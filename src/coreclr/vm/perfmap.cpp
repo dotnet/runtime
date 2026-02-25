@@ -10,6 +10,7 @@
 #include <clrconfignocache.h>
 #include "perfmap.h"
 #include "pal.h"
+#include <dn-stdio.h>
 
 
 // The code addresses are actually native image offsets during crossgen. Print
@@ -27,6 +28,7 @@
 #endif
 
 Volatile<bool> PerfMap::s_enabled = false;
+Volatile<bool> PerfMap::s_dependenciesReady = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
@@ -120,6 +122,17 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
     if (sendExisting)
     {
+        // When Enable is called very early in startup (e.g., via DiagnosticServer IPC before
+        // SystemDomain::Attach and ExecutionManager::Init), the AppDomain and EEJitManager
+        // may not exist yet. We use s_dependenciesReady (a Volatile<bool>) to guard against
+        // this, rather than null-checking individual pointers which would have race conditions
+        // due to non-Volatile statics like m_pEEJitManager.
+        // Safe to skip: no assemblies are loaded and no code is JIT'd at that point.
+        if (!s_dependenciesReady)
+        {
+            return;
+        }
+
         AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<Assembly *> pAssembly;
@@ -207,6 +220,15 @@ void PerfMap::Disable()
     }
 }
 
+// Signal that all dependencies (AppDomain, ExecutionManager) are ready.
+// This method must be called before any code is JITed or restored from R2R image.
+void PerfMap::SignalDependenciesReady()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    s_dependenciesReady = true;
+}
+
 // Construct a new map for the process.
 PerfMap::PerfMap()
 {
@@ -221,8 +243,8 @@ PerfMap::~PerfMap()
 {
     LIMITED_METHOD_CONTRACT;
 
-    delete m_FileStream;
-    m_FileStream = nullptr;
+    fclose(m_fp);
+    m_fp = nullptr;
 }
 
 void PerfMap::OpenFileForPid(int pid, const char* basePath)
@@ -240,16 +262,8 @@ void PerfMap::OpenFile(SString& path)
     STANDARD_VM_CONTRACT;
 
     // Open the file stream.
-    m_FileStream = new (nothrow) CFileStream();
-    if(m_FileStream != nullptr)
-    {
-        HRESULT hr = m_FileStream->OpenForWrite(path.GetUnicode());
-        if(FAILED(hr))
-        {
-            delete m_FileStream;
-            m_FileStream = nullptr;
-        }
-    }
+    if (fopen_lp(&m_fp, path.GetUnicode(), W("w")) != 0)
+        m_fp = nullptr;
 }
 
 // Write a line to the map file.
@@ -260,7 +274,7 @@ void PerfMap::WriteLine(SString& line)
     _ASSERTE(s_csPerfMap.OwnedByCurrentThread());
 #endif
 
-    if (m_FileStream == nullptr || m_ErrorEncountered)
+    if (m_fp == nullptr || m_ErrorEncountered)
     {
         return;
     }
@@ -268,19 +282,12 @@ void PerfMap::WriteLine(SString& line)
     EX_TRY
     {
         // Write the line.
-        // The PAL already takes a lock when writing, so we don't need to do so here.
-        const char * strLine = line.GetUTF8();
-        ULONG inCount = line.GetCount();
-        ULONG outCount;
-        m_FileStream->Write(strLine, inCount, &outCount);
-
-        if (inCount != outCount)
+        if (fprintf(m_fp, "%s", line.GetUTF8()) < 0)
         {
             // This will cause us to stop writing to the file.
             // The file will still remain open until shutdown so that we don't have to take a lock at this level when we touch the file stream.
             m_ErrorEncountered = true;
         }
-
     }
     EX_CATCH{} EX_END_CATCH
 }

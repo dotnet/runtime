@@ -816,6 +816,100 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task SerializeJsonObjectExtensionData_ProducesValidJson()
+        {
+            // JsonSerializer.Serialize was producing invalid JSON for [JsonExtensionData] property of type JsonObject
+            // Output was: {"Id":1,{"nested":true}} instead of {"Id":1,"nested":true}
+
+            var obj = new ClassWithJsonObjectExtensionDataAndProperty
+            {
+                Id = 1,
+                Extra = new JsonObject { ["nested"] = true }
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+
+            // Verify the JSON is valid by parsing it
+            using JsonDocument doc = JsonDocument.Parse(json);
+
+            // Verify the structure is correct: extension data should be flattened, not nested
+            Assert.True(doc.RootElement.TryGetProperty("Id", out JsonElement idElement));
+            Assert.Equal(1, idElement.GetInt32());
+
+            Assert.True(doc.RootElement.TryGetProperty("nested", out JsonElement nestedElement));
+            Assert.True(nestedElement.GetBoolean());
+
+            // Extension data property name should NOT appear in the output
+            Assert.False(doc.RootElement.TryGetProperty("Extra", out _));
+
+            // Verify expected JSON format
+            Assert.Equal(@"{""Id"":1,""nested"":true}", json);
+        }
+
+        [Fact]
+        public async Task SerializeJsonObjectExtensionData_RoundTrip()
+        {
+            var original = new ClassWithJsonObjectExtensionDataAndProperty
+            {
+                Id = 42,
+                Extra = new JsonObject
+                {
+                    ["string"] = "value",
+                    ["number"] = 123,
+                    ["boolean"] = false,
+                    ["nested"] = new JsonObject { ["inner"] = "data" }
+                }
+            };
+
+            string json = await Serializer.SerializeWrapper(original);
+
+            // Verify round-trip
+            var deserialized = await Serializer.DeserializeWrapper<ClassWithJsonObjectExtensionDataAndProperty>(json);
+
+            Assert.Equal(original.Id, deserialized.Id);
+            Assert.NotNull(deserialized.Extra);
+            Assert.Equal(4, deserialized.Extra.Count);
+            Assert.Equal("value", deserialized.Extra["string"]!.GetValue<string>());
+            Assert.Equal(123, deserialized.Extra["number"]!.GetValue<int>());
+            Assert.False(deserialized.Extra["boolean"]!.GetValue<bool>());
+            Assert.Equal("data", deserialized.Extra["nested"]!["inner"]!.GetValue<string>());
+        }
+
+        [Fact]
+        public async Task SerializeJsonObjectExtensionData_EmptyJsonObject()
+        {
+            var obj = new ClassWithJsonObjectExtensionDataAndProperty
+            {
+                Id = 1,
+                Extra = new JsonObject()
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Equal(@"{""Id"":1}", json);
+        }
+
+        [Fact]
+        public async Task SerializeJsonObjectExtensionData_NullJsonObject()
+        {
+            var obj = new ClassWithJsonObjectExtensionDataAndProperty
+            {
+                Id = 1,
+                Extra = null
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Equal(@"{""Id"":1}", json);
+        }
+
+        public class ClassWithJsonObjectExtensionDataAndProperty
+        {
+            public int Id { get; set; }
+
+            [JsonExtensionData]
+            public JsonObject? Extra { get; set; }
+        }
+
+        [Fact]
 #if BUILDING_SOURCE_GENERATOR_TESTS
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58945")]
 #endif

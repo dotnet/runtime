@@ -11,6 +11,9 @@
 //     File: C:\dev\dotnet\runtime3\src\coreclr\jit\gentree.cpp Line: 8641
 //
 
+
+namespace Runtime_116369;
+
 using System;
 using System.Threading;
 using System.Runtime.Intrinsics;

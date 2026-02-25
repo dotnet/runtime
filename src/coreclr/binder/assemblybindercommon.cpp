@@ -298,9 +298,8 @@ namespace BINDER_SPACE
             {
                 SString fileName;
                 SString simpleName;
-                bool isNativeImage = false;
                 HRESULT pathResult = S_OK;
-                IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ true, fileName, simpleName, isNativeImage));
+                IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ true, fileName, simpleName));
                 if (pathResult == S_FALSE)
                 {
                     break;
@@ -845,44 +844,38 @@ namespace BINDER_SPACE
             // For single-file, bundled assemblies should only be in the bundle manifest, not in the TPA.
             if (AssemblyProbeExtension::IsEnabled())
             {
-                // Search Assembly.ni.dll, then Assembly.dll
-                // The Assembly.ni.dll paths are rare, and intended for supporting managed C++ R2R assemblies.
-                const WCHAR* const candidates[] = { W(".ni.dll"),  W(".dll") };
+                const WCHAR* const dllExtension = W(".dll");
 
-                // Loop through the binding paths looking for a matching assembly
-                for (int i = 0; i < 2; i++)
+                SString assemblyFileName(simpleName);
+                assemblyFileName.Append(dllExtension);
+
+                ProbeExtensionResult probeExtensionResult = AssemblyProbeExtension::Probe(assemblyFileName, /* pathIsBundleRelative */ true);
+                if (probeExtensionResult.IsValid())
                 {
-                    SString assemblyFileName(simpleName);
-                    assemblyFileName.Append(candidates[i]);
+                    SString assemblyFilePath;
+                    if (Bundle::AppIsBundle())
+                        assemblyFilePath.SetUTF8(Bundle::AppBundle->BasePath());
 
-                    ProbeExtensionResult probeExtensionResult = AssemblyProbeExtension::Probe(assemblyFileName, /* pathIsBundleRelative */ true);
-                    if (probeExtensionResult.IsValid())
+                    assemblyFilePath.Append(assemblyFileName);
+
+                    hr = GetAssembly(assemblyFilePath,
+                                        TRUE,  // fIsInTPA
+                                        &pTPAAssembly,
+                                        probeExtensionResult);
+
+                    BinderTracing::PathProbed(assemblyFilePath, BinderTracing::PathSource::Bundle, hr);
+
+                    if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
                     {
-                        SString assemblyFilePath;
-                        if (Bundle::AppIsBundle())
-                           assemblyFilePath.SetUTF8(Bundle::AppBundle->BasePath());
+                        // Any other error is fatal
+                        IF_FAIL_GO(hr);
 
-                        assemblyFilePath.Append(assemblyFileName);
-
-                        hr = GetAssembly(assemblyFilePath,
-                                         TRUE,  // fIsInTPA
-                                         &pTPAAssembly,
-                                         probeExtensionResult);
-
-                        BinderTracing::PathProbed(assemblyFilePath, BinderTracing::PathSource::Bundle, hr);
-
-                        if (hr != HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+                        if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
                         {
-                            // Any other error is fatal
-                            IF_FAIL_GO(hr);
-
-                            if (TestCandidateRefMatchesDef(pRequestedAssemblyName, pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
-                            {
-                                // We have found the requested assembly match in the bundle with validation of the full-qualified name.
-                                // Bind to it.
-                                pBindResult->SetResult(pTPAAssembly);
-                                GO_WITH_HRESULT(S_OK);
-                            }
+                            // We have found the requested assembly match in the bundle with validation of the full-qualified name.
+                            // Bind to it.
+                            pBindResult->SetResult(pTPAAssembly);
+                            GO_WITH_HRESULT(S_OK);
                         }
                     }
                 }
@@ -893,25 +886,13 @@ namespace BINDER_SPACE
             const SimpleNameToFileNameMapEntry *pTpaEntry = tpaMap->LookupPtr(simpleName.GetUnicode());
             if (pTpaEntry != nullptr)
             {
-                if (pTpaEntry->m_wszNIFileName != nullptr)
-                {
-                    SString fileName(pTpaEntry->m_wszNIFileName);
+                _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
+                SString fileName(pTpaEntry->m_wszILFileName);
 
-                    hr = GetAssembly(fileName,
-                                     TRUE,  // fIsInTPA
-                                     &pTPAAssembly);
-                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
-                }
-                else
-                {
-                    _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
-                    SString fileName(pTpaEntry->m_wszILFileName);
-
-                    hr = GetAssembly(fileName,
-                                     TRUE,  // fIsInTPA
-                                     &pTPAAssembly);
-                    BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
-                }
+                hr = GetAssembly(fileName,
+                                    TRUE,  // fIsInTPA
+                                    &pTPAAssembly);
+                BinderTracing::PathProbed(fileName, BinderTracing::PathSource::ApplicationAssemblies, hr);
 
                 pBindResult->SetAttemptResult(hr, pTPAAssembly);
 

@@ -14,6 +14,8 @@
   .ver 4:0:0:0
 }
 
+.assembly extern System.Diagnostics.StackTrace { }
+
 .assembly NegativeCases
 {
 }
@@ -34,8 +36,8 @@
     IL_0001:  newobj     instance void [mscorlib]System.Diagnostics.StackTrace::.ctor()
     IL_0006:  ldc.i4.0
     IL_0007:  callvirt   instance class [mscorlib]System.Diagnostics.StackFrame [mscorlib]System.Diagnostics.StackTrace::GetFrame(int32)
-    IL_000c:  callvirt   instance class [mscorlib]System.Reflection.MethodBase [mscorlib]System.Diagnostics.StackFrame::GetMethod()
-    IL_0011:  callvirt   instance string [mscorlib]System.Reflection.MemberInfo::get_Name()
+    IL_000c:  call       class [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo::Create(class [mscorlib]System.Diagnostics.StackFrame)
+    IL_0011:  callvirt   instance string [System.Diagnostics.StackTrace]System.Diagnostics.DiagnosticMethodInfo::get_Name()
     IL_0016:  stloc.0
     .try
     {

@@ -18,7 +18,7 @@ export default {
       }),
       files({
         output: 'public',
-        extensions: /\.(json)$/,
+        extensions: /\.(json|txt)$/,
       }),
       nodeResolve({
          extensions: ['.js']

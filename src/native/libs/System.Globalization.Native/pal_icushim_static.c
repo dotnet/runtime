@@ -55,13 +55,12 @@ static int32_t load_icu_data(const void* pData);
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData);
+EMSCRIPTEN_KEEPALIVE int32_t wasm_load_icu_data(const void* pData);
 
-EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)
+EMSCRIPTEN_KEEPALIVE int32_t wasm_load_icu_data(const void* pData)
 {
     return load_icu_data(pData);
 }
-
 /*
  * driver.c calls this to make sure this file is linked, otherwise
  * its not, meaning the EMSCRIPTEN_KEEPALIVE functions above
@@ -72,7 +71,6 @@ void mono_wasm_link_icu_shim(void);
 void mono_wasm_link_icu_shim(void)
 {
 }
-
 #endif
 
 int32_t mono_wasi_load_icu_data(const void* pData);
@@ -210,7 +208,7 @@ int32_t GlobalizationNative_LoadICU(void)
 // GlobalizationNative_LoadICUData() as entrypoint
     if (!isDataSet)
     {
-        // don't try to locate icudt.dat automatically if mono_wasm_load_icu_data wasn't called
+        // don't try to locate icudt.dat automatically if wasm_load_icu_data wasn't called
         // and fallback to invariant mode
         return 0;
     }

@@ -13,7 +13,7 @@ This file contains the logic for generating command scripts for special GC tests
 WARNING:   When setting properties based on their current state (for example:
            <Foo Condition="'$(Foo)'==''>Bar</Foo>).  Be very careful.  Another script generation
            target might be trying to do the same thing.  It's better to avoid this by instead setting a new property.
-           
+
            Additionally, be careful with itemgroups.  Include will propagate outside of the target too!
 
 ***********************************************************************************************
@@ -57,10 +57,8 @@ export RunningIlasmRoundTrip=
 
       <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
 # IlasmRoundTrip Script
-# Disable Ilasm round-tripping for Linker tests.
-# Todo: Ilasm round-trip on linked binaries.
 
-if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
+if [ -n "$RunningIlasmRoundTrip" ];
 then
   python3 $(AssemblyName)_ilasmroundtrip.py
   ERRORLEVEL=$?
@@ -95,13 +93,11 @@ REM IlasmRoundTrip Script
 REM Disable Ilasm round-tripping for Linker tests.
 REM Todo: Ilasm round-trip on linked binaries.
 
-IF NOT DEFINED DoLink (
-  IF DEFINED RunningIlasmRoundTrip (
-    python $(AssemblyName)_ilasmroundtrip.py
-    IF NOT "!ERRORLEVEL!"=="0" (
-      ECHO ILASM ROUND-TRIP - FAILED !ERRORLEVEL!
-      Exit /b 1
-    )
+IF DEFINED RunningIlasmRoundTrip (
+  python $(AssemblyName)_ilasmroundtrip.py
+  IF NOT "!ERRORLEVEL!"=="0" (
+    ECHO ILASM ROUND-TRIP - FAILED !ERRORLEVEL!
+    Exit /b 1
   )
 )
 ]]>
@@ -225,7 +221,7 @@ IF NOT "%DOTNET_JitDisasm%" == "" (
   ***********************************************************************************************
   SuperPMI collection of CoreCLR tests
   ***********************************************************************************************
-  
+
   You shouldn't have to escape characters in a CDATA block, but it appears that you do actually need
   to escape semicolons with %3B here.
   -->
@@ -462,4 +458,4 @@ print("")
       Include="DOTNET_GCStress" Value="$(RunWithGcStress)" />
   </ItemGroup>
 
-</Project> 
+</Project>

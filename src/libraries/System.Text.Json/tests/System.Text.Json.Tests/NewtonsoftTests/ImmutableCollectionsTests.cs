@@ -292,6 +292,25 @@ namespace System.Text.Json.Tests
             Assert.True(data.Contains("II"));
             Assert.True(data.Contains("One"));
         }
+
+#if NET
+        [Fact]
+        public void DeserializeIReadOnlySetInterface()
+        {
+            string json = @"[
+                              ""One"",
+                              ""II"",
+                              ""3""
+                            ]";
+
+            IReadOnlySet<string> data = JsonSerializer.Deserialize<IReadOnlySet<string>>(json);
+
+            Assert.Equal(3, data.Count);
+            Assert.True(data.Contains("3"));
+            Assert.True(data.Contains("II"));
+            Assert.True(data.Contains("One"));
+        }
+#endif
         #endregion
 
         #region SortedSet

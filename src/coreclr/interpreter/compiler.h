@@ -105,6 +105,13 @@ public:
         _dataItems = dataItems;
     }
 
+    // Allocates a slot in the data items that is not shared with other opcodes
+    // Typically used for caching data at runtime.
+    int32_t GetNewDataItemIndex(void* data)
+    {
+        return _dataItems->Add(data);
+    }
+
     int32_t GetDataItemIndex(const InterpGenericLookup& lookup)
     {
         const size_t sizeOfFieldsConcatenated = sizeof(InterpGenericLookup::offsets) +
@@ -154,10 +161,11 @@ enum StackType {
     StackTypeVT,
     StackTypeByRef,
     StackTypeF,
+    StackTypeLocalVariableAddress, // LocalVariableAddress, The result of ldloca or ldarga is a byref per spec, but is also permitted to be treated as a nint in some cases. Keep track of that here.
 #ifdef TARGET_64BIT
-    StackTypeI = StackTypeI8
+    StackTypeI = StackTypeI8,
 #else
-    StackTypeI = StackTypeI4
+    StackTypeI = StackTypeI4,
 #endif
 };
 
@@ -293,7 +301,6 @@ enum InterpBBState
 enum InterpBBClauseType
 {
     BBClauseNone,
-    BBClauseTry,
     BBClauseCatch,
     BBClauseFinally,
     BBClauseFilter,
@@ -335,6 +342,9 @@ struct InterpBasicBlock
     // Valid only for BBs of call islands. It is set to true if it is a finally call island, false if is is a catch leave island.
     bool isFinallyCallIsland;
 
+    // Is a leave chain island basic block
+    bool isLeaveChainIsland;
+
     // If this basic block is a catch or filter funclet entry, this is the index of the variable
     // that holds the exception object.
     int clauseVarIndex;
@@ -342,7 +352,8 @@ struct InterpBasicBlock
     // Number of catch, filter or finally clauses that overlap with this basic block.
     int32_t overlappingEHClauseCount;
 
-    InterpBasicBlock(int32_t index) : InterpBasicBlock(index, 0) { }
+    // Number of try blocks that enclose this basic block.
+    int32_t enclosingTryBlockCount;
 
     InterpBasicBlock(int32_t index, int32_t ilOffset)
     {
@@ -365,8 +376,10 @@ struct InterpBasicBlock
         clauseType = BBClauseNone;
         isFilterOrCatchFuncletEntry = false;
         isFinallyCallIsland = false;
+        isLeaveChainIsland = false;
         clauseVarIndex = -1;
         overlappingEHClauseCount = 0;
+        enclosingTryBlockCount = -1;
     }
 };
 
@@ -414,8 +427,54 @@ struct InterpVar
 
 struct StackInfo
 {
+private:
     StackType type;
+public:
+
     CORINFO_CLASS_HANDLE clsHnd;
+
+    StackType GetStackType()
+    {
+        if (type == StackTypeLocalVariableAddress)
+        {
+            // Transient pointers are treated as byrefs for stack type purposes
+            return StackTypeByRef;
+        }
+        return type;
+    }
+
+    void SetAsLocalVariableAddress()
+    {
+        assert(type == StackTypeByRef);
+        type = StackTypeLocalVariableAddress;
+    }
+
+    bool IsLocalVariableAddress()
+    {
+        return type == StackTypeLocalVariableAddress;
+    }
+
+    // Used before a use of a value where the value on the stack would be correctly handled if the type on the stack
+    // was of type I. This is done to allow the use of the address of a local variable as a pointer which is common
+    // in older IL testing.
+    void BashStackTypeToI_ForLocalVariableAddress()
+    {
+        if (type == StackTypeLocalVariableAddress)
+        {
+            type = StackTypeI;
+        }
+    }
+
+    // Used before a conversion operation to ensure that transient pointers, byrefs, and object references are
+    // treated as integers for the purpose of the conversion. The Byref/O behavior here does not seem to have
+    // justification in the ECMA-335 spec, but it is needed to match the behavior of the JIT.
+    void BashStackTypeToI_ForConvert()
+    {
+        if ((type == StackTypeLocalVariableAddress) || (type == StackTypeByRef) || (type == StackTypeO))
+        {
+            type = StackTypeI;
+        }
+    }
 
     // The var associated with the value of this stack entry. Every time we push on
     // the stack a new var is created.
@@ -474,7 +533,7 @@ struct OpcodePeepElement
 };
 
 typedef bool (InterpCompiler::*CheckIfTokensAllowPeepToBeUsedFunc_t)(const uint8_t* ip, OpcodePeepElement*, void** outComputedInfo);
-typedef void (InterpCompiler::*ApplyPeepFunc_t)(const uint8_t* ip, OpcodePeepElement*, void* computedInfo);
+typedef int (InterpCompiler::*ApplyPeepFunc_t)(const uint8_t* ip, OpcodePeepElement*, void* computedInfo);
 struct OpcodePeep
 {
     OpcodePeepElement* const pattern;
@@ -490,17 +549,70 @@ struct OpcodePeep
     }
 };
 
+class InterpreterRetryData
+{
+    bool m_needsRetry = false;
+    int32_t m_tryCount = 0;
+    const char *m_reasonString = "";
+
+    dn_simdhash_u32_ptr_holder m_ilMergePointStackTypes;
+
+    static void FreeStackInfo(uint32_t key, void *value, void *userdata)
+    {
+        free(value);
+    }
+public:
+
+    InterpreterRetryData()
+        : m_ilMergePointStackTypes(FreeStackInfo)
+    {
+
+    }
+    bool NeedsRetry() const
+    {
+        return m_needsRetry;
+    }
+
+    const char *GetReasonString() const
+    {
+        return m_reasonString;
+    }
+
+    void SetNeedsRetry(const char *reasonString)
+    {
+        assert(reasonString != nullptr);
+        m_reasonString = reasonString;
+        m_needsRetry = true;
+    }
+
+    void StartCompilationAttempt()
+    {
+        m_reasonString = "";
+        m_needsRetry = false;
+        m_tryCount++;
+        if (m_tryCount > 1000)
+        {
+            BADCODE("Exceeded maximum number of compilation attempts");
+        }
+    }
+
+    void SetOverrideILMergePointStack(int32_t ilOffset, uint32_t stackHeight, StackInfo *pStackInfo);
+    bool GetOverrideILMergePointStackType(int32_t ilOffset, uint32_t* stackHeight, StackInfo** stack);
+};
+
 class InterpCompiler
 {
     friend class InterpIAllocator;
     friend class InterpGcSlotAllocator;
     friend class InterpILOpcodePeeps;
+    friend class InterpAsyncCallPeeps;
 
 private:
     CORINFO_METHOD_HANDLE m_methodHnd;
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
+    CORJIT_FLAGS m_corJitFlags;
 
     void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
     {
@@ -542,7 +654,10 @@ private:
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
 
+    InterpreterRetryData *m_pRetryData;
     const uint8_t* m_ip;
+
+    CORINFO_RESOLVED_TOKEN* m_pConstrainedToken = NULL;
     uint8_t* m_pILCode;
     int32_t m_ILCodeSizeFromILHeader;
     int32_t m_ILCodeSize; // This can differ from the size of the header if we add instructions for synchronized methods
@@ -552,6 +667,11 @@ private:
     // If the method has a hidden argument, GenerateCode allocates a var to store it and
     //  populates the var at method entry
     int32_t m_hiddenArgumentVar;
+
+    // If RuntimeHelpers.SetNextCallGenericContext or SetNextCallAsyncContinuation were used
+    // then these contain the value that should be passed as those arguments.
+    int32_t m_nextCallGenericContextVar;
+    int32_t m_nextCallAsyncContinuationVar;
 
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
@@ -563,6 +683,8 @@ private:
     // from the interpreter code header during execution.
     TArray<void*, MemPoolAllocator> m_dataItems;
 
+    TArray<InterpAsyncSuspendData*, MemPoolAllocator> m_asyncSuspendDataItems;
+
     InterpDataItemIndexMap m_genericLookupToDataItemIndex;
     int32_t GetDataItemIndex(void* data)
     {
@@ -571,6 +693,10 @@ private:
     int32_t GetDataItemIndex(const InterpGenericLookup& data)
     {
         return m_genericLookupToDataItemIndex.GetDataItemIndex(data);
+    }
+    int32_t GetNewDataItemIndex(void* data)
+    {
+        return m_genericLookupToDataItemIndex.GetNewDataItemIndex(data);
     }
 
     void* GetDataItemAtIndex(int32_t index);
@@ -710,16 +836,25 @@ private:
     int32_t m_varsSize = 0;
     int32_t m_varsCapacity = 0;
     int32_t m_numILVars = 0;
-    int32_t m_paramArgIndex = 0; // Index of the type parameter argument in the m_pVars array.
+    int32_t m_paramArgIndex = -1; // Index of the type parameter argument in the m_pVars array.
     // For each catch or filter clause, we create a variable that holds the exception object.
     // This is the index of the first such variable.
+    int32_t m_continuationArgIndex = -1; // Index of the continuation argument in the m_pVars array for async methods.
     int32_t m_clauseVarsIndex = 0;
+    
+    int32_t m_synchronizedOrAsyncPostFinallyOffset = -1; // If the method is synchronized/async, this is the offset of the instruction after the finally which does the actual return
 
     bool m_isSynchronized = false;
     int32_t m_synchronizedFlagVarIndex = -1; // If the method is synchronized, this is the index of the argument that flag indicating if the lock was taken
-    int32_t m_synchronizedRetValVarIndex = -1; // If the method is synchronized, ret instructions are replaced with a store to this var and a leave to an epilog instruction.
+    int32_t m_synchronizedOrAsyncRetValVarIndex = -1; // If the method is synchronized, ret instructions are replaced with a store to this var and a leave to an epilog instruction.
     int32_t m_synchronizedFinallyStartOffset = -1; // If the method is synchronized, this is the offset of the start of the finally epilog
-    int32_t m_synchronizedPostFinallyOffset = -1; // If the method is synchronized, this is the offset of the instruction after the finally which does the actual return
+
+    int32_t m_execContextVarIndex = -1; // If the method is async, this is the var index of the ExecutionContext local
+    int32_t m_syncContextVarIndex = -1; // If the method is async, this is the var index of the SynchronizationContext local
+
+    void *m_asyncResumeFuncPtr = NULL;
+    bool m_isAsyncMethodWithContextSaveRestore = false;
+    int32_t m_asyncFinallyStartOffset = -1; // If the method is async, this is the offset of the start of the fault handler
 
     bool m_shadowCopyOfThisPointerActuallyNeeded = false;
     bool m_shadowCopyOfThisPointerHasVar = false;
@@ -754,19 +889,59 @@ private:
     void PushInterpType(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd);
     void PushTypeVT(CORINFO_CLASS_HANDLE clsHnd, int size);
     void ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type);
+    bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig);
 
     // Opcode peeps
+    bool    FindAndApplyPeep(OpcodePeep* Peeps[]);
+
+    bool    IsConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo) { return true; }
+    int     ApplyConvRUnR4Peep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
     bool    IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
-    void    ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool ResolveAsyncCallToken(const uint8_t* ip);
+    enum class ContinuationContextHandling : uint8_t
+    {
+        ContinueOnCapturedContext,
+        ContinueOnThreadPool,
+        None
+    };
+    bool    IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+
+    int     ApplyRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo) { return -1; }
+    ContinuationContextHandling m_currentContinuationContextHandling = ContinuationContextHandling::None;
+    CORINFO_RESOLVED_TOKEN m_resolvedAsyncCallToken;
 
     // Code emit
     void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);
@@ -777,10 +952,13 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
+    void    EmitRet(CORINFO_METHOD_INFO* methodInfo);
+    void    EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling ContinuationContextHandling);
     void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder, bool enableImplicitArgConversionRules);
+    void    EmitNintIndexCheck(StackInfo *spArray, StackInfo *spIndex);
     void    EmitLdelem(int32_t opcode, InterpType type);
     void    EmitStelem(InterpType type);
     void    EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken);
@@ -791,6 +969,10 @@ private:
     void    EmitPushSyncObject();
     void    EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllowed, CORINFO_HELPER_DESC* calloutDesc);
     void    EmitCanAccessCallout(CORINFO_RESOLVED_TOKEN *pResolvedToken);
+    void    CheckForPInvokeThisCallWithNoArgs(CORINFO_SIG_INFO* sigInfo, CORINFO_METHOD_HANDLE methodHnd);
+    void    EmitLdftn(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isLdvirtftn);
+    void    EmitDup();
+    void    EmitLoadPointer(intptr_t value);
 
     // Var Offset allocator
     TArray<InterpInst*, MemPoolAllocator> *m_pActiveCalls;
@@ -805,6 +987,15 @@ private:
     void    InitializeGlobalVars();
     void    EndActiveCall(InterpInst *call);
     void    CompactActiveVars(int32_t *current_offset);
+
+    TArray<InterpIntervalMapEntry**, MemPoolAllocator> m_varIntervalMaps;
+    InterpIntervalMapEntry ComputeNextIntervalMapEntry_ForVars(const TArray<int32_t, MemPoolAllocator> &vars, int32_t *pNextIndex);
+    void AllocateIntervalMapData_ForVars(InterpIntervalMapEntry** ppIntervalMap, const TArray<int32_t, MemPoolAllocator> &vars);
+
+    void GetVarSizeAndOffset(const InterpIntervalMapEntry* pVarIntervalMap, int32_t entryIndex, int32_t internalIndex, uint32_t* pVarSize, uint32_t* pVarOffset);
+    InterpIntervalMapEntry ComputeNextIntervalMapEntry_ForOffsets(const InterpIntervalMapEntry* pVarIntervalMap, int32_t *pNextIndex, int32_t *pInternalIndex);
+    void ConvertToIntervalMapData_ForOffsets(InterpIntervalMapEntry** ppIntervalMap);
+    void UpdateLocalIntervalMaps();
 
     // Passes
     int32_t* m_pMethodCode;
@@ -838,6 +1029,7 @@ private:
     void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
     void PrintCompiledCode();
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);
+    void PrintInterpAsyncSuspendData(InterpAsyncSuspendData* pSuspendInfo);
 #ifdef DEBUG
     InterpDumpScope m_dumpScope;
     TArray<char, MallocAllocator> m_methodName;
@@ -859,11 +1051,12 @@ private:
 #endif // DEBUG
 public:
 
-    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo);
+    InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData *pretryData);
 
     InterpMethod* CompileMethod();
     void BuildGCInfo(InterpMethod *pInterpMethod);
     void BuildEHInfo();
+    void UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *pByteCodeStart);
 
     int32_t* GetCode(int32_t *pCodeSize);
 };

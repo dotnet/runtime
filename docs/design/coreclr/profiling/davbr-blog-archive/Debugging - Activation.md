@@ -1,5 +1,8 @@
 *This blog post originally appeared on David Broman's blog on 12/11/2007*
 
+***[Update 11/14/25]: The archived content below refers to an old naming convention of the environmental variables. `CORECLR_` prefix has been changed to `DOTNET_`. Both are supported for now, but the support for `CORECLR_` prefix may be removed in the future.
+Please see [Profiler Loading](../Profiler%20Loading.md) for details on the change.***
+
 
 This is the first of some tips to help you debug your profiler.  Note that these tips assume you're using CLR 2.x (see [this entry](https://learn.microsoft.com/archive/blogs/davbr/versions-of-microsoft-net-framework-clr-and-your-profiler) for info on how CLR version numbers map to .NET Framework version numbers).  In today's post, I address a frequent question from profiler developers and users: "Why didn't my profiler load?".
 

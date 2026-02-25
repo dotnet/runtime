@@ -357,7 +357,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 else
                 {
                     T result = task.Result;
-                    ToJS(result);
+                    marshaler(ref this, result);
                     slot.ElementType = slot.Type;
                     slot.Type = MarshalerType.TaskResolved;
                     return;

@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: request.cpp
 //
-
-//
 // CorDataAccess::Request implementation.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -229,7 +227,7 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
 
         if (retval && pMD->HasNativeCode() && !pMD->IsFCall())
         {
-            PCODE jitCodeAddr = pMD->GetNativeCode();
+            PCODE jitCodeAddr = pMD->GetCodeForInterpreterOrJitted();
 
             MethodDesc *pMDCheck = ExecutionManager::GetCodeMethodDesc(jitCodeAddr);
             if (pMDCheck)
@@ -790,6 +788,8 @@ ClrDataAccess::GetThreadFromThinlockID(UINT thinLockId, CLRDATA_ADDRESS *pThread
 HRESULT
 ClrDataAccess::GetThreadAllocData(CLRDATA_ADDRESS addr, struct DacpAllocData *data)
 {
+    if (addr == 0)
+        return E_INVALIDARG;
     if (data == NULL)
         return E_POINTER;
 
@@ -850,6 +850,12 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
 
 HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData)
 {
+    if (threadData == NULL)
+        return E_POINTER;
+
+    if (threadAddr == 0)
+        return E_INVALIDARG;
+
     SOSDacEnter();
 
     // marshal the Thread object from the target
@@ -889,16 +895,11 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
         TO_CDADDR(thread->m_LastThrownObjectHandle);
     threadData->nextThread =
         HOST_CDADDR(ThreadStore::s_pThreadStore->m_ThreadList.GetNext(thread));
-#ifdef FEATURE_EH_FUNCLETS
     if (thread->m_ExceptionState.m_pCurrentTracker)
     {
         threadData->firstNestedException = HOST_CDADDR(
             thread->m_ExceptionState.m_pCurrentTracker->m_pPrevNestedInfo);
     }
-#else
-    threadData->firstNestedException = HOST_CDADDR(
-        thread->m_ExceptionState.m_currentExInfo.m_pPrevNestedInfo);
-#endif // FEATURE_EH_FUNCLETS
 
     SOSDacLeave();
     return hr;
@@ -908,7 +909,7 @@ HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThre
 void CopyNativeCodeVersionToReJitData(NativeCodeVersion nativeCodeVersion, NativeCodeVersion activeCodeVersion, DacpReJitData * pReJitData)
 {
     pReJitData->rejitID = nativeCodeVersion.GetILCodeVersion().GetVersionId();
-    pReJitData->NativeCodeAddr = nativeCodeVersion.GetNativeCode();
+    pReJitData->NativeCodeAddr = GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCodeVersion.GetNativeCode());
 
     if (nativeCodeVersion != activeCodeVersion)
     {
@@ -1018,7 +1019,7 @@ HRESULT ClrDataAccess::GetMethodDescData(
         if (!requestedNativeCodeVersion.IsNull() && requestedNativeCodeVersion.GetNativeCode() != (PCODE)NULL)
         {
             methodDescData->bHasNativeCode = TRUE;
-            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode()));
+            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent(requestedNativeCodeVersion.GetNativeCode())));
         }
         else
         {
@@ -1232,9 +1233,9 @@ HRESULT ClrDataAccess::GetTieredVersions(
             PTR_Module pModule = (PTR_Module)pMD->GetModule();
             if (pModule->IsReadyToRun())
             {
-                PTR_PEImageLayout pImage = pModule->GetReadyToRunInfo()->GetImage();
+                PTR_ReadyToRunLoadedImage pImage = pModule->GetReadyToRunInfo()->GetImage();
                 r2rImageBase = dac_cast<TADDR>(pImage->GetBase());
-                r2rImageEnd = r2rImageBase + pImage->GetSize();
+                r2rImageEnd = r2rImageBase + pImage->GetVirtualSize();
             }
         }
 
@@ -1242,7 +1243,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
         int count = 0;
         for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
         {
-            TADDR pNativeCode = PCODEToPINSTR((*iter).GetNativeCode());
+            TADDR pNativeCode = PCODEToPINSTR(GetInterpreterCodeFromInterpreterPrecodeIfPresent((*iter).GetNativeCode()));
             nativeCodeAddrs[count].NativeCodeAddr = pNativeCode;
             PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
             nativeCodeAddrs[count].NativeCodeVersionNodePtr = PTR_CDADDR(pNode);
@@ -1792,7 +1793,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
     ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
     ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
-    ModuleData->dwTransientFlags = pModule->m_dwTransientFlags;
+    ModuleData->dwTransientFlags = (pModule->m_dwTransientFlags & Module::IS_EDIT_AND_CONTINUE) ? DacpModuleData::IsEditAndContinue : 0;
     ModuleData->LoaderAllocator = HOST_CDADDR(pModule->m_loaderAllocator);
 
     EX_TRY
@@ -2699,9 +2700,14 @@ ClrDataAccess::GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count,
 HRESULT
 ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS domain, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *assemblyData)
 {
-    if (assembly == (CLRDATA_ADDRESS)NULL && domain == (CLRDATA_ADDRESS)NULL)
+    if (assembly == (CLRDATA_ADDRESS)NULL)
     {
         return E_INVALIDARG;
+    }
+
+    if (assemblyData == NULL)
+    {
+        return E_POINTER;
     }
 
     SOSDacEnter();
@@ -2735,6 +2741,11 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS domain, CLRDATA_ADDRESS assembly,
 HRESULT
 ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded)
 {
+    if ((assembly == (CLRDATA_ADDRESS)NULL) || (name == NULL && pNeeded == NULL) || (name != NULL && count == 0))
+    {
+        return E_INVALIDARG;
+    }
+
     SOSDacEnter();
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
 
@@ -3801,9 +3812,13 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
                 }
 #endif // FEATURE_COMINTEROP
 
-                pSyncBlockData->MonitorHeld = pBlock->m_Monitor.GetMonitorHeldStateVolatile();
-                pSyncBlockData->Recursion = pBlock->m_Monitor.GetRecursionLevel();
-                pSyncBlockData->HoldingThread = HOST_CDADDR(pBlock->m_Monitor.GetHoldingThread());
+                DWORD holdingThread = 0;
+                DWORD recursionCount = 0;
+                BOOL monitorHeld = pBlock->TryGetLockInfo(&holdingThread, &recursionCount);
+
+                pSyncBlockData->MonitorHeld = monitorHeld == TRUE ? 1 : 0;
+                pSyncBlockData->Recursion = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
+                pSyncBlockData->HoldingThread = PTR_HOST_TO_TADDR(g_pThinLockThreadIdDispenser->IdToThread(holdingThread));
                 pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain());
 
                 // TODO: Microsoft, implement the wait list
@@ -4364,8 +4379,14 @@ BOOL ClrDataAccess::DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr)
         return FALSE;
     }
 
-    return (qiAddress == GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface)
-        || qiAddress == GetEEFuncEntryPoint(TrackerTarget_QueryInterface));
+    for (unsigned int i = 0; i < g_numKnownQueryInterfaceImplementations; i++)
+    {
+        if (PINSTRToPCODE(qiAddress) == g_knownQueryInterfaceImplementations[i])
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
@@ -4590,6 +4611,8 @@ HRESULT ClrDataAccess::GetCCWInterfaces(CLRDATA_ADDRESS ccw, unsigned int count,
 
 HRESULT ClrDataAccess::GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data)
 {
+    if (objAddr == 0)
+        return E_INVALIDARG;
     if (data == NULL)
         return E_POINTER;
 

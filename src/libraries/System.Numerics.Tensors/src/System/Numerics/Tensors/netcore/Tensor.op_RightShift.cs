@@ -48,7 +48,7 @@ namespace System.Numerics.Tensors
         extension<TScalar>(Tensor<TScalar>)
             where TScalar : IShiftOperators<TScalar, int, TScalar>
         {
-            /// <inheritdoc cref="op_LeftShift{T}(in ReadOnlyTensorSpan{T}, int)" />
+            /// <inheritdoc cref="op_RightShift{T}(in ReadOnlyTensorSpan{T}, int)" />
             public static Tensor<TScalar> operator >>(Tensor<TScalar> tensor, int shiftAmount) => ShiftRightArithmetic<TScalar>(tensor, shiftAmount);
         }
 
@@ -57,7 +57,7 @@ namespace System.Numerics.Tensors
         extension<TScalar>(Tensor<TScalar> tensor)
             where TScalar : IShiftOperators<TScalar, int, TScalar>
         {
-            /// <inheritdoc cref="op_LeftShiftAssignment{T}(ref TensorSpan{T}, int)" />
+            /// <inheritdoc cref="op_RightShiftAssignment{T}(ref TensorSpan{T}, int)" />
             public void operator >>=(int shiftAmount) => ShiftRightArithmetic<TScalar>(tensor, shiftAmount, tensor);
         }
 
@@ -65,7 +65,7 @@ namespace System.Numerics.Tensors
         extension<TScalar>(TensorSpan<TScalar>)
             where TScalar : IShiftOperators<TScalar, int, TScalar>
         {
-            /// <inheritdoc cref="op_LeftShift{T}(in ReadOnlyTensorSpan{T}, int)" />
+            /// <inheritdoc cref="op_RightShift{T}(in ReadOnlyTensorSpan{T}, int)" />
             public static Tensor<TScalar> operator >>(in TensorSpan<TScalar> tensor, int shiftAmount) => ShiftRightArithmetic<TScalar>(tensor, shiftAmount);
         }
 

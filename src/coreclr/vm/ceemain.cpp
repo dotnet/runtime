@@ -123,6 +123,7 @@
 #include "clsload.hpp"
 #include "object.h"
 #include "hash.h"
+#include "ebr.h"
 #include "ecall.h"
 #include "ceemain.h"
 #include "dllimport.h"
@@ -163,6 +164,7 @@
 #include "pendingload.h"
 #include "cdacplatformmetadata.hpp"
 #include "minipal/time.h"
+#include "minipal/random.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "callstubgenerator.h"
@@ -206,10 +208,6 @@
 #endif // FEATURE_GDBJIT
 
 #include "genanalysis.h"
-
-static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
-
-static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
 
 HRESULT EEStartup();
 
@@ -484,10 +482,10 @@ void InitGSCookie()
     void * pf = &__security_check_cookie;
     pf = NULL;
 
-    GSCookie val = (GSCookie)(__security_cookie ^ minipal_lowres_ticks());
+    GSCookie val = (GSCookie)(__security_cookie ^ minipal_hires_ticks());
 #else // !TARGET_UNIX
-    // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)minipal_lowres_ticks();
+    GSCookie val;
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&val, sizeof(val));
 #endif // !TARGET_UNIX
 
 #ifdef _DEBUG
@@ -615,12 +613,6 @@ void EEStartupHelper()
         GetSystemInfo(&g_SystemInfo);
         CDacPlatformMetadata::Init();
 
-        // Set callbacks so that LoadStringRC knows which language our
-        // threads are in so that it can return the proper localized string.
-    // TODO: This shouldn't rely on the LCID (id), but only the name
-        SetResourceCultureCallbacks(GetThreadUICultureNames,
-        GetThreadUICultureId);
-
 #ifndef TARGET_UNIX
         ::SetConsoleCtrlHandler(DbgCtrlCHandler, TRUE/*add*/);
 #endif
@@ -703,6 +695,10 @@ void EEStartupHelper()
         PAL_SetShutdownCallback(EESocketCleanupHelper);
 #endif // TARGET_UNIX
 
+#ifdef HOST_ANDROID
+        PAL_SetLogManagedCallstackForSignalCallback(EEPolicy::LogManagedCallstackForSignal);
+#endif // HOST_ANDROID
+
 #ifdef STRESS_LOG
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, g_pConfig->StressLog()) != 0) {
             unsigned facilities = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFacility, LF_ALL);
@@ -713,6 +709,10 @@ void EEStartupHelper()
             StressLog::Initialize(facilities, level, bytesPerThread, totalBytes, GetClrModuleBase(), logFilename);
             g_pStressLog = &StressLog::theLog;
         }
+#endif
+
+#ifdef FEATURE_PERFMAP
+        PerfMap::Initialize();
 #endif
 
 #ifdef FEATURE_PERFTRACING
@@ -740,7 +740,6 @@ void EEStartupHelper()
 #endif
 
 #ifdef FEATURE_PERFMAP
-        PerfMap::Initialize();
         InitThreadManagerPerfMapData();
 #endif
 
@@ -753,7 +752,6 @@ void EEStartupHelper()
 #ifndef TARGET_UNIX
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
-        InitEventStore();
 
         UnwindInfoTable::Initialize();
 
@@ -789,9 +787,13 @@ void EEStartupHelper()
         }
 #endif // USE_DISASSEMBLER
 
-        // Monitors, Crsts, and SimpleRWLocks all use the same spin heuristics
+        // Crsts and SimpleRWLocks all use the same spin heuristics
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
+
+        // Initialize EBR (Epoch-Based Reclamation) for HashMap's async mode.
+        // This must be done before any HashMap is initialized with fAsyncMode=TRUE.
+        g_HashMapEbr.Init();
 
         StubManager::InitializeStubManagers();
 
@@ -830,6 +832,10 @@ void EEStartupHelper()
         COMDelegate::Init();
 
         ExecutionManager::Init();
+
+#ifdef FEATURE_PERFMAP
+        PerfMap::SignalDependenciesReady();
+#endif
 
         JitHost::Init();
 
@@ -928,9 +934,6 @@ void EEStartupHelper()
         // On windows the finalizer thread is already partially created and is waiting
         // right before doing HasStarted(). We will release it now.
         FinalizerThread::EnableFinalization();
-#elif defined(TARGET_WASM)
-        // on wasm we need to run finalizers on main thread as we are single threaded
-        // active issue: https://github.com/dotnet/runtime/issues/114096
 #else
         // This isn't done as part of InitializeGarbageCollector() above because
         // debugger must be initialized before creating EE thread objects
@@ -1909,120 +1912,6 @@ static void TerminateDebugger(void)
 
 #endif // DEBUGGING_SUPPORTED
 
-#ifndef LOCALE_SPARENT
-#define LOCALE_SPARENT 0x0000006d
-#endif
-
-// ---------------------------------------------------------------------------
-// Impl for UtilLoadStringRC Callback: In VM, we let the thread decide culture
-// copy culture name into szBuffer and return length
-// ---------------------------------------------------------------------------
-extern BOOL g_fFatalErrorOccurredOnGCThread;
-static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pCultureNames));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    EX_TRY
-    {
-        InlineSString<LOCALE_NAME_MAX_LENGTH> sCulture;
-        InlineSString<LOCALE_NAME_MAX_LENGTH> sParentCulture;
-
-#if 0 // Enable and test if/once the unmanaged runtime is localized
-        Thread * pThread = GetThreadNULLOk();
-
-        // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
-        // indefinitely. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
-        // getting localized with a non-default thread-specific culture.
-        // A canonical stack trace that gets here is a fatal error in the GC that comes through:
-        // coreclr.dll!GetThreadUICultureNames
-        // coreclr.dll!CCompRC::LoadLibraryHelper
-        // coreclr.dll!CCompRC::LoadLibrary
-        // coreclr.dll!CCompRC::GetLibrary
-        // coreclr.dll!CCompRC::LoadString
-        // coreclr.dll!CCompRC::LoadString
-        // coreclr.dll!SString::LoadResourceAndReturnHR
-        // coreclr.dll!SString::LoadResourceAndReturnHR
-        // coreclr.dll!SString::LoadResource
-        // coreclr.dll!EventReporter::EventReporter
-        // coreclr.dll!EEPolicy::LogFatalError
-        // coreclr.dll!EEPolicy::HandleFatalError
-        if (pThread != NULL && !g_fFatalErrorOccurredOnGCThread) {
-
-            // Switch to cooperative mode, since we'll be looking at managed objects
-            // and we don't want them moving on us.
-            GCX_COOP();
-
-            CULTUREINFOBASEREF pCurrentCulture = (CULTUREINFOBASEREF)Thread::GetCulture(TRUE);
-
-            if (pCurrentCulture != NULL)
-            {
-                STRINGREF cultureName = pCurrentCulture->GetName();
-
-                if (cultureName != NULL)
-                {
-                    sCulture.Set(cultureName->GetBuffer(),cultureName->GetStringLength());
-                }
-
-                CULTUREINFOBASEREF pParentCulture = pCurrentCulture->GetParent();
-
-                if (pParentCulture != NULL)
-                {
-                    STRINGREF parentCultureName = pParentCulture->GetName();
-
-                    if (parentCultureName != NULL)
-                    {
-                        sParentCulture.Set(parentCultureName->GetBuffer(),parentCultureName->GetStringLength());
-                    }
-
-                }
-            }
-        }
-#endif
-
-        // If the lazily-initialized cultureinfo structures aren't initialized yet, we'll
-        // need to do the lookup the hard way.
-        if (sCulture.IsEmpty() || sParentCulture.IsEmpty())
-        {
-            LocaleIDValue id ;
-            int tmp; tmp = GetThreadUICultureId(&id);   // TODO: We should use the name instead
-            _ASSERTE(tmp!=0 && id != UICULTUREID_DONTCARE);
-            SIZE_T cchParentCultureName=LOCALE_NAME_MAX_LENGTH;
-            sCulture.Set(id);
-
-#ifndef TARGET_UNIX
-            if (!::GetLocaleInfoEx((LPCWSTR)sCulture, LOCALE_SPARENT, sParentCulture.OpenUnicodeBuffer(static_cast<COUNT_T>(cchParentCultureName)),static_cast<int>(cchParentCultureName)))
-            {
-                hr = HRESULT_FROM_GetLastError();
-            }
-            sParentCulture.CloseBuffer();
-#else // !TARGET_UNIX
-            sParentCulture = sCulture;
-#endif // !TARGET_UNIX
-        }
-        sCulture.Normalize();
-        sParentCulture.Normalize();
-        pCultureNames->AppendIfNotThere(sCulture);
-        pCultureNames->AppendIfNotThere(sParentCulture);
-        pCultureNames->Append(SString::Empty());
-    }
-    EX_CATCH
-    {
-        hr=E_OUTOFMEMORY;
-    }
-    EX_END_CATCH
-
-    return hr;
-}
-
 // The exit code for the process is communicated in one of two ways.  If the
 // entrypoint returns an 'int' we take that.  Otherwise we take a latched
 // process exit code.  This can be modified by the app via System.SetExitCode().
@@ -2046,85 +1935,6 @@ INT32 GetLatchedExitCode (void)
 {
     LIMITED_METHOD_CONTRACT;
     return LatchedExitCode;
-}
-
-// ---------------------------------------------------------------------------
-// Impl for UtilLoadStringRC Callback: In VM, we let the thread decide culture
-// Return an int uniquely describing which language this thread is using for ui.
-// ---------------------------------------------------------------------------
-static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    _ASSERTE(sizeof(LocaleIDValue)/sizeof(WCHAR) >= LOCALE_NAME_MAX_LENGTH);
-
-    int Result = 0;
-
-    Thread * pThread = GetThreadNULLOk();
-
-#if 0 // Enable and test if/once the unmanaged runtime is localized
-    // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
-    // indefinitely. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
-    // getting localized with a non-default thread-specific culture.
-    // A canonical stack trace that gets here is a fatal error in the GC that comes through:
-    // coreclr.dll!GetThreadUICultureNames
-    // coreclr.dll!CCompRC::LoadLibraryHelper
-    // coreclr.dll!CCompRC::LoadLibrary
-    // coreclr.dll!CCompRC::GetLibrary
-    // coreclr.dll!CCompRC::LoadString
-    // coreclr.dll!CCompRC::LoadString
-    // coreclr.dll!SString::LoadResourceAndReturnHR
-    // coreclr.dll!SString::LoadResourceAndReturnHR
-    // coreclr.dll!SString::LoadResource
-    // coreclr.dll!EventReporter::EventReporter
-    // coreclr.dll!EEPolicy::LogFatalError
-    // coreclr.dll!EEPolicy::HandleFatalError
-    if (pThread != NULL && !g_fFatalErrorOccurredOnGCThread)
-    {
-
-        // Switch to cooperative mode, since we'll be looking at managed objects
-        // and we don't want them moving on us.
-        GCX_COOP();
-
-        CULTUREINFOBASEREF pCurrentCulture = (CULTUREINFOBASEREF)Thread::GetCulture(TRUE);
-
-        if (pCurrentCulture != NULL)
-        {
-            STRINGREF currentCultureName = pCurrentCulture->GetName();
-
-            if (currentCultureName != NULL)
-            {
-                int cchCurrentCultureNameResult = currentCultureName->GetStringLength();
-                if (cchCurrentCultureNameResult < LOCALE_NAME_MAX_LENGTH)
-                {
-                    memcpy(*pLocale, currentCultureName->GetBuffer(), cchCurrentCultureNameResult*sizeof(WCHAR));
-                    (*pLocale)[cchCurrentCultureNameResult]='\0';
-                    Result=cchCurrentCultureNameResult;
-                }
-            }
-        }
-    }
-#endif
-    if (Result == 0)
-    {
-#ifndef TARGET_UNIX
-        // This thread isn't set up to use a non-default culture. Let's grab the default
-        // one and return that.
-
-        Result = ::GetUserDefaultLocaleName(*pLocale, LOCALE_NAME_MAX_LENGTH);
-
-        _ASSERTE(Result != 0);
-#else // !TARGET_UNIX
-        static const WCHAR enUS[] = W("en-US");
-        memcpy(*pLocale, enUS, sizeof(enUS));
-        Result = sizeof(enUS);
-#endif // !TARGET_UNIX
-    }
-    return Result;
 }
 
 #ifdef ENABLE_CONTRACTS_IMPL

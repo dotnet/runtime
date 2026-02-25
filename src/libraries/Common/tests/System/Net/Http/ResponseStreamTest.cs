@@ -392,6 +392,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123572", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         public async Task BrowserHttpHandler_StreamingRequest()
         {

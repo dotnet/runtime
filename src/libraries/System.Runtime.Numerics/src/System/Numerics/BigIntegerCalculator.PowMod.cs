@@ -73,14 +73,7 @@ namespace System.Numerics
 
             int resultLength = leftLength + right.Length;
 
-            if (leftLength >= right.Length)
-            {
-                Multiply(left.Slice(0, leftLength), right, temp.Slice(0, resultLength));
-            }
-            else
-            {
-                Multiply(right, left.Slice(0, leftLength), temp.Slice(0, resultLength));
-            }
+            Multiply(left.Slice(0, leftLength), right, temp.Slice(0, resultLength));
 
             left.Clear();
             //switch buffers

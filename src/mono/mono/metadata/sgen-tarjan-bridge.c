@@ -96,6 +96,11 @@ typedef struct {
 	// Count of colors that list this color in their other_colors
 	unsigned incoming_colors : INCOMING_COLORS_BITS;
 	unsigned visited : 1;
+	// color_visible_to_client for a ColorData* can change over the course of bridge processing which
+	// is problematic. We fix this by setting this flag when a color is detected as visible to client.
+	// Once the flag is set, the color is pinned to being visible to client, even though it could lose
+	// some xrefs, making it not satisfy the bridgeless_color_is_heavy condition.
+	unsigned visible_to_client : 1;
 } ColorData;
 
 // Represents one managed object. Equivalent of new/old bridge "HashEntry"
@@ -140,8 +145,17 @@ bridgeless_color_is_heavy (ColorData *data) {
 
 // Should color be made visible to client?
 static gboolean
-color_visible_to_client (ColorData *data) {
-	return dyn_array_ptr_size (&data->bridges) || bridgeless_color_is_heavy (data);
+color_visible_to_client (ColorData *data)
+{
+	if (data->visible_to_client)
+		return TRUE;
+
+	if (dyn_array_ptr_size (&data->bridges) || bridgeless_color_is_heavy (data)) {
+		data->visible_to_client = TRUE;
+		return TRUE;
+	} else {
+		return FALSE;
+	}
 }
 
 // Stacks of ScanData objects used for tarjan algorithm.
@@ -944,9 +958,9 @@ dump_color_table (const char *why, gboolean do_index)
 	int i = 0, j;
 	printf ("colors%s:\n", why);
 
-	for (cur = root_color_bucket; cur; cur = cur->next, ++i) {
+	for (cur = root_color_bucket; cur; cur = cur->next) {
 		ColorData *cd;
-		for (cd = &cur->data [0]; cd < cur->next_data; ++cd) {
+		for (cd = &cur->data [0]; cd < cur->next_data; ++cd, ++i) {
 			if (do_index)
 				printf ("\t%d(%d):", i, cd->api_index);
 			else
@@ -1105,9 +1119,9 @@ processing_build_callback_data (int generation)
 	for (cur = root_color_bucket; cur; cur = cur->next) {
 		ColorData *cd;
 		for (cd = &cur->data [0]; cd < cur->next_data; ++cd) {
-			int bridges = dyn_array_ptr_size (&cd->bridges);
-			if (!(bridges || bridgeless_color_is_heavy (cd)))
+			if (!color_visible_to_client (cd))
 				continue;
+			int bridges = dyn_array_ptr_size (&cd->bridges);
 
 			api_sccs [api_index] = (MonoGCBridgeSCC *)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * bridges, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 			api_sccs [api_index]->is_alive = FALSE;

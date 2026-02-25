@@ -20,6 +20,8 @@
 {
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace GCTest_arrres_il
 {
   .class public auto ansi Test
@@ -28,7 +30,7 @@
     .field private int32 m_indx
     .field private int32 m_resCount
     .field private static class GCTest_arrres_il.Test[-100...100] arr
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void  .ctor(int32 indx) il managed
     {
       .maxstack  8
@@ -43,14 +45,14 @@
       IL_0014:  ret
     } // end of method 'Test::.ctor'
 
-    .method public hidebysig newslot virtual 
+    .method public hidebysig newslot virtual
             instance void CheckValid() il managed
     {
       .maxstack  10
       IL_0000:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
                 dup
       			brinst.s   IL_0005
-      			
+
       			pop
       			ldstr		"Warning: Array is NULL in CheckValid"
       			call		void [System.Console]System.Console::WriteLine(string)
@@ -58,7 +60,7 @@
 
       IL_0005:  ldarg.0
       IL_0006:  ldfld      int32 GCTest_arrres_il.Test::m_indx
-      
+
 
       IL_000b:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
       IL_000c:  ldarg.0
@@ -80,16 +82,16 @@
       			ldfld      int32 GCTest_arrres_il.Test::m_indx
       			ldc.i4 -10000
       			beq   IL_RET
-      			
+
       IL_0000:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
                 dup
       			brinst.s   IL_0005
-      			
+
       			pop
       			ldstr		"Warning: Array is NULL in Finalize"
       			call		void [System.Console]System.Console::WriteLine(string)
       			ret
-      
+
       IL_0005:  ldarg.0
       IL_0006:  ldfld      int32 GCTest_arrres_il.Test::m_indx
       IL_000b:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
@@ -148,6 +150,7 @@
       IL_007b:  ret
     } // end of method 'Test::Finalize'
 
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: Arrays with non-zero lower bounds') type([TestLibrary]TestLibrary.PlatformDetection) string[1] ('IsNonZeroLowerBoundArrayNotSupported') }
     .method public hidebysig static int32
             Main() il managed
     {
@@ -183,7 +186,7 @@
       IL_001c:  call       void [mscorlib]System.GC::Collect()
       IL_0021:  call       void [mscorlib]System.GC::WaitForPendingFinalizers()
       IL_0026:  call       void [mscorlib]System.GC::Collect()
-      
+
       IL_002b:  ldc.i4.s   -100
       IL_002d:  stloc.1
       IL_002e:  br.s       IL_0058
@@ -203,7 +206,7 @@
       IL_004b:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0050:  ldloc.1
       IL_0051:  ldnull
-      
+
       IL_0052:  callvirt   instance void class GCTest_arrres_il.Test[-100...100]::Set(int32, class GCTest_arrres_il.Test)
       IL_0053:  ldloc.1
       IL_0054:  ldc.i4.s   50
@@ -216,7 +219,7 @@
       IL_005d:  call       void [mscorlib]System.GC::Collect()
       IL_0062:  call       void [mscorlib]System.GC::WaitForPendingFinalizers()
       IL_0067:  call       void [mscorlib]System.GC::Collect()
-      
+
       IL_006c:  ldc.i4.s   -100
       IL_006e:  stloc.2
       IL_006f:  br.s       IL_0099
@@ -326,7 +329,7 @@
                 ldstr      " is NULL"
 				call       void [System.Console]System.Console::WriteLine(string)
 				br.s       IL_0162
-		
+
       IL_014c:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0151:  ldloc.s    V_5
       IL_0153:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
@@ -334,12 +337,12 @@
       IL_0154:  callvirt   instance void GCTest_arrres_il.Test::CheckValid()
       			ldc.i4 		-10000
       			stfld      int32 GCTest_arrres_il.Test::m_indx
-      
+
       IL_0159:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_015e:  ldloc.s    V_5
       IL_0160:  ldnull
       IL_0161:  callvirt   instance void class GCTest_arrres_il.Test[-100...100]::Set(int32, class GCTest_arrres_il.Test)
-      
+
       IL_0162:  ldloc.s    V_5
       IL_0164:  ldc.i4.s   50
       IL_0166:  add
@@ -350,7 +353,7 @@
 
 				ldnull
 				stsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
-				
+
       IL_016f:  ldstr      "Test passed."
       IL_0174:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0179:  ldc.i4    0x64
@@ -361,7 +364,7 @@
       IL_0180:  ret
     } // end of method 'Test::Main'
 
-    .method public hidebysig specialname rtspecialname static 
+    .method public hidebysig specialname rtspecialname static
             void .cctor() il managed
     {
       .maxstack  8

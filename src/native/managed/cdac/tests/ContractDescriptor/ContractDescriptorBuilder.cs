@@ -205,6 +205,6 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
         _created = true;
         ulong contractDescriptorAddress = descriptor.CreateSubDescriptor(ContractDescriptorAddr, JsonDescriptorAddr, ContractPointerDataAddr);
         MockMemorySpace.MemoryContext memoryContext = GetMemoryContext();
-        return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, memoryContext.ReadFromTarget, memoryContext.WriteToTarget, null, out target);
+        return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, memoryContext.ReadFromTarget, memoryContext.WriteToTarget, null, [], out target);
     }
 }

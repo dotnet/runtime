@@ -69,6 +69,8 @@ namespace Internal.IL
         private DependencyList _dependencies;
         private BasicBlock _lateBasicBlocks;
 
+        private bool _asyncDependenciesReported;
+
         private sealed class ExceptionRegion
         {
             public ILExceptionRegion ILRegion;
@@ -157,7 +159,7 @@ namespace Internal.IL
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExit), reason);
                 if (_canonMethod.Signature.IsStatic)
                 {
-                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers"u8, "GetSyncFromClassHandle"u8)), reason);
+                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTable"u8, null)), reason);
 
                     MethodDesc method = _methodIL.OwningMethod;
                     if (method.OwningType.IsRuntimeDeterminedSubtype)
@@ -172,9 +174,17 @@ namespace Internal.IL
                     if (_canonMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                     {
                         if (_canonMethod.RequiresInstMethodDescArg())
-                            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers"u8, "GetClassFromMethodParam"u8)), reason);
+                            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("Internal.Runtime.CompilerHelpers"u8, "SharedCodeHelpers"u8, "GetClassHandleFromMethodParam"u8, null)), reason);
                     }
                 }
+            }
+
+            if (_canonMethod.IsAsyncCall())
+            {
+                const string reason = "Async state machine";
+                DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+                _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContexts"u8, null)), reason);
+                _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContexts"u8, null)), reason);
             }
 
             FindBasicBlocks();
@@ -310,6 +320,99 @@ namespace Internal.IL
             return _factory.MethodEntrypointOrTentativeMethod(method);
         }
 
+        // Check if a method call starts a task await pattern that can be
+        // optimized for runtime async.
+        // Roughly corresponds to impMatchTaskAwaitPattern in RyuJIT codebase
+        private bool MatchTaskAwaitPattern()
+        {
+            // We look for the following code patterns in runtime async methods:
+            //
+            //    call[virt] <Method>
+            //    [ OPTIONAL ]
+            //    {
+            //       [ OPTIONAL ]
+            //       {
+            //         stloc X;
+            //         ldloca X
+            //       }
+            //       ldc.i4.0 / ldc.i4.1
+            //       call[virt] <ConfigureAwait>
+            //    }
+            //    call       <Await>
+
+            // Find where this basic block ends
+            int nextBBOffset = _currentOffset;
+            while (nextBBOffset < _basicBlocks.Length && _basicBlocks[nextBBOffset] == null)
+                nextBBOffset++;
+
+            // Create ILReader for what's left in the basic block
+            var reader = new ILReader(new ReadOnlySpan<byte>(_ilBytes, _currentOffset, nextBBOffset - _currentOffset));
+
+            if (!reader.HasNext)
+                return false;
+
+            ILOpcode opcode;
+
+            // If we can read at least two call tokens + an ldc, this could be ConfigureAwait
+            // so check for that.
+            if (reader.Size > 2 * (1 + sizeof(int)))
+            {
+                opcode = reader.ReadILOpcode();
+
+                // ConfigureAwait on a ValueTask will start with stloc/ldloca.
+                int stlocNum = opcode switch
+                {
+                    >= ILOpcode.stloc_0 and <= ILOpcode.stloc_3 => opcode - ILOpcode.stloc_0,
+                    ILOpcode.stloc => reader.ReadILUInt16(),
+                    ILOpcode.stloc_s => reader.ReadILByte(),
+                    _ => -1,
+                };
+
+                // if it was a stloc, check for matching ldloca
+                if (stlocNum != -1)
+                {
+                    opcode = reader.ReadILOpcode();
+                    int ldlocaNum = opcode switch
+                    {
+                        ILOpcode.ldloca_s => reader.ReadILByte(),
+                        ILOpcode.ldloca => reader.ReadILUInt16(),
+                        _ => -1,
+                    };
+
+                    if (stlocNum != ldlocaNum)
+                        return false;
+
+                    opcode = reader.ReadILOpcode();
+                }
+
+                if (opcode is (not ILOpcode.ldc_i4_0) and (not ILOpcode.ldc_i4_1))
+                {
+                    if (stlocNum != -1)
+                    {
+                        // we had stloc/ldloca, we must see ConfigAwait
+                        return false;
+                    }
+
+                    goto checkForAwait;
+                }
+
+                opcode = reader.ReadILOpcode();
+                if (opcode is (not ILOpcode.call) and (not ILOpcode.callvirt)
+                    || !IsTaskConfigureAwait((MethodDesc)_methodIL.GetObject(reader.ReadILToken()))
+                    || !reader.HasNext)
+                {
+                    return false;
+                }
+            }
+
+            opcode = reader.ReadILOpcode();
+
+        checkForAwait:
+
+            return opcode == ILOpcode.call
+                && IsAsyncHelpersAwait((MethodDesc)_methodIL.GetObject(reader.ReadILToken()));
+        }
+
         private void ImportCall(ILOpcode opcode, int token)
         {
             // We get both the canonical and runtime determined form - JitInterface mostly operates
@@ -344,6 +447,60 @@ namespace Internal.IL
                     reason = "ldvirtftn"; break;
                 default:
                     Debug.Assert(false); break;
+            }
+
+            // Are we scanning a call within a state machine?
+            if (opcode is ILOpcode.call or ILOpcode.callvirt
+                && _canonMethod.IsAsyncCall())
+            {
+                // Add dependencies on infra to do suspend/resume. We only need to do this once per method scanned.
+                if (!_asyncDependenciesReported && method.IsAsync)
+                {
+                    _asyncDependenciesReported = true;
+
+                    const string asyncReason = "Async state machine";
+
+                    var resumptionStub = new AsyncResumptionStub(_canonMethod, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(resumptionStub), asyncReason);
+
+                    _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
+
+                    DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+
+                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
+                }
+
+                // If this is the task await pattern, we're actually going to call the variant
+                // so switch our focus to the variant.
+
+                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+                // we cannot resolve to an Async variant in such case.
+                bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
+
+                // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
+                allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
+
+                if (allowAsyncVariant)
+                {
+                    bool isDirect = opcode == ILOpcode.call || method.IsCallEffectivelyDirect();
+                    if (isDirect && !method.IsAsync)
+                    {
+                        // Async variant would be a thunk. Do not resolve direct calls
+                        // to async thunks. That just creates and JITs unnecessary
+                        // thunks, and the thunks are harder for the JIT to optimize.
+                        allowAsyncVariant = false;
+                    }
+                }
+
+                if (allowAsyncVariant && MatchTaskAwaitPattern())
+                {
+                    runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
+                    method = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
+                }
             }
 
             if (opcode == ILOpcode.newobj)
@@ -470,14 +627,19 @@ namespace Internal.IL
                 if (constrained.IsRuntimeDeterminedSubtype)
                     constrained = constrained.ConvertToCanonForm(CanonicalFormKind.Specific);
 
-                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup, ref staticResolution);
-                if (directMethod == null && constrained.IsEnum)
+                if (constrained.IsEnum)
                 {
-                    // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
-                    // type though, so we would fail to resolve and box. We have a special path for those to avoid boxing.
-                    directMethod = _compilation.TypeSystemContext.TryResolveConstrainedEnumMethod(constrained, method);
+                    // Optimize constrained calls to enum's GetHashCode method. TryResolveConstraintMethodApprox would return
+                    // null since the virtual method resolves to System.Enum's implementation and that's a reference type.
+                    // We can't do this for any other method since ToString and Equals have different semantics for enums
+                    // and their underlying type.
+                    if (method.OwningType.IsObject && method.Name.SequenceEqual("GetHashCode"u8))
+                    {
+                        constrained = constrained.UnderlyingType;
+                    }
                 }
 
+                MethodDesc directMethod = constrained.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out forceUseRuntimeLookup, ref staticResolution);
                 if (directMethod != null)
                 {
                     // Either
@@ -544,9 +706,7 @@ namespace Internal.IL
             }
             else
             {
-                if (!targetMethod.IsVirtual ||
-                    // Final/sealed has no meaning for interfaces, but lets us devirtualize otherwise
-                    (!targetMethod.OwningType.IsInterface && (targetMethod.IsFinal || targetMethod.OwningType.IsSealed())))
+                if (targetMethod.IsCallEffectivelyDirect())
                 {
                     directCall = true;
                 }
@@ -639,22 +799,23 @@ namespace Internal.IL
                     {
                         ISymbolNode instParam = null;
 
-                        if (targetMethod.RequiresInstMethodDescArg())
+                        if (!_canonMethod.IsSharedByGenericInstantiations)
+                        {
+                            // Some handemitted IL helpers will call __Canon methods directly from unshared context.
+                            // This is fine, we just don't report any dependencies for the exact instantiation.
+                        }
+                        else if (targetMethod.RequiresInstMethodDescArg())
                         {
                             instParam = GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod);
                         }
                         else if (targetMethod.RequiresInstMethodTableArg())
                         {
-                            bool hasHiddenParameter = true;
-
-                            if (targetMethod.IsIntrinsic)
-                            {
-                                if (_factory.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(targetMethod))
-                                    hasHiddenParameter = false;
-                            }
-
-                            if (hasHiddenParameter)
-                                instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
+                            instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
+                        }
+                        else
+                        {
+                            Debug.Assert(targetMethod.AcquiresInstMethodTableFromThis());
+                            _dependencies.Add(_factory.ShadowNonConcreteMethod(concreteMethod), reason);
                         }
 
                         if (instParam != null)
@@ -1544,6 +1705,42 @@ namespace Internal.IL
                 if (owningType != null)
                 {
                     return owningType.Name.SequenceEqual("MemoryMarshal"u8) && owningType.Namespace.SequenceEqual("System.Runtime.InteropServices"u8);
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsAsyncHelpersAwait(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name.SequenceEqual("Await"u8))
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Module == method.Context.SystemModule
+                        && owningType.Name.SequenceEqual("AsyncHelpers"u8)
+                        && owningType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8);
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsTaskConfigureAwait(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name.SequenceEqual("ConfigureAwait"u8))
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    ReadOnlySpan<byte> typeName = owningType.Name;
+                    return owningType.Module == method.Context.SystemModule
+                        && owningType.Namespace.SequenceEqual("System.Threading.Tasks"u8)
+                        && (typeName.SequenceEqual("Task"u8)
+                            || typeName.SequenceEqual("Task`1"u8)
+                            || typeName.SequenceEqual("ValueTask"u8)
+                            || typeName.SequenceEqual("ValueTask`1"u8));
                 }
             }
 

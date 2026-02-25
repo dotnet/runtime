@@ -16,7 +16,6 @@ namespace System.IO.Pipelines
 
         private CancellationTokenSource? _internalTokenSource;
         private bool _isReaderCompleted;
-        private bool _isStreamCompleted;
 
         private BufferSegment? _readHead;
         private int _readIndex;
@@ -231,12 +230,6 @@ namespace System.IO.Pipelines
                 }
             }
 
-            if (_isStreamCompleted)
-            {
-                ReadResult completedResult = new ReadResult(buffer: default, isCanceled: false, isCompleted: true);
-                return new ValueTask<ReadResult>(completedResult);
-            }
-
             return Core(this, minimumSize, tokenSource, cancellationToken);
 
 #if NET
@@ -253,6 +246,7 @@ namespace System.IO.Pipelines
                 using (reg)
                 {
                     var isCanceled = false;
+                    bool isCompleted = false;
                     try
                     {
                         // This optimization only makes sense if we don't have anything buffered
@@ -277,7 +271,7 @@ namespace System.IO.Pipelines
 
                             if (length == 0)
                             {
-                                reader._isStreamCompleted = true;
+                                isCompleted = true;
                                 break;
                             }
                         } while (minimumSize != null && reader._bufferedBytes < minimumSize);
@@ -302,7 +296,7 @@ namespace System.IO.Pipelines
                         }
                     }
 
-                    return new ReadResult(reader.GetCurrentReadOnlySequence(), isCanceled, reader._isStreamCompleted);
+                    return new ReadResult(reader.GetCurrentReadOnlySequence(), isCanceled, isCompleted);
                 }
             }
         }
@@ -362,11 +356,6 @@ namespace System.IO.Pipelines
                         }
                     }
 
-                    if (_isStreamCompleted)
-                    {
-                        return;
-                    }
-
                     await InnerStream.CopyToAsync(destination, tokenSource.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
@@ -423,11 +412,6 @@ namespace System.IO.Pipelines
                         }
                     }
 
-                    if (_isStreamCompleted)
-                    {
-                        return;
-                    }
-
                     await InnerStream.CopyToAsync(destination, tokenSource.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
@@ -465,7 +449,7 @@ namespace System.IO.Pipelines
         private bool TryReadInternal(CancellationTokenSource source, out ReadResult result)
         {
             bool isCancellationRequested = source.IsCancellationRequested;
-            if (isCancellationRequested || _bufferedBytes > 0 && (!_examinedEverything || _isStreamCompleted))
+            if (isCancellationRequested || (_bufferedBytes > 0 && !_examinedEverything))
             {
                 if (isCancellationRequested)
                 {
@@ -474,7 +458,7 @@ namespace System.IO.Pipelines
 
                 ReadOnlySequence<byte> buffer = GetCurrentReadOnlySequence();
 
-                result = new ReadResult(buffer, isCancellationRequested, _isStreamCompleted);
+                result = new ReadResult(buffer, isCancellationRequested, false);
                 return true;
             }
 

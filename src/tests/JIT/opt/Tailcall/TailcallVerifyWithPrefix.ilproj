@@ -1,18 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported, JitOptimizationSensitive -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Test unsupported outside of windows -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TailcallVerifyWithPrefix.il" />
     <Compile Include="TailcallVerifyTransparentLibraryWithPrefix.il" />
     <Compile Include="TailcallVerifyVerifiableLibraryWithPrefix.il" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

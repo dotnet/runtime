@@ -2,14 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b119026a;
+
 using System;
 using Xunit;
 
-public class test
+public class bug
 {
     static short si16;
     static uint su32;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -332,7 +332,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_DuplicatePropertyNotAllowed()
         {
-            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed));
+            throw new JsonException(SR.DuplicatePropertiesNotAllowed);
         }
 
         [DoesNotReturn]
@@ -376,7 +376,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactorty(Type converterType)
+        public static void ThrowInvalidOperationException_SerializerConverterFactoryReturnsJsonConverterFactory(Type converterType)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializerConverterFactoryReturnsJsonConverterFactory, converterType));
         }
@@ -549,7 +549,7 @@ namespace System.Text.Json
             if (string.IsNullOrEmpty(message))
             {
                 // Use a default message.
-                message = SR.Format(SR.SerializeUnableToSerialize);
+                message = SR.SerializeUnableToSerialize;
                 ex.AppendPathInformation = true;
             }
 
@@ -727,7 +727,7 @@ namespace System.Text.Json
         public static void ThrowJsonException_MetadataUnexpectedProperty(ReadOnlySpan<byte> propertyName, scoped ref ReadStack state)
         {
             state.Current.JsonPropertyName = propertyName.ToArray();
-            ThrowJsonException(SR.Format(SR.MetadataUnexpectedProperty));
+            ThrowJsonException(SR.MetadataUnexpectedProperty);
         }
 
         [DoesNotReturn]

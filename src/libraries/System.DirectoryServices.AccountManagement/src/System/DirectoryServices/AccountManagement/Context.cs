@@ -100,8 +100,7 @@ namespace System.DirectoryServices.AccountManagement
                 // if they just passed user then append the machine name here.
                 if (null != userName)
                 {
-                    int index = userName.IndexOf('\\');
-                    if (index == -1)
+                    if (!userName.Contains('\\'))
                     {
                         userName = _serverName + "\\" + userName;
                     }

@@ -38,6 +38,7 @@ public class ByRef_GCHole
         }
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

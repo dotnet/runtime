@@ -154,7 +154,7 @@ namespace System.Runtime.CompilerServices
             [NotNull] ref StateMachineBox? boxFieldRef)
             where TStateMachine : IAsyncStateMachine
         {
-            ExecutionContext? currentContext = ExecutionContext.Capture();
+            ExecutionContext? currentContext = ExecutionContext.CaptureForSuspension(Thread.CurrentThread);
 
             // Check first for the most common case: not the first yield in an async method.
             // In this case, the first yield will have already "boxed" the state machine in
@@ -403,7 +403,7 @@ namespace System.Runtime.CompilerServices
             {
                 ExecutionContext? context = Context;
 
-                if (context is null)
+                if (context == ExecutionContext.DefaultFlowSuppressed)
                 {
                     Debug.Assert(StateMachine is not null, $"Null {nameof(StateMachine)}");
                     StateMachine.MoveNext();

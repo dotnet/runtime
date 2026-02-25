@@ -21,8 +21,6 @@ struct _EventPipeBufferList {
 #else
 struct _EventPipeBufferList_Internal {
 #endif
-	// The thread which writes to the buffers in this list.
-	EventPipeThreadHolder thread_holder;
 	// The buffer manager that owns this list.
 	EventPipeBufferManager *manager;
 	// Buffers are stored in an intrusive linked-list from oldest to newest.
@@ -31,9 +29,6 @@ struct _EventPipeBufferList_Internal {
 	EventPipeBuffer *tail_buffer;
 	// The number of buffers in the list.
 	uint32_t buffer_count;
-	// The sequence number of the last event that was read, only
-	// updated/read by the reader thread.
-	uint32_t last_read_sequence_number;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BUFFER_MANAGER_GETTER_SETTER)
@@ -42,26 +37,13 @@ struct _EventPipeBufferList {
 };
 #endif
 
-EP_DEFINE_GETTER_REF(EventPipeBufferList *, buffer_list, EventPipeThreadHolder *, thread_holder);
-
-static
-inline
-EventPipeThread *
-ep_buffer_list_get_thread (EventPipeBufferList *buffer_list)
-{
-	return ep_thread_holder_get_thread (ep_buffer_list_get_thread_holder_cref (buffer_list));
-}
-
 EventPipeBufferList *
-ep_buffer_list_alloc (
-	EventPipeBufferManager *manager,
-	EventPipeThread *thread);
+ep_buffer_list_alloc (EventPipeBufferManager *manager);
 
 EventPipeBufferList *
 ep_buffer_list_init (
 	EventPipeBufferList *buffer_list,
-	EventPipeBufferManager *manager,
-	EventPipeThread *thread);
+	EventPipeBufferManager *manager);
 
 void
 ep_buffer_list_fini (EventPipeBufferList *buffer_list);
@@ -108,11 +90,22 @@ struct _EventPipeBufferManager_Internal {
 	ep_rt_spin_lock_handle_t rt_lock;
 	// The session this buffer manager belongs to.
 	EventPipeSession *session;
-	// Iterator state for reader thread.
+	// ---------------------------- READER-THREAD ONLY BEGIN ----------------------------
 	// These are not protected by rt_lock and expected to only be used on the reader thread.
+	// Iterator state for reader thread.
 	EventPipeEventInstance *current_event;
 	EventPipeBuffer *current_buffer;
-	EventPipeBufferList *current_buffer_list;
+	EventPipeThreadSessionState *current_thread_session_state;
+	// A snapshot of the thead_session_state_list only used by the reader thread to optimize event iteration.
+	// As existing and new threads write events, this represents the subset of EventPipeThreadSessionStates
+	// containing events before the snapshot timestamp. As buffer_manager_move_next_event_any_snapshot_thread
+	// and buffer_manager_move_next_event_same_thread iterate over events, entries are removed from the list
+	// when no more events are available before the snapshot timestamp. So once there are no more events
+	// before the snapshot timestamp, the list will be empty.
+	dn_list_t *thread_session_state_list_snapshot;
+	// The timestamp representing the cut-off for the snapshot list.
+	ep_timestamp_t snapshot_timestamp;
+	// ---------------------------- READER-THREAD ONLY END ------------------------------
 	// The total allocation size of buffers under management.
 	volatile size_t size_of_all_buffers;
 	// The maximum allowable size of buffers under management.
@@ -190,20 +183,6 @@ ep_buffer_manager_write_event (
 	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack);
 
-// READ_ONLY state and no new EventPipeBuffers or EventPipeBufferLists can be created. Calls to
-// write_event that start during the suspension period or were in progress but hadn't yet recorded
-// their event into a buffer before the start of the suspension period will return false and the
-// event will not be recorded. Any events that not recorded as a result of this suspension will be
-// treated the same as events that were not recorded due to configuration.
-// EXPECTED USAGE: First the caller will disable all events via configuration, then call
-// suspend_write_event () to force any write_event calls that may still be in progress to either
-// finish or cancel. After that all BufferLists and Buffers can be safely drained and/or deleted.
-// _Requires_lock_held (ep)
-void
-ep_buffer_manager_suspend_write_event (
-	EventPipeBufferManager *buffer_manager,
-	uint32_t session_index);
-
 // Write the contents of the managed buffers to the specified file.
 // The stop_timeStamp is used to determine when tracing was stopped to ensure that we
 // skip any events that might be partially written due to races when tracing is stopped.
@@ -236,7 +215,7 @@ ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager);
 // threads can be in the middle of a write operation and get blocked, and we may not get an opportunity
 // to free their buffer for a very long time.
 void
-ep_buffer_manager_deallocate_buffers (EventPipeBufferManager *buffer_manager);
+ep_buffer_manager_close (EventPipeBufferManager *buffer_manager);
 
 #ifdef EP_CHECKED_BUILD
 bool

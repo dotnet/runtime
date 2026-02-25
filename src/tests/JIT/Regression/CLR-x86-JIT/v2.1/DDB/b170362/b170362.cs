@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b170362;
+
 using System;
 using Xunit;
 
@@ -16,6 +19,7 @@ public class MainApp
 {
     static byte s = 1;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

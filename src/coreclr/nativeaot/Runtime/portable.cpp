@@ -88,7 +88,7 @@ FCIMPL1(Object *, RhpNewFinalizable, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, int numElements)
+FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, intptr_t numElements)
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context * acontext = pCurThread->GetAllocContext();
@@ -135,8 +135,6 @@ FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, intptr_t numElements)
 }
 FCIMPLEND
 
-#endif
-#if defined(FEATURE_PORTABLE_HELPERS)
 #if defined(FEATURE_64BIT_ALIGNMENT)
 
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
@@ -221,7 +219,7 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, int numElements)
+FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numElements)
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
@@ -322,13 +320,9 @@ FCIMPL0(void, RhpInterfaceDispatch64)
 }
 FCIMPLEND
 
-// @TODO Implement UniversalTransition
-EXTERN_C void * ReturnFromUniversalTransition;
-void * ReturnFromUniversalTransition;
-
-// @TODO Implement UniversalTransition_DebugStepTailCall
-EXTERN_C void * ReturnFromUniversalTransition_DebugStepTailCall;
-void * ReturnFromUniversalTransition_DebugStepTailCall;
+// @TODO Implement UniversalTransitionTailCall
+EXTERN_C void * ReturnFromUniversalTransitionTailCall;
+void * ReturnFromUniversalTransitionTailCall;
 
 #if !defined (HOST_ARM64)
 FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)

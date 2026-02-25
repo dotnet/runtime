@@ -30,7 +30,6 @@ nativeStringResourceTable_mscorrc
 #PAL_GetTransportName
 #PAL_GetCurrentThread
 #PAL_GetCpuLimit
-#PAL_GetNativeExceptionHolderHead
 #PAL_GetPalHostModule
 #PAL_GetSymbolModuleBase
 #PAL_GetTransportPipeName
@@ -64,8 +63,6 @@ nativeStringResourceTable_mscorrc
 #CreateFileMappingW
 #CreateFileA
 #CreateFileW
-#CreateMutexW
-#CreateMutexExW
 #CreateEventW
 #CreateEventExW
 #CreateProcessW
@@ -106,7 +103,6 @@ nativeStringResourceTable_mscorrc
 #RaiseException
 #RaiseFailFastException
 #ReadFile
-#ReleaseMutex
 #ReleaseSemaphore
 #ResetEvent
 #ResumeThread

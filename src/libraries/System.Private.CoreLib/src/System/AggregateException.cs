@@ -42,7 +42,7 @@ namespace System
         public AggregateException(string? message)
             : base(message ?? SR.AggregateException_ctor_DefaultMessage)
         {
-            _innerExceptions = Array.Empty<Exception>();
+            _innerExceptions = [];
         }
 
         /// <summary>

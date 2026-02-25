@@ -121,6 +121,8 @@ namespace Mono.Linker
 
         public bool DisableGeneratedCodeHeuristics { get; set; }
 
+        public string? TypeMapEntryAssembly { get; set; }
+
         /// <summary>
         /// Option to not special case EventSource.
         /// Currently, values are hard-coded and does not have a command line option to control

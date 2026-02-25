@@ -33,6 +33,8 @@
 #include "vmholder.h"
 #include "exceptmacros.h"
 #include "minipal/time.h"
+#include "minipal/thread.h"
+#include "SignalSafeThreadMap.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -54,13 +56,22 @@
 #include "perfmap.h"
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif
 
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
+
+#ifndef DACCESS_COMPILE
+Thread* GetThreadAsyncSafe()
+{
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    return (Thread*)FindThreadInSignalSafeMap(minipal_get_current_thread_id_no_cache());
+#else
+    return GetThreadNULLOk();
+#endif
+}
+#endif // DACCESS_COMPILE
 
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
@@ -130,8 +141,6 @@ CLREvent *ThreadStore::s_pWaitForStackCrawlEvent;
 #ifndef DACCESS_COMPILE
 
 BOOL Thread::s_fCleanFinalizedThread = FALSE;
-
-UINT64 Thread::s_monitorLockContentionCountOverflow = 0;
 
 CrstStatic g_DeadlockAwareCrst;
 
@@ -233,7 +242,7 @@ void  Thread::SetFrame(Frame *pFrame)
     if (g_pConfig->fAssertOnFailFast() == false)
         return;
 
-    Frame* espVal = (Frame*)GetCurrentSP();
+    void* espVal = GetCurrentSP();
 
     while (pFrame != (Frame*) -1)
     {
@@ -372,63 +381,25 @@ void SetThread(Thread* t)
 #endif
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
-    t_CurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
-}
-
-BOOL Thread::Alert ()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    BOOL fRetVal = FALSE;
+    if (t != NULL)
     {
-        HANDLE handle = GetThreadHandle();
-        if (handle != INVALID_HANDLE_VALUE)
+        t_CurrentThreadInfo.m_pAppDomain = AppDomain::GetCurrentDomain();
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        if (!InsertThreadIntoSignalSafeMap(t->GetOSThreadId64(), t))
         {
-            fRetVal = ::QueueUserAPC(UserInterruptAPC, handle, APC_Code);
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into signal-safe map due to out of memory."));
         }
+#endif // TARGET_UNIX && !TARGET_WASM
     }
-
-    return fRetVal;
-}
-
-
-DWORD Thread::Join(DWORD timeout, BOOL alertable)
-{
-    WRAPPER_NO_CONTRACT;
-    return JoinEx(timeout,alertable?WaitMode_Alertable:WaitMode_None);
-}
-DWORD Thread::JoinEx(DWORD timeout, WaitMode mode)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS; // For DoAppropriateWait
-    }
-    CONTRACTL_END;
-
-    BOOL alertable = (mode & WaitMode_Alertable)?TRUE:FALSE;
-
-    Thread *pCurThread = GetThreadNULLOk();
-    _ASSERTE(pCurThread || dbgOnly_IsSpecialEEThread());
-
+    else
     {
-        // We're not hosted, so WaitMode_InDeadlock is irrelevant.  Clear it, so that this wait can be
-        // forwarded to a SynchronizationContext if needed.
-        mode = (WaitMode)(mode & ~WaitMode_InDeadlock);
-
-        HANDLE handle = GetThreadHandle();
-        if (handle == INVALID_HANDLE_VALUE) {
-            return WAIT_FAILED;
+        t_CurrentThreadInfo.m_pAppDomain = NULL;
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        if (origThread != NULL)
+        {
+            RemoveThreadFromSignalSafeMap(origThread->GetOSThreadId64(), origThread);
         }
-        if (pCurThread) {
-            return pCurThread->DoAppropriateWait(1, &handle, FALSE, timeout, mode);
-        }
-        else {
-            return WaitForSingleObjectEx(handle,timeout,alertable);
-        }
+#endif // TARGET_UNIX && !TARGET_WASM
     }
 }
 
@@ -700,7 +671,6 @@ Thread* SetupThread()
 
     // reset any unstarted bits on the thread object
     pThread->ResetThreadState(Thread::TS_Unstarted);
-    pThread->SetThreadState(Thread::TS_LegalToJoin);
 
     ThreadStore::AddThread(pThread);
 
@@ -945,12 +915,14 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     SetThreadState((Thread::ThreadState)(Thread::TS_Detached | Thread::TS_ReportDead));
     // Do not touch Thread object any more.  It may be destroyed.
 
-    // These detached threads will be cleaned up by finalizer thread.  But if the process uses
-    // little managed heap, it will be a while before GC happens, and finalizer thread starts
-    // working on detached thread.  So we wake up finalizer thread to clean up resources.
-    //
-    // (It's possible that this is the startup thread, and startup failed, and so the finalization
-    //  machinery isn't fully initialized.  Hence this check.)
+    // These detached threads will be cleaned up by finalizer thread.
+    // NOTE: We do have a possible deadlock here. If the user is blocking the finalizer thread
+    // on a mutex that is about to be abandoned by this thread or on a Thread.Join call
+    // on this thread for non-Windows platforms, we will deadlock.
+    // This is because we're expecting the finalizer queue to clean up this thread's state,
+    // but the thread is blocked.
+    // We do not consider blocked finalizer thread to be something to be robust against in general.
+    // Blocking on a finalizer thread is a bug in the user code that can cause all sorts of problems.
     if (g_fEEStarted)
         FinalizerThread::EnableFinalization();
 
@@ -1200,118 +1172,6 @@ void InitThreadManager()
 // Thread members
 //************************************************************************
 
-
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-
-// One outstanding synchronization held by this thread:
-struct Dbg_TrackSyncEntry
-{
-    UINT_PTR     m_caller;
-    AwareLock   *m_pAwareLock;
-
-    BOOL        Equiv      (UINT_PTR caller, void *pAwareLock)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_caller == caller) && (m_pAwareLock == pAwareLock);
-    }
-
-    BOOL        Equiv      (void *pAwareLock)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_pAwareLock == pAwareLock);
-    }
-};
-
-// Each thread has a stack that tracks all enter and leave requests
-struct Dbg_TrackSyncStack : public Dbg_TrackSync
-{
-    enum
-    {
-        MAX_TRACK_SYNC  = 20,       // adjust stack depth as necessary
-    };
-
-    void    EnterSync  (UINT_PTR caller, void *pAwareLock);
-    void    LeaveSync  (UINT_PTR caller, void *pAwareLock);
-
-    Dbg_TrackSyncEntry  m_Stack [MAX_TRACK_SYNC];
-    UINT_PTR            m_StackPointer;
-    BOOL                m_Active;
-
-    Dbg_TrackSyncStack() : m_StackPointer(0),
-                           m_Active(TRUE)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-};
-
-void Dbg_TrackSyncStack::EnterSync(UINT_PTR caller, void *pAwareLock)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::EnterSync, IP=%p, Recursion=%u, LockState=%x, HoldingThread=%p.\n",
-                    caller,
-                    ((AwareLock*)pAwareLock)->GetRecursionLevel(),
-                    ((AwareLock*)pAwareLock)->GetLockState(),
-                    ((AwareLock*)pAwareLock)->GetHoldingThread());
-
-    if (m_Active)
-    {
-        if (m_StackPointer >= MAX_TRACK_SYNC)
-        {
-            _ASSERTE(!"Overflowed synchronization stack checking.  Disabling");
-            m_Active = FALSE;
-            return;
-        }
-    }
-    m_Stack[m_StackPointer].m_caller = caller;
-    m_Stack[m_StackPointer].m_pAwareLock = (AwareLock *) pAwareLock;
-
-    m_StackPointer++;
-
-}
-
-void Dbg_TrackSyncStack::LeaveSync(UINT_PTR caller, void *pAwareLock)
-{
-    WRAPPER_NO_CONTRACT;
-
-    STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::LeaveSync, IP=%p, Recursion=%u, LockState=%x, HoldingThread=%p.\n",
-                    caller,
-                    ((AwareLock*)pAwareLock)->GetRecursionLevel(),
-                    ((AwareLock*)pAwareLock)->GetLockState(),
-                    ((AwareLock*)pAwareLock)->GetHoldingThread());
-
-    if (m_Active)
-    {
-        if (m_StackPointer == 0)
-            _ASSERTE(!"Underflow in leaving synchronization");
-        else
-        if (m_Stack[m_StackPointer - 1].Equiv(pAwareLock))
-        {
-            m_StackPointer--;
-        }
-        else
-        {
-            for (int i=m_StackPointer - 2; i>=0; i--)
-            {
-                if (m_Stack[i].Equiv(pAwareLock))
-                {
-                    _ASSERTE(!"Locks are released out of order.  This might be okay...");
-                    memcpy(&m_Stack[i], &m_Stack[i+1],
-                           sizeof(m_Stack[0]) * (m_StackPointer - i - 1));
-
-                    return;
-                }
-            }
-            _ASSERTE(!"Trying to release a synchronization lock which isn't held");
-        }
-    }
-}
-
-#endif  // TRACK_SYNC
-
-
 static  DWORD dwHashCodeSeed = 123456789;
 
 //--------------------------------------------------------------------
@@ -1347,8 +1207,6 @@ Thread::Thread()
     m_thAllocContextObj = 0;
 
     m_UserInterrupt = 0;
-    m_WaitEventLink.m_Next = NULL;
-    m_WaitEventLink.m_LinkSB.m_pNext = NULL;
     m_ThreadHandle = INVALID_HANDLE_VALUE;
     m_ThreadHandleForClose = INVALID_HANDLE_VALUE;
     m_ThreadHandleForResume = INVALID_HANDLE_VALUE;
@@ -1418,11 +1276,6 @@ Thread::Thread()
 #endif // TARGET_UNIX
 #endif // FEATURE_HIJACK
 
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-    m_pTrackSync = new Dbg_TrackSyncStack;
-    NewHolder<Dbg_TrackSyncStack> trackSyncHolder(static_cast<Dbg_TrackSyncStack*>(m_pTrackSync));
-#endif  // TRACK_SYNC
-
     m_PreventAsync = 0;
     m_PreventAbort = 0;
 #ifdef FEATURE_COMINTEROP
@@ -1489,12 +1342,8 @@ Thread::Thread()
 
     m_pCreatingThrowableForException = NULL;
 
-#ifdef FEATURE_EH_FUNCLETS
     m_dwIndexClauseForCatch = 0;
     m_sfEstablisherOfActualHandlerFrame.Clear();
-#endif // FEATURE_EH_FUNCLETS
-
-    m_monitorLockContentionCount = 0;
 
     // Do not expose thread until it is fully constructed
     g_pThinLockThreadIdDispenser->NewId(this, this->m_ThreadId);
@@ -1508,9 +1357,6 @@ Thread::Thread()
 
     exposedObjectHolder.SuppressRelease();
     strongHndToExposedObjectHolder.SuppressRelease();
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-    trackSyncHolder.SuppressRelease();
-#endif
     contextHolder.SuppressRelease();
 
 #ifdef FEATURE_COMINTEROP
@@ -1683,13 +1529,11 @@ BOOL Thread::AllocHandles()
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(!m_DebugSuspendEvent.IsValid());
-    _ASSERTE(!m_EventWait.IsValid());
 
     BOOL fOK = TRUE;
     EX_TRY {
         // create a manual reset event for getting the thread to a safe point
         m_DebugSuspendEvent.CreateManualEvent(FALSE);
-        m_EventWait.CreateManualEvent(TRUE);
     }
     EX_CATCH {
         fOK = FALSE;
@@ -1698,9 +1542,6 @@ BOOL Thread::AllocHandles()
             m_DebugSuspendEvent.CloseEvent();
         }
 
-        if (!m_EventWait.IsValid()) {
-            m_EventWait.CloseEvent();
-        }
         RethrowTerminalExceptions();
     }
     EX_END_CATCH
@@ -1867,8 +1708,7 @@ FAILURE:
     return FALSE;
 }
 
-
-void Thread::HandleThreadStartupFailure()
+OBJECTREF Thread::GetExceptionDuringStartup()
 {
     CONTRACTL
     {
@@ -1880,37 +1720,11 @@ void Thread::HandleThreadStartupFailure()
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    struct
-    {
-        OBJECTREF pThrowable;
-        OBJECTREF pReason;
-    } gc;
-    gc.pThrowable = NULL;
-    gc.pReason = NULL;
+    OBJECTREF throwable = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
+    Exception::Delete(m_pExceptionDuringStartup);
+    m_pExceptionDuringStartup = NULL;
 
-    GCPROTECT_BEGIN(gc);
-
-    MethodTable *pMT = CoreLibBinder::GetException(kThreadStartException);
-    gc.pThrowable = AllocateObject(pMT);
-
-    MethodDescCallSite exceptionCtor(METHOD__THREAD_START_EXCEPTION__EX_CTOR);
-
-    if (m_pExceptionDuringStartup)
-    {
-        gc.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
-        Exception::Delete(m_pExceptionDuringStartup);
-        m_pExceptionDuringStartup = NULL;
-    }
-
-    ARG_SLOT args1[] = {
-        ObjToArgSlot(gc.pThrowable),
-        ObjToArgSlot(gc.pReason),
-    };
-    exceptionCtor.Call(args1);
-
-    GCPROTECT_END(); //Prot
-
-    RaiseTheExceptionInternalOnly(gc.pThrowable, FALSE);
+    return throwable;
 }
 
 #ifndef TARGET_UNIX
@@ -2432,22 +2246,7 @@ Thread::~Thread()
         UnmarkThreadForAbort();
     }
 
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-    _ASSERTE(IsAtProcessExit() || ((Dbg_TrackSyncStack *) m_pTrackSync)->m_StackPointer == 0);
-    delete m_pTrackSync;
-#endif // TRACK_SYNC
-
     _ASSERTE(IsDead() || IsUnstarted() || IsAtProcessExit());
-
-    if (m_WaitEventLink.m_Next != NULL && !IsAtProcessExit())
-    {
-        WaitEventLink *walk = &m_WaitEventLink;
-        while (walk->m_Next) {
-            ThreadQueue::RemoveThread(this, (SyncBlock*)((DWORD_PTR)walk->m_Next->m_WaitSB & ~1));
-            StoreEventToEventStore (walk->m_Next->m_EventWait);
-        }
-        m_WaitEventLink.m_Next = NULL;
-    }
 
     if (m_StateNC & TSNC_ExistInThreadStore) {
         BOOL ret;
@@ -2470,10 +2269,6 @@ Thread::~Thread()
     if (m_DebugSuspendEvent.IsValid())
     {
         m_DebugSuspendEvent.CloseEvent();
-    }
-    if (m_EventWait.IsValid())
-    {
-        m_EventWait.CloseEvent();
     }
 
     if (m_OSContext)
@@ -2534,21 +2329,6 @@ void Thread::BaseCoUninitialize()
     ::CoUninitialize();
 }// BaseCoUninitialize
 
-#ifdef FEATURE_COMINTEROP
-void Thread::BaseWinRTUninitialize()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_PREEMPTIVE;
-
-    _ASSERTE(WinRTSupported());
-    _ASSERTE(GetThread() == this);
-    _ASSERTE(IsWinRTInitialized());
-
-    RoUninitialize();
-}
-#endif // FEATURE_COMINTEROP
-
 void Thread::CoUninitialize()
 {
     CONTRACTL {
@@ -2559,31 +2339,14 @@ void Thread::CoUninitialize()
 
     // Running threads might have performed a CoInitialize which must
     // now be balanced.
-    BOOL needsUninitialize = IsCoInitialized()
-#ifdef FEATURE_COMINTEROP
-        || IsWinRTInitialized()
-#endif // FEATURE_COMINTEROP
-        ;
 
-    if (!IsAtProcessExit() && needsUninitialize)
+    if (!IsAtProcessExit() && IsCoInitialized())
     {
         GCX_PREEMP();
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        if (IsCoInitialized())
-        {
-            BaseCoUninitialize();
-            ResetThreadState(TS_CoInitialized);
-        }
-
-#ifdef FEATURE_COMINTEROP
-        if (IsWinRTInitialized())
-        {
-            _ASSERTE(WinRTSupported());
-            BaseWinRTUninitialize();
-            ResetWinRTInitialized();
-        }
-#endif // FEATURE_COMNITEROP
+        BaseCoUninitialize();
+        ResetThreadState(TS_CoInitialized);
     }
 }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -2591,7 +2354,132 @@ void Thread::CoUninitialize()
 void Thread::CleanupDetachedThreads()
 {
     CONTRACTL {
-        NOTHROW;
+        THROWS;
+        MODE_COOPERATIVE;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(!ThreadStore::HoldingThreadStore());
+
+    ArrayList threadsWithManagedCleanup;
+
+    {
+        ThreadStoreLockHolder threadStoreLockHolder;
+
+        Thread *thread = ThreadStore::GetAllThreadList(NULL, 0, 0);
+
+        STRESS_LOG0(LF_SYNC, LL_INFO1000, "T::CDT called\n");
+
+        while (thread != NULL)
+        {
+            Thread *next = ThreadStore::GetAllThreadList(thread, 0, 0);
+
+            if (thread->IsDetached())
+            {
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "T::CDT - detaching thread 0x%p\n", thread);
+
+                if (!thread->IsGCSpecial())
+                {
+                    // Record threads that we'll need to do some managed cleanup of
+                    // after we exit the thread store lock.
+                    // Increase the external ref count to ensure the exposed object stays alive
+                    // until we do our cleanup outside of the thread store lock.
+                    thread->IncExternalCount();
+                    threadsWithManagedCleanup.Append(thread);
+                }
+
+                // Unmark that the thread is detached while we have the
+                // thread store lock. This will ensure that no other
+                // thread will race in here and try to delete it, too.
+                thread->ResetThreadState(TS_Detached);
+                InterlockedDecrement(&m_DetachCount);
+                if (!thread->IsBackground())
+                    InterlockedDecrement(&m_ActiveDetachCount);
+
+                // If the debugger is attached, then we need to unlock the
+                // thread store before calling OnThreadTerminate. That
+                // way, we won't be holding the thread store lock if we
+                // need to block sending a detach thread event.
+                BOOL debuggerAttached =
+#ifdef DEBUGGING_SUPPORTED
+                    CORDebuggerAttached();
+#else // !DEBUGGING_SUPPORTED
+                    FALSE;
+#endif // !DEBUGGING_SUPPORTED
+
+                if (debuggerAttached)
+                    ThreadStore::UnlockThreadStore();
+
+                thread->OnThreadTerminate(debuggerAttached ? FALSE : TRUE);
+
+#ifdef DEBUGGING_SUPPORTED
+                if (debuggerAttached)
+                {
+                    ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
+
+                    // We remember the next Thread in the thread store
+                    // list before deleting the current one. But we can't
+                    // use that Thread pointer now that we release the
+                    // thread store lock in the middle of the loop. We
+                    // have to start from the beginning of the list every
+                    // time. If two threads T1 and T2 race into
+                    // CleanupDetachedThreads, then T1 will grab the first
+                    // Thread on the list marked for deletion and release
+                    // the lock. T2 will grab the second one on the
+                    // list. T2 may complete destruction of its Thread,
+                    // then T1 might re-acquire the thread store lock and
+                    // try to use the next Thread in the thread store. But
+                    // T2 just deleted that next Thread.
+                    thread = ThreadStore::GetAllThreadList(NULL, 0, 0);
+                }
+                else
+#endif // DEBUGGING_SUPPORTED
+                {
+                    thread = next;
+                }
+            }
+            else if (thread->HasThreadState(TS_Finalized))
+            {
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "T::CDT - finalized thread 0x%p\n", thread);
+
+                thread->ResetThreadState(TS_Finalized);
+                // We have finalized the managed Thread object.  Now it is time to clean up the unmanaged part
+                thread->DecExternalCount(TRUE);
+                thread = next;
+            }
+            else
+            {
+                thread = next;
+            }
+        }
+
+        s_fCleanFinalizedThread = FALSE;
+    }
+
+    ArrayList::Iterator iter = threadsWithManagedCleanup.Iterate();
+    while (iter.Next())
+    {
+        // During the actual thread shutdown,
+        // it may not be practical for us to run enough managed code to clean up
+        // any managed code that needs to know when a thread exits.
+        // Instead, run that clean up here when the Thread is detached,
+        // which is definitely after the thread has exited.
+        PTR_Thread pThread = (PTR_Thread)iter.GetElement();
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__ON_THREAD_EXITING);
+        DECLARE_ARGHOLDER_ARRAY(args, 1);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(pThread->GetExposedObject());
+        CALL_MANAGED_METHOD_NORET(args);
+
+        pThread->DecExternalCount(FALSE);
+    }
+}
+
+void Thread::CleanupFinalizedThreads()
+{
+    CONTRACTL {
+        THROWS;
+        MODE_COOPERATIVE;
         GC_TRIGGERS;
     }
     CONTRACTL_END;
@@ -2608,61 +2496,7 @@ void Thread::CleanupDetachedThreads()
     {
         Thread *next = ThreadStore::GetAllThreadList(thread, 0, 0);
 
-        if (thread->IsDetached())
-        {
-            STRESS_LOG1(LF_SYNC, LL_INFO1000, "T::CDT - detaching thread 0x%p\n", thread);
-
-            // Unmark that the thread is detached while we have the
-            // thread store lock. This will ensure that no other
-            // thread will race in here and try to delete it, too.
-            thread->ResetThreadState(TS_Detached);
-            InterlockedDecrement(&m_DetachCount);
-            if (!thread->IsBackground())
-                InterlockedDecrement(&m_ActiveDetachCount);
-
-            // If the debugger is attached, then we need to unlock the
-            // thread store before calling OnThreadTerminate. That
-            // way, we won't be holding the thread store lock if we
-            // need to block sending a detach thread event.
-            BOOL debuggerAttached =
-#ifdef DEBUGGING_SUPPORTED
-                CORDebuggerAttached();
-#else // !DEBUGGING_SUPPORTED
-                FALSE;
-#endif // !DEBUGGING_SUPPORTED
-
-            if (debuggerAttached)
-                ThreadStore::UnlockThreadStore();
-
-            thread->OnThreadTerminate(debuggerAttached ? FALSE : TRUE);
-
-#ifdef DEBUGGING_SUPPORTED
-            if (debuggerAttached)
-            {
-                ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
-
-                // We remember the next Thread in the thread store
-                // list before deleting the current one. But we can't
-                // use that Thread pointer now that we release the
-                // thread store lock in the middle of the loop. We
-                // have to start from the beginning of the list every
-                // time. If two threads T1 and T2 race into
-                // CleanupDetachedThreads, then T1 will grab the first
-                // Thread on the list marked for deletion and release
-                // the lock. T2 will grab the second one on the
-                // list. T2 may complete destruction of its Thread,
-                // then T1 might re-acquire the thread store lock and
-                // try to use the next Thread in the thread store. But
-                // T2 just deleted that next Thread.
-                thread = ThreadStore::GetAllThreadList(NULL, 0, 0);
-            }
-            else
-#endif // DEBUGGING_SUPPORTED
-            {
-                thread = next;
-            }
-        }
-        else if (thread->HasThreadState(TS_Finalized))
+        if (thread->HasThreadState(TS_Finalized))
         {
             STRESS_LOG1(LF_SYNC, LL_INFO1000, "T::CDT - finalized thread 0x%p\n", thread);
 
@@ -2699,31 +2533,13 @@ void Thread::CleanupCOMState()
     // now be balanced. However only the thread that called COInitialize can
     // call CoUninitialize.
 
-    BOOL needsUninitialize = IsCoInitialized()
-#ifdef FEATURE_COMINTEROP
-        || IsWinRTInitialized()
-#endif // FEATURE_COMINTEROP
-        ;
-
-    if (needsUninitialize)
+    if (IsCoInitialized())
     {
         GCX_PREEMP();
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        if (IsCoInitialized())
-        {
-            BaseCoUninitialize();
-            ResetCoInitialized();
-        }
-
-#ifdef FEATURE_COMINTEROP
-        if (IsWinRTInitialized())
-        {
-            _ASSERTE(WinRTSupported());
-            BaseWinRTUninitialize();
-            ResetWinRTInitialized();
-        }
-#endif // FEATURE_COMINTEROP
+        BaseCoUninitialize();
+        ResetCoInitialized();
     }
 }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -2744,15 +2560,7 @@ void Thread::CooperativeCleanup()
     GCX_COOP();
 
     // Clear any outstanding stale EH state that maybe still active on the thread.
-#ifdef FEATURE_EH_FUNCLETS
     ExInfo::PopTrackers((void*)-1);
-#else // !FEATURE_EH_FUNCLETS
-    PTR_ThreadExceptionState pExState = GetExceptionState();
-    if (pExState->IsExceptionInProgress())
-    {
-        pExState->GetCurrentExceptionTracker()->UnwindExInfo((void *)-1);
-    }
-#endif // FEATURE_EH_FUNCLETS
 
     if (m_ThreadLocalDataPtr != NULL)
     {
@@ -2804,13 +2612,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
 
-#ifdef FEATURE_INTERPRETER
-    if (m_pInterpThreadContext != nullptr)
-    {
-        delete m_pInterpThreadContext;
-    }
-#endif // FEATURE_INTERPRETER
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // If the currently running thread is the thread that died and it is an STA thread, then we
     // need to release all the RCW's in the current context. However, we cannot do this if we
@@ -2835,6 +2636,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     // We took a count during construction, and we rely on the count being
     // non-zero as we terminate the thread here.
     _ASSERTE(m_ExternalRefCount > 0);
+
+#ifdef FEATURE_INTERPRETER
+    if (m_pInterpThreadContext != nullptr)
+    {
+        delete m_pInterpThreadContext;
+    }
+#endif // FEATURE_INTERPRETER
 
     // The thread is no longer running.  It's important that we zero any general OBJECTHANDLE's
     // on this Thread object.  That's because we need the managed Thread object to be subject to
@@ -3019,59 +2827,6 @@ BOOL CheckForDuplicateHandles(int countHandles, HANDLE *handles)
     }
     return FALSE;
 }
-//--------------------------------------------------------------------
-// Based on whether this thread has a message pump, do the appropriate
-// style of Wait.
-//--------------------------------------------------------------------
-DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
-                                DWORD millis, WaitMode mode, PendingSync *syncState)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    INDEBUG(BOOL alertable = (mode & WaitMode_Alertable) != 0;);
-    _ASSERTE(alertable || syncState == 0);
-
-    struct Param
-    {
-        Thread *pThis;
-        int countHandles;
-        HANDLE *handles;
-        BOOL waitAll;
-        DWORD millis;
-        WaitMode mode;
-        void *associatedObjectForMonitorWait;
-        DWORD dwRet;
-    } param;
-    param.pThis = this;
-    param.countHandles = countHandles;
-    param.handles = handles;
-    param.waitAll = waitAll;
-    param.millis = millis;
-    param.mode = mode;
-    param.associatedObjectForMonitorWait = syncState != NULL ? syncState->m_Object : NULL;
-    param.dwRet = (DWORD) -1;
-
-    EE_TRY_FOR_FINALLY(Param *, pParam, &param) {
-        pParam->dwRet = pParam->pThis->DoAppropriateWaitWorker(pParam->countHandles, pParam->handles, pParam->waitAll, pParam->millis, pParam->mode, pParam->associatedObjectForMonitorWait);
-    }
-    EE_FINALLY {
-        if (syncState) {
-            if (!GOT_EXCEPTION() &&
-                param.dwRet >= WAIT_OBJECT_0 && param.dwRet < (DWORD)(WAIT_OBJECT_0 + countHandles)) {
-                // This thread has been removed from syncblk waiting list by the signalling thread
-                syncState->Restore(FALSE);
-            }
-            else
-                syncState->Restore(TRUE);
-        }
-
-        _ASSERTE (param.dwRet != WAIT_IO_COMPLETION);
-    }
-    EE_END_FINALLY;
-
-    return(param.dwRet);
-}
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
@@ -3138,6 +2893,63 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
 
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
+DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout, WaitMode mode)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    return DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
+}
+
+DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+#ifdef TARGET_UNIX
+    return WaitForSingleObjectEx(handle, timeout, mode == WaitMode_Alertable);
+#else
+    ULONGLONG dwStart = 0, dwEnd;
+    if (timeout != INFINITE)
+    {
+        dwStart = minipal_lowres_ticks();
+    }
+
+    while (true)
+    {
+        HRESULT ret = DoAppropriateAptStateWait(1, &handle, FALSE, timeout, mode);
+
+        if (ret != WAIT_IO_COMPLETION)
+        {
+            return ret;
+        }
+
+        _ASSERTE (mode == WaitMode_Alertable);
+        if (timeout != INFINITE)
+        {
+            dwEnd = minipal_lowres_ticks();
+            if (dwEnd - dwStart >= timeout)
+            {
+                ret = WAIT_TIMEOUT;
+                return ret;
+            }
+
+            timeout -= (DWORD)(dwEnd - dwStart);
+            dwStart = dwEnd;
+        }
+    }
+#endif
+}
+
+
 //--------------------------------------------------------------------
 // Do appropriate wait based on apartment state (STA or MTA)
 DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll,
@@ -3161,710 +2973,7 @@ DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL b
     return WaitForMultipleObjectsEx(numWaiters, pHandles, bWaitAll, timeout, alertable);
 }
 
-// A helper called by our two flavors of DoAppropriateWaitWorker
-void Thread::DoAppropriateWaitWorkerAlertableHelper(WaitMode mode)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    // A word about ordering for Interrupt.  If someone tries to interrupt a thread
-    // that's in the interruptible state, we queue an APC.  But if they try to interrupt
-    // a thread that's not in the interruptible state, we just record that fact.  So
-    // we have to set TS_Interruptible before we test to see whether someone wants to
-    // interrupt us or else we have a race condition that causes us to skip the APC.
-    SetThreadState(TS_Interruptible);
-
-    if (HasThreadStateNC(TSNC_InRestoringSyncBlock))
-    {
-        // The thread is restoring SyncBlock for Object.Wait.
-        ResetThreadStateNC(TSNC_InRestoringSyncBlock);
-    }
-    else
-    {
-        HandleThreadInterrupt();
-
-        // Safe to clear the interrupted state, no APC could have fired since we
-        // reset m_UserInterrupt (which inhibits our APC callback from doing
-        // anything).
-        ResetThreadState(TS_Interrupted);
-    }
-}
-
-void MarkOSAlertableWait()
-{
-    LIMITED_METHOD_CONTRACT;
-    GetThread()->SetThreadStateNC (Thread::TSNC_OSAlertableWait);
-}
-
-void UnMarkOSAlertableWait()
-{
-    LIMITED_METHOD_CONTRACT;
-    GetThread()->ResetThreadStateNC (Thread::TSNC_OSAlertableWait);
-}
-
-//--------------------------------------------------------------------
-// Based on whether this thread has a message pump, do the appropriate
-// style of Wait.
-//--------------------------------------------------------------------
-DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL waitAll,
-                                      DWORD millis, WaitMode mode, void *associatedObjectForMonitorWait)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    DWORD ret = 0;
-
-    BOOL alertable = (mode & WaitMode_Alertable) != 0;
-    // Waits from SynchronizationContext.WaitHelper are always just WaitMode_IgnoreSyncCtx.
-    // So if we defer to a sync ctx, we will lose any extra bits.  We must therefore not
-    // defer to a sync ctx if doing any non-default wait.
-    // If you're doing a default wait, but want to ignore sync ctx, specify WaitMode_IgnoreSyncCtx
-    // which will make mode != WaitMode_Alertable.
-    BOOL ignoreSyncCtx = (mode != WaitMode_Alertable);
-
-    if (AppDomain::GetCurrentDomain()->MustForceTrivialWaitOperations())
-        ignoreSyncCtx = TRUE;
-
-    // Unless the ignoreSyncCtx flag is set, first check to see if there is a synchronization
-    // context on the current thread and if there is, dispatch to it to do the wait.
-    // If  the wait is non alertable we cannot forward the call to the sync context
-    // since fundamental parts of the system (such as the GC) rely on non alertable
-    // waits not running any managed code. Also if we are past the point in shutdown were we
-    // are allowed to run managed code then we can't forward the call to the sync context.
-    if (!ignoreSyncCtx
-        && alertable
-        && !HasThreadStateNC(Thread::TSNC_BlockedForShutdown))
-    {
-        GCX_COOP();
-
-        BOOL fSyncCtxPresent = FALSE;
-        OBJECTREF SyncCtxObj = NULL;
-        GCPROTECT_BEGIN(SyncCtxObj)
-        {
-            GetSynchronizationContext(&SyncCtxObj);
-            if (SyncCtxObj != NULL)
-            {
-                SYNCHRONIZATIONCONTEXTREF syncRef = (SYNCHRONIZATIONCONTEXTREF)SyncCtxObj;
-                if (syncRef->IsWaitNotificationRequired())
-                {
-                    fSyncCtxPresent = TRUE;
-                    ret = DoSyncContextWait(&SyncCtxObj, countHandles, handles, waitAll, millis);
-                }
-            }
-        }
-        GCPROTECT_END();
-
-        if (fSyncCtxPresent)
-            return ret;
-    }
-
-    // Before going to pre-emptive mode the thread needs to be flagged as waiting for
-    // the debugger. This used to be accomplished by the TS_Interruptible flag but that
-    // doesn't work reliably, see DevDiv Bugs 699245. Some methods call in here already in
-    // COOP mode so we set the bit before the transition. For the calls that are already
-    // in pre-emptive mode those are still buggy. This is only a partial fix.
-    BOOL isCoop = PreemptiveGCDisabled();
-    ThreadStateNCStackHolder tsNC(isCoop && alertable, TSNC_DebuggerSleepWaitJoin);
-
-    GCX_PREEMP();
-
-    if (alertable)
-    {
-        DoAppropriateWaitWorkerAlertableHelper(mode);
-    }
-
-    StateHolder<MarkOSAlertableWait,UnMarkOSAlertableWait> OSAlertableWait(alertable);
-
-    ThreadStateHolder tsh(alertable, TS_Interruptible | TS_Interrupted);
-
-    bool sendWaitEvents =
-        millis != 0 &&
-        (mode & WaitMode_Alertable) != 0 &&
-        ETW_TRACING_CATEGORY_ENABLED(
-            MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-            TRACE_LEVEL_VERBOSE,
-            CLR_WAITHANDLE_KEYWORD);
-
-    // Monitor.Wait is typically a blocking wait. For other waits, when sending the wait events try a nonblocking wait first
-    // such that the events sent are more likely to represent blocking waits.
-    bool tryNonblockingWaitFirst = sendWaitEvents && associatedObjectForMonitorWait == NULL;
-    if (tryNonblockingWaitFirst)
-    {
-        ret = DoAppropriateAptStateWait(countHandles, handles, waitAll, 0 /* timeout */, mode);
-        if (ret == WAIT_TIMEOUT)
-        {
-            // Do a full wait and send the wait events
-            tryNonblockingWaitFirst = false;
-        }
-        else if (ret != WAIT_IO_COMPLETION && ret != WAIT_FAILED)
-        {
-            // The nonblocking wait was successful, don't send the wait events
-            sendWaitEvents = false;
-        }
-    }
-
-    if (sendWaitEvents)
-    {
-        if (associatedObjectForMonitorWait != NULL)
-        {
-            FireEtwWaitHandleWaitStart(
-                ETW::WaitHandleLog::WaitHandleStructs::MonitorWait,
-                associatedObjectForMonitorWait,
-                GetClrInstanceId());
-        }
-        else
-        {
-            FireEtwWaitHandleWaitStart(ETW::WaitHandleLog::WaitHandleStructs::Unknown, NULL, GetClrInstanceId());
-        }
-    }
-
-    ULONGLONG dwStart = 0, dwEnd;
-    if (millis != INFINITE)
-    {
-        dwStart = minipal_lowres_ticks();
-    }
-
-retry:
-    if (tryNonblockingWaitFirst)
-    {
-        // We have a final wait result from the nonblocking wait above
-        tryNonblockingWaitFirst = false;
-    }
-    else
-    {
-        ret = DoAppropriateAptStateWait(countHandles, handles, waitAll, millis, mode);
-    }
-
-    if (ret == WAIT_IO_COMPLETION)
-    {
-        _ASSERTE (alertable);
-
-        if (m_State & TS_Interrupted)
-        {
-            HandleThreadInterrupt();
-        }
-        // We could be woken by some spurious APC or an EE APC queued to
-        // interrupt us. In the latter case the TS_Interrupted bit will be set
-        // in the thread state bits. Otherwise we just go back to sleep again.
-        if (millis != INFINITE)
-        {
-            dwEnd = minipal_lowres_ticks();
-            if (dwEnd - dwStart >= millis)
-            {
-                ret = WAIT_TIMEOUT;
-                goto WaitCompleted;
-            }
-
-            millis -= (DWORD)(dwEnd - dwStart);
-            dwStart = dwEnd;
-        }
-        goto retry;
-    }
-    _ASSERTE((ret >= WAIT_OBJECT_0  && ret < (WAIT_OBJECT_0  + (DWORD)countHandles)) ||
-             (ret >= WAIT_ABANDONED && ret < (WAIT_ABANDONED + (DWORD)countHandles)) ||
-             (ret == WAIT_TIMEOUT) || (ret == WAIT_FAILED));
-    // countHandles is used as an unsigned -- it should never be negative.
-    _ASSERTE(countHandles >= 0);
-
-    // We support precisely one WAIT_FAILED case, where we attempt to wait on a
-    // thread handle and the thread is in the process of dying we might get a
-    // invalid handle substatus. Turn this into a successful wait.
-    // There are three cases to consider:
-    //  1)  Only waiting on one handle: return success right away.
-    //  2)  Waiting for all handles to be signalled: retry the wait without the
-    //      affected handle.
-    //  3)  Waiting for one of multiple handles to be signalled: return with the
-    //      first handle that is either signalled or has become invalid.
-    if (ret == WAIT_FAILED)
-    {
-        DWORD errorCode = ::GetLastError();
-        if (errorCode == ERROR_INVALID_PARAMETER)
-        {
-            if (CheckForDuplicateHandles(countHandles, handles))
-                COMPlusThrow(kDuplicateWaitObjectException);
-            else
-                COMPlusThrowHR(HRESULT_FROM_WIN32(errorCode));
-        }
-        else if (errorCode == ERROR_ACCESS_DENIED)
-        {
-            // A Win32 ACL could prevent us from waiting on the handle.
-            COMPlusThrow(kUnauthorizedAccessException);
-        }
-        else if (errorCode == ERROR_NOT_ENOUGH_MEMORY)
-        {
-            ThrowOutOfMemory();
-        }
-#ifdef TARGET_UNIX
-        else if (errorCode == ERROR_NOT_SUPPORTED)
-        {
-            // "Wait for any" and "wait for all" operations on multiple wait handles are not supported when a cross-process sync
-            // object is included in the array
-            COMPlusThrow(kPlatformNotSupportedException, W("PlatformNotSupported_NamedSyncObjectWaitAnyWaitAll"));
-        }
-#endif
-        else if (errorCode != ERROR_INVALID_HANDLE)
-        {
-            ThrowWin32(errorCode);
-        }
-
-        if (countHandles == 1)
-            ret = WAIT_OBJECT_0;
-        else if (waitAll)
-        {
-            // Probe all handles with a timeout of zero. When we find one that's
-            // invalid, move it out of the list and retry the wait.
-            for (int i = 0; i < countHandles; i++)
-            {
-                // WaitForSingleObject won't pump memssage; we already probe enough space
-                // before calling this function and we don't want to fail here, so we don't
-                // do a transition to tolerant code here
-                DWORD subRet = WaitForSingleObject (handles[i], 0);
-                if (subRet != WAIT_FAILED)
-                    continue;
-                _ASSERTE(::GetLastError() == ERROR_INVALID_HANDLE);
-                if ((countHandles - i - 1) > 0)
-                    memmove(&handles[i], &handles[i+1], (countHandles - i - 1) * sizeof(HANDLE));
-                countHandles--;
-                break;
-            }
-
-            // Compute the new timeout value by assume that the timeout
-            // is not large enough for more than one wrap
-            if (millis != INFINITE)
-            {
-                dwEnd = minipal_lowres_ticks();
-                if (dwEnd - dwStart >= millis)
-                {
-                    ret = WAIT_TIMEOUT;
-                    goto WaitCompleted;
-                }
-
-                millis -= (DWORD)(dwEnd - dwStart);
-                dwStart = dwEnd;
-            }
-            goto retry;
-        }
-        else
-        {
-            // Probe all handles with a timeout as zero, succeed with the first
-            // handle that doesn't timeout.
-            ret = WAIT_OBJECT_0;
-            int i;
-            for (i = 0; i < countHandles; i++)
-            {
-            TryAgain:
-                // WaitForSingleObject won't pump memssage; we already probe enough space
-                // before calling this function and we don't want to fail here, so we don't
-                // do a transition to tolerant code here
-                DWORD subRet = WaitForSingleObject (handles[i], 0);
-                if ((subRet == WAIT_OBJECT_0) || (subRet == WAIT_FAILED))
-                    break;
-                if (subRet == WAIT_ABANDONED)
-                {
-                    ret = (ret - WAIT_OBJECT_0) + WAIT_ABANDONED;
-                    break;
-                }
-                // If we get alerted it just masks the real state of the current
-                // handle, so retry the wait.
-                if (subRet == WAIT_IO_COMPLETION)
-                    goto TryAgain;
-                _ASSERTE(subRet == WAIT_TIMEOUT);
-                ret++;
-            }
-        }
-    }
-
-WaitCompleted:
-
-    _ASSERTE((ret != WAIT_TIMEOUT) || (millis != INFINITE));
-
-    if (sendWaitEvents)
-    {
-        FireEtwWaitHandleWaitStop(GetClrInstanceId());
-    }
-
-    return ret;
-}
-
-
-//--------------------------------------------------------------------
-// Only one style of wait for DoSignalAndWait since we don't support this on STA Threads
-//--------------------------------------------------------------------
-DWORD Thread::DoSignalAndWait(HANDLE *handles, DWORD millis, BOOL alertable, PendingSync *syncState)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    _ASSERTE(alertable || syncState == 0);
-
-    struct Param
-    {
-        Thread *pThis;
-        HANDLE *handles;
-        DWORD millis;
-        BOOL alertable;
-        DWORD dwRet;
-    } param;
-    param.pThis = this;
-    param.handles = handles;
-    param.millis = millis;
-    param.alertable = alertable;
-    param.dwRet = (DWORD) -1;
-
-    EE_TRY_FOR_FINALLY(Param *, pParam, &param) {
-        pParam->dwRet = pParam->pThis->DoSignalAndWaitWorker(pParam->handles, pParam->millis, pParam->alertable);
-    }
-    EE_FINALLY {
-        if (syncState) {
-            if (!GOT_EXCEPTION() && WAIT_OBJECT_0 == param.dwRet) {
-                // This thread has been removed from syncblk waiting list by the signalling thread
-                syncState->Restore(FALSE);
-            }
-            else
-                syncState->Restore(TRUE);
-        }
-
-        _ASSERTE (WAIT_IO_COMPLETION != param.dwRet);
-    }
-    EE_END_FINALLY;
-
-    return(param.dwRet);
-}
-
-
-DWORD Thread::DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    DWORD ret = 0;
-
-    GCX_PREEMP();
-
-    if(alertable)
-    {
-        DoAppropriateWaitWorkerAlertableHelper(WaitMode_None);
-    }
-
-    StateHolder<MarkOSAlertableWait,UnMarkOSAlertableWait> OSAlertableWait(alertable);
-
-    ThreadStateHolder tsh(alertable, TS_Interruptible | TS_Interrupted);
-
-    ULONGLONG dwStart = 0, dwEnd;
-
-    if (INFINITE != millis)
-    {
-        dwStart = minipal_lowres_ticks();
-    }
-
-    ret = SignalObjectAndWait(pHandles[0], pHandles[1], millis, alertable);
-
-retry:
-
-    if (WAIT_IO_COMPLETION == ret)
-    {
-        _ASSERTE (alertable);
-        // We could be woken by some spurious APC or an EE APC queued to
-        // interrupt us. In the latter case the TS_Interrupted bit will be set
-        // in the thread state bits. Otherwise we just go back to sleep again.
-        if ((m_State & TS_Interrupted))
-        {
-            HandleThreadInterrupt();
-        }
-        if (INFINITE != millis)
-        {
-            dwEnd = minipal_lowres_ticks();
-            if (dwStart + millis <= dwEnd)
-            {
-                ret = WAIT_TIMEOUT;
-                goto WaitCompleted;
-            }
-
-            millis -= (DWORD)(dwEnd - dwStart);
-            dwStart = dwEnd;
-        }
-        //Retry case we don't want to signal again so only do the wait...
-        ret = WaitForSingleObjectEx(pHandles[1],millis,TRUE);
-        goto retry;
-    }
-
-    if (WAIT_FAILED == ret)
-    {
-        DWORD errorCode = ::GetLastError();
-        //If the handle to signal is a mutex and
-        //   the calling thread is not the owner, errorCode is ERROR_NOT_OWNER
-
-        switch(errorCode)
-        {
-            case ERROR_INVALID_HANDLE:
-            case ERROR_NOT_OWNER:
-            case ERROR_ACCESS_DENIED:
-                COMPlusThrowWin32();
-                break;
-
-            case ERROR_TOO_MANY_POSTS:
-                ret = ERROR_TOO_MANY_POSTS;
-                break;
-
-            default:
-                CONSISTENCY_CHECK_MSGF(0, ("This errorCode is not understood '(%d)''\n", errorCode));
-                COMPlusThrowWin32();
-                break;
-        }
-    }
-
-WaitCompleted:
-
-    //Check that the return state is valid
-    _ASSERTE(WAIT_OBJECT_0 == ret  ||
-         WAIT_ABANDONED == ret ||
-         WAIT_TIMEOUT == ret ||
-         WAIT_FAILED == ret  ||
-         ERROR_TOO_MANY_POSTS == ret);
-
-    //Wrong to time out if the wait was infinite
-    _ASSERTE((WAIT_TIMEOUT != ret) || (INFINITE != millis));
-
-    return ret;
-}
-
-DWORD Thread::DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(handles));
-        PRECONDITION(IsProtectedByGCFrame (pSyncCtxObj));
-    }
-    CONTRACTL_END;
-    MethodDescCallSite invokeWaitMethodHelper(METHOD__SYNCHRONIZATION_CONTEXT__INVOKE_WAIT_METHOD_HELPER);
-
-    BASEARRAYREF handleArrayObj = (BASEARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I, countHandles);
-    memcpyNoGCRefs(handleArrayObj->GetDataPtr(), handles, countHandles * sizeof(HANDLE));
-
-    ARG_SLOT args[6] =
-    {
-        ObjToArgSlot(*pSyncCtxObj),
-        ObjToArgSlot(handleArrayObj),
-        BoolToArgSlot(waitAll),
-        (ARG_SLOT)millis,
-    };
-
-    return invokeWaitMethodHelper.Call_RetI4(args);
-}
-
-// Called out of SyncBlock::Wait() to block this thread until the Notify occurs.
-BOOL Thread::Block(INT32 timeOut, PendingSync *syncState)
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE(this == GetThread());
-
-    // Before calling Block, the SyncBlock queued us onto it's list of waiting threads.
-    // However, before calling Block the SyncBlock temporarily left the synchronized
-    // region.  This allowed threads to enter the region and call Notify, in which
-    // case we may have been signalled before we entered the Wait.  So we aren't in the
-    // m_WaitSB list any longer.  Not a problem: the following Wait will return
-    // immediately.  But it means we cannot enforce the following assertion:
-//    _ASSERTE(m_WaitSB != NULL);
-
-    return (Wait(syncState->m_WaitEventLink->m_Next->m_EventWait, timeOut, syncState) != WAIT_OBJECT_0);
-}
-
-
-// Return whether or not a timeout occurred.  TRUE=>we waited successfully
-DWORD Thread::Wait(HANDLE *objs, int cntObjs, INT32 timeOut, PendingSync *syncInfo)
-{
-    WRAPPER_NO_CONTRACT;
-
-    DWORD   dwResult;
-    DWORD   dwTimeOut32;
-
-    _ASSERTE(timeOut >= 0 || timeOut == INFINITE_TIMEOUT);
-
-    dwTimeOut32 = (timeOut == INFINITE_TIMEOUT
-                   ? INFINITE
-                   : (DWORD) timeOut);
-
-    dwResult = DoAppropriateWait(cntObjs, objs, FALSE /*=waitAll*/, dwTimeOut32,
-                                 WaitMode_Alertable /*alertable*/,
-                                 syncInfo);
-
-    // Either we succeeded in the wait, or we timed out
-    _ASSERTE((dwResult >= WAIT_OBJECT_0 && dwResult < (DWORD)(WAIT_OBJECT_0 + cntObjs)) ||
-             (dwResult == WAIT_TIMEOUT));
-
-    return dwResult;
-}
-
-// Return whether or not a timeout occurred.  TRUE=>we waited successfully
-DWORD Thread::Wait(CLREvent *pEvent, INT32 timeOut, PendingSync *syncInfo)
-{
-    WRAPPER_NO_CONTRACT;
-
-    DWORD   dwResult;
-    DWORD   dwTimeOut32;
-
-    _ASSERTE(timeOut >= 0 || timeOut == INFINITE_TIMEOUT);
-
-    dwTimeOut32 = (timeOut == INFINITE_TIMEOUT
-                   ? INFINITE
-                   : (DWORD) timeOut);
-
-    dwResult = pEvent->Wait(dwTimeOut32, TRUE /*alertable*/, syncInfo);
-
-    // Either we succeeded in the wait, or we timed out
-    _ASSERTE((dwResult == WAIT_OBJECT_0) ||
-             (dwResult == WAIT_TIMEOUT));
-
-    return dwResult;
-}
-
-#define WAIT_INTERRUPT_THREADABORT 0x1
-#define WAIT_INTERRUPT_INTERRUPT 0x2
-#define WAIT_INTERRUPT_OTHEREXCEPTION 0x4
-
-// When we restore
-DWORD EnterMonitorForRestore(SyncBlock *pSB)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    DWORD state = 0;
-    EX_TRY
-    {
-        pSB->EnterMonitor();
-    }
-    EX_CATCH
-    {
-        // Assume it is a normal exception unless proven.
-        state = WAIT_INTERRUPT_OTHEREXCEPTION;
-        Thread *pThread = GetThread();
-        if (pThread->IsAbortInitiated())
-        {
-            state = WAIT_INTERRUPT_THREADABORT;
-        }
-        else if (__pException != NULL)
-        {
-            if (__pException->GetHR() == COR_E_THREADINTERRUPTED)
-            {
-                state = WAIT_INTERRUPT_INTERRUPT;
-            }
-        }
-    }
-    EX_END_CATCH
-
-    return state;
-}
-
-// This is the service that backs us out of a wait that we interrupted.  We must
-// re-enter the monitor to the same extent the SyncBlock would, if we returned
-// through it (instead of throwing through it).  And we need to cancel the wait,
-// if it didn't get notified away while we are processing the interrupt.
-void PendingSync::Restore(BOOL bRemoveFromSB)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_EnterCount);
-
-    Thread      *pCurThread = GetThread();
-
-    _ASSERTE (pCurThread == m_OwnerThread);
-
-    WaitEventLink *pRealWaitEventLink = m_WaitEventLink->m_Next;
-
-    pRealWaitEventLink->m_RefCount --;
-    if (pRealWaitEventLink->m_RefCount == 0)
-    {
-        if (bRemoveFromSB) {
-            ThreadQueue::RemoveThread(pCurThread, pRealWaitEventLink->m_WaitSB);
-        }
-        if (pRealWaitEventLink->m_EventWait != &pCurThread->m_EventWait) {
-            // Put the event back to the pool.
-            StoreEventToEventStore(pRealWaitEventLink->m_EventWait);
-        }
-        // Remove from the link.
-        m_WaitEventLink->m_Next = m_WaitEventLink->m_Next->m_Next;
-    }
-
-    // Someone up the stack is responsible for keeping the syncblock alive by protecting
-    // the object that owns it.  But this relies on assertions that EnterMonitor is only
-    // called in cooperative mode.  Even though we are safe in preemptive, do the
-    // switch.
-    GCX_COOP_THREAD_EXISTS(pCurThread);
-    // We need to make sure that EnterMonitor succeeds.  We may have code like
-    // lock (a)
-    // {
-    // a.Wait
-    // }
-    // We need to make sure that the finally from lock is executed with the lock owned.
-    DWORD state = 0;
-    SyncBlock *psb = (SyncBlock*)((DWORD_PTR)pRealWaitEventLink->m_WaitSB & ~1);
-    for (LONG i=0; i < m_EnterCount;)
-    {
-        if ((state & (WAIT_INTERRUPT_THREADABORT | WAIT_INTERRUPT_INTERRUPT)) != 0)
-        {
-            // If the thread has been interrupted by Thread.Interrupt or Thread.Abort,
-            // disable the check at the beginning of DoAppropriateWait
-            pCurThread->SetThreadStateNC(Thread::TSNC_InRestoringSyncBlock);
-        }
-        DWORD result = EnterMonitorForRestore(psb);
-        if (result == 0)
-        {
-            i++;
-        }
-        else
-        {
-            // We block the thread until the thread acquires the lock.
-            // This is to make sure that when catch/finally is executed, the thread has the lock.
-            // We do not want thread to run its catch/finally if the lock is not taken.
-            state |= result;
-
-            // If the thread is being rudely aborted, and the thread has
-            // no Cer on stack, we will not run managed code to release the
-            // lock, so we can terminate the loop.
-            if (pCurThread->IsRudeAbortInitiated() &&
-                !pCurThread->IsExecutingWithinCer())
-            {
-                break;
-            }
-        }
-    }
-
-    pCurThread->ResetThreadStateNC(Thread::TSNC_InRestoringSyncBlock);
-
-    if ((state & WAIT_INTERRUPT_THREADABORT) != 0)
-    {
-        pCurThread->HandleThreadAbort();
-    }
-    else if ((state & WAIT_INTERRUPT_INTERRUPT) != 0)
-    {
-        COMPlusThrow(kThreadInterruptedException);
-    }
-}
-
-
-
+#ifdef TARGET_WINDOWS
 // This is the callback from the OS, when we queue an APC to interrupt a waiting thread.
 // The callback occurs on the thread we wish to interrupt.  It is a STATIC method.
 void WINAPI Thread::UserInterruptAPC(ULONG_PTR data)
@@ -3909,85 +3018,14 @@ void Thread::UserInterrupt(ThreadInterruptMode mode)
     if (HasValidThreadHandle() &&
         HasThreadState (TS_Interruptible))
     {
-        Alert();
+        HANDLE handle = GetThreadHandle();
+        if (handle != INVALID_HANDLE_VALUE)
+        {
+            ::QueueUserAPC(UserInterruptAPC, handle, APC_Code);
+        }
     }
 }
-
-// Implementation of Thread.Sleep().
-void Thread::UserSleep(INT32 time)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    INCONTRACT(_ASSERTE(!GetThread()->GCNoTrigger()));
-
-    DWORD   res;
-
-    // Before going to pre-emptive mode the thread needs to be flagged as waiting for
-    // the debugger. This used to be accomplished by the TS_Interruptible flag but that
-    // doesn't work reliably, see DevDiv Bugs 699245.
-    ThreadStateNCStackHolder tsNC(TRUE, TSNC_DebuggerSleepWaitJoin);
-    GCX_PREEMP();
-
-    // A word about ordering for Interrupt.  If someone tries to interrupt a thread
-    // that's in the interruptible state, we queue an APC.  But if they try to interrupt
-    // a thread that's not in the interruptible state, we just record that fact.  So
-    // we have to set TS_Interruptible before we test to see whether someone wants to
-    // interrupt us or else we have a race condition that causes us to skip the APC.
-    SetThreadState(TS_Interruptible);
-
-    // If someone has interrupted us, we should not enter the wait.
-    if (IsUserInterrupted())
-    {
-        HandleThreadInterrupt();
-    }
-
-    ThreadStateHolder tsh(TRUE, TS_Interruptible | TS_Interrupted);
-
-    ResetThreadState(TS_Interrupted);
-
-    DWORD dwTime = (DWORD)time;
-retry:
-
-    ULONGLONG start = minipal_lowres_ticks();
-
-    res = ClrSleepEx (dwTime, TRUE);
-
-    if (res == WAIT_IO_COMPLETION)
-    {
-        // We could be woken by some spurious APC or an EE APC queued to
-        // interrupt us. In the latter case the TS_Interrupted bit will be set
-        // in the thread state bits. Otherwise we just go back to sleep again.
-        if ((m_State & TS_Interrupted))
-        {
-            HandleThreadInterrupt();
-        }
-
-        if (dwTime == INFINITE)
-        {
-            goto retry;
-        }
-        else
-        {
-            ULONGLONG actDuration = minipal_lowres_ticks() - start;
-
-            if (dwTime > actDuration)
-            {
-                dwTime -= (DWORD)actDuration;
-                goto retry;
-            }
-            else
-            {
-                res = WAIT_TIMEOUT;
-            }
-        }
-    }
-    _ASSERTE(res == WAIT_TIMEOUT || res == WAIT_OBJECT_0);
-}
-
+#endif // TARGET_WINDOWS
 
 // Correspondence between an EE Thread and an exposed System.Thread:
 OBJECTREF Thread::GetExposedObject()
@@ -4645,34 +3683,15 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     // the thread.
     if (state == AS_Unknown)
     {
-        BOOL needUninitialize = (m_State & TS_CoInitialized)
-#ifdef FEATURE_COMINTEROP
-            || IsWinRTInitialized()
-#endif // FEATURE_COMINTEROP
-            ;
-
-        if (needUninitialize)
+        if (m_State & TS_CoInitialized)
         {
             GCX_PREEMP();
 
-            // If we haven't CoInitialized the thread, then we don't have anything to do.
-            if (m_State & TS_CoInitialized)
-            {
-                // CoUninitialize the thread and reset the STA/MTA/CoInitialized state bits.
-                ::CoUninitialize();
+            // CoUninitialize the thread and reset the STA/MTA/CoInitialized state bits.
+            ::CoUninitialize();
 
-                ThreadState uninitialized = static_cast<ThreadState>(TS_InSTA | TS_InMTA | TS_CoInitialized);
-                ResetThreadState(uninitialized);
-            }
-
-#ifdef FEATURE_COMINTEROP
-            if (IsWinRTInitialized())
-            {
-                _ASSERTE(WinRTSupported());
-                BaseWinRTUninitialize();
-                ResetWinRTInitialized();
-            }
-#endif // FEATURE_COMINTEROP
+            ThreadState uninitialized = static_cast<ThreadState>(TS_InSTA | TS_InMTA | TS_CoInitialized);
+            ResetThreadState(uninitialized);
         }
         return GetApartment();
     }
@@ -4758,47 +3777,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     else
     {
         _ASSERTE(!"Unexpected HRESULT returned from CoInitializeEx!");
-    }
-
-    // If WinRT is supported on this OS, also initialize it at the same time.  Since WinRT sits on top of COM
-    // we need to make sure that it is initialized in the same threading mode as we just started COM itself
-    // with (or that we detected COM had already been started with).
-    if (WinRTSupported() && !IsWinRTInitialized())
-    {
-        GCX_PREEMP();
-
-        BOOL isSTA = m_State & TS_InSTA;
-        _ASSERTE(isSTA || (m_State & TS_InMTA));
-
-        HRESULT hrWinRT = RoInitialize(isSTA ? RO_INIT_SINGLETHREADED : RO_INIT_MULTITHREADED);
-
-        if (SUCCEEDED(hrWinRT))
-        {
-            if (hrWinRT == S_OK)
-            {
-                SetThreadStateNC(TSNC_WinRTInitialized);
-            }
-            else
-            {
-                _ASSERTE(hrWinRT == S_FALSE);
-
-                // If the thread has already been initialized, back it out. We may not
-                // always be able to call RoUninitialize on shutdown so if there's
-                // a way to avoid having to, we should take advantage of that.
-                RoUninitialize();
-            }
-        }
-        else if (hrWinRT == E_OUTOFMEMORY)
-        {
-            COMPlusThrowOM();
-        }
-        else
-        {
-            // We don't check for RPC_E_CHANGEDMODE, since we're using the mode that was read in by
-            // initializing COM above.  COM and WinRT need to always be in the same mode, so we should never
-            // see that return code at this point.
-            _ASSERTE(!"Unexpected HRESULT From RoInitialize");
-        }
     }
 
     return GetApartment();
@@ -5020,10 +3998,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
         if (target->IsBackground())
             s_pThreadStore->m_BackgroundThreadCount--;
 
-        InterlockedExchangeAdd64(
-            (LONGLONG *)&Thread::s_monitorLockContentionCountOverflow,
-            target->m_monitorLockContentionCount);
-
         _ASSERTE(s_pThreadStore->m_ThreadCount >= 0);
         _ASSERTE(s_pThreadStore->m_BackgroundThreadCount >= 0);
         _ASSERTE(s_pThreadStore->m_ThreadCount >=
@@ -5090,7 +4064,6 @@ void ThreadStore::TransferStartedThread(Thread *thread)
     // As soon as we erase this bit, the thread becomes eligible for suspension,
     // stopping, interruption, etc.
     thread->ResetThreadState(Thread::TS_Unstarted);
-    thread->SetThreadState(Thread::TS_LegalToJoin);
 
     // One of the components of OtherThreadsComplete() has changed, so check whether
     // we should now exit the EE.
@@ -6990,9 +5963,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     _ASSERTE(GetThreadNULLOk() != NULL);
 
     Thread *pThread = GetThread();
-#ifdef FEATURE_EH_FUNCLETS
     Frame  *pFrame = pThread->m_pFrame;
-#endif // FEATURE_EH_FUNCLETS
 
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
@@ -7009,9 +5980,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
 
         BOOL *pfHadException;
 
-#ifdef FEATURE_EH_FUNCLETS
         Frame *pFrame;
-#endif // FEATURE_EH_FUNCLETS
     }args;
 
     args.pTryParam = &param;
@@ -7020,9 +5989,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     BOOL fHadException = TRUE;
     args.pfHadException = &fHadException;
 
-#ifdef FEATURE_EH_FUNCLETS
     args.pFrame = pFrame;
-#endif // FEATURE_EH_FUNCLETS
 
     PAL_TRY(TryArgs *, pArgs, &args)
     {
@@ -7037,12 +6004,10 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
             //
             // If eCLRDeterminedPolicy, we only swallow for TA, RTA, and ADU exception.
             // For eHostDeterminedPolicy, we will swallow all the managed exception.
-    #ifdef FEATURE_EH_FUNCLETS
             // this must be done after the second pass has run, it does not
             // reference anything on the stack, so it is safe to run in an
             // SEH __except clause as well as a C++ catch clause.
             ExInfo::PopTrackers(pArgs->pFrame);
-    #endif // FEATURE_EH_FUNCLETS
 
             _ASSERTE(!pArgs->pThread->IsAbortRequested());
         }
@@ -7228,7 +6193,7 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     while (pFrame < pvLimitSP)
     {
         CONSISTENCY_CHECK(pFrame != PTR_NULL);
-        CONSISTENCY_CHECK((pFrame) > static_cast<Frame *>((LPVOID)GetCurrentSP()));
+        CONSISTENCY_CHECK((pFrame) > static_cast<Frame *>(GetCurrentSP()));
         pFrame->ExceptionUnwind();
         pFrame = pFrame->Next();
     }
@@ -7237,49 +6202,6 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     return pFrame;
 }
 
-OBJECTREF Thread::GetCulture(BOOL bUICulture)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // This is the case when we're building CoreLib and haven't yet created
-    // the system assembly.
-    if (SystemDomain::System()->SystemAssembly()==NULL) {
-        return NULL;
-    }
-
-    OBJECTREF pCurrentCulture;
-    MethodDescCallSite propGet(bUICulture ? METHOD__CULTURE_INFO__GET_CURRENT_UI_CULTURE : METHOD__CULTURE_INFO__GET_CURRENT_CULTURE);
-    ARG_SLOT retVal = propGet.Call_RetArgSlot(NULL);
-    pCurrentCulture = ArgSlotToObj(retVal);
-    return pCurrentCulture;
-}
-
-void Thread::SetCulture(OBJECTREF *CultureObj, BOOL bUICulture)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    MethodDescCallSite propSet(bUICulture
-        ? METHOD__CULTURE_INFO__SET_CURRENT_UI_CULTURE
-        : METHOD__CULTURE_INFO__SET_CURRENT_CULTURE);
-
-    // Set up the Stack.
-    ARG_SLOT pNewArgs[] = {
-        ObjToArgSlot(*CultureObj)
-    };
-
-    // Make the actual call.
-    propSet.Call_RetArgSlot(pNewArgs);
-}
 
 BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
 {
@@ -7288,6 +6210,12 @@ BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
+
+    // This can be called early during startup from HandleFatalError
+    if (s_pThreadStore == NULL)
+    {
+        return FALSE;
+    }
 
     if (pThread)
     {
@@ -7691,11 +6619,23 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
 #ifdef FEATURE_INTERPRETER
 InterpThreadContext* Thread::GetInterpThreadContext()
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
+    return m_pInterpThreadContext;
+}
+
+InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (m_pInterpThreadContext == nullptr)
     {
-        m_pInterpThreadContext = new (nothrow) InterpThreadContext();
+        m_pInterpThreadContext = new InterpThreadContext();
     }
 
     return m_pInterpThreadContext;
@@ -7711,9 +6651,7 @@ InterpThreadContext* GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_W
     }
     CONTRACTL_END;
 
-    InterpThreadContext *pThreadContext = currentThread->GetInterpThreadContext();
-    if (pThreadContext == NULL)
-        COMPlusThrowOM();
+    InterpThreadContext *pThreadContext = currentThread->GetOrCreateInterpThreadContext();
     CreateNativeToInterpreterCallStub(pByteCodeStart->Method);
 
     return pThreadContext;
@@ -7728,7 +6666,7 @@ static InterpThreadContext* GetInterpThreadContextWithPossiblyMissingThreadOrCal
     Thread* currentThread,
     InterpByteCodeStart* pByteCodeStart)
 {
-    _ASSERTE(pByteCodeStart->Method->methodDesc->HasUnmanagedCallersOnlyAttribute());
+    _ASSERTE(pByteCodeStart->Method->methodHnd->HasUnmanagedCallersOnlyAttribute());
 
     InterpThreadContext *pThreadContext = NULL;
 
@@ -7797,7 +6735,7 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         Thread::ObjectRefFlush(CURRENT_THREAD);
 #endif
 
-        PrestubMethodFrame frame(pTransitionBlock, pByteCodeStart->Method->methodDesc);
+        PrestubMethodFrame frame(pTransitionBlock, pByteCodeStart->Method->methodHnd);
         PrestubMethodFrame* pPFrame = &frame;
 
         pPFrame->Push(CURRENT_THREAD);
@@ -7818,7 +6756,7 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
             _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodDesc, NULL);
+            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
             EX_RETHROW;
         }
         EX_END_CATCH

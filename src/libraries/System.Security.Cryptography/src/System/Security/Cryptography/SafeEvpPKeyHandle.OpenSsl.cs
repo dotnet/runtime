@@ -67,26 +67,43 @@ namespace System.Security.Cryptography
             if (IsInvalid)
                 throw new InvalidOperationException(SR.Cryptography_OpenInvalidHandle);
 
-            // Reliability: Allocate the SafeHandle before calling UpRefEvpPkey so
-            // that we don't lose a tracked reference in low-memory situations.
-            SafeEvpPKeyHandle safeHandle = new SafeEvpPKeyHandle();
+            // Keep the source handle alive so that a concurrent Dispose on another
+            // thread does not zero the handle field between UpRef and the copy below.
+            bool addedRef = false;
 
-            int success = Interop.Crypto.UpRefEvpPkey(this);
-
-            if (success != 1)
+            try
             {
-                Debug.Fail("Called UpRefEvpPkey on a key which was already marked for destruction");
-                Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
-                safeHandle.Dispose();
-                throw e;
-            }
+                DangerousAddRef(ref addedRef);
 
-            // Since we didn't actually create a new handle, copy the handle
-            // to the new SafeHandle.
-            safeHandle.SetHandle(handle);
-            // ExtraHandle is upref'd by UpRefEvpPkey
-            safeHandle.ExtraHandle = ExtraHandle;
-            return safeHandle;
+                // Reliability: Allocate the SafeHandle before calling UpRefEvpPkey so
+                // that we don't lose a tracked reference in low-memory situations.
+                SafeEvpPKeyHandle safeHandle = new SafeEvpPKeyHandle();
+
+                int success = Interop.Crypto.UpRefEvpPkey(this);
+
+                if (success != 1)
+                {
+                    Debug.Fail("Called UpRefEvpPkey on a key which was already marked for destruction");
+                    Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
+                    safeHandle.Dispose();
+                    throw e;
+                }
+
+                // Since we didn't actually create a new handle, copy the handle
+                // to the new SafeHandle. DangerousAddRef prevents ReleaseHandle
+                // from being called, so handle and ExtraHandle are stable here.
+                safeHandle.SetHandle(handle);
+                // ExtraHandle is upref'd by UpRefEvpPkey
+                safeHandle.ExtraHandle = ExtraHandle;
+                return safeHandle;
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    DangerousRelease();
+                }
+            }
         }
 
         /// <summary>

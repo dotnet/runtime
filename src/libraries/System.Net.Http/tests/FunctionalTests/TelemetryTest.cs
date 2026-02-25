@@ -22,8 +22,6 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71877", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/109024", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserAndIsBuiltWithAggressiveTrimming))]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(HttpClient).Assembly.GetType("System.Net.Http.HttpTelemetry", throwOnError: true, ignoreCase: false);
@@ -993,7 +991,7 @@ namespace System.Net.Http.Functional.Tests
         public static bool SupportsRemoteExecutorAndAlpn = RemoteExecutor.IsSupported && PlatformDetection.SupportsAlpn;
 
         [OuterLoop]
-        [ConditionalTheory(nameof(SupportsRemoteExecutorAndAlpn))]
+        [ConditionalTheory(typeof(TelemetryTest), nameof(SupportsRemoteExecutorAndAlpn))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task EventSource_Proxy_LogsIPAddress(bool useSsl)

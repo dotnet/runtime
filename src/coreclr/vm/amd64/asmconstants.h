@@ -569,16 +569,24 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLoc
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
 
 #ifdef TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xb50
+#ifdef _DEBUG
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xaf8
+#else // _DEBUG
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x290
+#endif // _DEBUG
 #else // TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xba8
+#ifdef _DEBUG
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xb50
+#else // _DEBUG
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x2d8
+#endif // _DEBUG
 #endif // TARGET_UNIX
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
 
 #define OFFSETOF__InterpThreadContext__pStackPointer 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpThreadContext__pStackPointer == offsetof(InterpThreadContext, pStackPointer))
 
-#define OFFSETOF__CallStubHeader__Routines 0x10
+#define OFFSETOF__CallStubHeader__Routines 0x18
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__Routines == offsetof(CallStubHeader, Routines))
 
 #ifdef TARGET_UNIX

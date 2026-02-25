@@ -28,6 +28,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary
+{
+  .ver 0:0:0:0
+}
 .assembly TailcallVerifyWithPrefix
 {
   .custom instance void [mscorlib]System.Reflection.AssemblyDescriptionAttribute::.ctor(string) = ( 01 00 00 00 00 )
@@ -2093,9 +2098,28 @@
   .method public hidebysig static int32
           Main() cil managed
   {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
+    // This test depends on being able to read out stack frames. NativeAOT with the default trimming rules
+    // is not guaranteed to provide such information.
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+        type([TestLibrary]TestLibrary.Utilities)
+        string[1] ('IsNotNativeAot')
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.PlatformSpecificAttribute::.ctor(valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+        int32(1) // TestPlatforms.Windows
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('Depends on implicit tailcalls to be performed')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsX86Process')
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
+        string('Depends on implicit tailcalls to be performed')
+      int32(0x11E) // AnyJitOptimizationStress
+    }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnMonoAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+        string('Depends on RyuJIT-specific tail-call expectations')
+        int32(-1) // Any
+    }
     .entrypoint
     .maxstack  1
 
@@ -3341,6 +3365,14 @@
     + "one - ReturnType: void; Callee<string>: Arguments: None - ReturnType: v"
     + "oid"
     IL_0005:  call       void [System.Console]System.Console::WriteLine(string)
+    // This test assumes that regular calls will be converted to tail-calls when possible
+    call bool [TestLibrary]TestLibrary.Utilities::get_IsCoreClrInterpreter()
+    ldc.i4.0
+    beq IL_000a
+    ldstr "Skipping test on interpreter, as it doesn't support converting regular calls into tail-calls"
+    call void [System.Console]System.Console::WriteLine(string)
+    ldc.i4.s 100
+    ret
     IL_000a:  ldc.i4.s   100
     IL_000c:  stsfld     int32 TailcallVerify.Condition10::Result
     .try
@@ -3457,6 +3489,14 @@
     + "alueType3Bytes>: Caller: Arguments: None - ReturnType: void; Callee: Ar"
     + "guments: None - ReturnType: void"
     IL_0023:  call       void [System.Console]System.Console::WriteLine(string)
+    // This test assumes that regular calls will be converted to tail-calls when possible
+    call bool [TestLibrary]TestLibrary.Utilities::get_IsCoreClrInterpreter()
+    ldc.i4.0
+    beq IL_0028
+    ldstr "Skipping test on interpreter, as it doesn't support converting regular calls into tail-calls"
+    call void [System.Console]System.Console::WriteLine(string)
+    ldc.i4.s 100
+    ret
     IL_0028:  ldc.i4.s   100
     IL_002a:  stsfld     int32 TailcallVerify.Condition10::Result
     .try
@@ -3536,6 +3576,14 @@
     + "alueType3Bytes>: Caller: Arguments: string, ValueType3Bytes - ReturnTyp"
     + "e: void; Callee: Arguments: string - ReturnType: void"
     IL_0023:  call       void [System.Console]System.Console::WriteLine(string)
+    // This test assumes that regular calls will be converted to tail-calls when possible
+    call bool [TestLibrary]TestLibrary.Utilities::get_IsCoreClrInterpreter()
+    ldc.i4.0
+    beq IL_0028
+    ldstr "Skipping test on interpreter, as it doesn't support converting regular calls into tail-calls"
+    call void [System.Console]System.Console::WriteLine(string)
+    ldc.i4.s 100
+    ret
     IL_0028:  ldc.i4.s   100
     IL_002a:  stsfld     int32 TailcallVerify.Condition10::Result
     .try

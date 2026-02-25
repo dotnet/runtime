@@ -11,6 +11,8 @@
 {
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace JitTest_thisnull_thiscall
 {
   .class public auto ansi beforefieldinit App
@@ -67,6 +69,7 @@
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: instance method called with null this') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
       .entrypoint
       // Code size       95 (0x5f)
       .maxstack  2

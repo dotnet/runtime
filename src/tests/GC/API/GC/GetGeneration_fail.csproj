@@ -10,4 +10,7 @@
   <ItemGroup>
     <Compile Include="GetGeneration_fail.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

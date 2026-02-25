@@ -9,11 +9,10 @@
 /*****************************************************************************/
 //
 //     Node enum
-//                       , GenTree struct flavor
-//                                           ,commutative
-//                                             ,illegal as VN func
-//                                               ,oper kind | DEBUG oper kind
-
+//                      , GenTree struct flavor
+//                      ,                    ,commutative
+//                      ,                    , ,illegal as VN func
+//                      ,                    , , ,(oper kind | DEBUG oper kind)
 GTNODE(NONE             , char               ,0,0,GTK_SPECIAL)
 
 //-----------------------------------------------------------------------------
@@ -38,6 +37,7 @@ GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
 GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)
+GTNODE(ASYNC_RESUME_INFO, GenTreeVal         ,0,0,GTK_LEAF)             // Address of async resume info for a state
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -293,6 +293,13 @@ GTNODE(SH3ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(ADD_UW           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 // Maps to riscv64 slli.uw instruction. Computes result = zext(op1[31..0]) << imm.
 GTNODE(SLLI_UW          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+
+// Maps to bset/bseti instruction. Computes result = op1 | (1 << op2)
+GTNODE(BIT_SET          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to bclr/bclri instruction. Computes result = op1 & ~(1 << op2)
+GTNODE(BIT_CLEAR        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to binv/binvi instruction. Computes result = op1 ^ (1 << op2)
+GTNODE(BIT_INVERT       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------
@@ -305,7 +312,7 @@ GTNODE(JTRUE            , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 //  Other nodes that have special structure:
 //-----------------------------------------------------------------------------
 
-GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,0,GTK_SPECIAL)            // Multi-dimensional array-element address
+GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,0,GTK_SPECIAL|DBK_NOTLIR)  // Multi-dimensional array-element address
 GTNODE(CALL             , GenTreeCall        ,0,0,GTK_SPECIAL|DBK_NOCONTAIN)
 GTNODE(FIELD_LIST       , GenTreeFieldList   ,0,0,GTK_SPECIAL)            // List of fields of a struct, when passed as an argument
 
@@ -323,9 +330,6 @@ GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHI
 GTNODE(PROF_HOOK        , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Profiler Enter/Leave/TailCall hook.
 
 GTNODE(RETFILT          , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // End filter with TYP_I_IMPL return value.
-#if defined(FEATURE_EH_WINDOWS_X86)
-GTNODE(END_LFIN         , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // End locally-invoked finally.
-#endif // FEATURE_EH_WINDOWS_X86
 
 //-----------------------------------------------------------------------------
 //  Swift interop-specific nodes:
@@ -357,6 +361,7 @@ GTNODE(SWAP             , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 GTNODE(COPY             , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)              // Copies a variable from its current location to a register that satisfies
 GTNODE(RELOAD           , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)              // code generation constraints. The operand is the actual lclVar node.
 GTNODE(IL_OFFSET        , GenTreeILOffset    ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // marks an IL offset for debugging purposes
+GTNODE(RECORD_ASYNC_RESUME, GenTreeVal       ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // record native offset for async resumption info
 
 /*****************************************************************************/
 #undef  GTNODE

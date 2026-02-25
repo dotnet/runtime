@@ -634,7 +634,7 @@ void Frame::PopIfChained()
 }
 #endif // TARGET_UNIX && !DACCESS_COMPILE
 
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+#if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
 /* static */
 void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
 {
@@ -676,7 +676,7 @@ void InlinedCallFrame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
         }
     }
 }
-#endif // !TARGET_X86 || TARGET_UNIX
+#endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
@@ -840,7 +840,7 @@ static PTR_BYTE FindGCRefMap(PTR_Module pZapModule, TADDR ptr)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    PEImageLayout *pNativeImage = pZapModule->GetReadyToRunImage();
+    ReadyToRunLoadedImage *pNativeImage = pZapModule->GetReadyToRunImage();
 
     RVA rva = pNativeImage->GetDataRva(ptr);
 
@@ -1985,7 +1985,7 @@ void InterpreterFrame::ExceptionUnwind_Impl()
 
     Thread *pThread = GetThread();
     InterpThreadContext *pThreadContext = pThread->GetInterpThreadContext();
-    InterpMethodContextFrame *pInterpMethodContextFrame = m_pTopInterpMethodContextFrame;
+    InterpMethodContextFrame *pInterpMethodContextFrame = GetTopInterpMethodContextFrame();
 
     // Unwind the interpreter frames belonging to the current InterpreterFrame.
     while (pInterpMethodContextFrame != NULL)
@@ -2041,6 +2041,12 @@ void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE *
         else
         if (pMD->RequiresInstMethodTableArg())
             *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + argit.GetParamTypeArgOffset()) = GCREFMAP_TYPE_PARAM;
+    }
+
+    // Encode async continuation arg (it's a GC reference)
+    if (argit.HasAsyncContinuation())
+    {
+        FakePromote((Object **)(pFrame + argit.GetAsyncContinuationArgOffset()), &sc, 0);
     }
 
     // If the function has a this pointer, add it to the mask

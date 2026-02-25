@@ -6,10 +6,5 @@
     <RunAOTCompilation>false</RunAOTCompilation>
   </PropertyGroup>
 
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-    <WasmExtraFilesToDeploy Include="main.js" />
-  </ItemGroup>
-
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
 </Project>

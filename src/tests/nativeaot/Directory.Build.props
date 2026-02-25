@@ -5,5 +5,11 @@
   <PropertyGroup>
     <!-- We expect trimming to be fully enabled in these tests -->
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+
+    <!--
+      Each of these tests is considered its own "merged runner" that contains merged-in tests.
+      This allows the tests to run on mobile platforms where process isolation is not supported.
+    -->
+    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
 </Project>

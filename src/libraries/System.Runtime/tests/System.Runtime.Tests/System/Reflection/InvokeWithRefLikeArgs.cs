@@ -37,6 +37,7 @@ namespace System.Reflection.Tests
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/40738")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public static void MethodTakesRefToRefStructAsArg_ThrowsNSE()
         {
             // Use a Binder to trick the reflection stack into treating the returned null
@@ -52,6 +53,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/40738")]
+        [SkipOnPlatform(TestPlatforms.Browser, "https://github.com/dotnet/runtime/issues/40738")]
         public static void MethodTakesOutToRefStructAsArg_ThrowsNSE()
         {
             MethodInfo mi = GetMethod(nameof(TestClass.TakesOutToRefStructAsArg));

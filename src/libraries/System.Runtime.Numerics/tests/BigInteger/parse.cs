@@ -1331,6 +1331,31 @@ namespace System.Numerics.Tests
             }
             Assert.Equal(expected, actual);
         }
+
+        [Fact]
+        public static void ParseWithNBSPAsGroupSeparator()
+        {
+            // Culture has NBSP as group separator; input has regular spaces.
+            // Exercises MatchChars path: cp=='\u0020' && IsSpaceReplacingChar(val=='\u00A0')
+            CultureInfo nbspCulture = new CultureInfo("en-US");
+            nbspCulture.NumberFormat.NumberGroupSeparator = "\u00A0";
+
+            BigInteger result = BigInteger.Parse("1 234 567", NumberStyles.AllowThousands, nbspCulture);
+            Assert.Equal((BigInteger)1234567, result);
+
+            // Culture has regular space as group separator; input has NBSP.
+            // Exercises MatchChars path: val=='\u0020' && IsSpaceReplacingChar(cp=='\u00A0')
+            CultureInfo spaceCulture = new CultureInfo("en-US");
+            spaceCulture.NumberFormat.NumberGroupSeparator = " ";
+
+            result = BigInteger.Parse("1\u00A0234\u00A0567", NumberStyles.AllowThousands, spaceCulture);
+            Assert.Equal((BigInteger)1234567, result);
+
+            // Culture has regular space as group separator; input has narrow NBSP (U+202F).
+            // Exercises IsSpaceReplacingChar matching U+202F against U+0020
+            result = BigInteger.Parse("1\u202F234\u202F567", NumberStyles.AllowThousands, spaceCulture);
+            Assert.Equal((BigInteger)1234567, result);
+        }
     }
 
     [Collection(nameof(DisableParallelization))]

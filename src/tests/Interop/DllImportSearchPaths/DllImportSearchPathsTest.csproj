@@ -12,6 +12,9 @@
     <CMakeProjectReference Include="../NativeLibrary/NativeLibraryToLoad/CMakeLists.txt" />
     <CMakeProjectReference Include="NativeLibraryWithDependency/CMakeLists.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 
   <PropertyGroup>
     <LibrarySubdirectory>$(OutputPath)/subdirectory</LibrarySubdirectory>

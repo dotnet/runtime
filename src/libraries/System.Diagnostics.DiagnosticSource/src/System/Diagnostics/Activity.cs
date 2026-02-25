@@ -54,9 +54,11 @@ namespace System.Diagnostics
     /// but the exception is suppressed, and the operation does something reasonable (typically
     /// doing nothing).
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplayString,nq}")]
+    [DebuggerTypeProxy(typeof(ActivityDebuggerProxy))]
     public partial class Activity : IDisposable
     {
-#pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
+#pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>()
         private static readonly IEnumerable<KeyValuePair<string, string?>> s_emptyBaggageTags = new KeyValuePair<string, string?>[0];
         private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTagObjects = new KeyValuePair<string, object?>[0];
         private static readonly IEnumerable<ActivityLink> s_emptyLinks = new DiagLinkedList<ActivityLink>();
@@ -1839,6 +1841,15 @@ namespace System.Diagnostics
             }
         }
 
+        private string DebuggerDisplayString
+        {
+            get
+            {
+                string? id = Id;
+                return $"OperationName = {OperationName}, Id = {(id is not null ? id : "(null)")}";
+            }
+        }
+
         [Flags]
         private enum State : byte
         {
@@ -1902,7 +1913,7 @@ namespace System.Diagnostics
             if (idData.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-#if NET9_0_OR_GREATER
+#if NET
             return new ActivityTraceId(Convert.ToHexStringLower(idData));
 #else
             return new ActivityTraceId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
@@ -1985,7 +1996,7 @@ namespace System.Diagnostics
                 span[1] = BinaryPrimitives.ReverseEndianness(span[1]);
             }
 
-#if NET9_0_OR_GREATER
+#if NET
             _hexString = Convert.ToHexStringLower(MemoryMarshal.AsBytes(span));
 #else
             _hexString = HexConverter.ToString(MemoryMarshal.AsBytes(span), HexConverter.Casing.Lower);
@@ -2070,7 +2081,7 @@ namespace System.Diagnostics
         {
             ulong id;
             ActivityTraceId.SetToRandomBytes(new Span<byte>(&id, sizeof(ulong)));
-#if NET9_0_OR_GREATER
+#if NET
             return new ActivitySpanId(Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong))));
 #else
             return new ActivitySpanId(HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower));
@@ -2081,7 +2092,7 @@ namespace System.Diagnostics
             if (idData.Length != 8)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-#if NET9_0_OR_GREATER
+#if NET
             return new ActivitySpanId(Convert.ToHexStringLower(idData));
 #else
             return new ActivitySpanId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
@@ -2153,7 +2164,7 @@ namespace System.Diagnostics
                 id = BinaryPrimitives.ReverseEndianness(id);
             }
 
-#if NET9_0_OR_GREATER
+#if NET
             _hexString = Convert.ToHexStringLower(new ReadOnlySpan<byte>(&id, sizeof(ulong)));
 #else
             _hexString = HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower);
@@ -2167,5 +2178,31 @@ namespace System.Diagnostics
         {
             ActivityTraceId.SetSpanFromHexChars(ToHexString().AsSpan(), destination);
         }
+    }
+
+    internal sealed class ActivityDebuggerProxy(Activity activity)
+    {
+        public ActivityTraceFlags ActivityTraceFlags => activity.ActivityTraceFlags;
+        public List<KeyValuePair<string, string?>> Baggage => new List<KeyValuePair<string, string?>>(activity.Baggage);
+        public ActivityContext Context => activity.Context;
+        public string DisplayName => activity.DisplayName;
+        public TimeSpan Duration => activity.Duration;
+        public List<ActivityEvent> Events => new List<ActivityEvent>(activity.Events);
+        public bool HasRemoteParent => activity.HasRemoteParent;
+        public string? Id => activity.Id;
+        public ActivityKind Kind => activity.Kind;
+        public List<ActivityLink> Links => new List<ActivityLink>(activity.Links);
+        public string OperationName => activity.OperationName;
+        public Activity? Parent => activity.Parent;
+        public string? ParentId => activity.ParentId;
+        public ActivitySpanId ParentSpanId => activity.ParentSpanId;
+        public ActivitySource Source => activity.Source;
+        public ActivitySpanId SpanId => activity.SpanId;
+        public DateTime StartTimeUtc => activity.StartTimeUtc;
+        public ActivityStatusCode Status => activity.Status;
+        public string? StatusDescription => activity.StatusDescription;
+        public List<KeyValuePair<string, object?>> TagObjects => new List<KeyValuePair<string, object?>>(activity.TagObjects);
+        public ActivityTraceId TraceId => activity.TraceId;
+        public string? TraceStateString => activity.TraceStateString;
     }
 }

@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandler_Decompression_Test(ITestOutputHelper output) : base(output) { }
 
         public static IEnumerable<object[]> DecompressedResponse_MethodSpecified_DecompressedContentReturned_MemberData() =>
-            from compressionName in new[] { "gzip", "GZIP", "zlib", "ZLIB", "deflate", "DEFLATE", "br", "BR" }
+            from compressionName in new[] { "gzip", "GZIP", "zlib", "ZLIB", "deflate", "DEFLATE", "br", "BR", "zstd", "ZSTD" }
             from all in new[] { false, true }
             from copyTo in new[] { false, true }
             from contentLength in new[] { 0, 1, 12345 }
@@ -40,9 +40,9 @@ namespace System.Net.Http.Functional.Tests
         public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(string compressionName, bool all, bool useCopyTo, int contentLength)
         {
             if (IsWinHttpHandler &&
-                (compressionName is "br" or "BR" or "zlib" or "ZLIB"))
+                (compressionName is "br" or "BR" or "zlib" or "ZLIB" or "zstd" or "ZSTD"))
             {
-                // brotli and zlib not supported on WinHttpHandler
+                // brotli, zlib, and zstd not supported on WinHttpHandler
                 return;
             }
 
@@ -62,6 +62,12 @@ namespace System.Net.Http.Functional.Tests
                 case "BR":
                     compress = s => new BrotliStream(s, CompressionLevel.Optimal, leaveOpen: true);
                     methods = all ? DecompressionMethods.Brotli : _all;
+                    break;
+
+                case "zstd":
+                case "ZSTD":
+                    compress = s => new ZstandardStream(s, CompressionLevel.Optimal, leaveOpen: true);
+                    methods = all ? DecompressionMethods.Zstandard : _all;
                     break;
 
                 case "zlib":
@@ -133,6 +139,13 @@ namespace System.Net.Http.Functional.Tests
                     DecompressionMethods.Deflate | DecompressionMethods.GZip,
                     useCopyTo
                 };
+                yield return new object[]
+                {
+                    "zstd",
+                    new Func<Stream, Stream>(s => new ZstandardStream(s, CompressionLevel.Optimal, leaveOpen: true)),
+                    DecompressionMethods.Deflate | DecompressionMethods.GZip | DecompressionMethods.Brotli,
+                    useCopyTo
+                };
 #endif
             }
         }
@@ -177,6 +190,7 @@ namespace System.Net.Http.Functional.Tests
 #if !NETFRAMEWORK
         [InlineData("deflate", DecompressionMethods.Deflate)]
         [InlineData("br", DecompressionMethods.Brotli)]
+        [InlineData("zstd", DecompressionMethods.Zstandard)]
 #endif
         [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
         public async Task DecompressedResponse_EmptyBody_Success(string encodingName, DecompressionMethods methods)
@@ -205,6 +219,10 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(DecompressionMethods.Brotli, "br", "br")]
         [InlineData(DecompressionMethods.Brotli, "br", "gzip")]
         [InlineData(DecompressionMethods.Brotli, "br", "gzip, deflate")]
+        [InlineData(DecompressionMethods.Zstandard, "zstd", "")]
+        [InlineData(DecompressionMethods.Zstandard, "zstd", "zstd")]
+        [InlineData(DecompressionMethods.Zstandard, "zstd", "gzip")]
+        [InlineData(DecompressionMethods.Zstandard, "zstd", "gzip, deflate, br")]
 #endif
         [InlineData(DecompressionMethods.GZip, "gzip", "")]
         [InlineData(DecompressionMethods.Deflate, "deflate", "")]
@@ -224,6 +242,12 @@ namespace System.Net.Http.Functional.Tests
         {
             // Brotli only supported on SocketsHttpHandler.
             if (IsWinHttpHandler && (encodings.Contains("br") || manualAcceptEncodingHeaderValues.Contains("br")))
+            {
+                return;
+            }
+
+            // Zstandard only supported on SocketsHttpHandler.
+            if (IsWinHttpHandler && (encodings.Contains("zstd") || manualAcceptEncodingHeaderValues.Contains("zstd")))
             {
                 return;
             }
@@ -266,6 +290,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
 #if NET
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli, "gzip; q=1.0, deflate; q=1.0, br; q=1.0", "")]
+        [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli | DecompressionMethods.Zstandard, "gzip; q=1.0, deflate; q=1.0, br; q=1.0, zstd; q=1.0", "")]
 #endif
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0, deflate; q=1.0", "")]
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip; q=1.0", "deflate")]

@@ -95,38 +95,6 @@ Return
 --*/
 VOID PROCCleanupInitialProcess(VOID);
 
-#if USE_SYSV_SEMAPHORES
-/*++
-Function:
-  PROCCleanupThreadSemIds(VOID);
-
-Abstract
-  Cleanup SysV semaphore ids for all threads.
-
-(no parameters, no return value)
---*/
-VOID PROCCleanupThreadSemIds(VOID);
-#endif
-
-/*++
-Function:
-  PROCProcessLock
-
-Abstract
-  Enter the critical section associated to the current process
---*/
-VOID PROCProcessLock(VOID);
-
-
-/*++
-Function:
-  PROCProcessUnlock
-
-Abstract
-  Leave the critical section associated to the current process
---*/
-VOID PROCProcessUnlock(VOID);
-
 /*++
 Function
   PROCAbortInitialize()
@@ -152,6 +120,7 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info
+  context - signal context or nullptr
 
   Does not return
 --*/
@@ -159,7 +128,7 @@ Parameters:
                         // making crash dumps impossible to analyze
 PAL_NORETURN
 #endif
-VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr);
+VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr, void* context = nullptr);
 
 /*++
 Function:
@@ -182,11 +151,26 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
   serialize - allow only one thread to generate core dump
 
 (no return value)
 --*/
-VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize);
+VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize);
+
+/*++
+Function:
+  PROCLogManagedCallstackForSignal
+
+  Invokes the registered callback to log the managed callstack for a signal.
+  Used by Android since CreateDump is not supported there.
+
+Parameters:
+  signal - POSIX signal number
+
+(no return value)
+--*/
+VOID PROCLogManagedCallstackForSignal(int signal);
 
 #ifdef __cplusplus
 }

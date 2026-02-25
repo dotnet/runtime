@@ -13,8 +13,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "Invariant", NumberFormatInfo.InvariantInfo, new int[] { 3 }, null };
             yield return new object[] { "en-US", CultureInfo.GetCultureInfo("en-US").NumberFormat, new int[] { 3 }, null };
 
-            // Culture does not exist on Windows 7 and in Browser's ICU
-            if (!PlatformDetection.IsWindows7 && PlatformDetection.IsNotBrowser)
+            if (PlatformDetection.IsNotBrowser)
             {
                 yield return new object[] { "ur-IN", CultureInfo.GetCultureInfo("ur-IN").NumberFormat, NumberFormatInfoData.UrINNumberGroupSizes(), new int[] { 3, 2 } };
             }

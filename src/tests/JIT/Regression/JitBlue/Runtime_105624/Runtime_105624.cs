@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_105624;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
@@ -20,19 +23,16 @@ using Xunit;
 
 public class Runtime_105624
 {
-    [Fact]
+    [ConditionalFact(typeof(Avx512F), nameof(Avx512F.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx512F.IsSupported)
-        {
-            var vr8 = Vector128.CreateScalar(4294967294U);
-            var vr7 = Avx512F.VL.ConvertToVector256Double(vr8);
+        var vr8 = Vector128.CreateScalar(4294967294U);
+        var vr7 = Avx512F.VL.ConvertToVector256Double(vr8);
 
-            var vr10 = Vector128.CreateScalar(4294967295U);
-            var vr9 = Avx512F.VL.ConvertToVector256Double(vr10);
+        var vr10 = Vector128.CreateScalar(4294967295U);
+        var vr9 = Avx512F.VL.ConvertToVector256Double(vr10);
 
-            var res = vr7 + vr9;
-            Assert.Equal(Vector256.CreateScalar(8589934589.0), res);
-        }
+        var res = vr7 + vr9;
+        Assert.Equal(Vector256.CreateScalar(8589934589.0), res);
     }
 }

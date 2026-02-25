@@ -6,9 +6,11 @@ This directory builds Profilers\Profiler.dll, which contains various implementat
 
 1) Easy to run/debug a profiler test manually simply by executing the managed test binary + setting minimal env vars:
 
-    CORECLR_ENABLE_PROFILING=1
-    CORECLR_PROFILER={CLSID_of_profiler}
-    CORECLR_PROFILER_PATH=path_to_profiler_dll
+    DOTNET_ENABLE_PROFILING=1
+    DOTNET_PROFILER={CLSID_of_profiler}
+    DOTNET_PROFILER_PATH=path_to_profiler_dll
+
+> **Note:** The `CORECLR_` prefix is still supported for backwards compatibility but may be removed in the future. Use the `DOTNET_` prefix for new projects.
 
 We should be very careful about adding any additional dependencies such as env vars or assumptions that certain files will reside in certain places. Any such dependencies need to be clearly documented.
 

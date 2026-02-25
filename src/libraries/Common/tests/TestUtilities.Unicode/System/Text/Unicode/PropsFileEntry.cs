@@ -32,7 +32,7 @@ namespace System.Text.Unicode
 
         public static bool TryParseLine(string line, [NotNullWhen(true)] out PropsFileEntry? value)
         {
-            Match match = GetRegex().Match(line);
+            Match match = GetRegex.Match(line);
 
             if (!match.Success)
             {
@@ -53,6 +53,6 @@ namespace System.Text.Unicode
         }
 
         [GeneratedRegex(@"^\s*(?<firstCodePoint>[0-9a-f]{4,})(\.\.(?<lastCodePoint>[0-9a-f]{4,}))?\s*;\s*(?<propName>.+?)\s*(#\s*(?<comment>.*))?$", RegexOptions.IgnoreCase)]
-        private static partial Regex GetRegex();
+        private static partial Regex GetRegex { get; }
     }
 }

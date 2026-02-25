@@ -125,16 +125,16 @@ namespace Amd64InstructionTableGenerator
             @"(?<operands>(\S[^#]*?)?)\s*" +
             @"(?<comment>#.*)?$",
             RegexOptions.ExplicitCapture)]
-        private static partial Regex EncDisassemblySplit();
+        private static partial Regex EncDisassemblySplit { get; }
 
         [GeneratedRegex(@"^\s*,?\s*(?<op>[^\(,]*(\([^\)]*\))?)?(?<rest>.+$)?", RegexOptions.ExplicitCapture)]
-        private static partial Regex EncOperandSplit();
+        private static partial Regex EncOperandSplit { get; }
 
         [GeneratedRegex(@"\[.*\]({1to[0-9]+})?$")]
-        private static partial Regex EncOperandIsMemOp();
+        private static partial Regex EncOperandIsMemOp { get; }
 
         [GeneratedRegex(@"\[rip.*\]({1to[0-9]+})?$")]
-        private static partial Regex EncOperandIsMOp();
+        private static partial Regex EncOperandIsMOp { get; }
 
         private static readonly HashSet<string> allOperands = new HashSet<string>();
 
@@ -255,7 +255,7 @@ namespace Amd64InstructionTableGenerator
 
             if (Debug.debug) Console.WriteLine($"new sample: {disassembly}");
 
-            var match = EncDisassemblySplit().Match(disassembly);
+            var match = EncDisassemblySplit.Match(disassembly);
 
             if (Debug.debug)
             {
@@ -299,7 +299,7 @@ namespace Amd64InstructionTableGenerator
 
             while (rest?.Length != 0)
             {
-                var opMatch = EncOperandSplit().Match(rest);
+                var opMatch = EncOperandSplit.Match(rest);
 
                 string op = opMatch.Groups["op"].ToString();
                 operands.Add(op);
@@ -593,7 +593,7 @@ namespace Amd64InstructionTableGenerator
             for (int i = 0; i < operands.Count; i++)
             {
                 string operand = operands[i];
-                bool memop = EncOperandIsMemOp().IsMatch(operand);
+                bool memop = EncOperandIsMemOp.IsMatch(operand);
 
                 if (memop)
                 {
@@ -603,7 +603,7 @@ namespace Amd64InstructionTableGenerator
 
                     accounted += hasSIB ? 6 : 5;
 
-                    if (EncOperandIsMOp().IsMatch(operand))
+                    if (EncOperandIsMOp.IsMatch(operand))
                     {
                         if (i == 0)
                         {
@@ -661,11 +661,11 @@ namespace Amd64InstructionTableGenerator
         private List<Amd64InstructionSample> samples = new List<Amd64InstructionSample>();
 
         [GeneratedRegex(@"^\s+0x00000000")]
-        private static partial Regex AssemblyPrefix();
+        private static partial Regex AssemblyPrefix { get; }
 
         // The '0x' prefix is not included in the regex match.
         [GeneratedRegex(@"^\s*0x(?<address>[0-9a-fA-F]+)", RegexOptions.ExplicitCapture)]
-        private static partial Regex AssemblyAddress();
+        private static partial Regex AssemblyAddress { get; }
 
         // NOTE: APX instructions push2/push2p/pop2/pop2p are not causing gdb to report an illegal instruction,
         // which is causing problems. So manually disallow them.
@@ -673,7 +673,7 @@ namespace Amd64InstructionTableGenerator
         // can be encoded with either an EVEX or VEX encoding, and the disassembler will annotate the instruction with
         // `{evex}` to indicate it is not the canonical encoding.
         [GeneratedRegex(@"((push2)|(pop2)|(\{vex\})|(\{bad\})|(\(bad\))|(\srex(\.[WRXB]*)?\s*(#.*)?$))")]
-        private static partial Regex BadDisassembly();
+        private static partial Regex BadDisassembly { get; }
 
         private List<(Map, int)> regExpandOpcodes;
 
@@ -737,7 +737,7 @@ namespace Amd64InstructionTableGenerator
             {
                 //if (Debug.debug) Console.WriteLine($"line: {line}");
 
-                var match = AssemblyAddress().Match(line);
+                var match = AssemblyAddress.Match(line);
                 if (!match.Success)
                 {
                     continue;
@@ -759,7 +759,7 @@ namespace Amd64InstructionTableGenerator
                     continue;
                 }
 
-                if (!BadDisassembly().IsMatch(sample))
+                if (!BadDisassembly.IsMatch(sample))
                 {
                     try
                     {

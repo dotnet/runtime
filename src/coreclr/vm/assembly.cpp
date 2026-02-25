@@ -129,6 +129,7 @@ Assembly::Assembly(PEAssembly* pPEAssembly, LoaderAllocator *pLoaderAllocator)
 #endif
     , m_isDynamic(false)
     , m_isLoading{true}
+    , m_isLoaded{false}
     , m_isTerminated{false}
     , m_level{FILE_LOAD_CREATE}
     , m_notifyFlags{NOT_NOTIFIED}
@@ -515,7 +516,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         pAssem->DeliverAsyncEvents();
         pAssem->FinishLoad();
         pAssem->ClearLoading();
-        pAssem->m_level = FILE_ACTIVE;
+        pAssem->SetLoadLevel(FILE_ACTIVE);
     }
 
     {
@@ -1060,8 +1061,10 @@ void Assembly::AddDiagnosticStartupHookPath(LPCWSTR wszPath)
 
 enum CorEntryPointType
 {
-    EntryManagedMain,                   // void main(String[])
-    EntryCrtMain                        // unsigned main(void)
+    EntryManagedMain,                   // void/int/uint Main(string[])
+    EntryCrtMain,                       // void/int/uint Main(void)
+    EntryManagedMainAsync,              // Task<int> Main(String[])
+    EntryManagedMainAsyncVoid,          // Task Main(String[])
 };
 
 void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
@@ -1127,6 +1130,29 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
     if (FAILED(sig.GetElemType(&nReturnType)))
         ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
 
+#if defined(TARGET_BROWSER)
+    // WASM-TODO: this validation is too trivial, but that's OK for now because we plan to remove browser specific hack later.
+    // https://github.com/dotnet/runtime/issues/121064
+    if (nReturnType == ELEMENT_TYPE_GENERICINST)
+    {
+        if (nParamCount > 1)
+            ThrowMainMethodException(pFD, IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN);
+
+        // this is Task<int> Main(String[] args)
+        *pType = EntryManagedMainAsync;
+        return;
+    }
+    if (nReturnType == ELEMENT_TYPE_CLASS)
+    {
+        if (nParamCount > 1)
+            ThrowMainMethodException(pFD, IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN);
+
+        // this is Task Main(String[] args)
+        *pType = EntryManagedMainAsyncVoid;
+        return;
+    }
+#endif // TARGET_BROWSER
+
     if ((nReturnType != ELEMENT_TYPE_VOID) && (nReturnType != ELEMENT_TYPE_I4) && (nReturnType != ELEMENT_TYPE_U4))
          ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
 
@@ -1164,6 +1190,10 @@ struct Param
     LPWSTR *wzArgs;
 } param;
 
+#if defined(TARGET_BROWSER)
+extern "C" void SystemJS_ResolveMainPromise(int exitCode);
+#endif // TARGET_BROWSER
+
 static void RunMainInternal(Param* pParam)
 {
     MethodDescCallSite  threadStart(pParam->pFD);
@@ -1172,7 +1202,10 @@ static void RunMainInternal(Param* pParam)
     GCPROTECT_BEGIN(StrArgArray);
 
     // Build the parameter array and invoke the method.
-    if (pParam->EntryType == EntryManagedMain) {
+    if (pParam->EntryType == EntryManagedMain
+        || pParam->EntryType == EntryManagedMainAsync
+        || pParam->EntryType == EntryManagedMainAsyncVoid)
+    {
         if (pParam->stringArgs == NULL) {
             // Allocate a COM Array object with enough slots for cCommandArgs - 1
             StrArgArray = (PTRARRAYREF) AllocateObjectArray((pParam->cCommandArgs - pParam->numSkipArgs), g_pStringClass);
@@ -1194,11 +1227,46 @@ static void RunMainInternal(Param* pParam)
         // Set the return value to 0 instead of returning random junk
         *pParam->piRetVal = 0;
         threadStart.Call(&stackVar);
+#if defined(TARGET_BROWSER)
+        SystemJS_ResolveMainPromise(*pParam->piRetVal);
+#endif // TARGET_BROWSER
     }
+// WASM-TODO: remove this
+// https://github.com/dotnet/runtime/issues/121064
+#if defined(TARGET_BROWSER)
+    else if (pParam->EntryType == EntryManagedMainAsync)
+    {
+        *pParam->piRetVal = 0;
+        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
+        
+        OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
+        ARG_SLOT stackVarWrapper[] =
+        {
+            ObjToArgSlot(exitCodeTask)
+        };
+        mainWrapper.Call(stackVarWrapper);
+    }
+    else if (pParam->EntryType == EntryManagedMainAsyncVoid)
+    {
+        *pParam->piRetVal = 0;
+        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT_VOID);
+        
+        OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
+        ARG_SLOT stackVarWrapper[] =
+        {
+            ObjToArgSlot(exitCodeTask)
+        };
+        mainWrapper.Call(stackVarWrapper);
+    }
+#endif // TARGET_BROWSER
     else
     {
+        // Call the main method
         *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
         SetLatchedExitCode(*pParam->piRetVal);
+#if defined(TARGET_BROWSER)
+        SystemJS_ResolveMainPromise(*pParam->piRetVal);
+#endif // TARGET_BROWSER
     }
 
     GCPROTECT_END();
@@ -1401,8 +1469,10 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
     //to decide when the process should get torn down.  So, don't call it from
     // AppDomain.ExecuteAssembly()
     if (pMeth) {
+#if !defined(TARGET_BROWSER)
         if (waitForOtherThreads)
             RunMainPost();
+#endif // !TARGET_BROWSER
     }
     else {
         StackSString displayName;
@@ -1482,6 +1552,7 @@ MethodDesc* Assembly::GetEntryPoint()
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, IDS_EE_ILLEGAL_TOKEN_FOR_MAIN, displayName);
     }
 
+    MethodTable * pInitialMT;
     if (mdParent != COR_GLOBAL_PARENT_TOKEN) {
         GCX_COOP();
         // This code needs a class init frame, because without it, the
@@ -1489,7 +1560,7 @@ MethodDesc* Assembly::GetEntryPoint()
         // type handle (ie, loading an assembly) is the first line of a program.
         DebuggerClassInitMarkFrame __dcimf;
 
-        MethodTable * pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
+        pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
                                                                        ClassLoader::ThrowIfNotFound,
                                                                        ClassLoader::FailIfUninstDefOrRef).GetMethodTable();
 
@@ -1501,6 +1572,35 @@ MethodDesc* Assembly::GetEntryPoint()
     {
         m_pEntryPoint = pModule->FindMethod(mdEntry);
     }
+
+#if defined(TARGET_BROWSER)
+    // WASM-TODO: this lookup by name is too trivial, but that's OK for now because we plan to remove browser specific hack later.
+    // https://github.com/dotnet/runtime/issues/121064
+    if (m_pEntryPoint)
+    {
+        // if this is async method we need to find the original method, instead of the roslyn generated wrapper
+        LPCUTF8 szName = m_pEntryPoint->GetName();
+        size_t nameLength = strlen(szName);
+        LPCUTF8 szEnd = szName + nameLength - 1;
+        DWORD dwAttrs = m_pEntryPoint->GetAttrs();
+        if (IsMdSpecialName(dwAttrs) && (*szName == '<') && (*szEnd == '>'))
+        {
+            // look for "<Name>$"
+            LPUTF8 pszAsyncName = (LPUTF8)new char[nameLength + 2];
+            snprintf (pszAsyncName, nameLength + 2, "%s$", szName);
+            m_pEntryPoint = MemberLoader::FindMethodByName(pInitialMT, pszAsyncName);
+
+            if (m_pEntryPoint == NULL)
+            {
+                // look for "Name" by trimming the first and last character of "<Name>"
+                pszAsyncName [nameLength - 1] = '\0';
+                m_pEntryPoint = MemberLoader::FindMethodByName(pInitialMT, pszAsyncName + 1);
+            }
+
+            delete[] pszAsyncName;
+        }
+    }
+#endif // TARGET_BROWSER
 
     RETURN m_pEntryPoint;
 }
@@ -2213,7 +2313,7 @@ void Assembly::FinishLoad()
     CONTRACTL_END;
 
     // Must set this a bit prematurely for the DAC stuff to work
-    m_level = FILE_LOADED;
+    SetLoadLevel(FILE_LOADED);
 
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);

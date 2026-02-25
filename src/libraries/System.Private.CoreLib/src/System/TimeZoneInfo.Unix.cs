@@ -62,7 +62,7 @@ namespace System
             if (IsUtcAlias(id))
             {
                 _baseUtcOffset = TimeSpan.Zero;
-                _adjustmentRules = Array.Empty<AdjustmentRule>();
+                _adjustmentRules = [];
                 return;
             }
 
@@ -145,7 +145,7 @@ namespace System
         {
             if (_adjustmentRules == null)
             {
-                return Array.Empty<AdjustmentRule>();
+                return [];
             }
 
             // The rules we use in Unix care mostly about the start and end dates but don't fill the transition start and end info.
@@ -284,7 +284,7 @@ namespace System
             return daylightDisplayName;
         }
 
-        private static void PopulateAllSystemTimeZones(CachedData cachedData)
+        private static Dictionary<string, TimeZoneInfo> PopulateAllSystemTimeZones(CachedData cachedData)
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 
@@ -295,13 +295,27 @@ namespace System
 
             if (Invariant)
             {
-                return;
+                return cachedData._systemTimeZones;
             }
+
+            const int initialCapacity = 430; // Should be enough for all time zones
+
+            // The filtered list that shouldn't have any duplicates.
+            Dictionary<string, TimeZoneInfo> filteredTimeZones = new Dictionary<string, TimeZoneInfo>(capacity: initialCapacity, comparer: StringComparer.OrdinalIgnoreCase)
+            {
+                { UtcId, s_utcTimeZone }
+            };
 
             foreach (string timeZoneId in GetTimeZoneIds())
             {
-                TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true);  // populate the cache
+                if (TryGetTimeZone(timeZoneId, false, out TimeZoneInfo? timeZone, out _, cachedData, alwaysFallbackToLocalMachine: true) == TimeZoneInfoResult.Success &&
+                    timeZone is not null)
+                {
+                    filteredTimeZones[timeZoneId] = timeZone;
+                }
             }
+
+            return filteredTimeZones;
         }
 
         /// <summary>

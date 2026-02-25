@@ -457,7 +457,7 @@ static struct ifaddrs *get_link_address(struct nlmsghdr *message, struct ifaddrs
     abort_if_invalid_pointer_argument(message);
     net_address = (struct ifaddrmsg*)(NLMSG_DATA(message));
     length = (ssize_t)(IFA_PAYLOAD(message));
-    LOG_DEBUG("   address data length: %zu", length);
+    LOG_DEBUG("   address data length: %zd", length);
     if (length <= 0) {
         goto error;
     }

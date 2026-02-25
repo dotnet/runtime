@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_105824;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
@@ -17,26 +20,23 @@ using Xunit;
 
 public class Runtime_105824
 {
-    [Fact]
+    [ConditionalFact(typeof(Avx2), nameof(Avx2.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx2.IsSupported)
+        uint[][] vr6 = new uint[][]
         {
-            uint[][] vr6 = new uint[][]
+            new uint[]
             {
-                new uint[]
-                {
-                    0
-                }
-            };
-            var vr7 = Vector256.Create<uint>(0);
-            var vr8 = vr6[0][0];
-            var vr9 = Vector256.Create<uint>(vr8);
-            var vr10 = Vector256.CreateScalar(0U);
-            var vr11 = Avx2.PermuteVar8x32(vr9, vr10);
-            var vr12 = Avx2.CompareEqual(vr7, vr11);
-            short vr13 = (short)Avx2.ConvertToUInt32(vr12);
-            Assert.Equal(-1, vr13);
-        }
+                0
+            }
+        };
+        var vr7 = Vector256.Create<uint>(0);
+        var vr8 = vr6[0][0];
+        var vr9 = Vector256.Create<uint>(vr8);
+        var vr10 = Vector256.CreateScalar(0U);
+        var vr11 = Avx2.PermuteVar8x32(vr9, vr10);
+        var vr12 = Avx2.CompareEqual(vr7, vr11);
+        short vr13 = (short)Avx2.ConvertToUInt32(vr12);
+        Assert.Equal(-1, vr13);
     }
 }

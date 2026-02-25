@@ -48,7 +48,7 @@ namespace System.Numerics.Tensors
         private static unsafe Span<TTo> Rename<TFrom, TTo>(Span<TFrom> span)
         {
             Debug.Assert(sizeof(TFrom) == sizeof(TTo));
-#if NET9_0_OR_GREATER
+#if NET
             return Unsafe.BitCast<Span<TFrom>, Span<TTo>>(span);
 #else
             return *(Span<TTo>*)(&span);
@@ -64,7 +64,7 @@ namespace System.Numerics.Tensors
         private static unsafe ReadOnlySpan<TTo> Rename<TFrom, TTo>(ReadOnlySpan<TFrom> span)
         {
             Debug.Assert(sizeof(TFrom) == sizeof(TTo));
-#if NET9_0_OR_GREATER
+#if NET
             return Unsafe.BitCast<ReadOnlySpan<TFrom>, ReadOnlySpan<TTo>>(span);
 #else
             return *(ReadOnlySpan<TTo>*)(&span);

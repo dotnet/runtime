@@ -1,7 +1,8 @@
 <Project>
   <PropertyGroup>
     <!-- OutDir is not set early enough to set this property in .props file. -->
-    <BundleDir Condition="'$(BundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+    <BundleDir Condition="'$(BundleDir)' == '' and '$(TargetOS)' != 'browser'">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</BundleDir>
+    <BundleDir Condition="'$(BundleDir)' == '' and '$(TargetOS)' == 'browser'">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'wwwroot'))</BundleDir>
     <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' != 'true'">$(AppBundleRoot)tests\$(AssemblyName)</PublishDir>
     <PublishDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true' and '$(IsFunctionalTest)' == 'true'">$(AppBundleRoot)runonly\$(AssemblyName)</PublishDir>
     <BundleDir Condition="'$(UseAppBundleRootForBuildingTests)' == 'true' and '$(IgnoreForCI)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PublishDir)', 'AppBundle'))</BundleDir>
@@ -16,7 +17,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">
     <RunAOTCompilation Condition="'$(RuntimeFlavor)' == 'Mono' ">true</RunAOTCompilation>
-    <UseNativeAOTRuntime Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</UseNativeAOTRuntime>
+    <UseNativeAOTRuntime Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -37,7 +38,8 @@
   </PropertyGroup>
 
   <!-- Override default trimming switches for Apple mobile -->
-  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(TargetsAppleMobile)' == 'true'">
+  <!-- TODO: https://github.com/dotnet/runtime/issues/124505 -->
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' == 'true'">
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
     <_DefaultValueAttributeSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DefaultValueAttributeSupport>
     <_DesignerHostSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DesignerHostSupport>
@@ -136,6 +138,7 @@
       <_runnerFilesToPublishToFileName Remove="@(_resolvedFilesToPublishToFileName)" />
 
       <ResolvedFileToPublish Include="@(_runnerFilesToPublishToFileName -> '%(OriginalIdentity)')" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
+
     </ItemGroup>
   </Target>
 

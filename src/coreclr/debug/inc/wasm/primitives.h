@@ -14,7 +14,7 @@
 
 inline CORDB_ADDRESS GetPatchEndAddr(CORDB_ADDRESS patchAddr)
 {
-    _ASSERTE("The function is not implemented on wasm");
+    PORTABILITY_ASSERT("The function is not implemented on wasm");
     return patchAddr;
 }
 

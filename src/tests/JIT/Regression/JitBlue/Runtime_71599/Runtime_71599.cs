@@ -11,6 +11,9 @@
 //     File: /Users/runner/work/1/s/src/coreclr/jit/bitsetasshortlong.h Line: 261
 // 
 
+
+namespace Runtime_71599;
+
 using System;
 using Xunit;
 

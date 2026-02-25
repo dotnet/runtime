@@ -331,6 +331,26 @@ public:
                                    WellKnownArg wellKnownParam);
 };
 
+class WasmClassifier
+{
+    unsigned m_localIndex = 0;
+
+public:
+    WasmClassifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return 0;
+    }
+
+    static var_types ToJitType(CorInfoWasmType wasmType);
+
+    ABIPassingInformation Classify(Compiler*    comp,
+                                   var_types    type,
+                                   ClassLayout* structLayout,
+                                   WellKnownArg wellKnownParam);
+};
+
 #if defined(TARGET_X86)
 typedef X86Classifier PlatformClassifier;
 #elif defined(WINDOWS_AMD64_ABI)
@@ -345,6 +365,8 @@ typedef Arm32Classifier PlatformClassifier;
 typedef RiscV64Classifier PlatformClassifier;
 #elif defined(TARGET_LOONGARCH64)
 typedef LoongArch64Classifier PlatformClassifier;
+#elif defined(TARGET_WASM)
+typedef WasmClassifier PlatformClassifier;
 #endif
 
 #ifdef SWIFT_SUPPORT

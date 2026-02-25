@@ -26,7 +26,7 @@ namespace HostActivation.Tests
             SharedState = sharedState;
 
             string exeDotNetPath = sharedState.BaseArtifact.GetUniqueSubdirectory("exe");
-            ExecutableDotNetBuilder = new DotNetBuilder(exeDotNetPath, TestContext.BuiltDotNet.BinPath, null);
+            ExecutableDotNetBuilder = new DotNetBuilder(exeDotNetPath, HostTestContext.BuiltDotNet.BinPath, null);
             ExecutableDotNet = ExecutableDotNetBuilder
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("9999.0.0")
                 .Build();
@@ -1224,7 +1224,7 @@ namespace HostActivation.Tests
                 // All dirs will be placed inside the base folder
                 // Executable location is created per test as each test adds a different set of SDK versions
 
-                var currentWorkingSdk = new DotNetBuilder(BaseArtifact.Location, TestContext.BuiltDotNet.BinPath, "current")
+                var currentWorkingSdk = new DotNetBuilder(BaseArtifact.Location, HostTestContext.BuiltDotNet.BinPath, "current")
                     .AddMockSDK("10000.0.0", "9999.0.0")
                     .Build();
                 CurrentWorkingDir = currentWorkingSdk.BinPath;

@@ -193,6 +193,25 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pContextPointers->Lr  = (PDWORD64)&pCalleeSaved->x30;
 }
 
+void UpdateRegDisplayFromArgumentRegisters(REGDISPLAY * pRD, ArgumentRegisters* pRegs)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    T_CONTEXT * pContext = pRD->pCurrentContext;
+    for (int i = 0; i < 8; i++)
+    {
+        pContext->X[i] = pRegs->x[i];
+    }
+    pContext->X[8] = *(&pRegs->x[0] - 1); // m_x8RetBuffReg
+
+    Arm64VolatileContextPointer * pContextPointers = &pRD->volatileCurrContextPointers;
+    for (int i = 0; i < 8; i++)
+    {
+        pContextPointers->X[i] = (PDWORD64)&pRegs->x[i];
+    }
+    pContextPointers->X[8] = (PDWORD64)(&pRegs->x[0] - 1); // m_x8RetBuffReg
+}
+
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
 #ifndef DACCESS_COMPILE
@@ -224,6 +243,41 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD, GetSP());
+        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
+    }
+#endif // DACCESS_COMPILE
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    // copy the callee saved regs
+    CalleeSavedRegisters *pCalleeSaved = GetCalleeSavedRegisters();
+    UpdateRegDisplayFromCalleeSavedRegisters(pRD, pCalleeSaved);
+
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
+    // copy the control registers
+    pRD->pCurrentContext->Fp = pCalleeSaved->x29;
+    pRD->pCurrentContext->Lr = pCalleeSaved->x30;
+    pRD->pCurrentContext->Pc = GetReturnAddress();
+    pRD->pCurrentContext->Sp = this->GetSP();
+
+    UpdateRegDisplayFromArgumentRegisters(pRD, GetArgumentRegisters());
+
+    // Finally, syncup the regdisplay with the context
+    SyncRegDisplayToCurrentContext(pRD);
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResolveHelperFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+}
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
+
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -240,18 +294,27 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     // Update the integer registers in KNONVOLATILE_CONTEXT_POINTERS from
     // the exception context we have.
-    pRD->pCurrentContextPointers->X19 = (PDWORD64)&m_ctx.X19;
-    pRD->pCurrentContextPointers->X20 = (PDWORD64)&m_ctx.X20;
-    pRD->pCurrentContextPointers->X21 = (PDWORD64)&m_ctx.X21;
-    pRD->pCurrentContextPointers->X22 = (PDWORD64)&m_ctx.X22;
-    pRD->pCurrentContextPointers->X23 = (PDWORD64)&m_ctx.X23;
-    pRD->pCurrentContextPointers->X24 = (PDWORD64)&m_ctx.X24;
-    pRD->pCurrentContextPointers->X25 = (PDWORD64)&m_ctx.X25;
-    pRD->pCurrentContextPointers->X26 = (PDWORD64)&m_ctx.X26;
-    pRD->pCurrentContextPointers->X27 = (PDWORD64)&m_ctx.X27;
-    pRD->pCurrentContextPointers->X28 = (PDWORD64)&m_ctx.X28;
-    pRD->pCurrentContextPointers->Fp = (PDWORD64)&m_ctx.Fp;
-    pRD->pCurrentContextPointers->Lr = (PDWORD64)&m_ctx.Lr;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    T_CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    T_CONTEXT *pContext = &m_ctx;
+#endif
+
+    pRD->pCurrentContextPointers->X19 = (PDWORD64)&pContext->X19;
+    pRD->pCurrentContextPointers->X20 = (PDWORD64)&pContext->X20;
+    pRD->pCurrentContextPointers->X21 = (PDWORD64)&pContext->X21;
+    pRD->pCurrentContextPointers->X22 = (PDWORD64)&pContext->X22;
+    pRD->pCurrentContextPointers->X23 = (PDWORD64)&pContext->X23;
+    pRD->pCurrentContextPointers->X24 = (PDWORD64)&pContext->X24;
+    pRD->pCurrentContextPointers->X25 = (PDWORD64)&pContext->X25;
+    pRD->pCurrentContextPointers->X26 = (PDWORD64)&pContext->X26;
+    pRD->pCurrentContextPointers->X27 = (PDWORD64)&pContext->X27;
+    pRD->pCurrentContextPointers->X28 = (PDWORD64)&pContext->X28;
+    pRD->pCurrentContextPointers->Fp = (PDWORD64)&pContext->Fp;
+    pRD->pCurrentContextPointers->Lr = (PDWORD64)&pContext->Lr;
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
@@ -584,14 +647,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
 {
     return EXCEPTION_CONTINUE_SEARCH;
 }
-
-#ifdef DACCESS_COMPILE
-BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
-{
-    _ASSERTE(!"ARM64:NYI");
-    return FALSE;
-}
-#endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 // ----------------------------------------------------------------

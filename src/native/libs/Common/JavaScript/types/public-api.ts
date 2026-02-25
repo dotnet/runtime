@@ -14,10 +14,6 @@ export interface DotnetHostBuilder {
      */
     withConfig(config: LoaderConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
-     */
-    withConfigSrc(configSrc: string): DotnetHostBuilder;
-    /**
      * "command line" arguments for the Main() method.
      * @param args
      */
@@ -78,20 +74,23 @@ export interface DotnetHostBuilder {
      */
     create(): Promise<RuntimeAPI>;
     /**
+     * Runs the Main() method of the application and keeps the runtime alive.
+     * You can provide "command line" arguments for the Main() method using
+     * - dotnet.withApplicationArguments("A", "B", "C")
+     * - dotnet.withApplicationArgumentsFromQuery()
+     */
+    runMain(): Promise<number>;
+    /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
-     * - dotnet.withApplicationArguments(["A", "B", "C"])
+     * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      * Note: after the runtime exits, it would reject all further calls to the API.
-     * You can use runMain() if you want to keep the runtime alive.
+     * You can use run() if you want to keep the runtime alive.
      */
-    run(): Promise<number>;
+    runMainAndExit(): Promise<number>;
 }
 export type LoaderConfig = {
-    /**
-     * Additional search locations for assets.
-     */
-    remoteSources?: string[];
     /**
      * It will not fail the startup is .pdb files can't be downloaded
      */
@@ -326,10 +325,6 @@ export interface AssetEntry {
      */
     culture?: string;
     /**
-     * If true, an attempt will be made to load the asset from each location in LoaderConfig.remoteSources.
-     */
-    loadRemote?: boolean;
-    /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */
     isOptional?: boolean;
@@ -410,7 +405,12 @@ export type AssetBehaviors = SingleAssetBehaviors |
     /**
      * The javascript module that came from nuget package .
      */
-    | "js-module-library-initializer";
+    | "js-module-library-initializer"
+    /**
+     * Managed assembly packaged as Webcil v 1.0
+     */
+    | "webcil10"
+    ;
 export declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.
@@ -724,7 +724,7 @@ export interface IMemoryView extends IDisposable {
     get byteLength(): number;
 }
 
-export declare function exit(exit_code: number, reason?: any): void;
+export declare function exit(exitCode: number, reason?: any): void;
 
 export declare const dotnet: DotnetHostBuilder;
 

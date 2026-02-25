@@ -821,6 +821,7 @@ class TestSwitch
         public static int CaseMinus1 = Switch(-1);
         public static int Case0 = Switch(0);
         public static int Case6 = Switch(6);
+        public static int Case7 = Switch(7); // Boundary: value == case count (tests fix for https://github.com/dotnet/runtime/issues/123833)
         public static int Case100 = Switch(100);
 
         private static int Switch(int x)
@@ -845,6 +846,7 @@ class TestSwitch
         Assert.AreEqual(Switcher.CaseMinus1, 100000);
         Assert.AreEqual(Switcher.Case0, 100);
         Assert.AreEqual(Switcher.Case6, 700);
+        Assert.AreEqual(Switcher.Case7, 100000);
         Assert.AreEqual(Switcher.Case100, 100000);
     }
 }

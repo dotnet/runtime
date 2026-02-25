@@ -43,6 +43,25 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
 #undef CALLEE_SAVED_REGISTER
 }
 
+#ifdef TARGET_WINDOWS
+void UpdateRegDisplayFromArgumentRegisters(REGDISPLAY * pRD, ArgumentRegisters* pRegs)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    T_CONTEXT * pContext = pRD->pCurrentContext;
+    pContext->Rcx = pRegs->RCX;
+    pContext->Rdx = pRegs->RDX;
+    pContext->R8 = pRegs->R8;
+    pContext->R9 = pRegs->R9;
+
+    KNONVOLATILE_CONTEXT_POINTERS * pContextPointers = pRD->pCurrentContextPointers;
+    pContextPointers->Rcx = (PULONG64)&pRegs->RCX;
+    pContextPointers->Rdx = (PULONG64)&pRegs->RDX;
+    pContextPointers->R8 = (PULONG64)&pRegs->R8;
+    pContextPointers->R9 = (PULONG64)&pRegs->R9;
+}
+#endif
+
 void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -87,6 +106,37 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
+
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD, GetSP());
+        _ASSERTE(pRD->pCurrentContext->Rip == GetReturnAddress());
+        _ASSERTE(pRD->pCurrentContext->Rsp == GetSP());
+    }
+#endif // DACCESS_COMPILE
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    pRD->pCurrentContext->Rip = GetReturnAddress();
+    pRD->pCurrentContext->Rsp = GetSP();
+
+    UpdateRegDisplayFromCalleeSavedRegisters(pRD, GetCalleeSavedRegisters());
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
+    UpdateRegDisplayFromArgumentRegisters(pRD, GetArgumentRegisters());
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResolveHelperFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+}
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
@@ -168,21 +218,30 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->SSP = m_SSP;
 #endif
 
-    pRD->pCurrentContextPointers->Rax = &m_ctx.Rax;
-    pRD->pCurrentContextPointers->Rcx = &m_ctx.Rcx;
-    pRD->pCurrentContextPointers->Rdx = &m_ctx.Rdx;
-    pRD->pCurrentContextPointers->Rbx = &m_ctx.Rbx;
-    pRD->pCurrentContextPointers->Rbp = &m_ctx.Rbp;
-    pRD->pCurrentContextPointers->Rsi = &m_ctx.Rsi;
-    pRD->pCurrentContextPointers->Rdi = &m_ctx.Rdi;
-    pRD->pCurrentContextPointers->R8  = &m_ctx.R8;
-    pRD->pCurrentContextPointers->R9  = &m_ctx.R9;
-    pRD->pCurrentContextPointers->R10 = &m_ctx.R10;
-    pRD->pCurrentContextPointers->R11 = &m_ctx.R11;
-    pRD->pCurrentContextPointers->R12 = &m_ctx.R12;
-    pRD->pCurrentContextPointers->R13 = &m_ctx.R13;
-    pRD->pCurrentContextPointers->R14 = &m_ctx.R14;
-    pRD->pCurrentContextPointers->R15 = &m_ctx.R15;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    CONTEXT *pContext = &m_ctx;
+#endif
+
+    pRD->pCurrentContextPointers->Rax = &pContext->Rax;
+    pRD->pCurrentContextPointers->Rcx = &pContext->Rcx;
+    pRD->pCurrentContextPointers->Rdx = &pContext->Rdx;
+    pRD->pCurrentContextPointers->Rbx = &pContext->Rbx;
+    pRD->pCurrentContextPointers->Rbp = &pContext->Rbp;
+    pRD->pCurrentContextPointers->Rsi = &pContext->Rsi;
+    pRD->pCurrentContextPointers->Rdi = &pContext->Rdi;
+    pRD->pCurrentContextPointers->R8  = &pContext->R8;
+    pRD->pCurrentContextPointers->R9  = &pContext->R9;
+    pRD->pCurrentContextPointers->R10 = &pContext->R10;
+    pRD->pCurrentContextPointers->R11 = &pContext->R11;
+    pRD->pCurrentContextPointers->R12 = &pContext->R12;
+    pRD->pCurrentContextPointers->R13 = &pContext->R13;
+    pRD->pCurrentContextPointers->R14 = &pContext->R14;
+    pRD->pCurrentContextPointers->R15 = &pContext->R15;
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
@@ -279,47 +338,9 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 }
 #endif // FEATURE_HIJACK
 
-BOOL isJumpRel32(PCODE pCode)
+bool isBackToBackJump(PCODE pCode)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
-    PTR_BYTE pbCode = PTR_BYTE(pCode);
-
-    return 0xE9 == pbCode[0];
-}
-
-//
-//  Given the same pBuffer that was used by emitJump this
-//  method decodes the instructions and returns the jump target
-//
-PCODE decodeJump32(PCODE pBuffer)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    // jmp rel32
-    _ASSERTE(isJumpRel32(pBuffer));
-
-    return rel32Decode(pBuffer+1);
-}
-
-BOOL isJumpRel64(PCODE pCode)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
-
+    LIMITED_METHOD_CONTRACT;
     PTR_BYTE pbCode = PTR_BYTE(pCode);
 
     return 0x48 == pbCode[0]  &&
@@ -328,19 +349,13 @@ BOOL isJumpRel64(PCODE pCode)
            0xE0 == pbCode[11];
 }
 
-PCODE decodeJump64(PCODE pBuffer)
+PCODE decodeBackToBackJump(PCODE pBuffer)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
 
     // mov rax, xxx
     // jmp rax
-    _ASSERTE(isJumpRel64(pBuffer));
+    _ASSERTE(isBackToBackJump(pBuffer));
 
     return *PTR_UINT64(pBuffer+2);
 }
@@ -353,11 +368,11 @@ BOOL GetAnyThunkTarget (CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
     *pTargetMethodDesc = (TADDR)NULL;
 
     //
-    // Check for something generated by emitJump.
+    // Check for something generated by emitBackToBackJump.
     //
-    if (isJumpRel64(pThunk))
+    if (isBackToBackJump(pThunk))
     {
-        *pTarget = decodeJump64(pThunk);
+        *pTarget = decodeBackToBackJump(pThunk);
         return TRUE;
     }
 
@@ -367,12 +382,6 @@ BOOL GetAnyThunkTarget (CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
 
 
 #ifndef DACCESS_COMPILE
-
-// Note: This is only used on server GC on Windows.
-//
-// This function returns the number of logical processors on a given physical chip.  If it cannot
-// determine the number of logical cpus, or the machine is not populated uniformly with the same
-// type of processors, this function returns 1.
 
 void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
 {
@@ -444,7 +453,7 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMe
     RETURN;
 }
 
-void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     CONTRACTL
     {

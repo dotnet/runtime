@@ -1646,7 +1646,7 @@ namespace Internal.TypeSystem.Interop
 
         private MetadataType Marshaller => Context.SystemModule.GetKnownType("System.Runtime.InteropServices.Marshalling"u8, "Utf8StringMarshaller"u8);
 
-        private MetadataType MarshallerIn => Marshaller.GetNestedType("ManagedToUnmanagedIn");
+        private MetadataType MarshallerIn => Marshaller.GetNestedType("ManagedToUnmanagedIn"u8);
 
         internal override bool CleanupRequired => true;
 

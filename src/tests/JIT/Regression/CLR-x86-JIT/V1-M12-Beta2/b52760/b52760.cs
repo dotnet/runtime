@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace Test
+namespace b52760
 {
     using System;
 
@@ -14,6 +14,7 @@ namespace Test
             ulong loc = 10;
             return loc *= loc;
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

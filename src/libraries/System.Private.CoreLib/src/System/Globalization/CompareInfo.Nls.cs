@@ -109,19 +109,6 @@ namespace System.Globalization
             Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-#if TARGET_WINDOWS
-            if (!Environment.IsWindows8OrAbove)
-            {
-                // On Windows 7 / Server 2008, LCMapStringEx exhibits strange behaviors if the destination
-                // buffer is both non-null and too small for the required output. To prevent this from
-                // causing issues for us, we need to make an immutable copy of the input buffer so that
-                // its contents can't change between when we calculate the required sort key length and
-                // when we populate the sort key buffer.
-
-                source = source.ToString();
-            }
-#endif
-
             // LCMapStringEx doesn't support passing cchSrc = 0, so if given a null or empty input
             // we'll normalize it to an empty null-terminated string and pass -1 to indicate that
             // the underlying OS function should read until it encounters the null terminator.
@@ -433,19 +420,6 @@ namespace System.Globalization
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-#if TARGET_WINDOWS
-            if (!Environment.IsWindows8OrAbove)
-            {
-                // On Windows 7 / Server 2008, LCMapStringEx exhibits strange behaviors if the destination
-                // buffer is both non-null and too small for the required output. To prevent this from
-                // causing issues for us, we need to make an immutable copy of the input buffer so that
-                // its contents can't change between when we calculate the required sort key length and
-                // when we populate the sort key buffer.
-
-                source = source.ToString();
-            }
-#endif
-
             uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
 
             // LCMapStringEx doesn't support passing cchSrc = 0, so if given an empty span
@@ -466,30 +440,6 @@ namespace System.Globalization
             {
                 Debug.Assert(pSource != null);
                 Debug.Assert(pSortKey != null);
-
-#if TARGET_WINDOWS
-                if (!Environment.IsWindows8OrAbove)
-                {
-                    // Manually check that the destination buffer is large enough to hold the full output.
-                    // See earlier comment for reasoning.
-
-                    int requiredSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
-                                                                               flags,
-                                                                               pSource, sourceLength,
-                                                                               null, 0,
-                                                                               null, null, _sortHandle);
-
-                    if (requiredSortKeyLength > destination.Length)
-                    {
-                        ThrowHelper.ThrowArgumentException_DestinationTooShort();
-                    }
-
-                    if (requiredSortKeyLength <= 0)
-                    {
-                        throw new ArgumentException(SR.Arg_ExternalException);
-                    }
-                }
-#endif
 
                 actualSortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                                      flags,

@@ -466,7 +466,7 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_GetFields(MethodTable* pMT, intptr_t
 
     BEGIN_QCALL;
 
-    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, TRUE);
+    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, EncApproxFieldDescIterator::FixUpEncFields);
     INT32 count = (INT32)fdIterator.Count();
 
     if (count > *pCount)
@@ -1233,6 +1233,32 @@ extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall:
     return allocatedMemory;
 }
 
+extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned(QCall::TypeHandle type, uint32_t size, uint32_t alignment)
+{
+    QCALL_CONTRACT;
+
+    void *allocatedMemory = nullptr;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = type.AsTypeHandle();
+    _ASSERTE(!typeHandle.IsNull());
+
+    _ASSERTE(alignment != 0);
+    _ASSERTE(0 == (alignment & (alignment - 1))); // require power of 2
+
+    // Get the loader allocator for the associated type.
+    // Allocating using the type's associated loader allocator means
+    // that the memory will be freed when the type is unloaded.
+    PTR_LoaderAllocator loaderAllocator = typeHandle.GetMethodTable()->GetLoaderAllocator();
+    LoaderHeap* loaderHeap = loaderAllocator->GetHighFrequencyHeap();
+    allocatedMemory = loaderHeap->AllocAlignedMem(size, alignment);
+
+    END_QCALL;
+
+    return allocatedMemory;
+}
+
 extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly)
 {
     QCALL_CONTRACT;
@@ -1271,7 +1297,7 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
     // Ensure the method is active and all types have been loaded so the function pointer can be used.
     pMethod->EnsureActive();
     pMethod->PrepareForUseAsAFunctionPointer();
-    funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
+    funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
 
     END_QCALL;
 
@@ -1837,8 +1863,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 //          async variants for task-returning methods
 //
 // For {task-returning, async} variants Reflection hands out only the task-returning variant.
-//  the async varinat is an implementation detail that conceptually does not exist.
-//  TODO: (async) the filtering may not cover all scenarios. Review and add tests.
+//  the async variant is an implementation detail that conceptually does not exist.
 //
 // For generic methods we always hand out an instantiating stub except for a generic method definition
 // For non-generic methods on generic types we need an instantiating stub if it's one of the following
@@ -2120,8 +2145,19 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsConstructor, MethodDesc *pMethod)
     }
     CONTRACTL_END;
 
-    BOOL ret = (BOOL)pMethod->IsClassConstructorOrCtor();
-    FC_RETURN_BOOL(ret);
+    FC_RETURN_BOOL(pMethod->IsClassConstructorOrCtor());
+}
+FCIMPLEND
+
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsAsyncMethod, MethodDesc *pMethod)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pMethod));
+    }
+    CONTRACTL_END;
+
+    FC_RETURN_BOOL(pMethod->IsAsyncMethod());
 }
 FCIMPLEND
 
