@@ -726,9 +726,14 @@ namespace System.IO.Compression
 
         public CrcValidatingReadStream(Stream baseStream, uint expectedCrc, long expectedLength)
         {
+            ArgumentNullException.ThrowIfNull(baseStream);
             _baseStream = baseStream;
+
             _expectedCrc = expectedCrc;
+
+            ArgumentOutOfRangeException.ThrowIfNegative(expectedLength);
             _expectedLength = expectedLength;
+            _runningCrc = 0;
         }
 
         public override bool CanRead => !_isDisposed && _baseStream.CanRead;
@@ -805,9 +810,13 @@ namespace System.IO.Compression
                 _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, data);
                 _totalBytesRead += data.Length;
 
-                if (_totalBytesRead >= _expectedLength)
+                if (_totalBytesRead == _expectedLength)
                 {
                     ValidateCrc();
+                }
+                else if (_totalBytesRead > _expectedLength)
+                {
+                    throw new InvalidDataException(SR.CrcMismatch);
                 }
             }
         }
