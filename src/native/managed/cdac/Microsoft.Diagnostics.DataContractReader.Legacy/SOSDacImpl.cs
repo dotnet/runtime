@@ -4510,6 +4510,18 @@ public sealed unsafe partial class SOSDacImpl
             int pNeededLocal;
             _legacyImpl13.GetLoaderAllocatorHeapNames(0, null, &pNeededLocal);
             Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC needed: {(pNeeded != null ? *pNeeded : -1)}, DAC needed: {pNeededLocal}");
+            if (hr >= 0 && ppNames != null && pNeededLocal > 0)
+            {
+                char** ppNamesLocal = stackalloc char*[pNeededLocal];
+                _legacyImpl13.GetLoaderAllocatorHeapNames(pNeededLocal, ppNamesLocal, null);
+                int compareCount = Math.Min(count, pNeededLocal);
+                for (int i = 0; i < compareCount; i++)
+                {
+                    string cdacName = Marshal.PtrToStringAnsi((nint)ppNames[i])!;
+                    string dacName = Marshal.PtrToStringAnsi((nint)ppNamesLocal[i])!;
+                    Debug.Assert(cdacName == dacName, $"HeapName[{i}] - cDAC: {cdacName}, DAC: {dacName}");
+                }
+            }
         }
 #endif
         return hr;
@@ -4558,6 +4570,21 @@ public sealed unsafe partial class SOSDacImpl
             int pNeededLocal;
             int hrLocal = _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, 0, null, null, &pNeededLocal);
             Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC needed: {(pNeeded != null ? *pNeeded : -1)}, DAC needed: {pNeededLocal}");
+            if (hr >= 0 && pLoaderHeaps != null && pNeededLocal > 0)
+            {
+                ClrDataAddress* pLoaderHeapsLocal = stackalloc ClrDataAddress[pNeededLocal];
+                int* pKindsLocal = stackalloc int[pNeededLocal];
+                hrLocal = _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, pNeededLocal, pLoaderHeapsLocal, pKindsLocal, null);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (hrLocal >= 0)
+                {
+                    for (int i = 0; i < pNeededLocal; i++)
+                    {
+                        Debug.Assert(pLoaderHeaps[i] == pLoaderHeapsLocal[i], $"Heap[{i}] - cDAC: {pLoaderHeaps[i]:x}, DAC: {pLoaderHeapsLocal[i]:x}");
+                        Debug.Assert(pKinds[i] == pKindsLocal[i], $"Kind[{i}] - cDAC: {pKinds[i]}, DAC: {pKindsLocal[i]}");
+                    }
+                }
+            }
         }
 #endif
         return hr;
