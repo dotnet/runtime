@@ -228,6 +228,9 @@ INST(i64_trunc_sat_f32_u, "i64.trunc_sat_f32_u", 0, IF_OPCODE,  0x05FC)
 INST(i64_trunc_sat_f64_s, "i64.trunc_sat_f64_s", 0, IF_OPCODE,  0x06FC)
 INST(i64_trunc_sat_f64_u, "i64.trunc_sat_f64_u", 0, IF_OPCODE,  0x07FC)
 
+INST(memory_copy,         "memory.copy",         0, IF_MEMIDX_MEMIDX, 0x0AFC)
+INST(memory_fill,         "memory.fill",         0, IF_ULEB128,       0x0BFC)
+
 // clang-format on
 
 #undef INST

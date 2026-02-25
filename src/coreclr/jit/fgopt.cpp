@@ -1746,6 +1746,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         GenTree* switchVal = switchTree->AsOp()->gtOp1;
         noway_assert(genActualTypeIsIntOrI(switchVal->TypeGet()));
 
+#if !defined(TARGET_WASM)
         // If we are in LIR, remove the jump table from the block.
         if (block->IsLIR())
         {
@@ -1753,6 +1754,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             assert(jumpTable->OperIs(GT_JMPTABLE));
             blockRange->Remove(jumpTable);
         }
+#endif // !defined(TARGET_WASM)
 
         // Change the GT_SWITCH(switchVal) into GT_JTRUE(GT_EQ(switchVal==0)).
         // Also mark the node as GTF_DONT_CSE as further down JIT is not capable of handling it.
@@ -1793,6 +1795,70 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         return true;
     }
+    else if (block->GetSwitchTargets()->GetSuccCount() == 2 && block->GetSwitchTargets()->HasDefaultCase() &&
+             !block->IsLIR() && fgNodeThreading == NodeThreading::AllTrees)
+    {
+        // If all non-default cases jump to the same target and the default jumps to a different target,
+        // replace the switch with an unsigned comparison against the max case index:
+        //   GT_SWITCH(switchVal) -> GT_JTRUE(GT_LT(switchVal, caseCount))
+
+        BBswtDesc* switchDesc = block->GetSwitchTargets();
+
+        FlowEdge*   defaultEdge   = switchDesc->GetDefaultCase();
+        BasicBlock* defaultDest   = defaultEdge->getDestinationBlock();
+        FlowEdge*   firstCaseEdge = switchDesc->GetCase(0);
+        BasicBlock* caseDest      = firstCaseEdge->getDestinationBlock();
+
+        // Optimize only when all non-default cases share the same target, distinct from the default target.
+        // Only the default case targets defaultDest.
+        if (defaultEdge->getDupCount() != 1)
+        {
+            return modified;
+        }
+
+        JITDUMP("\nConverting a switch (" FMT_BB ") where all non-default cases target the same block to a "
+                "conditional branch. Before:\n",
+                block->bbNum);
+        DISPNODE(switchTree);
+
+        // Use GT_LT (e.g., switchVal < caseCount), so true (in range) goes to the shared case target and false (out of
+        // range) goes to the default case.
+        switchTree->ChangeOper(GT_JTRUE);
+        GenTree* switchVal = switchTree->AsOp()->gtOp1;
+        noway_assert(genActualTypeIsIntOrI(switchVal->TypeGet()));
+        const unsigned caseCount = firstCaseEdge->getDupCount();
+        GenTree*       iconNode  = gtNewIconNode(caseCount, genActualType(switchVal->TypeGet()));
+        GenTree*       condNode  = gtNewOperNode(GT_LT, TYP_INT, switchVal, iconNode);
+        condNode->SetUnsigned();
+        switchTree->AsOp()->gtOp1 = condNode;
+        switchTree->AsOp()->gtOp1->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+
+        gtSetStmtInfo(switchStmt);
+        fgSetStmtSeq(switchStmt);
+
+        // Fix up dup counts: multiple switch cases originally pointed to the same
+        // successor, but the conditional branch has exactly one edge per target.
+        const unsigned caseDupCount = firstCaseEdge->getDupCount();
+        if (caseDupCount > 1)
+        {
+            firstCaseEdge->decrementDupCount(caseDupCount - 1);
+            caseDest->bbRefs -= (caseDupCount - 1);
+        }
+
+        block->SetCond(firstCaseEdge, defaultEdge);
+
+        JITDUMP("After:\n");
+        DISPNODE(switchTree);
+
+        if (fgFoldCondToReturnBlock(block))
+        {
+            JITDUMP("Folded conditional return into branchless return. After:\n");
+            DISPNODE(switchTree);
+        }
+
+        return true;
+    }
+
     return modified;
 }
 
