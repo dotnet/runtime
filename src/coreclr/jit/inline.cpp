@@ -631,7 +631,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 // Arguments:
 //   compiler      - the compiler instance examining a call for inlining
 //   call          - the call in question
-//   stmt          - statement containing the call (if known)
+//   context       - The inline context
 //   description   - string describing the context of the decision
 
 InlineResult::InlineResult(

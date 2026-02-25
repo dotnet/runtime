@@ -391,17 +391,8 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 
             if (call->TypeIs(TYP_VOID) && call->ShouldHaveRetBufArg())
             {
-                GenTree* retBuf;
-                if (call->ShouldHaveRetBufArg())
-                {
-                    assert(call->gtArgs.HasRetBuffer());
-                    retBuf = call->gtArgs.GetRetBufferArg()->GetNode();
-                }
-                else
-                {
-                    assert(!call->gtArgs.HasThisPointer());
-                    retBuf = call->gtArgs.GetArgByIndex(0)->GetNode();
-                }
+                assert(call->gtArgs.HasRetBuffer());
+                GenTree* retBuf = call->gtArgs.GetRetBufferArg()->GetNode();
 
                 assert(retBuf->TypeIs(TYP_I_IMPL, TYP_BYREF));
 

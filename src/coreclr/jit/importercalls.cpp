@@ -6218,12 +6218,12 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 if (varTypeIsLong(baseType))
                 {
                     uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
-                    result        = gtNewLconNode(BitOperations::RotateLeft(cns1, cns2));
+                    result        = gtNewLconNode((int64_t)BitOperations::RotateLeft(cns1, cns2));
                 }
                 else
                 {
                     uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                    result        = gtNewIconNode(BitOperations::RotateLeft(cns1, cns2), baseType);
+                    result        = gtNewIconNode((int32_t)BitOperations::RotateLeft(cns1, cns2), baseType);
                 }
                 break;
             }
