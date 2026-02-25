@@ -115,18 +115,21 @@ private:
     regNumber AllocateVirtualRegister(WasmValueType type);
     regNumber AllocateTemporaryRegister(var_types type);
     regNumber ReleaseTemporaryRegister(var_types type);
+    regNumber ReleaseTemporaryRegister(WasmValueType wasmType);
 
-    void CollectReferences();
-    void CollectReferencesForBlock(BasicBlock* block);
-    void CollectReferencesForNode(GenTree* node);
-    void CollectReferencesForDivMod(GenTreeOp* divModNode);
-    void CollectReferencesForCall(GenTreeCall* callNode);
-    void CollectReferencesForCast(GenTreeOp* castNode);
-    void CollectReferencesForLclVar(GenTreeLclVar* lclVar);
-    void RewriteLocalStackStore(GenTreeLclVarCommon* node);
-    void CollectReference(GenTree* node);
-    void RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);
-    void ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const char* reason));
+    void      CollectReferences();
+    void      CollectReferencesForBlock(BasicBlock* block);
+    void      CollectReferencesForNode(GenTree* node);
+    void      CollectReferencesForDivMod(GenTreeOp* divModNode);
+    void      CollectReferencesForCall(GenTreeCall* callNode);
+    void      CollectReferencesForCast(GenTreeOp* castNode);
+    void      CollectReferencesForBinop(GenTreeOp* binOpNode);
+    void      CollectReferencesForLclVar(GenTreeLclVar* lclVar);
+    void      RewriteLocalStackStore(GenTreeLclVarCommon* node);
+    void      CollectReference(GenTree* node);
+    void      RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);
+    regNumber RequestInternalRegister(GenTree* node, var_types type);
+    void      ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const char* reason));
 
     void ResolveReferences();
 

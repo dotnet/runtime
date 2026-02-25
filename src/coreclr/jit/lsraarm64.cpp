@@ -45,6 +45,21 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 }
 
 //------------------------------------------------------------------------
+// getNextFPRegWraparound: Get the next consecutive register, wrapping around
+//   from REG_FP_LAST to REG_FP_FIRST.
+//
+// Arguments:
+//    reg - The current register.
+//
+// Return Value:
+//    The next consecutive register
+//
+regNumber LinearScan::getNextFPRegWraparound(regNumber reg)
+{
+    return reg == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(reg);
+}
+
+//------------------------------------------------------------------------
 // assignConsecutiveRegisters: For subsequent RefPositions, set the register
 //   requirement to be the consecutive register(s) of the register that is assigned to
 //   the firstRefPosition.
@@ -70,13 +85,19 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
     assert(consecutiveRegsInUseThisLocation == RBM_NONE);
 
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
-    regNumber    regToAssign            = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
+    regNumber    regToAssign            = getNextFPRegWraparound(firstRegAssigned);
 
     // First RefPosition should always start with RefTypeUse
     assert(firstRefPosition->refType != RefTypeUpperVectorRestore);
 
     INDEBUG(int refPosCount = 1);
-    consecutiveRegsInUseThisLocation = (((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
+    consecutiveRegsInUseThisLocation = RBM_NONE;
+    regNumber consecutiveReg         = firstRegAssigned;
+    for (int i = 0; i < firstRefPosition->regCount; i++)
+    {
+        consecutiveRegsInUseThisLocation |= genSingleTypeRegMask(consecutiveReg);
+        consecutiveReg = getNextFPRegWraparound(consecutiveReg);
+    }
 
     while (consecutiveRefPosition != nullptr)
     {
@@ -105,7 +126,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
         assert((consecutiveRefPosition->refType == RefTypeDef) || (consecutiveRefPosition->refType == RefTypeUse));
         consecutiveRefPosition->registerAssignment = genSingleTypeRegMask(regToAssign);
         consecutiveRefPosition                     = getNextConsecutiveRefPosition(consecutiveRefPosition);
-        regToAssign                                = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+        regToAssign                                = getNextFPRegWraparound(regToAssign);
     }
 
     assert(refPosCount == firstRefPosition->regCount);
@@ -136,7 +157,7 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
     do
     {
         nextRefPosition = getNextConsecutiveRefPosition(nextRefPosition);
-        regToAssign     = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+        regToAssign     = getNextFPRegWraparound(regToAssign);
         if (!isFree(getRegisterRecord(regToAssign)))
         {
             if (nextRefPosition->refType == RefTypeUpperVectorRestore)

@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         public static bool SupportsDiffieHellman => PlatformDetection.IsWindows;
         public static bool DoesNotSupportDiffieHellman => !SupportsDiffieHellman;
 
-        [ConditionalFact(nameof(DoesNotSupportDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(DoesNotSupportDiffieHellman))]
         public static void TestKeyAgreement_PlatformNotSupported()
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreeVersion_RoundTrip()
         {
             KeyAgreeRecipientInfo recipient = EncodeKeyAgreel();
@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(3, recipient.Version);
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreeType_RoundTrip()
         {
             KeyAgreeRecipientInfo recipient = EncodeKeyAgreel();
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(RecipientInfoType.KeyAgreement, recipient.Type);
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreesRecipientIdType_RoundTrip()
         {
             KeyAgreeRecipientInfo recipient = EncodeKeyAgreel();
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(SubjectIdentifierType.IssuerAndSerialNumber, subjectIdentifier.Type);
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreeRecipientIdValue_RoundTrip()
         {
             KeyAgreeRecipientInfo recipient = EncodeKeyAgreel();
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal("0AE59B0CB8119F8942EDA74163413A02", xis.SerialNumber);
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreeRecipientIdType_Ski_RoundTrip()
         {
             KeyAgreeRecipientInfo recipient = FixedValueKeyAgree1(SubjectIdentifierType.SubjectKeyIdentifier);
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(SubjectIdentifierType.SubjectKeyIdentifier, subjectIdentifier.Type);
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreeRecipientIdValue_Ski_RoundTrip()
         {
             KeyAgreeRecipientInfo recipient = FixedValueKeyAgree1(SubjectIdentifierType.SubjectKeyIdentifier);
@@ -140,7 +140,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal("10DA1370316788112EB8594C864C2420AE7FBA42", ski);
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreeKeyEncryptionAlgorithm_RoundTrip()
         {
             KeyAgreeRecipientInfo recipient = EncodeKeyAgreel();
@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(0, a.KeyLength);
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreeEncryptedKey_RoundTrip()
         {
             KeyAgreeRecipientInfo recipient = EncodeKeyAgreel();
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal<byte>(expectedEncryptedKey, encryptedKey);
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreeOriginatorIdentifierOrKey_RoundTrip()
         {
             KeyAgreeRecipientInfo recipient = EncodeKeyAgreel();
@@ -212,7 +212,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(expectedKey, key);
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreeDate_RoundTrip()
         {
             KeyAgreeRecipientInfo recipient = EncodeKeyAgreel();
@@ -228,7 +228,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Throws<InvalidOperationException>(() => ignore = recipient.Date);
         }
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreeDate_RoundTrip_Ski()
         {
             KeyAgreeRecipientInfo recipient = EncodeKeyAgreel(SubjectIdentifierType.SubjectKeyIdentifier);
@@ -249,7 +249,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
 
-        [ConditionalFact(nameof(SupportsDiffieHellman))]
+        [ConditionalFact(typeof(KeyAgreeRecipientInfoTests), nameof(SupportsDiffieHellman))]
         public static void TestKeyAgreeOtherKeyAttribute_RoundTrip()
         {
             KeyAgreeRecipientInfo recipient = EncodeKeyAgreel();
