@@ -49,11 +49,6 @@ Contracts used:
 
 ``` csharp
 
-private enum Flags
-{
-    IsHandleWeak = 0x4,
-}
-
 public TargetPointer GetComWrappersIdentity(TargetPointer address)
 {
     return _target.ReadPointer(address + /* NativeObjectWrapperObject::ExternalComObject offset */);

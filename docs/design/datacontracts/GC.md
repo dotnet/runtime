@@ -636,6 +636,8 @@ HandleType[] IGC.GetSupportedHandleTypes()
     // currently supported types: WeakShort, WeakLong, Strong, Pinned, Dependent, WeakInteriorPointer, RefCounted (conditional on at least one of global variables "FeatureCOMInterop", "FeatureComWrappers", and "FeatureObjCMarshal"), and CrossReference (conditional on global variable "FeatureJavaMarshal")
 }
 
+HandleType[] GetHandleTypes(uint[] types) => // map raw uint into HandleType enum
+
 private void GetHandlesForSegment(TargetPointer segmentPtr, HandleType type, List<HandleData> handles)
 {
     // GC handles are stored in circular linked lists per segment and handle type. 
