@@ -160,6 +160,10 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ItemGroup>
       <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true'" Include="@(IntermediateAssembly)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
+      <!-- When NativeCompilationDuringPublish is false, Publish.targets is not imported so
+           _ComputeIlcCompileInputs (which populates IlcReference from ResolvedFileToPublish)
+           does not exist. Fall back to DefaultFrameworkAssemblies directly. -->
+      <IlcReference Condition="'$(NativeCompilationDuringPublish)' == 'false'" Include="@(DefaultFrameworkAssemblies)" />
     </ItemGroup>
   </Target>
 
