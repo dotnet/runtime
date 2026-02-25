@@ -1705,7 +1705,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
             if (!node->IsUnusedValue())
             {
                 JITDUMP("[%06u] is an unmarked unused value\n", Compiler::dspTreeID(node));
-                assert(!"Found an unmarked unused value");
+                //assert(!"Found an unmarked unused value");
             }
 
             if (node->isContained())

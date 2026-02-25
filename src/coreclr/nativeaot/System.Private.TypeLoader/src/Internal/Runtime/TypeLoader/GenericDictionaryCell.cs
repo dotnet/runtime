@@ -97,9 +97,15 @@ namespace Internal.Runtime.TypeLoader
                 builder.RegisterForPreparation(InterfaceType);
             }
 
-            internal override IntPtr Create(TypeBuilder builder)
+            internal override unsafe IntPtr Create(TypeBuilder builder)
             {
-                return RuntimeAugments.NewInterfaceDispatchCell(builder.GetRuntimeTypeHandle(InterfaceType), Slot);
+                var dispatchCellAndComposition = (nint*)MemoryHelpers.AllocateMemory((2 + 2) * sizeof(nint));
+                dispatchCellAndComposition[0] = 0;
+                dispatchCellAndComposition[1] = 0;
+                dispatchCellAndComposition[2] = builder.GetRuntimeTypeHandle(InterfaceType).Value;
+                dispatchCellAndComposition[3] = Slot;
+
+                return (IntPtr)dispatchCellAndComposition;
             }
         }
 

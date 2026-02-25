@@ -349,28 +349,14 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
 #endif // FEATURE_GC_STRESS
 }
 
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-EXTERN_C void F_CALL_CONV RhpInitialDynamicInterfaceDispatch();
+EXTERN_C void* g_pDispatchCache;
+void* g_pDispatchCache;
 
-FCIMPL2(void *, RhNewInterfaceDispatchCell, MethodTable * pInterface, int32_t slotNumber)
+FCIMPL1(void, RhpRegisterDispatchCache, void* pCache)
 {
-    InterfaceDispatchCell * pCell = new (nothrow) InterfaceDispatchCell[2];
-    if (pCell == NULL)
-        return NULL;
-
-    // Due to the synchronization mechanism used to update this indirection cell we must ensure the cell's alignment is twice that of a pointer.
-    // Fortunately, Windows heap guarantees this alignment.
-    ASSERT(IS_ALIGNED(pCell, 2 * POINTER_SIZE));
-    ASSERT(IS_ALIGNED(pInterface, (InterfaceDispatchCell::IDC_CachePointerMask + 1)));
-
-    pCell[0].m_pStub = (uintptr_t)&RhpInitialDynamicInterfaceDispatch;
-    pCell[0].m_pCache = ((uintptr_t)pInterface) | InterfaceDispatchCell::IDC_CachePointerIsInterfacePointerOrMetadataToken;
-    pCell[1].m_pStub = 0;
-    pCell[1].m_pCache = (uintptr_t)slotNumber;
-
-    return pCell;
+    ASSERT(g_pDispatchCache == NULL);
+    g_pDispatchCache = pCache;
 }
 FCIMPLEND
-#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #endif // DACCESS_COMPILE

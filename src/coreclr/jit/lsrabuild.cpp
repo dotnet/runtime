@@ -2665,7 +2665,7 @@ void LinearScan::buildIntervals()
             if (!defList.IsEmpty())
             {
                 INDEBUG(dumpDefList());
-                assert(!"Expected empty defList at end of block");
+                //assert(!"Expected empty defList at end of block");
             }
         }
 

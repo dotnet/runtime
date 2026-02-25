@@ -1,10 +1,7 @@
 set(GC_DIR ../../gc)
 
 set(COMMON_RUNTIME_SOURCES
-    allocheap.cpp
     rhassert.cpp
-    ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
-    CachedInterfaceDispatch_Aot.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
     DebugHeader.cpp
@@ -236,12 +233,6 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
-  list(APPEND RUNTIME_SOURCES_ARCH_ASM
-    ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchAot.${ASM_SUFFIX}
-  )
-endif ()
-
 if(CLR_CMAKE_TARGET_WIN32)
   if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
     list(APPEND RUNTIME_SOURCES_ARCH_ASM
@@ -285,10 +276,6 @@ add_compile_definitions($<$<CONFIG:Debug,Checked>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)
-add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
-if(CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_ARM)
-  add_definitions(-DINTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER)
-endif()
 add_definitions(-D_LIB)
 
 # there is a problem with undefined symbols when this is set

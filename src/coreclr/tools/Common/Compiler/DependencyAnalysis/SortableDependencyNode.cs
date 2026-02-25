@@ -105,6 +105,8 @@ namespace ILCompiler.DependencyAnalysis
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,
             ArrayOfEmbeddedDataNode,
+            InterfaceDispatchCellInfoSection,
+            InterfaceDispatchCellSection,
         }
 
         public class EmbeddedObjectNodeComparer : IComparer<EmbeddedObjectNode>
