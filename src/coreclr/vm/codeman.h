@@ -2583,6 +2583,7 @@ template<>
 struct cdac_data<ExecutionManager>
 {
     static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
+    static constexpr void* const EEJitManagerAddress = (void*)&ExecutionManager::m_pEEJitManager;
 };
 #endif
 
