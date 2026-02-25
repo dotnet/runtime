@@ -2486,9 +2486,9 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     unsigned i = 0, offset = 0;
     while (i < slots)
     {
-        // Copy the pointer-sized non-gc-pointer slots one at a time (and GC pointer slots if the destination is stack)
-        //  using regular I-sized load/store pairs.
-        if (dstOnStack || !layout->IsGCPtr(i))
+        // Copy the pointer-sized non-gc-pointer slots one at a time using regular I-sized load/store pairs,
+        //  and gc-pointer slots using a write barrier.
+        if (!layout->IsGCPtr(i))
         {
             // Do a pointer-sized load+store pair at the appropriate offset relative to dest and source
             emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
@@ -2514,7 +2514,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         offset += TARGET_POINTER_SIZE;
     }
 
-    assert(dstOnStack || (gcPtrCount == 0));
+    assert(gcPtrCount == 0);
 
     if (cpObjNode->IsVolatile())
     {
