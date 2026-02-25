@@ -7522,12 +7522,18 @@ void DacHandleWalker::WalkHandles()
 
     mEnumerated = true;
 
-    // The table slots are based on the number of GC heaps in the process.
+    // The table slots are based on the number of GC heaps in the process for GC for GC interface version < 8.
+    // This is a bug, and the correct implementation is based on the number of processors starting at GC interface version 8.
     uint32_t max_slots = 1;
 
 #ifdef FEATURE_SVR_GC
     if (GCHeapUtilities::IsServerHeap())
-        max_slots = *g_gcDacGlobals->g_totalCpuCount;
+    {
+        if (g_gcDacGlobals->minor_version_number >= 8)
+            max_slots = *g_gcDacGlobals->g_totalCpuCount;
+        else
+            max_slots = GcHeapCount();
+    }
 #endif // FEATURE_SVR_GC
 
     DacHandleWalkerParam param(&mList);
