@@ -84,7 +84,8 @@ class CSE_DataFlow;        // defined in optcse.cpp
 struct CSEdsc;             // defined in optcse.h
 class CSE_HeuristicCommon; // defined in optcse.h
 class OptBoolsDsc;         // defined in optimizer.cpp
-struct JumpThreadInfo;     // defined in redundantbranchopts.cpp
+struct JumpThreadInfo;        // defined in redundantbranchopts.cpp
+struct ForwardSubCandidate;  // defined in forwardsub.cpp
 class ProfileSynthesis;    // defined in profilesynthesis.h
 class PerLoopInfo;         // defined in inductionvariableopts.cpp
 class RangeCheck;          // defined in rangecheck.h
@@ -6847,7 +6848,11 @@ private:
 
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);
-    bool fgForwardSubStatement(Statement* statement);
+    bool fgForwardSubIsDefCandidate(Statement* stmt, GenTree** fwdSubNode, unsigned* lclNum);
+    static bool fgForwardSubCanReorderPast(ForwardSubCandidate* candidate, GenTreeFlags stmtFlags);
+    bool fgForwardSubHasStoreInterferenceWithCandidate(ForwardSubCandidate* candidate, Statement* stmt);
+    bool fgForwardSubStatement(ForwardSubCandidate* candidate, Statement* useStmt);
+    bool fgForwardSubStatement(Statement* stmt);
     bool fgForwardSubHasStoreInterference(Statement* defStmt, Statement* nextStmt, GenTree* nextStmtUse);
     void fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast);
 
