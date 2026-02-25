@@ -192,10 +192,11 @@ void Module::SetTransientFlagInterlockedWithMask(DWORD dwFlag, DWORD dwMask)
 {
     LIMITED_METHOD_CONTRACT;
 
+    _ASSERTE((dwFlag & dwMask) == dwFlag);
     for (;;)
     {
         DWORD dwTransientFlags = m_dwTransientFlags;
-        DWORD dwNewTransientFlags = (dwTransientFlags & ~dwMask) | (dwFlag & dwMask);
+        DWORD dwNewTransientFlags = (dwTransientFlags & ~dwMask) | dwFlag;
         if ((DWORD)InterlockedCompareExchange((LONG*)&m_dwTransientFlags, dwNewTransientFlags, dwTransientFlags) == dwTransientFlags)
             return;
     }
