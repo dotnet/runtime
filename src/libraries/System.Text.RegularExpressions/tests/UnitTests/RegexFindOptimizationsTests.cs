@@ -124,8 +124,20 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(abc)", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
         [InlineData(@"\b(in)\b", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "in")]
         [InlineData(@"\b(from).+(to)\b", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "from")]
-        [InlineData(@"(abcde|abcfg)\(", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")] // partial capture followed by non-letter One('(')
-        [InlineData(@"(abc|abd)e", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")] // partial capture followed by letter Set([Ee])
+        // Partial capture: inner Concatenate not fully consumed, followed by non-letter One('(')
+        [InlineData(@"(abcde|abcfg)\(", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
+        // Partial capture: inner Concatenate not fully consumed, followed by letter Set([Ee])
+        [InlineData(@"(abc|abd)e", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
+        // Adjacent captures: both fully consumed via inner Concatenate recursion, extraction continues across capture boundaries
+        [InlineData(@"(ab)(cd)", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abcd")]
+        // Non-capture content before capture: tests Set processing then Capture unwrap in same Concatenate iteration
+        [InlineData(@"ab(cd)", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abcd")]
+        // Single-char capture unwraps to Set (not Concatenate), exercises direct Set handling after Capture unwrap
+        [InlineData(@"a(b)c", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
+        // Empty capture unwraps to Empty node, which is skipped; extraction continues with subsequent content
+        [InlineData(@"()ab", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
+        // Atomic groups inside a Concatenate are not unwrapped (conservative); extraction stops before them
+        [InlineData(@"ab(?>cd)ef", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
         public void LeadingPrefix(string pattern, int options, int expectedMode, string expectedPrefix)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, (RegexOptions)options);
