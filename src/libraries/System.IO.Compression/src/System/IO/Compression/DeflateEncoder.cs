@@ -21,7 +21,7 @@ namespace System.IO.Compression
         /// </summary>
         /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
         public DeflateEncoder()
-            : this(ZLibCompressionOptions.DefaultQuality)
+            : this(ZLibNative.DefaultQuality)
         {
         }
 
@@ -32,7 +32,7 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9).</exception>
         /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
         public DeflateEncoder(int quality)
-            : this(quality, ZLibCompressionOptions.DefaultWindowLog)
+            : this(quality, ZLibNative.DefaultWindowLog)
         {
         }
 
@@ -101,7 +101,7 @@ namespace System.IO.Compression
             _finished = false;
 
             // -1 means use the default window log
-            int windowLog = options.WindowLog == -1 ? ZLibCompressionOptions.DefaultWindowLog : options.WindowLog;
+            int windowLog = options.WindowLog == -1 ? ZLibNative.DefaultWindowLog : options.WindowLog;
 
             // Compute windowBits based on the compression format:
             int windowBits = format switch
@@ -121,14 +121,14 @@ namespace System.IO.Compression
 
         private static void ValidateQuality(int quality)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(quality, ZLibCompressionOptions.MinQuality, nameof(quality));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, ZLibCompressionOptions.MaxQuality, nameof(quality));
+            ArgumentOutOfRangeException.ThrowIfLessThan(quality, ZLibNative.MinQuality, nameof(quality));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, ZLibNative.MaxQuality, nameof(quality));
         }
 
         private static void ValidateWindowLog(int windowLog)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, ZLibCompressionOptions.MinWindowLog, nameof(windowLog));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, ZLibCompressionOptions.MaxWindowLog, nameof(windowLog));
+            ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, ZLibNative.MinWindowLog, nameof(windowLog));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, ZLibNative.MaxWindowLog, nameof(windowLog));
         }
 
         /// <summary>
@@ -285,7 +285,7 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
-            => TryCompress(source, destination, out bytesWritten, ZLibCompressionOptions.DefaultQuality, ZLibCompressionOptions.DefaultWindowLog);
+            => TryCompress(source, destination, out bytesWritten, ZLibNative.DefaultQuality, ZLibNative.DefaultWindowLog);
 
         /// <summary>
         /// Tries to compress a source byte span into a destination span using the specified quality.
@@ -296,7 +296,7 @@ namespace System.IO.Compression
         /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality)
-            => TryCompress(source, destination, out bytesWritten, quality, ZLibCompressionOptions.DefaultWindowLog);
+            => TryCompress(source, destination, out bytesWritten, quality, ZLibNative.DefaultWindowLog);
 
         /// <summary>
         /// Tries to compress a source byte span into a destination span using the specified quality and window size.

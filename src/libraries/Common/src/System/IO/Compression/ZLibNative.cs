@@ -108,6 +108,16 @@ namespace System.IO.Compression
         /// </summary>
         public const int GZip_DefaultWindowBits = 31;
 
+        // WindowLog constants (base-2 logarithm of window size)
+        public const int MinWindowLog = 8;
+        public const int MaxWindowLog = 15;
+        public const int DefaultWindowLog = MaxWindowLog;
+
+        // Compression quality constants (0-9)
+        public const int MinQuality = 0;
+        public const int MaxQuality = 9;
+        public const int DefaultQuality = 6;
+
         /// <summary>
         /// <para><strong>From the ZLib manual:</strong><br />
         /// The <c>memLevel</c> parameter specifies how much memory should be allocated for the internal compression state.

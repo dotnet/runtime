@@ -8,14 +8,6 @@ namespace System.IO.Compression
     /// </summary>
     public sealed class ZLibCompressionOptions
     {
-        internal const int MinWindowLog = 8;
-        internal const int MaxWindowLog = 15;
-        internal const int DefaultWindowLog = MaxWindowLog;
-
-        internal const int MinQuality = 0;
-        internal const int MaxQuality = 9;
-        internal const int DefaultQuality = 6;
-
         private int _compressionLevel = -1;
         private ZLibCompressionStrategy _strategy;
         private int _windowLog = -1;
@@ -35,10 +27,10 @@ namespace System.IO.Compression
             {
                 if (value != -1)
                 {
-                    ArgumentOutOfRangeException.ThrowIfLessThan(value, MinQuality);
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxQuality);
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZLibNative.MinQuality);
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZLibNative.MaxQuality);
                 }
-                
+
                 _compressionLevel = value;
             }
         }
@@ -74,8 +66,8 @@ namespace System.IO.Compression
             {
                 if (value != -1)
                 {
-                    ArgumentOutOfRangeException.ThrowIfLessThan(value, MinWindowLog);
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxWindowLog);
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZLibNative.MinWindowLog);
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZLibNative.MaxWindowLog);
                 }
 
                 _windowLog = value;
