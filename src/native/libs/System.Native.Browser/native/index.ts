@@ -24,6 +24,8 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     }
 
     internals[InternalExchangeIndex.NativeBrowserExportsTable] = nativeBrowserExportsToTable({
+        getWasmMemory,
+        getWasmTable,
     });
     _ems_.dotnetUpdateInternals(internals, _ems_.dotnetUpdateInternalsSubscriber);
 
@@ -33,7 +35,17 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     function nativeBrowserExportsToTable(map: NativeBrowserExports): NativeBrowserExportsTable {
         // keep in sync with nativeBrowserExportsFromTable()
         return [
+            map.getWasmMemory,
+            map.getWasmTable,
         ];
+    }
+
+    function getWasmMemory(): WebAssembly.Memory {
+        return _ems_.wasmMemory;
+    }
+
+    function getWasmTable(): WebAssembly.Table {
+        return _ems_.wasmTable;
     }
 
     function setupEmscripten() {

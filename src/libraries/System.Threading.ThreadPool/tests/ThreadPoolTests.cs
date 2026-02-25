@@ -74,7 +74,7 @@ namespace System.Threading.ThreadPools.Tests
             }, UsePortableThreadPool.ToString()).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void GetMinMaxThreadsTest()
         {
             int minw, minc;
@@ -88,7 +88,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.True(minc <= maxc);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void GetAvailableThreadsTest()
         {
             int w, c;
@@ -267,7 +267,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public void QueueUserWorkItem_PreferLocal_InvalidArguments_Throws(bool preferLocal, bool useUnsafe)
         {
@@ -276,7 +276,7 @@ namespace System.Threading.ThreadPools.Tests
                 ThreadPool.QueueUserWorkItem(null, new object(), preferLocal));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public async Task QueueUserWorkItem_PreferLocal_NullValidForState(bool preferLocal, bool useUnsafe)
         {
@@ -292,7 +292,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(84, await tcs.Task);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public async Task QueueUserWorkItem_PreferLocal_ReferenceTypeStateObjectPassedThrough(bool preferLocal, bool useUnsafe)
         {
@@ -308,7 +308,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(84, await tcs.Task);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public async Task QueueUserWorkItem_PreferLocal_ValueTypeStateObjectPassedThrough(bool preferLocal, bool useUnsafe)
         {
@@ -324,7 +324,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(42, await tcs.Task);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public async Task QueueUserWorkItem_PreferLocal_RunsAsynchronously(bool preferLocal, bool useUnsafe)
         {
@@ -344,7 +344,7 @@ namespace System.Threading.ThreadPools.Tests
             }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(TwoBools))]
         public async Task QueueUserWorkItem_PreferLocal_ExecutionContextFlowedIfSafe(bool preferLocal, bool useUnsafe)
         {
@@ -362,7 +362,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(useUnsafe ? 0 : 42, await tcs.Task);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(OneBool))]
         public void UnsafeQueueUserWorkItem_IThreadPoolWorkItem_Invalid_Throws(bool preferLocal)
         {
@@ -370,7 +370,7 @@ namespace System.Threading.ThreadPools.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("callBack", () => ThreadPool.UnsafeQueueUserWorkItem(new InvalidWorkItemAndTask(() => { }), preferLocal));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(OneBool))]
         public async Task UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ManyIndividualItems_AllInvoked(bool preferLocal)
         {
@@ -386,7 +386,7 @@ namespace System.Threading.ThreadPools.Tests
             await Task.WhenAll(tasks.Select(t => t.Task));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(OneBool))]
         public async Task UnsafeQueueUserWorkItem_IThreadPoolWorkItem_SameObjectReused_AllInvoked(bool preferLocal)
         {
@@ -408,7 +408,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.Equal(0, remaining);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(OneBool))]
         public async Task UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ExecutionContextNotFlowed(bool preferLocal)
         {
@@ -577,7 +577,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunProcessorCountItemsInParallel()
         {
             int processorCount = Environment.ProcessorCount;
@@ -604,7 +604,7 @@ namespace System.Threading.ThreadPools.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ThreadPoolCanPickUpOneOrMoreWorkItemsWhenThreadIsAvailable()
         {
             int processorCount = Environment.ProcessorCount;
@@ -646,7 +646,7 @@ namespace System.Threading.ThreadPools.Tests
             unblockWorkItems.Set();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunMoreThanMaxWorkItemsMakesOneWorkItemWaitForStarvationDetection()
         {
             int processorCount = Environment.ProcessorCount;
@@ -674,7 +674,7 @@ namespace System.Threading.ThreadPools.Tests
             unblockWorkItems.Set();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void WorkQueueDepletionTest()
         {
             ManualResetEvent done = new ManualResetEvent(false);
@@ -835,7 +835,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ThreadPoolCanProcessManyWorkItemsInParallelWithoutDeadlocking()
         {
             int processorCount = Environment.ProcessorCount;
@@ -1499,7 +1499,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         public static bool IsThreadingAndRemoteExecutorSupported =>
-            PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
+            PlatformDetection.IsMultithreadingSupported && RemoteExecutor.IsSupported;
 
         private static bool GetUseWindowsThreadPool()
         {
