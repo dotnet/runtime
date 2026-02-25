@@ -37,35 +37,35 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Default_Write_byte_int_int()
         {
             Debug.WriteLine("Verifying default WriteTimeout with Write(byte[] buffer, int offset, int count)");
             VerifyInfiniteTimeout(Write_byte_int_int, false);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Default_Write_char_int_int()
         {
             Debug.WriteLine("Verifying default WriteTimeout with Write(char[] buffer, int offset, int count)");
             VerifyInfiniteTimeout(Write_char_int_int, false);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Default_Write_str()
         {
             Debug.WriteLine("Verifying default WriteTimeout with Write(string)");
             VerifyInfiniteTimeout(Write_str, false);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Default_WriteLine()
         {
             Debug.WriteLine("Verifying default WriteTimeout with WriteLine()");
             VerifyInfiniteTimeout(WriteLine, false);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Infinite_Write_byte_int_int()
         {
             Debug.WriteLine("Verifying infinite WriteTimeout with Write(byte[] buffer, int offset, int count)");
@@ -73,42 +73,42 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Infinite_Write_char_int_int()
         {
             Debug.WriteLine("Verifying infinite WriteTimeout with Write(char[] buffer, int offset, int count)");
             VerifyInfiniteTimeout(Write_char_int_int, true);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Infinite_Write_str()
         {
             Debug.WriteLine("Verifying infinite WriteTimeout with Write(string)");
             VerifyInfiniteTimeout(Write_str, true);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_Infinite_WriteLine()
         {
             Debug.WriteLine("Verifying infinite WriteTimeout with WriteLine()");
             VerifyInfiniteTimeout(WriteLine, true);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_1_Write_byte_int_int_BeforeOpen()
         {
             Debug.WriteLine("Verifying setting WriteTimeout=1 before Open() with Write(byte[] buffer, int offset, int count)");
             Verify1TimeoutBeforeOpen(Write_byte_int_int);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_1_Write_char_int_int_BeforeOpen()
         {
             Debug.WriteLine("Verifying setting WriteTimeout=1 before Open() with Write(char[] buffer, int offset, int count)");
             Verify1TimeoutBeforeOpen(Write_char_int_int);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_1_Write_str_BeforeOpen()
         {
             Debug.WriteLine("Verifying 1 WriteTimeout before Open with Write(string)");
@@ -116,49 +116,49 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_1_WriteLine_BeforeOpen()
         {
             Debug.WriteLine("Verifying 1 WriteTimeout before Open with WriteLine()");
             Verify1TimeoutBeforeOpen(WriteLine);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_1_Write_byte_int_int_AfterOpen()
         {
             Debug.WriteLine("Verifying setting WriteTimeout=1 after Open() with Write(byte[] buffer, int offset, int count)");
             Verify1TimeoutAfterOpen(Write_byte_int_int);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_1_Write_char_int_int_AfterOpen()
         {
             Debug.WriteLine("Verifying setting WriteTimeout=1 after Open() with Write(char[] buffer, int offset, int count)");
             Verify1TimeoutAfterOpen(Write_char_int_int);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_1_Write_str_AfterOpen()
         {
             Debug.WriteLine("Verifying 1 WriteTimeout after Open with Write(string)");
             Verify1TimeoutAfterOpen(Write_str);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_1_WriteLine_AfterOpen()
         {
             Debug.WriteLine("Verifying 1 WriteTimeout after Open with WriteLine()");
             Verify1TimeoutAfterOpen(WriteLine);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort))]
         public void WriteTimeout_Int32MinValue()
         {
             Debug.WriteLine("Verifying Int32.MinValue WriteTimeout");
             VerifyException(int.MinValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(WriteTimeout_Property), nameof(HasOneSerialPort))]
         public void WriteTimeout_NEG2()
         {
             Debug.WriteLine("Verifying -2 WriteTimeout");
