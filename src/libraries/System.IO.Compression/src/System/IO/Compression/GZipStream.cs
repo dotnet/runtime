@@ -44,8 +44,7 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(compressionOptions);
 
             // Compute windowBits for gzip format: windowLog + 16
-            int windowLog = compressionOptions.WindowLog == -1 ? DeflateEncoder.DefaultWindowLog : compressionOptions.WindowLog;
-            int windowBits = windowLog + 16;
+            int windowBits = compressionOptions.WindowLog == -1 ? ZLibNative.GZip_DefaultWindowBits : compressionOptions.WindowLog + 16;
 
             _deflateStream = new DeflateStream(stream, compressionOptions, leaveOpen, windowBits);
         }

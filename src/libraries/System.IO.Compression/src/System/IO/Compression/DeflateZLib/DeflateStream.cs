@@ -59,8 +59,7 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(compressionOptions);
 
             // Compute windowBits for raw deflate format: negative windowLog
-            int windowLog = compressionOptions.WindowLog == -1 ? DeflateEncoder.DefaultWindowLog : compressionOptions.WindowLog;
-            int windowBits = -windowLog;
+            int windowBits = compressionOptions.WindowLog == -1 ? ZLibNative.Deflate_DefaultWindowBits : -compressionOptions.WindowLog;
 
             InitializeDeflater(stream, (ZLibNative.CompressionLevel)compressionOptions.CompressionLevel, (CompressionStrategy)compressionOptions.CompressionStrategy, leaveOpen, windowBits);
         }
