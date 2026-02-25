@@ -34,21 +34,21 @@ namespace SampleSynthesisTests
             _output = output;
         }
 
-        [ConditionalFact(nameof(HasInstalledRecognizers))]
+        [ConditionalFact(typeof(SynthesizeRecognizeTests), nameof(HasInstalledRecognizers))]
         public void SpeechSynthesizerToSpeechRecognitionEngine1()
         {
             // word chosen to be recognized with high confidence
             SpeechSynthesizerToSpeechRecognitionEngine_Core("recognize", "recognize");
         }
 
-        [ConditionalFact(nameof(HasInstalledRecognizers))]
+        [ConditionalFact(typeof(SynthesizeRecognizeTests), nameof(HasInstalledRecognizers))]
         public void SpeechSynthesizerToSpeechRecognitionEngine2()
         {
             // word chosen to be recognized with high confidence
             SpeechSynthesizerToSpeechRecognitionEngine_Core("apple", "apple");
         }
 
-        [ConditionalFact(nameof(HasInstalledRecognizers))]
+        [ConditionalFact(typeof(SynthesizeRecognizeTests), nameof(HasInstalledRecognizers))]
         public void SpeechSynthesizerToSpeechRecognitionEngine_SilenceFails()
         {
             SpeechSynthesizerToSpeechRecognitionEngine_Core("    ", null);
@@ -145,7 +145,7 @@ namespace SampleSynthesisTests
             });
         }
 
-        [ConditionalFact(nameof(HasInstalledRecognizers))]
+        [ConditionalFact(typeof(SynthesizeRecognizeTests), nameof(HasInstalledRecognizers))]
         public void SpeechRecognitionEngineInvalidInput()
         {
             using var ms = new MemoryStream();
@@ -157,7 +157,7 @@ namespace SampleSynthesisTests
             }
         }
 
-        [ConditionalFact(nameof(HasInstalledRecognizers))]
+        [ConditionalFact(typeof(SynthesizeRecognizeTests), nameof(HasInstalledRecognizers))]
         public void SpeechRecognitionEngineProperties()
         {
             using (var rec = new SpeechRecognitionEngine())

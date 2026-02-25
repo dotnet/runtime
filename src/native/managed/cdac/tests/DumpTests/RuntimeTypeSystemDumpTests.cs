@@ -17,7 +17,6 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class RuntimeTypeSystemDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "TypeHierarchy";
-    protected override string DumpType => "full";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

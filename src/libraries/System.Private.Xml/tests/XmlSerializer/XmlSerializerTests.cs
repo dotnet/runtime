@@ -922,7 +922,7 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
     }
 
-    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
+    [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDefaultTimeSpanProperty()
     {
         var obj = new TypeWithDefaultTimeSpanProperty { TimeSpanProperty2 = new TimeSpan(0, 1, 0) };
@@ -965,7 +965,7 @@ public static partial class XmlSerializerTests
         }
     }
 
-    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
+    [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDateTimeOffsetProperty()
     {
         var now = new DateTimeOffset(DateTime.Now);
@@ -990,7 +990,7 @@ public static partial class XmlSerializerTests
         Assert.True(deserializedObj.NullableDTOWithDefault == null);
     }
 
-    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
+    [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties()
     {
         //var def = DateTimeOffset.Parse("3/17/1977 5:00:01 PM -05:00");  //  "1977-03-17T17:00:01-05:00"
@@ -1135,7 +1135,7 @@ public static partial class XmlSerializerTests
         }
     }
 
-    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
+    [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDateOnlyAndTimeOnly()
     {
         var doSerializer = new XmlSerializer(typeof(TypeWithDateAndTimeOnlyProperties), new XmlRootAttribute("DateAndTime"));
