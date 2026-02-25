@@ -9017,9 +9017,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         info.compCompHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
                         if (!isSyncCallThunk)
                         {
-                            // Otherwise the async variant that we got is a thunk.
-                            // Switch back to the non-async task-returning call. There is no reason to go through the
-                            // thunk.
+                            // The async variant that we got is a thunk. Switch
+                            // back to the non-async task-returning call. There
+                            // is no reason to go through the thunk.
                             _impResolveToken(CORINFO_TOKENKIND_Method);
                             prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
                             isAwait = false;

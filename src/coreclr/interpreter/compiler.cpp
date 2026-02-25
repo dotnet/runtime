@@ -4551,6 +4551,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     }
     else
     {
+        const uint8_t* origIP = m_ip;
         if (!newObj && m_methodInfo->args.isAsyncCall() && AsyncCallPeeps.FindAndApplyPeep(this))
         {
             resolvedCallToken = m_resolvedAsyncCallToken;
@@ -4576,14 +4577,30 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
 
-        if (callInfo.sig.isVarArg())
-        {
-            BADCODE("Vararg methods are not supported in interpreted code");
-        }
-
         if (continuationContextHandling != ContinuationContextHandling::None && !callInfo.sig.isAsyncCall())
         {
             BADCODE("We're trying to emit an async call, but the async resolved context didn't find one");
+        }
+
+        if (continuationContextHandling != ContinuationContextHandling::None && callInfo.kind == CORINFO_CALL)
+        {
+            bool isSyncCallThunk;
+            m_compHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
+            if (!isSyncCallThunk)
+            {
+                // The async variant that we got is a thunk. Switch back to the
+                // non-async task-returning call. There is no reason to create
+                // and go through the thunk.
+                ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedCallToken);
+                m_ip = origIP + 5;
+                continuationContextHandling = ContinuationContextHandling::None;
+                m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+            }
+        }
+
+        if (callInfo.sig.isVarArg())
+        {
+            BADCODE("Vararg methods are not supported in interpreted code");
         }
 
         if (isJmp)
