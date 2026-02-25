@@ -1615,13 +1615,8 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
         // Throw helper arity is (i (sp), i (pe)) -> (void).
         // Push SP here as the arg for the call.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
-
-        // hack, push pe for now
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE,0);
         genEmitHelperCall(m_compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
-
-        // hack, sig leaves on stack
-        GetEmitter()->emitIns(INS_unreachable);
         GetEmitter()->emitIns(INS_end);
     }
 }

@@ -275,7 +275,7 @@ void WasmRegAlloc::CollectReferencesForBlock(BasicBlock* block)
 
     // We may modify the range while iterating.
     //
-    // For now, we assume and reordering happens for already visited
+    // For now, we assume reordering happens only for already visited
     // nodes, and any newly introduces nodes do not need collection.
     //
     GenTree* node = LIR::AsRange(block).FirstNode();
