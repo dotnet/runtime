@@ -634,25 +634,35 @@ private:
     bool InsertMidStatement(InlineInfo& inlineInfo, GenTree** use)
     {
         Compiler* inlineeComp = m_compiler->InlineeCompiler;
+
+        if (!inlineInfo.setupStatements.Empty() || !inlineInfo.teardownStatements.Empty())
+        {
+            JITDUMP("Inlinee has setup or teardown statements\n");
+            return false;
+        }
+
         if (inlineeComp->fgBBcount != 1)
         {
+            JITDUMP("Inlinee has more than 1 basic block\n");
             return false;
         }
 
         if (!inlineeComp->fgFirstBB->KindIs(BBJ_RETURN))
         {
+            JITDUMP("Inlinee block is not BBJ_RETURN\n");
             return false;
         }
 
-        if ((inlineeComp->fgFirstBB->bbStmtList != nullptr) || !inlineInfo.setupStatements.Empty() ||
-            !inlineInfo.teardownStatements.Empty())
+        if ((inlineeComp->fgFirstBB->bbStmtList != nullptr))
         {
+            JITDUMP("Inlinee has statements\n");
             return false;
         }
 
         if (use == m_statement->GetRootNodePointer())
         {
             // Leave this case up to the general handling.
+            JITDUMP("Candidate is the root node\n");
             return false;
         }
 
@@ -664,6 +674,7 @@ private:
         };
         if (m_compiler->gtComplexityExceeds(m_statement->GetRootNode(), 16, getComplexity))
         {
+            JITDUMP("Candidate statement is too complex after substitution\n");
             *use = call;
             return false;
         }
@@ -1319,14 +1330,12 @@ void Compiler::fgMorphCallInlineHelper(InlineInfo&     inlineInfo,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Expanding INLINE_CANDIDATE in statement ");
-        printStmtID(fgMorphStmt);
-        printf(" in " FMT_BB ":\n", compCurBB->bbNum);
-        gtDispStmt(fgMorphStmt);
+        printf("Expanding inline candidate [%06u] in " FMT_STMT " in " FMT_BB "\n", dspTreeID(call), fgMorphStmt->GetID(), compCurBB->bbNum);
         if (call->IsImplicitTailCall())
         {
-            printf("Note: candidate is implicit tail call\n");
+            printf("  Note: candidate is implicit tail call\n");
         }
+        DISPSTMT(fgMorphStmt);
     }
 #endif
 
