@@ -767,9 +767,22 @@ namespace System.Text.Json.SourceGeneration
                 if (NeedsAccessorForGetter(property))
                 {
                     string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
-                    string propertyTypeFQN = property.PropertyType.FullyQualifiedName;
+
+                    if (property.CanUseUnsafeAccessors)
+                    {
+                        string castExpr = typeGenerationSpec.TypeRef.IsValueType
+                            ? $"ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj)"
+                            : $"({declaringTypeFQN})obj";
+
+                        string accessorName = property.IsProperty
+                            ? GetAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex)
+                            : GetAccessorName(typeFriendlyName, "field", property.MemberName, propertyIndex);
+
+                        return $"static obj => {accessorName}({castExpr})";
+                    }
+
                     string getterName = GetAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex);
-                    return $"static obj => ({propertyTypeFQN}){getterName}(obj)!";
+                    return $"static obj => {getterName}(obj)";
                 }
 
                 return "null";
@@ -789,11 +802,7 @@ namespace System.Text.Json.SourceGeneration
 
                 if (property is { CanUseSetter: true, IsInitOnlySetter: true })
                 {
-                    // Init-only property: generate a real setter
-                    // using UnsafeAccessor (when available) or reflection (as fallback).
-                    string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
-                    string setterName = GetAccessorName(typeFriendlyName, "set", property.MemberName, propertyIndex);
-                    return $"static (obj, value) => {setterName}(obj, value)";
+                    return GetAccessorBasedSetterDelegate(property, typeGenerationSpec, declaringTypeFQN, propertyIndex);
                 }
 
                 if (property.CanUseSetter)
@@ -805,12 +814,42 @@ namespace System.Text.Json.SourceGeneration
 
                 if (NeedsAccessorForSetter(property))
                 {
-                    string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
-                    string setterName = GetAccessorName(typeFriendlyName, "set", property.MemberName, propertyIndex);
-                    return $"static (obj, value) => {setterName}(obj, value)";
+                    return GetAccessorBasedSetterDelegate(property, typeGenerationSpec, declaringTypeFQN, propertyIndex);
                 }
 
                 return "null";
+            }
+
+            /// <summary>
+            /// Generates a setter delegate expression that calls the UnsafeAccessor extern directly
+            /// or the strongly typed reflection wrapper.
+            /// </summary>
+            private static string GetAccessorBasedSetterDelegate(
+                PropertyGenerationSpec property,
+                TypeGenerationSpec typeGenerationSpec,
+                string declaringTypeFQN,
+                int propertyIndex)
+            {
+                string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
+
+                if (property.CanUseUnsafeAccessors)
+                {
+                    string castExpr = typeGenerationSpec.TypeRef.IsValueType
+                        ? $"ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj)"
+                        : $"({declaringTypeFQN})obj";
+
+                    if (property.IsProperty)
+                    {
+                        string accessorName = GetAccessorName(typeFriendlyName, "set", property.MemberName, propertyIndex);
+                        return $"static (obj, value) => {accessorName}({castExpr}, value!)";
+                    }
+
+                    string fieldName = GetAccessorName(typeFriendlyName, "field", property.MemberName, propertyIndex);
+                    return $"static (obj, value) => {fieldName}({castExpr}) = value!";
+                }
+
+                string setterName = GetAccessorName(typeFriendlyName, "set", property.MemberName, propertyIndex);
+                return $"static (obj, value) => {setterName}(obj, value!)";
             }
 
             private static void GeneratePropertyAccessors(SourceWriter writer, TypeGenerationSpec typeGenerationSpec)
@@ -842,54 +881,34 @@ namespace System.Text.Json.SourceGeneration
                     if (property.CanUseUnsafeAccessors)
                     {
                         string refPrefix = typeGenerationSpec.TypeRef.IsValueType ? "ref " : "";
-                        string castExpr = typeGenerationSpec.TypeRef.IsValueType
-                            ? $"ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj)"
-                            : $"({declaringTypeFQN})obj";
 
                         if (property.IsProperty)
                         {
                             if (needsGetterAccessor)
                             {
-                                string externName = GetUnsafeAccessorExternName(typeFriendlyName, "get", property.MemberName, i);
-                                string wrapperName = GetAccessorName(typeFriendlyName, "get", property.MemberName, i);
+                                string accessorName = GetAccessorName(typeFriendlyName, "get", property.MemberName, i);
                                 writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "get_{property.MemberName}")]""");
-                                writer.WriteLine($"private static extern {propertyTypeFQN} {externName}({refPrefix}{declaringTypeFQN} obj);");
-                                writer.WriteLine($"private static object? {wrapperName}(object obj) => {externName}({castExpr});");
+                                writer.WriteLine($"private static extern {propertyTypeFQN} {accessorName}({refPrefix}{declaringTypeFQN} obj);");
                             }
 
                             if (needsSetterAccessor)
                             {
-                                string externName = GetUnsafeAccessorExternName(typeFriendlyName, "set", property.MemberName, i);
-                                string wrapperName = GetAccessorName(typeFriendlyName, "set", property.MemberName, i);
+                                string accessorName = GetAccessorName(typeFriendlyName, "set", property.MemberName, i);
                                 writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "set_{property.MemberName}")]""");
-                                writer.WriteLine($"private static extern void {externName}({refPrefix}{declaringTypeFQN} obj, {propertyTypeFQN} value);");
-                                writer.WriteLine($"private static void {wrapperName}(object obj, object? value) => {externName}({castExpr}, ({propertyTypeFQN})value!);");
+                                writer.WriteLine($"private static extern void {accessorName}({refPrefix}{declaringTypeFQN} obj, {propertyTypeFQN} value);");
                             }
                         }
                         else
                         {
                             // Field: single UnsafeAccessor that returns ref T, used for both get and set.
-                            string fieldExternName = GetUnsafeAccessorExternName(typeFriendlyName, "field", property.MemberName, i);
+                            string fieldAccessorName = GetAccessorName(typeFriendlyName, "field", property.MemberName, i);
                             writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Field, Name = "{property.MemberName}")]""");
-                            writer.WriteLine($"private static extern ref {propertyTypeFQN} {fieldExternName}({refPrefix}{declaringTypeFQN} obj);");
-
-                            if (needsGetterAccessor)
-                            {
-                                string wrapperName = GetAccessorName(typeFriendlyName, "get", property.MemberName, i);
-                                writer.WriteLine($"private static object? {wrapperName}(object obj) => {fieldExternName}({castExpr});");
-                            }
-
-                            if (needsSetterAccessor)
-                            {
-                                string wrapperName = GetAccessorName(typeFriendlyName, "set", property.MemberName, i);
-                                writer.WriteLine($"private static void {wrapperName}(object obj, object? value) => {fieldExternName}({castExpr}) = ({propertyTypeFQN})value!;");
-                            }
+                            writer.WriteLine($"private static extern ref {propertyTypeFQN} {fieldAccessorName}({refPrefix}{declaringTypeFQN} obj);");
                         }
                     }
                     else
                     {
-                        // Reflection fallback: generate cached delegate fields and wrapper methods
-                        // with the same signature as the UnsafeAccessor path.
+                        // Reflection fallback: generate cached delegate fields and strongly typed wrapper methods.
                         string memberAccessExpr = property.IsProperty
                             ? $"typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!"
                             : $"typeof({declaringTypeFQN}).GetField({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!";
@@ -899,7 +918,7 @@ namespace System.Text.Json.SourceGeneration
                             string cacheName = GetReflectionCacheName(typeFriendlyName, "get", property.MemberName, i);
                             string wrapperName = GetAccessorName(typeFriendlyName, "get", property.MemberName, i);
                             writer.WriteLine($"private static global::System.Func<object?, object?>? {cacheName};");
-                            writer.WriteLine($"private static object? {wrapperName}(object obj) => ({cacheName} ??= {memberAccessExpr}.GetValue)(obj);");
+                            writer.WriteLine($"private static {propertyTypeFQN} {wrapperName}(object obj) => ({propertyTypeFQN})({cacheName} ??= {memberAccessExpr}.GetValue)(obj)!;");
                         }
 
                         if (needsSetterAccessor)
@@ -907,22 +926,19 @@ namespace System.Text.Json.SourceGeneration
                             string cacheName = GetReflectionCacheName(typeFriendlyName, "set", property.MemberName, i);
                             string wrapperName = GetAccessorName(typeFriendlyName, "set", property.MemberName, i);
                             writer.WriteLine($"private static global::System.Action<object?, object?>? {cacheName};");
-                            writer.WriteLine($"private static void {wrapperName}(object obj, object? value) => ({cacheName} ??= {memberAccessExpr}.SetValue)(obj, value);");
+                            writer.WriteLine($"private static void {wrapperName}(object obj, {propertyTypeFQN} value) => ({cacheName} ??= {memberAccessExpr}.SetValue)(obj, value);");
                         }
                     }
                 }
             }
 
             /// <summary>
-            /// Gets the unified accessor wrapper name used by both UnsafeAccessor and reflection fallback paths.
-            /// The wrapper has signature: getter = <c>static object? name(object obj)</c>,
-            /// setter = <c>static void name(object obj, object? value)</c>.
+            /// Gets the accessor name for a property or field. For UnsafeAccessor this is the extern method name;
+            /// for reflection fallback this is the strongly typed wrapper method name.
+            /// Use kind "get"/"set" for property getters/setters, or "field" for field UnsafeAccessor externs.
             /// </summary>
             private static string GetAccessorName(string typeFriendlyName, string accessorKind, string memberName, int propertyIndex)
                 => $"__{accessorKind}_{typeFriendlyName}_{memberName}_{propertyIndex}";
-
-            private static string GetUnsafeAccessorExternName(string typeFriendlyName, string accessorKind, string memberName, int propertyIndex)
-                => $"__{accessorKind}_{typeFriendlyName}_{memberName}_{propertyIndex}_extern";
 
             private static string GetReflectionCacheName(string typeFriendlyName, string accessorKind, string memberName, int propertyIndex)
                 => $"s_{accessorKind}_{typeFriendlyName}_{memberName}_{propertyIndex}";
@@ -935,15 +951,12 @@ namespace System.Text.Json.SourceGeneration
             private static string GetConstructorAccessorName(TypeGenerationSpec typeSpec)
                 => $"__ctor_{typeSpec.TypeInfoPropertyName}";
 
-            private static string GetConstructorExternName(TypeGenerationSpec typeSpec)
-                => $"__ctor_{typeSpec.TypeInfoPropertyName}_extern";
-
             private static string GetConstructorReflectionCacheName(TypeGenerationSpec typeSpec)
                 => $"s_ctor_{typeSpec.TypeInfoPropertyName}";
 
             /// <summary>
             /// Generates the constructor accessor for inaccessible constructors.
-            /// For UnsafeAccessor: emits a [UnsafeAccessor(Constructor)] extern method plus a wrapper.
+            /// For UnsafeAccessor: emits a [UnsafeAccessor(Constructor)] extern method.
             /// For reflection fallback: emits a cached ConstructorInfo and a wrapper method.
             /// </summary>
             private static void GenerateConstructorAccessor(SourceWriter writer, TypeGenerationSpec typeSpec)
@@ -977,13 +990,8 @@ namespace System.Text.Json.SourceGeneration
 
                 if (typeSpec.CanUseUnsafeAccessorForConstructor)
                 {
-                    // UnsafeAccessor path: extern method + wrapper.
-                    string externName = GetConstructorExternName(typeSpec);
-
-                    // Build extern parameter list (same types, same names).
                     writer.WriteLine($"[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Constructor)]");
-                    writer.WriteLine($"private static extern {typeFQN} {externName}({wrapperParams});");
-                    writer.WriteLine($"private static {typeFQN} {wrapperName}({wrapperParams}) => {externName}({callArgs});");
+                    writer.WriteLine($"private static extern {typeFQN} {wrapperName}({wrapperParams});");
                 }
                 else
                 {
@@ -1021,10 +1029,25 @@ namespace System.Text.Json.SourceGeneration
                     return $"{objectExpr}.{property.NameSpecifiedInSourceCode}";
                 }
 
-                // Inaccessible [JsonInclude] property/field: use the unified accessor wrapper.
+                // Inaccessible [JsonInclude] property/field: call accessor directly.
                 string typeFriendlyName = typeGenSpec.TypeInfoPropertyName;
+
+                if (property.CanUseUnsafeAccessors)
+                {
+                    string accessorName = property.IsProperty
+                        ? GetAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex)
+                        : GetAccessorName(typeFriendlyName, "field", property.MemberName, propertyIndex);
+
+                    // Value type externs take 'ref T'; use the raw parameter variable to avoid
+                    // ref-of-cast issues. Reference type externs take the declaring type by value.
+                    return typeGenSpec.TypeRef.IsValueType
+                        ? $"{accessorName}(ref {ValueVarName})"
+                        : $"{accessorName}({objectExpr})";
+                }
+
                 string getterName = GetAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex);
-                return $"({property.PropertyType.FullyQualifiedName}){getterName}({objectExpr})!";
+
+                return $"{getterName}({objectExpr})";
             }
 
             private static void GenerateCtorParamMetadataInitFunc(SourceWriter writer, string ctorParamMetadataInitMethodName, TypeGenerationSpec typeGenerationSpec)
