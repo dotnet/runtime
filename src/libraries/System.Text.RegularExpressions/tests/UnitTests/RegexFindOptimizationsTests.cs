@@ -131,6 +131,23 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal(expectedPrefix, opts.LeadingPrefix);
         }
 
+        [Fact]
+        [OuterLoop("Stress test for deep nesting")]
+        public void LeadingPrefix_DeepCapatureNesting_DoesNotStackOverflow()
+        {
+            // Deeply nested captures like (((((...))))) with IgnoreCase exercise the recursive
+            // Capture-unwrapping path in TryGetOrdinalCaseInsensitiveString. Verify it doesn't SO.
+            const int Depth = 2000;
+            string pattern = new string('(', Depth) + "ab" + new string(')', Depth);
+            RegexFindOptimizations opts = ComputeOptimizations(pattern, RegexOptions.IgnoreCase);
+            // The prefix may or may not be extracted depending on stack limits, but it must not crash.
+            // If extraction succeeds, it should find "ab".
+            if (opts.FindMode == FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight)
+            {
+                Assert.Equal("ab", opts.LeadingPrefix);
+            }
+        }
+
         [Theory]
         [InlineData(@"[ab]", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "ab")]
         [InlineData(@"[Aa]", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "Aa")]

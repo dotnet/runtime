@@ -3016,7 +3016,8 @@ namespace System.Text.RegularExpressions
                 {
                     // This can occur after unwrapping a Capture whose child is a Concatenate.
                     // Recurse to extract any case-insensitive string from the inner concatenation.
-                    if (!child.TryGetOrdinalCaseInsensitiveString(0, child.ChildCount(), out _, out string? innerStr, consumeZeroWidthNodes))
+                    if (!StackHelper.TryEnsureSufficientExecutionStack() ||
+                        !child.TryGetOrdinalCaseInsensitiveString(0, child.ChildCount(), out _, out string? innerStr, consumeZeroWidthNodes))
                     {
                         break;
                     }
