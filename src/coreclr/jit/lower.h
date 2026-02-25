@@ -406,7 +406,6 @@ private:
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
     bool     TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
     void     LowerLclHeap(GenTree* node);
-    void     AfterLowerLclHeap(GenTree* node);
     void     ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void     LowerPutArgStk(GenTreePutArgStk* putArgNode);
     GenTree* LowerArrLength(GenTreeArrCommon* node);

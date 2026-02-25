@@ -91,7 +91,7 @@ void WasmRegAlloc::IdentifyCandidates()
         }
     }
 
-    if (anyFrameLocals || m_codeGen->isFramePointerRequired())
+    if (anyFrameLocals || m_compiler->compLocallocUsed)
     {
         AllocateFramePointer();
     }
@@ -359,16 +359,23 @@ void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 //------------------------------------------------------------------------
 // CollectReferencesForLclHeap: Collect virtual register references for a LCLHEAP.
 //
-// Consumes a temporary register for the size operand of the LCLHEAP operation.
+// Reserves internal register for unknown-sized LCLHEAP operations
 //
 // Arguments:
 //    lclHeapNode - The LCLHEAP node
 //
 void WasmRegAlloc::CollectReferencesForLclHeap(GenTreeOp* lclHeapNode)
 {
-    ConsumeTemporaryRegForOperand(lclHeapNode->gtGetOp1() DEBUGARG("lcl heap"));
+    // Known-sized allocations have contained size operand, so they don't require internal register.
+    if (!lclHeapNode->gtGetOp1()->isContainedIntOrIImmed())
+    {
+        regNumber internalReg = RequestInternalRegister(lclHeapNode, TYP_I_IMPL);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 }
 
+//------------------------------------------------------------------------
 // CollectReferencesForCall: Collect virtual register references for a call.
 //
 // Consumes temporary registers for a call.

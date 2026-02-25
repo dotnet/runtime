@@ -569,7 +569,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_LCLHEAP:
             LowerLclHeap(node);
-            AfterLowerLclHeap(node);
             break;
 
 #ifdef TARGET_XARCH
@@ -11720,15 +11719,6 @@ void Lowering::LowerLclHeap(GenTree* node)
 #endif
     ContainCheckLclHeap(node->AsOp());
 }
-
-#ifndef TARGET_WASM
-//------------------------------------------------------------------------
-// AfterLowerLclHeap: target-specific post-processing of the LCLHEAP node.
-//
-void Lowering::AfterLowerLclHeap(GenTree* node)
-{
-}
-#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // LowerBlockStoreCommon: a common logic to lower STORE_BLK/DYN_BLK.

@@ -361,11 +361,11 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
         {
             if (interval->IsLoop())
             {
-                GetEmitter()->emitIns_B(INS_loop);
+                GetEmitter()->emitIns_Block_Ty(INS_loop);
             }
             else
             {
-                GetEmitter()->emitIns_B(INS_block);
+                GetEmitter()->emitIns_Block_Ty(INS_block);
             }
 
             wasmCursor++;
@@ -1611,7 +1611,7 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
     }
     else
     {
-        GetEmitter()->emitIns_B(INS_if);
+        GetEmitter()->emitIns_Block_Ty(INS_if);
         // Throw helper arity is (i (sp)) -> (void).
         // Push SP here as the arg for the call.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
@@ -2417,8 +2417,6 @@ void CodeGen::genLclHeap(GenTree* tree)
     bool const     needsZeroing = m_compiler->info.compInitMem;
     GenTree* const size         = tree->AsOp()->gtOp1;
 
-    assert(genActualType(size->gtType) == TYP_I_IMPL);
-
     // We reserve this amount of space below any allocation for
     // establishing unwind invariants.
     //
@@ -2478,16 +2476,25 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
     else
     {
-        assert(size->TypeIs(TYP_I_IMPL));
         bool const is64Bit = (TARGET_POINTER_SIZE == 8);
-
         genConsumeReg(size);
-        regNumber sizeReg = GetMultiUseOperandReg(size);
 
-        // Check for zero-size.
+        // Extend size to pointer size, if necessary
+        if (genTypeSize(size->TypeGet()) < TARGET_POINTER_SIZE)
+        {
+            assert(TARGET_POINTER_SIZE == 8);
+            GetEmitter()->emitIns(INS_i64_extend_u_i32);
+        }
+
+        // Fetch the internal register we reserved during RA
+        InternalRegs* regs = internalRegisters.GetAll(tree);
+        assert(regs->Count() == 1);
+        regNumber sizeReg = regs->Extract();
+        assert(WasmRegToType(sizeReg) == TypeToWasmValueType(TYP_I_IMPL));
+
+        // Check for zero-sized requests
         GetEmitter()->emitIns(INS_I_eqz);
-        GetEmitter()->emitIns_B(INS_if, is64Bit ? WasmValueType::I64 : WasmValueType::I32);
-
+        GetEmitter()->emitIns_Block_Ty(INS_if, is64Bit ? WasmValueType::I64 : WasmValueType::I32);
         {
             // If size is zero, leave a zero on the stack
             GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
