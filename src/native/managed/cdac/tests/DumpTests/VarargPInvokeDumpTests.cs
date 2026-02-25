@@ -129,8 +129,8 @@ public class VarargPInvokeDumpTests : DumpTestBase
             // ILStubs have no debug info (RealCodeHeader.DebugInfo is null).
             // The DAC's GetBoundariesAndVars returns FALSE for this case,
             // causing GetMethodNativeMap to return E_FAIL, which propagates
-            // through GetILAddressMap. The cDAC matches by returning null
-            // from GetMethodNativeMap when debug info doesn't exist.
+            // through GetILAddressMap. The cDAC matches by using HasDebugInfo
+            // to detect the missing debug info and returning E_FAIL.
             IXCLRDataMethodInstance methodInstance = new ClrDataMethodInstance(
                 Target, mdHandle, TargetPointer.Null, legacyImpl: null);
             uint mapNeeded;

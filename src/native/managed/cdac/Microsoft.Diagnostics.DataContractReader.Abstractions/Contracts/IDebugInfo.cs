@@ -38,11 +38,14 @@ public interface IDebugInfo : IContract
 {
     static string IContract.Name { get; } = nameof(DebugInfo);
     /// <summary>
-    /// Given a code pointer, return the associated native/IL offset mapping and codeOffset.
-    /// Returns <see langword="null"/> when no debug info exists for the method (e.g. ILStubs),
-    /// as opposed to an empty sequence when debug info exists but contains no bounds entries.
+    /// Returns true if the method at <paramref name="pCode"/> has debug info associated with it.
+    /// Methods such as ILStubs may be JIT-compiled but have no debug metadata.
     /// </summary>
-    IEnumerable<OffsetMapping>? GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset) => throw new NotImplementedException();
+    bool HasDebugInfo(TargetCodePointer pCode) => throw new NotImplementedException();
+    /// <summary>
+    /// Given a code pointer, return the associated native/IL offset mapping and codeOffset.
+    /// </summary>
+    IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset) => throw new NotImplementedException();
 }
 
 public readonly struct DebugInfo : IDebugInfo

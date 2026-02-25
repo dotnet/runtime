@@ -25,13 +25,14 @@ public readonly struct OffsetMapping
 ```
 
 ```csharp
+// Returns true if the method at pCode has debug info associated with it.
+// Methods such as ILStubs may be JIT-compiled but have no debug metadata.
+bool HasDebugInfo(TargetCodePointer pCode);
+
 // Given a code pointer, return the associated native/IL offset mapping and codeOffset.
 // If preferUninstrumented, will always read the uninstrumented bounds.
 // Otherwise will read the instrumented bounds and fallback to the uninstrumented bounds.
-// Returns null when no debug info exists for the method (e.g. ILStubs that are JIT-compiled
-// but have no debug metadata). This is distinct from returning an empty sequence, which
-// indicates that debug info exists but contains no bounds entries.
-IEnumerable<OffsetMapping>? GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset);
+IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset);
 ```
 
 ## Version 1
@@ -98,7 +99,15 @@ The bit-packed data is read byte by byte, collecting bits until enough are avail
 ### Implementation
 
 ``` csharp
-IEnumerable<OffsetMapping>? IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset)
+bool IDebugInfo.HasDebugInfo(TargetCodePointer pCode)
+{
+    if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
+        return false;
+
+    return _eman.GetDebugInfo(cbh, out _) != TargetPointer.Null;
+}
+
+IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset)
 {
     // Get the method's DebugInfo
     if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
@@ -108,10 +117,10 @@ IEnumerable<OffsetMapping>? IDebugInfo.GetMethodNativeMap(TargetCodePointer pCod
     TargetCodePointer nativeCodeStart = _eman.GetStartAddress(cbh);
     codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
 
-    // No debug info exists (e.g. ILStubs). Return null to distinguish from
-    // "debug info exists but has no bounds" (empty sequence).
+    // No debug info exists (e.g. ILStubs). Return empty sequence.
+    // Callers that need to distinguish this case should use HasDebugInfo first.
     if (debugInfo == TargetPointer.Null)
-        return null;
+        return [];
 
     return RestoreBoundaries(debugInfo, hasFlagByte, preferUninstrumented);
 }
