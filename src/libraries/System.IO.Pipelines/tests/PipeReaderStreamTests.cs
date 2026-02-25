@@ -15,7 +15,7 @@ namespace System.IO.Pipelines.Tests
     {
         public delegate Task<int> ReadAsyncDelegate(Stream stream, byte[] data);
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DisposingPipeReaderStreamCompletesPipeReader(bool dataInPipe)
@@ -172,7 +172,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Writer.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CancellingPendingReadThrowsOperationCancelledException()
         {
             var pipe = new Pipe();
@@ -188,7 +188,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CanReadAfterCancellingPendingRead()
         {
             var pipe = new Pipe();
@@ -208,7 +208,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CancellationTokenFlowsToUnderlyingPipeReader()
         {
             var pipe = new Pipe();
@@ -246,7 +246,7 @@ namespace System.IO.Pipelines.Tests
             Assert.Same(stream, pipeReader.AsStream());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task PipeWriterStreamProducesToConsumingPipeReaderStream()
         {
             var pipe = new Pipe();
@@ -281,7 +281,7 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(producedSum, consumedSum);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ReadThrowsOriginalExceptionWhenItOccurs()
         {
             var pipeReader = new BuggyAndNotCompletedPipeReader();
@@ -438,7 +438,7 @@ namespace System.IO.Pipelines.Tests
 
                 yield return new object[] { readArrayAsync };
                 yield return new object[] { readMemoryAsync };
-                if (PlatformDetection.IsThreadingSupported)
+                if (PlatformDetection.IsMultithreadingSupported)
                 {
                     yield return new object[] { readMemoryAsyncWithThreadHop };
                 }

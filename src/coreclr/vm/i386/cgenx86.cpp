@@ -220,11 +220,20 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->SP = m_ctx.Esp;
     pRD->ControlPC = m_ctx.Eip;
 
-#define ARGUMENT_AND_SCRATCH_REGISTER(regname) pRD->pCurrentContextPointers->regname = &m_ctx.regname;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    CONTEXT *pContext = &m_ctx;
+#endif
+
+#define ARGUMENT_AND_SCRATCH_REGISTER(regname) pRD->pCurrentContextPointers->regname = &pContext->regname;
     ENUM_ARGUMENT_AND_SCRATCH_REGISTERS();
 #undef ARGUMENT_AND_SCRATCH_REGISTER
 
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &m_ctx.regname;
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &pContext->regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 

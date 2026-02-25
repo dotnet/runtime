@@ -69,14 +69,14 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<ArgumentNullException>(() => Dns.GetHostAddressesAsync(null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void DnsBeginGetHostAddresses_BadName_Throws()
         {
             IAsyncResult asyncObject = Dns.BeginGetHostAddresses("BadName", null, null);
             Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostAddresses(asyncObject));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void DnsBeginGetHostAddresses_BadIpString_ReturnsAddress()
         {
             IAsyncResult asyncObject = Dns.BeginGetHostAddresses("0.0.1.1", null, null);
@@ -86,7 +86,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(IPAddress.Parse("0.0.1.1"), results[0]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void DnsBeginGetHostAddresses_MachineName_MatchesGetHostAddresses()
         {
             IAsyncResult asyncObject = Dns.BeginGetHostAddresses(TestSettings.LocalHost, null, null);
@@ -249,6 +249,7 @@ namespace System.Net.NameResolution.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124751", TestPlatforms.Android)]
         public async Task DnsGetHostAddresses_LocalhostSubdomain_RespectsAddressFamily(AddressFamily addressFamily)
         {
             // Skip IPv6 test if OS doesn't support it.
