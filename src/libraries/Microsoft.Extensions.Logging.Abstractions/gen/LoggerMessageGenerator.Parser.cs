@@ -366,6 +366,37 @@ namespace Microsoft.Extensions.Logging.Generators
                                             keepMethod = false;
                                             break;
                                         }
+#if ROSLYN4_8_OR_GREATER
+                                        else if (paramSymbol.RefKind == RefKind.RefReadOnlyParameter)
+#else
+                                        else if (paramSymbol.RefKind == (RefKind)4) // RefKind.RefReadOnlyParameter, added in Roslyn 4.8
+#endif
+                                        {
+                                            qualifier = "ref readonly";
+                                        }
+
+                                        if (paramSymbol.IsParams)
+                                        {
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterParams, paramSymbol.Locations[0], paramName);
+                                            keepMethod = false;
+                                            break;
+                                        }
+
+                                        if (paramTypeSymbol.IsRefLikeType)
+                                        {
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterRefStruct, paramSymbol.Locations[0], paramName);
+                                            keepMethod = false;
+                                            break;
+                                        }
+
+#if ROSLYN4_4_OR_GREATER
+                                        if (paramSymbol.ScopedKind != ScopedKind.None)
+                                        {
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterParams, paramSymbol.Locations[0], paramName);
+                                            keepMethod = false;
+                                            break;
+                                        }
+#endif
 
                                         string typeName = paramTypeSymbol.ToDisplayString(
                                             SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
