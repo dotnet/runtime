@@ -1237,22 +1237,26 @@ static void RunMainInternal(Param* pParam)
     else if (pParam->EntryType == EntryManagedMainAsync)
     {
         *pParam->piRetVal = 0;
+        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
 
         OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
-        GCPROTECT_BEGIN(exitCodeTask);
-        UnmanagedCallersOnlyCaller mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
-        mainWrapper.InvokeThrowing(&exitCodeTask);
-        GCPROTECT_END();
+        ARG_SLOT stackVarWrapper[] =
+        {
+            ObjToArgSlot(exitCodeTask)
+        };
+        mainWrapper.Call(stackVarWrapper);
     }
     else if (pParam->EntryType == EntryManagedMainAsyncVoid)
     {
         *pParam->piRetVal = 0;
+        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT_VOID);
 
         OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
-        GCPROTECT_BEGIN(exitCodeTask);
-        UnmanagedCallersOnlyCaller mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
-        mainWrapper.InvokeThrowing(&exitCodeTask);
-        GCPROTECT_END();
+        ARG_SLOT stackVarWrapper[] =
+        {
+            ObjToArgSlot(exitCodeTask)
+        };
+        mainWrapper.Call(stackVarWrapper);
     }
 #endif // TARGET_BROWSER
     else

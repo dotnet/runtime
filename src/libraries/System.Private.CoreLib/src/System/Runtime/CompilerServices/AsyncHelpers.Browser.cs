@@ -48,24 +48,6 @@ namespace System.Runtime.CompilerServices
             return 0x0BADF00D;
         }
 
-#if CORECLR
-        [UnmanagedCallersOnly]
-        private static unsafe void HandleAsyncEntryPoint(object* pTask, Exception* pException)
-        {
-            try
-            {
-                if (*pTask is Task<int> taskOfInt)
-                    HandleAsyncEntryPoint(taskOfInt);
-                else
-                    HandleAsyncEntryPoint((Task)*pTask);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-#endif
-
         private static void CancelMainPromise()
         {
             string message = "Task was canceled";

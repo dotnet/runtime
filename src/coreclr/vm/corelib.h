@@ -722,7 +722,8 @@ DEFINE_METHOD(ASYNC_HELPERS,      RESUME_INTERPRETER_CONTINUATION, ResumeInterpr
 #endif
 
 #ifdef TARGET_BROWSER
-DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT, HandleAsyncEntryPoint, SM_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT, HandleAsyncEntryPoint, SM_TaskOfInt_RetInt)
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT_VOID, HandleAsyncEntryPoint, SM_Task_RetVoid)
 #endif // TARGET_BROWSER
 
 DEFINE_CLASS_U(CompilerServices, Continuation,          ContinuationObject)
