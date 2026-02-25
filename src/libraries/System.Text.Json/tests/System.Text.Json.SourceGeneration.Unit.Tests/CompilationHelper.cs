@@ -1058,6 +1058,84 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateTypesWithDeeplyNestedGenericConverter()
+        {
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(TypeWithDeeplyNestedConverter<int, string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonConverter(typeof(OuterGeneric<>.MiddleNonGeneric.InnerConverter<>))]
+                    public class TypeWithDeeplyNestedConverter<T1, T2>
+                    {
+                        public T1 Value1 { get; set; }
+                        public T2 Value2 { get; set; }
+                    }
+
+                    public class OuterGeneric<T>
+                    {
+                        public class MiddleNonGeneric
+                        {
+                            public sealed class InnerConverter<U> : JsonConverter<TypeWithDeeplyNestedConverter<T, U>>
+                            {
+                                public override TypeWithDeeplyNestedConverter<T, U> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                                    => throw new NotImplementedException();
+
+                                public override void Write(Utf8JsonWriter writer, TypeWithDeeplyNestedConverter<T, U> value, JsonSerializerOptions options)
+                                    => throw new NotImplementedException();
+                            }
+                        }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateTypesWithNonGenericOuterGenericConverter()
+        {
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(TypeWithNonGenericOuterConverter<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonConverter(typeof(NonGenericOuter.SingleLevelConverter<>))]
+                    public class TypeWithNonGenericOuterConverter<T>
+                    {
+                        public T Value { get; set; }
+                    }
+
+                    public class NonGenericOuter
+                    {
+                        public sealed class SingleLevelConverter<T> : JsonConverter<TypeWithNonGenericOuterConverter<T>>
+                        {
+                            public override TypeWithNonGenericOuterConverter<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                                => throw new NotImplementedException();
+
+                            public override void Write(Utf8JsonWriter writer, TypeWithNonGenericOuterConverter<T> value, JsonSerializerOptions options)
+                                => throw new NotImplementedException();
+                        }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
         private static readonly string FileSeparator = new string('=', 140);
 
         private sealed class NumberedSourceFileWriter : TextWriter

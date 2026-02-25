@@ -491,4 +491,102 @@ namespace System.Text.Json.SourceGeneration.Tests
             writer.WriteEndObject();
         }
     }
+
+    // Tests for generic within non-generic within generic: Outer<>.Middle.Inner<>
+    [JsonConverter(typeof(OuterGeneric<>.MiddleNonGeneric.InnerConverter<>))]
+    public class TypeWithDeeplyNestedConverter<T1, T2>
+    {
+        public T1 Value1 { get; set; }
+        public T2 Value2 { get; set; }
+    }
+
+    public class OuterGeneric<T>
+    {
+        public class MiddleNonGeneric
+        {
+            public sealed class InnerConverter<U> : JsonConverter<TypeWithDeeplyNestedConverter<T, U>>
+            {
+                public override TypeWithDeeplyNestedConverter<T, U> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType != JsonTokenType.StartObject)
+                        throw new JsonException();
+
+                    var result = new TypeWithDeeplyNestedConverter<T, U>();
+                    while (reader.Read())
+                    {
+                        if (reader.TokenType == JsonTokenType.EndObject)
+                            break;
+
+                        if (reader.TokenType != JsonTokenType.PropertyName)
+                            throw new JsonException();
+
+                        string propertyName = reader.GetString()!;
+                        reader.Read();
+
+                        if (propertyName == "Value1")
+                            result.Value1 = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                        else if (propertyName == "Value2")
+                            result.Value2 = JsonSerializer.Deserialize<U>(ref reader, options)!;
+                    }
+
+                    return result;
+                }
+
+                public override void Write(Utf8JsonWriter writer, TypeWithDeeplyNestedConverter<T, U> value, JsonSerializerOptions options)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("Value1");
+                    JsonSerializer.Serialize(writer, value.Value1, options);
+                    writer.WritePropertyName("Value2");
+                    JsonSerializer.Serialize(writer, value.Value2, options);
+                    writer.WriteEndObject();
+                }
+            }
+        }
+    }
+
+    // Tests for a single generic type parameter in a nested converter (non-generic containing generic)
+    [JsonConverter(typeof(NonGenericOuter.SingleLevelGenericConverter<>))]
+    public class TypeWithSingleLevelNestedConverter<T>
+    {
+        public T Value { get; set; }
+    }
+
+    public class NonGenericOuter
+    {
+        public sealed class SingleLevelGenericConverter<T> : JsonConverter<TypeWithSingleLevelNestedConverter<T>>
+        {
+            public override TypeWithSingleLevelNestedConverter<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType != JsonTokenType.StartObject)
+                    throw new JsonException();
+
+                var result = new TypeWithSingleLevelNestedConverter<T>();
+                while (reader.Read())
+                {
+                    if (reader.TokenType == JsonTokenType.EndObject)
+                        break;
+
+                    if (reader.TokenType != JsonTokenType.PropertyName)
+                        throw new JsonException();
+
+                    string propertyName = reader.GetString()!;
+                    reader.Read();
+
+                    if (propertyName == "Value")
+                        result.Value = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                }
+
+                return result;
+            }
+
+            public override void Write(Utf8JsonWriter writer, TypeWithSingleLevelNestedConverter<T> value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("Value");
+                JsonSerializer.Serialize(writer, value.Value, options);
+                writer.WriteEndObject();
+            }
+        }
+    }
 }

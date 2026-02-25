@@ -640,7 +640,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void GenericConverterAttribute_ConstraintSatisfied_Works()
         {
-            // The converter has a class constraint and string is a reference type
             var value = new TypeWithSatisfiedConstraint<string> { Value = "test" };
             string json = JsonSerializer.Serialize(value);
             Assert.Equal(@"{""Value"":""test""}", json);
@@ -686,6 +685,125 @@ namespace System.Text.Json.Serialization.Tests
                 writer.WritePropertyName("Value");
                 JsonSerializer.Serialize(writer, value.Value, options);
                 writer.WriteEndObject();
+            }
+        }
+
+        // Tests for generic within non-generic within generic: Outer<>.Middle.Inner<>
+        [Fact]
+        public static void GenericConverterAttribute_DeeplyNestedConverter_Works()
+        {
+            var value = new TypeWithDeeplyNestedConverter<int, string> { Value1 = 99, Value2 = "deep" };
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal(@"{""Value1"":99,""Value2"":""deep""}", json);
+
+            var deserialized = JsonSerializer.Deserialize<TypeWithDeeplyNestedConverter<int, string>>(json);
+            Assert.Equal(99, deserialized.Value1);
+            Assert.Equal("deep", deserialized.Value2);
+        }
+
+        [JsonConverter(typeof(OuterGeneric<>.MiddleNonGeneric.InnerConverter<>))]
+        public class TypeWithDeeplyNestedConverter<T1, T2>
+        {
+            public T1 Value1 { get; set; }
+            public T2 Value2 { get; set; }
+        }
+
+        public class OuterGeneric<T>
+        {
+            public class MiddleNonGeneric
+            {
+                public sealed class InnerConverter<U> : JsonConverter<TypeWithDeeplyNestedConverter<T, U>>
+                {
+                    public override TypeWithDeeplyNestedConverter<T, U> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                    {
+                        if (reader.TokenType != JsonTokenType.StartObject)
+                            throw new JsonException();
+
+                        var result = new TypeWithDeeplyNestedConverter<T, U>();
+                        while (reader.Read())
+                        {
+                            if (reader.TokenType == JsonTokenType.EndObject)
+                                break;
+
+                            if (reader.TokenType != JsonTokenType.PropertyName)
+                                throw new JsonException();
+
+                            string propertyName = reader.GetString()!;
+                            reader.Read();
+
+                            if (propertyName == "Value1")
+                                result.Value1 = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                            else if (propertyName == "Value2")
+                                result.Value2 = JsonSerializer.Deserialize<U>(ref reader, options)!;
+                        }
+                        return result;
+                    }
+
+                    public override void Write(Utf8JsonWriter writer, TypeWithDeeplyNestedConverter<T, U> value, JsonSerializerOptions options)
+                    {
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("Value1");
+                        JsonSerializer.Serialize(writer, value.Value1, options);
+                        writer.WritePropertyName("Value2");
+                        JsonSerializer.Serialize(writer, value.Value2, options);
+                        writer.WriteEndObject();
+                    }
+                }
+            }
+        }
+
+        // Tests for converter nested in non-generic class
+        [Fact]
+        public static void GenericConverterAttribute_NonGenericOuterConverter_Works()
+        {
+            var value = new TypeWithNonGenericOuterConverter<int> { Value = 42 };
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal(@"{""Value"":42}", json);
+
+            var deserialized = JsonSerializer.Deserialize<TypeWithNonGenericOuterConverter<int>>(json);
+            Assert.Equal(42, deserialized.Value);
+        }
+
+        [JsonConverter(typeof(NonGenericOuter.SingleLevelConverter<>))]
+        public class TypeWithNonGenericOuterConverter<T>
+        {
+            public T Value { get; set; }
+        }
+
+        public class NonGenericOuter
+        {
+            public sealed class SingleLevelConverter<T> : JsonConverter<TypeWithNonGenericOuterConverter<T>>
+            {
+                public override TypeWithNonGenericOuterConverter<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType != JsonTokenType.StartObject)
+                        throw new JsonException();
+
+                    var result = new TypeWithNonGenericOuterConverter<T>();
+                    while (reader.Read())
+                    {
+                        if (reader.TokenType == JsonTokenType.EndObject)
+                            break;
+
+                        if (reader.TokenType != JsonTokenType.PropertyName)
+                            throw new JsonException();
+
+                        string propertyName = reader.GetString()!;
+                        reader.Read();
+
+                        if (propertyName == "Value")
+                            result.Value = JsonSerializer.Deserialize<T>(ref reader, options)!;
+                    }
+                    return result;
+                }
+
+                public override void Write(Utf8JsonWriter writer, TypeWithNonGenericOuterConverter<T> value, JsonSerializerOptions options)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("Value");
+                    JsonSerializer.Serialize(writer, value.Value, options);
+                    writer.WriteEndObject();
+                }
             }
         }
     }

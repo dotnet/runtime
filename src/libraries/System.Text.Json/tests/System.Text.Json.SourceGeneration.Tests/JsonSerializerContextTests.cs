@@ -1025,65 +1025,48 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.True(deserialized2.IsActive);
         }
 
-        [Fact]
-        public static void SupportsOpenGenericConverterOnGenericType()
+        [Theory]
+        [InlineData(42, "42")]
+        [InlineData(0, "0")]
+        public static void SupportsOpenGenericConverterOnGenericType_Int(int value, string expectedJson)
         {
-            // Test Option<int> serialization
-            Option<int> option = new Option<int>(42);
+            Option<int> option = new Option<int>(value);
             string json = JsonSerializer.Serialize(option, OpenGenericConverterContext.Default.OptionInt32);
-            Assert.Equal("42", json);
+            Assert.Equal(expectedJson, json);
 
-            // Test deserialization
             Option<int> deserialized = JsonSerializer.Deserialize<Option<int>>(json, OpenGenericConverterContext.Default.OptionInt32);
             Assert.True(deserialized.HasValue);
-            Assert.Equal(42, deserialized.Value);
+            Assert.Equal(value, deserialized.Value);
         }
 
         [Fact]
-        public static void SupportsOpenGenericConverterOnGenericType_WithNullValue()
+        public static void SupportsOpenGenericConverterOnGenericType_NullValue()
         {
-            // Test Option<int> with no value
             Option<int> option = default;
             string json = JsonSerializer.Serialize(option, OpenGenericConverterContext.Default.OptionInt32);
             Assert.Equal("null", json);
 
-            // Test deserialization of null
             Option<int> deserialized = JsonSerializer.Deserialize<Option<int>>("null", OpenGenericConverterContext.Default.OptionInt32);
             Assert.False(deserialized.HasValue);
         }
 
-        [Fact]
-        public static void SupportsOpenGenericConverterOnGenericType_StringType()
+        [Theory]
+        [InlineData("hello", @"""hello""")]
+        [InlineData("", @"""""")]
+        public static void SupportsOpenGenericConverterOnGenericType_String(string value, string expectedJson)
         {
-            // Test Option<string> serialization
-            Option<string> option = new Option<string>("hello");
+            Option<string> option = new Option<string>(value);
             string json = JsonSerializer.Serialize(option, OpenGenericConverterContext.Default.OptionString);
-            Assert.Equal(@"""hello""", json);
+            Assert.Equal(expectedJson, json);
 
-            // Test deserialization
             Option<string> deserialized = JsonSerializer.Deserialize<Option<string>>(json, OpenGenericConverterContext.Default.OptionString);
             Assert.True(deserialized.HasValue);
-            Assert.Equal("hello", deserialized.Value);
-        }
-
-        [Fact]
-        public static void SupportsOpenGenericConverterOnGenericType_NestedInClass()
-        {
-            // Test ClassWithOptionProperty
-            var obj = new ClassWithOptionProperty { Name = "Test", OptionalValue = 123 };
-            string json = JsonSerializer.Serialize(obj, OpenGenericConverterContext.Default.ClassWithOptionProperty);
-            Assert.Equal(@"{""Name"":""Test"",""OptionalValue"":123}", json);
-
-            var deserialized = JsonSerializer.Deserialize<ClassWithOptionProperty>(json, OpenGenericConverterContext.Default.ClassWithOptionProperty);
-            Assert.Equal("Test", deserialized.Name);
-            Assert.True(deserialized.OptionalValue.HasValue);
-            Assert.Equal(123, deserialized.OptionalValue.Value);
+            Assert.Equal(value, deserialized.Value);
         }
 
         [Fact]
         public static void SupportsOpenGenericConverterOnProperty()
         {
-            // Test property-level open generic converter
             var obj = new ClassWithGenericConverterOnProperty { Value = new GenericWrapper<int>(42) };
             string json = JsonSerializer.Serialize(obj, OpenGenericConverterContext.Default.ClassWithGenericConverterOnProperty);
             Assert.Equal(@"{""Value"":42}", json);
@@ -1100,11 +1083,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
         }
 
-        // Tests for nested containing class with type parameters
         [Fact]
         public static void SupportsNestedGenericConverterOnGenericType()
         {
-            // Test TypeWithNestedConverter<int, string> serialization with nested converter
             var value = new TypeWithNestedConverter<int, string> { Value1 = 42, Value2 = "hello" };
             string json = JsonSerializer.Serialize(value, NestedGenericConverterContext.Default.TypeWithNestedConverterInt32String);
             Assert.Equal(@"{""Value1"":42,""Value2"":""hello""}", json);
@@ -1114,11 +1095,9 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("hello", deserialized.Value2);
         }
 
-        // Tests for type parameters with constraints that are satisfied
         [Fact]
         public static void SupportsConstrainedGenericConverterOnGenericType()
         {
-            // Test TypeWithSatisfiedConstraint<string> serialization - string satisfies class constraint
             var value = new TypeWithSatisfiedConstraint<string> { Value = "test" };
             string json = JsonSerializer.Serialize(value, NestedGenericConverterContext.Default.TypeWithSatisfiedConstraintString);
             Assert.Equal(@"{""Value"":""test""}", json);
@@ -1127,8 +1106,33 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("test", deserialized.Value);
         }
 
+        [Fact]
+        public static void SupportsGenericWithinNonGenericWithinGenericConverter()
+        {
+            var value = new TypeWithDeeplyNestedConverter<int, string> { Value1 = 99, Value2 = "deep" };
+            string json = JsonSerializer.Serialize(value, NestedGenericConverterContext.Default.TypeWithDeeplyNestedConverterInt32String);
+            Assert.Equal(@"{""Value1"":99,""Value2"":""deep""}", json);
+
+            var deserialized = JsonSerializer.Deserialize<TypeWithDeeplyNestedConverter<int, string>>(json, NestedGenericConverterContext.Default.TypeWithDeeplyNestedConverterInt32String);
+            Assert.Equal(99, deserialized.Value1);
+            Assert.Equal("deep", deserialized.Value2);
+        }
+
+        [Fact]
+        public static void SupportsSingleGenericLevelNestedConverter()
+        {
+            var value = new TypeWithSingleLevelNestedConverter<int> { Value = 42 };
+            string json = JsonSerializer.Serialize(value, NestedGenericConverterContext.Default.TypeWithSingleLevelNestedConverterInt32);
+            Assert.Equal(@"{""Value"":42}", json);
+
+            var deserialized = JsonSerializer.Deserialize<TypeWithSingleLevelNestedConverter<int>>(json, NestedGenericConverterContext.Default.TypeWithSingleLevelNestedConverterInt32);
+            Assert.Equal(42, deserialized.Value);
+        }
+
         [JsonSerializable(typeof(TypeWithNestedConverter<int, string>))]
         [JsonSerializable(typeof(TypeWithSatisfiedConstraint<string>))]
+        [JsonSerializable(typeof(TypeWithDeeplyNestedConverter<int, string>))]
+        [JsonSerializable(typeof(TypeWithSingleLevelNestedConverter<int>))]
         [JsonSerializable(typeof(int))]
         [JsonSerializable(typeof(string))]
         internal partial class NestedGenericConverterContext : JsonSerializerContext

@@ -807,9 +807,28 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateTypesWithConstrainedGenericConverter();
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            // Should compile without diagnostics since string satisfies the class constraint
             Assert.Empty(result.Diagnostics);
             result.AssertContainsType("global::HelloWorld.TypeWithSatisfiedConstraint<string>");
+        }
+
+        [Fact]
+        public void DeeplyNestedGenericConverter_CompileSuccessfully()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithDeeplyNestedGenericConverter();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithDeeplyNestedConverter<int, string>");
+        }
+
+        [Fact]
+        public void NonGenericOuterGenericConverter_CompileSuccessfully()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithNonGenericOuterGenericConverter();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithNonGenericOuterConverter<int>");
         }
     }
 }
