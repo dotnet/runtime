@@ -515,6 +515,13 @@ CDAC_TYPE_BEGIN(CodePointer)
 CDAC_TYPE_SIZE(sizeof(PCODE))
 CDAC_TYPE_END(CodePointer)
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_TYPE_BEGIN(PortableEntryPoint)
+CDAC_TYPE_INDETERMINATE(PortableEntryPoint)
+CDAC_TYPE_FIELD(PortableEntryPoint, /*pointer*/, MethodDesc, cdac_data<PortableEntryPoint>::MethodDesc)
+CDAC_TYPE_END(PortableEntryPoint)
+#endif
+
 CDAC_TYPE_BEGIN(MethodDescCodeData)
 CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
 CDAC_TYPE_FIELD(MethodDescCodeData, /*CodePointer*/, TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
@@ -1104,6 +1111,11 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
 #else
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 1)
+#else
+CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 0)
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)
@@ -1178,6 +1190,7 @@ CDAC_GLOBAL_CONTRACT(DebugInfo, 2)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
 CDAC_GLOBAL_CONTRACT(Exception, 1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, 2)
+CDAC_GLOBAL_CONTRACT(GCInfo, 1)
 CDAC_GLOBAL_CONTRACT(Loader, 1)
 CDAC_GLOBAL_CONTRACT(Notifications, 1)
 CDAC_GLOBAL_CONTRACT(Object, 1)

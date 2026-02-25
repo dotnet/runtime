@@ -16,6 +16,7 @@ public static class Constants
 
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
         public const string FeatureOnStackReplacement = nameof(FeatureOnStackReplacement);
+        public const string FeaturePortableEntrypoints = nameof(FeaturePortableEntrypoints);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);

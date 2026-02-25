@@ -63,7 +63,7 @@ public sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
 
-    private enum CorTokenType: uint
+    private enum CorTokenType : uint
     {
         mdtTypeRef = 0x01000000,
         mdtTypeDef = 0x02000000,
@@ -606,7 +606,6 @@ public sealed unsafe partial class SOSDacImpl
         {
             hr = ex.HResult;
         }
-
 #if DEBUG
         if (_legacyImpl is not null)
         {
@@ -627,8 +626,77 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.GetCodeHeaderData(ClrDataAddress ip, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetCodeHeaderData(ip, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetCodeHeaderData(ClrDataAddress ip, DacpCodeHeaderData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ip == 0 || data == null)
+                throw new ArgumentException();
+
+            IExecutionManager eman = _target.Contracts.ExecutionManager;
+            IGCInfo gcInfo = _target.Contracts.GCInfo;
+
+            TargetCodePointer targetCodePointer = ip.ToTargetCodePointer(_target);
+            if (eman.GetCodeBlockHandle(targetCodePointer) is not CodeBlockHandle cbh)
+            {
+                TargetPointer methodDesc = eman.NonVirtualEntry2MethodDesc(targetCodePointer);
+                if (methodDesc == TargetPointer.Null)
+                    throw new ArgumentException();
+                data->MethodDescPtr = methodDesc.ToClrDataAddress(_target);
+                data->JITType = JitTypes.TYPE_UNKNOWN;
+                data->GCInfo = 0;
+                data->MethodStart = 0;
+                data->MethodSize = 0;
+                data->HotRegionSize = 0;
+                data->ColdRegionSize = 0;
+                data->ColdRegionStart = 0;
+            }
+            else
+            {
+                data->MethodDescPtr = eman.GetMethodDesc(cbh).ToClrDataAddress(_target);
+
+                data->JITType = (JitTypes)eman.GetJITType(cbh);
+
+                eman.GetGCInfo(cbh, out TargetPointer pGcInfo, out uint gcVersion);
+                data->GCInfo = pGcInfo.ToClrDataAddress(_target);
+
+                data->MethodStart = eman.GetStartAddress(cbh).Value;
+
+                IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+                data->MethodSize = gcInfo.GetCodeLength(gcInfoHandle);
+
+                eman.GetMethodRegionInfo(cbh, out uint hotRegionSize, out TargetPointer coldRegionStart, out uint coldRegionSize);
+                data->HotRegionSize = hotRegionSize;
+                data->ColdRegionSize = coldRegionSize;
+                data->ColdRegionStart = coldRegionStart.ToClrDataAddress(_target);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpCodeHeaderData dataLocal = default;
+            int hrLocal = _legacyImpl.GetCodeHeaderData(ip, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->MethodDescPtr == dataLocal.MethodDescPtr, $"cDAC: {data->MethodDescPtr:x}, DAC: {dataLocal.MethodDescPtr:x}");
+                Debug.Assert(data->JITType == dataLocal.JITType, $"cDAC: {data->JITType}, DAC: {dataLocal.JITType}");
+                Debug.Assert(data->GCInfo == dataLocal.GCInfo, $"cDAC: {data->GCInfo:x}, DAC: {dataLocal.GCInfo:x}");
+                Debug.Assert(data->MethodStart == dataLocal.MethodStart, $"cDAC: {data->MethodStart:x}, DAC: {dataLocal.MethodStart:x}");
+                Debug.Assert(data->MethodSize == dataLocal.MethodSize, $"cDAC: {data->MethodSize}, DAC: {dataLocal.MethodSize}");
+                Debug.Assert(data->HotRegionSize == dataLocal.HotRegionSize, $"cDAC: {data->HotRegionSize}, DAC: {dataLocal.HotRegionSize}");
+                Debug.Assert(data->ColdRegionStart == dataLocal.ColdRegionStart, $"cDAC: {data->ColdRegionStart:x}, DAC: {dataLocal.ColdRegionStart:x}");
+                Debug.Assert(data->ColdRegionSize == dataLocal.ColdRegionSize, $"cDAC: {data->ColdRegionSize}, DAC: {dataLocal.ColdRegionSize}");
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetCodeHeapList(ClrDataAddress jitManager, uint count, void* codeHeaps, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetCodeHeapList(jitManager, count, codeHeaps, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetDacModuleHandle(void* phModule)
