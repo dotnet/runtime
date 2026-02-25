@@ -272,10 +272,21 @@ void WasmRegAlloc::CollectReferences()
 void WasmRegAlloc::CollectReferencesForBlock(BasicBlock* block)
 {
     m_currentBlock = block;
-    for (GenTree* node : LIR::AsRange(block))
+
+    // We may modify the range while iterating.
+    //
+    // For now, we assume and reordering happens for already visited
+    // nodes, and any newly introduces nodes do not need collection.
+    //
+    GenTree* node = LIR::AsRange(block).FirstNode();
+
+    while (node != nullptr)
     {
+        GenTree* nextNode = node->gtNext;
         CollectReferencesForNode(node);
+        node = nextNode;
     }
+
     m_currentBlock = nullptr;
 }
 
