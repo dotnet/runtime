@@ -2480,7 +2480,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         genConsumeReg(size);
 
         // Extend size to pointer size, if necessary
-        if (genTypeSize(size->TypeGet()) < TARGET_POINTER_SIZE)
+        if (genTypeSize(genActualType(size->TypeGet())) < TARGET_POINTER_SIZE)
         {
             assert(TARGET_POINTER_SIZE == 8);
             GetEmitter()->emitIns(INS_i64_extend_u_i32);
@@ -2491,6 +2491,9 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(regs->Count() == 1);
         regNumber sizeReg = regs->Extract();
         assert(WasmRegToType(sizeReg) == TypeToWasmValueType(TYP_I_IMPL));
+
+        // Save the size
+        GetEmitter()->emitIns_I(INS_local_tee, EA_PTRSIZE, WasmRegToIndex(sizeReg));
 
         // Check for zero-sized requests
         GetEmitter()->emitIns(INS_I_eqz);
