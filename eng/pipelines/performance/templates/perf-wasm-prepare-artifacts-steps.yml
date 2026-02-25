@@ -12,27 +12,27 @@ steps:
       /t:InstallWorkloadUsingArtifacts
       /bl:$(Build.SourcesDirectory)/artifacts/log/${{ parameters.configForBuild }}/InstallWorkloadUsingArtifacts.binlog
       $(Build.SourcesDirectory)/src/mono/wasm/Wasm.Build.Tests/Wasm.Build.Tests.csproj
-    displayName: "Install workload using artifacts"
+    displayName: "Install ${{ parameters.runtimeFlavor }} workload using artifacts"
 
-  # Mono needs full SDK + nugets; CoreCLR only needs the runtime pack
+  # Mono uses dotnet-latest (full SDK with workload), CoreCLR uses dotnet-none (minimal SDK)
   - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-    - script: >-
-        mkdir -p $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
-        cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-latest $(Build.SourcesDirectory)/artifacts/staging &&
-        cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
-        cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging &&
-        cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
-        cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
-      displayName: "Prepare artifacts staging directory (Mono)"
-
+    - script: cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-latest $(Build.SourcesDirectory)/artifacts/staging
+      displayName: "Stage SDK (dotnet-latest)"
   - ${{ if eq(parameters.runtimeFlavor, 'coreclr') }}:
-    - script: >-
-        mkdir -p $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
-        cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-none $(Build.SourcesDirectory)/artifacts/staging &&
-        cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
-        cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
-        cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
-      displayName: "Prepare artifacts staging directory (CoreCLR)"
+    - script: cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-none $(Build.SourcesDirectory)/artifacts/staging
+      displayName: "Stage SDK (dotnet-none)"
+
+  - script: >-
+      mkdir -p $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
+      cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
+      cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
+      cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
+    displayName: "Prepare ${{ parameters.runtimeFlavor }} artifacts staging directory"
+
+  # Mono also needs the ref pack directory (CoreCLR gets it from nugets)
+  - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+    - script: cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging
+      displayName: "Stage ref pack directory (Mono)"
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
