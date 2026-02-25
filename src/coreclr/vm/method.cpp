@@ -2484,7 +2484,7 @@ void MethodDesc::ResetPortableEntryPoint()
         pep->Init(this);  // Re-initializes: clears _pActualCode, _pInterpreterData, _flags
     }
 }
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 //*******************************************************************************
 void MethodDesc::Reset()
@@ -2507,7 +2507,7 @@ void MethodDesc::Reset()
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     _ASSERTE(HasPrecode());
     GetPrecode()->Reset();
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     if (HasNativeCodeSlot())
     {
