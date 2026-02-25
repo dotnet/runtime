@@ -163,7 +163,7 @@ namespace System.IO.Hashing.Tests
 
             // The maximum possible value of an Adler32 checksum is 0xFFF0FFF0,
             // which has both components just below the modulo value (0xFFF0 == 65520).
-            // A sequence of 655519 ones will generate this value.
+            // A sequence of 65519 ones will generate this value.
 
             byte[] primer = new byte[65519];
             primer.AsSpan().Fill(1);
@@ -171,7 +171,7 @@ namespace System.IO.Hashing.Tests
             alg.Append(primer);
             Assert.Equal(0xFFF0FFF0, alg.GetCurrentHashAsUInt32());
 
-            // Starting from an alerady-maxed checksum, a stream of 5553 max value
+            // Starting from an already-maxed checksum, a stream of 5553 max value
             // bytes will overflow if not reduced by mod 65521 before the last byte.
 
             byte[] data = new byte[length];
