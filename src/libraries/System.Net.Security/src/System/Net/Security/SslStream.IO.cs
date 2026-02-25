@@ -334,7 +334,7 @@ namespace System.Net.Security
 #if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
                 if (s_ktlsEnabled && reAuthenticationData == null && OperatingSystem.IsLinux() && InnerStream is NetworkStream ns)
                 {
-                    await DoKtlsHandshakeAsync(ns.Socket, cancellationToken).ConfigureAwait(false);
+                    await DoKtlsHandshakeAsync<TIOAdapter>(ns.Socket, cancellationToken).ConfigureAwait(false);
                     return;
                 }
 #endif
@@ -450,39 +450,50 @@ namespace System.Net.Security
         }
 
 #if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
-        private async Task DoKtlsHandshakeAsync(Socket socket, CancellationToken cancellationToken)
+        private async Task DoKtlsHandshakeAsync<TIOAdapter>(Socket socket, CancellationToken cancellationToken)
+            where TIOAdapter : IReadWriteAdapter
         {
             int fd = (int)socket.Handle;
+            SafeSslHandle sslHandle = Interop.OpenSsl.AllocateSslHandleForKtls(_sslAuthenticationOptions, fd);
+            _securityContext = sslHandle;
 
-            // Allocate SSL handle with socket BIO + kTLS enabled
-            _securityContext = await Task.Run(() =>
+            // Non-blocking handshake loop: SSL_do_handshake reads/writes the socket directly.
+            // On WANT_READ we await data via zero-byte read on InnerStream.
+            while (true)
             {
-                SafeSslHandle sslHandle = Interop.OpenSsl.AllocateSslHandleForKtls(_sslAuthenticationOptions, fd);
+                int ret = Interop.Ssl.SslDoHandshake(sslHandle, out Interop.Ssl.SslErrorCode error);
+                if (ret == 1)
+                {
+                    sslHandle.MarkHandshakeCompleted();
+                    break;
+                }
 
-                // Blocking handshake - OpenSSL reads/writes the socket directly
-                Interop.OpenSsl.DoSslHandshakeKtls(sslHandle);
-                return sslHandle;
-            }, cancellationToken).ConfigureAwait(false);
+                if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ)
+                {
+                    await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                }
+                else if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE)
+                {
+                    await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    throw new AuthenticationException(SR.net_auth_SSPI, Interop.OpenSsl.CreateSslException(SR.net_auth_SSPI));
+                }
+            }
 
             _useKtls = true;
             CompleteHandshake(_sslAuthenticationOptions);
         }
 
-        private static int KtlsReadSync(SafeSslHandle sslHandle, Span<byte> buffer)
+        private static int TryKtlsRead(SafeSslHandle sslHandle, Memory<byte> buffer, out Interop.Ssl.SslErrorCode error)
         {
-            return Interop.OpenSsl.KtlsRead(sslHandle, buffer);
+            return Interop.Ssl.SslRead(sslHandle, ref MemoryMarshal.GetReference(buffer.Span), buffer.Length, out error);
         }
 
-        private static int KtlsWriteSync(SafeSslHandle sslHandle, ReadOnlySpan<byte> buffer)
+        private static int TryKtlsWrite(SafeSslHandle sslHandle, ReadOnlyMemory<byte> buffer, out Interop.Ssl.SslErrorCode error)
         {
-            int totalWritten = 0;
-            while (totalWritten < buffer.Length)
-            {
-                int written = Interop.OpenSsl.KtlsWrite(sslHandle, buffer.Slice(totalWritten));
-                totalWritten += written;
-            }
-
-            return totalWritten;
+            return Interop.Ssl.SslWrite(sslHandle, ref MemoryMarshal.GetReference(buffer.Span), buffer.Length, out error);
         }
 #endif
 
@@ -926,8 +937,21 @@ namespace System.Net.Security
                 if (_useKtls)
                 {
                     SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
-                    int bytesRead = await Task.Run(() => KtlsReadSync(sslHandle, buffer.Span), cancellationToken).ConfigureAwait(false);
-                    return bytesRead;
+                    while (true)
+                    {
+                        int ret = TryKtlsRead(sslHandle, buffer, out Interop.Ssl.SslErrorCode error);
+                        if (ret > 0) return ret;
+
+                        if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN) return 0;
+
+                        if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ)
+                        {
+                            await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                            continue;
+                        }
+
+                        throw new IOException(SR.net_io_decrypt, Interop.OpenSsl.CreateSslException(SR.net_io_decrypt));
+                    }
                 }
 #endif
 
@@ -1085,7 +1109,25 @@ namespace System.Net.Security
                 if (_useKtls)
                 {
                     SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
-                    await Task.Run(() => KtlsWriteSync(sslHandle, buffer.Span), cancellationToken).ConfigureAwait(false);
+                    int totalWritten = 0;
+                    while (totalWritten < buffer.Length)
+                    {
+                        ReadOnlyMemory<byte> remaining = buffer.Slice(totalWritten);
+                        int ret = TryKtlsWrite(sslHandle, remaining, out Interop.Ssl.SslErrorCode error);
+                        if (ret > 0)
+                        {
+                            totalWritten += ret;
+                            continue;
+                        }
+
+                        if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE)
+                        {
+                            await Task.Yield();
+                            continue;
+                        }
+
+                        throw new IOException(SR.net_io_encrypt, Interop.OpenSsl.CreateSslException(SR.net_io_encrypt));
+                    }
                     return;
                 }
 #endif
