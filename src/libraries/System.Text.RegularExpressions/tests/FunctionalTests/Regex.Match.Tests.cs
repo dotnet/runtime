@@ -3236,6 +3236,7 @@ namespace System.Text.RegularExpressions.Tests
     public partial class RegexMatchTests
     {
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support AnyNewLine")]
         [MemberData(nameof(AnyNewLine_Dollar_TestData))]
         public async Task AnyNewLine_Dollar(RegexEngine engine, string pattern, string input, RegexOptions options, bool expectedSuccess, string expectedValue)
         {
@@ -3309,6 +3310,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support AnyNewLine")]
         [MemberData(nameof(AnyNewLine_EndZ_TestData))]
         public async Task AnyNewLine_EndZ(RegexEngine engine, string pattern, string input, RegexOptions options, bool expectedSuccess, string expectedValue)
         {
@@ -3381,6 +3383,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support AnyNewLine")]
         [MemberData(nameof(AnyNewLine_DollarMultiline_TestData))]
         public async Task AnyNewLine_DollarMultiline(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedValues)
         {
@@ -3478,6 +3481,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support AnyNewLine")]
         [MemberData(nameof(AnyNewLine_CaretMultiline_TestData))]
         public async Task AnyNewLine_CaretMultiline(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedValues)
         {
@@ -3577,6 +3581,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support AnyNewLine")]
         [MemberData(nameof(AnyNewLine_Dot_TestData))]
         public async Task AnyNewLine_Dot(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedValues)
         {
@@ -3654,6 +3659,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support AnyNewLine")]
         [MemberData(nameof(AnyNewLine_Integration_TestData))]
         public async Task AnyNewLine_Integration(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedValues)
         {
@@ -3697,6 +3703,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support AnyNewLine")]
         [MemberData(nameof(AnyNewLine_ReplaceSplit_TestData))]
         public async Task AnyNewLine_ReplaceSplit(RegexEngine engine)
         {
@@ -3737,6 +3744,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support AnyNewLine")]
         [MemberData(nameof(AnyNewLine_Unicode_TestData))]
         public async Task AnyNewLine_Unicode(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedValues)
         {
@@ -3827,6 +3835,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support AnyNewLine")]
         [MemberData(nameof(AnyNewLine_Advanced_TestData))]
         public async Task AnyNewLine_Advanced(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedValues)
         {
@@ -3963,6 +3972,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support AnyNewLine")]
         [MemberData(nameof(AnyNewLine_Methods_TestData))]
         public async Task AnyNewLine_Methods(RegexEngine engine)
         {
