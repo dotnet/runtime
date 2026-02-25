@@ -362,7 +362,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _wasmTypeNodes = new(key =>
             {
-                return new WasmTypeNode(key.Type);
+                return new WasmTypeNode(key);
             });
         }
 
@@ -1079,27 +1079,12 @@ namespace ILCompiler.DependencyAnalysis
             return default;
         }
 
-        private struct WasmTypeNodeKey : IEquatable<WasmTypeNodeKey>
-        {
-            public readonly WasmFuncType Type;
-
-            public WasmTypeNodeKey(WasmFuncType type)
-            {
-                Type = type;
-            }
-
-            public bool Equals(WasmTypeNodeKey other) => Type.Equals(other.Type);
-            public override bool Equals(object obj) => obj is WasmTypeNodeKey wtnk && Equals(wtnk);
-            public override int GetHashCode()
-                => Type.GetHashCode();
-        }
-
-        private NodeCache<WasmTypeNodeKey, WasmTypeNode> _wasmTypeNodes;
+        private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
 
         public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
         {
             WasmFuncType funcType = WasmFuncType.FromCorInfoSignature(types);
-            return _wasmTypeNodes.GetOrAdd(new WasmTypeNodeKey(funcType));
+            return _wasmTypeNodes.GetOrAdd(funcType);
         }
     }
 }

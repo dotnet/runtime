@@ -19,15 +19,13 @@ namespace ILCompiler.DependencyAnalysis.Wasm
         public WasmTypeNode(WasmFuncType type)
         {
             _type = type;
-            _data = new byte[_type.EncodeSize()];
-            _type.Encode(_data);
         }
 
         public override bool IsShareable => true;
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
 
-        public override int ClassCode => -856789310;
+        public override int ClassCode => (int)ObjectNodeOrder.WasmTypeNode;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -36,14 +34,23 @@ namespace ILCompiler.DependencyAnalysis.Wasm
         protected override string GetName(NodeFactory factory)
             => $"Wasm Type Signature: {Type.ToString()}";
 
-        private byte[] _data;
-
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
+            if (relocsOnly)
+            {
+                return new ObjectData(
+                       data: Array.Empty<byte>(),
+                       relocs: Array.Empty<Relocation>(),
+                       alignment: 1,
+                       definedSymbols: new ISymbolDefinitionNode[] { this });
+            }
+
+            byte[] data = new byte[_type.EncodeSize()];
+            _type.Encode(data);
+
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
-            builder.EmitBytes(_data);
-
+            builder.EmitBytes(data);
             return builder.ToObjectData();
         }
 

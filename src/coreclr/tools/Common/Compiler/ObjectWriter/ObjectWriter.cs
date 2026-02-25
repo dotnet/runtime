@@ -438,7 +438,6 @@ namespace ILCompiler.ObjectWriter
 
                 if (node is WasmTypeNode signature)
                 {
-                    Debug.Assert(LayoutMode == CodeDataLayout.Separate);
                     RecordMethodSignature(signature);
                 }
 
@@ -657,18 +656,12 @@ namespace ILCompiler.ObjectWriter
 
         private protected virtual void RecordMethodDeclaration(ISymbolDefinitionNode node, MethodDesc desc)
         {
-            if (LayoutMode != CodeDataLayout.Separate)
-            {
-                throw new InvalidOperationException($"RecordMethodDeclaration() must only be called on platforms with separated code and data, arch = {_nodeFactory.Target.Architecture}");
-            }
+            Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
 
         private protected virtual void RecordMethodSignature(WasmTypeNode signature)
         {
-            if (LayoutMode != CodeDataLayout.Separate)
-            {
-                throw new InvalidOperationException($"RecordMethodSignature() must only be called on platforms with separated code and data, arch = {_nodeFactory.Target.Architecture}");
-            }
+            Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
 
         private protected virtual void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
