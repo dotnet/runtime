@@ -17196,7 +17196,8 @@ bool Compiler::gtTreeMayHaveInvalidByrefs(Compiler* compiler, GenTree* tree)
         {
             GenTree* tree = *use;
             // It is possible to be more precise, but it is not required by the contract.
-            if (tree->TypeIs(TYP_BYREF) && !tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_RETURN))
+            if (tree->TypeIs(TYP_BYREF) && !tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_RETURN) &&
+                !tree->IsIntegralConst(0))
             {
                 return WALK_ABORT;
             }
