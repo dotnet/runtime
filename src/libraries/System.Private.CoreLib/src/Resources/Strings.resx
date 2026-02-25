@@ -4453,6 +4453,9 @@
   <data name="FunctionPointer_CallingConventionsUnbalanced">
     <value>Calling conventions present on modified return type must match explicitly specified calling conventions.</value>
   </data>
+  <data name="FunctionPointer_InvalidCallingConvention">
+    <value>'{0}' is not a valid calling convention type.</value>
+  </data>
   <data name="NotSupported_FunctionPointerSignature">
     <value>Function pointer signature can only be encoded by dynamic ILGenerator.</value>
   </data>

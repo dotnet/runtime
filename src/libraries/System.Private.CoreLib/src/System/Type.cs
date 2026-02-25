@@ -659,12 +659,6 @@ namespace System
         /// </exception>
         public static Type MakeFunctionPointerSignatureType(Type returnType, Type[]? parameterTypes, bool isUnmanaged = false, Type[]? callingConventions = null)
         {
-            static bool IsBuiltInCallingConvention(string? fullName) =>
-                fullName is "System.Runtime.CompilerServices.CallConvCdecl" or
-                "System.Runtime.CompilerServices.CallConvFastcall" or
-                "System.Runtime.CompilerServices.CallConvStdcall" or
-                "System.Runtime.CompilerServices.CallConvThiscall";
-
             ArgumentNullException.ThrowIfNull(returnType);
             parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
             callingConventions = (callingConventions != null) ? (Type[])callingConventions.Clone() : [];
@@ -673,33 +667,43 @@ namespace System
                 ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
 
             foreach (Type callConv in callingConventions)
+            {
                 ArgumentNullException.ThrowIfNull(callConv, nameof(callingConventions));
+                string? fullName = callConv.FullName;
+
+                if (callConv.HasElementType ||
+                    callConv.ContainsGenericParameters ||
+                    callConv.IsSignatureType ||
+                    fullName == null ||
+                    !fullName.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
+                {
+                    throw new ArgumentException(SR.Format(SR.FunctionPointer_InvalidCallingConvention, fullName), nameof(callingConventions));
+                }
+            }
 
             if (!isUnmanaged && callingConventions.Length >= 1)
                 throw new ArgumentException(SR.ManagedFunctionPointer_CallingConventionsNotAllowed, nameof(callingConventions));
 
             bool builtInCallConv = false;
             if (callingConventions.Length == 1)
-                builtInCallConv = IsBuiltInCallingConvention(callingConventions[0].FullName);
+            {
+                builtInCallConv = callingConventions[0].FullName is
+                    "System.Runtime.CompilerServices.CallConvCdecl" or
+                    "System.Runtime.CompilerServices.CallConvFastcall" or
+                    "System.Runtime.CompilerServices.CallConvStdcall" or
+                    "System.Runtime.CompilerServices.CallConvThiscall";
+            }
 
-            bool callConvInModOpts = false;
+            int callConvIndex = 0;
             if (returnType.GetOptionalCustomModifiers() is Type[] retTypeModOpts)
             {
-                int callConvIndex = 0;
-                bool callConvsFinished = false;
-
                 foreach (Type modopt in retTypeModOpts)
                 {
                     string? typeName = modopt.FullName;
 
-                    if (typeName != null && typeName.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
+                    if (typeName is not null && typeName.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
                     {
-                        if (callConvsFinished)
-                            throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
-
-                        callConvInModOpts = true;
-
-                        if (builtInCallConv && IsBuiltInCallingConvention(typeName))
+                        if (builtInCallConv)
                             throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
 
                         if (callConvIndex >= callingConventions.Length || modopt != callingConventions[callConvIndex])
@@ -707,20 +711,13 @@ namespace System
 
                         callConvIndex++;
                     }
-                    else if (callConvInModOpts)
-                    {
-                        if (callConvIndex != callingConventions.Length)
-                            throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
-
-                        callConvsFinished = true;
-                    }
                 }
-
-                if (callConvInModOpts && !callConvsFinished && callConvIndex != callingConventions.Length)
-                    throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
             }
 
-            if (!callConvInModOpts && isUnmanaged && !builtInCallConv && callingConventions.Length > 0)
+            if (callConvIndex > 0 && callConvIndex != callingConventions.Length)
+                throw new ArgumentException(SR.FunctionPointer_CallingConventionsUnbalanced, nameof(returnType));
+
+            if (callConvIndex <= 0 && isUnmanaged && !builtInCallConv && callingConventions.Length > 0)
             {
                 // Newer or multiple calling conventions specified -> encoded as modopts
                 returnType = MakeModifiedSignatureType(
