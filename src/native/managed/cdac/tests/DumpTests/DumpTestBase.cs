@@ -22,6 +22,7 @@ public abstract class DumpTestBase : IDisposable
 {
     private ClrMdDumpHost? _host;
     private ContractDescriptorTarget? _target;
+    private DumpInfo? _dumpInfo;
 
     /// <summary>
     /// The set of runtime versions to test against.
@@ -57,17 +58,26 @@ public abstract class DumpTestBase : IDisposable
     protected ContractDescriptorTarget Target => _target ?? throw new InvalidOperationException("Dump not loaded.");
 
     /// <summary>
+    /// Metadata about the environment in which the dump was generated.
+    /// Available after <see cref="InitializeDumpTest"/> has been called.
+    /// </summary>
+    protected DumpInfo? DumpMetadata => _dumpInfo;
+
+    /// <summary>
     /// Loads the dump for the given <paramref name="config"/> and evaluates skip
     /// attributes on the calling test method. Call this as the first line of every test.
     /// </summary>
     protected void InitializeDumpTest(TestConfiguration config, [CallerMemberName] string callerName = "")
     {
-        EvaluateVersionSkipAttributes(config, callerName);
+        string dumpRoot = GetDumpRoot();
+        string versionDir = Path.Combine(dumpRoot, config.RuntimeVersion);
+        _dumpInfo = DumpInfo.TryLoad(versionDir);
 
-        string dumpPath = GetDumpPath(config.RuntimeVersion);
+        EvaluateSkipAttributes(config, callerName);
+
+        string dumpPath = Path.Combine(versionDir, DumpType, DebuggeeName, $"{DebuggeeName}.dmp");
 
         Assert.True(File.Exists(dumpPath), $"Dump file not found: {dumpPath}");
-
 
         _host = ClrMdDumpHost.Open(dumpPath);
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
@@ -81,7 +91,6 @@ public abstract class DumpTestBase : IDisposable
             out _target);
 
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
-
     }
 
     public void Dispose()
@@ -91,14 +100,13 @@ public abstract class DumpTestBase : IDisposable
     }
 
     /// <summary>
-    /// Checks the calling test method for <see cref="SkipOnVersionAttribute"/> and
-    /// throws <see cref="SkipTestException"/> if the current configuration matches.
+    /// Checks the calling test method for skip attributes and throws
+    /// <see cref="SkipTestException"/> if the current configuration matches.
     /// </summary>
-    private void EvaluateVersionSkipAttributes(TestConfiguration config, string callerName)
+    private void EvaluateSkipAttributes(TestConfiguration config, string callerName)
     {
         if (config.RuntimeVersion is "net10.0" && DumpType == "heap")
         {
-            // Skip heap dumps on net10.0 for now, as they are currently generated with an older cDAC version that doesn't populate all fields
             throw new SkipTestException($"[net10.0] Skipping heap dump tests due to outdated dump generation.");
         }
 
@@ -111,21 +119,36 @@ public abstract class DumpTestBase : IDisposable
             if (string.Equals(attr.Version, config.RuntimeVersion, StringComparison.OrdinalIgnoreCase))
                 throw new SkipTestException($"[{config.RuntimeVersion}] {attr.Reason}");
         }
+
+        if (_dumpInfo is not null)
+        {
+            foreach (SkipOnOSAttribute attr in method.GetCustomAttributes<SkipOnOSAttribute>())
+            {
+                if (attr.IncludeOnly is not null)
+                {
+                    if (!string.Equals(attr.IncludeOnly, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase))
+                        throw new SkipTestException($"[{_dumpInfo.Os}] {attr.Reason}");
+                }
+                else if (attr.Os is not null)
+                {
+                    if (string.Equals(attr.Os, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase))
+                        throw new SkipTestException($"[{_dumpInfo.Os}] {attr.Reason}");
+                }
+            }
+        }
     }
 
-    private string GetDumpPath(string runtimeVersion)
+    private static string GetDumpRoot()
     {
         string? dumpRoot = Environment.GetEnvironmentVariable("CDAC_DUMP_ROOT");
-        if (string.IsNullOrEmpty(dumpRoot))
-        {
-            string? repoRoot = FindRepoRoot();
-            if (repoRoot is null)
-                throw new InvalidOperationException("Could not locate the repository root.");
+        if (!string.IsNullOrEmpty(dumpRoot))
+            return dumpRoot;
 
-            dumpRoot = Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
-        }
+        string? repoRoot = FindRepoRoot();
+        if (repoRoot is null)
+            throw new InvalidOperationException("Could not locate the repository root.");
 
-        return Path.Combine(dumpRoot, runtimeVersion, DumpType, DebuggeeName, $"{DebuggeeName}.dmp");
+        return Path.Combine(repoRoot, "artifacts", "dumps", "cdac");
     }
 
     /// <summary>

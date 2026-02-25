@@ -1076,6 +1076,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     if (hasBlocksOnlyReachableViaEH)
     {
         JITDUMP("\nThere are blocks only reachable via EH, bailing out for now\n");
+        NYI_WASM("Method has blocks only reachable via EH");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -1418,35 +1419,39 @@ PhaseStatus Compiler::fgWasmControlFlow()
             const unsigned trueNum  = block->GetTrueTarget()->bbPreorderNum;
             const unsigned falseNum = block->GetFalseTarget()->bbPreorderNum;
 
-            // We don't expect degenerate BBJ_COND
-            //
-            assert(trueNum != falseNum);
-
-            // If the true target is the next block, reverse the branch
-            //
-            const bool reverseCondition = trueNum == (cursor + 1);
-
-            if (reverseCondition)
+            if (trueNum == falseNum)
             {
-                JITDUMP("Reversing condition in " FMT_BB " to allow fall through to " FMT_BB "\n", block->bbNum,
-                        block->GetTrueTarget()->bbNum);
-
-                GenTree* const test = block->GetLastLIRNode();
-                assert(test->OperIs(GT_JTRUE));
-                {
-                    GenTree* const cond = gtReverseCond(test->AsOp()->gtOp1);
-                    // Ensure `gtReverseCond` did not create a new node.
-                    assert(cond == test->AsOp()->gtOp1);
-                    test->AsOp()->gtOp1 = cond;
-                }
-
-                // Rewire the flow
-                //
-                std::swap(block->TrueEdgeRef(), block->FalseEdgeRef());
+                // If branch is degenerate update to BBJ_ALWAYS
+                fgRemoveConditionalJump(block);
             }
             else
             {
-                JITDUMP("NOT Reversing condition in " FMT_BB "\n", block->bbNum);
+                // If the true target is the next block, reverse the branch
+                //
+                const bool reverseCondition = trueNum == (cursor + 1);
+
+                if (reverseCondition)
+                {
+                    JITDUMP("Reversing condition in " FMT_BB " to allow fall through to " FMT_BB "\n", block->bbNum,
+                            block->GetTrueTarget()->bbNum);
+
+                    GenTree* const test = block->GetLastLIRNode();
+                    assert(test->OperIs(GT_JTRUE));
+                    {
+                        GenTree* const cond = gtReverseCond(test->AsOp()->gtOp1);
+                        // Ensure `gtReverseCond` did not create a new node.
+                        assert(cond == test->AsOp()->gtOp1);
+                        test->AsOp()->gtOp1 = cond;
+                    }
+
+                    // Rewire the flow
+                    //
+                    std::swap(block->TrueEdgeRef(), block->FalseEdgeRef());
+                }
+                else
+                {
+                    JITDUMP("NOT Reversing condition in " FMT_BB "\n", block->bbNum);
+                }
             }
         }
     }

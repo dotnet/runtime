@@ -1215,10 +1215,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.CheckedWriteBarrier_EBP;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ENDCATCH:
-                    id = ReadyToRunHelper.EndCatch;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN:
                     id = ReadyToRunHelper.PInvokeBegin;
                     break;
@@ -1260,7 +1256,13 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
+                    id = ReadyToRunHelper.InitClass;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
+                    id = ReadyToRunHelper.InitInstClass;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
@@ -2437,6 +2439,10 @@ namespace Internal.JitInterface
                 else if (!originalMethod.IsVirtual && originalMethod.Context.GetWellKnownType(WellKnownType.Object) == originalMethod.OwningType)
                 {
                     // alllowed, non-virtual method's on Object will never become virtual, and will also always trigger a BOX_THIS pattern
+                }
+                else if (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(constrainedType))
+                {
+                    // The constrained value type is within the version bubble, so target method will always require boxing
                 }
                 else
                 {
