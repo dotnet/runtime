@@ -232,7 +232,7 @@ namespace System.IO.Compression
                 return OperationStatus.Done;
             }
 
-            if(destination.IsEmpty && (source.Length > 0 || isFinalBlock))
+            if (destination.IsEmpty && (source.Length > 0 || isFinalBlock))
             {
                 return OperationStatus.DestinationTooSmall;
             }
