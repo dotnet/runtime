@@ -641,43 +641,29 @@ private:
             return false;
         }
 
+        if (inlineeComp->fgBBcount != 1)
+        {
+            JITDUMP("Inlinee has more than 1 basic block\n");
+            return false;
+        }
+
+        if (!inlineeComp->fgFirstBB->KindIs(BBJ_RETURN))
+        {
+            JITDUMP("Inlinee block is not BBJ_RETURN\n");
+            return false;
+        }
+
+        if ((inlineeComp->fgFirstBB->bbStmtList != nullptr))
+        {
+            JITDUMP("Inlinee has statements\n");
+            return false;
+        }
+
         if (use == m_statement->GetRootNodePointer())
         {
             // Leave this case up to the general handling.
             JITDUMP("Candidate is the root node\n");
             return false;
-        }
-
-        BasicBlock* block = inlineeComp->fgFirstBB;
-        assert(block != nullptr);
-        int numBlocks = 0;
-        while (true)
-        {
-            if (block->bbStmtList != nullptr)
-            {
-                JITDUMP("Inlinee block " FMT_BB " has statements\n", block->bbNum);
-                return false;
-            }
-
-            if (block->KindIs(BBJ_RETURN))
-            {
-                break;
-            }
-
-            BasicBlock* succBlock = block->GetUniqueSucc();
-            if (succBlock == nullptr)
-            {
-                JITDUMP("Inlinee block " FMT_BB " has non-trivial control flow\n", block->bbNum);
-                return false;
-            }
-
-            block = succBlock;
-            numBlocks++;
-            if (numBlocks > 64)
-            {
-                JITDUMP("Too many blocks in inlinee\n");
-                return false;
-            }
         }
 
         GenTree* call = *use;
