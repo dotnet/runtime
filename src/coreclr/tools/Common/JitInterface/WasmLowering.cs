@@ -75,6 +75,11 @@ namespace Internal.JitInterface
 
             TypeDesc abiType = LowerToAbiType(type);
 
+            if (abiType == null)
+            {
+                return pointerType;
+            }
+
             switch (abiType.UnderlyingType.Category)
             {
                 case TypeFlags.Int32:
