@@ -1619,6 +1619,8 @@ public:
     void EnsurePortableEntryPoint();
 
     PCODE GetPortableEntryPoint();
+
+    void ResetPortableEntryPoint();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     //*******************************************************************************
