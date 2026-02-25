@@ -6,7 +6,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -405,13 +404,9 @@ namespace System.Net.Tests
         public async Task<HttpResponseMessage> AuthenticationFailure(HttpClient client, HttpStatusCode errorCode)
         {
             Task<HttpResponseMessage> clientTask = client.GetAsync(_factory.ListeningUrl);
-
-            // The server task will hang forever if it is not cancelled.
-            var tokenSource = new CancellationTokenSource();
-            Task<HttpListenerContext> serverTask = Task.Run(() => _listener.GetContext(), tokenSource.Token);
+            Task<HttpListenerContext> serverTask = _listener.GetContextAsync();
 
             Task resultTask = await Task.WhenAny(clientTask, serverTask);
-            tokenSource.Cancel();
             if (resultTask == serverTask)
             {
                 await serverTask;
@@ -419,8 +414,10 @@ namespace System.Net.Tests
 
             Assert.Same(clientTask, resultTask);
 
-            Assert.Equal(errorCode, clientTask.Result.StatusCode);
-            return clientTask.Result;
+            HttpResponseMessage response = await clientTask;
+            Assert.Equal(errorCode, response.StatusCode);
+
+            return response;
         }
 
         public async Task<HttpResponseMessage> AuthenticationFailureAsyncContext(HttpClient client, HttpStatusCode errorCode)
@@ -436,8 +433,10 @@ namespace System.Net.Tests
 
             Assert.Same(clientTask, resultTask);
 
-            Assert.Equal(errorCode, clientTask.Result.StatusCode);
-            return clientTask.Result;
+            HttpResponseMessage response = await clientTask;
+            Assert.Equal(errorCode, response.StatusCode);
+
+            return response;
         }
 
         private async Task ValidateNullUser()

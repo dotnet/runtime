@@ -144,6 +144,22 @@ namespace ILCompiler
         private DefaultInterfaceMethodImplementationInstantiationThunkHashtable _dimThunkHashtable = new DefaultInterfaceMethodImplementationInstantiationThunkHashtable();
 
         /// <summary>
+        /// Does a method represent a default interface method specialization thunk?
+        /// </summary>
+        public bool IsDefaultInterfaceMethodImplementationInstantiationThunk(MethodDesc method)
+        {
+            return method is DefaultInterfaceMethodImplementationInstantiationThunk;
+        }
+
+        /// <summary>
+        /// Convert from a default interface method specialization thunk to the actual target method.
+        /// </summary>
+        public MethodDesc GetTargetOfDefaultInterfaceMethodImplementationInstantiationThunk(MethodDesc method)
+        {
+            return ((DefaultInterfaceMethodImplementationInstantiationThunk)method).TargetMethod;
+        }
+
+        /// <summary>
         /// Represents a thunk to call shared instance method on generic interfaces.
         /// </summary>
         private sealed partial class DefaultInterfaceMethodImplementationInstantiationThunk : ILStubMethod, IPrefixMangledMethod
@@ -202,16 +218,6 @@ namespace ILCompiler
 
             public override MethodIL EmitIL()
             {
-                // TODO: (async) https://github.com/dotnet/runtime/issues/121781
-                if (_targetMethod.IsAsyncCall())
-                {
-                    ILEmitter e = new ILEmitter();
-                    ILCodeStream c = e.NewCodeStream();
-
-                    c.EmitCallThrowHelper(e, Context.GetCoreLibEntryPoint("System.Runtime"u8, "InternalCalls"u8, "RhpFallbackFailFast"u8, null));
-                    return e.Link(this);
-                }
-
                 // Generate the instantiating stub. This loosely corresponds to following C#:
                 // return Interface.Method(this, GetOrdinalInterface(this.m_pEEType, Index), [rest of parameters])
 
@@ -248,6 +254,11 @@ namespace ILCompiler
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)
                 {
                     codeStream.EmitLdArg(i + 1);
+                }
+
+                if (_targetMethod.IsAsyncCall())
+                {
+                    codeStream.Emit(ILOpcode.call, emit.NewToken(Context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "TailAwait"u8, null)));
                 }
 
                 codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod));

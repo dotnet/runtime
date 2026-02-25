@@ -11,7 +11,7 @@ using ILLink.Shared.TypeSystemProxy;
 namespace ILLink.Shared.TrimAnalysis
 {
     /// <summary>
-    /// This represents a type handle Nullable<T> where T is a known SystemTypeValue.
+    /// This represents a type handle Nullable{T} where T is a known SystemTypeValue.
     /// It is necessary to track the underlying type to propagate DynamicallyAccessedMembers annotations to the underlying type when applied to a Nullable.
     /// </summary>
     internal sealed record RuntimeTypeHandleForNullableSystemTypeValue : SingleValue

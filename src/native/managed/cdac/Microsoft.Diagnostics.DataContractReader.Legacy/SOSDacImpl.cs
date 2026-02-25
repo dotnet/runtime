@@ -41,6 +41,7 @@ public sealed unsafe partial class SOSDacImpl
     // They should be set when actually requested via other DAC APIs, so we lazily read the global pointers.
     private readonly Lazy<TargetPointer> _stringMethodTable;
     private readonly Lazy<TargetPointer> _objectMethodTable;
+    private readonly ulong _rcwMask = 1UL;
 
     private readonly ISOSDacInterface? _legacyImpl;
     private readonly ISOSDacInterface2? _legacyImpl2;
@@ -398,15 +399,12 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetAssemblyList(ClrDataAddress addr, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? values, int* pNeeded)
     {
-        if (addr == 0)
-        {
-            return HResults.E_INVALIDARG;
-        }
-
         int hr = HResults.S_OK;
 
         try
         {
+            if (addr == 0)
+                throw new ArgumentException();
             TargetPointer appDomain = addr.ToTargetPointer(_target);
             TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
             ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
@@ -484,13 +482,11 @@ public sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? modules, uint* pNeeded)
     {
-        if (assembly == 0)
-        {
-            return HResults.E_INVALIDARG;
-        }
         int hr = HResults.S_OK;
         try
         {
+            if (assembly == 0)
+                throw new ArgumentException();
             if (modules is not null && modules.Length > 0 && count > 0)
             {
                 TargetPointer addr = assembly.ToTargetPointer(_target);
@@ -640,12 +636,10 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetDomainFromContext(ClrDataAddress context, ClrDataAddress* domain)
     {
         int hr = HResults.S_OK;
-        if (context == 0 || domain == null)
-        {
-            return HResults.E_INVALIDARG;
-        }
         try
         {
+            if (context == 0 || domain == null)
+                throw new ArgumentException();
             *domain = context;
         }
         catch (System.Exception ex)
@@ -888,14 +882,11 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetFrameName(ClrDataAddress vtable, uint count, char* frameName, uint* pNeeded)
     {
-        if (vtable == 0)
-        {
-            return HResults.E_INVALIDARG;
-        }
-
         int hr = HResults.S_OK;
         try
         {
+            if (vtable == 0)
+                throw new ArgumentException();
             IStackWalk stackWalk = _target.Contracts.StackWalk;
             string name = stackWalk.GetFrameName(new(vtable));
 
@@ -942,13 +933,10 @@ public sealed unsafe partial class SOSDacImpl
     {
         int hr = HResults.S_OK;
 
-        if (data == null)
-        {
-            return HResults.E_INVALIDARG;
-        }
-
         try
         {
+            if (data == null)
+                throw new ArgumentException();
             IGC gc = _target.Contracts.GC;
             string[] heapType = gc.GetGCIdentifiers();
             if (!heapType.Contains(GCIdentifiers.Workstation) && !heapType.Contains(GCIdentifiers.Server))
@@ -1501,24 +1489,20 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetILForModule(ClrDataAddress moduleAddr, int rva, ClrDataAddress* il)
     {
         int hr = HResults.S_OK;
-        if (moduleAddr == 0 || il == null)
+        try
         {
-            hr = HResults.E_INVALIDARG;
+            if (moduleAddr == 0 || il == null)
+                throw new ArgumentException();
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            TargetPointer module = moduleAddr.ToTargetPointer(_target);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
+            TargetPointer peAssemblyPtr = loader.GetPEAssembly(moduleHandle);
+            *il = loader.GetILAddr(peAssemblyPtr, rva).ToClrDataAddress(_target);
         }
-        else
+        catch (System.Exception ex)
         {
-            try
-            {
-                Contracts.ILoader loader = _target.Contracts.Loader;
-                TargetPointer module = moduleAddr.ToTargetPointer(_target);
-                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
-                TargetPointer peAssemblyPtr = loader.GetPEAssembly(moduleHandle);
-                *il = loader.GetILAddr(peAssemblyPtr, rva).ToClrDataAddress(_target);
-            }
-            catch (System.Exception ex)
-            {
-                hr = ex.HResult;
-            }
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl is not null)
@@ -1553,14 +1537,11 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetJumpThunkTarget(void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD)
     {
-        if (ctx == null || targetIP == null || targetMD == null)
-        {
-            return HResults.E_INVALIDARG;
-        }
-
         int hr = HResults.S_OK;
         try
         {
+            if (ctx == null || targetIP == null || targetMD == null)
+                throw new ArgumentException();
             // API is implemented for x64 only
             if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.X64)
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
@@ -1606,24 +1587,17 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetMethodDescData(ClrDataAddress addr, ClrDataAddress ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData)
     {
-        if (addr == 0)
-        {
-            return HResults.E_INVALIDARG;
-        }
-        if (cRevertedRejitVersions != 0 && rgRevertedRejitData == null)
-        {
-            return HResults.E_INVALIDARG;
-        }
-        if (rgRevertedRejitData != null && pcNeededRevertedRejitData == null)
-        {
-            // If you're asking for reverted rejit data, you'd better ask for the number of
-            // elements we return
-            return HResults.E_INVALIDARG;
-        }
-
         int hr = HResults.S_OK;
         try
         {
+            if (addr == 0)
+                throw new ArgumentException();
+            if (cRevertedRejitVersions != 0 && rgRevertedRejitData == null)
+                throw new ArgumentException();
+            if (rgRevertedRejitData != null && pcNeededRevertedRejitData == null)
+                // If you're asking for reverted rejit data, you'd better ask for the number of
+                // elements we return
+                throw new ArgumentException();
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
 
             TargetPointer methodDesc = addr.ToTargetPointer(_target);
@@ -1906,39 +1880,36 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetMethodDescFromToken(ClrDataAddress moduleAddr, uint token, ClrDataAddress* methodDesc)
     {
         int hr = HResults.S_OK;
-        if (moduleAddr == 0 || methodDesc == null)
-            hr = HResults.E_INVALIDARG;
-        else
+        try
         {
-            try
+            if (moduleAddr == 0 || methodDesc == null)
+                throw new ArgumentException();
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            TargetPointer module = moduleAddr.ToTargetPointer(_target);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
+            Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
+            switch ((CorTokenType)token & CorTokenType.typeMask)
             {
-                Contracts.ILoader loader = _target.Contracts.Loader;
-                TargetPointer module = moduleAddr.ToTargetPointer(_target);
-                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
-                Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
-                switch ((CorTokenType)token & CorTokenType.typeMask)
-                {
-                    case CorTokenType.mdtFieldDef:
-                        *methodDesc = loader.GetModuleLookupMapElement(lookupTables.FieldDefToDesc, token, out var _).ToClrDataAddress(_target);
-                        break;
-                    case CorTokenType.mdtMethodDef:
-                        *methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, token, out var _).ToClrDataAddress(_target);
-                        break;
-                    case CorTokenType.mdtTypeDef:
-                        *methodDesc = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, token, out var _).ToClrDataAddress(_target);
-                        break;
-                    case CorTokenType.mdtTypeRef:
-                        *methodDesc = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, token, out var _).ToClrDataAddress(_target);
-                        break;
-                    default:
-                        hr = HResults.E_INVALIDARG;
-                        break;
-                }
+                case CorTokenType.mdtFieldDef:
+                    *methodDesc = loader.GetModuleLookupMapElement(lookupTables.FieldDefToDesc, token, out var _).ToClrDataAddress(_target);
+                    break;
+                case CorTokenType.mdtMethodDef:
+                    *methodDesc = loader.GetModuleLookupMapElement(lookupTables.MethodDefToDesc, token, out var _).ToClrDataAddress(_target);
+                    break;
+                case CorTokenType.mdtTypeDef:
+                    *methodDesc = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, token, out var _).ToClrDataAddress(_target);
+                    break;
+                case CorTokenType.mdtTypeRef:
+                    *methodDesc = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, token, out var _).ToClrDataAddress(_target);
+                    break;
+                default:
+                    throw new ArgumentException();
             }
-            catch (System.Exception ex)
-            {
-                hr = ex.HResult;
-            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl is not null)
@@ -1956,14 +1927,13 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetMethodDescName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
     {
-        if (addr == 0)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         if (pNeeded != null)
             *pNeeded = 0;
         try
         {
+            if (addr == 0)
+                throw new ArgumentException();
             TargetPointer methodDesc = addr.ToTargetPointer(_target);
             StringBuilder stringBuilder = new StringBuilder();
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
@@ -2081,13 +2051,12 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetMethodDescPtrFromIP(ClrDataAddress ip, ClrDataAddress* ppMD)
     {
-        if (ip == 0 || ppMD == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.E_NOTIMPL;
 
         try
         {
+            if (ip == 0 || ppMD == null)
+                throw new ArgumentException();
             IExecutionManager executionManager = _target.Contracts.ExecutionManager;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
@@ -2156,12 +2125,11 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetMethodTableData(ClrDataAddress mt, DacpMethodTableData* data)
     {
-        if (mt == 0 || data == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (mt == 0 || data == null)
+                throw new ArgumentException();
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
             Contracts.TypeHandle methodTable = contract.GetTypeHandle(mt.ToTargetPointer(_target));
 
@@ -2270,12 +2238,11 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetMethodTableForEEClass(ClrDataAddress eeClassReallyCanonMT, ClrDataAddress* value)
     {
-        if (eeClassReallyCanonMT == 0 || value == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (eeClassReallyCanonMT == 0 || value == null)
+                throw new ArgumentException();
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
             Contracts.TypeHandle methodTableHandle = contract.GetTypeHandle(eeClassReallyCanonMT.ToTargetPointer(_target));
             *value = methodTableHandle.Address.ToClrDataAddress(_target);
@@ -2477,12 +2444,11 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetModuleData(ClrDataAddress moduleAddr, DacpModuleData* data)
     {
-        if (moduleAddr == 0 || data == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (moduleAddr == 0 || data == null)
+                throw new ArgumentException();
             Contracts.ILoader contract = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr.ToTargetPointer(_target));
 
@@ -2494,7 +2460,7 @@ public sealed unsafe partial class SOSDacImpl
             bool isReflectionEmit = flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit);
             data->isReflection = (uint)(isReflectionEmit ? 1 : 0);
             data->isPEFile = (uint)(isReflectionEmit ? 0 : 1);      // ReflectionEmit module means it is not a PE file
-            data->dwTransientFlags = (uint)flags;
+            data->dwTransientFlags = (uint)(flags & Contracts.ModuleFlags.EditAndContinue) != 0 ? (uint)DacpModuleData.TransientFlags.IsEditAndContinue : 0;
 
             data->ilBase = contract.GetILBase(handle).ToClrDataAddress(_target);
 
@@ -2572,12 +2538,11 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetNestedExceptionData(ClrDataAddress exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException)
     {
-        if (exception == 0 || exceptionObject == null || nextNestedException == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (exception == 0 || exceptionObject == null || nextNestedException == null)
+                throw new ArgumentException();
             Contracts.IException contract = _target.Contracts.Exception;
             TargetPointer exceptionObjectLocal = contract.GetNestedExceptionInfo(
                 exception.ToTargetPointer(_target),
@@ -2612,12 +2577,11 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetObjectData(ClrDataAddress objAddr, DacpObjectData* data)
     {
-        if (objAddr == 0 || data == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (objAddr == 0 || data == null)
+                throw new ArgumentException();
             Contracts.IObject objectContract = _target.Contracts.Object;
             Contracts.IRuntimeTypeSystem runtimeTypeSystemContract = _target.Contracts.RuntimeTypeSystem;
 
@@ -2723,12 +2687,11 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetObjectStringData(ClrDataAddress obj, uint count, char* stringData, uint* pNeeded)
     {
-        if (obj == 0 || (stringData == null && pNeeded == null) || (stringData is not null && count <= 0))
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (obj == 0 || (stringData == null && pNeeded == null) || (stringData is not null && count <= 0))
+                throw new ArgumentException();
             Contracts.IObject contract = _target.Contracts.Object;
             string str = contract.GetStringValue(obj.ToTargetPointer(_target));
             OutputBufferHelpers.CopyStringToBuffer(stringData, count, pNeeded, str);
@@ -2863,12 +2826,11 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetPEFileBase(ClrDataAddress addr, ClrDataAddress* peBase)
     {
-        if (addr == 0 || peBase == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (addr == 0 || peBase == null)
+                throw new ArgumentException();
             Contracts.ILoader contract = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(addr.ToTargetPointer(_target));
             Contracts.ModuleFlags flags = contract.GetFlags(handle);
@@ -2902,12 +2864,12 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetPEFileName(ClrDataAddress addr, uint count, char* fileName, uint* pNeeded)
     {
-        if (addr == 0 || (fileName == null && pNeeded == null) || (fileName is not null && count <= 0))
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (addr == 0 || (fileName == null && pNeeded == null) || (fileName is not null && count <= 0))
+                throw new ArgumentException();
+
             Contracts.ILoader contract = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(addr.ToTargetPointer(_target));
             string path = contract.GetPath(handle);
@@ -2917,9 +2879,7 @@ public sealed unsafe partial class SOSDacImpl
             {
                 Contracts.ModuleFlags flags = contract.GetFlags(handle);
                 if (!flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit))
-                {
-                    return HResults.E_NOTIMPL;
-                }
+                    throw new NotImplementedException();
             }
 
             OutputBufferHelpers.CopyStringToBuffer(fileName, count, pNeeded, path);
@@ -2972,7 +2932,48 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetRegisterName(regName, count, buffer, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetStackLimits(ClrDataAddress threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp)
-        => _legacyImpl is not null ? _legacyImpl.GetStackLimits(threadPtr, lower, upper, fp) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (threadPtr == 0 || (lower == null && upper == null && fp == null))
+                throw new ArgumentException();
+
+            Contracts.IThread contract = _target.Contracts.Thread;
+            TargetPointer stackBase, stackLimit, frameAddress;
+            contract.GetStackLimitData(threadPtr.ToTargetPointer(_target), out stackBase, out stackLimit, out frameAddress);
+
+            if (lower != null)
+                *lower = stackBase.ToClrDataAddress(_target);
+
+            if (upper != null)
+                *upper = stackLimit.ToClrDataAddress(_target);
+
+            if (fp != null)
+                *fp = frameAddress.ToClrDataAddress(_target);
+        }
+        catch (global::System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ClrDataAddress lowerLocal, upperLocal, fpLocal;
+            int hrLocal = _legacyImpl.GetStackLimits(threadPtr, &lowerLocal, &upperLocal, &fpLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(lower == null || *lower == lowerLocal, $"cDAC: {*lower:x}, DAC: {lowerLocal:x}");
+                Debug.Assert(upper == null || *upper == upperLocal, $"cDAC: {*upper:x}, DAC: {upperLocal:x}");
+                Debug.Assert(fp == null || *fp == fpLocal, $"cDAC: {*fp:x}, DAC: {fpLocal:x}");
+            }
+        }
+#endif
+        return hr;
+    }
+
     int ISOSDacInterface.GetStackReferences(int osThreadID, void** ppEnum)
         => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
 
@@ -3001,12 +3002,11 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetThreadData(ClrDataAddress thread, DacpThreadData* data)
     {
-        if (thread == 0 || data == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (thread == 0 || data == null)
+                throw new ArgumentException();
             Contracts.IThread contract = _target.Contracts.Thread;
             Contracts.ThreadData threadData = contract.GetThreadData(thread.ToTargetPointer(_target));
             data->corThreadId = (int)threadData.Id;
@@ -3065,10 +3065,10 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetThreadFromThinlockID(uint thinLockId, ClrDataAddress* pThread)
     {
         int hr = HResults.S_OK;
-        if (pThread == null)
-            hr = HResults.E_INVALIDARG;
         try
         {
+            if (pThread == null)
+                throw new ArgumentException();
             TargetPointer threadPtr = _target.Contracts.Thread.IdToThread(thinLockId);
             *pThread = threadPtr.ToClrDataAddress(_target);
         }
@@ -3124,12 +3124,11 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetThreadStoreData(DacpThreadStoreData* data)
     {
-        if (data == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (data == null)
+                throw new ArgumentException();
             Contracts.IThread thread = _target.Contracts.Thread;
             Contracts.ThreadStoreData threadStoreData = thread.GetThreadStoreData();
             data->threadCount = threadStoreData.ThreadCount;
@@ -3175,12 +3174,11 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetTLSIndex(uint* pIndex)
     {
-        if (pIndex == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (pIndex == null)
+                throw new ArgumentException();
             uint TlsIndexBase = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.TlsIndexBase));
             uint OffsetOfCurrentThreadInfo = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.OffsetOfCurrentThreadInfo));
             uint CombinedTlsIndex = TlsIndexBase + (OffsetOfCurrentThreadInfo << 16) + 0x80000000;
@@ -3206,12 +3204,11 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetUsefulGlobals(DacpUsefulGlobalsData* data)
     {
-        if (data == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (data == null)
+                throw new ArgumentException();
             data->ArrayMethodTable = _target.ReadPointer(
                 _target.ReadGlobalPointer(Constants.Globals.ObjectArrayMethodTable))
                 .ToClrDataAddress(_target);
@@ -3305,41 +3302,35 @@ public sealed unsafe partial class SOSDacImpl
     {
         int hr = HResults.S_OK;
         IEnumerable<(TargetPointer Address, uint Index)> elements = Enumerable.Empty<(TargetPointer, uint)>();
-        if (moduleAddr == 0)
-            hr = HResults.E_INVALIDARG;
-        else
+        try
         {
-            try
+            if (moduleAddr == 0)
+                throw new ArgumentException();
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            TargetPointer moduleAddrPtr = moduleAddr.ToTargetPointer(_target);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(moduleAddrPtr);
+            Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
+            switch (mmt)
             {
-                Contracts.ILoader loader = _target.Contracts.Loader;
-                TargetPointer moduleAddrPtr = moduleAddr.ToTargetPointer(_target);
-                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(moduleAddrPtr);
-                Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
-                switch (mmt)
-                {
-                    case ModuleMapType.TYPEDEFTOMETHODTABLE:
-                        elements = loader.EnumerateModuleLookupMap(lookupTables.TypeDefToMethodTable);
-                        break;
-                    case ModuleMapType.TYPEREFTOMETHODTABLE:
-                        elements = loader.EnumerateModuleLookupMap(lookupTables.TypeRefToMethodTable);
-                        break;
-                    default:
-                        hr = HResults.E_INVALIDARG;
-                        break;
-                }
-                if (hr == HResults.S_OK)
-                {
-                    foreach ((TargetPointer element, uint index) in elements)
-                    {
-                        // Call the callback with each element
-                        pCallback(index, element.ToClrDataAddress(_target).Value, token);
-                    }
-                }
+                case ModuleMapType.TYPEDEFTOMETHODTABLE:
+                    elements = loader.EnumerateModuleLookupMap(lookupTables.TypeDefToMethodTable);
+                    break;
+                case ModuleMapType.TYPEREFTOMETHODTABLE:
+                    elements = loader.EnumerateModuleLookupMap(lookupTables.TypeRefToMethodTable);
+                    break;
+                default:
+                    throw new ArgumentException();
             }
-            catch (System.Exception ex)
+            foreach ((TargetPointer element, uint index) in elements)
             {
-                hr = ex.HResult;
+                // Call the callback with each element
+                pCallback(index, element.ToClrDataAddress(_target).Value, token);
             }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl is not null)
@@ -3721,12 +3712,11 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface7
     int ISOSDacInterface7.GetPendingReJITID(ClrDataAddress methodDesc, int* pRejitId)
     {
-        if (methodDesc == 0 || pRejitId == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (methodDesc == 0 || pRejitId == null)
+                throw new ArgumentException();
             Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
             Contracts.ICodeVersions codeVersionsContract = _target.Contracts.CodeVersions;
             TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
@@ -4049,25 +4039,134 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface10.GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded)
         => _legacyImpl10 is not null ? _legacyImpl10.GetObjectComWrappersData(objAddr, rcw, count, mowList, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface10.IsComWrappersCCW(ClrDataAddress ccw, Interop.BOOL* isComWrappersCCW)
-        => _legacyImpl10 is not null ? _legacyImpl10.IsComWrappersCCW(ccw, isComWrappersCCW) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
+            if (ccw == 0)
+                throw new ArgumentException();
+
+            if (isComWrappersCCW != null)
+            {
+                TargetPointer ccwPtr = comWrappersContract.GetManagedObjectWrapperFromCCW(ccw.ToTargetPointer(_target));
+                *isComWrappersCCW = (ccwPtr != TargetPointer.Null) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                hr = (ccwPtr != TargetPointer.Null) ? HResults.S_OK : HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl10 is not null)
+        {
+            Interop.BOOL isComWrappersCCWLocal;
+            int hrLocal = _legacyImpl10.IsComWrappersCCW(ccw, &isComWrappersCCWLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(*isComWrappersCCW == isComWrappersCCWLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface10.GetComWrappersCCWData(ClrDataAddress ccw, ClrDataAddress* managedObject, int* refCount)
-        => _legacyImpl10 is not null ? _legacyImpl10.GetComWrappersCCWData(ccw, managedObject, refCount) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ccw == 0)
+                throw new ArgumentException();
+            TargetPointer ccwPtr = ccw.ToTargetPointer(_target);
+            Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
+            TargetPointer managedObjectPtr = comWrappersContract.GetManagedObjectWrapperFromCCW(ccwPtr);
+            if (managedObjectPtr == TargetPointer.Null)
+                throw new ArgumentException();
+
+            if (managedObject != null)
+            {
+                *managedObject = 0;
+                *managedObject = comWrappersContract.GetComWrappersObjectFromMOW(managedObjectPtr).ToClrDataAddress(_target);
+            }
+
+            if (refCount != null)
+                *refCount = (int)comWrappersContract.GetMOWReferenceCount(managedObjectPtr);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl10 is not null)
+        {
+            ClrDataAddress managedObjectLocal;
+            int refCountLocal;
+            int hrLocal = _legacyImpl10.GetComWrappersCCWData(ccw, &managedObjectLocal, &refCountLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                if (managedObject != null)
+                    Debug.Assert(*managedObject == managedObjectLocal);
+                if (refCount != null)
+                    Debug.Assert(*refCount == refCountLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface10.IsComWrappersRCW(ClrDataAddress rcw, Interop.BOOL* isComWrappersRCW)
-        => _legacyImpl10 is not null ? _legacyImpl10.IsComWrappersRCW(rcw, isComWrappersRCW) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
+            if (rcw == 0)
+                throw new ArgumentException();
+            else if (isComWrappersRCW != null)
+            {
+                if ((rcw & _rcwMask) == 0)
+                    *isComWrappersRCW = Interop.BOOL.FALSE;
+                else
+                {
+                    TargetPointer rcwPtr = rcw.ToTargetPointer(_target) & ~_rcwMask;
+                    *isComWrappersRCW = comWrappersContract.IsComWrappersRCW(rcwPtr) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                }
+                hr = (*isComWrappersRCW != Interop.BOOL.FALSE) ? HResults.S_OK : HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl10 is not null)
+        {
+            Interop.BOOL isComWrappersRCWLocal;
+            int hrLocal = _legacyImpl10.IsComWrappersRCW(rcw, &isComWrappersRCWLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(*isComWrappersRCW == isComWrappersRCWLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface10.GetComWrappersRCWData(ClrDataAddress rcw, ClrDataAddress* identity)
     {
         int hr = HResults.S_OK;
         try
         {
-            ulong rcwMask = 1UL;
             Contracts.IComWrappers comWrappersContract = _target.Contracts.ComWrappers;
             if (rcw == 0 || identity == null)
                 throw new ArgumentException();
-            else if ((rcw & rcwMask) == 0)
+            else if ((rcw & _rcwMask) == 0)
                 *identity = 0;
-            else if (identity != null)
+            else
             {
-                TargetPointer identityPtr = comWrappersContract.GetComWrappersIdentity((rcw.ToTargetPointer(_target) & ~rcwMask));
+                TargetPointer identityPtr = comWrappersContract.GetComWrappersIdentity(rcw.ToTargetPointer(_target) & ~_rcwMask);
                 *identity = identityPtr.ToClrDataAddress(_target);
             }
         }
@@ -4164,25 +4263,23 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface14.GetStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress)
     {
         int hr = HResults.S_OK;
-        if (nonGCStaticsAddress == null && GCStaticsAddress == null)
-            hr = HResults.E_POINTER;
-        else if (methodTable == 0)
-            hr = HResults.E_INVALIDARG;
-        else
+        try
         {
-            try
-            {
-                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-                Contracts.TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
-                if (GCStaticsAddress != null)
-                    *GCStaticsAddress = rtsContract.GetGCStaticsBasePointer(typeHandle).ToClrDataAddress(_target);
-                if (nonGCStaticsAddress != null)
-                    *nonGCStaticsAddress = rtsContract.GetNonGCStaticsBasePointer(typeHandle).ToClrDataAddress(_target);
-            }
-            catch (System.Exception ex)
-            {
-                hr = ex.HResult;
-            }
+            if (nonGCStaticsAddress == null && GCStaticsAddress == null)
+                throw new NullReferenceException();
+            if (methodTable == 0)
+                throw new ArgumentException();
+
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+            if (GCStaticsAddress != null)
+                *GCStaticsAddress = rtsContract.GetGCStaticsBasePointer(typeHandle).ToClrDataAddress(_target);
+            if (nonGCStaticsAddress != null)
+                *nonGCStaticsAddress = rtsContract.GetNonGCStaticsBasePointer(typeHandle).ToClrDataAddress(_target);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl14 is not null)
@@ -4205,38 +4302,36 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface14.GetThreadStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress)
     {
         int hr = HResults.S_OK;
-        if (nonGCStaticsAddress == null && GCStaticsAddress == null)
-            hr = HResults.E_POINTER;
-        else if (methodTable == 0 || thread == 0)
-            hr = HResults.E_INVALIDARG;
-        else
+        try
         {
-            try
+            if (nonGCStaticsAddress == null && GCStaticsAddress == null)
+                throw new NullReferenceException();
+            if (methodTable == 0 || thread == 0)
+                throw new ArgumentException();
+
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            TargetPointer methodTablePtr = methodTable.ToTargetPointer(_target);
+            TargetPointer threadPtr = thread.ToTargetPointer(_target);
+            Contracts.TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTablePtr);
+            ushort numThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
+            if (numThreadStaticFields == 0)
             {
-                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-                TargetPointer methodTablePtr = methodTable.ToTargetPointer(_target);
-                TargetPointer threadPtr = thread.ToTargetPointer(_target);
-                Contracts.TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTablePtr);
-                ushort numThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
-                if (numThreadStaticFields == 0)
-                {
-                    if (GCStaticsAddress != null)
-                        *GCStaticsAddress = 0;
-                    if (nonGCStaticsAddress != null)
-                        *nonGCStaticsAddress = 0;
-                }
-                else
-                {
-                    if (GCStaticsAddress != null)
-                        *GCStaticsAddress = rtsContract.GetGCThreadStaticsBasePointer(typeHandle, threadPtr).ToClrDataAddress(_target);
-                    if (nonGCStaticsAddress != null)
-                        *nonGCStaticsAddress = rtsContract.GetNonGCThreadStaticsBasePointer(typeHandle, threadPtr).ToClrDataAddress(_target);
-                }
+                if (GCStaticsAddress != null)
+                    *GCStaticsAddress = 0;
+                if (nonGCStaticsAddress != null)
+                    *nonGCStaticsAddress = 0;
             }
-            catch (System.Exception ex)
+            else
             {
-                hr = ex.HResult;
+                if (GCStaticsAddress != null)
+                    *GCStaticsAddress = rtsContract.GetGCThreadStaticsBasePointer(typeHandle, threadPtr).ToClrDataAddress(_target);
+                if (nonGCStaticsAddress != null)
+                    *nonGCStaticsAddress = rtsContract.GetNonGCThreadStaticsBasePointer(typeHandle, threadPtr).ToClrDataAddress(_target);
             }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl14 is not null)
@@ -4262,27 +4357,24 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface14.GetMethodTableInitializationFlags(ClrDataAddress methodTable, MethodTableInitializationFlags* initializationStatus)
     {
         int hr = HResults.S_OK;
-        if (methodTable == 0)
-            hr = HResults.E_INVALIDARG;
-        else if (initializationStatus == null)
-            hr = HResults.E_POINTER;
-
-        else
+        try
         {
-            try
-            {
-                Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-                Contracts.TypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
-                *initializationStatus = (MethodTableInitializationFlags)0;
-                if (rtsContract.IsClassInited(methodTableHandle))
-                    *initializationStatus = MethodTableInitializationFlags.MethodTableInitialized;
-                if (rtsContract.IsInitError(methodTableHandle))
-                    *initializationStatus |= MethodTableInitializationFlags.MethodTableInitializationFailed;
-            }
-            catch (System.Exception ex)
-            {
-                hr = ex.HResult;
-            }
+            if (methodTable == 0)
+                throw new ArgumentException();
+            if (initializationStatus == null)
+                throw new NullReferenceException();
+
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.TypeHandle methodTableHandle = rtsContract.GetTypeHandle(methodTable.ToTargetPointer(_target));
+            *initializationStatus = (MethodTableInitializationFlags)0;
+            if (rtsContract.IsClassInited(methodTableHandle))
+                *initializationStatus = MethodTableInitializationFlags.MethodTableInitialized;
+            if (rtsContract.IsInitError(methodTableHandle))
+                *initializationStatus |= MethodTableInitializationFlags.MethodTableInitializationFailed;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
         }
 #if DEBUG
         if (_legacyImpl14 is not null)
@@ -4460,18 +4552,26 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.GetCount(uint* pCount)
         {
-            if (pCount == null)
-                return HResults.E_POINTER;
-#if DEBUG
-            if (_legacyMethodEnum is not null)
+            int hr = HResults.S_OK;
+            try
             {
-                uint countLocal;
-                _legacyMethodEnum.GetCount(&countLocal);
-                Debug.Assert(countLocal == (uint)_methods.Count);
-            }
+                if (pCount == null)
+                    throw new NullReferenceException();
+#if DEBUG
+                if (_legacyMethodEnum is not null)
+                {
+                    uint countLocal;
+                    _legacyMethodEnum.GetCount(&countLocal);
+                    Debug.Assert(countLocal == (uint)_methods.Count);
+                }
 #endif
-            *pCount = (uint)_methods.Count;
-            return HResults.S_OK;
+                *pCount = (uint)_methods.Count;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+            return hr;
         }
     }
 

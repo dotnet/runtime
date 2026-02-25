@@ -504,9 +504,10 @@ namespace System.IO.Tests
 
         }
 
-        // Observe until an expected count of events is triggered, otherwise fail. Return all collected events.
-        internal static List<FiredEvent> ExpectEvents(FileSystemWatcher watcher, int expectedEvents, Action action)
+        // Observe until an expected count of events is triggered, otherwise fail. Return all filtered events.
+        internal static List<FiredEvent> ExpectEvents(FileSystemWatcher watcher, int expectedEvents, Action action, Func<FiredEvent, bool>? isFilteredOut = null)
         {
+            isFilteredOut ??= _ => false;
             using var eventsOccurred = new AutoResetEvent(false);
             var eventsOrrures = 0;
 
@@ -551,7 +552,13 @@ namespace System.IO.Tests
 
             void AddEvent(WatcherChangeTypes eventType, string dir1, string dir2 = "")
             {
-                events.Add(new FiredEvent(eventType, dir1, dir2));
+                var firedEvent = new FiredEvent(eventType, dir1, dir2);
+                if (isFilteredOut(firedEvent))
+                {
+                    return;
+                }
+
+                events.Add(firedEvent);
                 if (Interlocked.Increment(ref eventsOrrures) == expectedEvents)
                 {
                     eventsOccurred.Set();

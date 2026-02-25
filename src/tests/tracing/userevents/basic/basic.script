@@ -1,0 +1,2 @@
+let Microsoft_Windows_DotNETRuntime_flags = new_dotnet_provider_flags();
+record_dotnet_provider("Microsoft-Windows-DotNETRuntime", 0x80000000000, 4, Microsoft_Windows_DotNETRuntime_flags);

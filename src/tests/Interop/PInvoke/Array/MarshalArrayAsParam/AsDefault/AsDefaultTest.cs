@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace MarshalArrayAsParam.Default;
 
@@ -654,6 +655,7 @@ public class ArrayMarshal
         Assert.Equal(sum, Get_Multidimensional_Array_Sum(array, ROWS, COLUMNS));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/176: VARIANT marshalling", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     [SkipOnMono("needs triage")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/81674", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]

@@ -661,7 +661,7 @@ namespace System.Net.Tests
                 // If the content is missing, then the HttpListener needs
                 // to get the content. However, the socket has been closed
                 // before the reading of the content, so reading should fail.
-                client.Send(_factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
+                await client.SendAsync(_factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
                 HttpListenerContext context = await _listener.GetContextAsync();
 
                 // Disconnect the Socket from the HttpListener.
@@ -687,7 +687,7 @@ namespace System.Net.Tests
                 // If the content is missing, then the HttpListener needs
                 // to get the content. However, the socket has been closed
                 // before the reading of the content, so reading should fail.
-                client.Send(_factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
+                await client.SendAsync(_factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
                 HttpListenerContext context = await _listener.GetContextAsync();
 
                 // Disconnect the Socket from the HttpListener.

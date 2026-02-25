@@ -400,7 +400,7 @@ namespace System.Formats.Tar
             long size = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             if (size < 0)
             {
-                throw new InvalidDataException(SR.Format(SR.TarSizeFieldNegative));
+                throw new InvalidDataException(SR.TarSizeFieldNegative);
             }
 
             // Continue with the rest of the fields that require no special checks
@@ -680,7 +680,7 @@ namespace System.Formats.Tar
 
             if (buffer.Length > 0)
             {
-                throw new InvalidDataException(SR.Format(SR.ExtHeaderInvalidRecords));
+                throw new InvalidDataException(SR.ExtHeaderInvalidRecords);
             }
         }
 

@@ -38,7 +38,8 @@
   </PropertyGroup>
 
   <!-- Override default trimming switches for Apple mobile -->
-  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(TargetsAppleMobile)' == 'true'">
+  <!-- TODO: https://github.com/dotnet/runtime/issues/124505 -->
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' == 'true'">
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
     <_DefaultValueAttributeSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DefaultValueAttributeSupport>
     <_DesignerHostSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DesignerHostSupport>

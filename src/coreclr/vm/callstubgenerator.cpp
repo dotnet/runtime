@@ -3,6 +3,7 @@
 
 #if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
 
+#include "common.h"
 #include "callstubgenerator.h"
 #include "callconvbuilder.hpp"
 #include "ecall.h"
@@ -22,10 +23,10 @@ extern "C" void Store_Stack_2B();
 extern "C" void Store_Stack_4B();
 #endif // TARGET_APPLE && TARGET_ARM64
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
 extern "C" void Load_Stack_Ref();
 extern "C" void Store_Stack_Ref();
-#endif // !UNIX_AMD64_ABI
+#endif // !UNIX_AMD64_ABI && ENREGISTERED_PARAMTYPE_MAXSIZE
 
 #ifdef TARGET_AMD64
 
@@ -80,102 +81,6 @@ extern "C" void Store_Ref_RDX();
 extern "C" void Store_Ref_R8();
 extern "C" void Store_Ref_R9();
 
-static const PCODE GPRegsRoutines[] =
-{
-    (PCODE)Load_RCX,            // 00
-    (PCODE)Load_RCX_RDX,        // 01
-    (PCODE)Load_RCX_RDX_R8,     // 02
-    (PCODE)Load_RCX_RDX_R8_R9,  // 03
-    (PCODE)0,                   // 10
-    (PCODE)Load_RDX,            // 11
-    (PCODE)Load_RDX_R8,         // 12
-    (PCODE)Load_RDX_R8_R9,      // 13
-    (PCODE)0,                   // 20
-    (PCODE)0,                   // 21
-    (PCODE)Load_R8,             // 22
-    (PCODE)Load_R8_R9,          // 23
-    (PCODE)0,                   // 30
-    (PCODE)0,                   // 31
-    (PCODE)0,                   // 32
-    (PCODE)Load_R9              // 33
-};
-
-static const PCODE GPRegsStoreRoutines[] =
-{
-    (PCODE)Store_RCX,            // 00
-    (PCODE)Store_RCX_RDX,        // 01
-    (PCODE)Store_RCX_RDX_R8,     // 02
-    (PCODE)Store_RCX_RDX_R8_R9,  // 03
-    (PCODE)0,                    // 10
-    (PCODE)Store_RDX,            // 11
-    (PCODE)Store_RDX_R8,         // 12
-    (PCODE)Store_RDX_R8_R9,      // 13
-    (PCODE)0,                    // 20
-    (PCODE)0,                    // 21
-    (PCODE)Store_R8,             // 22
-    (PCODE)Store_R8_R9,          // 23
-    (PCODE)0,                    // 30
-    (PCODE)0,                    // 31
-    (PCODE)0,                    // 32
-    (PCODE)Store_R9              // 33
-};
-
-static const PCODE GPRegsRefRoutines[] =
-{
-    (PCODE)Load_Ref_RCX,        // 0
-    (PCODE)Load_Ref_RDX,        // 1
-    (PCODE)Load_Ref_R8,         // 2
-    (PCODE)Load_Ref_R9,         // 3
-};
-
-static const PCODE GPRegsRefStoreRoutines[] =
-{
-    (PCODE)Store_Ref_RCX,        // 0
-    (PCODE)Store_Ref_RDX,        // 1
-    (PCODE)Store_Ref_R8,         // 2
-    (PCODE)Store_Ref_R9,         // 3
-};
-
-static const PCODE FPRegsRoutines[] =
-{
-    (PCODE)Load_XMM0,                // 00
-    (PCODE)Load_XMM0_XMM1,           // 01
-    (PCODE)Load_XMM0_XMM1_XMM2,      // 02
-    (PCODE)Load_XMM0_XMM1_XMM2_XMM3, // 03
-    (PCODE)0,                        // 10
-    (PCODE)Load_XMM1,                // 11
-    (PCODE)Load_XMM1_XMM2,           // 12
-    (PCODE)Load_XMM1_XMM2_XMM3,      // 13
-    (PCODE)0,                        // 20
-    (PCODE)0,                        // 21
-    (PCODE)Load_XMM2,                // 22
-    (PCODE)Load_XMM2_XMM3,           // 23
-    (PCODE)0,                        // 30
-    (PCODE)0,                        // 31
-    (PCODE)0,                        // 32
-    (PCODE)Load_XMM3                 // 33
-};
-
-static const PCODE FPRegsStoreRoutines[] =
-{
-    (PCODE)Store_XMM0,                // 00
-    (PCODE)Store_XMM0_XMM1,           // 01
-    (PCODE)Store_XMM0_XMM1_XMM2,      // 02
-    (PCODE)Store_XMM0_XMM1_XMM2_XMM3, // 03
-    (PCODE)0,                         // 10
-    (PCODE)Store_XMM1,                // 11
-    (PCODE)Store_XMM1_XMM2,           // 12
-    (PCODE)Store_XMM1_XMM2_XMM3,      // 13
-    (PCODE)0,                         // 20
-    (PCODE)0,                         // 21
-    (PCODE)Store_XMM2,                // 22
-    (PCODE)Store_XMM2_XMM3,           // 23
-    (PCODE)0,                         // 30
-    (PCODE)0,                         // 31
-    (PCODE)0,                         // 32
-    (PCODE)Store_XMM3                 // 33
-};
-
 #else // TARGET_WINDOWS
 
 extern "C" void Load_RDI();
@@ -221,86 +126,6 @@ extern "C" void Store_RCX_R8_R9();
 extern "C" void Store_R8();
 extern "C" void Store_R8_R9();
 extern "C" void Store_R9();
-
-static const PCODE GPRegsRoutines[] =
-{
-    (PCODE)Load_RDI,                    // 00
-    (PCODE)Load_RDI_RSI,                // 01
-    (PCODE)Load_RDI_RSI_RDX,            // 02
-    (PCODE)Load_RDI_RSI_RDX_RCX,        // 03
-    (PCODE)Load_RDI_RSI_RDX_RCX_R8,     // 04
-    (PCODE)Load_RDI_RSI_RDX_RCX_R8_R9,  // 05
-    (PCODE)0,                           // 10
-    (PCODE)Load_RSI,                    // 11
-    (PCODE)Load_RSI_RDX,                // 12
-    (PCODE)Load_RSI_RDX_RCX,            // 13
-    (PCODE)Load_RSI_RDX_RCX_R8,         // 14
-    (PCODE)Load_RSI_RDX_RCX_R8_R9,      // 15
-    (PCODE)0,                           // 20
-    (PCODE)0,                           // 21
-    (PCODE)Load_RDX,                    // 22
-    (PCODE)Load_RDX_RCX,                // 23
-    (PCODE)Load_RDX_RCX_R8,             // 24
-    (PCODE)Load_RDX_RCX_R8_R9,          // 25
-    (PCODE)0,                           // 30
-    (PCODE)0,                           // 31
-    (PCODE)0,                           // 32
-    (PCODE)Load_RCX,                    // 33
-    (PCODE)Load_RCX_R8,                 // 34
-    (PCODE)Load_RCX_R8_R9,              // 35
-    (PCODE)0,                           // 40
-    (PCODE)0,                           // 41
-    (PCODE)0,                           // 42
-    (PCODE)0,                           // 43
-    (PCODE)Load_R8,                     // 44
-    (PCODE)Load_R8_R9,                  // 45
-    (PCODE)0,                           // 50
-    (PCODE)0,                           // 51
-    (PCODE)0,                           // 52
-    (PCODE)0,                           // 53
-    (PCODE)0,                           // 54
-    (PCODE)Load_R9                      // 55
-};
-
-static const PCODE GPRegsStoreRoutines[] =
-{
-    (PCODE)Store_RDI,                    // 00
-    (PCODE)Store_RDI_RSI,                // 01
-    (PCODE)Store_RDI_RSI_RDX,            // 02
-    (PCODE)Store_RDI_RSI_RDX_RCX,        // 03
-    (PCODE)Store_RDI_RSI_RDX_RCX_R8,     // 04
-    (PCODE)Store_RDI_RSI_RDX_RCX_R8_R9,  // 05
-    (PCODE)0,                            // 10
-    (PCODE)Store_RSI,                    // 11
-    (PCODE)Store_RSI_RDX,                // 12
-    (PCODE)Store_RSI_RDX_RCX,            // 13
-    (PCODE)Store_RSI_RDX_RCX_R8,         // 14
-    (PCODE)Store_RSI_RDX_RCX_R8_R9,      // 15
-    (PCODE)0,                            // 20
-    (PCODE)0,                            // 21
-    (PCODE)Store_RDX,                    // 22
-    (PCODE)Store_RDX_RCX,                // 23
-    (PCODE)Store_RDX_RCX_R8,             // 24
-    (PCODE)Store_RDX_RCX_R8_R9,          // 25
-    (PCODE)0,                            // 30
-    (PCODE)0,                            // 31
-    (PCODE)0,                            // 32
-    (PCODE)Store_RCX,                    // 33
-    (PCODE)Store_RCX_R8,                 // 34
-    (PCODE)Store_RCX_R8_R9,              // 35
-    (PCODE)0,                            // 40
-    (PCODE)0,                            // 41
-    (PCODE)0,                            // 42
-    (PCODE)0,                            // 43
-    (PCODE)Store_R8,                     // 44
-    (PCODE)Store_R8_R9,                  // 45
-    (PCODE)0,                            // 50
-    (PCODE)0,                            // 51
-    (PCODE)0,                            // 52
-    (PCODE)0,                            // 53
-    (PCODE)0,                            // 54
-    (PCODE)Store_R9                      // 55
-};
 
 extern "C" void Load_XMM0();
 extern "C" void Load_XMM0_XMM1();
@@ -375,142 +200,6 @@ extern "C" void Store_XMM5_XMM6_XMM7();
 extern "C" void Store_XMM6();
 extern "C" void Store_XMM6_XMM7();
 extern "C" void Store_XMM7();
-
-static const PCODE FPRegsRoutines[] =
-{
-    (PCODE)Load_XMM0,                                   // 00
-    (PCODE)Load_XMM0_XMM1,                              // 01
-    (PCODE)Load_XMM0_XMM1_XMM2,                         // 02
-    (PCODE)Load_XMM0_XMM1_XMM2_XMM3,                    // 03
-    (PCODE)Load_XMM0_XMM1_XMM2_XMM3_XMM4,               // 04
-    (PCODE)Load_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5,          // 05
-    (PCODE)Load_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6,     // 06
-    (PCODE)Load_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,// 07
-    (PCODE)0,                                           // 10
-    (PCODE)Load_XMM1,                                   // 11
-    (PCODE)Load_XMM1_XMM2,                              // 12
-    (PCODE)Load_XMM1_XMM2_XMM3,                         // 13
-    (PCODE)Load_XMM1_XMM2_XMM3_XMM4,                    // 14
-    (PCODE)Load_XMM1_XMM2_XMM3_XMM4_XMM5,               // 15
-    (PCODE)Load_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6,          // 16
-    (PCODE)Load_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,     // 17
-    (PCODE)0,                                           // 20
-    (PCODE)0,                                           // 21
-    (PCODE)Load_XMM2,                                   // 22
-    (PCODE)Load_XMM2_XMM3,                              // 23
-    (PCODE)Load_XMM2_XMM3_XMM4,                         // 24
-    (PCODE)Load_XMM2_XMM3_XMM4_XMM5,                    // 25
-    (PCODE)Load_XMM2_XMM3_XMM4_XMM5_XMM6,               // 26
-    (PCODE)Load_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,          // 27
-    (PCODE)0,                                           // 30
-    (PCODE)0,                                           // 31
-    (PCODE)0,                                           // 32
-    (PCODE)Load_XMM3,                                   // 33
-    (PCODE)Load_XMM3_XMM4,                              // 34
-    (PCODE)Load_XMM3_XMM4_XMM5,                         // 35
-    (PCODE)Load_XMM3_XMM4_XMM5_XMM6,                    // 36
-    (PCODE)Load_XMM3_XMM4_XMM5_XMM6_XMM7,               // 37
-    (PCODE)0,                                           // 40
-    (PCODE)0,                                           // 41
-    (PCODE)0,                                           // 42
-    (PCODE)0,                                           // 43
-    (PCODE)Load_XMM4,                                   // 44
-    (PCODE)Load_XMM4_XMM5,                              // 45
-    (PCODE)Load_XMM4_XMM5_XMM6,                         // 46
-    (PCODE)Load_XMM4_XMM5_XMM6_XMM7,                    // 47
-    (PCODE)0,                                           // 50
-    (PCODE)0,                                           // 51
-    (PCODE)0,                                           // 52
-    (PCODE)0,                                           // 53
-    (PCODE)0,                                           // 54
-    (PCODE)Load_XMM5,                                   // 55
-    (PCODE)Load_XMM5_XMM6,                              // 56
-    (PCODE)Load_XMM5_XMM6_XMM7,                         // 57
-    (PCODE)0,                                           // 60
-    (PCODE)0,                                           // 61
-    (PCODE)0,                                           // 62
-    (PCODE)0,                                           // 63
-    (PCODE)0,                                           // 64
-    (PCODE)0,                                           // 65
-    (PCODE)Load_XMM6,                                   // 66
-    (PCODE)Load_XMM6_XMM7,                              // 67
-    (PCODE)0,                                           // 70
-    (PCODE)0,                                           // 71
-    (PCODE)0,                                           // 72
-    (PCODE)0,                                           // 73
-    (PCODE)0,                                           // 74
-    (PCODE)0,                                           // 75
-    (PCODE)0,                                           // 76
-    (PCODE)Load_XMM7                                    // 77
-};
-
-static const PCODE FPRegsStoreRoutines[] =
-{
-    (PCODE)Store_XMM0,                                   // 00
-    (PCODE)Store_XMM0_XMM1,                              // 01
-    (PCODE)Store_XMM0_XMM1_XMM2,                         // 02
-    (PCODE)Store_XMM0_XMM1_XMM2_XMM3,                    // 03
-    (PCODE)Store_XMM0_XMM1_XMM2_XMM3_XMM4,               // 04
-    (PCODE)Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5,          // 05
-    (PCODE)Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6,     // 06
-    (PCODE)Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,// 07
-    (PCODE)0,                                            // 10
-    (PCODE)Store_XMM1,                                   // 11
-    (PCODE)Store_XMM1_XMM2,                              // 12
-    (PCODE)Store_XMM1_XMM2_XMM3,                         // 13
-    (PCODE)Store_XMM1_XMM2_XMM3_XMM4,                    // 14
-    (PCODE)Store_XMM1_XMM2_XMM3_XMM4_XMM5,               // 15
-    (PCODE)Store_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6,          // 16
-    (PCODE)Store_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,     // 17
-    (PCODE)0,                                            // 20
-    (PCODE)0,                                            // 21
-    (PCODE)Store_XMM2,                                   // 22
-    (PCODE)Store_XMM2_XMM3,                              // 23
-    (PCODE)Store_XMM2_XMM3_XMM4,                         // 24
-    (PCODE)Store_XMM2_XMM3_XMM4_XMM5,                    // 25
-    (PCODE)Store_XMM2_XMM3_XMM4_XMM5_XMM6,               // 26
-    (PCODE)Store_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,          // 27
-    (PCODE)0,                                            // 30
-    (PCODE)0,                                            // 31
-    (PCODE)0,                                            // 32
-    (PCODE)Store_XMM3,                                   // 33
-    (PCODE)Store_XMM3_XMM4,                              // 34
-    (PCODE)Store_XMM3_XMM4_XMM5,                         // 35
-    (PCODE)Store_XMM3_XMM4_XMM5_XMM6,                    // 36
-    (PCODE)Store_XMM3_XMM4_XMM5_XMM6_XMM7,               // 37
-    (PCODE)0,                                            // 40
-    (PCODE)0,                                            // 41
-    (PCODE)0,                                            // 42
-    (PCODE)0,                                            // 43
-    (PCODE)Store_XMM4,                                   // 44
-    (PCODE)Store_XMM4_XMM5,                              // 45
-    (PCODE)Store_XMM4_XMM5_XMM6,                         // 46
-    (PCODE)Store_XMM4_XMM5_XMM6_XMM7,                    // 47
-    (PCODE)0,                                            // 50
-    (PCODE)0,                                            // 51
-    (PCODE)0,                                            // 52
-    (PCODE)0,                                            // 53
-    (PCODE)0,                                            // 54
-    (PCODE)Store_XMM5,                                   // 55
-    (PCODE)Store_XMM5_XMM6,                              // 56
-    (PCODE)Store_XMM5_XMM6_XMM7,                         // 57
-    (PCODE)0,                                            // 60
-    (PCODE)0,                                            // 61
-    (PCODE)0,                                            // 62
-    (PCODE)0,                                            // 63
-    (PCODE)0,                                            // 64
-    (PCODE)0,                                            // 65
-    (PCODE)Store_XMM6,                                   // 66
-    (PCODE)Store_XMM6_XMM7,                              // 67
-    (PCODE)0,                                            // 70
-    (PCODE)0,                                            // 71
-    (PCODE)0,                                            // 72
-    (PCODE)0,                                            // 73
-    (PCODE)0,                                            // 74
-    (PCODE)0,                                            // 75
-    (PCODE)0,                                            // 76
-    (PCODE)Store_XMM7                                    // 77
-};
 
 #endif // TARGET_WINDOWS
 
@@ -592,6 +281,41 @@ extern "C" void Store_X6();
 extern "C" void Store_X6_X7();
 extern "C" void Store_X7();
 
+#if defined(TARGET_APPLE)
+extern "C" void Load_SwiftSelf();
+extern "C" void Load_SwiftSelf_ByRef();
+extern "C" void Load_SwiftError();
+extern "C" void Load_SwiftIndirectResult();
+
+extern "C" void Load_X0_AtOffset();
+extern "C" void Load_X1_AtOffset();
+extern "C" void Load_X2_AtOffset();
+extern "C" void Load_X3_AtOffset();
+extern "C" void Load_X4_AtOffset();
+extern "C" void Load_X5_AtOffset();
+extern "C" void Load_X6_AtOffset();
+extern "C" void Load_X7_AtOffset();
+extern "C" void Load_D0_AtOffset();
+extern "C" void Load_D1_AtOffset();
+extern "C" void Load_D2_AtOffset();
+extern "C" void Load_D3_AtOffset();
+extern "C" void Load_D4_AtOffset();
+extern "C" void Load_D5_AtOffset();
+extern "C" void Load_D6_AtOffset();
+extern "C" void Load_D7_AtOffset();
+extern "C" void Load_Stack_AtOffset();
+
+extern "C" void Store_X0_AtOffset();
+extern "C" void Store_X1_AtOffset();
+extern "C" void Store_X2_AtOffset();
+extern "C" void Store_X3_AtOffset();
+extern "C" void Store_D0_AtOffset();
+extern "C" void Store_D1_AtOffset();
+extern "C" void Store_D2_AtOffset();
+extern "C" void Store_D3_AtOffset();
+extern "C" void SwiftLoweredReturnTerminator();
+#endif // TARGET_APPLE
+
 extern "C" void Load_Ref_X0();
 extern "C" void Load_Ref_X1();
 extern "C" void Load_Ref_X2();
@@ -609,166 +333,6 @@ extern "C" void Store_Ref_X4();
 extern "C" void Store_Ref_X5();
 extern "C" void Store_Ref_X6();
 extern "C" void Store_Ref_X7();
-
-static const PCODE GPRegsRoutines[] =
-{
-    (PCODE)Load_X0,                         // 00
-    (PCODE)Load_X0_X1,                      // 01
-    (PCODE)Load_X0_X1_X2,                   // 02
-    (PCODE)Load_X0_X1_X2_X3,                // 03
-    (PCODE)Load_X0_X1_X2_X3_X4,             // 04
-    (PCODE)Load_X0_X1_X2_X3_X4_X5,          // 05
-    (PCODE)Load_X0_X1_X2_X3_X4_X5_X6,       // 06
-    (PCODE)Load_X0_X1_X2_X3_X4_X5_X6_X7,    // 07
-    (PCODE)0,                               // 10
-    (PCODE)Load_X1,                         // 11
-    (PCODE)Load_X1_X2,                      // 12
-    (PCODE)Load_X1_X2_X3,                   // 13
-    (PCODE)Load_X1_X2_X3_X4,                // 14
-    (PCODE)Load_X1_X2_X3_X4_X5,             // 15
-    (PCODE)Load_X1_X2_X3_X4_X5_X6,          // 16
-    (PCODE)Load_X1_X2_X3_X4_X5_X6_X7,       // 17
-    (PCODE)0,                               // 20
-    (PCODE)0,                               // 21
-    (PCODE)Load_X2,                         // 22
-    (PCODE)Load_X2_X3,                      // 23
-    (PCODE)Load_X2_X3_X4,                   // 24
-    (PCODE)Load_X2_X3_X4_X5,                // 25
-    (PCODE)Load_X2_X3_X4_X5_X6,             // 26
-    (PCODE)Load_X2_X3_X4_X5_X6_X7,          // 27
-    (PCODE)0,                               // 30
-    (PCODE)0,                               // 31
-    (PCODE)0,                               // 32
-    (PCODE)Load_X3,                         // 33
-    (PCODE)Load_X3_X4,                      // 34
-    (PCODE)Load_X3_X4_X5,                   // 35
-    (PCODE)Load_X3_X4_X5_X6,                // 36
-    (PCODE)Load_X3_X4_X5_X6_X7,             // 37
-    (PCODE)0,                               // 40
-    (PCODE)0,                               // 41
-    (PCODE)0,                               // 42
-    (PCODE)0,                               // 43
-    (PCODE)Load_X4,                         // 44
-    (PCODE)Load_X4_X5,                      // 45
-    (PCODE)Load_X4_X5_X6,                   // 46
-    (PCODE)Load_X4_X5_X6_X7,                // 47
-    (PCODE)0,                               // 50
-    (PCODE)0,                               // 51
-    (PCODE)0,                               // 52
-    (PCODE)0,                               // 53
-    (PCODE)0,                               // 54
-    (PCODE)Load_X5,                         // 55
-    (PCODE)Load_X5_X6,                      // 56
-    (PCODE)Load_X5_X6_X7,                   // 57
-    (PCODE)0,                               // 60
-    (PCODE)0,                               // 61
-    (PCODE)0,                               // 62
-    (PCODE)0,                               // 63
-    (PCODE)0,                               // 64
-    (PCODE)0,                               // 65
-    (PCODE)Load_X6,                         // 66
-    (PCODE)Load_X6_X7,                      // 67
-    (PCODE)0,                               // 70
-    (PCODE)0,                               // 71
-    (PCODE)0,                               // 72
-    (PCODE)0,                               // 73
-    (PCODE)0,                               // 74
-    (PCODE)0,                               // 75
-    (PCODE)0,                               // 76
-    (PCODE)Load_X7                          // 77
-};
-
-static const PCODE GPRegsStoreRoutines[] =
-{
-    (PCODE)Store_X0,                         // 00
-    (PCODE)Store_X0_X1,                      // 01
-    (PCODE)Store_X0_X1_X2,                   // 02
-    (PCODE)Store_X0_X1_X2_X3,                // 03
-    (PCODE)Store_X0_X1_X2_X3_X4,             // 04
-    (PCODE)Store_X0_X1_X2_X3_X4_X5,          // 05
-    (PCODE)Store_X0_X1_X2_X3_X4_X5_X6,       // 06
-    (PCODE)Store_X0_X1_X2_X3_X4_X5_X6_X7,    // 07
-    (PCODE)0,                                // 10
-    (PCODE)Store_X1,                         // 11
-    (PCODE)Store_X1_X2,                      // 12
-    (PCODE)Store_X1_X2_X3,                   // 13
-    (PCODE)Store_X1_X2_X3_X4,                // 14
-    (PCODE)Store_X1_X2_X3_X4_X5,             // 15
-    (PCODE)Store_X1_X2_X3_X4_X5_X6,          // 16
-    (PCODE)Store_X1_X2_X3_X4_X5_X6_X7,       // 17
-    (PCODE)0,                                // 20
-    (PCODE)0,                                // 21
-    (PCODE)Store_X2,                         // 22
-    (PCODE)Store_X2_X3,                      // 23
-    (PCODE)Store_X2_X3_X4,                   // 24
-    (PCODE)Store_X2_X3_X4_X5,                // 25
-    (PCODE)Store_X2_X3_X4_X5_X6,             // 26
-    (PCODE)Store_X2_X3_X4_X5_X6_X7,          // 27
-    (PCODE)0,                                // 30
-    (PCODE)0,                                // 31
-    (PCODE)0,                                // 32
-    (PCODE)Store_X3,                         // 33
-    (PCODE)Store_X3_X4,                      // 34
-    (PCODE)Store_X3_X4_X5,                   // 35
-    (PCODE)Store_X3_X4_X5_X6,                // 36
-    (PCODE)Store_X3_X4_X5_X6_X7,             // 37
-    (PCODE)0,                                // 40
-    (PCODE)0,                                // 41
-    (PCODE)0,                                // 42
-    (PCODE)0,                                // 43
-    (PCODE)Store_X4,                         // 44
-    (PCODE)Store_X4_X5,                      // 45
-    (PCODE)Store_X4_X5_X6,                   // 46
-    (PCODE)Store_X4_X5_X6_X7,                // 47
-    (PCODE)0,                                // 50
-    (PCODE)0,                                // 51
-    (PCODE)0,                                // 52
-    (PCODE)0,                                // 53
-    (PCODE)0,                                // 54
-    (PCODE)Store_X5,                         // 55
-    (PCODE)Store_X5_X6,                      // 56
-    (PCODE)Store_X5_X6_X7,                   // 57
-    (PCODE)0,                                // 60
-    (PCODE)0,                                // 61
-    (PCODE)0,                                // 62
-    (PCODE)0,                                // 63
-    (PCODE)0,                                // 64
-    (PCODE)0,                                // 65
-    (PCODE)Store_X6,                         // 66
-    (PCODE)Store_X6_X7,                      // 67
-    (PCODE)0,                                // 70
-    (PCODE)0,                                // 71
-    (PCODE)0,                                // 72
-    (PCODE)0,                                // 73
-    (PCODE)0,                                // 74
-    (PCODE)0,                                // 75
-    (PCODE)0,                                // 76
-    (PCODE)Store_X7                          // 77
-};
-
-static const PCODE GPRegsRefRoutines[] =
-{
-    (PCODE)Load_Ref_X0,        // 0
-    (PCODE)Load_Ref_X1,        // 1
-    (PCODE)Load_Ref_X2,        // 2
-    (PCODE)Load_Ref_X3,        // 3
-    (PCODE)Load_Ref_X4,        // 4
-    (PCODE)Load_Ref_X5,        // 5
-    (PCODE)Load_Ref_X6,        // 6
-    (PCODE)Load_Ref_X7         // 7
-};
-
-static const PCODE GPRegsRefStoreRoutines[] =
-{
-    (PCODE)Store_Ref_X0,        // 0
-    (PCODE)Store_Ref_X1,        // 1
-    (PCODE)Store_Ref_X2,        // 2
-    (PCODE)Store_Ref_X3,        // 3
-    (PCODE)Store_Ref_X4,        // 4
-    (PCODE)Store_Ref_X5,        // 5
-    (PCODE)Store_Ref_X6,        // 6
-    (PCODE)Store_Ref_X7         // 7
-};
 
 extern "C" void Load_D0();
 extern "C" void Load_D0_D1();
@@ -994,415 +558,42 @@ extern "C" void Store_S6();
 extern "C" void Store_S6_S7();
 extern "C" void Store_S7();
 
-static const PCODE FPRegsStoreRoutines[] =
-{
-    (PCODE)Store_D0,                         // 00
-    (PCODE)Store_D0_D1,                      // 01
-    (PCODE)Store_D0_D1_D2,                   // 02
-    (PCODE)Store_D0_D1_D2_D3,                // 03
-    (PCODE)Store_D0_D1_D2_D3_D4,             // 04
-    (PCODE)Store_D0_D1_D2_D3_D4_D5,          // 05
-    (PCODE)Store_D0_D1_D2_D3_D4_D5_D6,       // 06
-    (PCODE)Store_D0_D1_D2_D3_D4_D5_D6_D7,    // 07
-    (PCODE)0,                                // 10
-    (PCODE)Store_D1,                         // 11
-    (PCODE)Store_D1_D2,                      // 12
-    (PCODE)Store_D1_D2_D3,                   // 13
-    (PCODE)Store_D1_D2_D3_D4,                // 14
-    (PCODE)Store_D1_D2_D3_D4_D5,             // 15
-    (PCODE)Store_D1_D2_D3_D4_D5_D6,          // 16
-    (PCODE)Store_D1_D2_D3_D4_D5_D6_D7,       // 17
-    (PCODE)0,                                // 20
-    (PCODE)0,                                // 21
-    (PCODE)Store_D2,                         // 22
-    (PCODE)Store_D2_D3,                      // 23
-    (PCODE)Store_D2_D3_D4,                   // 24
-    (PCODE)Store_D2_D3_D4_D5,                // 25
-    (PCODE)Store_D2_D3_D4_D5_D6,             // 26
-    (PCODE)Store_D2_D3_D4_D5_D6_D7,          // 27
-    (PCODE)0,                                // 30
-    (PCODE)0,                                // 31
-    (PCODE)0,                                // 32
-    (PCODE)Store_D3,                         // 33
-    (PCODE)Store_D3_D4,                      // 34
-    (PCODE)Store_D3_D4_D5,                   // 35
-    (PCODE)Store_D3_D4_D5_D6,                // 36
-    (PCODE)Store_D3_D4_D5_D6_D7,             // 37
-    (PCODE)0,                                // 40
-    (PCODE)0,                                // 41
-    (PCODE)0,                                // 42
-    (PCODE)0,                                // 43
-    (PCODE)Store_D4,                         // 44
-    (PCODE)Store_D4_D5,                      // 45
-    (PCODE)Store_D4_D5_D6,                   // 46
-    (PCODE)Store_D4_D5_D6_D7,                // 47
-    (PCODE)0,                                // 50
-    (PCODE)0,                                // 51
-    (PCODE)0,                                // 52
-    (PCODE)0,                                // 53
-    (PCODE)0,                                // 54
-    (PCODE)Store_D5,                         // 55
-    (PCODE)Store_D5_D6,                      // 56
-    (PCODE)Store_D5_D6_D7,                   // 57
-    (PCODE)0,                                // 60
-    (PCODE)0,                                // 61
-    (PCODE)0,                                // 62
-    (PCODE)0,                                // 63
-    (PCODE)0,                                // 64
-    (PCODE)0,                                // 65
-    (PCODE)Store_D6,                         // 66
-    (PCODE)Store_D6_D7,                      // 67
-    (PCODE)0,                                // 70
-    (PCODE)0,                                // 71
-    (PCODE)0,                                // 72
-    (PCODE)0,                                // 73
-    (PCODE)0,                                // 74
-    (PCODE)0,                                // 75
-    (PCODE)0,                                // 76
-    (PCODE)Store_D7                          // 77
-};
-
-static const PCODE FPRegsRoutines[] =
-{
-    (PCODE)Load_D0,                         // 00
-    (PCODE)Load_D0_D1,                      // 01
-    (PCODE)Load_D0_D1_D2,                   // 02
-    (PCODE)Load_D0_D1_D2_D3,                // 03
-    (PCODE)Load_D0_D1_D2_D3_D4,             // 04
-    (PCODE)Load_D0_D1_D2_D3_D4_D5,          // 05
-    (PCODE)Load_D0_D1_D2_D3_D4_D5_D6,       // 06
-    (PCODE)Load_D0_D1_D2_D3_D4_D5_D6_D7,    // 07
-    (PCODE)0,                               // 10
-    (PCODE)Load_D1,                         // 11
-    (PCODE)Load_D1_D2,                      // 12
-    (PCODE)Load_D1_D2_D3,                   // 13
-    (PCODE)Load_D1_D2_D3_D4,                // 14
-    (PCODE)Load_D1_D2_D3_D4_D5,             // 15
-    (PCODE)Load_D1_D2_D3_D4_D5_D6,          // 16
-    (PCODE)Load_D1_D2_D3_D4_D5_D6_D7,       // 17
-    (PCODE)0,                               // 20
-    (PCODE)0,                               // 21
-    (PCODE)Load_D2,                         // 22
-    (PCODE)Load_D2_D3,                      // 23
-    (PCODE)Load_D2_D3_D4,                   // 24
-    (PCODE)Load_D2_D3_D4_D5,                // 25
-    (PCODE)Load_D2_D3_D4_D5_D6,             // 26
-    (PCODE)Load_D2_D3_D4_D5_D6_D7,          // 27
-    (PCODE)0,                               // 30
-    (PCODE)0,                               // 31
-    (PCODE)0,                               // 32
-    (PCODE)Load_D3,                         // 33
-    (PCODE)Load_D3_D4,                      // 34
-    (PCODE)Load_D3_D4_D5,                   // 35
-    (PCODE)Load_D3_D4_D5_D6,                // 36
-    (PCODE)Load_D3_D4_D5_D6_D7,             // 37
-    (PCODE)0,                               // 40
-    (PCODE)0,                               // 41
-    (PCODE)0,                               // 42
-    (PCODE)0,                               // 43
-    (PCODE)Load_D4,                         // 44
-    (PCODE)Load_D4_D5,                      // 45
-    (PCODE)Load_D4_D5_D6,                   // 46
-    (PCODE)Load_D4_D5_D6_D7,                // 47
-    (PCODE)0,                               // 50
-    (PCODE)0,                               // 51
-    (PCODE)0,                               // 52
-    (PCODE)0,                               // 53
-    (PCODE)0,                               // 54
-    (PCODE)Load_D5,                         // 55
-    (PCODE)Load_D5_D6,                      // 56
-    (PCODE)Load_D5_D6_D7,                   // 57
-    (PCODE)0,                               // 60
-    (PCODE)0,                               // 61
-    (PCODE)0,                               // 62
-    (PCODE)0,                               // 63
-    (PCODE)0,                               // 64
-    (PCODE)0,                               // 65
-    (PCODE)Load_D6,                         // 66
-    (PCODE)Load_D6_D7,                      // 67
-    (PCODE)0,                               // 70
-    (PCODE)0,                               // 71
-    (PCODE)0,                               // 72
-    (PCODE)0,                               // 73
-    (PCODE)0,                               // 74
-    (PCODE)0,                               // 75
-    (PCODE)0,                               // 76
-    (PCODE)Load_D7                          // 77
-};
-
-PCODE FPRegs128StoreRoutines[] =
-{
-    (PCODE)Store_Q0,                         // 00
-    (PCODE)Store_Q0_Q1,                      // 01
-    (PCODE)Store_Q0_Q1_Q2,                   // 02
-    (PCODE)Store_Q0_Q1_Q2_Q3,                // 03
-    (PCODE)Store_Q0_Q1_Q2_Q3_Q4,             // 04
-    (PCODE)Store_Q0_Q1_Q2_Q3_Q4_Q5,          // 05
-    (PCODE)Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6,       // 06
-    (PCODE)Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7,    // 07
-    (PCODE)0,                                // 10
-    (PCODE)Store_Q1,                         // 11
-    (PCODE)Store_Q1_Q2,                      // 12
-    (PCODE)Store_Q1_Q2_Q3,                   // 13
-    (PCODE)Store_Q1_Q2_Q3_Q4,                // 14
-    (PCODE)Store_Q1_Q2_Q3_Q4_Q5,             // 15
-    (PCODE)Store_Q1_Q2_Q3_Q4_Q5_Q6,          // 16
-    (PCODE)Store_Q1_Q2_Q3_Q4_Q5_Q6_Q7,       // 17
-    (PCODE)0,                                // 20
-    (PCODE)0,                                // 21
-    (PCODE)Store_Q2,                         // 22
-    (PCODE)Store_Q2_Q3,                      // 23
-    (PCODE)Store_Q2_Q3_Q4,                   // 24
-    (PCODE)Store_Q2_Q3_Q4_Q5,                // 25
-    (PCODE)Store_Q2_Q3_Q4_Q5_Q6,             // 26
-    (PCODE)Store_Q2_Q3_Q4_Q5_Q6_Q7,          // 27
-    (PCODE)0,                                // 30
-    (PCODE)0,                                // 31
-    (PCODE)0,                                // 32
-    (PCODE)Store_Q3,                         // 33
-    (PCODE)Store_Q3_Q4,                      // 34
-    (PCODE)Store_Q3_Q4_Q5,                   // 35
-    (PCODE)Store_Q3_Q4_Q5_Q6,                // 36
-    (PCODE)Store_Q3_Q4_Q5_Q6_Q7,             // 37
-    (PCODE)0,                                // 40
-    (PCODE)0,                                // 41
-    (PCODE)0,                                // 42
-    (PCODE)0,                                // 43
-    (PCODE)Store_Q4,                         // 44
-    (PCODE)Store_Q4_Q5,                      // 45
-    (PCODE)Store_Q4_Q5_Q6,                   // 46
-    (PCODE)Store_Q4_Q5_Q6_Q7,                // 47
-    (PCODE)0,                                // 50
-    (PCODE)0,                                // 51
-    (PCODE)0,                                // 52
-    (PCODE)0,                                // 53
-    (PCODE)0,                                // 54
-    (PCODE)Store_Q5,                         // 55
-    (PCODE)Store_Q5_Q6,                      // 56
-    (PCODE)Store_Q5_Q6_Q7,                   // 57
-    (PCODE)0,                                // 60
-    (PCODE)0,                                // 61
-    (PCODE)0,                                // 62
-    (PCODE)0,                                // 63
-    (PCODE)0,                                // 64
-    (PCODE)0,                                // 65
-    (PCODE)Store_Q6,                         // 66
-    (PCODE)Store_Q6_Q7,                      // 67
-    (PCODE)0,                                // 70
-    (PCODE)0,                                // 71
-    (PCODE)0,                                // 72
-    (PCODE)0,                                // 73
-    (PCODE)0,                                // 74
-    (PCODE)0,                                // 75
-    (PCODE)0,                                // 76
-    (PCODE)Store_Q7                          // 77
-};
-
-static const PCODE FPRegs128LoadRoutines[] =
-{
-    (PCODE)Load_Q0,                         // 00
-    (PCODE)Load_Q0_Q1,                      // 01
-    (PCODE)Load_Q0_Q1_Q2,                   // 02
-    (PCODE)Load_Q0_Q1_Q2_Q3,                // 03
-    (PCODE)Load_Q0_Q1_Q2_Q3_Q4,             // 04
-    (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5,          // 05
-    (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6,       // 06
-    (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7,    // 07
-    (PCODE)0,                               // 10
-    (PCODE)Load_Q1,                         // 11
-    (PCODE)Load_Q1_Q2,                      // 12
-    (PCODE)Load_Q1_Q2_Q3,                   // 13
-    (PCODE)Load_Q1_Q2_Q3_Q4,                // 14
-    (PCODE)Load_Q1_Q2_Q3_Q4_Q5,             // 15
-    (PCODE)Load_Q1_Q2_Q3_Q4_Q5_Q6,          // 16
-    (PCODE)Load_Q1_Q2_Q3_Q4_Q5_Q6_Q7,       // 17
-    (PCODE)0,                               // 20
-    (PCODE)0,                               // 21
-    (PCODE)Load_Q2,                         // 22
-    (PCODE)Load_Q2_Q3,                      // 23
-    (PCODE)Load_Q2_Q3_Q4,                   // 24
-    (PCODE)Load_Q2_Q3_Q4_Q5,                // 25
-    (PCODE)Load_Q2_Q3_Q4_Q5_Q6,             // 26
-    (PCODE)Load_Q2_Q3_Q4_Q5_Q6_Q7,          // 27
-    (PCODE)0,                               // 30
-    (PCODE)0,                               // 31
-    (PCODE)0,                               // 32
-    (PCODE)Load_Q3,                         // 33
-    (PCODE)Load_Q3_Q4,                      // 34
-    (PCODE)Load_Q3_Q4_Q5,                   // 35
-    (PCODE)Load_Q3_Q4_Q5_Q6,                // 36
-    (PCODE)Load_Q3_Q4_Q5_Q6_Q7,             // 37
-    (PCODE)0,                               // 40
-    (PCODE)0,                               // 41
-    (PCODE)0,                               // 42
-    (PCODE)0,                               // 43
-    (PCODE)Load_Q4,                         // 44
-    (PCODE)Load_Q4_Q5,                      // 45
-    (PCODE)Load_Q4_Q5_Q6,                   // 46
-    (PCODE)Load_Q4_Q5_Q6_Q7,                // 47
-    (PCODE)0,                               // 50
-    (PCODE)0,                               // 51
-    (PCODE)0,                               // 52
-    (PCODE)0,                               // 53
-    (PCODE)0,                               // 54
-    (PCODE)Load_Q5,                         // 55
-    (PCODE)Load_Q5_Q6,                      // 56
-    (PCODE)Load_Q5_Q6_Q7,                   // 57
-    (PCODE)0,                               // 60
-    (PCODE)0,                               // 61
-    (PCODE)0,                               // 62
-    (PCODE)0,                               // 63
-    (PCODE)0,                               // 64
-    (PCODE)0,                               // 65
-    (PCODE)Load_Q6,                         // 66
-    (PCODE)Load_Q6_Q7,                      // 67
-    (PCODE)0,                               // 70
-    (PCODE)0,                               // 71
-    (PCODE)0,                               // 72
-    (PCODE)0,                               // 73
-    (PCODE)0,                               // 74
-    (PCODE)0,                               // 75
-    (PCODE)0,                               // 76
-    (PCODE)Load_Q7                          // 77
-};
-
-static const PCODE FPRegs32StoreRoutines[] =
-{
-    (PCODE)Store_S0,                         // 00
-    (PCODE)Store_S0_S1,                      // 01
-    (PCODE)Store_S0_S1_S2,                   // 02
-    (PCODE)Store_S0_S1_S2_S3,                // 03
-    (PCODE)Store_S0_S1_S2_S3_S4,             // 04
-    (PCODE)Store_S0_S1_S2_S3_S4_S5,          // 05
-    (PCODE)Store_S0_S1_S2_S3_S4_S5_S6,       // 06
-    (PCODE)Store_S0_S1_S2_S3_S4_S5_S6_S7,    // 07
-    (PCODE)0,                                // 10
-    (PCODE)Store_S1,                         // 11
-    (PCODE)Store_S1_S2,                      // 12
-    (PCODE)Store_S1_S2_S3,                   // 13
-    (PCODE)Store_S1_S2_S3_S4,                // 14
-    (PCODE)Store_S1_S2_S3_S4_S5,             // 15
-    (PCODE)Store_S1_S2_S3_S4_S5_S6,          // 16
-    (PCODE)Store_S1_S2_S3_S4_S5_S6_S7,       // 17
-    (PCODE)0,                                // 20
-    (PCODE)0,                                // 21
-    (PCODE)Store_S2,                         // 22
-    (PCODE)Store_S2_S3,                      // 23
-    (PCODE)Store_S2_S3_S4,                   // 24
-    (PCODE)Store_S2_S3_S4_S5,                // 25
-    (PCODE)Store_S2_S3_S4_S5_S6,             // 26
-    (PCODE)Store_S2_S3_S4_S5_S6_S7,          // 27
-    (PCODE)0,                                // 30
-    (PCODE)0,                                // 31
-    (PCODE)0,                                // 32
-    (PCODE)Store_S3,                         // 33
-    (PCODE)Store_S3_S4,                      // 34
-    (PCODE)Store_S3_S4_S5,                   // 35
-    (PCODE)Store_S3_S4_S5_S6,                // 36
-    (PCODE)Store_S3_S4_S5_S6_S7,             // 37
-    (PCODE)0,                                // 40
-    (PCODE)0,                                // 41
-    (PCODE)0,                                // 42
-    (PCODE)0,                                // 43
-    (PCODE)Store_S4,                         // 44
-    (PCODE)Store_S4_S5,                      // 45
-    (PCODE)Store_S4_S5_S6,                   // 46
-    (PCODE)Store_S4_S5_S6_S7,                // 47
-    (PCODE)0,                                // 50
-    (PCODE)0,                                // 51
-    (PCODE)0,                                // 52
-    (PCODE)0,                                // 53
-    (PCODE)0,                                // 54
-    (PCODE)Store_S5,                         // 55
-    (PCODE)Store_S5_S6,                      // 56
-    (PCODE)Store_S5_S6_S7,                   // 57
-    (PCODE)0,                                // 60
-    (PCODE)0,                                // 61
-    (PCODE)0,                                // 62
-    (PCODE)0,                                // 63
-    (PCODE)0,                                // 64
-    (PCODE)0,                                // 65
-    (PCODE)Store_S6,                         // 66
-    (PCODE)Store_S6_S7,                      // 67
-    (PCODE)0,                                // 70
-    (PCODE)0,                                // 71
-    (PCODE)0,                                // 72
-    (PCODE)0,                                // 73
-    (PCODE)0,                                // 74
-    (PCODE)0,                                // 75
-    (PCODE)0,                                // 76
-    (PCODE)Store_S7                          // 77
-};
-
-static const PCODE FPRegs32LoadRoutines[] =
-{
-    (PCODE)Load_S0,                         // 00
-    (PCODE)Load_S0_S1,                      // 01
-    (PCODE)Load_S0_S1_S2,                   // 02
-    (PCODE)Load_S0_S1_S2_S3,                // 03
-    (PCODE)Load_S0_S1_S2_S3_S4,             // 04
-    (PCODE)Load_S0_S1_S2_S3_S4_S5,          // 05
-    (PCODE)Load_S0_S1_S2_S3_S4_S5_S6,       // 06
-    (PCODE)Load_S0_S1_S2_S3_S4_S5_S6_S7,    // 07
-    (PCODE)0,                               // 10
-    (PCODE)Load_S1,                         // 11
-    (PCODE)Load_S1_S2,                      // 12
-    (PCODE)Load_S1_S2_S3,                   // 13
-    (PCODE)Load_S1_S2_S3_S4,                // 14
-    (PCODE)Load_S1_S2_S3_S4_S5,             // 15
-    (PCODE)Load_S1_S2_S3_S4_S5_S6,          // 16
-    (PCODE)Load_S1_S2_S3_S4_S5_S6_S7,       // 17
-    (PCODE)0,                               // 20
-    (PCODE)0,                               // 21
-    (PCODE)Load_S2,                         // 22
-    (PCODE)Load_S2_S3,                      // 23
-    (PCODE)Load_S2_S3_S4,                   // 24
-    (PCODE)Load_S2_S3_S4_S5,                // 25
-    (PCODE)Load_S2_S3_S4_S5_S6,             // 26
-    (PCODE)Load_S2_S3_S4_S5_S6_S7,          // 27
-    (PCODE)0,                               // 30
-    (PCODE)0,                               // 31
-    (PCODE)0,                               // 32
-    (PCODE)Load_S3,                         // 33
-    (PCODE)Load_S3_S4,                      // 34
-    (PCODE)Load_S3_S4_S5,                   // 35
-    (PCODE)Load_S3_S4_S5_S6,                // 36
-    (PCODE)Load_S3_S4_S5_S6_S7,             // 37
-    (PCODE)0,                               // 40
-    (PCODE)0,                               // 41
-    (PCODE)0,                               // 42
-    (PCODE)0,                               // 43
-    (PCODE)Load_S4,                         // 44
-    (PCODE)Load_S4_S5,                      // 45
-    (PCODE)Load_S4_S5_S6,                   // 46
-    (PCODE)Load_S4_S5_S6_S7,                // 47
-    (PCODE)0,                               // 50
-    (PCODE)0,                               // 51
-    (PCODE)0,                               // 52
-    (PCODE)0,                               // 53
-    (PCODE)0,                               // 54
-    (PCODE)Load_S5,                         // 55
-    (PCODE)Load_S5_S6,                      // 56
-    (PCODE)Load_S5_S6_S7,                   // 57
-    (PCODE)0,                               // 60
-    (PCODE)0,                               // 61
-    (PCODE)0,                               // 62
-    (PCODE)0,                               // 63
-    (PCODE)0,                               // 64
-    (PCODE)0,                               // 65
-    (PCODE)Load_S6,                         // 66
-    (PCODE)Load_S6_S7,                      // 67
-    (PCODE)0,                               // 70
-    (PCODE)0,                               // 71
-    (PCODE)0,                               // 72
-    (PCODE)0,                               // 73
-    (PCODE)0,                               // 74
-    (PCODE)0,                               // 75
-    (PCODE)0,                               // 76
-    (PCODE)Load_S7                          // 77
-};
-
 #endif // TARGET_ARM64
+
+#ifdef TARGET_ARM
+
+extern "C" void Load_R0();
+extern "C" void Load_R0_R1();
+extern "C" void Load_R0_R1_R2();
+extern "C" void Load_R0_R1_R2_R3();
+extern "C" void Load_R1();
+extern "C" void Load_R1_R2();
+extern "C" void Load_R1_R2_R3();
+extern "C" void Load_R2();
+extern "C" void Load_R2_R3();
+extern "C" void Load_R3();
+
+extern "C" void Store_R0();
+extern "C" void Store_R0_R1();
+extern "C" void Store_R0_R1_R2();
+extern "C" void Store_R0_R1_R2_R3();
+extern "C" void Store_R1();
+extern "C" void Store_R1_R2();
+extern "C" void Store_R1_R2_R3();
+extern "C" void Store_R2();
+extern "C" void Store_R2_R3();
+extern "C" void Store_R3();
+
+extern "C" void Load_R0_R1_4B();
+extern "C" void Load_R0_R1_R2_R3_4B();
+extern "C" void Load_R2_R3_4B();
+extern "C" void Load_Stack_4B();
+extern "C" void Store_R0_R1_4B();
+extern "C" void Store_R0_R1_R2_R3_4B();
+extern "C" void Store_R2_R3_4B();
+extern "C" void Store_Stack_4B();
+
+#endif // TARGET_ARM
 
 #ifdef TARGET_RISCV64
 
@@ -1498,142 +689,6 @@ extern "C" void Store_Ref_A5();
 extern "C" void Store_Ref_A6();
 extern "C" void Store_Ref_A7();
 
-PCODE GPRegsRoutines[] =
-{
-    (PCODE)Load_A0,                         // 00
-    (PCODE)Load_A0_A1,                      // 01
-    (PCODE)Load_A0_A1_A2,                   // 02
-    (PCODE)Load_A0_A1_A2_A3,                // 03
-    (PCODE)Load_A0_A1_A2_A3_A4,             // 04
-    (PCODE)Load_A0_A1_A2_A3_A4_A5,          // 05
-    (PCODE)Load_A0_A1_A2_A3_A4_A5_A6,       // 06
-    (PCODE)Load_A0_A1_A2_A3_A4_A5_A6_A7,    // 07
-    (PCODE)0,                               // 10
-    (PCODE)Load_A1,                         // 11
-    (PCODE)Load_A1_A2,                      // 12
-    (PCODE)Load_A1_A2_A3,                   // 13
-    (PCODE)Load_A1_A2_A3_A4,                // 14
-    (PCODE)Load_A1_A2_A3_A4_A5,             // 15
-    (PCODE)Load_A1_A2_A3_A4_A5_A6,          // 16
-    (PCODE)Load_A1_A2_A3_A4_A5_A6_A7,       // 17
-    (PCODE)0,                               // 20
-    (PCODE)0,                               // 21
-    (PCODE)Load_A2,                         // 22
-    (PCODE)Load_A2_A3,                      // 23
-    (PCODE)Load_A2_A3_A4,                   // 24
-    (PCODE)Load_A2_A3_A4_A5,                // 25
-    (PCODE)Load_A2_A3_A4_A5_A6,             // 26
-    (PCODE)Load_A2_A3_A4_A5_A6_A7,          // 27
-    (PCODE)0,                               // 30
-    (PCODE)0,                               // 31
-    (PCODE)0,                               // 32
-    (PCODE)Load_A3,                         // 33
-    (PCODE)Load_A3_A4,                      // 34
-    (PCODE)Load_A3_A4_A5,                   // 35
-    (PCODE)Load_A3_A4_A5_A6,                // 36
-    (PCODE)Load_A3_A4_A5_A6_A7,             // 37
-    (PCODE)0,                               // 40
-    (PCODE)0,                               // 41
-    (PCODE)0,                               // 42
-    (PCODE)0,                               // 43
-    (PCODE)Load_A4,                         // 44
-    (PCODE)Load_A4_A5,                      // 45
-    (PCODE)Load_A4_A5_A6,                   // 46
-    (PCODE)Load_A4_A5_A6_A7,                // 47
-    (PCODE)0,                               // 50
-    (PCODE)0,                               // 51
-    (PCODE)0,                               // 52
-    (PCODE)0,                               // 53
-    (PCODE)0,                               // 54
-    (PCODE)Load_A5,                         // 55
-    (PCODE)Load_A5_A6,                      // 56
-    (PCODE)Load_A5_A6_A7,                   // 57
-    (PCODE)0,                               // 60
-    (PCODE)0,                               // 61
-    (PCODE)0,                               // 62
-    (PCODE)0,                               // 63
-    (PCODE)0,                               // 64
-    (PCODE)0,                               // 65
-    (PCODE)Load_A6,                         // 66
-    (PCODE)Load_A6_A7,                      // 67
-    (PCODE)0,                               // 70
-    (PCODE)0,                               // 71
-    (PCODE)0,                               // 72
-    (PCODE)0,                               // 73
-    (PCODE)0,                               // 74
-    (PCODE)0,                               // 75
-    (PCODE)0,                               // 76
-    (PCODE)Load_A7                          // 77
-};
-
-PCODE GPRegsStoreRoutines[] =
-{
-    (PCODE)Store_A0,                         // 00
-    (PCODE)Store_A0_A1,                      // 01
-    (PCODE)Store_A0_A1_A2,                   // 02
-    (PCODE)Store_A0_A1_A2_A3,                // 03
-    (PCODE)Store_A0_A1_A2_A3_A4,             // 04
-    (PCODE)Store_A0_A1_A2_A3_A4_A5,          // 05
-    (PCODE)Store_A0_A1_A2_A3_A4_A5_A6,       // 06
-    (PCODE)Store_A0_A1_A2_A3_A4_A5_A6_A7,    // 07
-    (PCODE)0,                                // 10
-    (PCODE)Store_A1,                         // 11
-    (PCODE)Store_A1_A2,                      // 12
-    (PCODE)Store_A1_A2_A3,                   // 13
-    (PCODE)Store_A1_A2_A3_A4,                // 14
-    (PCODE)Store_A1_A2_A3_A4_A5,             // 15
-    (PCODE)Store_A1_A2_A3_A4_A5_A6,          // 16
-    (PCODE)Store_A1_A2_A3_A4_A5_A6_A7,       // 17
-    (PCODE)0,                                // 20
-    (PCODE)0,                                // 21
-    (PCODE)Store_A2,                         // 22
-    (PCODE)Store_A2_A3,                      // 23
-    (PCODE)Store_A2_A3_A4,                   // 24
-    (PCODE)Store_A2_A3_A4_A5,                // 25
-    (PCODE)Store_A2_A3_A4_A5_A6,             // 26
-    (PCODE)Store_A2_A3_A4_A5_A6_A7,          // 27
-    (PCODE)0,                                // 30
-    (PCODE)0,                                // 31
-    (PCODE)0,                                // 32
-    (PCODE)Store_A3,                         // 33
-    (PCODE)Store_A3_A4,                      // 34
-    (PCODE)Store_A3_A4_A5,                   // 35
-    (PCODE)Store_A3_A4_A5_A6,                // 36
-    (PCODE)Store_A3_A4_A5_A6_A7,             // 37
-    (PCODE)0,                                // 40
-    (PCODE)0,                                // 41
-    (PCODE)0,                                // 42
-    (PCODE)0,                                // 43
-    (PCODE)Store_A4,                         // 44
-    (PCODE)Store_A4_A5,                      // 45
-    (PCODE)Store_A4_A5_A6,                   // 46
-    (PCODE)Store_A4_A5_A6_A7,                // 47
-    (PCODE)0,                                // 50
-    (PCODE)0,                                // 51
-    (PCODE)0,                                // 52
-    (PCODE)0,                                // 53
-    (PCODE)0,                                // 54
-    (PCODE)Store_A5,                         // 55
-    (PCODE)Store_A5_A6,                      // 56
-    (PCODE)Store_A5_A6_A7,                   // 57
-    (PCODE)0,                                // 60
-    (PCODE)0,                                // 61
-    (PCODE)0,                                // 62
-    (PCODE)0,                                // 63
-    (PCODE)0,                                // 64
-    (PCODE)0,                                // 65
-    (PCODE)Store_A6,                         // 66
-    (PCODE)Store_A6_A7,                      // 67
-    (PCODE)0,                                // 70
-    (PCODE)0,                                // 71
-    (PCODE)0,                                // 72
-    (PCODE)0,                                // 73
-    (PCODE)0,                                // 74
-    (PCODE)0,                                // 75
-    (PCODE)0,                                // 76
-    (PCODE)Store_A7                          // 77
-};
-
 extern "C" void Load_FA0();
 extern "C" void Load_FA0_FA1();
 extern "C" void Load_FA0_FA1_FA2();
@@ -1708,252 +763,297 @@ extern "C" void Store_FA6();
 extern "C" void Store_FA6_FA7();
 extern "C" void Store_FA7();
 
-PCODE FPRegsRoutines[] =
-{
-    (PCODE)Load_FA0,                         // 00
-    (PCODE)Load_FA0_FA1,                     // 01
-    (PCODE)Load_FA0_FA1_FA2,                 // 02
-    (PCODE)Load_FA0_FA1_FA2_FA3,             // 03
-    (PCODE)Load_FA0_FA1_FA2_FA3_FA4,         // 04
-    (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5,     // 05
-    (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6,    // 06
-    (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 07
-    (PCODE)0,                                // 10
-    (PCODE)Load_FA1,                         // 11
-    (PCODE)Load_FA1_FA2,                     // 12
-    (PCODE)Load_FA1_FA2_FA3,                 // 13
-    (PCODE)Load_FA1_FA2_FA3_FA4,             // 14
-    (PCODE)Load_FA1_FA2_FA3_FA4_FA5,         // 15
-    (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6,     // 16
-    (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 17
-    (PCODE)0,                                // 20
-    (PCODE)0,                                // 21
-    (PCODE)Load_FA2,                         // 22
-    (PCODE)Load_FA2_FA3,                     // 23
-    (PCODE)Load_FA2_FA3_FA4,                 // 24
-    (PCODE)Load_FA2_FA3_FA4_FA5,             // 25
-    (PCODE)Load_FA2_FA3_FA4_FA5_FA6,         // 26
-    (PCODE)Load_FA2_FA3_FA4_FA5_FA6_FA7,     // 27
-    (PCODE)0,                                // 30
-    (PCODE)0,                                // 31
-    (PCODE)0,                                // 32
-    (PCODE)Load_FA3,                         // 33
-    (PCODE)Load_FA3_FA4,                     // 34
-    (PCODE)Load_FA3_FA4_FA5,                 // 35
-    (PCODE)Load_FA3_FA4_FA5_FA6,             // 36
-    (PCODE)Load_FA3_FA4_FA5_FA6_FA7,         // 37
-    (PCODE)0,                                // 40
-    (PCODE)0,                                // 41
-    (PCODE)0,                                // 42
-    (PCODE)0,                                // 43
-    (PCODE)Load_FA4,                         // 44
-    (PCODE)Load_FA4_FA5,                     // 45
-    (PCODE)Load_FA4_FA5_FA6,                 // 46
-    (PCODE)Load_FA4_FA5_FA6_FA7,             // 47
-    (PCODE)0,                                // 50
-    (PCODE)0,                                // 51
-    (PCODE)0,                                // 52
-    (PCODE)0,                                // 53
-    (PCODE)0,                                // 54
-    (PCODE)Load_FA5,                         // 55
-    (PCODE)Load_FA5_FA6,                     // 56
-    (PCODE)Load_FA5_FA6_FA7,                 // 57
-    (PCODE)0,                                // 60
-    (PCODE)0,                                // 61
-    (PCODE)0,                                // 62
-    (PCODE)0,                                // 63
-    (PCODE)0,                                // 64
-    (PCODE)0,                                // 65
-    (PCODE)Load_FA6,                         // 66
-    (PCODE)Load_FA6_FA7,                     // 67
-    (PCODE)0,                                // 70
-    (PCODE)0,                                // 71
-    (PCODE)0,                                // 72
-    (PCODE)0,                                // 73
-    (PCODE)0,                                // 74
-    (PCODE)0,                                // 75
-    (PCODE)0,                                // 76
-    (PCODE)Load_FA7                          // 77
-};
-
-PCODE FPRegsStoreRoutines[] =
-{
-    (PCODE)Store_FA0,                         // 00
-    (PCODE)Store_FA0_FA1,                     // 01
-    (PCODE)Store_FA0_FA1_FA2,                 // 02
-    (PCODE)Store_FA0_FA1_FA2_FA3,             // 03
-    (PCODE)Store_FA0_FA1_FA2_FA3_FA4,         // 04
-    (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5,     // 05
-    (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6,    // 06
-    (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 07
-    (PCODE)0,                                 // 10
-    (PCODE)Store_FA1,                         // 11
-    (PCODE)Store_FA1_FA2,                     // 12
-    (PCODE)Store_FA1_FA2_FA3,                 // 13
-    (PCODE)Store_FA1_FA2_FA3_FA4,             // 14
-    (PCODE)Store_FA1_FA2_FA3_FA4_FA5,         // 15
-    (PCODE)Store_FA1_FA2_FA3_FA4_FA5_FA6,     // 16
-    (PCODE)Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 17
-    (PCODE)0,                                 // 20
-    (PCODE)0,                                 // 21
-    (PCODE)Store_FA2,                         // 22
-    (PCODE)Store_FA2_FA3,                     // 23
-    (PCODE)Store_FA2_FA3_FA4,                 // 24
-    (PCODE)Store_FA2_FA3_FA4_FA5,             // 25
-    (PCODE)Store_FA2_FA3_FA4_FA5_FA6,         // 26
-    (PCODE)Store_FA2_FA3_FA4_FA5_FA6_FA7,     // 27
-    (PCODE)0,                                 // 30
-    (PCODE)0,                                 // 31
-    (PCODE)0,                                 // 32
-    (PCODE)Store_FA3,                         // 33
-    (PCODE)Store_FA3_FA4,                     // 34
-    (PCODE)Store_FA3_FA4_FA5,                 // 35
-    (PCODE)Store_FA3_FA4_FA5_FA6,             // 36
-    (PCODE)Store_FA3_FA4_FA5_FA6_FA7,         // 37
-    (PCODE)0,                                 // 40
-    (PCODE)0,                                 // 41
-    (PCODE)0,                                 // 42
-    (PCODE)0,                                 // 43
-    (PCODE)Store_FA4,                         // 44
-    (PCODE)Store_FA4_FA5,                     // 45
-    (PCODE)Store_FA4_FA5_FA6,                 // 46
-    (PCODE)Store_FA4_FA5_FA6_FA7,             // 47
-    (PCODE)0,                                 // 50
-    (PCODE)0,                                 // 51
-    (PCODE)0,                                 // 52
-    (PCODE)0,                                 // 53
-    (PCODE)0,                                 // 54
-    (PCODE)Store_FA5,                         // 55
-    (PCODE)Store_FA5_FA6,                     // 56
-    (PCODE)Store_FA5_FA6_FA7,                 // 57
-    (PCODE)0,                                 // 60
-    (PCODE)0,                                 // 61
-    (PCODE)0,                                 // 62
-    (PCODE)0,                                 // 63
-    (PCODE)0,                                 // 64
-    (PCODE)0,                                 // 65
-    (PCODE)Store_FA6,                         // 66
-    (PCODE)Store_FA6_FA7,                     // 67
-    (PCODE)0,                                 // 70
-    (PCODE)0,                                 // 71
-    (PCODE)0,                                 // 72
-    (PCODE)0,                                 // 73
-    (PCODE)0,                                 // 74
-    (PCODE)0,                                 // 75
-    (PCODE)0,                                 // 76
-    (PCODE)Store_FA7                          // 77
-};
-
-PCODE GPRegsRefRoutines[] =
-{
-    (PCODE)Load_Ref_A0,        // 0 - a0
-    (PCODE)Load_Ref_A1,        // 1 - a1
-    (PCODE)Load_Ref_A2,        // 2 - a2
-    (PCODE)Load_Ref_A3,        // 3 - a3
-    (PCODE)Load_Ref_A4,        // 4 - a4
-    (PCODE)Load_Ref_A5,        // 5 - a5
-    (PCODE)Load_Ref_A6,        // 6 - a6
-    (PCODE)Load_Ref_A7         // 7 - a7
-};
-
-PCODE GPRegsRefStoreRoutines[] =
-{
-    (PCODE)Store_Ref_A0,        // 0 - a0
-    (PCODE)Store_Ref_A1,        // 1 - a1
-    (PCODE)Store_Ref_A2,        // 2 - a2
-    (PCODE)Store_Ref_A3,        // 3 - a3
-    (PCODE)Store_Ref_A4,        // 4 - a4
-    (PCODE)Store_Ref_A5,        // 5 - a5
-    (PCODE)Store_Ref_A6,        // 6 - a6
-    (PCODE)Store_Ref_A7         // 7 - a7
-};
-
 #endif // TARGET_RISCV64
-
-#define LOG_COMPUTE_CALL_STUB 0
 
 PCODE CallStubGenerator::GetStackRoutine()
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("Load_Stack\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "Load_Stack\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack : (PCODE)Store_Stack;
 }
 
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
 PCODE CallStubGenerator::GetStackRoutine_1B()
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetStackRoutine_1B\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRoutine_1B\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack_1B : (PCODE)Store_Stack_1B;
 }
 
 PCODE CallStubGenerator::GetStackRoutine_2B()
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetStackRoutine_2B\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRoutine_2B\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack_2B : (PCODE)Store_Stack_2B;
 }
 
 PCODE CallStubGenerator::GetStackRoutine_4B()
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetStackRoutine_4B\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRoutine_4B\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack_4B : (PCODE)Store_Stack_4B;
 }
 #endif // TARGET_APPLE && TARGET_ARM64
 
 PCODE CallStubGenerator::GetGPRegRangeRoutine(int r1, int r2)
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetGPRegRangeRoutine %d %d\n", r1, r2);
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetGPRegRangeRoutine %d %d\n", r1, r2));
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    static const PCODE GPRegsLoadRoutines[] = {
+        (PCODE)Load_RCX, (PCODE)Load_RCX_RDX, (PCODE)Load_RCX_RDX_R8, (PCODE)Load_RCX_RDX_R8_R9,
+        (PCODE)0, (PCODE)Load_RDX, (PCODE)Load_RDX_R8, (PCODE)Load_RDX_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)Load_R8, (PCODE)Load_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_R9
+    };
+    static const PCODE GPRegsStoreRoutines[] = {
+        (PCODE)Store_RCX, (PCODE)Store_RCX_RDX, (PCODE)Store_RCX_RDX_R8, (PCODE)Store_RCX_RDX_R8_R9,
+        (PCODE)0, (PCODE)Store_RDX, (PCODE)Store_RDX_R8, (PCODE)Store_RDX_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)Store_R8, (PCODE)Store_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R9
+    };
+#elif defined(TARGET_AMD64) // Unix AMD64
+    static const PCODE GPRegsLoadRoutines[] = {
+        (PCODE)Load_RDI, (PCODE)Load_RDI_RSI, (PCODE)Load_RDI_RSI_RDX, (PCODE)Load_RDI_RSI_RDX_RCX, (PCODE)Load_RDI_RSI_RDX_RCX_R8, (PCODE)Load_RDI_RSI_RDX_RCX_R8_R9,
+        (PCODE)0, (PCODE)Load_RSI, (PCODE)Load_RSI_RDX, (PCODE)Load_RSI_RDX_RCX, (PCODE)Load_RSI_RDX_RCX_R8, (PCODE)Load_RSI_RDX_RCX_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)Load_RDX, (PCODE)Load_RDX_RCX, (PCODE)Load_RDX_RCX_R8, (PCODE)Load_RDX_RCX_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_RCX, (PCODE)Load_RCX_R8, (PCODE)Load_RCX_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_R8, (PCODE)Load_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_R9
+    };
+    static const PCODE GPRegsStoreRoutines[] = {
+        (PCODE)Store_RDI, (PCODE)Store_RDI_RSI, (PCODE)Store_RDI_RSI_RDX, (PCODE)Store_RDI_RSI_RDX_RCX, (PCODE)Store_RDI_RSI_RDX_RCX_R8, (PCODE)Store_RDI_RSI_RDX_RCX_R8_R9,
+        (PCODE)0, (PCODE)Store_RSI, (PCODE)Store_RSI_RDX, (PCODE)Store_RSI_RDX_RCX, (PCODE)Store_RSI_RDX_RCX_R8, (PCODE)Store_RSI_RDX_RCX_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)Store_RDX, (PCODE)Store_RDX_RCX, (PCODE)Store_RDX_RCX_R8, (PCODE)Store_RDX_RCX_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_RCX, (PCODE)Store_RCX_R8, (PCODE)Store_RCX_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R8, (PCODE)Store_R8_R9,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R9
+    };
+#elif defined(TARGET_ARM64)
+    static const PCODE GPRegsLoadRoutines[] = {
+        (PCODE)Load_X0, (PCODE)Load_X0_X1, (PCODE)Load_X0_X1_X2, (PCODE)Load_X0_X1_X2_X3, (PCODE)Load_X0_X1_X2_X3_X4, (PCODE)Load_X0_X1_X2_X3_X4_X5, (PCODE)Load_X0_X1_X2_X3_X4_X5_X6, (PCODE)Load_X0_X1_X2_X3_X4_X5_X6_X7,
+        (PCODE)0, (PCODE)Load_X1, (PCODE)Load_X1_X2, (PCODE)Load_X1_X2_X3, (PCODE)Load_X1_X2_X3_X4, (PCODE)Load_X1_X2_X3_X4_X5, (PCODE)Load_X1_X2_X3_X4_X5_X6, (PCODE)Load_X1_X2_X3_X4_X5_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)Load_X2, (PCODE)Load_X2_X3, (PCODE)Load_X2_X3_X4, (PCODE)Load_X2_X3_X4_X5, (PCODE)Load_X2_X3_X4_X5_X6, (PCODE)Load_X2_X3_X4_X5_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_X3, (PCODE)Load_X3_X4, (PCODE)Load_X3_X4_X5, (PCODE)Load_X3_X4_X5_X6, (PCODE)Load_X3_X4_X5_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_X4, (PCODE)Load_X4_X5, (PCODE)Load_X4_X5_X6, (PCODE)Load_X4_X5_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_X5, (PCODE)Load_X5_X6, (PCODE)Load_X5_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_X6, (PCODE)Load_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_X7
+    };
+    static const PCODE GPRegsStoreRoutines[] = {
+        (PCODE)Store_X0, (PCODE)Store_X0_X1, (PCODE)Store_X0_X1_X2, (PCODE)Store_X0_X1_X2_X3, (PCODE)Store_X0_X1_X2_X3_X4, (PCODE)Store_X0_X1_X2_X3_X4_X5, (PCODE)Store_X0_X1_X2_X3_X4_X5_X6, (PCODE)Store_X0_X1_X2_X3_X4_X5_X6_X7,
+        (PCODE)0, (PCODE)Store_X1, (PCODE)Store_X1_X2, (PCODE)Store_X1_X2_X3, (PCODE)Store_X1_X2_X3_X4, (PCODE)Store_X1_X2_X3_X4_X5, (PCODE)Store_X1_X2_X3_X4_X5_X6, (PCODE)Store_X1_X2_X3_X4_X5_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)Store_X2, (PCODE)Store_X2_X3, (PCODE)Store_X2_X3_X4, (PCODE)Store_X2_X3_X4_X5, (PCODE)Store_X2_X3_X4_X5_X6, (PCODE)Store_X2_X3_X4_X5_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_X3, (PCODE)Store_X3_X4, (PCODE)Store_X3_X4_X5, (PCODE)Store_X3_X4_X5_X6, (PCODE)Store_X3_X4_X5_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_X4, (PCODE)Store_X4_X5, (PCODE)Store_X4_X5_X6, (PCODE)Store_X4_X5_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_X5, (PCODE)Store_X5_X6, (PCODE)Store_X5_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_X6, (PCODE)Store_X6_X7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_X7
+    };
+#elif defined(TARGET_ARM)
+    static const PCODE GPRegsLoadRoutines[] = {
+        (PCODE)Load_R0, (PCODE)Load_R0_R1, (PCODE)Load_R0_R1_R2, (PCODE)Load_R0_R1_R2_R3,
+        (PCODE)0, (PCODE)Load_R1, (PCODE)Load_R1_R2, (PCODE)Load_R1_R2_R3,
+        (PCODE)0, (PCODE)0, (PCODE)Load_R2, (PCODE)Load_R2_R3,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_R3
+    };
+    static const PCODE GPRegsStoreRoutines[] = {
+        (PCODE)Store_R0, (PCODE)Store_R0_R1, (PCODE)Store_R0_R1_R2, (PCODE)Store_R0_R1_R2_R3,
+        (PCODE)0, (PCODE)Store_R1, (PCODE)Store_R1_R2, (PCODE)Store_R1_R2_R3,
+        (PCODE)0, (PCODE)0, (PCODE)Store_R2, (PCODE)Store_R2_R3,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R3
+    };
+#elif defined(TARGET_RISCV64)
+    static const PCODE GPRegsLoadRoutines[] = {
+        (PCODE)Load_A0, (PCODE)Load_A0_A1, (PCODE)Load_A0_A1_A2, (PCODE)Load_A0_A1_A2_A3, (PCODE)Load_A0_A1_A2_A3_A4, (PCODE)Load_A0_A1_A2_A3_A4_A5, (PCODE)Load_A0_A1_A2_A3_A4_A5_A6, (PCODE)Load_A0_A1_A2_A3_A4_A5_A6_A7,
+        (PCODE)0, (PCODE)Load_A1, (PCODE)Load_A1_A2, (PCODE)Load_A1_A2_A3, (PCODE)Load_A1_A2_A3_A4, (PCODE)Load_A1_A2_A3_A4_A5, (PCODE)Load_A1_A2_A3_A4_A5_A6, (PCODE)Load_A1_A2_A3_A4_A5_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)Load_A2, (PCODE)Load_A2_A3, (PCODE)Load_A2_A3_A4, (PCODE)Load_A2_A3_A4_A5, (PCODE)Load_A2_A3_A4_A5_A6, (PCODE)Load_A2_A3_A4_A5_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_A3, (PCODE)Load_A3_A4, (PCODE)Load_A3_A4_A5, (PCODE)Load_A3_A4_A5_A6, (PCODE)Load_A3_A4_A5_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_A4, (PCODE)Load_A4_A5, (PCODE)Load_A4_A5_A6, (PCODE)Load_A4_A5_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_A5, (PCODE)Load_A5_A6, (PCODE)Load_A5_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_A6, (PCODE)Load_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_A7
+    };
+    static const PCODE GPRegsStoreRoutines[] = {
+        (PCODE)Store_A0, (PCODE)Store_A0_A1, (PCODE)Store_A0_A1_A2, (PCODE)Store_A0_A1_A2_A3, (PCODE)Store_A0_A1_A2_A3_A4, (PCODE)Store_A0_A1_A2_A3_A4_A5, (PCODE)Store_A0_A1_A2_A3_A4_A5_A6, (PCODE)Store_A0_A1_A2_A3_A4_A5_A6_A7,
+        (PCODE)0, (PCODE)Store_A1, (PCODE)Store_A1_A2, (PCODE)Store_A1_A2_A3, (PCODE)Store_A1_A2_A3_A4, (PCODE)Store_A1_A2_A3_A4_A5, (PCODE)Store_A1_A2_A3_A4_A5_A6, (PCODE)Store_A1_A2_A3_A4_A5_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)Store_A2, (PCODE)Store_A2_A3, (PCODE)Store_A2_A3_A4, (PCODE)Store_A2_A3_A4_A5, (PCODE)Store_A2_A3_A4_A5_A6, (PCODE)Store_A2_A3_A4_A5_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_A3, (PCODE)Store_A3_A4, (PCODE)Store_A3_A4_A5, (PCODE)Store_A3_A4_A5_A6, (PCODE)Store_A3_A4_A5_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_A4, (PCODE)Store_A4_A5, (PCODE)Store_A4_A5_A6, (PCODE)Store_A4_A5_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_A5, (PCODE)Store_A5_A6, (PCODE)Store_A5_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_A6, (PCODE)Store_A6_A7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_A7
+    };
 #endif
 
     int index = r1 * NUM_ARGUMENT_REGISTERS + r2;
-    PCODE routine = m_interpreterToNative ? GPRegsRoutines[index] : GPRegsStoreRoutines[index];
+    PCODE routine = m_interpreterToNative ? GPRegsLoadRoutines[index] : GPRegsStoreRoutines[index];
     _ASSERTE(routine != 0);
     return routine;
 }
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
 PCODE CallStubGenerator::GetGPRegRefRoutine(int r)
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetGPRegRefRoutine %d\n", r);
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetGPRegRefRoutine %d\n", r));
 #endif
-    return m_interpreterToNative ? GPRegsRefRoutines[r] : GPRegsRefStoreRoutines[r];
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    static const PCODE GPRegsRefLoadRoutines[] = {
+        (PCODE)Load_Ref_RCX, (PCODE)Load_Ref_RDX, (PCODE)Load_Ref_R8, (PCODE)Load_Ref_R9
+    };
+    static const PCODE GPRegsRefStoreRoutines[] = {
+        (PCODE)Store_Ref_RCX, (PCODE)Store_Ref_RDX, (PCODE)Store_Ref_R8, (PCODE)Store_Ref_R9
+    };
+#elif defined(TARGET_ARM64)
+    static const PCODE GPRegsRefLoadRoutines[] = {
+        (PCODE)Load_Ref_X0, (PCODE)Load_Ref_X1, (PCODE)Load_Ref_X2, (PCODE)Load_Ref_X3,
+        (PCODE)Load_Ref_X4, (PCODE)Load_Ref_X5, (PCODE)Load_Ref_X6, (PCODE)Load_Ref_X7
+    };
+    static const PCODE GPRegsRefStoreRoutines[] = {
+        (PCODE)Store_Ref_X0, (PCODE)Store_Ref_X1, (PCODE)Store_Ref_X2, (PCODE)Store_Ref_X3,
+        (PCODE)Store_Ref_X4, (PCODE)Store_Ref_X5, (PCODE)Store_Ref_X6, (PCODE)Store_Ref_X7
+    };
+#elif defined(TARGET_RISCV64)
+    static const PCODE GPRegsRefLoadRoutines[] = {
+        (PCODE)Load_Ref_A0, (PCODE)Load_Ref_A1, (PCODE)Load_Ref_A2, (PCODE)Load_Ref_A3,
+        (PCODE)Load_Ref_A4, (PCODE)Load_Ref_A5, (PCODE)Load_Ref_A6, (PCODE)Load_Ref_A7
+    };
+    static const PCODE GPRegsRefStoreRoutines[] = {
+        (PCODE)Store_Ref_A0, (PCODE)Store_Ref_A1, (PCODE)Store_Ref_A2, (PCODE)Store_Ref_A3,
+        (PCODE)Store_Ref_A4, (PCODE)Store_Ref_A5, (PCODE)Store_Ref_A6, (PCODE)Store_Ref_A7
+    };
+#endif
+
+    return m_interpreterToNative ? GPRegsRefLoadRoutines[r] : GPRegsRefStoreRoutines[r];
 }
 
 PCODE CallStubGenerator::GetStackRefRoutine()
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetStackRefRoutine\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRefRoutine\n"));
     return m_interpreterToNative ? (PCODE)Load_Stack_Ref : (PCODE)Store_Stack_Ref;
 }
 
-#endif // UNIX_AMD64_ABI
+#endif // !UNIX_AMD64_ABI && ENREGISTERED_PARAMTYPE_MAXSIZE
 
 PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
 {
-#if LOG_COMPUTE_CALL_STUB
-    printf("GetFPRegRangeRoutine %d %d\n", x1, x2);
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetFPRegRangeRoutine %d %d\n", x1, x2));
+
+#ifdef TARGET_ARM
+    _ASSERTE(!"Not support FP reg yet");
+    return 0;
+#else
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    static const PCODE FPRegsLoadRoutines[] = {
+        (PCODE)Load_XMM0, (PCODE)Load_XMM0_XMM1, (PCODE)Load_XMM0_XMM1_XMM2, (PCODE)Load_XMM0_XMM1_XMM2_XMM3,
+        (PCODE)0, (PCODE)Load_XMM1, (PCODE)Load_XMM1_XMM2, (PCODE)Load_XMM1_XMM2_XMM3,
+        (PCODE)0, (PCODE)0, (PCODE)Load_XMM2, (PCODE)Load_XMM2_XMM3,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_XMM3
+    };
+    static const PCODE FPRegsStoreRoutines[] = {
+        (PCODE)Store_XMM0, (PCODE)Store_XMM0_XMM1, (PCODE)Store_XMM0_XMM1_XMM2, (PCODE)Store_XMM0_XMM1_XMM2_XMM3,
+        (PCODE)0, (PCODE)Store_XMM1, (PCODE)Store_XMM1_XMM2, (PCODE)Store_XMM1_XMM2_XMM3,
+        (PCODE)0, (PCODE)0, (PCODE)Store_XMM2, (PCODE)Store_XMM2_XMM3,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_XMM3
+    };
+#elif defined(TARGET_AMD64) // Unix AMD64
+    static const PCODE FPRegsLoadRoutines[] = {
+        (PCODE)Load_XMM0, (PCODE)Load_XMM0_XMM1, (PCODE)Load_XMM0_XMM1_XMM2, (PCODE)Load_XMM0_XMM1_XMM2_XMM3, (PCODE)Load_XMM0_XMM1_XMM2_XMM3_XMM4, (PCODE)Load_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5, (PCODE)Load_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6, (PCODE)Load_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)Load_XMM1, (PCODE)Load_XMM1_XMM2, (PCODE)Load_XMM1_XMM2_XMM3, (PCODE)Load_XMM1_XMM2_XMM3_XMM4, (PCODE)Load_XMM1_XMM2_XMM3_XMM4_XMM5, (PCODE)Load_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6, (PCODE)Load_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)Load_XMM2, (PCODE)Load_XMM2_XMM3, (PCODE)Load_XMM2_XMM3_XMM4, (PCODE)Load_XMM2_XMM3_XMM4_XMM5, (PCODE)Load_XMM2_XMM3_XMM4_XMM5_XMM6, (PCODE)Load_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_XMM3, (PCODE)Load_XMM3_XMM4, (PCODE)Load_XMM3_XMM4_XMM5, (PCODE)Load_XMM3_XMM4_XMM5_XMM6, (PCODE)Load_XMM3_XMM4_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_XMM4, (PCODE)Load_XMM4_XMM5, (PCODE)Load_XMM4_XMM5_XMM6, (PCODE)Load_XMM4_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_XMM5, (PCODE)Load_XMM5_XMM6, (PCODE)Load_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_XMM6, (PCODE)Load_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_XMM7
+    };
+    static const PCODE FPRegsStoreRoutines[] = {
+        (PCODE)Store_XMM0, (PCODE)Store_XMM0_XMM1, (PCODE)Store_XMM0_XMM1_XMM2, (PCODE)Store_XMM0_XMM1_XMM2_XMM3, (PCODE)Store_XMM0_XMM1_XMM2_XMM3_XMM4, (PCODE)Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5, (PCODE)Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6, (PCODE)Store_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)Store_XMM1, (PCODE)Store_XMM1_XMM2, (PCODE)Store_XMM1_XMM2_XMM3, (PCODE)Store_XMM1_XMM2_XMM3_XMM4, (PCODE)Store_XMM1_XMM2_XMM3_XMM4_XMM5, (PCODE)Store_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6, (PCODE)Store_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)Store_XMM2, (PCODE)Store_XMM2_XMM3, (PCODE)Store_XMM2_XMM3_XMM4, (PCODE)Store_XMM2_XMM3_XMM4_XMM5, (PCODE)Store_XMM2_XMM3_XMM4_XMM5_XMM6, (PCODE)Store_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_XMM3, (PCODE)Store_XMM3_XMM4, (PCODE)Store_XMM3_XMM4_XMM5, (PCODE)Store_XMM3_XMM4_XMM5_XMM6, (PCODE)Store_XMM3_XMM4_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_XMM4, (PCODE)Store_XMM4_XMM5, (PCODE)Store_XMM4_XMM5_XMM6, (PCODE)Store_XMM4_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_XMM5, (PCODE)Store_XMM5_XMM6, (PCODE)Store_XMM5_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_XMM6, (PCODE)Store_XMM6_XMM7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_XMM7
+    };
+#elif defined(TARGET_ARM64)
+    static const PCODE FPRegsLoadRoutines[] = {
+        (PCODE)Load_D0, (PCODE)Load_D0_D1, (PCODE)Load_D0_D1_D2, (PCODE)Load_D0_D1_D2_D3, (PCODE)Load_D0_D1_D2_D3_D4, (PCODE)Load_D0_D1_D2_D3_D4_D5, (PCODE)Load_D0_D1_D2_D3_D4_D5_D6, (PCODE)Load_D0_D1_D2_D3_D4_D5_D6_D7,
+        (PCODE)0, (PCODE)Load_D1, (PCODE)Load_D1_D2, (PCODE)Load_D1_D2_D3, (PCODE)Load_D1_D2_D3_D4, (PCODE)Load_D1_D2_D3_D4_D5, (PCODE)Load_D1_D2_D3_D4_D5_D6, (PCODE)Load_D1_D2_D3_D4_D5_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)Load_D2, (PCODE)Load_D2_D3, (PCODE)Load_D2_D3_D4, (PCODE)Load_D2_D3_D4_D5, (PCODE)Load_D2_D3_D4_D5_D6, (PCODE)Load_D2_D3_D4_D5_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_D3, (PCODE)Load_D3_D4, (PCODE)Load_D3_D4_D5, (PCODE)Load_D3_D4_D5_D6, (PCODE)Load_D3_D4_D5_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_D4, (PCODE)Load_D4_D5, (PCODE)Load_D4_D5_D6, (PCODE)Load_D4_D5_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_D5, (PCODE)Load_D5_D6, (PCODE)Load_D5_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_D6, (PCODE)Load_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_D7
+    };
+    static const PCODE FPRegsStoreRoutines[] = {
+        (PCODE)Store_D0, (PCODE)Store_D0_D1, (PCODE)Store_D0_D1_D2, (PCODE)Store_D0_D1_D2_D3, (PCODE)Store_D0_D1_D2_D3_D4, (PCODE)Store_D0_D1_D2_D3_D4_D5, (PCODE)Store_D0_D1_D2_D3_D4_D5_D6, (PCODE)Store_D0_D1_D2_D3_D4_D5_D6_D7,
+        (PCODE)0, (PCODE)Store_D1, (PCODE)Store_D1_D2, (PCODE)Store_D1_D2_D3, (PCODE)Store_D1_D2_D3_D4, (PCODE)Store_D1_D2_D3_D4_D5, (PCODE)Store_D1_D2_D3_D4_D5_D6, (PCODE)Store_D1_D2_D3_D4_D5_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)Store_D2, (PCODE)Store_D2_D3, (PCODE)Store_D2_D3_D4, (PCODE)Store_D2_D3_D4_D5, (PCODE)Store_D2_D3_D4_D5_D6, (PCODE)Store_D2_D3_D4_D5_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_D3, (PCODE)Store_D3_D4, (PCODE)Store_D3_D4_D5, (PCODE)Store_D3_D4_D5_D6, (PCODE)Store_D3_D4_D5_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_D4, (PCODE)Store_D4_D5, (PCODE)Store_D4_D5_D6, (PCODE)Store_D4_D5_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_D5, (PCODE)Store_D5_D6, (PCODE)Store_D5_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_D6, (PCODE)Store_D6_D7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_D7
+    };
+#elif defined(TARGET_RISCV64)
+    static const PCODE FPRegsLoadRoutines[] = {
+        (PCODE)Load_FA0, (PCODE)Load_FA0_FA1, (PCODE)Load_FA0_FA1_FA2, (PCODE)Load_FA0_FA1_FA2_FA3, (PCODE)Load_FA0_FA1_FA2_FA3_FA4, (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5, (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6, (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)Load_FA1, (PCODE)Load_FA1_FA2, (PCODE)Load_FA1_FA2_FA3, (PCODE)Load_FA1_FA2_FA3_FA4, (PCODE)Load_FA1_FA2_FA3_FA4_FA5, (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6, (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)Load_FA2, (PCODE)Load_FA2_FA3, (PCODE)Load_FA2_FA3_FA4, (PCODE)Load_FA2_FA3_FA4_FA5, (PCODE)Load_FA2_FA3_FA4_FA5_FA6, (PCODE)Load_FA2_FA3_FA4_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_FA3, (PCODE)Load_FA3_FA4, (PCODE)Load_FA3_FA4_FA5, (PCODE)Load_FA3_FA4_FA5_FA6, (PCODE)Load_FA3_FA4_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_FA4, (PCODE)Load_FA4_FA5, (PCODE)Load_FA4_FA5_FA6, (PCODE)Load_FA4_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_FA5, (PCODE)Load_FA5_FA6, (PCODE)Load_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_FA6, (PCODE)Load_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_FA7
+    };
+    static const PCODE FPRegsStoreRoutines[] = {
+        (PCODE)Store_FA0, (PCODE)Store_FA0_FA1, (PCODE)Store_FA0_FA1_FA2, (PCODE)Store_FA0_FA1_FA2_FA3, (PCODE)Store_FA0_FA1_FA2_FA3_FA4, (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5, (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6, (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)Store_FA1, (PCODE)Store_FA1_FA2, (PCODE)Store_FA1_FA2_FA3, (PCODE)Store_FA1_FA2_FA3_FA4, (PCODE)Store_FA1_FA2_FA3_FA4_FA5, (PCODE)Store_FA1_FA2_FA3_FA4_FA5_FA6, (PCODE)Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)Store_FA2, (PCODE)Store_FA2_FA3, (PCODE)Store_FA2_FA3_FA4, (PCODE)Store_FA2_FA3_FA4_FA5, (PCODE)Store_FA2_FA3_FA4_FA5_FA6, (PCODE)Store_FA2_FA3_FA4_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_FA3, (PCODE)Store_FA3_FA4, (PCODE)Store_FA3_FA4_FA5, (PCODE)Store_FA3_FA4_FA5_FA6, (PCODE)Store_FA3_FA4_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_FA4, (PCODE)Store_FA4_FA5, (PCODE)Store_FA4_FA5_FA6, (PCODE)Store_FA4_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_FA5, (PCODE)Store_FA5_FA6, (PCODE)Store_FA5_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_FA6, (PCODE)Store_FA6_FA7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_FA7
+    };
 #endif
+
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
-    PCODE routine = m_interpreterToNative ? FPRegsRoutines[index] : FPRegsStoreRoutines[index];
+    PCODE routine = m_interpreterToNative ? FPRegsLoadRoutines[index] : FPRegsStoreRoutines[index];
     _ASSERTE(routine != 0);
     return routine;
+#endif
 }
 
 #ifdef TARGET_ARM64
 PCODE CallStubGenerator::GetFPReg128RangeRoutine(int x1, int x2)
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetFPReg128RangeRoutine %d %d\n", x1, x2);
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetFPReg128RangeRoutine %d %d\n", x1, x2));
 #endif
+    static const PCODE FPRegs128LoadRoutines[] = {
+        (PCODE)Load_Q0, (PCODE)Load_Q0_Q1, (PCODE)Load_Q0_Q1_Q2, (PCODE)Load_Q0_Q1_Q2_Q3, (PCODE)Load_Q0_Q1_Q2_Q3_Q4, (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5, (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6, (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)Load_Q1, (PCODE)Load_Q1_Q2, (PCODE)Load_Q1_Q2_Q3, (PCODE)Load_Q1_Q2_Q3_Q4, (PCODE)Load_Q1_Q2_Q3_Q4_Q5, (PCODE)Load_Q1_Q2_Q3_Q4_Q5_Q6, (PCODE)Load_Q1_Q2_Q3_Q4_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)Load_Q2, (PCODE)Load_Q2_Q3, (PCODE)Load_Q2_Q3_Q4, (PCODE)Load_Q2_Q3_Q4_Q5, (PCODE)Load_Q2_Q3_Q4_Q5_Q6, (PCODE)Load_Q2_Q3_Q4_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_Q3, (PCODE)Load_Q3_Q4, (PCODE)Load_Q3_Q4_Q5, (PCODE)Load_Q3_Q4_Q5_Q6, (PCODE)Load_Q3_Q4_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_Q4, (PCODE)Load_Q4_Q5, (PCODE)Load_Q4_Q5_Q6, (PCODE)Load_Q4_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_Q5, (PCODE)Load_Q5_Q6, (PCODE)Load_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_Q6, (PCODE)Load_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_Q7
+    };
+    static const PCODE FPRegs128StoreRoutines[] = {
+        (PCODE)Store_Q0, (PCODE)Store_Q0_Q1, (PCODE)Store_Q0_Q1_Q2, (PCODE)Store_Q0_Q1_Q2_Q3, (PCODE)Store_Q0_Q1_Q2_Q3_Q4, (PCODE)Store_Q0_Q1_Q2_Q3_Q4_Q5, (PCODE)Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6, (PCODE)Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)Store_Q1, (PCODE)Store_Q1_Q2, (PCODE)Store_Q1_Q2_Q3, (PCODE)Store_Q1_Q2_Q3_Q4, (PCODE)Store_Q1_Q2_Q3_Q4_Q5, (PCODE)Store_Q1_Q2_Q3_Q4_Q5_Q6, (PCODE)Store_Q1_Q2_Q3_Q4_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)Store_Q2, (PCODE)Store_Q2_Q3, (PCODE)Store_Q2_Q3_Q4, (PCODE)Store_Q2_Q3_Q4_Q5, (PCODE)Store_Q2_Q3_Q4_Q5_Q6, (PCODE)Store_Q2_Q3_Q4_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_Q3, (PCODE)Store_Q3_Q4, (PCODE)Store_Q3_Q4_Q5, (PCODE)Store_Q3_Q4_Q5_Q6, (PCODE)Store_Q3_Q4_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_Q4, (PCODE)Store_Q4_Q5, (PCODE)Store_Q4_Q5_Q6, (PCODE)Store_Q4_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_Q5, (PCODE)Store_Q5_Q6, (PCODE)Store_Q5_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_Q6, (PCODE)Store_Q6_Q7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_Q7
+    };
+
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
     PCODE routine = m_interpreterToNative ? FPRegs128LoadRoutines[index] : FPRegs128StoreRoutines[index];
     _ASSERTE(routine != 0);
@@ -1963,19 +1063,157 @@ PCODE CallStubGenerator::GetFPReg128RangeRoutine(int x1, int x2)
 PCODE CallStubGenerator::GetFPReg32RangeRoutine(int x1, int x2)
 {
 #if LOG_COMPUTE_CALL_STUB
-    printf("GetFPReg32RangeRoutine %d %d\n", x1, x2);
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetFPReg32RangeRoutine %d %d\n", x1, x2));
+
 #endif
+    static const PCODE FPRegs32LoadRoutines[] = {
+        (PCODE)Load_S0, (PCODE)Load_S0_S1, (PCODE)Load_S0_S1_S2, (PCODE)Load_S0_S1_S2_S3, (PCODE)Load_S0_S1_S2_S3_S4, (PCODE)Load_S0_S1_S2_S3_S4_S5, (PCODE)Load_S0_S1_S2_S3_S4_S5_S6, (PCODE)Load_S0_S1_S2_S3_S4_S5_S6_S7,
+        (PCODE)0, (PCODE)Load_S1, (PCODE)Load_S1_S2, (PCODE)Load_S1_S2_S3, (PCODE)Load_S1_S2_S3_S4, (PCODE)Load_S1_S2_S3_S4_S5, (PCODE)Load_S1_S2_S3_S4_S5_S6, (PCODE)Load_S1_S2_S3_S4_S5_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)Load_S2, (PCODE)Load_S2_S3, (PCODE)Load_S2_S3_S4, (PCODE)Load_S2_S3_S4_S5, (PCODE)Load_S2_S3_S4_S5_S6, (PCODE)Load_S2_S3_S4_S5_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_S3, (PCODE)Load_S3_S4, (PCODE)Load_S3_S4_S5, (PCODE)Load_S3_S4_S5_S6, (PCODE)Load_S3_S4_S5_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_S4, (PCODE)Load_S4_S5, (PCODE)Load_S4_S5_S6, (PCODE)Load_S4_S5_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_S5, (PCODE)Load_S5_S6, (PCODE)Load_S5_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_S6, (PCODE)Load_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_S7
+    };
+    static const PCODE FPRegs32StoreRoutines[] = {
+        (PCODE)Store_S0, (PCODE)Store_S0_S1, (PCODE)Store_S0_S1_S2, (PCODE)Store_S0_S1_S2_S3, (PCODE)Store_S0_S1_S2_S3_S4, (PCODE)Store_S0_S1_S2_S3_S4_S5, (PCODE)Store_S0_S1_S2_S3_S4_S5_S6, (PCODE)Store_S0_S1_S2_S3_S4_S5_S6_S7,
+        (PCODE)0, (PCODE)Store_S1, (PCODE)Store_S1_S2, (PCODE)Store_S1_S2_S3, (PCODE)Store_S1_S2_S3_S4, (PCODE)Store_S1_S2_S3_S4_S5, (PCODE)Store_S1_S2_S3_S4_S5_S6, (PCODE)Store_S1_S2_S3_S4_S5_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)Store_S2, (PCODE)Store_S2_S3, (PCODE)Store_S2_S3_S4, (PCODE)Store_S2_S3_S4_S5, (PCODE)Store_S2_S3_S4_S5_S6, (PCODE)Store_S2_S3_S4_S5_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_S3, (PCODE)Store_S3_S4, (PCODE)Store_S3_S4_S5, (PCODE)Store_S3_S4_S5_S6, (PCODE)Store_S3_S4_S5_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_S4, (PCODE)Store_S4_S5, (PCODE)Store_S4_S5_S6, (PCODE)Store_S4_S5_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_S5, (PCODE)Store_S5_S6, (PCODE)Store_S5_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_S6, (PCODE)Store_S6_S7,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_S7
+    };
+
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
     return m_interpreterToNative ? FPRegs32LoadRoutines[index] : FPRegs32StoreRoutines[index];
 }
 #endif // TARGET_ARM64
 
+#ifdef TARGET_ARM
+PCODE CallStubGenerator::GetRegRoutine_4B(int r1, int r2)
+{
+#if LOG_COMPUTE_CALL_STUB
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetRegRoutine_4B\n"));
+#endif
+    static const PCODE GPRegLoadRoutines_4B[] = {
+        (PCODE)0, (PCODE)Load_R0_R1_4B, (PCODE)0, (PCODE)Load_R0_R1_R2_R3_4B,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Load_R2_R3_4B,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0
+    };
+    static const PCODE GPRegStoreRoutines_4B[] = {
+        (PCODE)0, (PCODE)Store_R0_R1_4B, (PCODE)0, (PCODE)Store_R0_R1_R2_R3_4B,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)Store_R2_R3_4B,
+        (PCODE)0, (PCODE)0, (PCODE)0, (PCODE)0
+    };
+
+    int index = r1 * NUM_ARGUMENT_REGISTERS + r2;
+    return m_interpreterToNative ? GPRegLoadRoutines_4B[index] : GPRegStoreRoutines_4B[index];
+}
+
+PCODE CallStubGenerator::GetStackRoutine_4B()
+{
+#if LOG_COMPUTE_CALL_STUB
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetStackRoutine_4B\n"));
+#endif
+    return m_interpreterToNative ? (PCODE)Load_Stack_4B : (PCODE)Store_Stack_4B;
+}
+#endif // TARGET_ARM
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+PCODE CallStubGenerator::GetSwiftSelfRoutine()
+{
+#if LOG_COMPUTE_CALL_STUB
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftSelfRoutine\n"));
+#endif
+    return (PCODE)Load_SwiftSelf;
+}
+
+PCODE CallStubGenerator::GetSwiftSelfByRefRoutine()
+{
+#if LOG_COMPUTE_CALL_STUB
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftSelfByRefRoutine\n"));
+#endif
+    return (PCODE)Load_SwiftSelf_ByRef;
+}
+
+PCODE CallStubGenerator::GetSwiftErrorRoutine()
+{
+#if LOG_COMPUTE_CALL_STUB
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftErrorRoutine\n"));
+#endif
+    return (PCODE)Load_SwiftError;
+}
+
+PCODE CallStubGenerator::GetSwiftIndirectResultRoutine()
+{
+#if LOG_COMPUTE_CALL_STUB
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftIndirectResultRoutine\n"));
+#endif
+    return (PCODE)Load_SwiftIndirectResult;
+}
+
+PCODE CallStubGenerator::GetSwiftLoadGPAtOffsetRoutine(int regIndex)
+{
+    static PCODE routines[] = {
+        (PCODE)Load_X0_AtOffset, (PCODE)Load_X1_AtOffset, (PCODE)Load_X2_AtOffset, (PCODE)Load_X3_AtOffset,
+        (PCODE)Load_X4_AtOffset, (PCODE)Load_X5_AtOffset, (PCODE)Load_X6_AtOffset, (PCODE)Load_X7_AtOffset
+    };
+    _ASSERTE(regIndex >= 0 && regIndex < ARRAY_SIZE(routines));
+    return routines[regIndex];
+}
+
+PCODE CallStubGenerator::GetSwiftLoadFPAtOffsetRoutine(int regIndex)
+{
+    static PCODE routines[] = {
+        (PCODE)Load_D0_AtOffset, (PCODE)Load_D1_AtOffset, (PCODE)Load_D2_AtOffset, (PCODE)Load_D3_AtOffset,
+        (PCODE)Load_D4_AtOffset, (PCODE)Load_D5_AtOffset, (PCODE)Load_D6_AtOffset, (PCODE)Load_D7_AtOffset
+    };
+    _ASSERTE(regIndex >= 0 && regIndex < ARRAY_SIZE(routines));
+    return routines[regIndex];
+}
+
+PCODE CallStubGenerator::GetSwiftStoreGPAtOffsetRoutine(int regIndex)
+{
+    static PCODE routines[] = {
+        (PCODE)Store_X0_AtOffset, (PCODE)Store_X1_AtOffset, (PCODE)Store_X2_AtOffset, (PCODE)Store_X3_AtOffset
+    };
+    _ASSERTE(regIndex >= 0 && regIndex < ARRAY_SIZE(routines));
+    return routines[regIndex];
+}
+
+PCODE CallStubGenerator::GetSwiftStoreFPAtOffsetRoutine(int regIndex)
+{
+    static PCODE routines[] = {
+        (PCODE)Store_D0_AtOffset, (PCODE)Store_D1_AtOffset, (PCODE)Store_D2_AtOffset, (PCODE)Store_D3_AtOffset
+    };
+    _ASSERTE(regIndex >= 0 && regIndex < ARRAY_SIZE(routines));
+    return routines[regIndex];
+}
+#endif // TARGET_APPLE && TARGET_ARM64
+
 extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetI1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetU1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetI2(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetU2(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+#ifdef TARGET_32BIT
+extern "C" void CallJittedMethodRetI4(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+#endif // TARGET_32BIT
 extern "C" void InterpreterStubRetVoid();
 extern "C" void InterpreterStubRetDouble();
 extern "C" void InterpreterStubRetI8();
+#ifdef TARGET_32BIT
+extern "C" void InterpreterStubRetI4();
+extern "C" void InterpreterStubRetFloat();
+#endif // TARGET_32BIT
 
 #ifdef TARGET_AMD64
 #ifdef TARGET_WINDOWS
@@ -1989,7 +1227,16 @@ extern "C" void CallJittedMethodRetBuffRSI(PCODE *routines, int8_t*pArgs, int8_t
 extern "C" void InterpreterStubRetBuffRDI();
 extern "C" void InterpreterStubRetBuffRSI();
 #endif // TARGET_WINDOWS
-#else // TARGET_AMD64
+#elif defined(TARGET_ARM) // TARGET_ARM
+extern "C" void CallJittedMethodRetBuffR0(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void CallJittedMethodRetBuffR1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void InterpreterStubRetBuffR0();
+extern "C" void InterpreterStubRetBuffR1();
+#else // !TARGET_AMD64 && !TARGET_ARM
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+extern "C" void CallJittedMethodRetBuffX1(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+extern "C" void InterpreterStubRetBuffX1();
+#endif
 extern "C" void CallJittedMethodRetBuff(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void InterpreterStubRetBuff();
 #endif // TARGET_AMD64
@@ -2010,7 +1257,6 @@ extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRe
 extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet3Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet4Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
-extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
@@ -2022,6 +1268,9 @@ extern "C" void CallJittedMethodRetVector128(PCODE *routines, int8_t *pArgs, int
 extern "C" void CallJittedMethodRet2Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet3Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
 extern "C" void CallJittedMethodRet4Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+#if defined(TARGET_APPLE)
+extern "C" void CallJittedMethodRetSwiftLowered(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuation);
+#endif // TARGET_APPLE
 extern "C" void InterpreterStubRet2I8();
 extern "C" void InterpreterStubRet2Double();
 extern "C" void InterpreterStubRet3Double();
@@ -2051,11 +1300,7 @@ extern "C" void InterpreterStubRetFloatInt();
 extern "C" void InterpreterStubRetIntFloat();
 #endif // TARGET_RISCV64
 
-#if LOG_COMPUTE_CALL_STUB
-#define INVOKE_FUNCTION_PTR(functionPtrName) printf(#functionPtrName "\n"); return functionPtrName
-#else
-#define INVOKE_FUNCTION_PTR(functionPtrName) return functionPtrName
-#endif
+#define INVOKE_FUNCTION_PTR(functionPtrName) LOG2((LF2_INTERPRETER, LL_INFO10000, #functionPtrName "\n")); return functionPtrName
 
 CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallStubGenerator::ReturnType returnType)
 {
@@ -2066,9 +1311,27 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
         case ReturnTypeVoid:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetVoid);
         case ReturnTypeDouble:
+#ifndef ARM_SOFTFP
             INVOKE_FUNCTION_PTR(CallJittedMethodRetDouble);
+#endif // !ARM_SOFTFP
         case ReturnTypeI8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI8);
+#ifdef TARGET_32BIT
+        case ReturnTypeFloat:
+#ifndef ARM_SOFTFP
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloat);
+#endif // !ARM_SOFTFP
+        case ReturnTypeI4:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI4);
+#endif // TARGET_32BIT
+        case ReturnTypeI1:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI1);
+        case ReturnTypeU1:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetU1);
+        case ReturnTypeI2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetI2);
+        case ReturnTypeU2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetU2);
 #ifdef TARGET_AMD64
 #ifdef TARGET_WINDOWS
         case ReturnTypeBuffArg1:
@@ -2081,7 +1344,17 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
         case ReturnTypeBuffArg2:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRSI);
 #endif // TARGET_WINDOWS
-#else // TARGET_AMD64
+#elif defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        case ReturnTypeBuffArg2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffX1);
+        case ReturnTypeBuff:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
+#elif defined(TARGET_ARM)
+        case ReturnTypeBuffArg1:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR0);
+        case ReturnTypeBuffArg2:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffR1);
+#else // !TARGET_AMD64 && !TARGET_ARM && !(TARGET_ARM64 && TARGET_WINDOWS)
         case ReturnTypeBuff:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuff);
 #endif // TARGET_AMD64
@@ -2128,6 +1401,10 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRet3Vector128);
         case ReturnType4Vector128:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet4Vector128);
+#if defined(TARGET_APPLE)
+        case ReturnTypeSwiftLowered:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetSwiftLowered);
+#endif // TARGET_APPLE
 #endif // TARGET_ARM64
 #if defined(TARGET_RISCV64)
         case ReturnType2I8:
@@ -2145,11 +1422,7 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
     }
 }
 
-#if LOG_COMPUTE_CALL_STUB
-#define RETURN_TYPE_HANDLER(returnType) printf(#returnType "\n"); return (PCODE)returnType
-#else
-#define RETURN_TYPE_HANDLER(returnType) return (PCODE)returnType
-#endif
+#define RETURN_TYPE_HANDLER(returnType) LOG2((LF2_INTERPRETER, LL_INFO10000, #returnType "\n")); return (PCODE)returnType
 
 PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::ReturnType returnType)
 {
@@ -2160,9 +1433,23 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
         case ReturnTypeVoid:
             RETURN_TYPE_HANDLER(InterpreterStubRetVoid);
         case ReturnTypeDouble:
+#ifndef ARM_SOFTFP
             RETURN_TYPE_HANDLER(InterpreterStubRetDouble);
+#endif // !ARM_SOFTFP
+        case ReturnTypeI1:
+        case ReturnTypeU1:
         case ReturnTypeI8:
+        case ReturnTypeI2:
+        case ReturnTypeU2:
             RETURN_TYPE_HANDLER(InterpreterStubRetI8);
+#ifdef TARGET_32BIT
+        case ReturnTypeFloat:
+#ifndef ARM_SOFTFP
+            RETURN_TYPE_HANDLER(InterpreterStubRetFloat);
+#endif // !ARM_SOFTFP
+        case ReturnTypeI4:
+            RETURN_TYPE_HANDLER(InterpreterStubRetI4);
+#endif // TARGET_32BIT
 #ifdef TARGET_AMD64
         case ReturnTypeBuffArg1:
 #ifdef TARGET_WINDOWS
@@ -2176,7 +1463,17 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
 #else
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffRSI);
 #endif
-#else // TARGET_AMD64
+#elif defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        case ReturnTypeBuffArg2:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffX1);
+        case ReturnTypeBuff:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
+#elif defined(TARGET_ARM)
+        case ReturnTypeBuffArg1:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffR0);
+        case ReturnTypeBuffArg2:
+            RETURN_TYPE_HANDLER(InterpreterStubRetBuffR1);
+#else // !TARGET_AMD64 && !TARGET_ARM && !(TARGET_ARM64 && TARGET_WINDOWS)
         case ReturnTypeBuff:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuff);
 #endif // TARGET_AMD64
@@ -2257,9 +1554,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
 
     _ASSERTE(pMD != NULL);
 
-#if LOG_COMPUTE_CALL_STUB
-    printf("GenerateCallStub interpreterToNative=%d\n", interpreterToNative ? 1 : 0);
-#endif // LOG_COMPUTE_CALL_STUB
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "GenerateCallStub interpreterToNative=%d\n", interpreterToNative ? 1 : 0));
     m_interpreterToNative = interpreterToNative;
 
     MetaSig sig(pMD);
@@ -2274,16 +1569,18 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     LoaderAllocator *pLoaderAllocator = pMD->GetLoaderAllocator();
     S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
     void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
+    bool hasSwiftError = m_isSwiftCallConv && m_hasSwiftError && pMD->IsILStub();
 
-    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
+    int targetSlotIndex = m_interpreterToNative ? m_targetSlotIndex : (m_routineIndex - 1);
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, m_pInvokeFunction);
 
     return pHeader;
 }
 
 struct CachedCallStubKey
 {
-    CachedCallStubKey(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
-     : HashCode(hashCode), NumRoutines(numRoutines), TotalStackSize(totalStackSize), HasContinuationRet(hasContinuationRet), Invoke(pInvokeFunction), Routines(pRoutines)
+    CachedCallStubKey(int32_t hashCode, int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, bool hasSwiftError, CallStubHeader::InvokeFunctionPtr pInvokeFunction)
+     : HashCode(hashCode), NumRoutines(numRoutines), TargetSlotIndex(targetSlotIndex), TotalStackSize(totalStackSize), HasContinuationRet(hasContinuationRet), HasSwiftError(hasSwiftError), Invoke(pInvokeFunction), Routines(pRoutines)
     {
     }
 
@@ -2291,7 +1588,7 @@ struct CachedCallStubKey
     {
         LIMITED_METHOD_CONTRACT;
 
-        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke || HasContinuationRet != other.HasContinuationRet)
+        if (HashCode != other.HashCode || NumRoutines != other.NumRoutines || TargetSlotIndex != other.TargetSlotIndex || TotalStackSize != other.TotalStackSize || Invoke != other.Invoke || HasContinuationRet != other.HasContinuationRet || HasSwiftError != other.HasSwiftError)
             return false;
 
         for (int i = 0; i < NumRoutines; i++)
@@ -2304,17 +1601,19 @@ struct CachedCallStubKey
 
     const int32_t HashCode = 0;
     const int NumRoutines = 0;
+    const int TargetSlotIndex = 0;
     const int TotalStackSize = 0;
     const bool HasContinuationRet = false;
+    const bool HasSwiftError = false;
     const CallStubHeader::InvokeFunctionPtr Invoke = NULL; // Pointer to the invoke function
     const PCODE *Routines;
 };
 
 struct CachedCallStub
 {
-    CachedCallStub(int32_t hashCode, int numRoutines, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
+    CachedCallStub(int32_t hashCode, int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, bool hasSwiftError, CallStubHeader::InvokeFunctionPtr pInvokeFunction) :
         HashCode(hashCode),
-        Header(numRoutines, pRoutines, totalStackSize, hasContinuationRet, pInvokeFunction)
+        Header(numRoutines, targetSlotIndex, pRoutines, totalStackSize, hasContinuationRet, hasSwiftError, pInvokeFunction)
     {
     }
 
@@ -2326,9 +1625,11 @@ struct CachedCallStub
         return CachedCallStubKey(
             HashCode,
             Header.NumRoutines,
+            Header.TargetSlotIndex,
             &Header.Routines[0],
             Header.TotalStackSize,
             Header.HasContinuationRet,
+            Header.HasSwiftError,
             Header.Invoke);
     }
 
@@ -2376,13 +1677,17 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     hashState.Add(m_totalStackSize);
     hashState.AddPointer((void*)m_pInvokeFunction);
     hashState.Add(sig.IsAsyncCall() ? 1 : 0);
+    hashState.Add(m_targetSlotIndex);
+    hashState.Add(m_hasSwiftError ? 1 : 0);
 
     CachedCallStubKey cachedHeaderKey(
         hashState.ToHashCode(),
         m_routineIndex,
+        m_targetSlotIndex,
         pRoutines,
         ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
         sig.IsAsyncCall(),
+        m_hasSwiftError,
         m_pInvokeFunction);
 
     CrstHolder lockHolder(&s_callStubCrst);
@@ -2390,9 +1695,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     if (pCachedHeader != NULL)
     {
         // The stub is already cached, return the cached header
-#if LOG_COMPUTE_CALL_STUB
-        printf("CallStubHeader at %p\n", &pCachedHeader->Header);
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "CallStubHeader at %p\n", &pCachedHeader->Header));
         return &pCachedHeader->Header;
     }
     else
@@ -2402,14 +1705,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         // We only need to allocate the actual pRoutines array, and then we can just use the cachedHeader we already constructed
         size_t finalCachedCallStubSize = sizeof(CachedCallStub) + m_routineIndex * sizeof(PCODE);
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, m_pInvokeFunction);
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
 
         _ASSERTE(s_callStubCache->Lookup(cachedHeaderKey) == pHeader);
-#if LOG_COMPUTE_CALL_STUB
-        printf("CallStubHeader at %p\n", &pHeader->Header);
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "CallStubHeader at %p\n", &pHeader->Header));
         return &pHeader->Header;
     }
 };
@@ -2441,11 +1742,40 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
         m_x1 = NoRange;
         m_currentRoutineType = RoutineType::None;
     }
+#if defined(TARGET_APPLE)
+    else if ((m_currentRoutineType == RoutineType::SwiftSelf) && (type != RoutineType::SwiftSelf))
+    {
+        pRoutines[m_routineIndex++] = GetSwiftSelfRoutine();
+        m_currentRoutineType = RoutineType::None;
+    }
+    else if ((m_currentRoutineType == RoutineType::SwiftSelfByRef) && (type != RoutineType::SwiftSelfByRef))
+    {
+        pRoutines[m_routineIndex++] = GetSwiftSelfByRefRoutine();
+        pRoutines[m_routineIndex++] = (PCODE)m_swiftSelfByRefSize;
+        m_swiftSelfByRefSize = 0;
+        m_currentRoutineType = RoutineType::None;
+    }
+    else if ((m_currentRoutineType == RoutineType::SwiftError) && (type != RoutineType::SwiftError))
+    {
+        pRoutines[m_routineIndex++] = GetSwiftErrorRoutine();
+        m_currentRoutineType = RoutineType::None;
+    }
+    else if ((m_currentRoutineType == RoutineType::SwiftIndirectResult) && (type != RoutineType::SwiftIndirectResult))
+    {
+        pRoutines[m_routineIndex++] = GetSwiftIndirectResultRoutine();
+        m_currentRoutineType = RoutineType::None;
+    }
+#endif // TARGET_APPLE
 #endif // TARGET_ARM64
     else if ((m_currentRoutineType == RoutineType::Stack) && (type != RoutineType::Stack))
     {
         pRoutines[m_routineIndex++] = GetStackRoutine();
+#ifdef TARGET_32BIT
+        pRoutines[m_routineIndex++] = m_s1;
+        pRoutines[m_routineIndex++] = m_s2 - m_s1 + 1;
+#else // !TARGET_32BIT
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+#endif // TARGET_32BIT
         m_s1 = NoRange;
         m_currentRoutineType = RoutineType::None;
     }
@@ -2497,9 +1827,16 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         PInvoke::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, NULL);
         hasUnmanagedCallConv = true;
     }
-    // NOTE: IL stubs don't actually have an UnmanagedCallersOnly attribute,
-    // even though the HasUnmanagedCallersOnlyAttribute method may return true for them.
-    else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute() && !pMD->IsILStub())
+    else if (pMD != NULL && pMD->IsILStub())
+    {
+        MethodDesc* pTargetMD = pMD->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
+        if (pTargetMD != NULL && pTargetMD->IsPInvoke())
+        {
+            PInvoke::GetCallingConvention_IgnoreErrors(pTargetMD, &unmanagedCallConv, NULL);
+            hasUnmanagedCallConv = true;
+        }
+    }
+    else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute())
     {
         if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
         {
@@ -2543,7 +1880,16 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
 
     if (hasUnmanagedCallConv)
     {
-        ComputeCallStubWorker<PInvokeArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
+#if defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        if (callConvIsInstanceMethodCallConv(unmanagedCallConv))
+        {
+            ComputeCallStubWorker<WindowsArm64PInvokeThisCallArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
+        }
+        else
+#endif // defined(TARGET_ARM64) && defined(TARGET_WINDOWS)
+        {
+            ComputeCallStubWorker<PInvokeArgIterator>(hasUnmanagedCallConv, unmanagedCallConv, sig, pRoutines, pMD);
+        }
     }
     else
     {
@@ -2556,19 +1902,19 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 {
     bool unmanagedThisCallConv = false;
     bool rewriteMetaSigFromExplicitThisToHasThis = false;
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+    bool isSwiftCallConv = false;
+#endif
 
     if (hasUnmanagedCallConv)
     {
-        switch (unmanagedCallConv)
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+        isSwiftCallConv = (unmanagedCallConv == CorInfoCallConvExtension::Swift);
+        m_isSwiftCallConv = isSwiftCallConv;
+        if (!isSwiftCallConv)
+#endif
         {
-            case CorInfoCallConvExtension::Thiscall:
-            case CorInfoCallConvExtension::CMemberFunction:
-            case CorInfoCallConvExtension::StdcallMemberFunction:
-            case CorInfoCallConvExtension::FastcallMemberFunction:
-                unmanagedThisCallConv = true;
-                break;
-            default:
-                break;
+            unmanagedThisCallConv = callConvIsInstanceMethodCallConv(unmanagedCallConv);
         }
     }
 
@@ -2600,18 +1946,14 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     // in the places where it is needed such as computation of return buffers.
     if (sig.GetCallingConventionInfo() & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("Managed ExplicitThis to HasThis conversion needed\n");
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Managed ExplicitThis to HasThis conversion needed\n"));
         rewriteMetaSigFromExplicitThisToHasThis = true;
     }
 
     SigBuilder sigBuilder;
     if (rewriteMetaSigFromExplicitThisToHasThis)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("Rewriting ExplicitThis to implicit this\n");
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Rewriting ExplicitThis to implicit this\n"));
         sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS);
         if ((sig.NumFixedArgs() == 0) || (sig.HasThis() && !sig.HasExplicitThis()))
         {
@@ -2653,6 +1995,22 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         sig = newSig;
     }
 
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+    CQuickArray<SwiftLoweringElement> swiftLoweringInfo;
+    SigBuilder swiftSigBuilder;
+    int swiftIndirectResultCount = 0;
+    int swiftArgIndex = 0;
+
+    m_hasSwiftReturnLowering = false;
+    m_swiftReturnLowering = {};
+    m_swiftSelfByRefSize = 0;
+
+    if (isSwiftCallConv)
+    {
+        RewriteSignatureForSwiftLowering(sig, swiftSigBuilder, swiftLoweringInfo, swiftIndirectResultCount);
+    }
+#endif // TARGET_APPLE && TARGET_ARM64
+
     ArgIteratorType argIt(&sig);
     int32_t interpreterStackOffset = 0;
 
@@ -2665,16 +2023,12 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     m_s2 = 0;
     m_routineIndex = 0;
     m_totalStackSize = argIt.SizeOfArgStack();
-#if LOG_COMPUTE_CALL_STUB
-    printf("ComputeCallStub\n");
-#endif
+    LOG2((LF2_INTERPRETER, LL_INFO10000, "ComputeCallStub\n"));
     int numArgs = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0);
 
     if (argIt.HasThis())
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("HasThis\n");
-#endif
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "HasThis\n"));
         // The "this" argument register is not enumerated by the arg iterator, so
         // we need to "inject" it here.
         // CLR ABI specifies that unlike the native Windows x64 calling convention, it is passed in the first argument register.
@@ -2685,9 +2039,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
     if (argIt.HasParamType())
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("argIt.HasParamType\n");
-#endif
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "argIt.HasParamType\n"));
         // In the Interpreter calling convention the argument after the "this" pointer is the parameter type
         ArgLocDesc paramArgLocDesc;
         argIt.GetParamTypeLoc(&paramArgLocDesc);
@@ -2697,9 +2049,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
     if (argIt.HasAsyncContinuation())
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("argIt.HasAsyncContinuation\n");
-#endif
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "argIt.HasAsyncContinuation\n"));
         // In the Interpreter calling convention the argument after the param type is the async continuation
         ArgLocDesc asyncContinuationLocDesc;
         argIt.GetAsyncContinuationLoc(&asyncContinuationLocDesc);
@@ -2707,12 +2057,23 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+    if (swiftIndirectResultCount > 0)
+    {
+#if LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Emitting Load_SwiftIndirectResult routine\n"));
+#endif
+        TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftIndirectResult, pRoutines);
+        pRoutines[m_routineIndex++] = GetSwiftIndirectResultRoutine();
+        m_currentRoutineType = RoutineType::None;
+        interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
+    }
+#endif
+
     int ofs;
     while ((ofs = argIt.GetNextOffset()) != TransitionBlock::InvalidOffset)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("Next argument\n");
-#endif
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Next argument\n"));
         ArgLocDesc argLocDesc;
         argIt.GetArgLoc(ofs, &argLocDesc);
 
@@ -2721,17 +2082,37 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
         // Each entry on the interpreter stack is always aligned to at least 8 bytes, but some arguments are 16 byte aligned
         TypeHandle thArgTypeHandle;
-        if ((argIt.GetArgType(&thArgTypeHandle) == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > 8)
+        CorElementType corType = argIt.GetArgType(&thArgTypeHandle);
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+        if (isSwiftCallConv && m_interpreterToNative)
         {
-            unsigned align = CEEInfo::getClassAlignmentRequirementStatic(thArgTypeHandle);
-            if (align < INTERP_STACK_SLOT_SIZE)
+            MethodTable* pArgMT = nullptr;
+
+            if (corType == ELEMENT_TYPE_BYREF)
             {
-                align = INTERP_STACK_SLOT_SIZE;
+                sig.GetByRefType(&thArgTypeHandle);
             }
-            else if (align > INTERP_STACK_ALIGNMENT)
+
+            if (thArgTypeHandle.IsTypeDesc() && !thArgTypeHandle.AsTypeDesc()->GetTypeParam().IsNull())
             {
-                align = INTERP_STACK_ALIGNMENT;
+                pArgMT = thArgTypeHandle.AsTypeDesc()->GetTypeParam().AsMethodTable();
             }
+            else if (!thArgTypeHandle.IsTypeDesc() && !thArgTypeHandle.IsNull())
+            {
+                pArgMT = thArgTypeHandle.AsMethodTable();
+            }
+
+            if (ProcessSwiftSpecialArgument(pArgMT, interpStackSlotSize, interpreterStackOffset, pRoutines))
+            {
+                swiftArgIndex++;
+                continue;
+            }
+        }
+#endif // TARGET_APPLE && TARGET_ARM64
+
+        if ((corType == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > INTERP_STACK_SLOT_SIZE)
+        {
+            unsigned align = std::clamp(CEEInfo::getClassAlignmentRequirementStatic(thArgTypeHandle), INTERP_STACK_SLOT_SIZE, INTERP_STACK_ALIGNMENT);
             assert(align == 8 || align == 16); // At the moment, we can only have an 8 or 16 byte alignment requirement here
             if (interpreterStackOffset != ALIGN_UP(interpreterStackOffset, align))
             {
@@ -2739,15 +2120,32 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 
                 interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
                 pRoutines[m_routineIndex++] = (PCODE)InjectInterpStackAlign;
-#if LOG_COMPUTE_CALL_STUB
-                printf("Inject stack align argument\n");
-#endif
+                LOG2((LF2_INTERPRETER, LL_INFO10000, "Inject stack align argument\n"));
             }
 
             assert(interpreterStackOffset == ALIGN_UP(interpreterStackOffset, align));
 
             interpStackSlotSize = ALIGN_UP(thArgTypeHandle.GetSize(), align);
         }
+
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+        if (isSwiftCallConv && m_interpreterToNative && swiftArgIndex < (int)swiftLoweringInfo.Size())
+        {
+            SwiftLoweringElement& elem = swiftLoweringInfo[swiftArgIndex];
+            swiftArgIndex++;
+
+            if (elem.isLowered)
+            {
+                if (elem.structSize != 0)
+                {
+                    interpreterStackOffset += elem.structSize;
+                }
+                EmitSwiftLoweredElementRoutine(elem, argLocDesc, pRoutines);
+                continue;
+            }
+        }
+#endif // TARGET_APPLE && TARGET_ARM64
+
         interpreterStackOffset += interpStackSlotSize;
 
 #ifdef UNIX_AMD64_ABI
@@ -2801,6 +2199,20 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
             }
         }
         else
+#elif defined(TARGET_ARM) && defined(ARM_SOFTFP)
+        if (argLocDesc.m_cGenReg != 0 && argLocDesc.m_byteStackSize != 0)
+        {
+            ArgLocDesc argLocDescReg = {};
+            argLocDescReg.m_idxGenReg = argLocDesc.m_idxGenReg;
+            argLocDescReg.m_cGenReg = argLocDesc.m_cGenReg;
+            ProcessArgument(&argIt, argLocDescReg, pRoutines);
+
+            ArgLocDesc argLocDescStack = {};
+            argLocDescStack.m_byteStackIndex = argLocDesc.m_byteStackIndex;
+            argLocDescStack.m_byteStackSize = argLocDesc.m_byteStackSize;
+            ProcessArgument(&argIt, argLocDescStack, pRoutines);
+        }
+        else
 #endif // UNIX_AMD64_ABI
         {
             ProcessArgument(&argIt, argLocDesc, pRoutines);
@@ -2816,7 +2228,15 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
     if (m_interpreterToNative)
     {
         m_pInvokeFunction = GetInvokeFunctionPtr(returnType);
+        m_targetSlotIndex = m_routineIndex;
         m_routineIndex++; // Reserve one extra slot for the target method pointer
+
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+        if (m_hasSwiftReturnLowering)
+        {
+            EmitSwiftReturnLoweringRoutines(pRoutines);
+        }
+#endif // TARGET_APPLE && TARGET_ARM64
     }
     else
     {
@@ -2832,6 +2252,13 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     LIMITED_METHOD_CONTRACT;
 
     RoutineType argType = RoutineType::None;
+#ifdef TARGET_ARM
+    if (argLocDesc.m_cGenReg == 2 || argLocDesc.m_byteStackSize >= 8)
+    {
+        /* do nothing */
+    }
+    else
+#endif // TARGET_ARM
     if (argLocDesc.m_cGenReg != 0)
     {
         argType = RoutineType::GPReg;
@@ -2857,21 +2284,30 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     {
         argType = RoutineType::Stack;
     }
-    
+
     TerminateCurrentRoutineIfNotOfNewType(argType, pRoutines);
 
     if (argLocDesc.m_cGenReg != 0)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg);
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg));
+#ifdef TARGET_ARM
+        if (argLocDesc.m_cGenReg == 2)
+        {
+            pRoutines[m_routineIndex++] = GetRegRoutine_4B(argLocDesc.m_idxGenReg, argLocDesc.m_idxGenReg + argLocDesc.m_cGenReg - 1);
+        }
+        else
+#endif // TARGET_ARM
         if (m_r1 == NoRange) // No active range yet
         {
             // Start a new range
             m_r1 = argLocDesc.m_idxGenReg;
             m_r2 = m_r1 + argLocDesc.m_cGenReg - 1;
         }
-        else if (argLocDesc.m_idxGenReg == m_r2 + 1 && (!pArgIt || !pArgIt->IsArgPassedByRef()))
+        else if (argLocDesc.m_idxGenReg == m_r2 + 1
+#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
+                 && (!pArgIt || !pArgIt->IsArgPassedByRef())
+#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
+                )
         {
             // Extend an existing range, but only if the argument is not passed by reference.
             // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
@@ -2888,9 +2324,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 
     if (argLocDesc.m_cFloatReg != 0)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("m_cFloatReg=%d\n", (int)argLocDesc.m_cFloatReg);
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "m_cFloatReg=%d\n", (int)argLocDesc.m_cFloatReg));
         if (m_x1 == NoRange) // No active range yet
         {
             // Start a new range
@@ -2928,7 +2362,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
         {
             // HFA Arguments using odd number of 32 bit FP registers cannot be merged with further ranges due to the
             // interpreter stack slot size alignment needs. The range copy routines for these registers
-            // ensure that the interpreter stack is properly aligned after the odd number of registers are 
+            // ensure that the interpreter stack is properly aligned after the odd number of registers are
             // loaded / stored.
             pRoutines[m_routineIndex++] = GetFPReg32RangeRoutine(m_x1, m_x2);
             argType = RoutineType::None;
@@ -2939,18 +2373,30 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 
     if (argLocDesc.m_byteStackSize != 0)
     {
-#if LOG_COMPUTE_CALL_STUB
-        printf("m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize);
-#endif // LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize));
+#ifdef TARGET_ARM
+        if (argLocDesc.m_byteStackSize >= 8)
+        {
+            pRoutines[m_routineIndex++] = GetStackRoutine_4B();
+            pRoutines[m_routineIndex++] = argLocDesc.m_byteStackIndex;
+            pRoutines[m_routineIndex++] = argLocDesc.m_byteStackSize;
+        }
+        else
+#endif // TARGET_ARM
         if (m_s1 == NoRange) // No active range yet
         {
             // Start a new range
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
-        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8) && (!pArgIt || !pArgIt->IsArgPassedByRef()))
+        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= TARGET_POINTER_SIZE) && IS_ALIGNED(m_s2 - m_s1 + 1, INTERP_STACK_SLOT_SIZE)
+#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
+                 && (!pArgIt || !pArgIt->IsArgPassedByRef())
+#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
+                )
         {
-            // Extend an existing range, but only if the argument is at least pointer size large.
+            // Extend an existing range, but only if the argument is at least pointer size large and
+            // the existing range end was aligned to interpreter stack slot size.
             // The only case when this is not true is on Apple ARM64 OSes where primitive type smaller
             // than 8 bytes are passed on the stack in a packed manner. We process such arguments one by
             // one to avoid explosion of the number of pRoutines.
@@ -2960,7 +2406,12 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
         {
             // Discontinuous range - store a routine for the current and start a new one
             pRoutines[m_routineIndex++] = GetStackRoutine();
+#ifdef TARGET_32BIT
+            pRoutines[m_routineIndex++] = m_s1;
+            pRoutines[m_routineIndex++] = m_s2 - m_s1 + 1;
+#else // !TARGET_32BIT
             pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+#endif // TARGET_32BIT
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
@@ -2995,6 +2446,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
     // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
     // So the argument loading routine needs to load the address of the argument. To avoid explosion of number of the routines,
     // we always process single argument passed by reference using single routine.
+#ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
     if (pArgIt != NULL && pArgIt->IsArgPassedByRef())
     {
         int unalignedArgSize = pArgIt->GetArgSize();
@@ -3005,7 +2457,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
         //  automatically do alignment of the stack offset themselves when updating the stack offset,
         //  and if we were to pass them aligned sizes they would potentially read bytes past the end of the VT.
         int alignedArgSize = m_interpreterToNative
-            ? ALIGN_UP(unalignedArgSize, 8)
+            ? ALIGN_UP(unalignedArgSize, TARGET_POINTER_SIZE)
             : unalignedArgSize;
 
         if (argLocDesc.m_cGenReg == 1)
@@ -3024,6 +2476,7 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
             argType = RoutineType::None;
         }
     }
+#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 #endif // UNIX_AMD64_ABI
 
     m_currentRoutineType = argType;
@@ -3032,9 +2485,16 @@ void CallStubGenerator::ProcessArgument(ArgIteratorType *pArgIt, ArgLocDesc& arg
 template<typename ArgIteratorType>
 CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *pArgIt)
 {
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+    if (m_hasSwiftReturnLowering)
+    {
+        return ReturnTypeSwiftLowered;
+    }
+#endif // TARGET_APPLE && TARGET_ARM64
+
     if (pArgIt->HasRetBuffArg())
     {
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
         if (pArgIt->HasThis())
         {
             return ReturnTypeBuffArg2;
@@ -3044,6 +2504,13 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             return ReturnTypeBuffArg1;
         }
 #else
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        if (pArgIt->IsRetBuffPassedAsFirstArg())
+        {
+            _ASSERTE(pArgIt->HasThis());
+            return ReturnTypeBuffArg2;
+        }
+#endif
         return ReturnTypeBuff;
 #endif // TARGET_AMD64
     }
@@ -3054,16 +2521,18 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
 
         switch (thReturnType)
         {
-            case ELEMENT_TYPE_BOOLEAN:
-            case ELEMENT_TYPE_CHAR:
             case ELEMENT_TYPE_I1:
+                return ReturnTypeI1;
+            case ELEMENT_TYPE_BOOLEAN:
             case ELEMENT_TYPE_U1:
+                return ReturnTypeU1;
             case ELEMENT_TYPE_I2:
+                return ReturnTypeI2;
+            case ELEMENT_TYPE_CHAR:
             case ELEMENT_TYPE_U2:
+                return ReturnTypeU2;
             case ELEMENT_TYPE_I4:
             case ELEMENT_TYPE_U4:
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
             case ELEMENT_TYPE_I:
             case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_CLASS:
@@ -3075,9 +2544,18 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             case ELEMENT_TYPE_ARRAY:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_FNPTR:
+#ifdef TARGET_32BIT
+                return ReturnTypeI4;
+                break;
+#endif // TARGET_32BIT
+            case ELEMENT_TYPE_I8:
+            case ELEMENT_TYPE_U8:
                 return ReturnTypeI8;
                 break;
             case ELEMENT_TYPE_R4:
+#if defined(TARGET_ARM64) || defined(TARGET_32BIT)
+                return ReturnTypeFloat;
+#endif // TARGET_ARM64 || TARGET_32BIT
             case ELEMENT_TYPE_R8:
                 return ReturnTypeDouble;
                 break;
@@ -3217,6 +2695,20 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                         _ASSERTE(!"The return types that are not HFA should be <= 16 bytes in size");
                     }
                 }
+#elif TARGET_ARM
+                switch (thReturnValueType.GetSize())
+                {
+                    case 1:
+                    case 2:
+                    case 4:
+                        return ReturnTypeI4;
+                        break;
+                    case 8:
+                        return ReturnTypeI8;
+                    default:
+                        _ASSERTE(!"The return types should be <= 8 bytes in size");
+                        break;
+                }
 #elif defined(TARGET_RISCV64)
                 {
                     FpStructInRegistersInfo info = pArgIt->GetReturnFpStructInRegistersInfo();
@@ -3273,5 +2765,398 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
     // We should never reach this spot
     return ReturnTypeVoid;
 }
+
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilder &swiftSigBuilder, CQuickArray<SwiftLoweringElement> &swiftLoweringInfo, int &swiftIndirectResultCount)
+{
+    sig.Reset();
+    TypeHandle thReturnType;
+    CorElementType retCorType = sig.GetReturnTypeNormalized(&thReturnType);
+    if (retCorType == ELEMENT_TYPE_VALUETYPE && !thReturnType.IsNull() && !thReturnType.IsTypeDesc())
+    {
+        MethodTable* pRetMT = thReturnType.AsMethodTable();
+        if (pRetMT->IsValueType() && !pRetMT->IsHFA() &&
+            !pRetMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) &&
+            !pRetMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) &&
+            !pRetMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)) &&
+            !pRetMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR512T)) &&
+            !pRetMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
+        {
+            CORINFO_SWIFT_LOWERING lowering = {};
+            pRetMT->GetNativeSwiftPhysicalLowering(&lowering, false);
+            if (!lowering.byReference && lowering.numLoweredElements > 0)
+            {
+                m_hasSwiftReturnLowering = true;
+                m_swiftReturnLowering = lowering;
+#if LOG_COMPUTE_CALL_STUB
+                LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift return lowering detected: %d elements\n", lowering.numLoweredElements));
+#endif
+            }
+        }
+    }
+
+    // Count how many extra arguments we need due to Swift lowering
+    sig.Reset();
+    int newArgCount = 0;
+    int swiftSelfCount = 0;
+    int swiftErrorCount = 0;
+    swiftIndirectResultCount = 0;
+    CorElementType argType;
+    while ((argType = sig.NextArg()) != ELEMENT_TYPE_END)
+    {
+        TypeHandle thArgType = sig.GetLastTypeHandleThrowing();
+        MethodTable* pArgMT = nullptr;
+
+        if (argType == ELEMENT_TYPE_BYREF)
+        {
+            sig.GetByRefType(&thArgType);
+        }
+
+        // Extract the underlying MT for pointer types or unwrapped byrefs
+        if (thArgType.IsTypeDesc() && !thArgType.AsTypeDesc()->GetTypeParam().IsNull())
+        {
+            pArgMT = thArgType.AsTypeDesc()->GetTypeParam().AsMethodTable();
+        }
+        else if (!thArgType.IsTypeDesc() && !thArgType.IsNull())
+        {
+            pArgMT = thArgType.AsMethodTable();
+        }
+
+        if (pArgMT != nullptr)
+        {
+            if (!pArgMT->IsValueType())
+            {
+                COMPlusThrow(kInvalidProgramException);
+            }
+
+            if (pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
+                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
+                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)) ||
+                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR512T)) ||
+                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
+            {
+                COMPlusThrow(kInvalidProgramException);
+            }
+
+            if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_SELF))
+            {
+                swiftSelfCount++;
+                if (swiftSelfCount > 1)
+                {
+                    COMPlusThrow(kInvalidProgramException);
+                }
+                newArgCount++;
+                continue;
+            }
+
+            if (pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SWIFT_SELF_T)))
+            {
+                swiftSelfCount++;
+                if (swiftSelfCount > 1)
+                {
+                    COMPlusThrow(kInvalidProgramException);
+                }
+
+                // Fall through for struct lowering
+            }
+
+            if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))
+            {
+                swiftErrorCount++;
+                m_hasSwiftError = true;
+                if (swiftErrorCount > 1)
+                {
+                    COMPlusThrow(kInvalidProgramException);
+                }
+                newArgCount++;
+                continue;
+            }
+
+            if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_INDIRECT_RESULT))
+            {
+                swiftIndirectResultCount++;
+                if (swiftIndirectResultCount > 1)
+                {
+                    COMPlusThrow(kInvalidProgramException);
+                }
+                // SwiftIndirectResult goes in x8, not in argument registers
+                continue;
+            }
+
+            if (argType == ELEMENT_TYPE_VALUETYPE)
+            {
+                CORINFO_SWIFT_LOWERING lowering = {};
+                pArgMT->GetNativeSwiftPhysicalLowering(&lowering, false);
+
+                if (!lowering.byReference && lowering.numLoweredElements > 0)
+                {
+                    newArgCount += (int)lowering.numLoweredElements;
+                    continue;
+                }
+            }
+        }
+
+        newArgCount++;
+    }
+
+    if (!m_interpreterToNative)
+    {
+        sig.Reset();
+        return;
+    }
+
+    swiftLoweringInfo.ReSizeThrows(newArgCount);
+    int loweringIndex = 0;
+
+    // Build new signature with lowered structs and store lowering info
+    swiftSigBuilder.AppendByte((BYTE)sig.GetCallingConventionInfo());
+    swiftSigBuilder.AppendData(newArgCount);
+
+    // Copy return type
+    SigPointer pReturn = sig.GetReturnProps();
+    pReturn.ConvertToInternalExactlyOne(sig.GetModule(), sig.GetSigTypeContext(), &swiftSigBuilder);
+
+    // Process arguments
+    sig.Reset();
+    while ((argType = sig.NextArg()) != ELEMENT_TYPE_END)
+    {
+       if (argType == ELEMENT_TYPE_VALUETYPE)
+        {
+            TypeHandle thArgType = sig.GetLastTypeHandleThrowing();
+            MethodTable* pArgMT = thArgType.IsTypeDesc() ? nullptr : thArgType.AsMethodTable();
+            if (pArgMT != nullptr)
+            {
+                if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_INDIRECT_RESULT))
+                {
+                    // SwiftIndirectResult goes in x8, not in argument registers
+                    continue;
+                }
+                // Don't lower Swift* types except SwiftSelf<T>
+                if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_SELF))
+                {
+                    SigPointer pArg = sig.GetArgProps();
+                    pArg.ConvertToInternalExactlyOne(sig.GetModule(), sig.GetSigTypeContext(), &swiftSigBuilder);
+                    swiftLoweringInfo[loweringIndex++] = { 0, 0, false, false };
+                    continue;
+                }
+
+                CORINFO_SWIFT_LOWERING lowering = {};
+                pArgMT->GetNativeSwiftPhysicalLowering(&lowering, false);
+
+                if (!lowering.byReference && lowering.numLoweredElements > 0)
+                {
+                    // Emit primitive types instead of struct
+                    int structSize = ALIGN_UP(pArgMT->GetNumInstanceFieldBytes(), INTERP_STACK_SLOT_SIZE);
+                    for (size_t i = 0; i < lowering.numLoweredElements; i++)
+                    {
+                        bool isFloat = false;
+                        switch (lowering.loweredElements[i])
+                        {
+                            case CORINFO_TYPE_BYTE:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_I1);
+                                break;
+                            case CORINFO_TYPE_UBYTE:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_U1);
+                                break;
+                            case CORINFO_TYPE_SHORT:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_I2);
+                                break;
+                            case CORINFO_TYPE_USHORT:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_U2);
+                                break;
+                            case CORINFO_TYPE_INT:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_I4);
+                                break;
+                            case CORINFO_TYPE_UINT:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_U4);
+                                break;
+                            case CORINFO_TYPE_LONG:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_I8);
+                                break;
+                            case CORINFO_TYPE_ULONG:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_U8);
+                                break;
+                            case CORINFO_TYPE_NATIVEINT:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_I);
+                                break;
+                            case CORINFO_TYPE_NATIVEUINT:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_U);
+                                break;
+                            case CORINFO_TYPE_FLOAT:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_R4);
+                                isFloat = true;
+                                break;
+                            case CORINFO_TYPE_DOUBLE:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_R8);
+                                isFloat = true;
+                                break;
+                            default:
+                                swiftSigBuilder.AppendElementType(ELEMENT_TYPE_I);
+                                break;
+                        }
+                        bool isLast = (i == lowering.numLoweredElements - 1);
+                        swiftLoweringInfo[loweringIndex++] = {
+                            (uint16_t)lowering.offsets[i],
+                            isLast ? (uint16_t)structSize : (uint16_t)0,
+                            isFloat,
+                            true
+                        };
+                    }
+                    continue;
+                }
+            }
+        }
+
+        SigPointer pArg = sig.GetArgProps();
+        pArg.ConvertToInternalExactlyOne(sig.GetModule(), sig.GetSigTypeContext(), &swiftSigBuilder);
+        swiftLoweringInfo[loweringIndex++] = { 0, 0, false, false };
+    }
+
+    DWORD cSwiftSig;
+    PCCOR_SIGNATURE pSwiftSig = (PCCOR_SIGNATURE)swiftSigBuilder.GetSignature(&cSwiftSig);
+    MetaSig swiftSig(pSwiftSig, cSwiftSig, sig.GetModule(), NULL, MetaSig::sigMember);
+    sig = swiftSig;
+}
+
+bool CallStubGenerator::ProcessSwiftSpecialArgument(MethodTable* pArgMT, int interpStackSlotSize, int32_t &interpreterStackOffset, PCODE *pRoutines)
+{
+    if (pArgMT == nullptr)
+    {
+        return false;
+    }
+
+    if (pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SWIFT_SELF_T)))
+    {
+        Instantiation inst = pArgMT->GetInstantiation();
+        _ASSERTE(inst.GetNumArgs() != 0);
+        TypeHandle innerType = inst[0];
+        _ASSERTE(!innerType.IsNull() && !innerType.IsTypeDesc());
+        MethodTable* pInnerMT = innerType.AsMethodTable();
+#if DEBUG
+        CORINFO_SWIFT_LOWERING lowering = {};
+        pInnerMT->GetNativeSwiftPhysicalLowering(&lowering, false);
+        _ASSERTE(lowering.byReference);
+#endif // DEBUG
+
+#if LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "SwiftSelf<T> argument detected\n"));
+#endif
+        TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftSelfByRef, pRoutines);
+        m_currentRoutineType = RoutineType::SwiftSelfByRef;
+
+        int structSize = ALIGN_UP(pInnerMT->GetNumInstanceFieldBytes(), INTERP_STACK_SLOT_SIZE);
+        m_swiftSelfByRefSize = structSize;
+        interpreterStackOffset += structSize;
+        return true;
+    }
+
+    if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_SELF))
+    {
+#if LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift Self argument detected\n"));
+#endif
+
+        TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftSelf, pRoutines);
+        m_currentRoutineType = RoutineType::SwiftSelf;
+        interpreterStackOffset += interpStackSlotSize;
+        return true;
+    }
+
+    if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))
+    {
+#if LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift Error argument detected\n"));
+#endif
+
+        TerminateCurrentRoutineIfNotOfNewType(RoutineType::SwiftError, pRoutines);
+        m_currentRoutineType = RoutineType::SwiftError;
+        interpreterStackOffset += interpStackSlotSize;
+        return true;
+    }
+
+    return false;
+}
+
+void CallStubGenerator::EmitSwiftLoweredElementRoutine(SwiftLoweringElement &elem, ArgLocDesc &argLocDesc, PCODE *pRoutines)
+{
+    TerminateCurrentRoutineIfNotOfNewType(RoutineType::None, pRoutines);
+
+    if (elem.isFloat && argLocDesc.m_cFloatReg > 0)
+    {
+        int regIndex = argLocDesc.m_idxFloatReg;
+        pRoutines[m_routineIndex++] = GetSwiftLoadFPAtOffsetRoutine(regIndex);
+        // Pack offset (lower 16 bits) and structSize (bits 16-31)
+        PCODE packedData = (PCODE)elem.offset | ((PCODE)elem.structSize << 16);
+        pRoutines[m_routineIndex++] = packedData;
+#if LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element to FP reg: offset=%d, structSize=%d, reg=d%d\n",
+               elem.offset, elem.structSize, regIndex));
+#endif
+    }
+    else if (!elem.isFloat && argLocDesc.m_cGenReg > 0)
+    {
+        int regIndex = argLocDesc.m_idxGenReg;
+        pRoutines[m_routineIndex++] = GetSwiftLoadGPAtOffsetRoutine(regIndex);
+        // Pack offset (lower 16 bits) and structSize (bits 16-31)
+        PCODE packedData = (PCODE)elem.offset | ((PCODE)elem.structSize << 16);
+        pRoutines[m_routineIndex++] = packedData;
+#if LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element to GP reg: offset=%d, structSize=%d, reg=x%d\n",
+               elem.offset, elem.structSize, regIndex));
+#endif
+    }
+    else
+    {
+        // Spilled to stack
+        pRoutines[m_routineIndex++] = (PCODE)Load_Stack_AtOffset;
+        // Pack offset (lower 16 bits), structSize (bits 16-31), and stackOffset (bits 32-63)
+        PCODE packedData = (PCODE)elem.offset |
+                           ((PCODE)elem.structSize << 16) |
+                           ((PCODE)argLocDesc.m_byteStackIndex << 32);
+        pRoutines[m_routineIndex++] = packedData;
+#if LOG_COMPUTE_CALL_STUB
+        LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift lowered element to stack: offset=%d, structSize=%d, stackOffset=%d\n",
+               elem.offset, elem.structSize, argLocDesc.m_byteStackIndex));
+#endif
+    }
+}
+
+void CallStubGenerator::EmitSwiftReturnLoweringRoutines(PCODE *pRoutines)
+{
+    int gpRegIndex = 0;
+    int fpRegIndex = 0;
+
+    for (size_t i = 0; i < m_swiftReturnLowering.numLoweredElements; i++)
+    {
+        CorInfoType elemType = m_swiftReturnLowering.loweredElements[i];
+        uint32_t offset = m_swiftReturnLowering.offsets[i];
+
+        bool isFloat = (elemType == CORINFO_TYPE_FLOAT || elemType == CORINFO_TYPE_DOUBLE);
+
+        if (isFloat)
+        {
+            _ASSERTE(fpRegIndex < 4);
+            pRoutines[m_routineIndex++] = GetSwiftStoreFPAtOffsetRoutine(fpRegIndex);
+            pRoutines[m_routineIndex++] = (PCODE)offset;
+            fpRegIndex++;
+#if LOG_COMPUTE_CALL_STUB
+            LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift return store FP d%d at offset %d\n", fpRegIndex - 1, offset));
+#endif
+        }
+        else
+        {
+            _ASSERTE(gpRegIndex < 4);
+            pRoutines[m_routineIndex++] = GetSwiftStoreGPAtOffsetRoutine(gpRegIndex);
+            pRoutines[m_routineIndex++] = (PCODE)offset;
+            gpRegIndex++;
+#if LOG_COMPUTE_CALL_STUB
+            LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift return store GP x%d at offset %d\n", gpRegIndex - 1, offset));
+#endif
+        }
+    }
+
+    pRoutines[m_routineIndex++] = (PCODE)SwiftLoweredReturnTerminator;
+}
+#endif
 
 #endif // FEATURE_INTERPRETER && !TARGET_WASM

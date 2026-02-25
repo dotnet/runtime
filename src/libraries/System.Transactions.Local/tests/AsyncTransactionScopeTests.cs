@@ -432,7 +432,7 @@ namespace System.Transactions.Tests
             }, variation.ToString()).Dispose();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true, false, null)]
         [InlineData(true, true, null)]
         public void AsyncTSAndDependantClone(bool requiresNew, bool synchronizeScope, string? txId)
@@ -522,7 +522,7 @@ namespace System.Transactions.Tests
             AssertTransaction(txId);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(true, false, null)]
         [InlineData(true, true, null)]
         public void NestedAsyncTSAndDependantClone(bool parentrequiresNew, bool childRequiresNew, string? txId)
@@ -1104,7 +1104,7 @@ namespace System.Transactions.Tests
             AssertTransactionNull();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void VerifyBYOTOpenConnSimulationTest()
         {
             // Create threads to do work
@@ -1120,7 +1120,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task VerifyBYOTSyncTSNestedAsync()
         {
             string txId1;
@@ -1147,7 +1147,7 @@ namespace System.Transactions.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task VerifyBYOTAsyncTSNestedAsync()
         {
             string txId1;
@@ -1171,7 +1171,7 @@ namespace System.Transactions.Tests
             AssertTransactionNull();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(TransactionScopeAsyncFlowOption.Suppress)]
         [InlineData(TransactionScopeAsyncFlowOption.Enabled)]
         public void DoTxQueueWorkItem(TransactionScopeAsyncFlowOption asyncFlowOption)
@@ -1207,7 +1207,7 @@ namespace System.Transactions.Tests
             AssertTransactionNull();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(TransactionScopeAsyncFlowOption.Suppress)]
         [InlineData(TransactionScopeAsyncFlowOption.Enabled)]
         public void DoTxNewThread(TransactionScopeAsyncFlowOption asyncFlowOption)

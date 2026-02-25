@@ -129,29 +129,72 @@ namespace Internal.IL
         public void CreateCrossModuleInlineableTokensForILBody(EcmaMethod method)
         {
             Debug.Assert(_manifestMutableModule != null);
-            Debug.Assert(!_compilationModuleGroup.VersionsWithMethodBody(method) &&
-                    _compilationModuleGroup.CrossModuleInlineable(method));
             var wrappedMethodIL = new ManifestModuleWrappedMethodIL();
-            if (!wrappedMethodIL.Initialize(_manifestMutableModule, EcmaMethodIL.Create(method)))
+
+            if (method.IsAsync)
             {
-                // If we could not initialize the wrapped method IL, we should store a null.
-                // That will result in the IL code for the method being unavailable for use in
-                // the compilation, which is version safe.
-                wrappedMethodIL = null;
+                if (!wrappedMethodIL.Initialize(_manifestMutableModule, GetMethodILForAsyncMethod(method), method, false))
+                {
+                    // If we could not initialize the wrapped method IL, we should store a null.
+                    // That will result in the IL code for the method being unavailable for use in
+                    // the compilation, which is version safe.
+                    wrappedMethodIL = null;
+                }
             }
+            else
+            {
+                Debug.Assert(!_compilationModuleGroup.VersionsWithMethodBody(method) &&
+                        _compilationModuleGroup.CrossModuleInlineable(method));
+
+                if (!wrappedMethodIL.Initialize(_manifestMutableModule, EcmaMethodIL.Create(method)))
+                {
+                    // If we could not initialize the wrapped method IL, we should store a null.
+                    // That will result in the IL code for the method being unavailable for use in
+                    // the compilation, which is version safe.
+                    wrappedMethodIL = null;
+                }
+            }
+
             _manifestModuleWrappedMethods.Add(method, wrappedMethodIL);
             IncrementVersion();
         }
 
         public bool NeedsCrossModuleInlineableTokens(EcmaMethod method)
         {
-            if (!_compilationModuleGroup.VersionsWithMethodBody(method) &&
-                    _compilationModuleGroup.CrossModuleInlineable(method) &&
-                    !_manifestModuleWrappedMethods.ContainsKey(method))
+            if (((!_compilationModuleGroup.VersionsWithMethodBody(method) &&
+                    _compilationModuleGroup.CrossModuleInlineable(method))
+                    || NeedsTaskReturningThunk(method))
+                    && !_manifestModuleWrappedMethods.ContainsKey(method))
             {
                 return true;
             }
             return false;
+        }
+
+        bool NeedsTaskReturningThunk(EcmaMethod method)
+        {
+            if (!method.IsAsync)
+                return false;
+
+            if (method.Signature.ReturnsTaskOrValueTask())
+                return true;
+
+            if (method.OwningType.Module != method.Context.SystemModule)
+                return true;
+
+            return false;
+        }
+
+        MethodIL GetMethodILForAsyncMethod(EcmaMethod method)
+        {
+            Debug.Assert(method.IsAsync);
+            if (method.Signature.ReturnsTaskOrValueTask())
+            {
+                return AsyncThunkILEmitter.EmitTaskReturningThunk(method, ((CompilerTypeSystemContext)method.Context).GetAsyncVariantMethod(method));
+            }
+            // We only allow non-Task returning runtime async methods in CoreLib
+            // Skip this method
+            return null;
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
@@ -165,14 +208,6 @@ namespace Internal.IL
                         return result;
                 }
 
-                if (method.IsAsync)
-                {
-                    // We should not be creating any AsyncMethodVariants yet.
-                    // This hasn't been implemented.
-                    Debug.Assert(!method.IsAsyncVariant());
-                    return null;
-                }
-
                 // Check to see if there is an override for the EcmaMethodIL. If there is not
                 // then simply return the EcmaMethodIL. In theory this could call
                 // CreateCrossModuleInlineableTokensForILBody, but we explicitly do not want
@@ -182,7 +217,14 @@ namespace Internal.IL
                 // principles of the compiler.
                 if (!_manifestModuleWrappedMethods.TryGetValue(ecmaMethod, out var methodIL))
                 {
-                    methodIL = EcmaMethodIL.Create(ecmaMethod);
+                    if (NeedsTaskReturningThunk(ecmaMethod))
+                    {
+                        methodIL = GetMethodILForAsyncMethod(ecmaMethod);
+                    }
+                    else
+                    {
+                        methodIL = EcmaMethodIL.Create(ecmaMethod);
+                    }
                 }
 
                 if (methodIL != null)
@@ -223,6 +265,7 @@ namespace Internal.IL
             ILExceptionRegion[] _exceptionRegions;
             byte[] _ilBytes;
             LocalVariableDefinition[] _locals;
+            HashSet<object> _methodsWithAsyncVariants;
 
             MutableModule _mutableModule;
 
@@ -230,18 +273,29 @@ namespace Internal.IL
 
             public bool Initialize(MutableModule mutableModule, EcmaMethodIL wrappedMethod)
             {
+                return Initialize(mutableModule, wrappedMethod, wrappedMethod.OwningMethod, true);
+            }
+
+            public bool Initialize(MutableModule mutableModule, MethodIL wrappedMethod, EcmaMethod owningMethod, bool validateStandaloneMetadata)
+            {
+                HashSet<MethodDesc> methodsWhichCannotHaveAsyncVariants = null;
+                _methodsWithAsyncVariants = null;
+
+                if (wrappedMethod == null)
+                    return false;
+
                 bool failedToReplaceToken = false;
                 try
                 {
                     Debug.Assert(mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences == null);
-                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = wrappedMethod.OwningMethod.Module;
-                    var owningMethodHandle = mutableModule.TryGetEntityHandle(wrappedMethod.OwningMethod);
+                    mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = owningMethod.Module;
+                    var owningMethodHandle = mutableModule.TryGetEntityHandle(owningMethod);
                     if (!owningMethodHandle.HasValue)
                         return false;
                     _mutableModule = mutableModule;
                     _maxStack = wrappedMethod.MaxStack;
                     _isInitLocals = wrappedMethod.IsInitLocals;
-                    _owningMethod = wrappedMethod.OwningMethod;
+                    _owningMethod = owningMethod;
                     _exceptionRegions = (ILExceptionRegion[])wrappedMethod.GetExceptionRegions().Clone();
                     _ilBytes = (byte[])wrappedMethod.GetILBytes().Clone();
                     _locals = (LocalVariableDefinition[])wrappedMethod.GetLocals();
@@ -262,7 +316,8 @@ namespace Internal.IL
 
                     ILTokenReplacer.Replace(_ilBytes, GetMutableModuleToken);
 #if DEBUG
-                    Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute(_owningMethod) != null);
+                    if (validateStandaloneMetadata)
+                        Debug.Assert(ReadyToRunStandaloneMethodMetadata.Compute(_owningMethod) != null);
 #endif // DEBUG
                 }
                 finally
@@ -283,11 +338,46 @@ namespace Internal.IL
                     }
                     else
                     {
+                        // Since async thunks directly refer to async methods(which is otherwise not permitted in IL), we need to track this detail
+                        // when we replace the tokens, and use tokens for the non-async variant method, but return
+                        // the async variant as appropriate.
+                        if (result is MethodDesc methodDesc)
+                        {
+                            if (methodDesc.IsAsyncVariant())
+                            {
+                                // We actually need to store the non-variant method, and force GetObject
+                                // to return the async variant
+                                methodDesc = methodDesc.GetTargetOfAsyncVariant();
+                                if (_methodsWithAsyncVariants == null)
+                                    _methodsWithAsyncVariants = new HashSet<object>();
+                                _methodsWithAsyncVariants.Add(methodDesc);
+                                result = methodDesc;
+
+                                if (methodsWhichCannotHaveAsyncVariants != null &&
+                                    methodsWhichCannotHaveAsyncVariants.Contains(methodDesc))
+                                {
+                                    // This method cannot refer to both an async thunk and async variant, fail the compile
+                                    throw new Exception("Method refers in IL directly to an async variant method and a non-async variant");
+                                }
+                            }
+                            else if (methodDesc.IsAsync)
+                            {
+                                if (methodsWhichCannotHaveAsyncVariants == null)
+                                    methodsWhichCannotHaveAsyncVariants = new HashSet<MethodDesc>();
+                                methodsWhichCannotHaveAsyncVariants.Add(methodDesc);
+                                if (_methodsWithAsyncVariants != null &&
+                                    _methodsWithAsyncVariants.Contains(methodDesc))
+                                {
+                                    // This method cannot refer to both an async thunk and async variant, fail the compile
+                                    throw new Exception("Method refers in IL directly to an async variant method and a non-async variant");
+                                }
+                            }
+                        }
                         newToken = mutableModule.TryGetHandle((TypeSystemEntity)result);
                     }
                     if (!newToken.HasValue)
                     {
-                        // Toekn replacement has failed. Do not attempt to use this IL.
+                        // Token replacement has failed. Do not attempt to use this IL.
                         failedToReplaceToken = true;
                         return 1;
                     }
@@ -312,7 +402,14 @@ namespace Internal.IL
                 if ((token & 0xFF000000) == 0x70000000)
                     return _mutableModule.GetUserString(System.Reflection.Metadata.Ecma335.MetadataTokens.UserStringHandle(token));
 
-                return _mutableModule.GetObject(System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token), notFoundBehavior);
+                object result = _mutableModule.GetObject(System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token), notFoundBehavior);
+                if (_methodsWithAsyncVariants != null &&
+                    _methodsWithAsyncVariants.Contains(result))
+                {
+                    // Return the async variant method
+                    result = ((MethodDesc)result).GetAsyncVariant();
+                }
+                return result;
             }
         }
     }

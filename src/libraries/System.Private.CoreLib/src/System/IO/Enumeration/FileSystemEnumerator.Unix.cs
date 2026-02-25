@@ -30,6 +30,19 @@ namespace System.IO.Enumeration
         // Used for creating full paths
         private char[]? _pathBuffer;
 
+        /// <summary>
+        /// Encapsulates a find operation.
+        /// </summary>
+        /// <param name="directory">The directory to search in.</param>
+        /// <param name="isNormalized">Whether the directory path is already normalized or not.</param>
+        /// <param name="options">Enumeration options to use.</param>
+        /// <param name="expression">The search expression to potentially use for OS-level filtering (Windows only).</param>
+        internal FileSystemEnumerator(string directory, bool isNormalized, EnumerationOptions? options, string? expression) :
+            this(directory, isNormalized, options)
+        {
+            _ = expression; // unused
+        }
+
         private void Init()
         {
             // We need to initialize the directory handle up front to ensure

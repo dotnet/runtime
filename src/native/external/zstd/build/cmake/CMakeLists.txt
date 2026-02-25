@@ -36,7 +36,6 @@ set(ZSTD_FULL_VERSION "${zstd_VERSION_MAJOR}.${zstd_VERSION_MINOR}.${zstd_VERSIO
 project(zstd
   VERSION "${ZSTD_FULL_VERSION}"
   LANGUAGES C   # Main library is in C
-            ASM # And ASM
             CXX # Testing contributed code also utilizes CXX
   )
 

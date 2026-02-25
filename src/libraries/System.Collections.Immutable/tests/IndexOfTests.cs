@@ -88,22 +88,44 @@ namespace System.Collections.Immutable.Tests
             Func<TCollection, int, int, int, IEqualityComparer<int>, int> lastIndexOfItemIndexCountEQ)
         {
             TCollection emptyCollection = factory(new int[0]);
+            TCollection singleCollection = factory(new[] { 10 });
             TCollection collection1256 = factory(new[] { 1, 2, 5, 6 });
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndexCountEQ(emptyCollection, 100, 1, 1, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndexCountEQ(emptyCollection, 100, -1, 1, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndexCountEQ(collection1256, 100, 1, 20, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndexCountEQ(collection1256, 100, 1, -1, EqualityComparer<int>.Default));
-            Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndexCountEQ(emptyCollection, 100, 1, 1, new CustomComparer(50)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndexCountEQ(emptyCollection, 100, -1, 1, new CustomComparer(50)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndexCountEQ(collection1256, 100, 1, 20, new CustomComparer(1)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndexCountEQ(collection1256, 100, 1, -1, new CustomComparer(1)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => lastIndexOfItemIndex(collection1256, 2, 5));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => lastIndexOfItemIndexCountEQ(emptyCollection, 100, 1, 1, EqualityComparer<int>.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => lastIndexOfItemIndexCountEQ(emptyCollection, 100, -1, 1, EqualityComparer<int>.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => lastIndexOfItemIndexCountEQ(singleCollection, 100, 1, 1, EqualityComparer<int>.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => lastIndexOfItemIndexCountEQ(singleCollection, 100, -1, 1, EqualityComparer<int>.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => lastIndexOfItemIndexCountEQ(collection1256, 100, 1, 20, EqualityComparer<int>.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => lastIndexOfItemIndexCountEQ(collection1256, 100, 1, -1, EqualityComparer<int>.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => lastIndexOfItemIndexCountEQ(emptyCollection, 100, 1, 1, new CustomComparer(50)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => lastIndexOfItemIndexCountEQ(emptyCollection, 100, -1, 1, new CustomComparer(50)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => lastIndexOfItemIndexCountEQ(singleCollection, 100, 1, 1, new CustomComparer(50)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => lastIndexOfItemIndexCountEQ(singleCollection, 100, -1, 1, new CustomComparer(50)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => lastIndexOfItemIndexCountEQ(collection1256, 100, 1, 20, new CustomComparer(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => lastIndexOfItemIndexCountEQ(collection1256, 100, 1, -1, new CustomComparer(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => lastIndexOfItemIndex(collection1256, 2, 5));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => lastIndexOfItemIndexCountEQ(collection1256, 6, 2, 4, EqualityComparer<int>.Default));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => lastIndexOfItemIndexCountEQ(collection1256, 6, 4, 4, EqualityComparer<int>.Default));
 
             Assert.Equal(-1, lastIndexOfItem(emptyCollection, 5));
             Assert.Equal(-1, lastIndexOfItemEQ(emptyCollection, 5, EqualityComparer<int>.Default));
             Assert.Equal(-1, lastIndexOfItemIndex(emptyCollection, 5, 0));
             Assert.Equal(-1, lastIndexOfItemIndexCount(emptyCollection, 5, 0, 0));
+
+            Assert.Equal(0, lastIndexOfItem(singleCollection, 10));
+            Assert.Equal(0, lastIndexOfItemEQ(singleCollection, 10, EqualityComparer<int>.Default));
+            Assert.Equal(0, lastIndexOfItemIndex(singleCollection, 10, 0));
+            Assert.Equal(0, lastIndexOfItemIndexCount(singleCollection, 10, 0, 1));
+            Assert.Equal(0, lastIndexOfItemIndexCountEQ(singleCollection, 10, 0, 1, EqualityComparer<int>.Default));
+            Assert.Equal(-1, lastIndexOfItemIndexCountEQ(singleCollection, 100, 0, 1, EqualityComparer<int>.Default));
+
+            Assert.Equal(1, lastIndexOfItem(collection1256, 2));
+            Assert.Equal(1, lastIndexOfItemEQ(collection1256, 2, EqualityComparer<int>.Default));
+            Assert.Equal(1, lastIndexOfItemIndex(collection1256, 2, 3));
+            Assert.Equal(1, lastIndexOfItemIndexCount(collection1256, 2, 3, 4));
+            Assert.Equal(2, lastIndexOfItemIndexCountEQ(collection1256, 5, 3, 4, EqualityComparer<int>.Default));
+            Assert.Equal(3, lastIndexOfItemIndexCountEQ(collection1256, 6, 3, 4, EqualityComparer<int>.Default));
+            Assert.Equal(-1, lastIndexOfItemIndexCountEQ(collection1256, 100, 3, 4, EqualityComparer<int>.Default));
 
             // Create a list with contents: 100,101,102,103,104,100,101,102,103,104
             ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(Enumerable.Range(100, 5).Concat(Enumerable.Range(100, 5)));

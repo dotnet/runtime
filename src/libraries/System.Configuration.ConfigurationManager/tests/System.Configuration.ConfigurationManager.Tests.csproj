@@ -9,6 +9,11 @@
          Set the root namespace to avoid conflicts. -->
     <RootNamespace>System.ConfigurationTests</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\StringPolyfills.cs" Link="System\StringPolyfills.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />

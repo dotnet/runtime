@@ -8,4 +8,7 @@
   <ItemGroup>
     <Compile Include="L-2-10-1.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

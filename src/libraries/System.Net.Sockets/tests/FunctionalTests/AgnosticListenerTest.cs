@@ -29,7 +29,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ConnectWithV4_Success()
         {
             TcpListener listener = SocketTestExtensions.CreateAndStartTcpListenerOnAnonymousPort(out int port);
@@ -46,7 +46,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ConnectWithV6_Success()
         {
             TcpListener listener = SocketTestExtensions.CreateAndStartTcpListenerOnAnonymousPort(out int port);
@@ -63,7 +63,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ConnectWithV4AndV6_Success()
         {
             TcpListener listener = SocketTestExtensions.CreateAndStartTcpListenerOnAnonymousPort(out int port);

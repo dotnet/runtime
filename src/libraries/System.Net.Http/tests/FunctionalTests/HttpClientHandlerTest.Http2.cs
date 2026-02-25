@@ -687,6 +687,48 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [InlineData(false)] // server disconnects without sending SETTINGS
+        [InlineData(true)]  // server sends GOAWAY instead of SETTINGS
+        public async Task ServerDisconnectDuringSetup_PropagatesMeaningfulException(bool sendGoAway)
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                // Accept connection and read client preface, but do NOT send SETTINGS.
+                Http2LoopbackConnection connection = await server.AcceptConnectionAsync();
+
+                if (sendGoAway)
+                {
+                    // Send GOAWAY instead of SETTINGS, then shut down.
+                    await connection.SendGoAway(0, ProtocolErrors.ENHANCE_YOUR_CALM);
+                    await connection.ShutdownSendAsync();
+
+                    // The client should throw HttpRequestException(HttpProtocolError) wrapping
+                    // HttpProtocolException with the GOAWAY error code.
+                    await AssertProtocolErrorAsync(sendTask, ProtocolErrors.ENHANCE_YOUR_CALM);
+                }
+                else
+                {
+                    // Immediately shut down the connection without sending SETTINGS.
+                    // This simulates a server-side disconnect during HTTP/2 setup.
+                    await connection.ShutdownSendAsync();
+
+                    // The client should throw HttpRequestException(InvalidResponse) wrapping
+                    // HttpIOException(InvalidResponse) -> HttpIOException(ResponseEnded),
+                    // indicating the server disconnected before sending SETTINGS.
+                    HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
+                    Assert.Equal(HttpRequestError.InvalidResponse, ex.HttpRequestError);
+                    HttpIOException httpIoEx = Assert.IsAssignableFrom<HttpIOException>(ex.InnerException);
+                    Assert.Equal(HttpRequestError.InvalidResponse, httpIoEx.HttpRequestError);
+                    HttpIOException innerHttpIoEx = Assert.IsAssignableFrom<HttpIOException>(httpIoEx.InnerException);
+                    Assert.Equal(HttpRequestError.ResponseEnded, innerHttpIoEx.HttpRequestError);
+                }
+            }
+        }
+
         // This test is based on RFC 7540 section 6.1:
         // "If a DATA frame is received whose stream identifier field is 0x0, the recipient MUST
         // respond with a connection error (Section 5.4.1) of type PROTOCOL_ERROR."
@@ -1077,7 +1119,7 @@ namespace System.Net.Http.Functional.Tests
 
                 // Server sends GOAWAY frame
                 await connection.SendGoAway(streamId, ProtocolErrors.ENHANCE_YOUR_CALM);
-                connection.ShutdownSend();
+                await connection.ShutdownSendAsync();
             });
         }
 
@@ -1487,7 +1529,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendResponseDataAsync(streamId3, new byte[5], endStream: true);
 
                 // We will not send any more frames, so send EOF now, and ensure the client handles this properly.
-                connection.ShutdownSend();
+                await connection.ShutdownSendAsync();
 
                 // Receive all responses
                 HttpResponseMessage response1 = await sendTask1;

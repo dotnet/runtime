@@ -14,6 +14,7 @@
     <ProjectReference Include="../common/localloc_common.ilproj" />
     <ProjectReference Include="../common/eh_common.csproj" />
     <ProjectReference Include="flowgraph/dev10_bug679008/helper.ilproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <MergedWrapperProjectReference Remove="flowgraph/dev10_bug679008/helper.ilproj" />
     <CMakeProjectReference Include="gc_poll/CMakeLists.txt" />
     <CMakeProjectReference Include="structs/systemvbringup/CMakeLists.txt" />

@@ -1948,7 +1948,7 @@ public:
     void CleanupCodeHeaps();
 
     template<typename TCodeHeader>
-    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
+    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
                    size_t* pAllocatedSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
                  , UINT nUnwindInfos
                   );

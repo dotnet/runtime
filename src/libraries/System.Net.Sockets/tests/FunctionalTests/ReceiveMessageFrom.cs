@@ -286,19 +286,19 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveMessageFrom_Sync : ReceiveMessageFrom<SocketHelperArraySync>
     {
         public ReceiveMessageFrom_Sync(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveMessageFrom_SyncForceNonBlocking : ReceiveMessageFrom<SocketHelperSyncForceNonBlocking>
     {
         public ReceiveMessageFrom_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveMessageFrom_Apm : ReceiveMessageFrom<SocketHelperApm>
     {
         public ReceiveMessageFrom_Apm(ITestOutputHelper output) : base(output) { }
@@ -349,7 +349,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentException>("endPoint", () => socket.EndReceiveMessageFrom(iar, ref socketFlags, ref invalidEndPoint, out _));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void BeginReceiveMessageFrom_RemoteEpIsReturnedWhenCompletedSynchronously()
         {
             EndPoint anyEp = new IPEndPoint(IPAddress.Any, 0);
@@ -416,7 +416,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentNullException>(() => socket.ReceiveMessageFromAsync(null));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false, 0)]
         [InlineData(false, 1)]
         [InlineData(false, 2)]
@@ -497,13 +497,13 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveMessageFrom_SpanSync : ReceiveMessageFrom<SocketHelperSpanSync>
     {
         public ReceiveMessageFrom_SpanSync(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ReceiveMessageFrom_SpanSyncForceNonBlocking : ReceiveMessageFrom<SocketHelperSpanSyncForceNonBlocking>
     {
         public ReceiveMessageFrom_SpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }

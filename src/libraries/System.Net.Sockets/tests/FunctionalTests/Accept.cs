@@ -143,7 +143,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Accept_WithTargetSocket_Success()
         {
             if (!SupportsAcceptIntoExistingSocket)
@@ -166,7 +166,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task Accept_WithTargetSocket_ReuseAfterDisconnect_Success(bool reuseSocket)
@@ -238,7 +238,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Accept_WithInUseTargetSocket_Fails()
         {
             if (!SupportsAcceptIntoExistingSocket)
@@ -352,7 +352,7 @@ namespace System.Net.Sockets.Tests
             }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task AcceptReceive_Success()
         {
             if (!SupportsAcceptReceive)
@@ -377,19 +377,19 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptSync : Accept<SocketHelperArraySync>
     {
         public AcceptSync(ITestOutputHelper output) : base(output) {}
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptSyncForceNonBlocking : Accept<SocketHelperSyncForceNonBlocking>
     {
         public AcceptSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class AcceptApm : Accept<SocketHelperApm>
     {
         public AcceptApm(ITestOutputHelper output) : base(output) {}

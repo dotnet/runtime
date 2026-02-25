@@ -401,7 +401,7 @@ namespace Microsoft.Extensions.Http.Logging
             Assert.Equal(0, sink.Writes.Count(w => w.LoggerName.StartsWith("System.Net.Http.HttpClient.TestLoggerProvider")));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsPreciseGcSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsPreciseGcSupported))]
         public async Task LoggerFactoryWithHttpClientFactory_NoCircularDependency_DebugLogging()
         {
             var sink = new TestSink();

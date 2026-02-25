@@ -1116,10 +1116,10 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39056")]
         [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
         public async Task Send_TimeoutRequestContent_Throws()
         {
+            var semaphore = new SemaphoreSlim(0);
             await LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -1145,12 +1145,14 @@ namespace System.Net.Http.Functional.Tests
 
                     TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() => sendTask);
                     Assert.IsType<TimeoutException>(ex.InnerException);
+                    semaphore.Release();
                 },
                 async server =>
                 {
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await IgnoreExceptions(connection.ReadRequestDataAsync());
+                        await semaphore.WaitAsync();
                     });
                 });
         }
@@ -1531,7 +1533,7 @@ namespace System.Net.Http.Functional.Tests
             public static IEnumerable<object[]> Send_InnerHandlerThrows_OuterExceptionIsCaptured_MemberData() =>
                 Enum.GetValues<ExceptionScenario>().Select(e => new object[] { e });
 
-            [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+            [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
             [MemberData(nameof(Send_InnerHandlerThrows_OuterExceptionIsCaptured_MemberData))]
             public async Task Send_InnerHandlerThrows_OriginalExceptionInformationIsCaptured(ExceptionScenario scenario)
             {

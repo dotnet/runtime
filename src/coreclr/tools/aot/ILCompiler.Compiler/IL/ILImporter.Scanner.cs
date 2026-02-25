@@ -467,7 +467,7 @@ namespace Internal.IL
 
                     DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
 
-                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("AllocContinuation"u8, null)), asyncReason);
+                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
                     _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
                     _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null)), asyncReason);
                     _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
@@ -476,9 +476,27 @@ namespace Internal.IL
 
                 // If this is the task await pattern, we're actually going to call the variant
                 // so switch our focus to the variant.
-                if (method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask()
-                    && !method.OwningType.IsDelegate
-                    && MatchTaskAwaitPattern())
+
+                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+                // we cannot resolve to an Async variant in such case.
+                bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
+
+                // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
+                allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
+
+                if (allowAsyncVariant)
+                {
+                    bool isDirect = opcode == ILOpcode.call || method.IsCallEffectivelyDirect();
+                    if (isDirect && !method.IsAsync)
+                    {
+                        // Async variant would be a thunk. Do not resolve direct calls
+                        // to async thunks. That just creates and JITs unnecessary
+                        // thunks, and the thunks are harder for the JIT to optimize.
+                        allowAsyncVariant = false;
+                    }
+                }
+
+                if (allowAsyncVariant && MatchTaskAwaitPattern())
                 {
                     runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
                     method = _factory.TypeSystemContext.GetAsyncVariantMethod(method);
@@ -688,9 +706,7 @@ namespace Internal.IL
             }
             else
             {
-                if (!targetMethod.IsVirtual ||
-                    // Final/sealed has no meaning for interfaces, but lets us devirtualize otherwise
-                    (!targetMethod.OwningType.IsInterface && (targetMethod.IsFinal || targetMethod.OwningType.IsSealed())))
+                if (targetMethod.IsCallEffectivelyDirect())
                 {
                     directCall = true;
                 }
@@ -796,8 +812,9 @@ namespace Internal.IL
                         {
                             instParam = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType);
                         }
-                        else if (targetMethod.AcquiresInstMethodTableFromThis())
+                        else
                         {
+                            Debug.Assert(targetMethod.AcquiresInstMethodTableFromThis());
                             _dependencies.Add(_factory.ShadowNonConcreteMethod(concreteMethod), reason);
                         }
 

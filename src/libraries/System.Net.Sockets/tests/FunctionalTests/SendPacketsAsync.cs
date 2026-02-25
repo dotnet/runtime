@@ -12,7 +12,7 @@ using Xunit;
 namespace System.Net.Sockets.Tests
 {
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class SendPacketsAsync : IDisposable
     {
         private readonly ITestOutputHelper _log;

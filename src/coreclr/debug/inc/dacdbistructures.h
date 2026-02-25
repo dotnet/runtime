@@ -468,6 +468,18 @@ public:
     bool                                   m_fInitialized;
 }; // class SequencePoints
 
+//===================================================================================
+// AsyncLocalData serves as the Dbi equivalent of ICorDebugInfo::AsyncContinuationVarInfo.
+// It maps the offset of an async variable within a continuation to its ILVarNum.
+//===================================================================================
+struct MSLAYOUT AsyncLocalData
+{
+    // offset within a continuation object where the variable is stored
+    ULONG offset;
+    // IL variable number corresponding to the async local
+    ULONG ilVarNum;
+};
+
 //----------------------------------------------------------------------------------
 // declarations needed for getting native code regions
 //----------------------------------------------------------------------------------

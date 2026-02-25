@@ -13,11 +13,12 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.Interop.UnitTests;
 using Xunit;
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator, Microsoft.Interop.Analyzers.LibraryImportDiagnosticsAnalyzer>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -577,7 +578,7 @@ namespace LibraryImportGenerator.UnitTests
             await test.RunAsync();
         }
 
-        class FallbackForwarderTest : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.DownlevelLibraryImportGenerator>.Test
+        class FallbackForwarderTest : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.DownlevelLibraryImportGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>.Test
         {
             private readonly bool _expectFallbackForwarder;
 
@@ -746,7 +747,7 @@ namespace LibraryImportGenerator.UnitTests
                 public class Basic { }
                 """;
 
-            var test = new NoChangeTest<Microsoft.Interop.LibraryImportGenerator>()
+            var test = new NoChangeTest<Microsoft.Interop.LibraryImportGenerator, Microsoft.Interop.Analyzers.LibraryImportDiagnosticsAnalyzer>()
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
@@ -766,7 +767,7 @@ namespace LibraryImportGenerator.UnitTests
                 public class Basic { }
                 """;
 
-            var test = new NoChangeTest<Microsoft.Interop.DownlevelLibraryImportGenerator>(framework)
+            var test = new NoChangeTest<Microsoft.Interop.DownlevelLibraryImportGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>(framework)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
@@ -775,8 +776,9 @@ namespace LibraryImportGenerator.UnitTests
             await test.RunAsync();
         }
 
-        class NoChangeTest<TSourceGenerator> : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<TSourceGenerator>.Test
+        class NoChangeTest<TSourceGenerator, TAnalyzer> : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<TSourceGenerator, TAnalyzer>.Test
             where TSourceGenerator : new()
+            where TAnalyzer : DiagnosticAnalyzer, new()
         {
             public NoChangeTest()
                 : base(referenceAncillaryInterop: false)

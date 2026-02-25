@@ -107,6 +107,7 @@ export function dotnetUpdateInternalsSubscriber() {
             cancelPromise: table[4],
             invokeJSFunction: table[5],
             forceDisposeProxies: table[6],
+            abortInteropTimers: table[7],
         };
         Object.assign(runtime, runtimerLocal);
     }
@@ -135,6 +136,7 @@ export function dotnetUpdateInternalsSubscriber() {
             addOnExitListener: table[14],
             abortStartup: table[15],
             quitNow: table[16],
+            normalizeException: table[17],
         };
         Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);
@@ -149,6 +151,8 @@ export function dotnetUpdateInternalsSubscriber() {
             loadIcuData: table[2],
             initializeCoreCLR: table[3],
             registerPdbBytes: table[4],
+            instantiateWasm: table[5],
+            instantiateWebcilModule: table[6],
         };
         Object.assign(native, nativeLocal);
     }
@@ -169,6 +173,8 @@ export function dotnetUpdateInternalsSubscriber() {
     // keep in sync with nativeBrowserExportsToTable()
     function nativeBrowserExportsFromTable(table: NativeBrowserExportsTable, interop: NativeBrowserExports): void {
         const interopLocal: NativeBrowserExports = {
+            getWasmMemory: table[0],
+            getWasmTable: table[1],
         };
         Object.assign(interop, interopLocal);
     }
@@ -177,6 +183,7 @@ export function dotnetUpdateInternalsSubscriber() {
     function diagnosticsExportsFromTable(table: DiagnosticsExportsTable, interop: DiagnosticsExports): void {
         const interopLocal: DiagnosticsExports = {
             symbolicateStackTrace: table[0],
+            installNativeSymbols: table[1],
         };
         Object.assign(interop, interopLocal);
     }
@@ -191,9 +198,10 @@ export function dotnetUpdateInternalsSubscriber() {
             stringToUTF8: table[4],
             zeroRegion: table[5],
             isSharedArrayBuffer: table[6],
-            abortTimers: table[7],
+            abortBackgroundTimers: table[7],
             abortPosix: table[8],
             getExitStatus: table[9],
+            runBackgroundTimers: table[10],
         };
         Object.assign(interop, interopLocal);
     }
