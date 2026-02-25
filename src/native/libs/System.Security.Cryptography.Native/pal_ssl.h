@@ -557,3 +557,43 @@ PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);
 Staples an encoded OCSP response onto the TLS session
 */
 PALEXPORT void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len);
+
+/*
+Sets the file descriptor for kTLS socket BIO mode.
+Returns 1 on success, 0 on failure.
+*/
+PALEXPORT int32_t CryptoNative_SslSetFd(SSL* ssl, int32_t fd);
+
+/*
+Enables the SSL_OP_ENABLE_KTLS option.
+Returns 1 if the option was set, 0 if kTLS is not supported by the OpenSSL build.
+*/
+PALEXPORT int32_t CryptoNative_SslSetKtls(SSL* ssl);
+
+/*
+Checks if kTLS TX (send) offload is active.
+*/
+PALEXPORT int32_t CryptoNative_SslGetKtlsSend(SSL* ssl);
+
+/*
+Checks if kTLS RX (recv) offload is active.
+*/
+PALEXPORT int32_t CryptoNative_SslGetKtlsRecv(SSL* ssl);
+
+/*
+Performs a blocking SSL handshake with internal poll loop.
+Returns 1 on success.
+*/
+PALEXPORT int32_t CryptoNative_SslDoHandshakeBlocking(SSL* ssl, int32_t* error);
+
+/*
+Performs a blocking SSL read with internal poll loop.
+Returns number of bytes read on success, <= 0 on error.
+*/
+PALEXPORT int32_t CryptoNative_SslReadBlocking(SSL* ssl, void* buf, int32_t num, int32_t* error);
+
+/*
+Performs a blocking SSL write with internal poll loop.
+Returns number of bytes written on success, <= 0 on error.
+*/
+PALEXPORT int32_t CryptoNative_SslWriteBlocking(SSL* ssl, const void* buf, int32_t num, int32_t* error);

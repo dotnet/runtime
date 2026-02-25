@@ -525,6 +525,138 @@ internal static partial class Interop
             return sslHandle;
         }
 
+        internal static SafeSslHandle AllocateSslHandleForKtls(SslAuthenticationOptions sslAuthenticationOptions, int socketFd)
+        {
+            // For kTLS, we don't cache SSL contexts since the socket BIO makes context sharing less useful
+            using SafeSslContextHandle sslCtxHandle = GetOrCreateSslContextHandle(sslAuthenticationOptions, allowCached: false);
+
+            GCHandle alpnHandle = default;
+            SafeSslHandle sslHandle;
+            try
+            {
+                sslHandle = SafeSslHandle.CreateForKtls(sslCtxHandle, sslAuthenticationOptions.IsServer, socketFd);
+                Debug.Assert(sslHandle != null, "Expected non-null return value from SafeSslHandle.CreateForKtls");
+                if (sslHandle.IsInvalid)
+                {
+                    sslHandle.Dispose();
+                    throw CreateSslException(SR.net_allocate_ssl_context_failed);
+                }
+
+                // Configuration is the same as for normal SSL handles
+                if (!sslAuthenticationOptions.AllowRsaPssPadding || !sslAuthenticationOptions.AllowRsaPkcs1Padding)
+                {
+                    ConfigureSignatureAlgorithms(sslHandle, sslAuthenticationOptions.AllowRsaPssPadding, sslAuthenticationOptions.AllowRsaPkcs1Padding);
+                }
+
+                if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+                {
+                    if (sslAuthenticationOptions.IsServer)
+                    {
+                        Debug.Assert(Interop.Ssl.SslGetData(sslHandle) == IntPtr.Zero);
+                        alpnHandle = GCHandle.Alloc(sslAuthenticationOptions.ApplicationProtocols);
+                        Interop.Ssl.SslSetData(sslHandle, GCHandle.ToIntPtr(alpnHandle));
+                        sslHandle.AlpnHandle = alpnHandle;
+                    }
+                    else
+                    {
+                        if (Interop.Ssl.SslSetAlpnProtos(sslHandle, sslAuthenticationOptions.ApplicationProtocols) != 0)
+                        {
+                            throw CreateSslException(SR.net_alpn_config_failed);
+                        }
+                    }
+                }
+
+                if (sslAuthenticationOptions.IsClient)
+                {
+                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !IPAddress.IsValid(sslAuthenticationOptions.TargetHost))
+                    {
+                        if (!Ssl.SslSetTlsExtHostName(sslHandle, sslAuthenticationOptions.TargetHost))
+                        {
+                            Crypto.ErrClearError();
+                        }
+                    }
+
+                    if (sslAuthenticationOptions.CertificateContext != null ||
+                        sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
+                        sslAuthenticationOptions.CertSelectionDelegate != null)
+                    {
+                        Ssl.SslSetPostHandshakeAuth(sslHandle, 1);
+                    }
+
+                    Ssl.SslSetClientCertCallback(sslHandle, 1);
+                }
+                else
+                {
+                    if (sslAuthenticationOptions.RemoteCertRequired)
+                    {
+                        Ssl.SslSetVerifyPeer(sslHandle);
+                    }
+
+                    if (sslAuthenticationOptions.CertificateContext != null)
+                    {
+                        byte[]? ocspResponse = sslAuthenticationOptions.CertificateContext.GetOcspResponseNoWaiting();
+                        if (ocspResponse != null)
+                        {
+                            Ssl.SslStapleOcsp(sslHandle, ocspResponse);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                if (alpnHandle.IsAllocated)
+                {
+                    alpnHandle.Free();
+                }
+
+                throw;
+            }
+
+            return sslHandle;
+        }
+
+        internal static SecurityStatusPalErrorCode DoSslHandshakeKtls(SafeSslHandle context)
+        {
+            int retVal = Ssl.SslDoHandshakeBlocking(context, out Ssl.SslErrorCode errorCode);
+
+            if (retVal != 1)
+            {
+                throw new SslException(SR.Format(SR.net_ssl_handshake_failed_error, errorCode), GetSslError(retVal, errorCode));
+            }
+
+            context.MarkHandshakeCompleted();
+            return SecurityStatusPalErrorCode.OK;
+        }
+
+        internal static int KtlsRead(SafeSslHandle context, Span<byte> buffer)
+        {
+            int retVal = Ssl.SslReadBlocking(context, ref MemoryMarshal.GetReference(buffer), buffer.Length, out Ssl.SslErrorCode errorCode);
+
+            if (retVal > 0)
+            {
+                return retVal;
+            }
+
+            if (errorCode == Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN)
+            {
+                return 0;
+            }
+
+            throw new SslException(SR.Format(SR.net_ssl_decrypt_failed, errorCode), GetSslError(retVal, errorCode));
+        }
+
+        internal static int KtlsWrite(SafeSslHandle context, ReadOnlySpan<byte> input)
+        {
+            int retVal = Ssl.SslWriteBlocking(context, ref MemoryMarshal.GetReference(input), input.Length, out Ssl.SslErrorCode errorCode);
+
+            if (retVal > 0)
+            {
+                return retVal;
+            }
+
+            throw new SslException(SR.Format(SR.net_ssl_encrypt_failed, errorCode), GetSslError(retVal, errorCode));
+        }
+
         internal static string[] GetDefaultSignatureAlgorithms()
         {
             ushort[] rawAlgs = Interop.Ssl.GetDefaultSignatureAlgorithms();

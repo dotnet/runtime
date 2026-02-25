@@ -12,6 +12,11 @@
 #include <string.h>
 #include <stdbool.h>
 
+#ifdef __linux__
+#include <errno.h>
+#include <poll.h>
+#endif
+
 c_static_assert(PAL_SSL_ERROR_NONE == SSL_ERROR_NONE);
 c_static_assert(PAL_SSL_ERROR_SSL == SSL_ERROR_SSL);
 c_static_assert(PAL_SSL_ERROR_WANT_READ == SSL_ERROR_WANT_READ);
@@ -1307,4 +1312,181 @@ void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len)
     {
         OPENSSL_free(copy);
     }
+}
+
+int32_t CryptoNative_SslSetFd(SSL* ssl, int32_t fd)
+{
+    ERR_clear_error();
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (SSL_set_fd_ptr == NULL)
+    {
+        return 0;
+    }
+#endif
+    return SSL_set_fd(ssl, fd);
+}
+
+int32_t CryptoNative_SslSetKtls(SSL* ssl)
+{
+#ifdef SSL_OP_ENABLE_KTLS
+    SSL_set_options(ssl, SSL_OP_ENABLE_KTLS);
+    return 1;
+#else
+    (void)ssl;
+    return 0;
+#endif
+}
+
+int32_t CryptoNative_SslGetKtlsSend(SSL* ssl)
+{
+#ifndef OPENSSL_NO_KTLS
+    return BIO_get_ktls_send(SSL_get_wbio(ssl));
+#else
+    (void)ssl;
+    return 0;
+#endif
+}
+
+int32_t CryptoNative_SslGetKtlsRecv(SSL* ssl)
+{
+#ifndef OPENSSL_NO_KTLS
+    return BIO_get_ktls_recv(SSL_get_rbio(ssl));
+#else
+    (void)ssl;
+    return 0;
+#endif
+}
+
+#ifdef __linux__
+static int32_t PollForSsl(SSL* ssl, int32_t sslError)
+{
+    int fd = SSL_get_fd(ssl);
+    if (fd < 0)
+        return -1;
+
+    struct pollfd pfd;
+    pfd.fd = fd;
+    pfd.revents = 0;
+
+    if (sslError == SSL_ERROR_WANT_READ)
+        pfd.events = POLLIN;
+    else if (sslError == SSL_ERROR_WANT_WRITE)
+        pfd.events = POLLOUT;
+    else
+        return -1;
+
+    int ret;
+    do
+    {
+        ret = poll(&pfd, 1, -1);
+    } while (ret < 0 && errno == EINTR);
+
+    return ret;
+}
+#endif
+
+int32_t CryptoNative_SslDoHandshakeBlocking(SSL* ssl, int32_t* error)
+{
+#ifdef __linux__
+    while (1)
+    {
+        ERR_clear_error();
+        int32_t result = SSL_do_handshake(ssl);
+        if (result == 1)
+        {
+            *error = SSL_ERROR_NONE;
+            return 1;
+        }
+
+        int32_t err = SSL_get_error(ssl, result);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+        {
+            if (PollForSsl(ssl, err) < 0)
+            {
+                *error = SSL_ERROR_SYSCALL;
+                return -1;
+            }
+            continue;
+        }
+
+        *error = err;
+        return result;
+    }
+#else
+    (void)ssl;
+    *error = SSL_ERROR_SSL;
+    return -1;
+#endif
+}
+
+int32_t CryptoNative_SslReadBlocking(SSL* ssl, void* buf, int32_t num, int32_t* error)
+{
+#ifdef __linux__
+    while (1)
+    {
+        ERR_clear_error();
+        int32_t result = SSL_read(ssl, buf, num);
+        if (result > 0)
+        {
+            *error = SSL_ERROR_NONE;
+            return result;
+        }
+
+        int32_t err = SSL_get_error(ssl, result);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+        {
+            if (PollForSsl(ssl, err) < 0)
+            {
+                *error = SSL_ERROR_SYSCALL;
+                return -1;
+            }
+            continue;
+        }
+
+        *error = err;
+        return result;
+    }
+#else
+    (void)ssl;
+    (void)buf;
+    (void)num;
+    *error = SSL_ERROR_SSL;
+    return -1;
+#endif
+}
+
+int32_t CryptoNative_SslWriteBlocking(SSL* ssl, const void* buf, int32_t num, int32_t* error)
+{
+#ifdef __linux__
+    while (1)
+    {
+        ERR_clear_error();
+        int32_t result = SSL_write(ssl, buf, num);
+        if (result > 0)
+        {
+            *error = SSL_ERROR_NONE;
+            return result;
+        }
+
+        int32_t err = SSL_get_error(ssl, result);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+        {
+            if (PollForSsl(ssl, err) < 0)
+            {
+                *error = SSL_ERROR_SYSCALL;
+                return -1;
+            }
+            continue;
+        }
+
+        *error = err;
+        return result;
+    }
+#else
+    (void)ssl;
+    (void)buf;
+    (void)num;
+    *error = SSL_ERROR_SSL;
+    return -1;
+#endif
 }

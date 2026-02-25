@@ -4,17 +4,27 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Security
 {
     public partial class SslStream
     {
+#if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
+        internal static readonly bool s_ktlsEnabled =
+            Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SECURITY_KTLS") == "1";
+
+        private bool _useKtls;
+#endif
+
         internal readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
         internal new Stream InnerStream => base.InnerStream;
         private NestedState _nestedAuth;
@@ -320,6 +330,15 @@ namespace System.Net.Security
                 }
 #endif // TARGET_APPLE
 
+                // kTLS path: use socket BIO for direct kernel TLS offload
+#if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
+                if (s_ktlsEnabled && reAuthenticationData == null && OperatingSystem.IsLinux() && InnerStream is NetworkStream ns)
+                {
+                    await DoKtlsHandshakeAsync(ns.Socket, cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+#endif
+
                 if (!receiveFirst)
                 {
                     token = NextMessage(reAuthenticationData, out int consumed);
@@ -429,6 +448,43 @@ namespace System.Net.Security
                                                                     KeyExchangeStrength);
 #pragma warning restore SYSLIB0058 // Use NegotiatedCipherSuite.
         }
+
+#if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
+        private async Task DoKtlsHandshakeAsync(Socket socket, CancellationToken cancellationToken)
+        {
+            int fd = (int)socket.Handle;
+
+            // Allocate SSL handle with socket BIO + kTLS enabled
+            _securityContext = await Task.Run(() =>
+            {
+                SafeSslHandle sslHandle = Interop.OpenSsl.AllocateSslHandleForKtls(_sslAuthenticationOptions, fd);
+
+                // Blocking handshake - OpenSSL reads/writes the socket directly
+                Interop.OpenSsl.DoSslHandshakeKtls(sslHandle);
+                return sslHandle;
+            }, cancellationToken).ConfigureAwait(false);
+
+            _useKtls = true;
+            CompleteHandshake(_sslAuthenticationOptions);
+        }
+
+        private static int KtlsReadSync(SafeSslHandle sslHandle, Span<byte> buffer)
+        {
+            return Interop.OpenSsl.KtlsRead(sslHandle, buffer);
+        }
+
+        private static int KtlsWriteSync(SafeSslHandle sslHandle, ReadOnlySpan<byte> buffer)
+        {
+            int totalWritten = 0;
+            while (totalWritten < buffer.Length)
+            {
+                int written = Interop.OpenSsl.KtlsWrite(sslHandle, buffer.Slice(totalWritten));
+                totalWritten += written;
+            }
+
+            return totalWritten;
+        }
+#endif
 
         // This method will make sure we have at least one full TLS frame buffered.
         private async ValueTask<int> ReceiveHandshakeFrameAsync<TIOAdapter>(CancellationToken cancellationToken)
@@ -866,6 +922,15 @@ namespace System.Net.Security
                 }
 #endif // TARGET_APPLE
 
+#if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
+                if (_useKtls)
+                {
+                    SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
+                    int bytesRead = await Task.Run(() => KtlsReadSync(sslHandle, buffer.Span), cancellationToken).ConfigureAwait(false);
+                    return bytesRead;
+                }
+#endif
+
                 int processedLength = 0;
                 int nextTlsFrameLength = UnknownTlsFrameLength;
 
@@ -1015,6 +1080,15 @@ namespace System.Net.Security
                     return;
                 }
 #endif // TARGET_APPLE
+
+#if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
+                if (_useKtls)
+                {
+                    SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
+                    await Task.Run(() => KtlsWriteSync(sslHandle, buffer.Span), cancellationToken).ConfigureAwait(false);
+                    return;
+                }
+#endif
 
                 ValueTask t = buffer.Length < MaxDataSize ?
                     WriteSingleChunk<TIOAdapter>(buffer, cancellationToken) :
