@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -37,6 +37,7 @@ namespace System.Text.Json.SourceGeneration
             private const string OptionsLocalVariableName = "options";
             private const string ValueVarName = "value";
             private const string WriterVarName = "writer";
+            private const string ValueTypeSetterDelegateName = "ValueTypeSetter";
             private const string PreserveReferenceHandlerPropertyName = "Preserve";
             private const string IgnoreCyclesReferenceHandlerPropertyName = "IgnoreCycles";
 
@@ -96,6 +97,12 @@ namespace System.Text.Json.SourceGeneration
             private bool _emitGetConverterForNullablePropertyMethod;
 
             /// <summary>
+            /// Indicates that a value type property setter uses the reflection fallback,
+            /// requiring the <c>ValueTypeSetter</c> delegate type to be emitted.
+            /// </summary>
+            private bool _emitValueTypeSetterDelegate;
+
+            /// <summary>
             /// The SourceText emit implementation filled by the individual Roslyn versions.
             /// </summary>
             private partial void AddSource(string hintName, SourceText sourceText);
@@ -123,7 +130,7 @@ namespace System.Text.Json.SourceGeneration
                 string contextName = contextGenerationSpec.ContextType.Name;
 
                 // Add root context implementation.
-                AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec, _emitGetConverterForNullablePropertyMethod));
+                AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec, _emitGetConverterForNullablePropertyMethod, _emitValueTypeSetterDelegate));
 
                 // Add GetJsonTypeInfo override implementation.
                 AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation(contextGenerationSpec));
@@ -132,6 +139,7 @@ namespace System.Text.Json.SourceGeneration
                 AddSource($"{contextName}.PropertyNames.g.cs", GetPropertyNameInitialization(contextGenerationSpec));
 
                 _emitGetConverterForNullablePropertyMethod = false;
+                _emitValueTypeSetterDelegate = false;
                 _propertyNames.Clear();
                 _typeIndex.Clear();
             }
@@ -594,7 +602,7 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 // Generate UnsafeAccessor methods or reflection cache fields for property accessors.
-                GeneratePropertyAccessors(writer, typeMetadata);
+                _emitValueTypeSetterDelegate |= GeneratePropertyAccessors(writer, typeMetadata);
 
                 // Generate constructor accessor for inaccessible [JsonConstructor] constructors.
                 GenerateConstructorAccessor(writer, typeMetadata);
@@ -772,6 +780,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (property.CanUseUnsafeAccessors)
                     {
+                        // UnsafeAccessor externs for value types take 'ref T'.
                         string castExpr = typeGenerationSpec.TypeRef.IsValueType
                             ? $"ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj)"
                             : $"({declaringTypeFQN})obj";
@@ -783,8 +792,10 @@ namespace System.Text.Json.SourceGeneration
                         return $"static obj => {accessorName}({castExpr})";
                     }
 
+                    // Reflection fallback wrappers are strongly typed; cast in the delegate.
                     string getterName = GetAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex, needsDisambiguation);
-                    return $"static obj => {getterName}(obj)";
+
+                    return $"static obj => {getterName}(({declaringTypeFQN})obj)";
                 }
 
                 return "null";
@@ -852,15 +863,21 @@ namespace System.Text.Json.SourceGeneration
                     return $"static (obj, value) => {fieldName}({castExpr}) = value!";
                 }
 
+                // Reflection fallback wrapper is strongly typed; cast in the delegate like UnsafeAccessor.
                 string setterName = GetAccessorName(typeFriendlyName, "set", property.MemberName, propertyIndex, needsDisambiguation);
-                return $"static (obj, value) => {setterName}(obj, value!)";
+                string setterCastExpr = typeGenerationSpec.TypeRef.IsValueType
+                    ? $"ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj)"
+                    : $"({declaringTypeFQN})obj";
+
+                return $"static (obj, value) => {setterName}({setterCastExpr}, value!)";
             }
 
-            private static void GeneratePropertyAccessors(SourceWriter writer, TypeGenerationSpec typeGenerationSpec)
+            private static bool GeneratePropertyAccessors(SourceWriter writer, TypeGenerationSpec typeGenerationSpec)
             {
                 ImmutableEquatableArray<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecs;
                 HashSet<string> duplicateMemberNames = GetDuplicateMemberNames(properties);
                 bool needsAccessors = false;
+                bool needsValueTypeSetterDelegate = false;
 
                 for (int i = 0; i < properties.Count; i++)
                 {
@@ -912,19 +929,53 @@ namespace System.Text.Json.SourceGeneration
                             writer.WriteLine($"private static extern ref {propertyTypeFQN} {fieldAccessorName}({refPrefix}{declaringTypeFQN} obj);");
                         }
                     }
+                    else if (property.IsProperty)
+                    {
+                        // Reflection fallback for properties: use Delegate.CreateDelegate on the MethodInfo for efficient invocation.
+                        // Wrapper methods are strongly typed to match UnsafeAccessor signatures.
+                        string propertyExpr = $"typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!";
+
+                        if (needsGetterAccessor)
+                        {
+                            string cacheName = GetReflectionCacheName(typeFriendlyName, "get", property.MemberName, i, disambiguate);
+                            string wrapperName = GetAccessorName(typeFriendlyName, "get", property.MemberName, i, disambiguate);
+                            string delegateType = $"global::System.Func<{declaringTypeFQN}, {propertyTypeFQN}>";
+                            writer.WriteLine($"private static {delegateType}? {cacheName};");
+                            writer.WriteLine($"private static {propertyTypeFQN} {wrapperName}({declaringTypeFQN} obj) => ({cacheName} ??= ({delegateType})global::System.Delegate.CreateDelegate(typeof({delegateType}), {propertyExpr}.GetGetMethod(true)!))(obj);");
+                        }
+
+                        if (needsSetterAccessor)
+                        {
+                            string cacheName = GetReflectionCacheName(typeFriendlyName, "set", property.MemberName, i, disambiguate);
+                            string wrapperName = GetAccessorName(typeFriendlyName, "set", property.MemberName, i, disambiguate);
+
+                            if (typeGenerationSpec.TypeRef.IsValueType)
+                            {
+                                // For value types, use a ref-parameter delegate to mutate the unboxed value in-place.
+                                needsValueTypeSetterDelegate = true;
+                                string delegateType = $"{ValueTypeSetterDelegateName}<{declaringTypeFQN}, {propertyTypeFQN}>";
+                                writer.WriteLine($"private static {delegateType}? {cacheName};");
+                                writer.WriteLine($"private static void {wrapperName}(ref {declaringTypeFQN} obj, {propertyTypeFQN} value) => ({cacheName} ??= ({delegateType})global::System.Delegate.CreateDelegate(typeof({delegateType}), {propertyExpr}.GetSetMethod(true)!))(ref obj, value);");
+                            }
+                            else
+                            {
+                                string delegateType = $"global::System.Action<{declaringTypeFQN}, {propertyTypeFQN}>";
+                                writer.WriteLine($"private static {delegateType}? {cacheName};");
+                                writer.WriteLine($"private static void {wrapperName}({declaringTypeFQN} obj, {propertyTypeFQN} value) => ({cacheName} ??= ({delegateType})global::System.Delegate.CreateDelegate(typeof({delegateType}), {propertyExpr}.GetSetMethod(true)!))(obj, value);");
+                            }
+                        }
+                    }
                     else
                     {
-                        // Reflection fallback: generate cached delegate fields and strongly typed wrapper methods.
-                        string memberAccessExpr = property.IsProperty
-                            ? $"typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!"
-                            : $"typeof({declaringTypeFQN}).GetField({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!";
+                        // Reflection fallback for fields: use FieldInfo.GetValue/SetValue (fields don't have MethodInfo).
+                        string fieldExpr = $"typeof({declaringTypeFQN}).GetField({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!";
 
                         if (needsGetterAccessor)
                         {
                             string cacheName = GetReflectionCacheName(typeFriendlyName, "get", property.MemberName, i, disambiguate);
                             string wrapperName = GetAccessorName(typeFriendlyName, "get", property.MemberName, i, disambiguate);
                             writer.WriteLine($"private static global::System.Func<object?, object?>? {cacheName};");
-                            writer.WriteLine($"private static {propertyTypeFQN} {wrapperName}(object obj) => ({propertyTypeFQN})({cacheName} ??= {memberAccessExpr}.GetValue)(obj)!;");
+                            writer.WriteLine($"private static {propertyTypeFQN} {wrapperName}(object obj) => ({propertyTypeFQN})({cacheName} ??= {fieldExpr}.GetValue)(obj)!;");
                         }
 
                         if (needsSetterAccessor)
@@ -932,10 +983,12 @@ namespace System.Text.Json.SourceGeneration
                             string cacheName = GetReflectionCacheName(typeFriendlyName, "set", property.MemberName, i, disambiguate);
                             string wrapperName = GetAccessorName(typeFriendlyName, "set", property.MemberName, i, disambiguate);
                             writer.WriteLine($"private static global::System.Action<object?, object?>? {cacheName};");
-                            writer.WriteLine($"private static void {wrapperName}(object obj, {propertyTypeFQN} value) => ({cacheName} ??= {memberAccessExpr}.SetValue)(obj, value);");
+                            writer.WriteLine($"private static void {wrapperName}(object obj, {propertyTypeFQN} value) => ({cacheName} ??= {fieldExpr}.SetValue)(obj, value);");
                         }
                     }
                 }
+
+                return needsValueTypeSetterDelegate;
             }
 
             /// <summary>
@@ -1508,7 +1561,7 @@ namespace System.Text.Json.SourceGeneration
                     """);
             }
 
-            private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec, bool emitGetConverterForNullablePropertyMethod)
+            private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec, bool emitGetConverterForNullablePropertyMethod, bool emitValueTypeSetterDelegate)
             {
                 string contextTypeRef = contextSpec.ContextType.FullyQualifiedName;
                 string contextTypeName = contextSpec.ContextType.Name;
@@ -1531,6 +1584,12 @@ namespace System.Text.Json.SourceGeneration
                         global::System.Reflection.BindingFlags.NonPublic;
 
                     """);
+
+                if (emitValueTypeSetterDelegate)
+                {
+                    writer.WriteLine($"private delegate void {ValueTypeSetterDelegateName}<TDeclaringType, TValue>(ref TDeclaringType obj, TValue value);");
+                    writer.WriteLine();
+                }
 
                 writer.WriteLine($$"""
                     /// <summary>
