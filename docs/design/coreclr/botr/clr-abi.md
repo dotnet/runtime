@@ -725,7 +725,7 @@ The prolog will decrement the stack pointer by the fixed frame size, home any ar
 
 So on exit from the prolog the stack pointer (`$sp`) will point to the bottom of the fixed part of the stack frame. The frame pointer (`$fp`) if used, will also point to the bottom of fixed part of the stack frame. `$sp` and `$fp` will only differ in methods that can allocate extra storage on the stack at runtime (typically from `localloc`). The stack is kept 16 byte aligned.
 
-For methods that can be interrupted by GC or EH (generaly speaking: methods with gc safe calls) the prolog also saves a frame descriptor onto the stack, for use during GC and EH. By convention this value is stored at `fp[0]`. Since only `sp` will be availble to to unwinding (by virtue of being saved to `$__stack_pointer`) we adopt the convention that when `$sp` moves in the middle of the method, `$sp[0]` is set to `$fp`.
+For methods that can be interrupted by GC or EH (generally speaking: methods with gc safe calls) the prolog also saves a frame descriptor onto the stack, for use during GC and EH. By convention this value is stored at `fp[0]`. Since only `sp` will be available for unwinding (by virtue of being saved to `$__stack_pointer`) we adopt the convention that when `$sp` moves in the middle of the method, `$sp[0]` is set to `$fp`.
 
 Thus to access information for EH/GC/unwinding, the frame descriptor `fd` can be found from the managed frame `$sp` as follows:
 * `fd = $sp[0]`
