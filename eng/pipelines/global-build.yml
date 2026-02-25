@@ -23,6 +23,7 @@ pr:
     - eng/pipelines/installer/*.*
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
+    - src/mono/wasm/**  # TEMPORARILY DISABLED for WBT dev loop
 
 variables:
   - template: /eng/pipelines/common/variables.yml
