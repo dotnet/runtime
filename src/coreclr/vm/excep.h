@@ -675,16 +675,10 @@ enum ExceptionNotificationHandlerType
 class ExceptionNotifications
 {
 private:
-    void static GetEventArgsForNotification(ExceptionNotificationHandlerType notificationType,
-        OBJECTREF *pOutEventArgs, OBJECTREF *pThrowable);
-
     void static DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
         OBJECTREF *pThrowable);
 
 public:
-    void static DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs,
-        OBJECTREF *pAppDomain);
-
     BOOL static CanDeliverNotificationToCurrentAppDomain(ExceptionNotificationHandlerType notificationType);
 
     void static DeliverNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pThrowable);

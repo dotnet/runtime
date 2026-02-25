@@ -431,7 +431,7 @@ DEFINE_METASIG_T(SM(PtrObj_PtrObj_PtrException_RetVoid, P(j) P(j) P(C(EXCEPTION)
 DEFINE_METASIG_T(SM(PtrObj_PtrStr_PtrException_RetVoid, P(j) P(s) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrException_PtrException_RetVoid, P(C(EXCEPTION)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrChar_PtrException_PtrObj_PtrException_RetVoid, P(u) P(C(EXCEPTION)) P(j) P(C(EXCEPTION)), v))
-DEFINE_METASIG_T(SM(PtrException_PtrObj_PtrException_RetVoid, P(C(EXCEPTION)) P(j) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrDelegate_PtrException_PtrException_RetVoid, P(C(DELEGATE)) P(C(EXCEPTION)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrChar_PtrStr_PtrException_RetVoid, P(u) P(s) P(C(EXCEPTION)), v))
 
 // fields - e.g.:

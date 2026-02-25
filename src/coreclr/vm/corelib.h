@@ -303,7 +303,7 @@ DEFINE_CLASS(EXCEPTION,             System,                 Exception)
 DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, SM_PtrException_PtrException_RetVoid)
 DEFINE_METHOD(EXCEPTION,            CREATE_RUNTIME_WRAPPED_EXCEPTION, CreateRuntimeWrappedException, SM_PtrObj_PtrObj_PtrException_RetVoid)
 DEFINE_METHOD(EXCEPTION,            CREATE_TYPE_INIT_EXCEPTION, CreateTypeInitializationException, SM_PtrChar_PtrException_PtrObj_PtrException_RetVoid)
-DEFINE_METHOD(EXCEPTION,            CREATE_FIRSTCHANCE_EVENTARGS, CreateFirstChanceExceptionEventArgs, SM_PtrException_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(EXCEPTION,            DELIVER_FIRSTCHANCE_NOTIFICATION, DeliverFirstChanceNotification, SM_PtrDelegate_PtrException_PtrException_RetVoid)
 DEFINE_METHOD(EXCEPTION,            GET_TO_STRING,          GetToString,                SM_PtrObj_PtrStr_PtrException_RetVoid)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            GET_DESCRIPTION_BSTR,   GetDescriptionBstr,         SM_PtrException_PtrException_RetIntPtr)

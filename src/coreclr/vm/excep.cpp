@@ -9482,78 +9482,9 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
 }
 
 #ifndef DACCESS_COMPILE
-// This method will deliver the actual exception notification. Its assumed that the caller has done the necessary checks, including
-// checking whether the delegate can be invoked for the exception's corruption severity.
-void ExceptionNotifications::DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate,
-        OBJECTREF *pAppDomain, OBJECTREF *pEventArgs)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pDelegate  != NULL && IsProtectedByGCFrame(pDelegate) && (*pDelegate != NULL));
-        PRECONDITION(pEventArgs != NULL && IsProtectedByGCFrame(pEventArgs));
-        PRECONDITION(pAppDomain != NULL && IsProtectedByGCFrame(pAppDomain));
-    }
-    CONTRACTL_END;
-
-    PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(DELEGATEREF(*pDelegate)->GetMethodPtr());
-
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
-
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(DELEGATEREF(*pDelegate)->GetTarget());
-    args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(*pAppDomain);
-    args[ARGNUM_2] = OBJECTREF_TO_ARGHOLDER(*pEventArgs);
-
-    CALL_MANAGED_METHOD_NORET(args);
-}
 
 // To include definition of COMDelegate::GetMethodDesc
 #include "comdelegate.h"
-
-// This method constructs the arguments to be passed to the exception notification event callback
-void ExceptionNotifications::GetEventArgsForNotification(ExceptionNotificationHandlerType notificationType,
-                                                         OBJECTREF *pOutEventArgs, OBJECTREF *pThrowable)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(notificationType != UnhandledExceptionHandler);
-        PRECONDITION((pOutEventArgs != NULL) && IsProtectedByGCFrame(pOutEventArgs));
-        PRECONDITION(*pOutEventArgs == NULL);
-        PRECONDITION((pThrowable != NULL) && (*pThrowable != NULL) && IsProtectedByGCFrame(pThrowable));
-        PRECONDITION(IsException((*pThrowable)->GetMethodTable())); // We expect a valid exception object
-    }
-    CONTRACTL_END;
-
-    EX_TRY
-    {
-        switch(notificationType)
-        {
-            case FirstChanceExceptionHandler:
-            {
-                // FirstChance notification takes only a single argument: the exception object.
-                UnmanagedCallersOnlyCaller createEventArgs(METHOD__EXCEPTION__CREATE_FIRSTCHANCE_EVENTARGS);
-                createEventArgs.InvokeThrowing(pThrowable, pOutEventArgs);
-                break;
-            }
-            default:
-                _ASSERTE(!"Invalid Exception Notification Handler!");
-                break;
-        }
-    }
-    EX_CATCH
-    {
-        // Set event args to be NULL incase of any error (e.g. OOM)
-        *pOutEventArgs = NULL;
-        LOG((LF_EH, LL_INFO100, "ExceptionNotifications::GetEventArgsForNotification: Setting event args to NULL due to an exception.\n"));
-        RethrowTerminalExceptions();
-    }
-    EX_END_CATCH
-}
 
 // This SEH filter will be invoked when an exception escapes out of the exception notification
 // callback and enters the runtime. In such a case, we ill simply failfast.
@@ -9641,31 +9572,13 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
     }
     CONTRACTL_END;
 
-    Thread *pCurThread = GetThreadNULLOk();
-    _ASSERTE(pCurThread != NULL);
-
-    // Get the current AppDomain
-    AppDomain *pCurDomain = GetAppDomain();
-    _ASSERTE(pCurDomain != NULL);
-
     struct
     {
         OBJECTREF oNotificationDelegate;
-        PTRARRAYREF arrDelegates;
-        OBJECTREF   oInnerDelegate;
-        OBJECTREF   oEventArgs;
-        OBJECTREF   oCurrentThrowable;
-        OBJECTREF   oCurAppDomain;
+        OBJECTREF oCurrentThrowable;
     } gc;
     gc.oNotificationDelegate = NULL;
-    gc.arrDelegates = NULL;
-    gc.oInnerDelegate = NULL;
-    gc.oEventArgs = NULL;
     gc.oCurrentThrowable = NULL;
-    gc.oCurAppDomain = NULL;
-
-    // This will hold the MethodDesc of the callback that will be invoked.
-    MethodDesc *pMDDelegate = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -9674,10 +9587,6 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
 
     // We expect a valid exception object
     _ASSERTE(IsException(gc.oCurrentThrowable->GetMethodTable()));
-
-    // Save the reference to the current AppDomain. If the user code has
-    // wired upto this event, then the managed AppDomain object will exist.
-    gc.oCurAppDomain = pCurDomain->GetRawExposedObject();
 
     // Get the reference to the delegate based upon the type of notification
     if (notificationType == FirstChanceExceptionHandler)
@@ -9695,35 +9604,19 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
         // Prevent any async exceptions from this moment on this thread
         ThreadPreventAsyncHolder prevAsync;
 
-        gc.oEventArgs = NULL;
-
-        // Get the arguments to be passed to the delegate callback. Incase of any
-        // problem while allocating the event args, we will return a NULL.
-        ExceptionNotifications::GetEventArgsForNotification(notificationType, &gc.oEventArgs,
-            &gc.oCurrentThrowable);
-
-        // Check if there are multiple callbacks registered? If there are, we will
-        // loop through them, invoking each one at a time. Before invoking the target,
-        // we will check if the target can be invoked based upon the corruption severity
-        // for the active exception that was passed to us.
-        gc.arrDelegates = (PTRARRAYREF) ((DELEGATEREF)(gc.oNotificationDelegate))->GetInvocationList();
-        if (gc.arrDelegates == NULL || !gc.arrDelegates->GetMethodTable()->IsArray())
+        // Construct event args and invoke the delegate in managed code.
+        // Multicast delegate invocation is handled by managed Delegate.Invoke.
+        EX_TRY
         {
-            ExceptionNotifications::DeliverExceptionNotification(notificationType, &gc.oNotificationDelegate, &gc.oCurAppDomain, &gc.oEventArgs);
+            UnmanagedCallersOnlyCaller deliverNotification(METHOD__EXCEPTION__DELIVER_FIRSTCHANCE_NOTIFICATION);
+            deliverNotification.InvokeThrowing(&gc.oNotificationDelegate, &gc.oCurrentThrowable);
         }
-        else
+        EX_CATCH
         {
-            // The _invocationCount could be less than the array size, if we are sharing
-            // immutable arrays cleverly.
-            UINT_PTR      cnt = ((DELEGATEREF)(gc.oNotificationDelegate))->GetInvocationCount();
-            _ASSERTE(cnt <= gc.arrDelegates->GetNumComponents());
-
-            for (UINT_PTR i=0; i<cnt; i++)
-            {
-                gc.oInnerDelegate = gc.arrDelegates->m_Array[i];
-                ExceptionNotifications::DeliverExceptionNotification(notificationType, &gc.oInnerDelegate, &gc.oCurAppDomain, &gc.oEventArgs);
-            }
+            LOG((LF_EH, LL_INFO100, "ExceptionNotifications::DeliverNotificationInternal: Exception during notification delivery.\n"));
+            RethrowTerminalExceptions();
         }
+        EX_END_CATCH
     }
 
     GCPROTECT_END();
