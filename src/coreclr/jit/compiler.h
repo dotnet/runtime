@@ -2559,7 +2559,7 @@ class Compiler
     friend class MorphCopyBlockHelper;
     friend class SharedTempsScope;
     friend class CallArgs;
-    friend class InlineAndDevirtualizeWalker;
+    friend class DevirtualizeAndInlineWalker;
     friend class IndirectCallTransformer;
     friend class ProfileSynthesis;
     friend class LocalsUseVisitor;

@@ -202,7 +202,7 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
     return false;
 }
 
-class InlineAndDevirtualizeWalker : public GenTreeVisitor<InlineAndDevirtualizeWalker>
+class DevirtualizeAndInlineWalker : public GenTreeVisitor<DevirtualizeAndInlineWalker>
 {
     bool        m_madeChanges   = false;
     BasicBlock* m_block         = nullptr;
@@ -219,7 +219,7 @@ public:
         UseExecutionOrder = true,
     };
 
-    InlineAndDevirtualizeWalker(Compiler* comp)
+    DevirtualizeAndInlineWalker(Compiler* comp)
         : GenTreeVisitor(comp)
     {
     }
@@ -260,21 +260,14 @@ public:
             return fgWalkResult::WALK_SKIP_SUBTREES;
         }
 
-        while ((*use)->IsCall() && TryInline(use, user))
-        {
-            if (m_nextBlock != nullptr)
-            {
-                return fgWalkResult::WALK_ABORT;
-            }
-        }
-
         return fgWalkResult::WALK_CONTINUE;
     }
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         LateDevirtualization(use, user);
-        if (m_nextBlock != nullptr)
+
+        if ((*use)->IsCall() && TryInline(use, user))
         {
             // Restart process.
             return fgWalkResult::WALK_ABORT;
@@ -322,6 +315,8 @@ private:
 
         if (InsertMidStatement(inlineInfo, use))
         {
+            m_nextBlock = m_block;
+            m_nextStatement = m_statement;
             return true;
         }
 
@@ -673,7 +668,8 @@ private:
             return false;
         }
 
-        JITDUMP("Inlinee tree can be inserted mid-statement\n");
+        JITDUMP("Inlinee tree inserted mid-statement\n");
+        DISPSTMT(m_statement);
 
         assert(!inlineeComp->fgFirstBB->hasTryIndex());
         assert(!inlineeComp->fgFirstBB->hasHndIndex());
@@ -890,10 +886,6 @@ private:
                     callInfo.methodFlags       = methodFlags;
                     m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext,
                                                        DebugInfo(inlinersContext, ilLocation));
-                    // Reprocess the statement to pick up the inline in preorder.
-                    assert(m_nextBlock == nullptr);
-                    m_nextBlock     = m_block;
-                    m_nextStatement = m_statement;
                 }
                 m_madeChanges = true;
             }
@@ -1072,7 +1064,7 @@ PhaseStatus Compiler::fgInline()
 
     noway_assert(fgFirstBB != nullptr);
 
-    InlineAndDevirtualizeWalker walker(this);
+    DevirtualizeAndInlineWalker walker(this);
     bool                        madeChanges  = false;
     BasicBlock*                 currentBlock = fgFirstBB;
 
