@@ -104,16 +104,39 @@ namespace TestLibrary
         public static bool IsBrowser => OperatingSystem.IsBrowser();
         public static bool IsWasi => OperatingSystem.IsWasi();
         public static bool IsWasm => IsBrowser || IsWasi;
+        public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
 
         // TODO-WASM: https://github.com/dotnet/runtime/issues/124748
         // this is compiled with 11.0.0-preview.1.26104.118\ref
         // which doesn't have the RuntimeFeature.IsMultithreadingSupported API yet.
         // after we update to a newer ref, we should use RuntimeFeature.IsMultithreadingSupported directly.
         // public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
-        public static bool IsMultithreadingSupported => GetIsMultithreadingSupported(null);
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_IsMultithreadingSupported")]
-        static extern bool GetIsMultithreadingSupported([UnsafeAccessorType("System.Runtime.CompilerServices.RuntimeFeature, System.Private.CoreLib")] object? _);
-        public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
+        public static bool IsMultithreadingSupported
+        {
+            get
+            {
+                if (!IsWasm)
+                    return true;
+
+                try
+                {
+                    Type runtimeFeatureType = typeof(object).Assembly.GetType("System.Runtime.CompilerServices.RuntimeFeature");
+                    if (runtimeFeatureType != null)
+                    {
+                        var isMultithreadingSupportedProperty = runtimeFeatureType.GetProperty("IsMultithreadingSupported", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                        if (isMultithreadingSupportedProperty != null)
+                        {
+                            return (bool)isMultithreadingSupportedProperty.GetValue(null);
+                        }
+                    }
+                }
+                catch
+                {
+                    // if any of the reflection calls fail, assume multithreading is not supported.
+                }
+                return false;
+            }
+        }
 
         private static bool IsEnvironmentVariableTrue(string variableName)
         {

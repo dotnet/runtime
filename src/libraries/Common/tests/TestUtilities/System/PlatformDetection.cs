@@ -142,9 +142,32 @@ namespace System
 #if NET11_0_OR_GREATER
         public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
 #else
-        public static bool IsMultithreadingSupported => GetIsMultithreadingSupported(null);
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_IsMultithreadingSupported")]
-        static extern bool GetIsMultithreadingSupported([UnsafeAccessorType("System.Runtime.CompilerServices.RuntimeFeature, System.Private.CoreLib")] object? _);
+        public static bool IsMultithreadingSupported
+        {
+            get
+            {
+                if (!IsWasm)
+                    return true;
+
+                try
+                {
+                    Type runtimeFeatureType = typeof(object).Assembly.GetType("System.Runtime.CompilerServices.RuntimeFeature");
+                    if (runtimeFeatureType != null)
+                    {
+                        var isMultithreadingSupportedProperty = runtimeFeatureType.GetProperty("IsMultithreadingSupported", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                        if (isMultithreadingSupportedProperty != null)
+                        {
+                            return (bool)isMultithreadingSupportedProperty.GetValue(null);
+                        }
+                    }
+                }
+                catch
+                {
+                    // if any of the reflection calls fail, assume multithreading is not supported.
+                }
+                return false;
+            }
+        }
 #endif
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
         public static bool IsWasmThreadingSupported => IsBrowser && IsMultithreadingSupported;
