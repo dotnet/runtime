@@ -151,14 +151,12 @@ namespace System
 
                 try
                 {
-                    Type runtimeFeatureType = typeof(object).Assembly.GetType("System.Runtime.CompilerServices.RuntimeFeature");
-                    if (runtimeFeatureType != null)
+                    Type runtimeFeatureType = typeof(System.Runtime.CompilerServices.RuntimeFeature);
+
+                    PropertyInfo isMultithreadingSupportedProperty = runtimeFeatureType.GetProperty("IsMultithreadingSupported", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    if (isMultithreadingSupportedProperty != null)
                     {
-                        var isMultithreadingSupportedProperty = runtimeFeatureType.GetProperty("IsMultithreadingSupported", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                        if (isMultithreadingSupportedProperty != null)
-                        {
-                            return (bool)isMultithreadingSupportedProperty.GetValue(null);
-                        }
+                        return (bool)isMultithreadingSupportedProperty.GetValue(null);
                     }
                 }
                 catch
