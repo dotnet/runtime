@@ -88,17 +88,17 @@ void DebugInfo::Validate() const
         if (!di.IsValid())
             continue;
 
-        // bool isValidOffs = di.GetLocation().GetOffset() < di.GetInlineContext()->GetILSize();
-        // if (isValidOffs)
-        //{
-        //     bool isValidStart = di.GetInlineContext()->GetILInstsSet()->bitVectTest(di.GetLocation().GetOffset());
-        //     assert(isValidStart &&
-        //            "Detected invalid debug info: IL offset does not refer to the start of an IL instruction");
-        // }
-        // else
-        //{
-        //     assert(!"Detected invalid debug info: IL offset is out of range");
-        // }
+        bool isValidOffs = di.GetLocation().GetOffset() < di.GetInlineContext()->GetILSize();
+        if (isValidOffs)
+        {
+            bool isValidStart = di.GetInlineContext()->GetILInstsSet()->bitVectTest(di.GetLocation().GetOffset());
+            assert(isValidStart &&
+                   "Detected invalid debug info: IL offset does not refer to the start of an IL instruction");
+        }
+        else
+        {
+            assert(!"Detected invalid debug info: IL offset is out of range");
+        }
 
     } while (di.GetParent(&di));
 }

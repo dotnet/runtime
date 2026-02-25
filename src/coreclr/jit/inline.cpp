@@ -1275,7 +1275,7 @@ InlineContext* InlineStrategy::NewRoot()
     return rootContext;
 }
 
-InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statement* stmt, GenTreeCall* call)
+InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, GenTreeCall* call)
 {
     InlineContext* context = new (m_compiler, CMK_Inlining) InlineContext(this);
 
@@ -1295,6 +1295,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
         context->m_ILSize           = info->methInfo.ILCodeSize;
         context->m_ActualCallOffset = info->ilOffset;
         context->m_RuntimeContext   = info->exactContextHandle;
+        context->m_Location         = info->containingStatementLocation;
     }
     else
     {
@@ -1310,8 +1311,8 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     // call <foo>
     // which becomes a single statement where the IL location points to the
     // ldarg instruction.
-    context->m_Location = stmt->GetDebugInfo().GetLocation();
-    context->m_Callee   = call->gtCallMethHnd;
+    // DebugInfo(parentContext, context->m_Location).Validate();
+    context->m_Callee = call->gtCallMethHnd;
 
 #if defined(DEBUG)
     context->m_Devirtualized = call->IsDevirtualized();

@@ -637,6 +637,8 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CorInfoInitClassResult initClassResult;
     bool                   exactContextNeedsRuntimeLookup;
     InlineContext*         inlinersContext;
+
+    ILLocation containingStatementLocation;
 };
 
 // LateDevirtualizationInfo
@@ -647,7 +649,7 @@ struct LateDevirtualizationInfo
 {
     CORINFO_METHOD_HANDLE  methodHnd;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
-    InlineContext*         inlinersContext;
+    ILLocation             ilLocation;
 };
 
 // InlArgInfo describes inline candidate argument properties.
@@ -742,7 +744,6 @@ struct InlineInfo
 #endif // FEATURE_SIMD
 
     GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
-    Statement*   iciStmt;  // The statement iciCall is in.
     BasicBlock*  iciBlock; // The basic block iciStmt is in.
 
     StatementListBuilder setupStatements;
@@ -981,8 +982,8 @@ public:
     // Construct a new inline strategy.
     InlineStrategy(Compiler* compiler);
 
-    // Create context for the specified inline candidate contained in the specified statement.
-    InlineContext* NewContext(InlineContext* parentContext, Statement* stmt, GenTreeCall* call);
+    // Create context for the specified inline candidate.
+    InlineContext* NewContext(InlineContext* parentContext, GenTreeCall* call);
 
     // Compiler associated with this strategy
     Compiler* GetCompiler() const

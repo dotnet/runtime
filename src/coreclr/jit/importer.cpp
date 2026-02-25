@@ -2077,6 +2077,8 @@ void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
     {
         impCurStmtDI = impCreateDIWithCurrentStackInfo(offs, false);
     }
+
+    impCurStmtDI.Validate();
 }
 
 //------------------------------------------------------------------------
@@ -13010,7 +13012,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     if (impIsInvariant(curArgVal))
     {
         argInfo->argIsInvariant = true;
-        if (argInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
+        if (argInfo->argIsThis && curArgVal->OperIs(GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
         {
             // Abort inlining at this call site
             inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);
@@ -13050,7 +13052,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         }
         else
         {
-            printf("Argument #%u:", pInlineInfo->iciCall->gtArgs.GetIndex(arg));
+            printf("IL Argument #%u:", pInlineInfo->iciCall->gtArgs.GetUserIndex(arg));
         }
         if (argInfo->argIsLclVar)
         {

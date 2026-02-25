@@ -1065,7 +1065,7 @@ DEVIRT:
 
                 // Is it an inline candidate?
                 impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                       compInlineContext);
+                                       compInlineContext, impCurStmtDI);
             }
 
             // append the call node.
@@ -1276,7 +1276,8 @@ DONE:
         INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
         // Is it an inline candidate?
-        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, compInlineContext);
+        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, compInlineContext,
+                               impCurStmtDI);
 
         // If the call is virtual, record the inliner's context for possible use during late devirt inlining.
         // Also record the generics context if there is any.
@@ -1288,7 +1289,7 @@ DONE:
             LateDevirtualizationInfo* const info       = new (this, CMK_Inlining) LateDevirtualizationInfo;
             info->methodHnd                            = callInfo->hMethod;
             info->exactContextHnd                      = exactContextHnd;
-            info->inlinersContext                      = compInlineContext;
+            info->ilLocation                           = impCurStmtDI.GetLocation();
             call->AsCall()->gtLateDevirtualizationInfo = info;
         }
     }
@@ -6222,7 +6223,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 else
                 {
                     uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                    result        = gtNewIconNode((int32_t)BitOperations::RotateLeft(cns1, cns2), baseType);
+                    result        = gtNewIconNode(BitOperations::RotateLeft(cns1, cns2), baseType);
                 }
                 break;
             }
@@ -6266,7 +6267,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 if (varTypeIsLong(baseType))
                 {
                     uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
-                    result        = gtNewLconNode(BitOperations::RotateRight(cns1, cns2));
+                    result        = gtNewLconNode((int32_t)BitOperations::RotateRight(cns1, cns2));
                 }
                 else
                 {
@@ -7886,6 +7887,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
 //    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
 //    inlinersContext -- the inliner's context
+//    debugInfo -- debug info that will be the parent debug info of statements from the inlinee
 //
 // Notes:
 //    Mostly a wrapper for impMarkInlineCandidateHelper that also undoes
@@ -7896,7 +7898,8 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
-                                      InlineContext*         inlinersContext)
+                                      InlineContext*         inlinersContext,
+                                      const DebugInfo&       debugInfo)
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
@@ -7919,7 +7922,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 
             // Do the actual evaluation
             impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                         inlinersContext, &inlineResult);
+                                         inlinersContext, &inlineResult, debugInfo);
             // Ignore non-inlineable candidates
             // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
             // calls on NativeAOT, but that requires more changes elsewhere too.
@@ -7943,7 +7946,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         assert(candidatesCount <= 1);
         InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
         impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                     inlinersContext, &inlineResult);
+                                     inlinersContext, &inlineResult, debugInfo);
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
@@ -7977,6 +7980,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
 //    inlinersContext -- the inliner's context
+//    debugInfo -- debug info that will be the parent debug info of statements from the inlinee
 //
 // Notes:
 //    If callNode is an inline candidate, this method sets the flag
@@ -7994,7 +7998,8 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
                                             bool                   exactContextNeedsRuntimeLookup,
                                             CORINFO_CALL_INFO*     callInfo,
                                             InlineContext*         inlinersContext,
-                                            InlineResult*          inlineResult)
+                                            InlineResult*          inlineResult,
+                                            const DebugInfo&       debugInfo)
 {
     // Let the strategy know there's another call
     impInlineRoot()->m_inlineStrategy->NoteCall();
@@ -8203,8 +8208,8 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     }
 
     InlineCandidateInfo* inlineCandidateInfo = nullptr;
-    impCheckCanInline(call, candidateIndex, fncHandle, methAttr, exactContextHnd, inlinersContext, &inlineCandidateInfo,
-                      inlineResult);
+    impCheckCanInline(call, candidateIndex, fncHandle, methAttr, exactContextHnd, inlinersContext, debugInfo,
+                      &inlineCandidateInfo, inlineResult);
 
     if (inlineResult->IsFailure())
     {
@@ -9608,6 +9613,7 @@ bool Compiler::impTailCallRetTypeCompatible(bool                     allowWideni
 //   methAttr - attributes for the method
 //   exactContextHnd - exact context for the method
 //   inlinersContext - the inliner's context
+//   debugInfo -- debug info that will be the parent debug info of statements from the inlinee
 //   ppInlineCandidateInfo [out] - information needed later for inlining
 //   inlineResult - result of ongoing inline evaluation
 //
@@ -9621,6 +9627,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                                  unsigned               methAttr,
                                  CORINFO_CONTEXT_HANDLE exactContextHnd,
                                  InlineContext*         inlinersContext,
+                                 const DebugInfo&       debugInfo,
                                  InlineCandidateInfo**  ppInlineCandidateInfo,
                                  InlineResult*          inlineResult)
 {
@@ -9636,6 +9643,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         unsigned               methAttr;
         CORINFO_CONTEXT_HANDLE exactContextHnd;
         InlineContext*         inlinersContext;
+        const DebugInfo*       debugInfo;
         InlineResult*          result;
         InlineCandidateInfo**  ppInlineCandidateInfo;
     } param;
@@ -9648,6 +9656,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
     param.methAttr              = methAttr;
     param.exactContextHnd       = (exactContextHnd != nullptr) ? exactContextHnd : MAKE_METHODCONTEXT(fncHandle);
     param.inlinersContext       = inlinersContext;
+    param.debugInfo             = &debugInfo;
     param.result                = inlineResult;
     param.ppInlineCandidateInfo = ppInlineCandidateInfo;
 
@@ -9801,6 +9810,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         pInfo->initClassResult                = initClassResult;
         pInfo->exactContextNeedsRuntimeLookup = false;
         pInfo->inlinersContext                = pParam->inlinersContext;
+        pInfo->containingStatementLocation    = pParam->debugInfo->GetLocation();
+        assert((pParam->debugInfo->GetInlineContext() == pParam->inlinersContext) || !pParam->debugInfo->IsValid());
 
         // Note exactContextNeedsRuntimeLookup is reset later on,
         // over in impMarkInlineCandidate.

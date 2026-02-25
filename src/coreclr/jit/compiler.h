@@ -5156,6 +5156,7 @@ private:
                            unsigned               methAttr,
                            CORINFO_CONTEXT_HANDLE exactContextHnd,
                            InlineContext*         inlinersContext,
+                           const DebugInfo&       debugInfo,
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
@@ -5178,7 +5179,8 @@ private:
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
                                 CORINFO_CALL_INFO*     callInfo,
-                                InlineContext*         inlinersContext);
+                                InlineContext*         inlinersContext,
+                                const DebugInfo&       debugInfo);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       uint8_t                candidateIndex,
@@ -5186,7 +5188,8 @@ private:
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
                                       InlineContext*         inlinersContext,
-                                      InlineResult*          inlineResult);
+                                      InlineResult*          inlineResult,
+                                      const DebugInfo&       debugInfo);
 
     bool impTailCallRetTypeCompatible(bool                     allowWidening,
                                       var_types                callerRetType,
@@ -6633,7 +6636,7 @@ private:
     void fgMorphCallInline(InlineInfo& inlineInfo, GenTreeCall* call, InlineResult* result);
     void fgMorphCallInlineHelper(InlineInfo& inlineInfo, GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
 #if DEBUG
-    void fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call);
+    void fgNoteNonInlineCandidate(GenTreeCall* call);
     static fgWalkPreFn fgFindNonInlineCandidate;
 #endif
     GenTree* fgOptimizeDelegateConstructor(GenTreeCall*            call,

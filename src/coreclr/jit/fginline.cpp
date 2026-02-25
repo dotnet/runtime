@@ -868,9 +868,10 @@ private:
                 }
 #endif // DEBUG
 
+                InlineContext*         inlinersContext        = call->gtInlineContext;
                 CORINFO_METHOD_HANDLE  method                 = call->gtLateDevirtualizationInfo->methodHnd;
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
-                InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
+                ILLocation             ilLocation             = call->gtLateDevirtualizationInfo->ilLocation;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
@@ -887,7 +888,8 @@ private:
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;
                     callInfo.methodFlags       = methodFlags;
-                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext);
+                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext,
+                                                       DebugInfo(inlinersContext, ilLocation));
                     // Reprocess the statement to pick up the inline in preorder.
                     assert(m_nextBlock == nullptr);
                     m_nextBlock     = m_block;
@@ -1082,7 +1084,7 @@ PhaseStatus Compiler::fgInline()
             // In debug builds we want the inline tree to show all failed
             // inlines. Some inlines may fail very early and never make it to
             // candidate stage. So scan the tree looking for those early failures.
-            INDEBUG(fgWalkTreePre(currentStmt->GetRootNodePointer(), fgFindNonInlineCandidate, currentStmt));
+            INDEBUG(fgWalkTreePre(currentStmt->GetRootNodePointer(), fgFindNonInlineCandidate, nullptr));
 
             walker.VisitStatement(currentBlock, currentStmt);
 
@@ -1189,8 +1191,8 @@ void Compiler::fgMorphCallInline(InlineInfo& inlineInfo, GenTreeCall* call, Inli
             {
 #ifdef DEBUG
                 // In debug we always put all inline attempts into the inline tree.
-                InlineContext* ctx = m_inlineStrategy->NewContext(call->GetSingleInlineCandidateInfo()->inlinersContext,
-                                                                  fgMorphStmt, call);
+                InlineContext* ctx =
+                    m_inlineStrategy->NewContext(call->GetSingleInlineCandidateInfo()->inlinersContext, call);
                 ctx->SetFailed(inlineResult);
 #endif
             }
@@ -1389,10 +1391,9 @@ Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWal
     if (tree->OperIs(GT_CALL))
     {
         Compiler*    compiler = data->m_compiler;
-        Statement*   stmt     = (Statement*)data->pCallbackData;
         GenTreeCall* call     = tree->AsCall();
 
-        compiler->fgNoteNonInlineCandidate(stmt, call);
+        compiler->fgNoteNonInlineCandidate(call);
     }
     return WALK_CONTINUE;
 }
@@ -1402,14 +1403,13 @@ Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWal
 // not marked as inline candidates.
 //
 // Arguments:
-//    stmt  - statement containing the call
 //    call  - the call itself
 //
 // Notes:
 //    Used in debug only to try and place descriptions of inline failures
 //    into the proper context in the inline tree.
 
-void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
+void Compiler::fgNoteNonInlineCandidate(GenTreeCall* call)
 {
     if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate() || call->WasInlineCandidate())
     {
@@ -1433,7 +1433,7 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
 
     if (call->gtCallType == CT_USER_FUNC)
     {
-        m_inlineStrategy->NewContext(call->gtInlineContext, stmt, call)->SetFailed(&inlineResult);
+        m_inlineStrategy->NewContext(call->gtInlineContext, call)->SetFailed(&inlineResult);
     }
 }
 
@@ -1473,7 +1473,6 @@ void Compiler::fgInvokeInlineeCompiler(InlineInfo&     inlineInfo,
 
     inlineInfo.fncHandle              = fncHandle;
     inlineInfo.iciCall                = call;
-    inlineInfo.iciStmt                = fgMorphStmt;
     inlineInfo.iciBlock               = compCurBB;
     inlineInfo.thisDereferencedFirst  = false;
     inlineInfo.retExprClassHnd        = nullptr;
@@ -1548,8 +1547,7 @@ void Compiler::fgInvokeInlineeCompiler(InlineInfo&     inlineInfo,
             // late as possible, which is here.
             pParam->inlineInfo->inlineContext =
                 pParam->inlineInfo->InlineRoot->m_inlineStrategy
-                    ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt,
-                                              pParam->inlineInfo->iciCall);
+                    ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciCall);
             pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
             pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHandle;
 
@@ -2132,9 +2130,9 @@ void Compiler::fgInsertInlineeArgument(StatementListBuilder& statements,
 //
 void Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 {
-    BasicBlock*      block  = inlineInfo->iciBlock;
-    const DebugInfo& callDI = inlineInfo->iciStmt->GetDebugInfo();
-    GenTreeCall*     call   = inlineInfo->iciCall->AsCall();
+    BasicBlock*  block  = inlineInfo->iciBlock;
+    DebugInfo    callDI = DebugInfo(inlineInfo->inlineContext->GetParent(), inlineInfo->inlineContext->GetLocation());
+    GenTreeCall* call   = inlineInfo->iciCall->AsCall();
 
     noway_assert(call->OperIs(GT_CALL));
 
@@ -2308,8 +2306,7 @@ void Compiler::fgInlineAppendStatements(class StatementListBuilder& statements, 
 
     JITDUMP("fgInlineAppendStatements: nulling out gc ref inlinee locals.\n");
 
-    Statement*           callStmt          = inlineInfo->iciStmt;
-    const DebugInfo&     callDI            = callStmt->GetDebugInfo();
+    DebugInfo callDI = DebugInfo(inlineInfo->inlineContext->GetParent(), inlineInfo->inlineContext->GetLocation());
     CORINFO_METHOD_INFO* InlineeMethodInfo = InlineeCompiler->info.compMethodInfo;
     const unsigned       lclCnt            = InlineeMethodInfo->locals.numArgs;
     InlLclVarInfo*       lclVarInfo        = inlineInfo->lclVarInfo;
