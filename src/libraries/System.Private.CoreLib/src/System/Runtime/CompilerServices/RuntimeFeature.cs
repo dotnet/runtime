@@ -75,8 +75,8 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Gets a value that indicates whether the runtime supports multithreading, including
         /// creating threads and using blocking synchronization primitives. This property
-        /// returns <see langword="false"/> on platforms that do not support multithreading,
-        /// such as browser and WASI.
+        /// returns <see langword="false"/> on platforms or configurations where multithreading
+        /// is not supported or is disabled, such as single-threaded browser environments and WASI.
         /// </summary>
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
