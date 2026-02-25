@@ -92,7 +92,7 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
-        [ConditionalFact(nameof(IsElevatedAndWindows10OrLater))] // flaky on Windows 8.1
+        [ConditionalFact(typeof(ServiceBaseTests), nameof(IsElevatedAndWindows10OrLater))] // flaky on Windows 8.1
         public void TestOnStartWithArgsThenStop()
         {
             ServiceController controller = ConnectToServer();
@@ -190,7 +190,7 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
-        [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
+        [ConditionalFact(typeof(ServiceBaseTests), nameof(IsElevatedAndSupportsEventLogs))]
         public void LogWritten()
         {
             string serviceName = Guid.NewGuid().ToString();
@@ -200,7 +200,7 @@ namespace System.ServiceProcess.Tests
             testService.DeleteTestServices();
         }
 
-        [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
+        [ConditionalFact(typeof(ServiceBaseTests), nameof(IsElevatedAndSupportsEventLogs))]
         public void LogWritten_AutoLog_False()
         {
             string serviceName = nameof(LogWritten_AutoLog_False) + Guid.NewGuid().ToString();
@@ -221,7 +221,7 @@ namespace System.ServiceProcess.Tests
             testService.DeleteTestServices();
         }
 
-        [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
+        [ConditionalFact(typeof(ServiceBaseTests), nameof(IsElevatedAndSupportsEventLogs))]
         public void NoServiceNameOnServiceBase()
         {
             // When installing a service, you must supply a non empty name.
