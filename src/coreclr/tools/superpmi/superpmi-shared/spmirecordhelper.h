@@ -449,9 +449,7 @@ inline Agnostic_CORINFO_LOOKUP_KIND SpmiRecordsHelper::CreateAgnostic_CORINFO_LO
     {
         genericLookupKind.needsRuntimeLookup = (DWORD)pGenericLookupKind->needsRuntimeLookup;
         genericLookupKind.runtimeLookupKind  = (DWORD)pGenericLookupKind->runtimeLookupKind;
-        genericLookupKind.runtimeLookupFlags = pGenericLookupKind->runtimeLookupFlags;
     }
-    // We don't store result->runtimeLookupArgs, which is opaque data. Ok?
     return genericLookupKind;
 }
 
@@ -461,8 +459,6 @@ inline CORINFO_LOOKUP_KIND SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(
     CORINFO_LOOKUP_KIND genericLookupKind;
     genericLookupKind.needsRuntimeLookup = lookupKind.needsRuntimeLookup != 0;
     genericLookupKind.runtimeLookupKind  = (CORINFO_RUNTIME_LOOKUP_KIND)lookupKind.runtimeLookupKind;
-    genericLookupKind.runtimeLookupFlags = lookupKind.runtimeLookupFlags;
-    genericLookupKind.runtimeLookupArgs  = nullptr; // We don't store this opaque data. Ok?
     return genericLookupKind;
 }
 
@@ -499,6 +495,7 @@ inline Agnostic_CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_
     runtimeLookup.indirectSecondOffset = (DWORD)pLookup->indirectSecondOffset;
     for (int i = 0; i < CORINFO_MAXINDIRECTIONS; i++)
         runtimeLookup.offsets[i] = (DWORDLONG)pLookup->offsets[i];
+    runtimeLookup.helperEntryPoint = StoreAgnostic_CORINFO_CONST_LOOKUP(&pLookup->helperEntryPoint);
     return runtimeLookup;
 }
 
@@ -515,6 +512,7 @@ inline CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(
     runtimeLookup.indirectSecondOffset = lookup.indirectSecondOffset != 0;
     for (int i                   = 0; i < CORINFO_MAXINDIRECTIONS; i++)
         runtimeLookup.offsets[i] = (size_t)lookup.offsets[i];
+    runtimeLookup.helperEntryPoint = RestoreCORINFO_CONST_LOOKUP(lookup.helperEntryPoint);
     return runtimeLookup;
 }
 
