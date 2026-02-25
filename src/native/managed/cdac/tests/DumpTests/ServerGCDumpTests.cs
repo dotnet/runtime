@@ -16,6 +16,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class ServerGCDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ServerGC";
+    protected override string DumpType => "full";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
