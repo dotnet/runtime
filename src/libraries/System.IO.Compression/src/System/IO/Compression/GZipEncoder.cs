@@ -18,7 +18,7 @@ namespace System.IO.Compression
         /// </summary>
         /// <exception cref="IOException">Failed to create the <see cref="GZipEncoder"/> instance.</exception>
         public GZipEncoder()
-            : this(DeflateEncoder.DefaultQuality, DeflateEncoder.DefaultWindowLog)
+            : this(ZLibCompressionOptions.DefaultQuality, ZLibCompressionOptions.DefaultWindowLog)
         {
         }
 
@@ -29,7 +29,7 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9).</exception>
         /// <exception cref="IOException">Failed to create the <see cref="GZipEncoder"/> instance.</exception>
         public GZipEncoder(int quality)
-            : this(quality, DeflateEncoder.DefaultWindowLog)
+            : this(quality, ZLibCompressionOptions.DefaultWindowLog)
         {
         }
 
@@ -120,7 +120,7 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
-            => TryCompress(source, destination, out bytesWritten, DeflateEncoder.DefaultQuality, DeflateEncoder.DefaultWindowLog);
+            => TryCompress(source, destination, out bytesWritten, ZLibCompressionOptions.DefaultQuality, ZLibCompressionOptions.DefaultWindowLog);
 
         /// <summary>
         /// Tries to compress a source byte span into a destination span using the specified quality.
@@ -131,7 +131,7 @@ namespace System.IO.Compression
         /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality)
-            => TryCompress(source, destination, out bytesWritten, quality, DeflateEncoder.DefaultWindowLog);
+            => TryCompress(source, destination, out bytesWritten, quality, ZLibCompressionOptions.DefaultWindowLog);
 
         /// <summary>
         /// Tries to compress a source byte span into a destination span using the specified quality and window size.

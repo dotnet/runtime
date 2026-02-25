@@ -17,16 +17,11 @@ namespace System.IO.Compression
         private bool _finished;
 
         /// <summary>
-        /// The default quality value (optimal compression).
-        /// </summary>
-        internal const int DefaultQuality = 6;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="DeflateEncoder"/> class using the default quality.
         /// </summary>
         /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
         public DeflateEncoder()
-            : this(DefaultQuality)
+            : this(ZLibCompressionOptions.DefaultQuality)
         {
         }
 
@@ -37,7 +32,7 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9).</exception>
         /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
         public DeflateEncoder(int quality)
-            : this(quality, DefaultWindowLog)
+            : this(quality, ZLibCompressionOptions.DefaultWindowLog)
         {
         }
 
@@ -106,7 +101,7 @@ namespace System.IO.Compression
             _finished = false;
 
             // -1 means use the default window log
-            int windowLog = options.WindowLog == -1 ? DefaultWindowLog : options.WindowLog;
+            int windowLog = options.WindowLog == -1 ? ZLibCompressionOptions.DefaultWindowLog : options.WindowLog;
 
             // Compute windowBits based on the compression format:
             int windowBits = format switch
@@ -124,41 +119,16 @@ namespace System.IO.Compression
                 (ZLibNative.CompressionStrategy)options.CompressionStrategy);
         }
 
-        /// <summary>
-        /// The minimum quality value for compression (no compression).
-        /// </summary>
-        internal const int MinQuality = 0;
-
-        /// <summary>
-        /// The maximum quality value for compression (best compression).
-        /// </summary>
-        internal const int MaxQuality = 9;
-
-        /// <summary>
-        /// The minimum window log value (256 bytes window).
-        /// </summary>
-        internal const int MinWindowLog = 8;
-
-        /// <summary>
-        /// The maximum window log value (32KB window).
-        /// </summary>
-        internal const int MaxWindowLog = 15;
-
-        /// <summary>
-        /// The default window log value (32KB window).
-        /// </summary>
-        internal const int DefaultWindowLog = MaxWindowLog;
-
         private static void ValidateQuality(int quality)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(quality, MinQuality, nameof(quality));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, MaxQuality, nameof(quality));
+            ArgumentOutOfRangeException.ThrowIfLessThan(quality, ZLibCompressionOptions.MinQuality, nameof(quality));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, ZLibCompressionOptions.MaxQuality, nameof(quality));
         }
 
         private static void ValidateWindowLog(int windowLog)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, MinWindowLog, nameof(windowLog));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, MaxWindowLog, nameof(windowLog));
+            ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, ZLibCompressionOptions.MinWindowLog, nameof(windowLog));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, ZLibCompressionOptions.MaxWindowLog, nameof(windowLog));
         }
 
         /// <summary>
@@ -315,7 +285,7 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
-            => TryCompress(source, destination, out bytesWritten, DefaultQuality, DefaultWindowLog);
+            => TryCompress(source, destination, out bytesWritten, ZLibCompressionOptions.DefaultQuality, ZLibCompressionOptions.DefaultWindowLog);
 
         /// <summary>
         /// Tries to compress a source byte span into a destination span using the specified quality.
@@ -326,7 +296,7 @@ namespace System.IO.Compression
         /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality)
-            => TryCompress(source, destination, out bytesWritten, quality, DefaultWindowLog);
+            => TryCompress(source, destination, out bytesWritten, quality, ZLibCompressionOptions.DefaultWindowLog);
 
         /// <summary>
         /// Tries to compress a source byte span into a destination span using the specified quality and window size.

@@ -8,8 +8,13 @@ namespace System.IO.Compression
     /// </summary>
     public sealed class ZLibCompressionOptions
     {
-        private const int MinWindowLog = 8;
-        private const int MaxWindowLog = 15;
+        internal const int MinWindowLog = 8;
+        internal const int MaxWindowLog = 15;
+        internal const int DefaultWindowLog = MaxWindowLog;
+
+        internal const int MinQuality = 0;
+        internal const int MaxQuality = 9;
+        internal const int DefaultQuality = 6;
 
         private int _compressionLevel = -1;
         private ZLibCompressionStrategy _strategy;
@@ -34,6 +39,7 @@ namespace System.IO.Compression
                 _compressionLevel = value;
             }
         }
+
         /// <summary>
         /// Gets or sets the compression algorithm for a compression stream.
         /// </summary>
