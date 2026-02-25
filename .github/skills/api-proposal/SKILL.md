@@ -56,9 +56,9 @@ This skill has 6 phases. Each can run independently (e.g., "just draft the propo
    - Only proceed to prototyping if workarounds are genuinely insufficient
 
 6. **Search for prior proposals** on the same topic:
-   - Search dotnet/runtime issues for related `api-suggestion` / `api-approved` / `api-needs-work` issues
+   - Search dotnet/runtime issues for related proposals (e.g., `api-suggestion`, `api-needs-work`, or closed issues)
    - If duplicates exist, surface them — don't block work, but note them for linking later
-   - There is usually a reason why existing proposals haven't been approved; understand it
+   - Look for clues in reviewer feedback: what caused a prior proposal to be marked `api-needs-work`? Why was it closed or stalled? Learn from that history to avoid repeating the same mistakes
 
 7. Ask clarifying questions if the proposal is too vague to prototype.
 
@@ -66,7 +66,7 @@ This skill has 6 phases. Each can run independently (e.g., "just draft the propo
 
 ### Phase 1: Research
 
-The skill contains baked-in examples and guidelines (see [references/proposal-examples.md](references/proposal-examples.md) and [references/api-proposal-checklist.md](references/api-proposal-checklist.md)). The agent does NOT need to search for `api-approved` issues at runtime.
+The skill contains baked-in examples and guidelines for writing good proposals (see [references/proposal-examples.md](references/proposal-examples.md) and [references/api-proposal-checklist.md](references/api-proposal-checklist.md)). The agent does NOT need to search for `api-approved` issues as templates — the baked-in references are sufficient. Phase 0's search for *related* issues on the same topic is a separate concern and is still required.
 
 **What the agent DOES at runtime:**
 
@@ -159,7 +159,7 @@ Write the proposal matching the spirit of the [issue template](https://github.co
 
 - WHAT concrete user problem are we solving? Show scenario(s).
 - Reference prior art in other ecosystems where relevant.
-- **Do NOT re-litigate workarounds here.** By the time the proposal is being drafted, the user has already evaluated workarounds in Phase 0 and accepted that none are viable. The proposal should focus on the problem and the proposed solution.
+- Briefly summarize existing workarounds and why they are insufficient, but do not repeat the full Phase 0 analysis. Keep this section focused on the problem and the high-level rationale for a new API.
 
 **2. API Proposal**
 
@@ -256,7 +256,7 @@ Commit prototype changes and push the branch to the user's fork (default) or ask
 If the agent cannot prompt the user for input (e.g., running as Copilot Coding Agent), automatically post the API proposal as a comment on the associated pull request:
 
 ```bash
-gh pr comment <pr-number> --body "<proposal text with prototype commit link>"
+gh pr comment <pr-number> --body-file proposal.md
 ```
 
 Skip the interactive options below.
@@ -265,22 +265,24 @@ Skip the interactive options below.
 
 Present the user with the following options. Which options appear depends on context:
 
+> **Note:** Always write the proposal text to a temporary file (e.g., `proposal.md`) and use `--body-file` instead of `--body` to avoid shell quoting/escaping issues with multi-line text.
+
 1. **Post as comment on existing issue/PR** — Only offer this when the user explicitly referenced an issue or PR in their original prompt.
    ```bash
-   gh issue comment <number> --body "<proposal text with prototype commit link>"
+   gh issue comment <number> --body-file proposal.md
    # or
-   gh pr comment <number> --body "<proposal text with prototype commit link>"
+   gh pr comment <number> --body-file proposal.md
    ```
 
 2. **Create a new issue** — Always offer this option.
    ```bash
-   gh issue create --label api-suggestion --title "[API Proposal]: <title>" --body "<proposal text with prototype commit link>"
+   gh issue create --label api-suggestion --title "[API Proposal]: <title>" --body-file proposal.md
    ```
    No area label — repo automation handles that.
 
 3. **Create a new draft PR with proposal in OP** — Always offer this option.
    ```bash
-   gh pr create --draft --title "[API Proposal]: <title>" --body "<proposal text with prototype commit link>"
+   gh pr create --draft --title "[API Proposal]: <title>" --body-file proposal.md
    ```
 
 Include related issue links in the body for all options.
