@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalFact(nameof(DoesNotSupportRawDerivation))]
+        [ConditionalFact(typeof(ECDiffieHellmanTests), nameof(DoesNotSupportRawDerivation))]
         public static void RawDerivation_NotSupported()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(ECCurve.NamedCurves.nistP256))

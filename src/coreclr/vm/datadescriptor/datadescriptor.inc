@@ -18,6 +18,8 @@ CDAC_TYPE_FIELD(Thread, /*uint32*/, State, cdac_data<Thread>::State)
 CDAC_TYPE_FIELD(Thread, /*uint32*/, PreemptiveGCDisabled, cdac_data<Thread>::PreemptiveGCDisabled)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, RuntimeThreadLocals, cdac_data<Thread>::RuntimeThreadLocals)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, Frame, cdac_data<Thread>::Frame)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, CachedStackBase, cdac_data<Thread>::CachedStackBase)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, CachedStackLimit, cdac_data<Thread>::CachedStackLimit)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, GCHandle, GCHandle, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, GCHandle, LastThrownObject, cdac_data<Thread>::LastThrownObject)
@@ -464,6 +466,10 @@ CDAC_TYPE_BEGIN(NativeCodeSlot)
 CDAC_TYPE_SIZE(sizeof(MethodDesc::NativeCodeSlot))
 CDAC_TYPE_END(NativeCodeSlot)
 
+CDAC_TYPE_BEGIN(AsyncMethodData)
+CDAC_TYPE_SIZE(sizeof(AsyncMethodData))
+CDAC_TYPE_END(AsyncMethodData)
+
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
 CDAC_TYPE_SIZE(sizeof(InstantiatedMethodDesc))
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*pointer*/, PerInstInfo, cdac_data<InstantiatedMethodDesc>::PerInstInfo)
@@ -508,6 +514,13 @@ CDAC_TYPE_END(CLRToCOMCallMethodDesc)
 CDAC_TYPE_BEGIN(CodePointer)
 CDAC_TYPE_SIZE(sizeof(PCODE))
 CDAC_TYPE_END(CodePointer)
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_TYPE_BEGIN(PortableEntryPoint)
+CDAC_TYPE_INDETERMINATE(PortableEntryPoint)
+CDAC_TYPE_FIELD(PortableEntryPoint, /*pointer*/, MethodDesc, cdac_data<PortableEntryPoint>::MethodDesc)
+CDAC_TYPE_END(PortableEntryPoint)
+#endif
 
 CDAC_TYPE_BEGIN(MethodDescCodeData)
 CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
@@ -1098,6 +1111,11 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
 #else
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 1)
+#else
+CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 0)
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)
@@ -1133,6 +1151,7 @@ CDAC_GLOBAL(DispatchThisPtrMask, uintptr_t, InteropLib::ABI::DispatchThisPtrMask
 CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, InteropLib::ABI::g_knownQueryInterfaceImplementations)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
+CDAC_GLOBAL_POINTER(GlobalAllocContext, &::g_global_alloc_context)
 CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS
 CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
@@ -1151,7 +1170,6 @@ CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
-CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
@@ -1173,6 +1191,7 @@ CDAC_GLOBAL_CONTRACT(DebugInfo, 2)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
 CDAC_GLOBAL_CONTRACT(Exception, 1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, 2)
+CDAC_GLOBAL_CONTRACT(GCInfo, 1)
 CDAC_GLOBAL_CONTRACT(Loader, 1)
 CDAC_GLOBAL_CONTRACT(Notifications, 1)
 CDAC_GLOBAL_CONTRACT(Object, 1)

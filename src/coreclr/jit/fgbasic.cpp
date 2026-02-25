@@ -2305,12 +2305,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     else
                     {
                         lvaTable[varNum].lvHasLdAddrOp = 1;
-                        if (!info.compIsStatic && (varNum == 0))
+                        if (!info.compIsStatic && (varNum == info.compThisArg))
                         {
                             // Addr taken on "this" pointer is significant,
                             // go ahead to mark it as permanently addr-exposed here.
                             // This may be conservative, but probably not very.
-                            lvaSetVarAddrExposed(0 DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
+                            lvaSetVarAddrExposed(info.compThisArg DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
                         }
                     }
                 } // isInlining

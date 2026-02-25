@@ -165,6 +165,13 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
     ContainCheckBinary(binOp);
+
+    if (binOp->gtOverflow())
+    {
+        binOp->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        binOp->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+
     return binOp->gtNext;
 }
 
@@ -200,7 +207,61 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
-    NYI_WASM("LowerBlockStore");
+    GenTree* dstAddr = blkNode->Addr();
+    GenTree* src     = blkNode->Data();
+
+    if (blkNode->OperIsInitBlkOp())
+    {
+        if (src->OperIs(GT_INIT_VAL))
+        {
+            src->SetContained();
+            src = src->AsUnOp()->gtGetOp1();
+        }
+
+        if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            src->SetContained();
+        }
+        else
+        {
+            // memory.fill
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        }
+    }
+    else
+    {
+        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+        src->SetContained();
+
+        if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
+        }
+
+        ClassLayout* layout  = blkNode->GetLayout();
+        bool         doCpObj = layout->HasGCPtr();
+
+        // CopyObj or CopyBlk
+        if (doCpObj)
+        {
+            // Try to use bulk copy helper
+            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
+            {
+                return;
+            }
+
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
+        }
+        else
+        {
+            assert(blkNode->OperIs(GT_STORE_BLK));
+            // memory.copy
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -450,6 +511,8 @@ void Lowering::AfterLowerBlock()
                     // rare, introduced in lowering only. All HIR-induced cases (such as from "gtSetEvalOrder") should
                     // instead be ifdef-ed out for WASM.
                     m_anyChanges = true;
+
+                    JITDUMP("node==[%06u] prev==[%06u]\n", Compiler::dspTreeID(node), Compiler::dspTreeID(prev));
                     NYI_WASM("IR not in a stackified form");
                 }
 
