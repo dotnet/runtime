@@ -1237,26 +1237,22 @@ static void RunMainInternal(Param* pParam)
     else if (pParam->EntryType == EntryManagedMainAsync)
     {
         *pParam->piRetVal = 0;
-        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
-        
+
         OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
-        ARG_SLOT stackVarWrapper[] =
-        {
-            ObjToArgSlot(exitCodeTask)
-        };
-        mainWrapper.Call(stackVarWrapper);
+        GCPROTECT_BEGIN(exitCodeTask);
+        UnmanagedCallersOnlyCaller mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
+        mainWrapper.InvokeThrowing(&exitCodeTask);
+        GCPROTECT_END();
     }
     else if (pParam->EntryType == EntryManagedMainAsyncVoid)
     {
         *pParam->piRetVal = 0;
-        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT_VOID);
-        
+
         OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
-        ARG_SLOT stackVarWrapper[] =
-        {
-            ObjToArgSlot(exitCodeTask)
-        };
-        mainWrapper.Call(stackVarWrapper);
+        GCPROTECT_BEGIN(exitCodeTask);
+        UnmanagedCallersOnlyCaller mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
+        mainWrapper.InvokeThrowing(&exitCodeTask);
+        GCPROTECT_END();
     }
 #endif // TARGET_BROWSER
     else
@@ -1386,12 +1382,8 @@ void RunManagedStartup()
     }
     CONTRACTL_END;
 
-    MethodDescCallSite managedStartup(METHOD__STARTUP_HOOK_PROVIDER__MANAGED_STARTUP);
-
-    ARG_SLOT args[1];
-    args[0] = PtrToArgSlot(s_wszDiagnosticStartupHookPaths);
-
-    managedStartup.Call(args);
+    UnmanagedCallersOnlyCaller managedStartup(METHOD__STARTUP_HOOK_PROVIDER__MANAGED_STARTUP);
+    managedStartup.InvokeThrowing(s_wszDiagnosticStartupHookPaths);
 }
 
 INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads)

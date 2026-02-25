@@ -605,41 +605,10 @@ OBJECTREF InvokeUtil::CreateClassLoadExcept(OBJECTREF* classes, OBJECTREF* excep
 
     OBJECTREF oRet = 0;
 
-    struct {
-        OBJECTREF o;
-        STRINGREF str;
-    } gc;
-    gc.o = NULL;
-    gc.str = NULL;
+    GCPROTECT_BEGIN(oRet);
 
-    MethodTable *pVMClassLoadExcept = CoreLibBinder::GetException(kReflectionTypeLoadException);
-    gc.o = AllocateObject(pVMClassLoadExcept);
-    GCPROTECT_BEGIN(gc);
-    ARG_SLOT args[4];
-
-    // Retrieve the resource string.
-    ResMgrGetString(W("ReflectionTypeLoad_LoadFailed"), &gc.str);
-
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.o->GetMethodTable(),
-                            COR_CTOR_METHOD_NAME, &gsig_IM_ArrType_ArrException_Str_RetVoid);
-
-    if (!pMD)
-    {
-        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
-    }
-
-    MethodDescCallSite ctor(pMD);
-
-    // Call the constructor
-    args[0]  = ObjToArgSlot(gc.o);
-    args[1]  = ObjToArgSlot(*classes);
-    args[2]  = ObjToArgSlot(*except);
-    args[3]  = ObjToArgSlot((OBJECTREF)gc.str);
-
-    ctor.Call(args);
-
-    oRet = gc.o;
+    UnmanagedCallersOnlyCaller createClassLoadExcept(METHOD__EXCEPTION__CREATE_REFLECTION_TYPE_LOAD_EXCEPTION);
+    createClassLoadExcept.InvokeThrowing(classes, except, &oRet);
 
     GCPROTECT_END();
     RETURN oRet;
@@ -659,43 +628,22 @@ OBJECTREF InvokeUtil::CreateTargetExcept(OBJECTREF* except) {
     }
     CONTRACT_END;
 
-    OBJECTREF o;
     OBJECTREF oRet = 0;
 
-    MethodTable *pVMTargetExcept = CoreLibBinder::GetException(kTargetInvocationException);
-    o = AllocateObject(pVMTargetExcept);
-    GCPROTECT_BEGIN(o);
-    ARG_SLOT args[2];
+    GCPROTECT_BEGIN(oRet);
 
-    MethodDesc* pMD = MemberLoader::FindMethod(o->GetMethodTable(),
-                            COR_CTOR_METHOD_NAME, &gsig_IM_Exception_RetVoid);
+    UnmanagedCallersOnlyCaller createTargetExcept(METHOD__EXCEPTION__CREATE_TARGET_INVOCATION_EXCEPTION);
 
-    if (!pMD)
-    {
-        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
-    }
-
-    MethodDescCallSite ctor(pMD);
-
-    // Call the constructor
-    args[0]  = ObjToArgSlot(o);
     // for security, don't allow a non-exception object to be spoofed as an exception object. We cast later and
     // don't check and this could cause us grief.
     _ASSERTE(!except || IsException((*except)->GetMethodTable()));  // how do we get non-exceptions?
-    if (except && IsException((*except)->GetMethodTable()))
-    {
-        args[1]  = ObjToArgSlot(*except);
-    }
-    else
-    {
-        args[1] = 0;
-    }
 
-    ctor.Call(args);
+    OBJECTREF innerEx = (except && IsException((*except)->GetMethodTable())) ? *except : NULL;
+    GCPROTECT_BEGIN(innerEx);
 
-    oRet = o;
+    createTargetExcept.InvokeThrowing(&innerEx, &oRet);
 
+    GCPROTECT_END();
     GCPROTECT_END();
     RETURN oRet;
 }
