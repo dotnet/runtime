@@ -168,7 +168,7 @@ namespace System
         }
 #endif
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
-        public static bool IsWasmThreadingSupported => IsBrowser && IsMultithreadingSupported;
+        public static bool IsWasmThreadingSupported => IsWasm && IsMultithreadingSupported;
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
 
         private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
