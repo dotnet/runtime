@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             await host.StartAsync();
 
             // Wait for the background service to fail
-            await Task.Delay(TimeSpan.FromMilliseconds(500));
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
             {
@@ -160,7 +160,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             await host.StartAsync();
 
             // Wait a bit for the background service to fail
-            await Task.Delay(TimeSpan.FromSeconds(2));
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
 
             await host.StopAsync();
         }
