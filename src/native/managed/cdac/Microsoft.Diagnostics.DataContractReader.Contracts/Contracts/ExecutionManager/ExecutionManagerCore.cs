@@ -332,7 +332,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.RelativeOffset;
     }
 
-<<<<<<< copilot/implement-get-jit-manager-list
     JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
     {
         TargetPointer eeJitManagerPtr = _target.ReadGlobalPointer(Constants.Globals.EEJitManagerAddress);
@@ -346,7 +345,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             CodeType = 0, // miManaged | miIL
             HeapListAddress = jitManager.AllCodeHeaps,
         };
-=======
+    }
+
     private RangeSection RangeSectionFromCodeBlockHandle(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
@@ -354,6 +354,5 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeInfoHandle.Address.Value);
         return range;
->>>>>>> main
     }
 }
