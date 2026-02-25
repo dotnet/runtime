@@ -41,7 +41,7 @@ namespace System.IO.Compression
         /// <exception cref="IOException">Failed to create the <see cref="GZipEncoder"/> instance.</exception>
         public GZipEncoder(ZLibCompressionOptions options)
         {
-            _deflateEncoder = new DeflateEncoder(options, DeflateEncoder.CompressionFormat.GZip);
+            _deflateEncoder = new DeflateEncoder(options, CompressionFormat.GZip);
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace System.IO.Compression
         /// <exception cref="IOException">Failed to create the <see cref="GZipEncoder"/> instance.</exception>
         public GZipEncoder(int quality, int windowLog)
         {
-            _deflateEncoder = new DeflateEncoder(quality, windowLog, DeflateEncoder.CompressionFormat.GZip);
+            _deflateEncoder = new DeflateEncoder(quality, windowLog, CompressionFormat.GZip);
         }
 
         /// <summary>

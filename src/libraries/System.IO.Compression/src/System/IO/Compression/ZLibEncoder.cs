@@ -41,7 +41,7 @@ namespace System.IO.Compression
         /// <exception cref="IOException">Failed to create the <see cref="ZLibEncoder"/> instance.</exception>
         public ZLibEncoder(ZLibCompressionOptions options)
         {
-            _deflateEncoder = new DeflateEncoder(options, DeflateEncoder.CompressionFormat.ZLib);
+            _deflateEncoder = new DeflateEncoder(options, CompressionFormat.ZLib);
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace System.IO.Compression
         /// <exception cref="IOException">Failed to create the <see cref="ZLibEncoder"/> instance.</exception>
         public ZLibEncoder(int quality, int windowLog)
         {
-            _deflateEncoder = new DeflateEncoder(quality, windowLog, DeflateEncoder.CompressionFormat.ZLib);
+            _deflateEncoder = new DeflateEncoder(quality, windowLog, CompressionFormat.ZLib);
         }
 
         /// <summary>

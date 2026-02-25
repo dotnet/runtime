@@ -65,19 +65,6 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Specifies the compression format for zlib-based encoders.
-        /// </summary>
-        internal enum CompressionFormat
-        {
-            /// <summary>Raw deflate format (no header/trailer).</summary>
-            Deflate,
-            /// <summary>ZLib format (zlib header/trailer).</summary>
-            ZLib,
-            /// <summary>GZip format (gzip header/trailer).</summary>
-            GZip
-        }
-
-        /// <summary>
         /// Internal constructor that accepts quality, windowLog (8-15), and format.
         /// Validates both parameters and transforms windowLog to windowBits based on format.
         /// </summary>
@@ -137,7 +124,6 @@ namespace System.IO.Compression
                 (ZLibNative.CompressionStrategy)options.CompressionStrategy);
         }
 
-
         /// <summary>
         /// The minimum quality value for compression (no compression).
         /// </summary>
@@ -162,7 +148,6 @@ namespace System.IO.Compression
         /// The default window log value (32KB window).
         /// </summary>
         internal const int DefaultWindowLog = MaxWindowLog;
-
 
         private static void ValidateQuality(int quality)
         {
