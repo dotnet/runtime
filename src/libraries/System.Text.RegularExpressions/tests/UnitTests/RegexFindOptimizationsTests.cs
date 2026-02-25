@@ -120,6 +120,18 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(?<=cd)ab", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingString_RightToLeft, "ab")]
         [InlineData(@"\bab(?=\w)(?!=\d)c\b", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "abc")]
         [InlineData(@"\bab(?=\w)(?!=\d)c\b", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
+        // Alternation branches differing by one trailing character: prefix extraction should include all shared characters
+        [InlineData(@"(?:http|https)://foo", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "http")]
+        // Alternation where shorter branch is just the shared prefix
+        [InlineData(@"(?:ab|abc)d", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
+        // Alternation where branches differ by more than one character
+        [InlineData(@"(?:abc|abcdef)g", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
+        // Three-branch alternation with shared prefix and different lengths
+        [InlineData(@"(?:ab|abc|abcd)e", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
+        // Three-branch alternation with shared prefix and different trailing characters
+        [InlineData(@"(?:ab|abc|abd)e", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
+        // Case-sensitive alternation with branches differing by one (handled by ExtractCommonPrefixText, not Node, but verifies no regression)
+        [InlineData(@"(?:ab|abc)d", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
         public void LeadingPrefix(string pattern, int options, int expectedMode, string expectedPrefix)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, (RegexOptions)options);
