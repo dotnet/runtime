@@ -3469,7 +3469,7 @@ namespace System.Numerics
                 {
                     // When the value is positive, we simply need to copy all bits as big endian
 
-                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination.Slice(0, byteCount));
 
                     for (int i = 0; i < bits.Length; i++)
                     {
@@ -3481,7 +3481,7 @@ namespace System.Numerics
                     // When the value is negative, we need to copy the two's complement representation
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination.Slice(0, byteCount));
                     int uintCount = byteCount / sizeof(uint);
 
                     int i = 0;
@@ -3546,7 +3546,7 @@ namespace System.Numerics
                 {
                     // When the value is positive, we simply need to copy all bits as little endian
 
-                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination.Slice(0, byteCount));
 
                     for (int i = 0; i < bits.Length; i++)
                     {
@@ -3558,7 +3558,7 @@ namespace System.Numerics
                     // When the value is negative, we need to copy the two's complement representation
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination.Slice(0, byteCount));
                     int uintCount = byteCount / sizeof(uint);
 
                     int i = 0;
