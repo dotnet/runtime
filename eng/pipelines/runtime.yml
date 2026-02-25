@@ -1979,26 +1979,30 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      #
-      # Diagnostics Tests (SOS with cDAC and DAC)
-      # These jobs reuse the CoreCLR_Libraries build artifacts to avoid duplicate builds.
-      # They check out the dotnet/diagnostics repo and run its SOS test suite.
-      #
+    #
+    # Diagnostics Tests (SOS with cDAC and DAC)
+    # These jobs reuse the CoreCLR_Libraries build artifacts to avoid duplicate builds.
+    # They check out the dotnet/diagnostics repo and run its SOS test suite.
+    # This stage is separate so diagnostics failures don't block the main Build stage.
+    #
+    - stage: Diagnostics
+      dependsOn:
+      - Build
+      - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+        - EvaluatePaths
+      jobs:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - windows_x64
-          shouldContinueOnError: true
           jobParameters:
             name: cDAC
             useCdac: true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
-            dependsOn:
-            - ${{ format('build_windows_x64_{0}_CoreCLR_Libraries', variables.debugOnPrReleaseOnRolling) }}
             preBuildSteps:
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
@@ -2030,15 +2034,12 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - windows_x64
-          shouldContinueOnError: true
           jobParameters:
             name: DAC
             useCdac: false
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
-            dependsOn:
-            - ${{ format('build_windows_x64_{0}_CoreCLR_Libraries', variables.debugOnPrReleaseOnRolling) }}
             preBuildSteps:
               - template: /eng/pipelines/common/download-artifact-step.yml
                 parameters:
