@@ -181,7 +181,19 @@ public class PriorityQueue<TElement, TPriority>
 }
 ```
 
-- **Additions to existing types**: Markdown `diff` blocks showing only relevant context (sibling overloads, not every member):
+- **Additions to existing types**: Prefer `csharp` blocks when the proposal only adds new members and doesn't need to show existing APIs for context. Mark the containing type `partial` to emphasize it has other public members:
+
+```csharp
+namespace System.Text.Json;
+
+public partial class JsonNamingPolicy
+{
+    public static JsonNamingPolicy SnakeLowerCase { get; }
+    public static JsonNamingPolicy SnakeUpperCase { get; }
+}
+```
+
+When existing members ARE needed for context (e.g., to show sibling overloads), use `diff` blocks instead:
 
 ```diff
 namespace System.Text.Json;
