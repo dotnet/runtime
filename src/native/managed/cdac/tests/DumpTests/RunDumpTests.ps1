@@ -290,11 +290,16 @@ else {
     }
 }
 
+# Compute versions to skip so the test project excludes them from discovery.
+$skipVersions = @($allVersions | Where-Object { $_ -notin $selectedVersions })
+$skipVersionsStr = $skipVersions -join ";"
+
 Write-Host ""
 Write-Host "=== cDAC Dump Tests ===" -ForegroundColor Cyan
 Write-Host "  Action:    $Action"
 Write-Host "  Versions:  $($selectedVersions -join ', ')"
 Write-Host "  Force:     $Force"
+if ($skipVersionsStr) { Write-Host "  Skipping:  $($skipVersions -join ', ')" }
 if ($Filter) { Write-Host "  Filter:    $Filter" }
 Write-Host ""
 
@@ -338,7 +343,11 @@ if ($Action -in @("dumps", "all")) {
 if ($Action -in @("test", "all")) {
     Write-Host ""
     Write-Host "--- Building test project ---" -ForegroundColor Cyan
-    & $dotnet build $dumpTestsProj --nologo -v $dotnetVerbosity 2>&1 | ForEach-Object { Write-Host "  $_" }
+    $buildArgs = @($dumpTestsProj, "--nologo", "-v", $dotnetVerbosity)
+    if ($skipVersionsStr) {
+        $buildArgs += "/p:SkipDumpVersions=$skipVersionsStr"
+    }
+    & $dotnet build @buildArgs 2>&1 | ForEach-Object { Write-Host "  $_" }
     if ($LASTEXITCODE -ne 0) { Write-Error "Test project build failed."; exit 1 }
 
     Write-Host ""
