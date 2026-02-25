@@ -211,6 +211,29 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(jsonParameter);
         }
 
+        [Fact]
+        public void TypeWithInitOnlyAndRequiredMembers_OnlyRequiredHasAssociatedParameterInfo()
+        {
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(ClassWithInitOnlyAndRequiredMembers));
+            Assert.Equal(2, typeInfo.Properties.Count);
+
+            JsonPropertyInfo initOnlyProp = typeInfo.Properties.Single(p => p.Name == nameof(ClassWithInitOnlyAndRequiredMembers.InitOnlyValue));
+            JsonPropertyInfo requiredProp = typeInfo.Properties.Single(p => p.Name == nameof(ClassWithInitOnlyAndRequiredMembers.RequiredValue));
+
+            Assert.Null(initOnlyProp.AssociatedParameter);
+
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                Assert.NotNull(requiredProp.AssociatedParameter);
+                Assert.True(requiredProp.AssociatedParameter.IsMemberInitializer);
+                Assert.Equal(typeof(ClassWithInitOnlyAndRequiredMembers), requiredProp.AssociatedParameter.DeclaringType);
+            }
+            else
+            {
+                Assert.Null(requiredProp.AssociatedParameter);
+            }
+        }
+
         [Theory]
         [InlineData(typeof(ClassWithDefaultCtor))]
         [InlineData(typeof(StructWithDefaultCtor))]
@@ -527,6 +550,12 @@ namespace System.Text.Json.Serialization.Tests
         internal class ClassWithInitOnlyProperty
         {
             public int Value { get; init; }
+        }
+
+        internal class ClassWithInitOnlyAndRequiredMembers
+        {
+            public int InitOnlyValue { get; init; }
+            public required string RequiredValue { get; set; }
         }
 
         internal class ClassWithMultipleConstructors
