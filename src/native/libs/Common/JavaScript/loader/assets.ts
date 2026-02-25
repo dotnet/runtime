@@ -92,12 +92,17 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
     totalAssetsToDownload++;
     const assetInternal = asset as AssetEntryInternal;
     dotnetAssert.check(assetInternal.virtualPath, "Assembly asset must have virtualPath");
+    if (assetInternal.culture) {
+        assetInternal.name = `${assetInternal.culture}/${assetInternal.name}`;
+    }
     if (assetInternal.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetInternal.name);
     }
     assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
         ? assetInternal.virtualPath
-        : browserVirtualAppBase + assetInternal.virtualPath;
+        : assetInternal.culture
+            ? `${browserVirtualAppBase}${assetInternal.culture}/${assetInternal.virtualPath}`
+            : browserVirtualAppBase + assetInternal.virtualPath;
     if (assetInternal.virtualPath.endsWith(".wasm")) {
         assetInternal.behavior = "webcil10";
         const webcilPromise = loadResource(assetInternal);
@@ -110,10 +115,9 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
         assetInternal.behavior = "assembly";
         const bytes = await fetchBytes(assetInternal);
         onDownloadedAsset();
-
         await nativeModulePromiseController.promise;
         if (bytes) {
-            dotnetBrowserHostExports.registerDllBytes(bytes, assetInternal.virtualPath);
+            dotnetBrowserHostExports.registerDllBytes(bytes, asset.virtualPath!);
         }
     }
 }
@@ -152,6 +156,71 @@ export async function fetchVfs(asset: AssemblyAsset): Promise<void> {
     if (bytes) {
         dotnetBrowserHostExports.installVfsFile(bytes, asset);
     }
+}
+
+export async function fetchSatelliteAssemblies(culturesToLoad: string[]): Promise<void> {
+    const satelliteResources = loaderConfig.resources?.satelliteResources;
+    if (!satelliteResources) {
+        return;
+    }
+
+    const promises: Promise<void>[] = [];
+    for (const culture of culturesToLoad) {
+        if (!Object.prototype.hasOwnProperty.call(satelliteResources, culture)) {
+            continue;
+        }
+        for (const asset of satelliteResources[culture]) {
+            const assetInternal = asset as AssetEntryInternal;
+            assetInternal.culture = culture;
+            promises.push(fetchDll(asset));
+        }
+    }
+    await Promise.all(promises);
+}
+
+export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boolean> {
+    const lazyAssemblies = loaderConfig.resources?.lazyAssembly;
+    if (!lazyAssemblies) {
+        throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
+    }
+
+    let assemblyNameWithoutExtension = assemblyNameToLoad;
+    if (assemblyNameToLoad.endsWith(".dll"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 4);
+    else if (assemblyNameToLoad.endsWith(".wasm"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 5);
+
+    const assemblyNameToLoadDll = assemblyNameWithoutExtension + ".dll";
+    const assemblyNameToLoadWasm = assemblyNameWithoutExtension + ".wasm";
+
+    let dllAsset: AssemblyAsset | null = null;
+    for (const asset of lazyAssemblies) {
+        if (asset.virtualPath === assemblyNameToLoadDll || asset.virtualPath === assemblyNameToLoadWasm) {
+            dllAsset = asset;
+            break;
+        }
+    }
+
+    if (!dllAsset) {
+        throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
+    }
+
+    await fetchDll(dllAsset);
+
+    if (loaderConfig.debugLevel != 0) {
+        const pdbNameToLoad = assemblyNameWithoutExtension + ".pdb";
+        const pdbAssets = loaderConfig.resources?.pdb;
+        if (pdbAssets) {
+            for (const pdbAsset of pdbAssets) {
+                if (pdbAsset.virtualPath === pdbNameToLoad) {
+                    await fetchPdb(pdbAsset);
+                    break;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 export async function fetchNativeSymbols(asset: SymbolsAsset): Promise<void> {

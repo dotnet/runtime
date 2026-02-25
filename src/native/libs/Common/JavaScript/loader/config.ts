@@ -68,6 +68,9 @@ function mergeResources(target: Assets, source: Assets): Assets {
     for (const key in source.satelliteResources) {
         source.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
     }
+    for (const key in target.satelliteResources) {
+        source.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
+    }
     return Object.assign(target, source);
 }
 
