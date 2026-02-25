@@ -17162,11 +17162,13 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool igno
 
 //-----------------------------------------------------------
 // gtTreeMayHaveInvalidByrefs: Returns true if the given tree may contain potentially invalid byrefs.
-//    Technically, we should place a special side-effect flag on all GC-typed nodes until
+//    Technically, we should place a special side-effect flag on all TYP_BYREF-typed nodes until
 //    they are proven to be unconditionally valid or not pointing to the heap. We don't
 //    do that today, as it would likely cause a significant size regression.
 //    Consequently, any code that speculatively hoists nodes with byrefs must call this
 //    method to verify the tree and avoid hoisting if potentially invalid byrefs are present.
+//    We also assume that all TYP_REF nodes are always valid. All attempts to have some kinds
+//    of tagged unions of unmanaged + managed fields are UB.
 //
 // Arguments:
 //    compiler - The compiler instance to use for the walk.
@@ -17194,23 +17196,8 @@ bool Compiler::gtTreeMayHaveInvalidByrefs(Compiler* compiler, GenTree* tree)
         {
             GenTree* tree = *use;
             // It is possible to be more precise, but it is not required by the contract.
-            // Conservatively assume that some TYP_REF could be invalid too, e.g. IND<TYP_REF> nodes.
-            if (varTypeIsGC(tree) && !tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_RETURN))
+            if (tree->TypeIs(TYP_BYREF) && !tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_RETURN))
             {
-                if (tree->OperIs(GT_CNS_INT))
-                {
-                    if (tree->IsIntegralConst(0))
-                    {
-                        // Null is fine.
-                        return WALK_CONTINUE;
-                    }
-
-                    if (tree->TypeIs(TYP_REF) && tree->IsIconHandle(GTF_ICON_OBJ_HDL))
-                    {
-                        // We assume frozen object handles are always valid in any context.
-                        return WALK_CONTINUE;
-                    }
-                }
                 return WALK_ABORT;
             }
             return WALK_CONTINUE;
