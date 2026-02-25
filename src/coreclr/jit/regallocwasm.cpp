@@ -330,6 +330,7 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
         case GT_SUB:
         case GT_MUL:
             CollectReferencesForBinop(node->AsOp());
+            break;
 
         case GT_STORE_BLK:
             CollectReferencesForBlockStore(node->AsBlk());
