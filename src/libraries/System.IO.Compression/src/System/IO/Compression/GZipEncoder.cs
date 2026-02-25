@@ -25,8 +25,8 @@ namespace System.IO.Compression
         /// <summary>
         /// Initializes a new instance of the <see cref="GZipEncoder"/> class using the specified quality.
         /// </summary>
-        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9).</exception>
+        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression), or -1 to use the default value.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9 or -1).</exception>
         /// <exception cref="IOException">Failed to create the <see cref="GZipEncoder"/> instance.</exception>
         public GZipEncoder(int quality)
             : this(quality, ZLibNative.DefaultWindowLog)
@@ -47,9 +47,9 @@ namespace System.IO.Compression
         /// <summary>
         /// Initializes a new instance of the <see cref="GZipEncoder"/> class using the specified quality and window size.
         /// </summary>
-        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
-        /// <param name="windowLog">The base-2 logarithm of the window size (8-15). Larger values result in better compression at the expense of memory usage.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9), or <paramref name="windowLog"/> is not in the valid range (8-15).</exception>
+        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression), or -1 to use the default value.</param>
+        /// <param name="windowLog">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9 or -1), or <paramref name="windowLog"/> is not in the valid range (8-15 or -1).</exception>
         /// <exception cref="IOException">Failed to create the <see cref="GZipEncoder"/> instance.</exception>
         public GZipEncoder(int quality, int windowLog)
         {
@@ -128,7 +128,7 @@ namespace System.IO.Compression
         /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
         /// <param name="destination">When this method returns, a span of bytes where the compressed data is stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
-        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
+        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression), or -1 to use the default value.</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality)
             => TryCompress(source, destination, out bytesWritten, quality, ZLibNative.DefaultWindowLog);
@@ -139,8 +139,8 @@ namespace System.IO.Compression
         /// <param name="source">A read-only span of bytes containing the source data to compress.</param>
         /// <param name="destination">When this method returns, a span of bytes where the compressed data is stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination"/>.</param>
-        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression).</param>
-        /// <param name="windowLog">The base-2 logarithm of the window size (8-15). Larger values result in better compression at the expense of memory usage.</param>
+        /// <param name="quality">The compression quality value between 0 (no compression) and 9 (maximum compression), or -1 to use the default value.</param>
+        /// <param name="windowLog">The base-2 logarithm of the window size (8-15), or -1 to use the default value. Larger values result in better compression at the expense of memory usage.</param>
         /// <returns><see langword="true"/> if the compression operation was successful; <see langword="false"/> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog)
         {
