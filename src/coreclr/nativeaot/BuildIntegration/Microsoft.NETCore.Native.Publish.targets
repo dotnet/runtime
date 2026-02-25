@@ -1,6 +1,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <Target Name="_ComputeIlcCompileInputs"
+          Condition="'$(BuildingFrameworkLibrary)' != 'true'"
           BeforeTargets="ComputeIlcCompileInputs"
           DependsOnTargets="$(IlcDynamicBuildPropertyDependencies);_ComputeAssembliesToCompileToNative;_PrepareTrimConfiguration">
 
