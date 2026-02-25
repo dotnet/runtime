@@ -6943,9 +6943,12 @@ void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned pref
     {
         // Query the async variants (twice, to get both directions)
         CORINFO_METHOD_HANDLE method = call->gtCallMethHnd;
-        bool variantIsThunk;
+        bool                  variantIsThunk;
         method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
-        method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
+        if (method != NO_METHOD_HANDLE)
+        {
+            method = info.compCompHnd->getAsyncOtherVariant(method, &variantIsThunk);
+        }
     }
 #endif
 }
