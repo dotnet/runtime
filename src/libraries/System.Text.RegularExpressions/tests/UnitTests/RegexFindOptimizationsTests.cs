@@ -152,7 +152,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Fact]
         [OuterLoop("Stress test for deep nesting")]
-        public void LeadingPrefix_DeepCapatureNesting_DoesNotStackOverflow()
+        public void LeadingPrefix_DeepCaptureNesting_DoesNotStackOverflow()
         {
             // Deeply nested captures like (((((...))))) with IgnoreCase exercise the recursive
             // Capture-unwrapping path in TryGetOrdinalCaseInsensitiveString. Verify it doesn't SO.
