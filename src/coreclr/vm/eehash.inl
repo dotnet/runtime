@@ -87,7 +87,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ClearHashTable()
 
     //_ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
 
     if (m_pVolatileBucketTable->m_pBuckets != NULL)
     {
@@ -128,7 +128,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::EmptyHashTable()
 
     _ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
 
     if (m_pVolatileBucketTable->m_pBuckets != NULL)
     {
@@ -217,7 +217,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::InsertValue(KeyType p
 
     _ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
 
     _ASSERTE(m_pVolatileBucketTable->m_dwNumBuckets != 0);
 
@@ -263,7 +263,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::InsertKeyAsValue(KeyT
 
     _ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
 
     _ASSERTE(m_pVolatileBucketTable->m_dwNumBuckets != 0);
 
@@ -308,7 +308,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::DeleteValue(KeyType p
 
     _ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
 
     _ASSERTE(m_pVolatileBucketTable->m_dwNumBuckets != 0);
 
@@ -526,7 +526,7 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
     // Before EE starts there is only one thread, so EBR is not needed.
     //
 #ifndef DACCESS_COMPILE
-   EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
+   EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
 #endif
 
     // Atomic transaction. In any other point of this method or ANY of the callees of this function you can not read
@@ -581,7 +581,7 @@ FORCEINLINE EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>:
     }
     CONTRACTL_END
 
-    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
 
     // Atomic transaction. In any other point of this method or ANY of the callees of this function you can not read
     // from m_pVolatileBucketTable!!!!!!! A racing condition would occur.
@@ -638,7 +638,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     CONTRACTL_END
 
 #if defined(_DEBUG)
-    _ASSERTE(!g_fEEStarted || g_EEHashEbr.InCriticalRegion());
+    _ASSERTE(!g_fEEStarted || g_EbrCollector.InCriticalRegion());
 #endif
 
     // Make the new bucket table 4 times bigger
@@ -673,7 +673,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     // won't be freed until we (and all other readers) exit.
     if (g_fEEStarted)
     {
-        if (!g_EEHashEbr.QueueForDeletion(
+        if (!g_EbrCollector.QueueForDeletion(
             pOldBuckets,
             DeleteObsoleteEEHashBuckets,
             (m_pVolatileBucketTable->m_dwNumBuckets + 1) * sizeof(EEHashEntry_t*)))
@@ -788,7 +788,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::
 
     _ASSERTE_IMPL(OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EEHashEbr, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
 
     _ASSERTE(pIter->m_pTable == (void *) this);
 

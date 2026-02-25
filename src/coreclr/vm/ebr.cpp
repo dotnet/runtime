@@ -66,11 +66,12 @@ struct EbrTlsDestructor final
 };
 static thread_local EbrTlsDestructor t_ebrTlsDestructor;
 
-// Global EBR collector for HashMap's async mode.
-EbrCollector g_HashMapEbr;
-
-// Global EBR collector for EEHashTable bucket reclamation.
-EbrCollector g_EEHashEbr;
+// Global EBR collector for safe deferred deletion of memory that may be
+// concurrently accessed by reader threads.
+//
+// A single collector is used because each thread has a single thread-local
+// EbrThreadData that can only be associated with one collector at a time.
+EbrCollector g_EbrCollector;
 
 // ============================================
 // EbrCollector implementation
@@ -141,6 +142,7 @@ EbrCollector::GetOrCreateThreadData()
         return pData;
 
     _ASSERTE_ALL_BUILDS(pData->m_pCollector != DetachedCollector && "Attempt to reattach detached thread.");
+    _ASSERTE_ALL_BUILDS(pData->m_pCollector == nullptr && "Thread already registered with a different collector.");
 
     pData->m_pCollector = this;
 

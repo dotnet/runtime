@@ -10,18 +10,18 @@
 //
 // Usage:
 //   // Startup:
-//   g_HashMapEbr.Init();
+//   g_EbrCollector.Init();
 //
 //   // Reader/Writer thread:
 //   {
-//       EbrCriticalRegionHolder ebr(&g_HashMapEbr, m_fAsyncMode);
+//       EbrCriticalRegionHolder ebr(&g_EbrCollector, fAsyncMode);
 //       // ... access shared data safely ...
 //       // Objects queued for deletion will not be freed while any thread
 //       // is in a critical region that observed a prior epoch.
 //   }
 //
 //   // Writer thread (inside critical region), after replacing shared pointer:
-//   g_HashMapEbr.QueueForDeletion(pOldData, deleteFn, sizeEstimate);
+//   g_EbrCollector.QueueForDeletion(pOldData, deleteFn, sizeEstimate);
 //
 //   // Shutdown:
 //   The EBR collector doesn't support a shutdown feature. CoreCLR doesn't support
@@ -117,11 +117,10 @@ private:
     Volatile<size_t> m_pendingSizeInBytes;
 };
 
-// Global EBR collector for HashMap's async mode.
-extern EbrCollector g_HashMapEbr;
-
-// Global EBR collector for EEHashTable bucket reclamation.
-extern EbrCollector g_EEHashEbr;
+// Global EBR collector for safe deferred deletion of memory that may be
+// concurrently accessed by reader threads (e.g. HashMap and EEHashTable
+// bucket arrays during resize).
+extern EbrCollector g_EbrCollector;
 
 // RAII holder for EBR critical regions, analogous to GCX_COOP pattern.
 // When fEnable is false, the holder is a no-op.
