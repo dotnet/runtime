@@ -3195,6 +3195,10 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             AddIns(INTOP_RET_VOID);
             return true;
         case NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait:
+            if ((m_methodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)
+            {
+                BADCODE("TailAwait is not supported in async methods that capture contexts");
+            }
             m_nextAwaitIsTail = true;
             return true;
         case NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation:
