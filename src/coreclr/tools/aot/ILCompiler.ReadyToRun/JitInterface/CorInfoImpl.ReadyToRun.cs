@@ -1215,10 +1215,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.CheckedWriteBarrier_EBP;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ENDCATCH:
-                    id = ReadyToRunHelper.EndCatch;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN:
                     id = ReadyToRunHelper.PInvokeBegin;
                     break;
@@ -1260,7 +1256,13 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
+                    id = ReadyToRunHelper.InitClass;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
+                    id = ReadyToRunHelper.InitInstClass;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:

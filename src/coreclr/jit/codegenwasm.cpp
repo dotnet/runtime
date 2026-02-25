@@ -619,6 +619,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genIntrinsic(treeNode->AsIntrinsic());
             break;
 
+        case GT_PINVOKE_PROLOG:
+            // TODO-WASM-CQ re-establish the global stack pointer here?
+            break;
+
         default:
 #ifdef DEBUG
             NYIRAW(GenTree::OpName(treeNode->OperGet()));

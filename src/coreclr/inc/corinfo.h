@@ -417,8 +417,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_FIELD_ACCESS_EXCEPTION,
     CORINFO_HELP_CLASS_ACCESS_EXCEPTION,
 
-    CORINFO_HELP_ENDCATCH,          // call back into the EE at the end of a catch block
-
     /* Synchronization */
 
     CORINFO_HELP_MON_ENTER,

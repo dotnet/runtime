@@ -531,6 +531,17 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
         // performance optimization.
         m_canUseProcVmReadSyscall = false;
         assert(m_fdMem != -1);
+#ifdef TARGET_ARM64
+        // Android's heap allocator (scudo) uses ARM64 Top-Byte Ignore (TBI) for memory tagging.
+        // pread on /proc/<pid>/mem treats the offset as a file position, not a virtual address,
+        // so the kernel does not apply TBI — tagged pointers cause EINVAL.
+        // See https://www.kernel.org/doc/html/latest/arch/arm64/tagged-address-abi.html
+        //
+        // Currently only Android allocators set a non-zero top byte, so on other ARM64 Linux
+        // configurations this is a no-op. However, any future use of TBI tagging (e.g., ARM MTE)
+        // on other Linux distros would hit the same issue.
+        address &= 0x00FFFFFFFFFFFFFFULL;
+#endif
         *read = pread(m_fdMem, buffer, size, (off_t)address);
     }
 
