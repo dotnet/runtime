@@ -427,8 +427,8 @@ bool Compiler::fgForwardSubIsDefCandidate(Statement* stmt, GenTree** fwdSubNode,
 
     JITDUMP("    [%06u]: ", dspTreeID(defNode))
 
-    *lclNum                  = defNode->AsLclVarCommon()->GetLclNum();
-    LclVarDsc* const varDsc  = lvaGetDesc(*lclNum);
+    *lclNum                 = defNode->AsLclVarCommon()->GetLclNum();
+    LclVarDsc* const varDsc = lvaGetDesc(*lclNum);
 
     if (varDsc->lvPinned)
     {
@@ -583,7 +583,7 @@ bool Compiler::fgForwardSubCanReorderPast(ForwardSubCandidate* candidate, GenTre
 //
 bool Compiler::fgForwardSubHasStoreInterferenceWithCandidate(ForwardSubCandidate* candidate, Statement* stmt)
 {
-    Statement*          defStmt = candidate->defStmt;
+    Statement*           defStmt = candidate->defStmt;
     GenTreeLclVarCommon* defNode = defStmt->GetRootNode()->AsLclVarCommon();
 
     for (GenTreeLclVarCommon* defStmtLcl : defStmt->LocalsTreeList())
@@ -645,8 +645,8 @@ bool Compiler::fgForwardSubStatement(ForwardSubCandidate* candidate, Statement* 
     LclVarDsc* const varDsc     = lvaGetDesc(lclNum);
     GenTree*         fwdSubNode = candidate->fwdSubNode;
 
-    JITDUMP("  Trying to fwd sub [%06u] (V%02u) into [%06u]\n",
-            dspTreeID(defNode), lclNum, dspTreeID(useStmt->GetRootNode()));
+    JITDUMP("  Trying to fwd sub [%06u] (V%02u) into [%06u]\n", dspTreeID(defNode), lclNum,
+            dspTreeID(useStmt->GetRootNode()));
 
     // We often see stale flags, eg call flags after inlining.
     // Try and clean these up.
@@ -723,7 +723,7 @@ bool Compiler::fgForwardSubStatement(ForwardSubCandidate* candidate, Statement* 
     // the use statement (before the use point) and any accumulated
     // intermediate effects from statements between the def and use.
     //
-    GenTreeFlags      const useFlags   = fsv.GetFlags() | candidate->intermediateFlags;
+    GenTreeFlags const      useFlags   = fsv.GetFlags() | candidate->intermediateFlags;
     ExceptionSetFlags const useExcepts = fsv.GetExceptions() | candidate->intermediateExcepts;
 
     if (((useFlags & GTF_ASG) != 0) && fgForwardSubHasStoreInterference(defStmt, useStmt, fsv.GetNode()))
@@ -741,8 +741,7 @@ bool Compiler::fgForwardSubStatement(ForwardSubCandidate* candidate, Statement* 
         JITDUMP(" cannot reorder global reference with persistent side effects\n");
         return false;
     }
-    if (((fwdSubNode->gtFlags & GTF_ORDER_SIDEEFF) != 0) &&
-        ((useFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
+    if (((fwdSubNode->gtFlags & GTF_ORDER_SIDEEFF) != 0) && ((useFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
     {
         JITDUMP(" cannot reorder ordering side effect with global reference/ordering side effect\n");
         return false;
@@ -919,8 +918,8 @@ bool Compiler::fgForwardSubStatement(ForwardSubCandidate* candidate, Statement* 
 //
 bool Compiler::fgForwardSubStatement(Statement* stmt)
 {
-    GenTree*  fwdSubNode = nullptr;
-    unsigned  lclNum     = BAD_VAR_NUM;
+    GenTree* fwdSubNode = nullptr;
+    unsigned lclNum     = BAD_VAR_NUM;
 
     if (!fgForwardSubIsDefCandidate(stmt, &fwdSubNode, &lclNum))
     {
@@ -960,10 +959,10 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     }
 
     ForwardSubCandidate candidate;
-    candidate.defStmt            = stmt;
-    candidate.lclNum             = lclNum;
-    candidate.fwdSubNode         = fwdSubNode;
-    candidate.fwdSubFlags        = fwdSubNode->gtFlags;
+    candidate.defStmt             = stmt;
+    candidate.lclNum              = lclNum;
+    candidate.fwdSubNode          = fwdSubNode;
+    candidate.fwdSubFlags         = fwdSubNode->gtFlags;
     candidate.intermediateFlags   = GTF_EMPTY;
     candidate.intermediateExcepts = ExceptionSetFlags::None;
 
@@ -1229,10 +1228,10 @@ bool Compiler::fgForwardSubBlock(BasicBlock* block)
             // If this statement uses the candidate local, the def must
             // remain alive for that use and forward sub is impossible.
             //
-            bool interferes = false;
-            unsigned const candLcl = candidate->lclNum;
-            LclVarDsc* const candDsc = lvaGetDesc(candLcl);
-            unsigned const candParentLcl = candDsc->lvIsStructField ? candDsc->lvParentLcl : BAD_VAR_NUM;
+            bool             interferes    = false;
+            unsigned const   candLcl       = candidate->lclNum;
+            LclVarDsc* const candDsc       = lvaGetDesc(candLcl);
+            unsigned const   candParentLcl = candDsc->lvIsStructField ? candDsc->lvParentLcl : BAD_VAR_NUM;
 
             for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
             {
@@ -1264,8 +1263,8 @@ bool Compiler::fgForwardSubBlock(BasicBlock* block)
 
             if (interferes)
             {
-                JITDUMP("    V%02u interferes with [%06u], removing candidate\n",
-                        candidate->lclNum, dspTreeID(stmt->GetRootNode()));
+                JITDUMP("    V%02u interferes with [%06u], removing candidate\n", candidate->lclNum,
+                        dspTreeID(stmt->GetRootNode()));
                 candidates.BottomRef(i) = candidates.BottomRef(candidates.Height() - 1);
                 candidates.Pop(1);
                 i--;
@@ -1285,17 +1284,16 @@ bool Compiler::fgForwardSubBlock(BasicBlock* block)
         // the O(N*M) work in the main loop.
         //
         unsigned const maxCandidates = 16;
-        GenTree*  fwdSubNode = nullptr;
-        unsigned  lclNum     = BAD_VAR_NUM;
+        GenTree*       fwdSubNode    = nullptr;
+        unsigned       lclNum        = BAD_VAR_NUM;
 
-        if ((candidates.Height() < (int)maxCandidates) &&
-            fgForwardSubIsDefCandidate(stmt, &fwdSubNode, &lclNum))
+        if ((candidates.Height() < (int)maxCandidates) && fgForwardSubIsDefCandidate(stmt, &fwdSubNode, &lclNum))
         {
             ForwardSubCandidate newCandidate;
-            newCandidate.defStmt            = stmt;
-            newCandidate.lclNum             = lclNum;
-            newCandidate.fwdSubNode         = fwdSubNode;
-            newCandidate.fwdSubFlags        = fwdSubNode->gtFlags;
+            newCandidate.defStmt             = stmt;
+            newCandidate.lclNum              = lclNum;
+            newCandidate.fwdSubNode          = fwdSubNode;
+            newCandidate.fwdSubFlags         = fwdSubNode->gtFlags;
             newCandidate.intermediateFlags   = GTF_EMPTY;
             newCandidate.intermediateExcepts = ExceptionSetFlags::None;
             candidates.Push(newCandidate);
