@@ -33,3 +33,5 @@ jobs:
           parameters:
             configForBuild: Release
             artifactName: BrowserWasmCoreCLR
+            sdkDirName: dotnet-none
+            includeRefPack: false
