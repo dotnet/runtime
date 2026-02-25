@@ -47,6 +47,7 @@
           Link="Common\System\IO\Compression\ZLibNative.CompressionLevel.cs" />
     <Compile Include="$(CommonPath)System\IO\Compression\ZLibNative.ZStream.cs"
              Link="Common\System\IO\Compression\ZLibNative.ZStream.cs" />
+    <Compile Include="System\IO\Compression\CompressionFormat.cs" />
     <Compile Include="System\IO\Compression\CompressionLevel.cs" />
     <Compile Include="System\IO\Compression\CompressionMode.cs" />
     <Compile Include="System\IO\Compression\Crc32Helper.ZLib.cs" />
