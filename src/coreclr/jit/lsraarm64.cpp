@@ -1365,6 +1365,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // Build any immediates
     BuildHWIntrinsicImmediate(intrinsicTree, intrin);
 
+    // Build any additional special cases
+    switch (intrin.id)
+    {
+        case NI_Sve2_Scatter16BitNarrowingNonTemporal:
+        case NI_Sve2_Scatter32BitNarrowingNonTemporal:
+        case NI_Sve2_ScatterNonTemporal:
+            buildInternalFloatRegisterDefForNode(intrinsicTree, internalFloatRegCandidates());
+            break;
+
+        default:
+            break;
+    }
+
     // Build all Operands
     for (size_t opNum = 1; opNum <= intrin.numOperands; opNum++)
     {
