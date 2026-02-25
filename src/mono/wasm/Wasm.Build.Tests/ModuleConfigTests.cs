@@ -124,11 +124,19 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     }
 
     [Theory]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    public void SymbolMapFileEmitted(bool emitSymbolMap, bool isPublish)
+    [InlineData(false)]
+    [InlineData(true)]
+    [TestCategory("native")]
+    public void SymbolMapFileEmitted(bool isPublish)
+        => SymbolMapFileEmittedCore(emitSymbolMap: true, isPublish);
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SymbolMapFileNotEmitted(bool isPublish)
+        => SymbolMapFileEmittedCore(emitSymbolMap: false, isPublish);
+
+    private void SymbolMapFileEmittedCore(bool emitSymbolMap, bool isPublish)
     {
         Configuration config = Configuration.Release;
         string extraProperties = $"<WasmEmitSymbolMap>{emitSymbolMap.ToString().ToLowerInvariant()}</WasmEmitSymbolMap>";
