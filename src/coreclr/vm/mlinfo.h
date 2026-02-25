@@ -50,8 +50,11 @@ enum MarshalFlags
     MARSHAL_FLAG_BYREF              = 0x008,
     MARSHAL_FLAG_HRESULT_SWAP       = 0x010,
     MARSHAL_FLAG_RETVAL             = 0x020,
-    // unused                       = 0x040,
-    MARSHAL_FLAG_FIELD              = 0x080
+    MARSHAL_FLAG_FIELD              = 0x040,
+    // Disable cleanup code even when a marshaller needs cleanup.
+    // Used for struct marshalling where we generate marshal/unmarshal/cleanup stubs separately.
+    MARSHAL_FLAG_NO_CLEANUP         = 0x080,
+    MARSHAL_FLAG_CLEANUP_ONLY       = 0x100, // Used for struct marshalling cleanup code. Only generate cleanup logic.
 };
 
 #include <pshpack1.h>
@@ -327,7 +330,8 @@ public:
     void GenerateFieldIL(PInvokeStubLinker* psl,
                         UINT32 managedOffset, // the field's byte offset into the managed object
                         UINT32 nativeOffset, // the field's byte offset into the native object
-                        FieldDesc* pFieldDesc); // The field descriptor for reporting errors
+                        FieldDesc* pFieldDesc, // The field descriptor for reporting errors
+                        DWORD dwMarshalFlags = 0); // Flags to specify which scenarios to generate IL for.
 
     OverrideProcArgs const* GetOverrideProcArgs()
     {

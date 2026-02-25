@@ -29,6 +29,8 @@ struct StructMarshalStubs
         Unmarshal,
         Cleanup
     };
+
+    static bool TryGenerateStructMarshallingMethod(MethodDesc* pMD, DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
 };
 
 struct LocalDesc

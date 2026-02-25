@@ -2493,7 +2493,8 @@ void MarshalInfo::GenerateReturnIL(PInvokeStubLinker* psl,
 void MarshalInfo::GenerateFieldIL(PInvokeStubLinker* psl,
     UINT32 managedOffset,
     UINT32 nativeOffset,
-    FieldDesc* pFieldDesc)
+    FieldDesc* pFieldDesc,
+    DWORD dwMarshalFlags)
 {
     CONTRACTL
     {
@@ -2521,13 +2522,39 @@ void MarshalInfo::GenerateFieldIL(PInvokeStubLinker* psl,
     ILCodeStream* pcsMarshal = psl->GetMarshalCodeStream();
     ILCodeStream* pcsUnmarshal = psl->GetUnmarshalCodeStream();
 
-    pcsMarshal->EmitNOP("// field { ");
-    pcsUnmarshal->EmitNOP("// field { ");
+    if (dwMarshalFlags == 0)
+    {
+        // By default, struct marshalling stubs are all in-out.
+        // Since we generate a single stub for all three operations (managed->native, native->managed, cleanup)
+        // we set the clr-to-native flag so the marshal phase is CLR->Native and the unmarshal phase is Native->CLR
+        dwMarshalFlags = MARSHAL_FLAG_IN | MARSHAL_FLAG_OUT | MARSHAL_FLAG_CLR_TO_NATIVE;
+    }
 
-    pMarshaler->EmitMarshalField(pcsMarshal, pcsUnmarshal, m_paramidx, managedOffset, nativeOffset, &m_args);
+    // We can't just emit NOPs always because our struct marshalling methods
+    // do only one operation (marshal/unmarshal/cleanup) based on flags,
+    // and an IL body can't end with NOPs without RET instructions afterwards.
+    if (dwMarshalFlags & MARSHAL_FLAG_IN)
+    {
+        pcsMarshal->EmitNOP("// field { ");
+    }
 
-    pcsMarshal->EmitNOP("// } field");
-    pcsUnmarshal->EmitNOP("// } field");
+    if (dwMarshalFlags & MARSHAL_FLAG_OUT)
+    {
+        pcsUnmarshal->EmitNOP("// field { ");
+    }
+
+    pMarshaler->EmitMarshalField(pcsMarshal, pcsUnmarshal, m_paramidx, managedOffset, nativeOffset, dwMarshalFlags, &m_args);
+
+
+    if (dwMarshalFlags & MARSHAL_FLAG_IN)
+    {
+        pcsMarshal->EmitNOP("// } field");
+    }
+
+    if (dwMarshalFlags & MARSHAL_FLAG_OUT)
+    {
+        pcsUnmarshal->EmitNOP("// } field");
+    }
 
     return;
 }

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 #if FEATURE_COMINTEROP
 using System.Runtime.InteropServices.CustomMarshalers;
@@ -619,19 +620,17 @@ namespace System.StubHelpers
         {
             internal IntPtr m_pElementMT;
             internal TypeHandle m_Array;
-            internal IntPtr m_pManagedNativeArrayMarshaler;
             internal int m_NativeDataValid;
             internal int m_BestFitMap;
             internal int m_ThrowOnUnmappableChar;
             internal short m_vt;
         }
 
-        internal static unsafe void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, bool nativeDataValid, IntPtr pManagedMarshaler)
+        internal static unsafe void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, bool nativeDataValid)
         {
             MarshalerState* pState = (MarshalerState*)pMarshalState;
             pState->m_pElementMT = pMT;
             pState->m_Array = default;
-            pState->m_pManagedNativeArrayMarshaler = pManagedMarshaler;
             pState->m_NativeDataValid = nativeDataValid ? 1 : 0;
             pState->m_BestFitMap = (byte)(dwFlags >> 16);
             pState->m_ThrowOnUnmappableChar = (byte)(dwFlags >> 24);
@@ -699,7 +698,6 @@ namespace System.StubHelpers
         {
 #pragma warning disable CA1823, IDE0044 // not used by managed code
             internal IntPtr m_pElementMT;
-            internal IntPtr m_pManagedElementMarshaler;
             internal IntPtr m_Array;
             internal int m_BestFitMap;
             internal int m_ThrowOnUnmappableChar;
@@ -708,12 +706,11 @@ namespace System.StubHelpers
 #pragma warning restore CA1823, IDE0044
         }
 
-        internal static unsafe void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, int cElements, IntPtr pManagedMarshaler)
+        internal static unsafe void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, int cElements)
         {
             MarshalerState* pState = (MarshalerState*)pMarshalState;
             pState->m_pElementMT = pMT;
             pState->m_Array = default;
-            pState->m_pManagedElementMarshaler = pManagedMarshaler;
             pState->m_BestFitMap = (byte)(dwFlags >> 16);
             pState->m_ThrowOnUnmappableChar = (byte)(dwFlags >> 24);
             pState->m_vt = (ushort)dwFlags;
@@ -1074,8 +1071,7 @@ namespace System.StubHelpers
                 pvArrayMarshaler,
                 IntPtr.Zero,      // not needed as we marshal primitive VTs only
                 dwArrayMarshalerFlags,
-                nativeDataValid: false,
-                IntPtr.Zero);     // not needed as we marshal primitive VTs only
+                nativeDataValid: false);
 
             IntPtr pNativeHome;
             IntPtr pNativeHomeAddr = new IntPtr(&pNativeHome);
@@ -1352,6 +1348,64 @@ namespace System.StubHelpers
         internal const int Marshal = 0;
         internal const int Unmarshal = 1;
         internal const int Cleanup = 2;
+    }
+
+    internal static unsafe class StructureMarshaler<T> where T : struct
+    {
+        [Intrinsic]
+        private static extern void ConvertToUnmanagedCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
+
+        internal static void ConvertToUnmanaged(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        {
+            try
+            {
+                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+                ConvertToUnmanagedCore(ref managed, unmanaged, ref cleanupWorkList);
+            }
+            catch (Exception)
+            {
+                Free(ref managed, unmanaged, ref cleanupWorkList);
+                throw;
+            }
+        }
+
+        [Intrinsic]
+        internal static extern void ConvertToManaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
+
+        [Intrinsic]
+        internal static extern void Free(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
+    }
+
+    internal static unsafe class LayoutClassMarshaller<T> where T : class
+    {
+        private static void ConvertToUnmanagedCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static void ConvertToUnmanaged(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        {
+            try
+            {
+                NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+                ConvertToUnmanagedCore(managed, unmanaged, ref cleanupWorkList);
+            }
+            catch (Exception)
+            {
+                Free(managed, unmanaged, ref cleanupWorkList);
+                throw;
+            }
+        }
+
+        internal static void ConvertToManaged(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static void Free(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     internal abstract class CleanupWorkListElement

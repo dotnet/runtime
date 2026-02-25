@@ -1093,14 +1093,22 @@ void ILValueClassMarshaler::EmitClearNative(ILCodeStream * pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Cleanup);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+    TypeHandle structType{m_pargs->m_pMT};
+
+    MethodDesc* pFreeMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__FREE);
+
+    MethodDesc* pFreeMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pFreeMethodTypicalInstantiation,
+        TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&structType, 1)).GetMethodTable(),
+        FALSE,
+        Instantiation(),
+        TRUE);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pFreeMethod), 3, 0);
 }
 
 
@@ -1108,28 +1116,44 @@ void ILValueClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
+    TypeHandle structType{m_pargs->m_pMT};
 
     EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Marshal);
+    pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+    MethodDesc* pConvertToUnmanagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED);
+
+    MethodDesc* pConvertToUnmanagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToUnmanagedMethodTypicalInstantiation,
+        TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&structType, 1)).GetMethodTable(),
+        FALSE,
+        Instantiation(),
+        TRUE);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToUnmanagedMethod), 4, 0);
 }
 
 void ILValueClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
-
     EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
     pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Unmarshal);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+    TypeHandle structType{m_pargs->m_pMT};
+
+    MethodDesc* pConvertToManagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED);
+
+    MethodDesc* pConvertToManagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToManagedMethodTypicalInstantiation,
+        TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&structType, 1)).GetMethodTable(),
+        FALSE,
+        Instantiation(),
+        TRUE);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToManagedMethod), 4, 0);
 }
 
 
@@ -3892,16 +3916,7 @@ void ILNativeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
         pslILEmit->EmitLDC(0); // false
     }
 
-    if (mops.elementType == VT_RECORD && !mops.methodTable->IsBlittable())
-    {
-        pslILEmit->EmitLDFTN(pslILEmit->GetToken(PInvoke::CreateStructMarshalILStub(mops.methodTable)));
-    }
-    else
-    {
-        pslILEmit->EmitLoadNullPtr();
-    }
-
-    pslILEmit->EmitCALL(METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CREATE_MARSHALER, 5, 0);
+    pslILEmit->EmitCALL(METHOD__MNGD_NATIVE_ARRAY_MARSHALER__CREATE_MARSHALER, 4, 0);
 }
 
 bool ILNativeArrayMarshaler::CanMarshalViaPinning()
@@ -4341,7 +4356,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToNative(MngdN
         else
         {
             pMarshaler->ComToOleArray(&arrayRef, *pNativeHome, pThis->m_pElementMT, pThis->m_BestFitMap,
-                                      pThis->m_ThrowOnUnmappableChar, pThis->m_NativeDataValid, cElements, pThis->m_pManagedMarshaler);
+                                      pThis->m_ThrowOnUnmappableChar, pThis->m_NativeDataValid, cElements);
         }
     }
 
@@ -4409,7 +4424,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(Mngd
         }
         else
         {
-            pMarshaler->OleToComArray(*pNativeHome, &arrayRef, pThis->m_pElementMT, pThis->m_pManagedMarshaler);
+            pMarshaler->OleToComArray(*pNativeHome, &arrayRef, pThis->m_pElementMT);
         }
     }
 
@@ -4429,7 +4444,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ClearNativeContents(MngdNativ
 
         if (pMarshaler != NULL && pMarshaler->ClearOleArray != NULL)
         {
-            pMarshaler->ClearOleArray(*pNativeHome, cElements, pThis->m_pElementMT, pThis->m_pManagedMarshaler);
+            pMarshaler->ClearOleArray(*pNativeHome, cElements, pThis->m_pElementMT);
         }
     }
 
@@ -4462,16 +4477,7 @@ void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     pslILEmit->EmitLDC(mops.additive);
 
-    if (mops.elementType == VT_RECORD && !mops.methodTable->IsBlittable())
-    {
-        pslILEmit->EmitLDFTN(pslILEmit->GetToken(PInvoke::CreateStructMarshalILStub(mops.methodTable)));
-    }
-    else
-    {
-        pslILEmit->EmitLoadNullPtr();
-    }
-
-    pslILEmit->EmitCALL(METHOD__MNGD_FIXED_ARRAY_MARSHALER__CREATE_MARSHALER, 5, 0);
+    pslILEmit->EmitCALL(METHOD__MNGD_FIXED_ARRAY_MARSHALER__CREATE_MARSHALER, 4, 0);
 }
 
 extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFixedArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void* pNativeHome)
@@ -4525,7 +4531,7 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFi
             else
             {
                 pMarshaler->ComToOleArray(&arrayRef, pNativeHome, pThis->m_pElementMT, pThis->m_BestFitMap,
-                    pThis->m_ThrowOnUnmappableChar, FALSE, pThis->m_cElements, pThis->m_pManagedElementMarshaler);
+                    pThis->m_ThrowOnUnmappableChar, FALSE, pThis->m_cElements);
             }
         }
     }
@@ -4598,7 +4604,7 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdF
         }
         else
         {
-            pMarshaler->OleToComArray(pNativeHome, &arrayRef, pThis->m_pElementMT, pThis->m_pManagedElementMarshaler);
+            pMarshaler->OleToComArray(pNativeHome, &arrayRef, pThis->m_pElementMT);
         }
     }
 
@@ -4616,7 +4622,7 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ClearNativeContents(MngdFixedA
 
     if (pMarshaler != NULL && pMarshaler->ClearOleArray != NULL)
     {
-        pMarshaler->ClearOleArray(pNativeHome, pThis->m_cElements, pThis->m_pElementMT, pThis->m_pManagedElementMarshaler);
+        pMarshaler->ClearOleArray(pNativeHome, pThis->m_cElements, pThis->m_pElementMT);
     }
 
     END_QCALL;
@@ -4660,16 +4666,7 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     pslILEmit->EmitLDC(m_pargs->m_pMarshalInfo->GetArrayRank());
     pslILEmit->EmitLDC(dwFlags);
 
-    if (mops.elementType == VT_RECORD && !mops.methodTable->IsBlittable())
-    {
-        pslILEmit->EmitLDFTN(pslILEmit->GetToken(PInvoke::CreateStructMarshalILStub(mops.methodTable)));
-    }
-    else
-    {
-        pslILEmit->EmitLoadNullPtr();
-    }
-
-    pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CREATE_MARSHALER, 5, 0);
+    pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CREATE_MARSHALER, 4, 0);
 }
 
 void ILSafeArrayMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -4706,7 +4703,7 @@ void ILSafeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmi
     pslILEmit->EmitCALL(METHOD__MNGD_SAFE_ARRAY_MARSHALER__CONVERT_CONTENTS_TO_NATIVE, 4, 0);
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags, PCODE pManagedMarshaler)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMarshaler* pThis, MethodTable* pMT, UINT32 iRank, UINT32 dwFlags)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
@@ -4715,7 +4712,6 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMa
     pThis->m_vt            = (VARTYPE)dwFlags;
     pThis->m_fStatic       = (BYTE)(dwFlags >> 16);
     pThis->m_nolowerbounds = (BYTE)(dwFlags >> 24);
-    pThis->m_pManagedMarshaler = pManagedMarshaler;
 }
 
 extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
@@ -4789,7 +4785,6 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSaf
                                                 (SAFEARRAY*)*pNativeHome,
                                                 pThis->m_vt,
                                                 pThis->m_pElementMT,
-                                                pThis->m_pManagedMarshaler,
                                                 (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_NativeDataValid));
     }
 
@@ -4883,7 +4878,6 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSa
         OleVariant::MarshalArrayRefForSafeArray(pNative,
                                                 &arrayRef,
                                                 pThis->m_vt,
-                                                pThis->m_pManagedMarshaler,
                                                 pThis->m_pElementMT);
     }
 

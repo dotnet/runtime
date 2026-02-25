@@ -4000,6 +4000,155 @@ static void CreateStructStub(ILStubState* pss,
     pss->FinishEmit(pMD);
 }
 
+static void CreateStructMarshalIL(MethodDesc* pMD, DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder, DWORD dwMarshalOperationFlags)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(CheckPointer(resolver));
+        PRECONDITION(CheckPointer(methodILDecoder));
+    }
+    CONTRACTL_END;
+
+    MethodTable* pMT = pMD->GetClassInstantiation()[0].GetMethodTable();
+
+    // Marshal the fields
+    MarshalInfo::MarshalScenario ms = MarshalInfo::MARSHAL_SCENARIO_FIELD;
+
+    EEClassNativeLayoutInfo const* pNativeLayoutInfo = pMT->GetNativeLayoutInfo();
+
+    int numFields = pNativeLayoutInfo->GetNumFields();
+
+    CorNativeLinkType nlType = pMT->GetCharSet();
+
+    NativeFieldDescriptor const* pFieldDescriptors = pNativeLayoutInfo->GetNativeFieldDescriptors();
+
+    const bool isInlineArray = pMT->GetClass()->IsInlineArray();
+    if (isInlineArray)
+    {
+        _ASSERTE(pNativeLayoutInfo->GetSize() % pFieldDescriptors[0].NativeSize() == 0);
+        numFields = pNativeLayoutInfo->GetSize() / pFieldDescriptors[0].NativeSize();
+    }
+
+    DWORD dwStubFlags = PINVOKESTUB_FL_STRUCT_MARSHAL;
+
+    BOOL bestFit, throwOnUnmappableChar;
+
+    ReadBestFitCustomAttribute(pMT->GetModule(), pMT->GetCl(), &bestFit, &throwOnUnmappableChar);
+
+    if (bestFit == TRUE)
+    {
+        dwStubFlags |= PINVOKESTUB_FL_BESTFIT;
+    }
+    if (throwOnUnmappableChar == TRUE)
+    {
+        dwStubFlags |= PINVOKESTUB_FL_THROWONUNMAPPABLECHAR;
+    }
+
+    SigTypeContext genericContext;
+    SigTypeContext::InitTypeContext(pMD, &genericContext);
+
+    NewHolder<PInvokeStubLinker> slIL(new PInvokeStubLinker(dwStubFlags, pMD->GetModule(), pMD->GetSignature(), &genericContext, nullptr, -1));
+    slIL->SetStubMethodDesc(pMD);
+
+    for (int i = 0; i < numFields; ++i)
+    {
+        // For inline arrays, we only have one field descriptor that we need to reuse for each field.
+        NativeFieldDescriptor const& nativeFieldDescriptor = isInlineArray ? pFieldDescriptors[0] : pFieldDescriptors[i];
+        PTR_FieldDesc pFD = nativeFieldDescriptor.GetFieldDesc();
+        SigPointer fieldSig = pFD->GetSigPointer();
+        // The first byte in a field signature is always 0x6 per ECMA 335. Skip over this byte to get to the rest of the signature for the MarshalInfo constructor.
+        (void)fieldSig.GetByte(nullptr);
+        SigTypeContext context(pFD, TypeHandle(pMT));
+
+        MarshalInfo mlInfo(pFD->GetModule(),
+            fieldSig,
+            &context,
+            pFD->GetMemberDef(),
+            ms,
+            nlType,
+            nlfNone,
+            TRUE,
+            i + 1,
+            numFields,
+            SF_IsBestFit(dwStubFlags),
+            SF_IsThrowOnUnmappableChar(dwStubFlags),
+            TRUE,
+            NULL,
+            TRUE
+            DEBUG_ARG(NULL)
+            DEBUG_ARG(NULL)
+            DEBUG_ARG(-1 /* field */));
+
+        // When we have an inline array, we need to calculate the offset based on how many elements we've already seen.
+        // Otherwise, we have a specific field descriptor for the given field that contains the correct offset info.
+        UINT32 managedOffset = isInlineArray ? (i * pFD->GetSize()) : pFD->GetOffset();
+        UINT32 externalOffset = isInlineArray ? (i * nativeFieldDescriptor.NativeSize()) : nativeFieldDescriptor.GetExternalOffset();
+
+        mlInfo.GenerateFieldIL(slIL, managedOffset, externalOffset, pFD, MARSHAL_FLAG_CLR_TO_NATIVE | dwMarshalOperationFlags);
+    }
+
+    if (dwMarshalOperationFlags & MARSHAL_FLAG_CLEANUP_ONLY)
+    {
+        slIL->GetCleanupCodeStream()->EmitRET();
+    }
+    else if (dwMarshalOperationFlags & MARSHAL_FLAG_IN)
+    {
+        slIL->GetMarshalCodeStream()->EmitRET();
+    }
+    else if (dwMarshalOperationFlags & MARSHAL_FLAG_OUT)
+    {
+        slIL->GetUnmarshalCodeStream()->EmitRET();
+    }
+
+    SString sInstructions;
+
+    slIL->LogILStub(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB, &sInstructions);
+
+    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+    ilResolver->SetStubMethodDesc(pMD);
+    *methodILDecoder = ilResolver->FinalizeILStub(slIL);
+    *resolver = ilResolver.Extract();
+}
+
+bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(resolver));
+        PRECONDITION(CheckPointer(methodILDecoder));
+    }
+    CONTRACTL_END;
+
+    if (!pMD->IsIntrinsic())
+        return false;
+
+    if (pMD->GetMethodTable()->GetTypicalMethodTable() != CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER))
+        return false;
+
+    MethodDesc* pTypicalDefinition = pMD->LoadTypicalMethodDefinition();
+
+    if (pTypicalDefinition == CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED_CORE))
+    {
+        CreateStructMarshalIL(pMD, resolver, methodILDecoder, MARSHAL_FLAG_IN | MARSHAL_FLAG_NO_CLEANUP);
+        return true;
+    }
+    else if (pTypicalDefinition == CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED))
+    {
+        CreateStructMarshalIL(pMD, resolver, methodILDecoder, MARSHAL_FLAG_OUT | MARSHAL_FLAG_NO_CLEANUP);
+        return true;
+    }
+    else if (pTypicalDefinition == CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__FREE))
+    {
+        CreateStructMarshalIL(pMD, resolver, methodILDecoder, MARSHAL_FLAG_IN | MARSHAL_FLAG_OUT | MARSHAL_FLAG_CLEANUP_ONLY);
+        return true;
+    }
+
+    return false;
+}
+
 namespace
 {
     class PInvokeStubParameters
@@ -5889,6 +6038,37 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
     CONTRACTL_END;
 
     m_pPInvokeTarget = pTarget;
+}
+
+void MarshalStructWithStructMarshaler(MethodDesc* pPrimaryMD, MethodTable* pMT, void* pManagedData, void* pNativeData, void** ppCleanupWorkList)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pPrimaryMD));
+        PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(pMT->IsValueType());
+    }
+    CONTRACTL_END;
+
+    TypeHandle th(pMT);
+
+    MethodDesc* pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pPrimaryMD,
+        TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).GetMethodTable(),
+        FALSE,
+        Instantiation(),
+        TRUE);
+
+    PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
+    DECLARE_ARGHOLDER_ARRAY(args, 3);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pManagedData);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(pNativeData);
+    args[ARGNUM_2] = PTR_TO_ARGHOLDER(ppCleanupWorkList);
+
+    CALL_MANAGED_METHOD_NORET(args);
 }
 
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)

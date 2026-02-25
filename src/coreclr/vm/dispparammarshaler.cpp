@@ -247,18 +247,11 @@ void DispParamArrayMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTREF
     if (!pElemMT && vt == VT_RECORD)
         pElemMT = OleVariant::GetElementTypeForRecordSafeArray(pSafeArray).GetMethodTable();
 
-    PCODE pStructMarshalStubAddress = NULL;
-    if (vt == VT_RECORD && !pElemMT->IsBlittable())
-    {
-        GCX_PREEMP();
-        pStructMarshalStubAddress = PInvoke::GetEntryPointForStructMarshalStub(pElemMT);
-    }
-
     // Create an array from the SAFEARRAY.
     *(BASEARRAYREF*)pDestObj = OleVariant::CreateArrayRefForSafeArray(pSafeArray, vt, pElemMT);
 
     // Convert the contents of the SAFEARRAY.
-    OleVariant::MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF*)pDestObj, vt, pStructMarshalStubAddress, pElemMT);
+    OleVariant::MarshalArrayRefForSafeArray(pSafeArray, (BASEARRAYREF*)pDestObj, vt, pElemMT);
 }
 
 void DispParamArrayMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT *pDestVar)
@@ -292,21 +285,12 @@ void DispParamArrayMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT
             pElemMT = tempHandle.GetMethodTable();
         }
 
-        PCODE pStructMarshalStubAddress = NULL;
-        GCPROTECT_BEGIN(*pSrcObj);
-        if (vt == VT_RECORD && !pElemMT->IsBlittable())
-        {
-            GCX_PREEMP();
-            pStructMarshalStubAddress = PInvoke::GetEntryPointForStructMarshalStub(pElemMT);
-        }
-        GCPROTECT_END();
-
         // Allocate the safe array based on the source object and the destination VT.
         pSafeArray = OleVariant::CreateSafeArrayForArrayRef((BASEARRAYREF*)pSrcObj, vt, pElemMT);
         _ASSERTE(pSafeArray);
 
         // Marshal the contents of the SAFEARRAY.
-        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF*)pSrcObj, pSafeArray, vt, pElemMT, pStructMarshalStubAddress);
+        OleVariant::MarshalSafeArrayForArrayRef((BASEARRAYREF*)pSrcObj, pSafeArray, vt, pElemMT);
     }
 
     // Store the resulting SAFEARRAY in the destination VARIANT.
