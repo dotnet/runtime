@@ -476,7 +476,7 @@ internal class AMD64Unwinder(Target target)
                         // pop nonvolatile-integer-register[0..7]
                         //
 
-                        byte registerNumber = (byte)(ReadByteAt(nextByte + 2) & 0x7);
+                        byte registerNumber = (byte)(ReadByteAt(nextByte) & 0x7);
                         SetRegister(ref context, registerNumber, _target.Read<ulong>(context.Rsp));
 
                         context.Rsp += 8;
