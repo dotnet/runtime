@@ -522,20 +522,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void TypesWithJsonConstructorAnnotations_WarnAsExpected()
         {
+            // Inaccessible [JsonConstructor] constructors are now supported via UnsafeAccessor or reflection fallback.
+            // No diagnostics should be emitted.
             Compilation compilation = CompilationHelper.CreateCompilationWithJsonConstructorAttributeAnnotations();
-
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
-
-            Location protectedCtorLocation = compilation.GetSymbolsWithName("ClassWithProtectedCtor").First().Locations[0];
-            Location privateCtorLocation = compilation.GetSymbolsWithName("ClassWithPrivateCtor").First().Locations[0];
-
-            var expectedDiagnostics = new DiagnosticData[]
-            {
-                new(DiagnosticSeverity.Warning, protectedCtorLocation, "The constructor on type 'HelloWorld.ClassWithProtectedCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
-                new(DiagnosticSeverity.Warning, privateCtorLocation, "The constructor on type 'HelloWorld.ClassWithPrivateCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
-            };
-
-            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+            CompilationHelper.AssertEqualDiagnosticMessages([], result.Diagnostics);
         }
 
         [Fact]
