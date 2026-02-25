@@ -4320,6 +4320,19 @@ do                                                                      \
                     goto EXIT_FRAME;
                 }
 
+                case INTOP_RET_EXISTING_CONTINUATION:
+                {
+                    if (pInterpreterFrame->GetContinuation() == NULL)
+                    {
+                        // No continuation returned
+                        ip++;
+                        break;
+                    }
+
+                    // Otherwise exit without modifying current continuation
+                    goto EXIT_FRAME;
+                }
+
                 case INTOP_HANDLE_CONTINUATION_RESUME:
                 {
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[1]];
@@ -4386,6 +4399,7 @@ do                                                                      \
                     ip += 3;
                     break;
                 }
+
                 default:
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unimplemented or invalid interpreter opcode\n"));
                     break;
