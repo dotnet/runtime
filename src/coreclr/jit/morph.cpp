@@ -11285,6 +11285,68 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
             break;
 
+        case GT_RSH:
+        case GT_RSZ:
+
+            // Fold consecutive same-operation shifts with constant amounts:
+            //   (x shift c1) shift c2 -> x shift (c1 + c2)
+            // This optimizes chained divisions that lower to consecutive right shifts (issue #74020).
+
+            if (fgGlobalMorph && op2->IsCnsIntOrI() && op1->OperIs(oper) && op1->AsOp()->gtOp2->IsCnsIntOrI()
+                && !op1->IsMultiRegNode()
+                && !(op1->gtFlags & (GTF_ALL_EFFECT | GTF_SET_FLAGS)))
+            {
+                ssize_t  c1       = op1->AsOp()->gtOp2->AsIntCon()->IconValue();
+                ssize_t  c2       = op2->AsIntCon()->IconValue();
+                unsigned bitWidth = genTypeSize(tree->TypeGet()) * 8;
+
+                if ((c1 > 0) && (c2 > 0) && (bitWidth > 0))
+                {
+                    ssize_t combined = c1 + c2;
+
+                    if (combined < (ssize_t)bitWidth)
+                    {
+                        // Safe to combine: x shift (c1 + c2)
+                        JITDUMP("Folding consecutive shifts: (x %s %d) %s %d -> x %s %d\n",
+                                GenTree::OpName(op1->OperGet()), (int)c1, GenTree::OpName(oper), (int)c2,
+                                GenTree::OpName(oper), (int)combined);
+
+                        op2->AsIntCon()->SetIconValue(combined);
+                        tree->AsOp()->gtOp1 = op1->AsOp()->gtOp1;
+                        DEBUG_DESTROY_NODE(op1->AsOp()->gtOp2);
+                        DEBUG_DESTROY_NODE(op1);
+                        return tree;
+                    }
+                    else if (oper == GT_RSH)
+                    {
+                        // RSH saturates to sign bit extraction: x >> (bitWidth - 1)
+                        JITDUMP("Folding overshift RSH: (x >> %d) >> %d -> x >> %d\n", (int)c1, (int)c2,
+                                (int)(bitWidth - 1));
+
+                        op2->AsIntCon()->SetIconValue((ssize_t)bitWidth - 1);
+                        tree->AsOp()->gtOp1 = op1->AsOp()->gtOp1;
+                        DEBUG_DESTROY_NODE(op1->AsOp()->gtOp2);
+                        DEBUG_DESTROY_NODE(op1);
+                        return tree;
+                    }
+                    else
+                    {
+                        // GT_RSZ or GT_LSH overshift -> 0
+                        JITDUMP("Folding overshift %s to zero: (x %s %d) %s %d -> 0\n",
+                                GenTree::OpName(oper), GenTree::OpName(op1->OperGet()), (int)c1,
+                                GenTree::OpName(oper), (int)c2);
+
+                        DEBUG_DESTROY_NODE(op1->AsOp()->gtOp2);
+                        DEBUG_DESTROY_NODE(op1);
+                        DEBUG_DESTROY_NODE(op2);
+                        DEBUG_DESTROY_NODE(tree);
+                        return fgMorphTree(gtNewZeroConNode(typ));
+                    }
+                }
+            }
+
+            break;
+
         case GT_INIT_VAL:
             // Initialization values for initBlk have special semantics - their lower
             // byte is used to fill the struct. However, we allow 0 as a "bare" value,
