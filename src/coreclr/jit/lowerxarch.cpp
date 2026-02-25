@@ -10278,11 +10278,65 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
+                            case NI_AVX512BMM_BitMultiplyMatrix16x16WithOrReduction:
+                            case NI_AVX512BMM_BitMultiplyMatrix16x16WithXorReduction:
+                            {
+                                bool supportsOp2RegOptional = false;
+                                bool supportsOp3RegOptional = false;
+
+                                GenTree* containedOperand   = nullptr;
+                                GenTree* regOptionalOperand = nullptr;
+                                bool     swapOperands       = false;
+
+                                if (IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
+                                {
+                                    containedOperand = op3;
+                                }
+                                else if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
+                                {
+                                    containedOperand = op2;
+                                    swapOperands     = true;
+                                }
+                                else
+                                {
+                                    if (supportsOp2RegOptional)
+                                    {
+                                        regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op2);
+                                    }
+
+                                    if (supportsOp3RegOptional)
+                                    {
+                                        regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op3);
+                                    }
+
+                                    if (regOptionalOperand == op2)
+                                    {
+                                        swapOperands = true;
+                                    }
+                                }
+
+                                if (containedOperand != nullptr)
+                                {
+                                    MakeSrcContained(node, containedOperand);
+                                }
+                                else if (regOptionalOperand != nullptr)
+                                {
+                                    MakeSrcRegOptional(node, regOptionalOperand);
+                                }
+
+                                if (swapOperands)
+                                {
+                                    // Swap the operands here to make the containment checks in codegen significantly
+                                    // simpler
+                                    std::swap(node->Op(2), node->Op(3));
+                                }
+                                break;
+                            }
+
                             default:
                             {
                                 assert((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
-                                       (intrinsicId >= FIRST_NI_AVXVNNI && intrinsicId <= LAST_NI_AVXVNNIINT_V512) ||
-                                       (intrinsicId >= FIRST_NI_AVX512BMM && intrinsicId <= LAST_NI_AVX512BMM));
+                                       (intrinsicId >= FIRST_NI_AVXVNNI && intrinsicId <= LAST_NI_AVXVNNIINT_V512));
                                 TryMakeSrcContainedOrRegOptional(node, op3);
                                 break;
                             }

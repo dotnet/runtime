@@ -902,18 +902,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         case NI_AVXVNNI_MultiplyWideningAndAdd:
                         case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+                        case NI_AVX512BMM_BitMultiplyMatrix16x16WithOrReduction:
+                        case NI_AVX512BMM_BitMultiplyMatrix16x16WithXorReduction:
                         {
                             assert(targetReg != REG_NA);
                             assert(op1Reg != REG_NA);
                             assert(op2Reg != REG_NA);
 
-                            genHWIntrinsic_R_R_R_RM(ins, simdSize, targetReg, op1Reg, op2Reg, op3, instOptions);
-                            break;
-                        }
-
-                        case NI_AVX512BMM_BitMultiplyMatrix16x16WithOrReduction:
-                        case NI_AVX512BMM_BitMultiplyMatrix16x16WithXorReduction:
-                        {
                             genHWIntrinsic_R_R_R_RM(ins, simdSize, targetReg, op1Reg, op2Reg, op3, instOptions);
                             break;
                         }

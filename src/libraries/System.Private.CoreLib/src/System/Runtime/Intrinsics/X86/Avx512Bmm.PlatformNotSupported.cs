@@ -33,27 +33,27 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<byte> ReverseBits(Vector512<byte> values) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>__m256i _mm256_bmacor16x16x16 (__m256i left, __m256i right, __m256i addend)</para>
+        ///   <para>__m256i _mm256_bmacor16x16x16 (__m256i addend, __m256i left, __m256i right)</para>
         ///   <para>  VBMACOR16x16x16  ymm1, ymm2, ymm3/m256</para>
         /// </summary>
-        public static Vector256<ushort> BitMultiplyMatrix16x16WithOrReduction(Vector256<ushort> left, Vector256<ushort> right, Vector256<ushort> addend) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> BitMultiplyMatrix16x16WithOrReduction(Vector256<ushort> addend, Vector256<ushort> left, Vector256<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>__m512i _mm512_bmacor16x16x16 (__m512i left, __m512i right, __m512i addend)</para>
+        ///   <para>__m512i _mm512_bmacor16x16x16 (__m512i addend, __m512i left, __m512i right)</para>
         ///   <para>  VBMACOR16x16x16  zmm1, zmm2, zmm3/m256</para>
         /// </summary>
-        public static Vector512<ushort> BitMultiplyMatrix16x16WithOrReduction(Vector512<ushort> left, Vector512<ushort> right, Vector512<ushort> addend) { throw new PlatformNotSupportedException(); }
+        public static Vector512<ushort> BitMultiplyMatrix16x16WithOrReduction(Vector512<ushort> addend, Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>__m256i _mm256_bmacxor16x16x16 (__m256i left, __m256i right, __m256i addend)</para>
+        ///   <para>__m256i _mm256_bmacxor16x16x16 (__m256i addend, __m256i left, __m256i right)</para>
         ///   <para>  VBMACXOR16x16x16  ymm1, ymm2, ymm3/m256</para>
         /// </summary>
-        public static Vector256<ushort> BitMultiplyMatrix16x16WithXorReduction(Vector256<ushort> left, Vector256<ushort> right, Vector256<ushort> addend) { throw new PlatformNotSupportedException(); }
+        public static Vector256<ushort> BitMultiplyMatrix16x16WithXorReduction(Vector256<ushort> addend, Vector256<ushort> left, Vector256<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        ///   <para>__m512i _mm512_bmacxor16x16x16 (__m512i left, __m512i right, __m512i addend)</para>
+        ///   <para>__m512i _mm512_bmacxor16x16x16 (__m512i addend, __m512i left, __m512i right)</para>
         ///   <para>  VBMACXOR16x16x16  zmm1, zmm2, zmm3/m256</para>
         /// </summary>
-        public static Vector512<ushort> BitMultiplyMatrix16x16WithXorReduction(Vector512<ushort> left, Vector512<ushort> right, Vector512<ushort> addend) { throw new PlatformNotSupportedException(); }
+        public static Vector512<ushort> BitMultiplyMatrix16x16WithXorReduction(Vector512<ushort> addend, Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
     }
 }

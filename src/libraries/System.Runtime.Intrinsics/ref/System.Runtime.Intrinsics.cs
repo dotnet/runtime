@@ -8588,10 +8588,10 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector128<byte> ReverseBits(System.Runtime.Intrinsics.Vector128<byte> values) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<byte> ReverseBits(System.Runtime.Intrinsics.Vector256<byte> values) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> ReverseBits(System.Runtime.Intrinsics.Vector512<byte> values) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<ushort> BitMultiplyMatrix16x16WithOrReduction(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right, System.Runtime.Intrinsics.Vector256<ushort> addend) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<ushort> BitMultiplyMatrix16x16WithOrReduction(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right, System.Runtime.Intrinsics.Vector512<ushort> addend) { throw null; }
-        public static System.Runtime.Intrinsics.Vector256<ushort> BitMultiplyMatrix16x16WithXorReduction(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right, System.Runtime.Intrinsics.Vector256<ushort> addend) { throw null; }
-        public static System.Runtime.Intrinsics.Vector512<ushort> BitMultiplyMatrix16x16WithXorReduction(System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right, System.Runtime.Intrinsics.Vector512<ushort> addend) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> BitMultiplyMatrix16x16WithOrReduction(System.Runtime.Intrinsics.Vector256<ushort> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> BitMultiplyMatrix16x16WithOrReduction(System.Runtime.Intrinsics.Vector512<ushort> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> BitMultiplyMatrix16x16WithXorReduction(System.Runtime.Intrinsics.Vector256<ushort> addend, System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ushort> BitMultiplyMatrix16x16WithXorReduction(System.Runtime.Intrinsics.Vector512<ushort> addend, System.Runtime.Intrinsics.Vector512<ushort> left, System.Runtime.Intrinsics.Vector512<ushort> right) { throw null; }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx512F.X64
         {
             internal X64() { }
