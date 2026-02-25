@@ -58,6 +58,8 @@
 #endif // TARGET_AMD64 || TARGET_ARM64
 #include "introsort.h"
 
+extern uint32_t g_totalCpuCount;
+
 #ifdef SERVER_GC
 namespace SVR {
 #else // SERVER_GC
@@ -53401,6 +53403,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     bool v2 = gcDacVars->minor_version_number >= 2;
     bool v4 = gcDacVars->minor_version_number >= 4;
     bool v6 = gcDacVars->minor_version_number >= 6;
+    bool v8 = gcDacVars->minor_version_number >= 8;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -53547,6 +53550,12 @@ void PopulateDacVars(GcDacVars *gcDacVars)
         gcDacVars->gc_descriptor = (void*)&GCContractDescriptorWKS;
 #endif // MULTIPLE_HEAPS
 #endif // GC_DESCRIPTOR
+    }
+    if (v8)
+    {
+#ifdef MULTIPLE_HEAPS
+        gcDacVars->g_totalCpuCount = &::g_totalCpuCount;
+#endif // MULTIPLE_HEAPS
     }
 }
 

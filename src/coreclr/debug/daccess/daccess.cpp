@@ -7523,11 +7523,11 @@ void DacHandleWalker::WalkHandles()
     mEnumerated = true;
 
     // The table slots are based on the number of GC heaps in the process.
-    int max_slots = 1;
+    uint32_t max_slots = 1;
 
 #ifdef FEATURE_SVR_GC
     if (GCHeapUtilities::IsServerHeap())
-        max_slots = GCHeapCount();
+        max_slots = *g_gcDacGlobals->g_totalCpuCount;
 #endif // FEATURE_SVR_GC
 
     DacHandleWalkerParam param(&mList);
@@ -7539,9 +7539,9 @@ void DacHandleWalker::WalkHandles()
         {
             if (map->pBuckets[i] != NULL)
             {
-                for (int j = 0; j < max_slots && SUCCEEDED(param.Result); ++j)
+                for (uint32_t j = 0; j < max_slots && SUCCEEDED(param.Result); ++j)
                 {
-                    DPTR(dac_handle_table) hTable = map->pBuckets[i]->pTable[j];
+                    DPTR(dac_handle_table) hTable = map->pBuckets[i]->pTable[(int)j];
                     if (hTable)
                     {
                         // handleType is the integer from 1 -> HANDLE_MAX_INTERNAL_TYPES based on the requested handle kinds to walk.
