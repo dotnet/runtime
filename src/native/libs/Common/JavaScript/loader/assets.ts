@@ -117,7 +117,7 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
         onDownloadedAsset();
         await nativeModulePromiseController.promise;
         if (bytes) {
-            dotnetBrowserHostExports.registerDllBytes(bytes, asset.virtualPath!);
+            dotnetBrowserHostExports.registerDllBytes(bytes, assetInternal.virtualPath);
         }
     }
 }
