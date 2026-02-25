@@ -3027,12 +3027,20 @@ namespace System.Text.RegularExpressions
                     // This can occur after unwrapping a Capture whose child is a Concatenate.
                     // Recurse to extract any case-insensitive string from the inner concatenation.
                     if (!StackHelper.TryEnsureSufficientExecutionStack() ||
-                        !child.TryGetOrdinalCaseInsensitiveString(0, child.ChildCount(), out _, out string? innerStr, consumeZeroWidthNodes, unwrapCaptures))
+                        !child.TryGetOrdinalCaseInsensitiveString(0, child.ChildCount(), out int innerNodesConsumed, out string? innerStr, consumeZeroWidthNodes, unwrapCaptures))
                     {
                         break;
                     }
 
                     vsb.Append(innerStr);
+
+                    // If the inner concatenation wasn't fully consumed, we can't continue past it
+                    // as subsequent siblings aren't guaranteed to immediately follow the extracted prefix.
+                    if (innerNodesConsumed < child.ChildCount())
+                    {
+                        i++;
+                        break;
+                    }
                 }
                 else if (child.Kind is RegexNodeKind.Empty)
                 {
