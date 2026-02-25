@@ -59,7 +59,9 @@ namespace ILCompiler.ObjectWriter
         private protected override void RecordMethodSignature(WasmTypeNode signature)
         {
             int signatureIndex = _signatureCount;
-            Utf8String mangledName = new Utf8String(signature.GetMangledName(_nodeFactory.NameMangler));
+            var mangledNameBuilder = new Utf8StringBuilder();
+            signature.AppendMangledName(_nodeFactory.NameMangler, mangledNameBuilder);
+            Utf8String mangledName = mangledNameBuilder.ToUtf8String();
             // Note that we do not expect duplicates here, since crossgen's node cache should handle this and all nodes representing
             // identical signatures in a module should point to the same node instance
             _uniqueSignatures.Add(mangledName, signatureIndex);
