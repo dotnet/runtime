@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
-        public static void StoppedWithException(this ILogger logger, Exception? ex)
+        public static void StoppedWithException(this ILogger logger, Exception ex)
         {
             if (logger.IsEnabled(LogLevel.Debug))
             {
@@ -110,6 +110,17 @@ namespace Microsoft.Extensions.Hosting.Internal
                    eventId: LoggerEventIds.HostedServiceStartupFaulted,
                    exception: ex,
                    message: "Hosting failed to start");
+            }
+        }
+
+        public static void BackgroundServiceExceptionsPropagating(this ILogger logger, Exception ex)
+        {
+            if (logger.IsEnabled(LogLevel.Debug))
+            {
+                logger.LogDebug(
+                    eventId: LoggerEventIds.BackgroundServiceExceptionsPropagating,
+                    exception: ex,
+                    message: "Propagating background service exceptions");
             }
         }
     }

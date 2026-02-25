@@ -18,5 +18,6 @@ namespace Microsoft.Extensions.Hosting.Internal
         public static readonly EventId BackgroundServiceFaulted = new EventId(9, nameof(BackgroundServiceFaulted));
         public static readonly EventId BackgroundServiceStoppingHost = new EventId(10, nameof(BackgroundServiceStoppingHost));
         public static readonly EventId HostedServiceStartupFaulted = new EventId(11, nameof(HostedServiceStartupFaulted));
+        public static readonly EventId BackgroundServiceExceptionsPropagating = new EventId(12, nameof(BackgroundServiceExceptionsPropagating));
     }
 }

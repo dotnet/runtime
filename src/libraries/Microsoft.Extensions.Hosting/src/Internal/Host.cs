@@ -30,6 +30,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
         private bool _hostStarting;
         private bool _hostStopped;
+        private readonly List<ExceptionDispatchInfo> _backgroundServiceExceptions = new();
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
@@ -142,7 +143,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 // Exceptions in StartedAsync cause startup to be aborted.
                 LogAndRethrow();
 
-                // Call IHostApplicationLifetime.Started
+                // Cancel IHostApplicationLifetime.Started
                 // This catches all exceptions and does not re-throw.
                 _applicationLifetime.NotifyStarted();
 
@@ -197,6 +198,10 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (_options.BackgroundServiceExceptionBehavior == BackgroundServiceExceptionBehavior.StopHost)
                 {
                     _logger.BackgroundServiceStoppingHost(ex);
+                    lock (_backgroundServiceExceptions)
+                    {
+                        _backgroundServiceExceptions.Add(ExceptionDispatchInfo.Capture(ex));
+                    }
 
                     // This catches all exceptions and does not re-throw.
                     _applicationLifetime.StopApplication();
@@ -231,7 +236,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 if (!_hostStarting) // Started?
                 {
 
-                    // Call IHostApplicationLifetime.ApplicationStopping.
+                    // Cancel IHostApplicationLifetime.ApplicationStopping.
                     // This catches all exceptions and does not re-throw.
                     _applicationLifetime.StopApplication();
                 }
@@ -251,7 +256,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                             (service, token) => service.StoppingAsync(token)).ConfigureAwait(false);
                     }
 
-                    // Call IHostApplicationLifetime.ApplicationStopping.
+                    // Cancel IHostApplicationLifetime.ApplicationStopping.
                     // This catches all exceptions and does not re-throw.
                     _applicationLifetime.StopApplication();
 
@@ -267,7 +272,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                 }
 
-                // Call IHostApplicationLifetime.Stopped
+                // Cancel IHostApplicationLifetime.Stopped
                 // This catches all exceptions and does not re-throw.
                 _applicationLifetime.NotifyStopped();
 
@@ -302,6 +307,25 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
 
             _logger.Stopped();
+
+            // If background services faulted and caused the host to stop, rethrow the exceptions
+            // so they propagate and cause a non-zero exit code.
+            lock (_backgroundServiceExceptions)
+            {
+                if (_backgroundServiceExceptions.Count == 1)
+                {
+                    _logger.BackgroundServiceExceptionsPropagating(_backgroundServiceExceptions[0].SourceException);
+                    _backgroundServiceExceptions[0].Throw();
+                }
+                else if (_backgroundServiceExceptions.Count > 1)
+                {
+                    var aggregateException = new AggregateException(
+                        "One or more background services threw an exception.",
+                        _backgroundServiceExceptions.Select(edi => edi.SourceException));
+                    _logger.BackgroundServiceExceptionsPropagating(aggregateException);
+                    throw aggregateException;
+                }
+            }
         }
 
         private static async Task ForeachService<T>(
