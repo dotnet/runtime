@@ -956,6 +956,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA
     { FIRST_NI_AVXVNNI, LAST_NI_AVXVNNI },                      // AVXVNNI
+    { FIRST_NI_AVX512BMM, LAST_NI_AVX512BMM },                  // AVX512BMM
     { FIRST_NI_GFNI, LAST_NI_GFNI },                            // GFNI
     { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },                  // GFNI_V256
     { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },                  // GFNI_V512
@@ -987,7 +988,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      SHA_X64
     { NI_Illegal, NI_Illegal },                                 //      WAITPKG_X64
     { NI_Illegal, NI_Illegal },                                 //      X86Serialize_X64
-    { FIRST_NI_AVX512BMM, LAST_NI_AVX512BMM },                  // AVX512BMM
 #elif defined (TARGET_ARM64)
     { FIRST_NI_ArmBase, LAST_NI_ArmBase },                      // ArmBase
     { FIRST_NI_AdvSimd, LAST_NI_AdvSimd },                      // AdvSimd
