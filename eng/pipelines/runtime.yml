@@ -2010,7 +2010,7 @@ extends:
             - task: PublishTestResults@2
               inputs:
                 testResultsFormat: xUnit
-                testResultsFiles: '**/*.xml'
+                testResultsFiles: '**/SOS.*.xml'
                 searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
                 testRunTitle: 'Tests cDAC_$(osGroup)_$(archType)_$(_BuildConfig)'
                 failTaskOnFailedTests: true
@@ -2050,7 +2050,7 @@ extends:
             - task: PublishTestResults@2
               inputs:
                 testResultsFormat: xUnit
-                testResultsFiles: '**/*.xml'
+                testResultsFiles: '**/SOS.*.xml'
                 searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
                 testRunTitle: 'Tests DAC_$(osGroup)_$(archType)_$(_BuildConfig)'
                 failTaskOnFailedTests: true
