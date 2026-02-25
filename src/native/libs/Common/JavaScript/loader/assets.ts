@@ -207,7 +207,7 @@ export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boo
 
     await fetchDll(dllAsset);
 
-    if (loaderConfig.debugLevel != 0) {
+    if (loaderConfig.debugLevel !== 0) {
         const pdbNameToLoad = assemblyNameWithoutExtension + ".pdb";
         const pdbAssets = loaderConfig.resources?.pdb;
         let pdbAssetToLoad: SymbolsAsset | undefined;
