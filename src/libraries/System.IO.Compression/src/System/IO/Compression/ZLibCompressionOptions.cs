@@ -8,6 +8,9 @@ namespace System.IO.Compression
     /// </summary>
     public sealed class ZLibCompressionOptions
     {
+        private const int MinWindowLog = 8;
+        private const int MaxWindowLog = 15;
+
         private int _compressionLevel = -1;
         private ZLibCompressionStrategy _strategy;
         private int _windowLog = -1;
@@ -62,8 +65,8 @@ namespace System.IO.Compression
             {
                 if (value != -1)
                 {
-                    ArgumentOutOfRangeException.ThrowIfLessThan(value, DeflateEncoder.MinWindowLog);
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, DeflateEncoder.MaxWindowLog);
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, MinWindowLog);
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxWindowLog);
                 }
 
                 _windowLog = value;
