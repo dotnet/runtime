@@ -237,10 +237,18 @@ internal readonly struct StackWalk_1 : IStackWalk
     {
         IExecutionManager eman = _target.Contracts.ExecutionManager;
         TargetCodePointer codePointer = CodePointerUtils.CodePointerFromAddress(ip, _target);
-        if (eman.GetCodeBlockHandle(codePointer) is CodeBlockHandle cbh && cbh.Address != TargetPointer.Null)
+        try
         {
-            codeBlockHandle = cbh;
-            return true;
+            if (eman.GetCodeBlockHandle(codePointer) is CodeBlockHandle cbh && cbh.Address != TargetPointer.Null)
+            {
+                codeBlockHandle = cbh;
+                return true;
+            }
+        }
+        catch (VirtualReadException)
+        {
+            // If we fail to read memory while looking up the code block, the IP is not in managed code
+            // (or the data is corrupted). Treat as not managed and continue the walk.
         }
         codeBlockHandle = default;
         return false;
