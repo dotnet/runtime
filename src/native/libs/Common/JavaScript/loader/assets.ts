@@ -210,13 +210,25 @@ export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boo
     if (loaderConfig.debugLevel != 0) {
         const pdbNameToLoad = assemblyNameWithoutExtension + ".pdb";
         const pdbAssets = loaderConfig.resources?.pdb;
+        let pdbAssetToLoad: SymbolsAsset | undefined;
         if (pdbAssets) {
             for (const pdbAsset of pdbAssets) {
                 if (pdbAsset.virtualPath === pdbNameToLoad) {
-                    await fetchPdb(pdbAsset);
+                    pdbAssetToLoad = pdbAsset;
                     break;
                 }
             }
+        }
+        if (!pdbAssetToLoad) {
+            for (const lazyAsset of lazyAssemblies) {
+                if (lazyAsset.virtualPath === pdbNameToLoad) {
+                    pdbAssetToLoad = lazyAsset as SymbolsAsset;
+                    break;
+                }
+            }
+        }
+        if (pdbAssetToLoad) {
+            await fetchPdb(pdbAssetToLoad);
         }
     }
 
