@@ -83,6 +83,18 @@ namespace System.Text.Json.SourceGeneration
 
         public required bool ConstructorSetsRequiredParameters { get; init; }
 
+        /// <summary>
+        /// Whether the deserialization constructor is inaccessible from the generated context.
+        /// When true, UnsafeAccessor or reflection is used to invoke the constructor.
+        /// </summary>
+        public required bool ConstructorIsInaccessible { get; init; }
+
+        /// <summary>
+        /// Whether UnsafeAccessors can be used for the constructor.
+        /// False when the declaring type is generic or UnsafeAccessorAttribute is not available.
+        /// </summary>
+        public required bool CanUseUnsafeAccessorForConstructor { get; init; }
+
         public required TypeRef? NullableUnderlyingType { get; init; }
 
         /// <summary>

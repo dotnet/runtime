@@ -576,6 +576,7 @@ namespace System.Text.Json.SourceGeneration
                 List<int>? fastPathPropertyIndices = null;
                 ObjectConstructionStrategy constructionStrategy = default;
                 bool constructorSetsRequiredMembers = false;
+                bool constructorIsInaccessible = false;
                 ParameterGenerationSpec[]? ctorParamSpecs = null;
                 List<PropertyInitializerGenerationSpec>? propertyInitializerSpecs = null;
                 CollectionType collectionType = CollectionType.NotApplicable;
@@ -679,11 +680,8 @@ namespace System.Text.Json.SourceGeneration
                     {
                         ReportDiagnostic(DiagnosticDescriptors.MultipleJsonConstructorAttribute, typeToGenerate.Location, type.ToDisplayString());
                     }
-                    else if (constructor != null && !IsSymbolAccessibleWithin(constructor, within: contextType))
-                    {
-                        ReportDiagnostic(DiagnosticDescriptors.JsonConstructorInaccessible, typeToGenerate.Location, type.ToDisplayString());
-                        constructor = null;
-                    }
+
+                    constructorIsInaccessible = constructor is not null && !IsSymbolAccessibleWithin(constructor, within: contextType);
 
                     classType = ClassType.Object;
 
@@ -731,6 +729,10 @@ namespace System.Text.Json.SourceGeneration
                     CollectionValueType = collectionValueType,
                     ConstructionStrategy = constructionStrategy,
                     ConstructorSetsRequiredParameters = constructorSetsRequiredMembers,
+                    ConstructorIsInaccessible = constructorIsInaccessible,
+                    CanUseUnsafeAccessorForConstructor = constructorIsInaccessible
+                        && _knownSymbols.UnsafeAccessorAttributeType is not null
+                        && type is not INamedTypeSymbol { IsGenericType: true },
                     NullableUnderlyingType = nullableUnderlyingType,
                     RuntimeTypeRef = runtimeTypeRef,
                     IsValueTuple = type.IsTupleType,
