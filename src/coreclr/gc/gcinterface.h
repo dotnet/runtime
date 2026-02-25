@@ -412,7 +412,7 @@ typedef enum
      * graph.  This further implies that short weak handles do not track
      * across object resurrections.
      * [cDAC] [GC]: Contract depends on this value
-     * 
+     *
      */
     HNDTYPE_WEAK_SHORT   = 0,
 

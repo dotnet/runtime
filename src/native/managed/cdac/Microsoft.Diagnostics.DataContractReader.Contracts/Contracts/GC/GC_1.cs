@@ -370,7 +370,8 @@ internal readonly struct GC_1 : IGC
         {
             if (type >= _handleMaxInternalTypes)
                 continue;
-            handleTypes.Add(type switch
+
+            HandleType? mappedType = type switch
             {
                 (uint)HandleType_1.WeakShort => HandleType.WeakShort,
                 (uint)HandleType_1.WeakLong => HandleType.WeakLong,
@@ -380,8 +381,13 @@ internal readonly struct GC_1 : IGC
                 (uint)HandleType_1.Dependent => HandleType.Dependent,
                 (uint)HandleType_1.WeakInteriorPointer => HandleType.WeakInteriorPointer,
                 (uint)HandleType_1.CrossReference => HandleType.CrossReference,
-                _ => throw new InvalidOperationException($"Unknown handle type {type}"),
-            });
+                _ => null,
+            };
+
+            if (mappedType is HandleType concreteType)
+            {
+                handleTypes.Add(concreteType);
+            }
         }
         return handleTypes.ToArray();
     }
