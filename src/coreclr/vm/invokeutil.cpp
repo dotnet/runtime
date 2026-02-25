@@ -584,36 +584,6 @@ OBJECTREF InvokeUtil::CreateObjectAfterInvoke(TypeHandle th, void * pValue) {
     return obj;
 }
 
-// This is a special purpose Exception creation function.  It
-//  creates the ReflectionTypeLoadException placing the passed
-//  classes array and exception array into it.
-OBJECTREF InvokeUtil::CreateClassLoadExcept(OBJECTREF* classes, OBJECTREF* except) {
-    CONTRACT(OBJECTREF) {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(classes));
-        PRECONDITION(CheckPointer(except));
-        PRECONDITION(IsProtectedByGCFrame (classes));
-        PRECONDITION(IsProtectedByGCFrame (except));
-
-        POSTCONDITION(RETVAL != NULL);
-
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACT_END;
-
-    OBJECTREF oRet = 0;
-
-    GCPROTECT_BEGIN(oRet);
-
-    UnmanagedCallersOnlyCaller createClassLoadExcept(METHOD__EXCEPTION__CREATE_REFLECTION_TYPE_LOAD_EXCEPTION);
-    createClassLoadExcept.InvokeThrowing(classes, except, &oRet);
-
-    GCPROTECT_END();
-    RETURN oRet;
-}
-
 OBJECTREF InvokeUtil::CreateTargetExcept(OBJECTREF* except) {
     CONTRACT(OBJECTREF) {
         THROWS;

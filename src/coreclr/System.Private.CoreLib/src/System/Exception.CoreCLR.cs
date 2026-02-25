@@ -352,22 +352,5 @@ namespace System
                 *pException = ex;
             }
         }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe void CreateReflectionTypeLoadException(
-            object* pTypes, object* pExceptions, object* pResult, Exception* pException)
-        {
-            try
-            {
-                *pResult = new System.Reflection.ReflectionTypeLoadException(
-                    (Type[]?)*pTypes,
-                    (Exception[]?)*pExceptions,
-                    SR.ReflectionTypeLoad_LoadFailed);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
     }
 }

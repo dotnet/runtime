@@ -678,7 +678,7 @@ extern "C" HINSTANCE QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pM
 
 // Get class will return an array contain all of the classes
 //  that are defined within this Module.
-extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retTypes)
+extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retTypes, QCall::ObjectHandleOnStack retExceptions)
 {
     QCALL_CONTRACT;
 
@@ -751,15 +751,14 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
         gc.refArrClasses->SetAt(curPos++, refCurClass);
     }
 
-    // check if there were exceptions thrown
+    // Return exceptions to managed side for throwing
     if (cXcept > 0) {
 
         gc.xceptRet = (PTRARRAYREF) AllocateObjectArray(cXcept,g_pExceptionClass);
         for (DWORD i=0;i<cXcept;i++) {
             gc.xceptRet->SetAt(i, gc.xcept->GetAt(i));
         }
-        OBJECTREF except = InvokeUtil::CreateClassLoadExcept((OBJECTREF*) &gc.refArrClasses,(OBJECTREF*) &gc.xceptRet);
-        COMPlusThrow(except);
+        retExceptions.Set(gc.xceptRet);
     }
 
     // We should have filled the array exactly.

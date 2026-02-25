@@ -307,7 +307,6 @@ DEFINE_METHOD(EXCEPTION,            GET_SOURCE_BSTR,        GetSourceBstr,      
 DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT_BSTR,  GetHelpContextBstr,         SM_PtrException_PtrIntPtr_PtrUInt_PtrException_RetVoid)
 #endif // FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            CREATE_TARGET_INVOCATION_EXCEPTION, CreateTargetInvocationException, SM_PtrException_PtrObj_PtrException_RetVoid)
-DEFINE_METHOD(EXCEPTION,            CREATE_REFLECTION_TYPE_LOAD_EXCEPTION, CreateReflectionTypeLoadException, SM_PtrObj_PtrObj_PtrObj_PtrException_RetVoid)
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
