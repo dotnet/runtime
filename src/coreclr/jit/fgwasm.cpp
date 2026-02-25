@@ -1076,6 +1076,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     if (hasBlocksOnlyReachableViaEH)
     {
         JITDUMP("\nThere are blocks only reachable via EH, bailing out for now\n");
+        NYI_WASM("Method has blocks only reachable via EH");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 

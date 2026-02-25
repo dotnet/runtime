@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(test.Prk, prk);
         }
 
-        [ConditionalTheory(nameof(MD5Supported))]
+        [ConditionalTheory(typeof(HKDFTests), nameof(MD5Supported))]
         [MemberData(nameof(GetHkdfTestCases))]
         public void ExtractTamperHashTests(HkdfTestCase test)
         {
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Tests
                 () => Extract(new HashAlgorithmName("foo"), 20, ikm, salt));
         }
 
-        [ConditionalFact(nameof(EmptyKeysSupported))]
+        [ConditionalFact(typeof(HKDFTests), nameof(EmptyKeysSupported))]
         public void ExtractEmptyIkm()
         {
             byte[] salt = new byte[20];
