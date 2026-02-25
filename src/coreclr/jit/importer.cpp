@@ -11026,11 +11026,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     if (map->Lookup(origCall, &enumeratorLcl))
                     {
                         GenTree* returnValue = op2;
-                        if (returnValue->OperIs(GT_RET_EXPR))
-                        {
-                            returnValue = returnValue->AsRetExpr()->gtInlineCandidate;
-                        }
-
                         if (returnValue->IsCall())
                         {
                             JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(returnValue),
