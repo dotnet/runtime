@@ -632,7 +632,8 @@ void WasmRegAlloc::ResolveReferences()
     {
         TemporaryRegStack& temporaryRegs          = m_temporaryRegs[static_cast<unsigned>(type)];
         TemporaryRegBank&  allocatedTemporaryRegs = temporaryRegMap[static_cast<unsigned>(type)];
-        // If temporaryRegs.Count != 0 that means CollectReferences failed to CollectReference one or more multiply-used nodes.
+        // If temporaryRegs.Count != 0 that means CollectReferences failed to CollectReference one or more multiply-used
+        // nodes.
         assert(temporaryRegs.Count == 0);
 
         allocatedTemporaryRegs.Count = temporaryRegs.MaxCount;

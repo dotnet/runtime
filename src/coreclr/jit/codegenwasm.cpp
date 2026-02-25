@@ -2434,9 +2434,9 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 //
 void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
-    GenTree*  dstAddr       = cpObjNode->Addr();
-    GenTree*  source        = cpObjNode->Data();
-    var_types srcAddrType   = TYP_BYREF;
+    GenTree*  dstAddr     = cpObjNode->Addr();
+    GenTree*  source      = cpObjNode->Data();
+    var_types srcAddrType = TYP_BYREF;
 
     assert(source->isContained());
     if (source->OperIs(GT_IND))
