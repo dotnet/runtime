@@ -958,6 +958,21 @@ internal class AMD64Unwinder(Target target)
                             }
 
                         //
+                        // Save nonvolatile integer register on the stack using a
+                        // 32-bit displacement.
+                        //
+                        // The operation information is the register number.
+                        //
+                        case UnwindCode.OpCodes.UWOP_SAVE_NONVOL_FAR:
+                            {
+                                uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset;
+                                frameOffset += (uint)(GetUnwindCode(unwindInfo, index + 2).FrameOffset << 16);
+                                SetRegister(ref context, unwindOp.OpInfo, _target.ReadPointer(frameBase + frameOffset));
+                                index += 2;
+                                break;
+                            }
+
+                        //
                         // Function epilog marker (ignored for prologue unwind).
                         //
                         case UnwindCode.OpCodes.UWOP_EPILOG:
@@ -1002,7 +1017,7 @@ internal class AMD64Unwinder(Target target)
                         //
                         case UnwindCode.OpCodes.UWOP_PUSH_MACHFRAME:
                             {
-                                machineFrame = false;
+                                machineFrame = true;
                                 TargetPointer returnAddressPtr = context.Rsp;
                                 TargetPointer stackAddressPtr = context.Rsp + (3 * 8);
                                 if (unwindOp.OpInfo != 0)
