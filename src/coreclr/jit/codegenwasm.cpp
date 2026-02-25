@@ -2463,7 +2463,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
                 // TODO-WASM-CQ: possibly do small fills directly
                 //
-                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, 0);
+                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
             }
 
             // SP now points at the reserved space just below the allocation.
@@ -2534,7 +2534,7 @@ void CodeGen::genLclHeap(GenTree* tree)
                 GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
                 GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(sizeReg));
                 // TODO-WASM-CQ: possibly do small fills directly
-                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, 0);
+                GetEmitter()->emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
             }
 
             // Re-establish unwind invariant: store FP at SP[0]
