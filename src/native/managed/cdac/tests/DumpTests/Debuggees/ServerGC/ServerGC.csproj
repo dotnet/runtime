@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ServerGarbageCollection>true</ServerGarbageCollection>
+    <DumpTypes>Full</DumpTypes>
   </PropertyGroup>
 </Project>

@@ -652,12 +652,6 @@ private void GetHandlesForSegment(TargetPointer segmentPtr, HandleType type, Lis
     byte uHead = uBlock;
     do
     {
-        if (HasSecondary(type))
-        {
-            byte blockIndex = target.Read<byte>(segmentPtr + /* TableSegment::RgUserData offset */ + uBlock);
-            if (blockIndex == target.ReadGlobal<byte>("BlockInvalid"))
-                continue;
-        }
         GetHandlesForBlock(segmentPtr, uBlock, type, handles);
         // update uBlock
         uBlock = target.Read<byte>(segmentPtr + /* TableSegment::RgAllocation offset */ + uBlock);
@@ -693,8 +687,13 @@ private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, ui
     if (HasSecondary(type))
     {
         byte blockIndex = target.Read<byte>(segmentPtr + /* TableSegment::RgUserData offset */ + uBlock);
-        uint offset = blockIndex * target.ReadGlobal<byte>("HandlesPerBlock") + intraBlockIndex;
-        handleData.Secondary = target.ReadPointer(segmentPtr + /* TableSegment::RgValue offset */ + offset * target.PointerSize);
+        if (blockIndex == target.ReadGlobal<byte>("BlockInvalid"))
+            handleData.Secondary = 0;
+        else
+        {
+            uint offset = blockIndex * target.ReadGlobal<byte>("HandlesPerBlock") + intraBlockIndex;
+            handleData.Secondary = target.ReadPointer(segmentPtr + /* TableSegment::RgValue offset */ + offset * target.PointerSize);
+        }
     }
     else
     {
@@ -710,7 +709,7 @@ private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, ui
         {
             IBuiltInCOM builtInCOM = target.Contracts.BuiltInCOM;
             handleData.RefCount = (uint)builtInCOM.GetRefCount(ccw);
-            handleData.StrongReference = handleData.StrongReference || handleData.RefCount > 0 && !builtInCOM.IsHandleWeak(ccw);
+            handleData.StrongReference = handleData.StrongReference || (handleData.RefCount > 0 && !builtInCOM.IsHandleWeak(ccw));
         }
     }
 

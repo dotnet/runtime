@@ -410,19 +410,11 @@ internal readonly struct GC_1 : IGC
             return;
         uBlock = tableSegment.RgAllocation[uBlock];
         byte uHead = uBlock;
-        byte uBlockOld;
         // for each block in the segment for the given handle type
         do
         {
-            uBlockOld = uBlock;
+            GetHandlesForBlock(tableSegment, uBlock, type, handles);
             uBlock = tableSegment.RgAllocation[uBlock];
-            if (HasSecondary(type))
-            {
-                byte blockIndex = tableSegment.RgUserData[uBlockOld];
-                if (blockIndex == _blockInvalid)
-                    continue;
-            }
-            GetHandlesForBlock(tableSegment, uBlockOld, type, handles);
         } while (uBlock != uHead);
     }
 
@@ -454,8 +446,13 @@ internal readonly struct GC_1 : IGC
         if (HasSecondary(type))
         {
             byte blockIndex = tableSegment.RgUserData[uBlock];
-            uint offset = blockIndex * _handlesPerBlock + intraBlockIndex;
-            handleData.Secondary = _target.ReadPointer(tableSegment.RgValue + offset * (uint)_target.PointerSize);
+            if (blockIndex == _blockInvalid)
+                handleData.Secondary = 0;
+            else
+            {
+                uint offset = blockIndex * _handlesPerBlock + intraBlockIndex;
+                handleData.Secondary = _target.ReadPointer(tableSegment.RgValue + offset * (uint)_target.PointerSize);
+            }
         }
         else
         {

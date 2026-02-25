@@ -1,4 +1,4 @@
-# Contract ComWrappers
+# Contract BuiltInCOM
 
 This contract is for getting information related to built-in COM.
 
