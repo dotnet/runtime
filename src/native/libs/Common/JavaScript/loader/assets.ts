@@ -92,11 +92,11 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
     totalAssetsToDownload++;
     const assetInternal = asset as AssetEntryInternal;
     dotnetAssert.check(assetInternal.virtualPath, "Assembly asset must have virtualPath");
-    if (assetInternal.culture) {
-        assetInternal.name = `${assetInternal.culture}/${assetInternal.name}`;
-    }
-    if (assetInternal.name && !asset.resolvedUrl) {
-        asset.resolvedUrl = locateFile(assetInternal.name);
+    const assetNameForUrl = assetInternal.culture
+        ? `${assetInternal.culture}/${assetInternal.name}`
+        : assetInternal.name;
+    if (assetNameForUrl && !asset.resolvedUrl) {
+        asset.resolvedUrl = locateFile(assetNameForUrl);
     }
     assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
         ? assetInternal.virtualPath
