@@ -830,5 +830,15 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Empty(result.Diagnostics);
             result.AssertContainsType("global::HelloWorld.TypeWithNonGenericOuterConverter<int>");
         }
+
+        [Fact]
+        public void ManyParamsAsymmetricNestedConverter_CompileSuccessfully()
+        {
+            Compilation compilation = CompilationHelper.CreateTypesWithManyParamsAsymmetricNestedConverter();
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Empty(result.Diagnostics);
+            result.AssertContainsType("global::HelloWorld.TypeWithManyParams<int, string, bool, double, long>");
+        }
     }
 }

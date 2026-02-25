@@ -1129,12 +1129,38 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(42, deserialized.Value);
         }
 
+        [Fact]
+        public static void SupportsAsymmetricNestedConverterWithManyParams()
+        {
+            var value = new TypeWithManyParams<int, string, bool, double, long>
+            {
+                Value1 = 1,
+                Value2 = "two",
+                Value3 = true,
+                Value4 = 4.0,
+                Value5 = 5L
+            };
+            string json = JsonSerializer.Serialize(value, NestedGenericConverterContext.Default.TypeWithManyParamsInt32StringBooleanDoubleInt64);
+            Assert.Equal(@"{""Value1"":1,""Value2"":""two"",""Value3"":true,""Value4"":4,""Value5"":5}", json);
+
+            var deserialized = JsonSerializer.Deserialize<TypeWithManyParams<int, string, bool, double, long>>(json, NestedGenericConverterContext.Default.TypeWithManyParamsInt32StringBooleanDoubleInt64);
+            Assert.Equal(1, deserialized.Value1);
+            Assert.Equal("two", deserialized.Value2);
+            Assert.True(deserialized.Value3);
+            Assert.Equal(4.0, deserialized.Value4);
+            Assert.Equal(5L, deserialized.Value5);
+        }
+
         [JsonSerializable(typeof(TypeWithNestedConverter<int, string>))]
         [JsonSerializable(typeof(TypeWithSatisfiedConstraint<string>))]
         [JsonSerializable(typeof(TypeWithDeeplyNestedConverter<int, string>))]
         [JsonSerializable(typeof(TypeWithSingleLevelNestedConverter<int>))]
+        [JsonSerializable(typeof(TypeWithManyParams<int, string, bool, double, long>))]
         [JsonSerializable(typeof(int))]
         [JsonSerializable(typeof(string))]
+        [JsonSerializable(typeof(bool))]
+        [JsonSerializable(typeof(double))]
+        [JsonSerializable(typeof(long))]
         internal partial class NestedGenericConverterContext : JsonSerializerContext
         {
         }

@@ -1136,6 +1136,50 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateTypesWithManyParamsAsymmetricNestedConverter()
+        {
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(TypeWithManyParams<int, string, bool, double, long>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonConverter(typeof(Level1<,,>.Level2<>.Level3Converter<>))]
+                    public class TypeWithManyParams<T1, T2, T3, T4, T5>
+                    {
+                        public T1 Value1 { get; set; }
+                        public T2 Value2 { get; set; }
+                        public T3 Value3 { get; set; }
+                        public T4 Value4 { get; set; }
+                        public T5 Value5 { get; set; }
+                    }
+
+                    public class Level1<A, B, C>
+                    {
+                        public class Level2<D>
+                        {
+                            public sealed class Level3Converter<E> : JsonConverter<TypeWithManyParams<A, B, C, D, E>>
+                            {
+                                public override TypeWithManyParams<A, B, C, D, E> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                                    => throw new NotImplementedException();
+
+                                public override void Write(Utf8JsonWriter writer, TypeWithManyParams<A, B, C, D, E> value, JsonSerializerOptions options)
+                                    => throw new NotImplementedException();
+                            }
+                        }
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
         private static readonly string FileSeparator = new string('=', 140);
 
         private sealed class NumberedSourceFileWriter : TextWriter

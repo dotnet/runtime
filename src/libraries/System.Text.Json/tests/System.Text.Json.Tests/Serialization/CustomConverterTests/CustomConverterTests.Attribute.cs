@@ -806,5 +806,93 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
         }
+
+        // Tests for many generic parameters with asymmetric distribution: Level1<,,>.Level2<>.Level3Converter<>
+        [Fact]
+        public static void GenericConverterAttribute_ManyParamsAsymmetricNesting_Works()
+        {
+            var value = new TypeWithManyParams<int, string, bool, double, long>
+            {
+                Value1 = 1,
+                Value2 = "two",
+                Value3 = true,
+                Value4 = 4.0,
+                Value5 = 5L
+            };
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal(@"{""Value1"":1,""Value2"":""two"",""Value3"":true,""Value4"":4,""Value5"":5}", json);
+
+            var deserialized = JsonSerializer.Deserialize<TypeWithManyParams<int, string, bool, double, long>>(json);
+            Assert.Equal(1, deserialized.Value1);
+            Assert.Equal("two", deserialized.Value2);
+            Assert.True(deserialized.Value3);
+            Assert.Equal(4.0, deserialized.Value4);
+            Assert.Equal(5L, deserialized.Value5);
+        }
+
+        [JsonConverter(typeof(Level1<,,>.Level2<>.Level3Converter<>))]
+        public class TypeWithManyParams<T1, T2, T3, T4, T5>
+        {
+            public T1 Value1 { get; set; }
+            public T2 Value2 { get; set; }
+            public T3 Value3 { get; set; }
+            public T4 Value4 { get; set; }
+            public T5 Value5 { get; set; }
+        }
+
+        public class Level1<A, B, C>
+        {
+            public class Level2<D>
+            {
+                public sealed class Level3Converter<E> : JsonConverter<TypeWithManyParams<A, B, C, D, E>>
+                {
+                    public override TypeWithManyParams<A, B, C, D, E> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                    {
+                        if (reader.TokenType != JsonTokenType.StartObject)
+                            throw new JsonException();
+
+                        var result = new TypeWithManyParams<A, B, C, D, E>();
+                        while (reader.Read())
+                        {
+                            if (reader.TokenType == JsonTokenType.EndObject)
+                                break;
+
+                            if (reader.TokenType != JsonTokenType.PropertyName)
+                                throw new JsonException();
+
+                            string propertyName = reader.GetString()!;
+                            reader.Read();
+
+                            switch (propertyName)
+                            {
+                                case "Value1": result.Value1 = JsonSerializer.Deserialize<A>(ref reader, options)!; break;
+                                case "Value2": result.Value2 = JsonSerializer.Deserialize<B>(ref reader, options)!; break;
+                                case "Value3": result.Value3 = JsonSerializer.Deserialize<C>(ref reader, options)!; break;
+                                case "Value4": result.Value4 = JsonSerializer.Deserialize<D>(ref reader, options)!; break;
+                                case "Value5": result.Value5 = JsonSerializer.Deserialize<E>(ref reader, options)!; break;
+                            }
+                        }
+
+                        return result;
+                    }
+
+                    public override void Write(Utf8JsonWriter writer, TypeWithManyParams<A, B, C, D, E> value, JsonSerializerOptions options)
+                    {
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("Value1");
+                        JsonSerializer.Serialize(writer, value.Value1, options);
+                        writer.WritePropertyName("Value2");
+                        JsonSerializer.Serialize(writer, value.Value2, options);
+                        writer.WritePropertyName("Value3");
+                        JsonSerializer.Serialize(writer, value.Value3, options);
+                        writer.WritePropertyName("Value4");
+                        JsonSerializer.Serialize(writer, value.Value4, options);
+                        writer.WritePropertyName("Value5");
+                        JsonSerializer.Serialize(writer, value.Value5, options);
+                        writer.WriteEndObject();
+                    }
+                }
+            }
+        }
     }
 }
