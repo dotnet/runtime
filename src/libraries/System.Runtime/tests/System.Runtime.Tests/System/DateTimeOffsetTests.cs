@@ -755,7 +755,7 @@ namespace System.Tests
 
         public static bool IsMinValueNegativeLocalOffset() => TimeZoneInfo.Local.GetUtcOffset(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc)).Ticks < 0;
 
-        [ConditionalFact(nameof(IsMinValueNegativeLocalOffset))]
+        [ConditionalFact(typeof(DateTimeOffsetTests), nameof(IsMinValueNegativeLocalOffset))]
         public static void ToLocalTime_MinValue()
         {
             DateTimeOffset dateTimeOffset = new DateTimeOffset(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
@@ -765,7 +765,7 @@ namespace System.Tests
 
         public static bool IsMaxValuePositiveLocalOffset() => TimeZoneInfo.Local.GetUtcOffset(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc)).Ticks > 0;
 
-        [ConditionalFact(nameof(IsMaxValuePositiveLocalOffset))]
+        [ConditionalFact(typeof(DateTimeOffsetTests), nameof(IsMaxValuePositiveLocalOffset))]
         public static void ToLocalTime_MaxValue()
         {
             DateTimeOffset dateTimeOffset = new DateTimeOffset(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc));
@@ -781,7 +781,7 @@ namespace System.Tests
             yield return new object[] { new DateTimeOffset(2019, 11, 3, 1, 0, 0, new TimeSpan(-8, 0, 0)) };
         }
 
-        [ConditionalTheory(nameof(IsPacificTime))]
+        [ConditionalTheory(typeof(DateTimeOffsetTests), nameof(IsPacificTime))]
         [MemberData(nameof(ToLocalTime_Ambiguous_TestData))]
         public static void ToLocalTime_Ambiguous(DateTimeOffset dateTimeOffset)
         {

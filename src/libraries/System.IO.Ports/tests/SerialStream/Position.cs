@@ -15,7 +15,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Position), nameof(HasOneSerialPort))]
         public void Position_Open_Close()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -31,7 +31,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Position), nameof(HasOneSerialPort))]
         public void Position_Open_BaseStreamClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -46,7 +46,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Position), nameof(HasOneSerialPort))]
         public void Position_AfterOpen()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -58,7 +58,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_Position), nameof(HasOneSerialPort))]
         public void Position_BadValue()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
