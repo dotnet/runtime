@@ -20,13 +20,13 @@ Use this checklist to validate an API proposal before publishing. Items are orde
 - [ ] **DO** verify naming consistency with existing APIs in the target namespace
 - [ ] **DO NOT** include implementation code in the API surface
 - [ ] **DO NOT** include extensive XML documentation in the proposal diff — comments only as brief clarifications
-- [ ] **DO NOT** expose types from the `System` namespace without strong justification
 
 ## Scope Completeness
 
 - [ ] **DO** consider whether neighboring APIs need the same treatment (e.g., adding to `ToDictionary`? what about `ToHashSet`?)
 - [ ] **DO** consider whether APIs require common parameters (e.g., `CancellationToken`, `IEqualityComparer<T>`)
 - [ ] **DO** consider async counterparts if adding sync APIs, and vice versa
+- [ ] **DO** include `System.Linq.Queryable` and `System.Linq.AsyncEnumerable` equivalents when proposing new `System.Linq` methods
 - [ ] **DO** consider overload consistency with existing method families
 - [ ] **DO NOT** propose a narrow addition without evaluating the broader scope — reviewers will ask about it
 
