@@ -109,7 +109,10 @@ namespace TestLibrary
         // this is compiled with 11.0.0-preview.1.26104.118\ref
         // which doesn't have the RuntimeFeature.IsMultithreadingSupported API yet.
         // after we update to a newer ref, we should use RuntimeFeature.IsMultithreadingSupported directly.
-        public static bool IsMultithreadingSupported => (!IsBrowser && !IsWasi) || IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
+        // public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
+        public static bool IsMultithreadingSupported => GetIsMultithreadingSupported(null);
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_IsMultithreadingSupported")]
+        static extern bool GetIsMultithreadingSupported([UnsafeAccessorType("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported, System.Private.CoreLib")] object? _);
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
 
         private static bool IsEnvironmentVariableTrue(string variableName)

@@ -139,14 +139,15 @@ namespace System
         public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
-
-        // TODO-WASM: https://github.com/dotnet/runtime/issues/124748
-        // this is compiled with 11.0.0-preview.1.26104.118\ref
-        // which doesn't have the RuntimeFeature.IsMultithreadingSupported API yet.
-        // after we update to a newer ref, we should use RuntimeFeature.IsMultithreadingSupported directly.
-        public static bool IsMultithreadingSupported => (IsNotBrowser && IsNotWasi) || IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
+#if NET && NET11_0_OR_GREATER
+        public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
+#else
+        public static bool IsMultithreadingSupported => GetIsMultithreadingSupported(null);
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_IsMultithreadingSupported")]
+        static extern bool GetIsMultithreadingSupported([UnsafeAccessorType("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported, System.Private.CoreLib")] object? _);
+#endif
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
-        public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
+        public static bool IsWasmThreadingSupported => IsBrowser && IsMultithreadingSupported;
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
 
         private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);

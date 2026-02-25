@@ -5,6 +5,9 @@
     <!-- For some reason, xunit.core.props isn't excluded in VS and sets this to true. -->
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(TargetFramework)' == 'net11.0'">$(DefineConstants);NET11_0_OR_GREATER</DefineConstants>
+  </PropertyGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)ILLink.Substitutions.AggressiveTrimming.xml"
