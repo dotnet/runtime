@@ -15,6 +15,7 @@ let currentParallelDownloads = 0;
 let downloadedAssetsCount = 0;
 let totalAssetsToDownload = 0;
 let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
+const loadedLazyAssemblies = new Set<string>();
 
 export function setLoadBootResourceCallback(callback: LoadBootResourceCallback | undefined): void {
     loadBootResourceCallback = callback;
@@ -205,12 +206,17 @@ export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boo
         throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
     }
 
+    if (loadedLazyAssemblies.has(dllAsset.virtualPath)) {
+        return false;
+    }
+
     await fetchDll(dllAsset);
+    loadedLazyAssemblies.add(dllAsset.virtualPath);
 
     if (loaderConfig.debugLevel !== 0) {
         const pdbNameToLoad = assemblyNameWithoutExtension + ".pdb";
         const pdbAssets = loaderConfig.resources?.pdb;
-        let pdbAssetToLoad: SymbolsAsset | undefined;
+        let pdbAssetToLoad: AssemblyAsset | undefined;
         if (pdbAssets) {
             for (const pdbAsset of pdbAssets) {
                 if (pdbAsset.virtualPath === pdbNameToLoad) {
@@ -222,7 +228,7 @@ export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boo
         if (!pdbAssetToLoad) {
             for (const lazyAsset of lazyAssemblies) {
                 if (lazyAsset.virtualPath === pdbNameToLoad) {
-                    pdbAssetToLoad = lazyAsset as SymbolsAsset;
+                    pdbAssetToLoad = lazyAsset as AssemblyAsset;
                     break;
                 }
             }

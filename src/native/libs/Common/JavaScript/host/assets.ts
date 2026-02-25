@@ -11,12 +11,15 @@ const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map()
 
 export function registerPdbBytes(bytes: Uint8Array, virtualPath: string) {
     const lastSlash = virtualPath.lastIndexOf("/");
-    const parentDirectory = lastSlash > 0
+    let parentDirectory = lastSlash > 0
         ? virtualPath.substring(0, lastSlash)
         : browserVirtualAppBase;
     let fileName = lastSlash > 0 ? virtualPath.substring(lastSlash + 1) : virtualPath;
     if (fileName.startsWith("/")) {
         fileName = fileName.substring(1);
+    }
+    if (!parentDirectory.startsWith("/")) {
+        parentDirectory = browserVirtualAppBase + parentDirectory;
     }
 
     _ems_.dotnetLogger.debug(`Registering PDB '${fileName}' in directory '${parentDirectory}'`);
