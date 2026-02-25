@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
@@ -29,31 +28,38 @@ internal sealed class Utf8JsonReaderFuzzer : IFuzzer
 
     delegate T RefFunc<T>(ref Utf8JsonReader reader);
 
-    static Random s_random = default!;
+    static byte[] s_controlBytes = [];
+    static int s_controlIndex;
+
+    static byte NextByte()
+    {
+        byte value = s_controlBytes[s_controlIndex];
+        s_controlIndex = (s_controlIndex + 1) % s_controlBytes.Length;
+        return value;
+    }
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
-        const int minLength = 10;
+        const int controlByteCount = 32;
+        const int minLength = controlByteCount + 10;
         if (bytes.Length < minLength)
         {
             return;
         }
 
-        // Create a random seed from the last 4 bytes of the input
-        int len = bytes.Length;
-        int randomSeed = bytes[len - 1] + (bytes[len - 2] << 8) + (bytes[len - 3] << 16) + (bytes[len - 4] << 24);
-        s_random = new Random(randomSeed);
-
-        // Remove the 4 bytes used for the random seed
-        bytes = bytes.Slice(0, len - 4);
+        // Use the first bytes directly as control data instead of seeding a PRNG,
+        // so the fuzzing engine can see the relationship between input and code coverage.
+        s_controlBytes = bytes.Slice(0, controlByteCount).ToArray();
+        s_controlIndex = 0;
+        bytes = bytes.Slice(controlByteCount);
 
         JsonSerializerOptions options = new JsonSerializerOptions
         {
-            AllowTrailingCommas = s_random.Next() % 2 == 0,
-            Encoder = s_random.Next() % 2 == 0 ? JavaScriptEncoder.Default : JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            AllowTrailingCommas = NextByte() % 2 == 0,
+            Encoder = NextByte() % 2 == 0 ? JavaScriptEncoder.Default : JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             // TODO: JsonExceptions differ between Span and Sequence paths
-            ReadCommentHandling = (JsonCommentHandling)s_random.Next(0, 2),
-            NumberHandling = (JsonNumberHandling)s_random.Next(0, 4),
+            ReadCommentHandling = (JsonCommentHandling)(NextByte() % 2),
+            NumberHandling = (JsonNumberHandling)(NextByte() % 4),
         };
 
         // Fuzz using ReadOnlySpan<byte>
@@ -62,8 +68,6 @@ internal sealed class Utf8JsonReaderFuzzer : IFuzzer
         // Fuzz using ReadOnlySequence<byte>
         var sequence = CreateVariableSegmentSequence(bytes);
         var readerSequence = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
-
-        //Debugger.Launch();
 
         var byteArr = bytes.ToArray();
         TestDeserializeAsync<string>(byteArr, sequence, options);
@@ -128,8 +132,8 @@ internal sealed class Utf8JsonReaderFuzzer : IFuzzer
            return true;
         });
 
-        TestRandomPoco(bytes, sequence, options);
-        TestRandomPocoWithSetters(bytes, sequence, options);
+        TestRandomType(bytes, sequence, options, maxDepth: NextByte() % 3);
+        TestRandomType(bytes, sequence, options, maxDepth: NextByte() % 3);
 
         while (true)
         {
@@ -237,7 +241,7 @@ internal sealed class Utf8JsonReaderFuzzer : IFuzzer
                         }
                         catch (InvalidOperationException ex) when (ex.Message.Contains("surrogate"))
                         {
-                            // If the string is not a valid DateTime, we expect an exception
+                            // If the string contains invalid surrogate characters, we expect an exception
                             return null;
                         }
                         return value;
@@ -251,7 +255,7 @@ internal sealed class Utf8JsonReaderFuzzer : IFuzzer
                         }
                         catch (InvalidOperationException ex) when (ex.Message.Contains("surrogate"))
                         {
-                            // If the string is not a valid DateTime, we expect an exception
+                            // If the string contains invalid surrogate characters, we expect an exception
                             return null;
                         }
                         return value;
@@ -314,20 +318,10 @@ internal sealed class Utf8JsonReaderFuzzer : IFuzzer
                                                 $"Span has token: {spanToken}, Sequence has token: {seqToken}");
         }
 
-        try
+        if (!comparer?.Invoke(spanToken, seqToken) ?? !spanToken.Equals(seqToken))
         {
-            if (!comparer?.Invoke(spanToken, seqToken) ?? !spanToken.Equals(seqToken))
-            {
-                throw new InvalidOperationException("Span and Sequence readers diverged in token availability. " +
-                                                    $"Span has token: {spanToken}, Sequence has token: {seqToken}");
-            }
-        }
-        catch (Exception ex)
-        {
-            if (CompareExceptions(ex, ex))
-            {
-                return default!;
-            }
+            throw new InvalidOperationException("Span and Sequence readers diverged in token availability. " +
+                                                $"Span has token: {spanToken}, Sequence has token: {seqToken}");
         }
 
         if (spanReader.BytesConsumed != seqReader.BytesConsumed ||
@@ -362,39 +356,48 @@ internal sealed class Utf8JsonReaderFuzzer : IFuzzer
         typeof(IntEnum),
         typeof(StringEnum),
         typeof(bool),
-        // Add more types as needed
+        typeof(double),
+        typeof(long),
+        typeof(Int128),
+        typeof(char),
     ];
 
-    void TestRandomPoco(ReadOnlySpan<byte> bytes, ReadOnlySequence<byte> sequence, JsonSerializerOptions options)
+    static Type GenerateRandomType(int maxDepth)
     {
-        Span<Type> selectedTypes = new Type[6];
-        for (int i = 0; i < 6; i++)
-            selectedTypes[i] = groundTypes[s_random.Next() % groundTypes.Length];
+        if (maxDepth <= 0)
+            return groundTypes[NextByte() % groundTypes.Length];
 
-        Type pocoType = typeof(PocoTemplate<,,,,,>).MakeGenericType(selectedTypes.ToArray());
-        Type testerType = typeof(Tester<>).MakeGenericType(pocoType);
-        var testerInstance = (ITester)Activator.CreateInstance(testerType)!;
-
-        testerInstance.TestWrapper(bytes, sequence, options);
+        int kind = NextByte() % 5;
+        return kind switch
+        {
+            0 => groundTypes[NextByte() % groundTypes.Length],
+            1 => typeof(List<>).MakeGenericType(GenerateRandomType(maxDepth - 1)),
+            2 => typeof(Dictionary<,>).MakeGenericType(typeof(string), GenerateRandomType(maxDepth - 1)),
+            3 => typeof(PocoTemplate<,,,,,>).MakeGenericType(
+                GenerateRandomType(maxDepth - 1), GenerateRandomType(maxDepth - 1),
+                GenerateRandomType(maxDepth - 1), GenerateRandomType(maxDepth - 1),
+                GenerateRandomType(maxDepth - 1), GenerateRandomType(maxDepth - 1)),
+            4 => typeof(PocoWithSetters<,,,,,>).MakeGenericType(
+                GenerateRandomType(maxDepth - 1), GenerateRandomType(maxDepth - 1),
+                GenerateRandomType(maxDepth - 1), GenerateRandomType(maxDepth - 1),
+                GenerateRandomType(maxDepth - 1), GenerateRandomType(maxDepth - 1)),
+            _ => groundTypes[0],
+        };
     }
 
-    void TestRandomPocoWithSetters(ReadOnlySpan<byte> bytes, ReadOnlySequence<byte> sequence, JsonSerializerOptions options)
+    static void TestRandomType(ReadOnlySpan<byte> bytes, ReadOnlySequence<byte> sequence, JsonSerializerOptions options, int maxDepth)
     {
-        Span<Type> selectedTypes = new Type[6];
-        for (int i = 0; i < 6; i++)
-            selectedTypes[i] = groundTypes[s_random.Next() % groundTypes.Length];
-
-        Type pocoType = typeof(PocoWithSetters<,,,,,>).MakeGenericType(selectedTypes.ToArray());
-        Type testerType = typeof(Tester<>).MakeGenericType(pocoType);
+        Type type = GenerateRandomType(maxDepth);
+        Type testerType = typeof(Tester<>).MakeGenericType(type);
         var testerInstance = (ITester)Activator.CreateInstance(testerType)!;
-
         testerInstance.TestWrapper(bytes, sequence, options);
     }
 
     private static ReadOnlySequence<byte> CreateVariableSegmentSequence(ReadOnlySpan<byte> bytes)
     {
         // Split into 2-5 segments, but never less than 1 byte per segment
-        int segmentCount = s_random.Next(2, Math.Min(6, bytes.Length + 1));
+        int maxSegments = Math.Min(6, bytes.Length + 1);
+        int segmentCount = maxSegments <= 2 ? 2 : 2 + NextByte() % (maxSegments - 2);
 
         if (bytes.Length == 0 || bytes.Length < segmentCount)
         {
@@ -408,7 +411,7 @@ internal sealed class Utf8JsonReaderFuzzer : IFuzzer
         for (int i = 0; i < segmentCount; i++)
         {
             int max = remaining - (segmentCount - i - 1);
-            segmentSizes[i] = (i == segmentCount - 1) ? max : s_random.Next(1, max);
+            segmentSizes[i] = (i == segmentCount - 1) ? max : (max <= 1 ? 1 : 1 + NextByte() % (max - 1));
             remaining -= segmentSizes[i];
         }
 
@@ -506,7 +509,7 @@ internal sealed class Utf8JsonReaderFuzzer : IFuzzer
     {
         public void TestWrapper(ReadOnlySpan<byte> bytes, ReadOnlySequence<byte> sequence, JsonSerializerOptions options)
         {
-            TestDeserializeAsync<T>(bytes.ToArray(), sequence, options);
+            TestDeserializeAsync<T>(bytes.ToArray(), sequence, options, static (_, _) => true);
         }
     }
 
@@ -643,7 +646,7 @@ internal sealed class Utf8JsonReaderFuzzer : IFuzzer
                 if (spanArgumentEx?.Message.Equals(seqArgumentEx?.Message) is not true)
                 {
                     throw new InvalidOperationException(
-                        $"Span and Sequence readers diverged in exponent exception:{Environment.NewLine}" +
+                        $"Span and Sequence readers diverged in same key exception:{Environment.NewLine}" +
                         $"Span: '{spanArgumentEx?.Message ?? "null"}'{Environment.NewLine}" +
                         $"Seq: '{seqArgumentEx?.Message ?? "null"}'");
                 }
