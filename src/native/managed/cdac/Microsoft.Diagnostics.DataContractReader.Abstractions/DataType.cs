@@ -123,11 +123,8 @@ public enum DataType
     DynamicILBlobTable,
     EEJitManager,
     PatchpointInfo,
-<<<<<<< copilot/implement-get-loader-allocator-heap-names
     VirtualCallStubManager,
-=======
     PortableEntryPoint,
->>>>>>> main
 
     TransitionBlock,
     DebuggerEval,
