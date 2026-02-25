@@ -152,6 +152,7 @@ export function dotnetUpdateInternalsSubscriber() {
             initializeCoreCLR: table[3],
             registerPdbBytes: table[4],
             instantiateWasm: table[5],
+            instantiateWebcilModule: table[6],
         };
         Object.assign(native, nativeLocal);
     }
@@ -172,6 +173,8 @@ export function dotnetUpdateInternalsSubscriber() {
     // keep in sync with nativeBrowserExportsToTable()
     function nativeBrowserExportsFromTable(table: NativeBrowserExportsTable, interop: NativeBrowserExports): void {
         const interopLocal: NativeBrowserExports = {
+            getWasmMemory: table[0],
+            getWasmTable: table[1],
         };
         Object.assign(interop, interopLocal);
     }

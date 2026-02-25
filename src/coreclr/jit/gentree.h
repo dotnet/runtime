@@ -1984,6 +1984,8 @@ public:
 
     inline GenTree* gtCommaStoreVal();
 
+    GenTree* gtFirstNodeInOperandOrder();
+
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
 
@@ -8098,6 +8100,9 @@ public:
         BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
+#ifdef TARGET_WASM
+        BlkOpKindNativeOpcode,
+#endif
     } gtBlkOpKind;
 
     bool gtBlkOpGcUnsafe;

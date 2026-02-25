@@ -2043,6 +2043,13 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("ALLOC_CONTINUATION_CLASS");
                     break;
 
+                case ReadyToRunHelper.InitClass:
+                    builder.Append("INIT_CLASS");
+                    break;
+                case ReadyToRunHelper.InitInstClass:
+                    builder.Append("INIT_INST_CLASS");
+                    break;
+
                 default:
                     throw new BadImageFormatException(helperType.ToString());
             }

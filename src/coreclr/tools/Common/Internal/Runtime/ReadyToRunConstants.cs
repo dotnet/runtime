@@ -360,6 +360,9 @@ namespace Internal.ReadyToRunConstants
         AllocContinuationClass      = 0x114,
         AllocContinuationMethod     = 0x115,
 
+        InitClass                   = 0x116,
+        InitInstClass               = 0x117,
+
         // **********************************************************************************************
         //
         // These are not actually part of the R2R file format. We have them here because it's convenient.

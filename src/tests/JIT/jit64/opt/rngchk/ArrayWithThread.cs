@@ -17,7 +17,7 @@ namespace ArrayWithThread
         public static ManualResetEvent myResetEvent2 = new ManualResetEvent(false);
         [ActiveIssue("times out", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
         [SkipOnCoreClr("", RuntimeTestModes.AnyGCStress)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static int TestEntryPoint()
         {
             int retVal = 100;
