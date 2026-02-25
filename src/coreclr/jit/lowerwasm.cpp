@@ -244,6 +244,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         ClassLayout* layout  = blkNode->GetLayout();
         bool         doCpObj = layout->HasGCPtr();
 
+        // If copying to the stack instead of the heap, we should treat it as a raw memcpy for
+        //  smaller generated code and potentially better performance.
+        if (blkNode->IsAddressNotOnHeap(m_compiler))
+            doCpObj = false;
+
         // CopyObj or CopyBlk
         if (doCpObj)
         {

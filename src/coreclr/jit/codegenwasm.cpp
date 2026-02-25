@@ -2450,6 +2450,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     // If the destination is on the stack we don't need the write barrier.
     bool dstOnStack = cpObjNode->IsAddressNotOnHeap(m_compiler);
+    // We should have generated a memory.copy for this scenario in lowering.
+    assert(!dstOnStack);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -2461,9 +2463,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     genConsumeOperands(cpObjNode);
 
-    ClassLayout* layout = cpObjNode->GetLayout();
-    unsigned     slots  = layout->GetSlotCount();
-
     regNumber srcReg = GetMultiUseOperandReg(source);
     regNumber dstReg = GetMultiUseOperandReg(dstAddr);
 
@@ -2472,7 +2471,12 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         // TODO-WASM: Memory barrier
     }
 
+    // TODO: Do we need an implicit null check here?
+
     emitter* emit = GetEmitter();
+
+    ClassLayout* layout = cpObjNode->GetLayout();
+    unsigned     slots  = layout->GetSlotCount();
 
     emitAttr attrSrcAddr = emitActualTypeSize(srcAddrType);
     emitAttr attrDstAddr = emitActualTypeSize(dstAddr->TypeGet());
