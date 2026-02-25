@@ -139,7 +139,7 @@ namespace System
         public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
-#if NET && NET11_0_OR_GREATER
+#if NET11_0_OR_GREATER
         public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
 #else
         public static bool IsMultithreadingSupported => GetIsMultithreadingSupported(null);
