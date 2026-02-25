@@ -247,7 +247,6 @@ namespace System
         public static bool IsSingleFile => !HasAssemblyFiles;
 
         public static bool IsReadyToRunCompiled => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
-        public static bool IsOSXAndReadyToRunCompiled => IsOSX && IsReadyToRunCompiled;
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
