@@ -29,7 +29,7 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
         const double webSocketMessageFrequency = 45000;
         const double fastTimeoutFrequency = 100;
 
-        [ConditionalFact(nameof(PlatformDetection.IsBrowser))]
+        [ConditionalFact(typeof(BrowserTimerThrottlingTest), nameof(PlatformDetection.IsBrowser))]
         [OuterLoop] // involves long delay
         // this test is influenced by usage of WS on the same browser tab in previous unit tests. we may need to wait long time for it to fizzle down
         public async Task DotnetTimersAreHeavilyThrottledWithoutWebSocket()
@@ -78,7 +78,7 @@ namespace System.Net.WebSockets.Client.Wasm.Tests
             Assert.True(maxDelayMs > moreThanLightThrottlingThreshold, "Expect that it was heavily throttled " + maxDelayMs);
         }
 
-        [ConditionalFact(nameof(WebSocketsSupported), nameof(PlatformDetection.IsBrowser))]
+        [ConditionalFact(typeof(BrowserTimerThrottlingTest), nameof(WebSocketsSupported), nameof(PlatformDetection.IsBrowser))]
         [OuterLoop] // involves long delay
         public async Task WebSocketKeepsDotnetTimersOnlyLightlyThrottled()
         {

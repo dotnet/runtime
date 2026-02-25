@@ -330,7 +330,7 @@ namespace System.Net.Sockets.Tests
     [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
     public class DualModeConnectToHostString : DualModeBase
     {
-        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
+        [ConditionalTheory(typeof(DualModeConnectToHostString), nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -349,7 +349,7 @@ namespace System.Net.Sockets.Tests
     [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
     public class DualModeConnectToDnsEndPoint : DualModeBase
     {
-        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
+        [ConditionalTheory(typeof(DualModeConnectToDnsEndPoint), nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -609,7 +609,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
+        [ConditionalTheory(typeof(DualModeConnectAsync), nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -636,7 +636,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
+        [ConditionalTheory(typeof(DualModeConnectAsync), nameof(LocalhostIsBothIPv4AndIPv6))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22225")]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnectAsync_Static_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)

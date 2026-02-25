@@ -182,7 +182,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsRenegotiation))]
+        [ConditionalTheory(typeof(SslStreamNetworkStreamTest), nameof(SupportsRenegotiation))]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
@@ -260,7 +260,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsRenegotiation))]
+        [ConditionalTheory(typeof(SslStreamNetworkStreamTest), nameof(SupportsRenegotiation))]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
@@ -378,7 +378,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsRenegotiation))]
+        [ConditionalFact(typeof(SslStreamNetworkStreamTest), nameof(SupportsRenegotiation))]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_IncompleteIncomingTlsFrame_Throws()
         {
@@ -444,7 +444,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsRenegotiation))]
+        [ConditionalFact(typeof(SslStreamNetworkStreamTest), nameof(SupportsRenegotiation))]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_PendingDecryptedData_Throws()
         {

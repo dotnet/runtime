@@ -14,7 +14,7 @@ namespace System.Net.Quic.Tests
 
         public static bool IsQuicUnsupported => !IsSupported;
 
-        [ConditionalFact(nameof(IsQuicUnsupported))]
+        [ConditionalFact(typeof(MsQuicPlatformDetectionTests), nameof(IsQuicUnsupported))]
         public async Task UnsupportedPlatforms_ThrowsPlatformNotSupportedException()
         {
             PlatformNotSupportedException listenerEx = await Assert.ThrowsAsync<PlatformNotSupportedException>(async () => await CreateQuicListener());

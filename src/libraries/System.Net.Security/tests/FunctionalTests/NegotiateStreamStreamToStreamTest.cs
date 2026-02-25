@@ -32,7 +32,7 @@ namespace System.Net.Security.Tests
         protected virtual bool SupportsCancelableReadsWrites => false;
         protected virtual bool IsEncryptedAndSigned => true;
 
-        [ConditionalTheory(nameof(IsNtlmInstalled))]
+        [ConditionalTheory(typeof(NegotiateStreamStreamToStreamTest), nameof(IsNtlmInstalled))]
         [InlineData(0)]
         [InlineData(1)]
         public async Task NegotiateStream_StreamToStream_Authentication_Success(int delay)
@@ -90,7 +90,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsNtlmInstalled))]
+        [ConditionalTheory(typeof(NegotiateStreamStreamToStreamTest), nameof(IsNtlmInstalled))]
         [InlineData(0)]
         [InlineData(1)]
         public async Task NegotiateStream_StreamToStream_Authenticated_DisposeAsync(int delay)
@@ -120,14 +120,14 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNtlmInstalled))]
+        [ConditionalFact(typeof(NegotiateStreamStreamToStreamTest), nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_StreamToStream_Unauthenticated_Dispose()
         {
             new NegotiateStream(new MemoryStream()).Dispose();
             await new NegotiateStream(new MemoryStream()).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(IsNtlmInstalled))]
+        [ConditionalFact(typeof(NegotiateStreamStreamToStreamTest), nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_StreamToStream_Authentication_TargetName_Success()
         {
             string targetName = "testTargetName";
@@ -186,7 +186,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNtlmInstalled))]
+        [ConditionalFact(typeof(NegotiateStreamStreamToStreamTest), nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_StreamToStream_Authentication_EmptyCredentials_Fails()
         {
             string targetName = "testTargetName";

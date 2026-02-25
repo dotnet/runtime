@@ -35,7 +35,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         protected static Frame MakeDataFrame(int streamId, byte[] data, bool endStream = false) =>
             new DataFrame(data, (endStream ? FrameFlags.EndStream : FrameFlags.None), 0, streamId);
 
-        [ConditionalFact(nameof(TestsEnabled))]
+        [ConditionalFact(typeof(BidirectionStreamingTest), nameof(TestsEnabled))]
         public async Task WriteRequestAfterReadResponse()
         {
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -95,7 +95,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ConditionalFact(nameof(TestsEnabled))]
+        [ConditionalFact(typeof(BidirectionStreamingTest), nameof(TestsEnabled))]
         public async Task AfterReadResponseServerError_ClientWrite()
         {
             TaskCompletionSource<Stream> requestStreamTcs = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -157,7 +157,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ConditionalFact(nameof(TestsEnabled))]
+        [ConditionalFact(typeof(BidirectionStreamingTest), nameof(TestsEnabled))]
         public async Task AfterReadResponseServerError_ClientRead()
         {
             TaskCompletionSource<Stream> requestStreamTcs = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -209,7 +209,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ConditionalFact(nameof(TestsEnabled))]
+        [ConditionalFact(typeof(BidirectionStreamingTest), nameof(TestsEnabled))]
         public async Task AfterReadResponseCompleteClient_ServerGetsEndStream()
         {
             TaskCompletionSource<Stream> requestStreamTcs = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -273,7 +273,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ConditionalFact(nameof(TestsEnabled))]
+        [ConditionalFact(typeof(BidirectionStreamingTest), nameof(TestsEnabled))]
         public async Task ReadAndWriteAfterServerHasSentEndStream_Success()
         {
             TaskCompletionSource<Stream> requestStreamTcs = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -323,7 +323,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [ConditionalFact(nameof(TestsBackwardsCompatibilityEnabled))]
+        [ConditionalFact(typeof(BidirectionStreamingTest), nameof(TestsBackwardsCompatibilityEnabled))]
         public async Task BackwardsCompatibility_DowngradeToHttp11()
         {
             TaskCompletionSource<object> completeStreamTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);

@@ -5,12 +5,20 @@ using System.Net.Mail.Tests;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
+
 namespace System.Net.Mail.Tests
 {
     public abstract class SmtpClientAuthTest<TSendMethod> : LoopbackServerTestBase<TSendMethod>
         where TSendMethod : ISendMethodProvider
     {
         public static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
+
+        private static void CheckIsNtlmInstalled()
+        {
+            if (!IsNtlmInstalled)
+                throw new SkipTestException(nameof(IsNtlmInstalled));
+        }
 
         public SmtpClientAuthTest(ITestOutputHelper output) : base(output)
         {
@@ -36,10 +44,11 @@ namespace System.Net.Mail.Tests
             Assert.Equal("NTLM", Server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
 
-        [ConditionalFact(nameof(IsNtlmInstalled))]
+        [ConditionalFact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
         public async Task TestGssapiAuthentication()
         {
+            CheckIsNtlmInstalled();
             Server.AdvertiseGssapiAuthSupport = true;
             Server.ExpectedGssapiCredential = new NetworkCredential("foo", "bar");
             Smtp.Credentials = Server.ExpectedGssapiCredential;

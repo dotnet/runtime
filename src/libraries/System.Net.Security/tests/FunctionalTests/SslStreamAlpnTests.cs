@@ -175,7 +175,7 @@ namespace System.Net.Security.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ConditionalTheory(nameof(ClientSupportsAlpn))]
+        [ConditionalTheory(typeof(SslStreamAlpnTestBase), nameof(ClientSupportsAlpn))]
         [MemberData(nameof(Http2Servers))]
         public async Task SslStream_Http2_Alpn_Success(Uri server)
         {
@@ -236,6 +236,53 @@ namespace System.Net.Security.Tests
                 yield return new object[] { proto, null, list_empty, default(SslApplicationProtocol) };
                 yield return new object[] { proto, list_empty, null, default(SslApplicationProtocol) };
                 yield return new object[] { proto, null, null, default(SslApplicationProtocol) };
+            }
+        }
+
+        [ConditionalFact(nameof(BackendSupportsAlpn))]
+        public async Task SslStream_StreamToStream_AlpnListTotalSizeExceedsLimit_Throws()
+        {
+            // Each protocol is 255 bytes, serialized with a 1-byte length prefix = 256 bytes each.
+            // Per RFC 7301, TLS wire format limits ProtocolNameList to 2^16-1 (65,535) bytes.
+            // All platforms enforce this via managed validation before calling native APIs.
+            // 256 * 256 = 65,536 > 65,535
+            const int protocolCount = 256;
+            List<SslApplicationProtocol> oversizedProtocols = new List<SslApplicationProtocol>();
+            for (int i = 0; i < protocolCount; i++)
+            {
+                byte[] proto = new byte[255];
+                proto.AsSpan().Fill((byte)'a');
+                proto[0] = (byte)((i >> 8) + 1);
+                proto[1] = (byte)(i & 0xFF);
+                oversizedProtocols.Add(new SslApplicationProtocol(proto));
+            }
+
+            using X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate();
+
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+            {
+                ApplicationProtocols = oversizedProtocols,
+                RemoteCertificateValidationCallback = delegate { return true; },
+                TargetHost = Guid.NewGuid().ToString("N"),
+            };
+
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+            {
+                ApplicationProtocols = new List<SslApplicationProtocol> { SslApplicationProtocol.Http2 },
+                ServerCertificateContext = SslStreamCertificateContext.Create(certificate, null)
+            };
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+            using (clientStream)
+            using (serverStream)
+            using (var client = new SslStream(clientStream, false))
+            using (var server = new SslStream(serverStream, false))
+            {
+                Task serverTask = server.AuthenticateAsServerAsync(TestAuthenticateAsync, serverOptions);
+                await Assert.ThrowsAsync<ArgumentException>(() => client.AuthenticateAsClientAsync(TestAuthenticateAsync, clientOptions));
+                server.Dispose();
+
+                await Assert.ThrowsAnyAsync<Exception>(() => serverTask.WaitAsync(TestConfiguration.PassingTestTimeout));
             }
         }
     }

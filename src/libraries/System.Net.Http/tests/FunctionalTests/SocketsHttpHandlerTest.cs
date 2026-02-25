@@ -2781,7 +2781,7 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()
         {
             const int MaxConcurrentStreams = 2;
@@ -2824,7 +2824,7 @@ namespace System.Net.Http.Functional.Tests
             await VerifySendTasks(sendTasks).ConfigureAwait(false);
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_ManyRequestsEnqueuedSimultaneously_SufficientConnectionsCreated()
         {
             // This is equal to Http2Connection.InitialMaxConcurrentStreams, which is the limit we impose before we have received the peer's initial SETTINGS frame.
@@ -2862,7 +2862,7 @@ namespace System.Net.Http.Functional.Tests
             await VerifySendTasks(sendTasks);
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemainingRequestsAreHandledByNewConnection()
         {
             const int MaxConcurrentStreams = 2;
@@ -2892,7 +2892,7 @@ namespace System.Net.Http.Functional.Tests
             await VerifySendTasks(sendTasks).ConfigureAwait(false);
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
             if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
@@ -2963,7 +2963,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         [OuterLoop("Incurs long delay")]
         public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
         {
@@ -3227,7 +3227,7 @@ namespace System.Net.Http.Functional.Tests
             await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
         }
 
-        [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalTheory(typeof(SocketsHttpHandlerTest_ConnectCallback), nameof(PlatformSupportsUnixDomainSockets))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)

@@ -454,7 +454,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSubWindows10))]
+        [ConditionalFact(typeof(UnixDomainSocketTest), nameof(IsSubWindows10))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void Socket_CreateUnixDomainSocket_Throws_OnWindows()
         {

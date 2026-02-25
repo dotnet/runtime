@@ -106,12 +106,12 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
 
     protected static bool IsRemoteExecutorSupportedAndNotNano => RemoteExecutor.IsSupported && PlatformDetection.IsNotWindowsNanoServer;
 
-    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void Promotion()
         => PromotionCore();
 
     // #76010
-    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void Promotion_twice()
     {
         PromotionCore();
@@ -300,7 +300,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         }
     }
 
-    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void Recovery()
     {
         Test(() =>
@@ -491,7 +491,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
             Retry(() => Assert.Equal(TransactionStatus.Committed, tx.TransactionInformation.Status));
         });
 
-    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void Distributed_transactions_require_ImplicitDistributedTransactions_true()
     {
         // Temporarily skip on 32-bit where we have an issue.
@@ -510,7 +510,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         });
     }
 
-    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void ImplicitDistributedTransactions_cannot_be_changed_after_being_set()
     {
         // Temporarily skip on 32-bit where we have an issue.
@@ -527,7 +527,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         });
     }
 
-    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/77241")]
     public void ImplicitDistributedTransactions_cannot_be_changed_after_being_read_as_true()
     {
@@ -548,7 +548,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
         });
     }
 
-    [ConditionalFact(nameof(IsRemoteExecutorSupportedAndNotNano))]
+    [ConditionalFact(typeof(OleTxTests), nameof(IsRemoteExecutorSupportedAndNotNano))]
     public void ImplicitDistributedTransactions_cannot_be_changed_after_being_read_as_false()
     {
         // Temporarily skip on 32-bit where we have an issue.
