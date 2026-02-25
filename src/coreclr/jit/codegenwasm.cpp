@@ -361,11 +361,11 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
         {
             if (interval->IsLoop())
             {
-                GetEmitter()->emitIns_Block_Ty(INS_loop);
+                GetEmitter()->emitIns_BlockTy(INS_loop);
             }
             else
             {
-                GetEmitter()->emitIns_Block_Ty(INS_block);
+                GetEmitter()->emitIns_BlockTy(INS_block);
             }
 
             wasmCursor++;
@@ -1611,7 +1611,7 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
     }
     else
     {
-        GetEmitter()->emitIns_Block_Ty(INS_if);
+        GetEmitter()->emitIns_BlockTy(INS_if);
         // Throw helper arity is (i (sp)) -> (void).
         // Push SP here as the arg for the call.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
@@ -2497,7 +2497,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // Check for zero-sized requests
         GetEmitter()->emitIns(INS_I_eqz);
-        GetEmitter()->emitIns_Block_Ty(INS_if, is64Bit ? WasmValueType::I64 : WasmValueType::I32);
+        GetEmitter()->emitIns_BlockTy(INS_if, is64Bit ? WasmValueType::I64 : WasmValueType::I32);
         {
             // If size is zero, leave a zero on the stack
             GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);

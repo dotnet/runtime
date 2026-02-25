@@ -28,14 +28,14 @@ void emitter::emitIns(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// emitIns_Block_Ty: Emit a block instruction with simple type signature
+// emitIns_BlockTy: Emit a block instruction with simple type signature
 //
 // Arguments:
 //   ins      - instruction to emit
 //   valType  - type of object left on the stack at block end (for the block sig),
 //              with WasmValueType::Invalid representing no object left on the stack.
 //
-void emitter::emitIns_Block_Ty(instruction ins, WasmValueType valType)
+void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
 {
     emitIns_I(ins, EA_4BYTE, (cnsval_ssize_t)valType);
 }
