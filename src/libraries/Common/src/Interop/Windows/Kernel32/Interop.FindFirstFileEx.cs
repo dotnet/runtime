@@ -24,21 +24,6 @@ internal static partial class Interop
             return FindFirstFileExPrivate(fileName, FINDEX_INFO_LEVELS.FindExInfoBasic, ref data, FINDEX_SEARCH_OPS.FindExSearchNameMatch, IntPtr.Zero, 0);
         }
 
-        internal static void GetFindData(string fullPath, bool isDirectory, bool ignoreAccessDenied, ref WIN32_FIND_DATA findData)
-        {
-            using SafeFindHandle handle = FindFirstFile(Path.TrimEndingDirectorySeparator(fullPath), ref findData);
-            if (handle.IsInvalid)
-            {
-                int errorCode = Marshal.GetLastPInvokeError();
-                // File not found doesn't make much sense coming from a directory.
-                if (isDirectory && errorCode == Errors.ERROR_FILE_NOT_FOUND)
-                    errorCode = Errors.ERROR_PATH_NOT_FOUND;
-                if (ignoreAccessDenied && errorCode == Errors.ERROR_ACCESS_DENIED)
-                    return;
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
-            }
-        }
-
         internal enum FINDEX_INFO_LEVELS : uint
         {
             FindExInfoStandard = 0x0u,

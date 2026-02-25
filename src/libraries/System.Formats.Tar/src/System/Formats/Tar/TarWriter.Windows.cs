@@ -27,15 +27,25 @@ namespace System.Formats.Tar
             string? linkTarget = null;
             if ((attributes & FileAttributes.ReparsePoint) != 0)
             {
-                Interop.Kernel32.WIN32_FIND_DATA findData = default;
-                Interop.Kernel32.GetFindData(fullPath, isDirectory, ignoreAccessDenied: false, ref findData);
-
-                // dwReserved0 contains the reparse tag when the file has FileAttributes.ReparsePoint.
-                if (findData.dwReserved0 is Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK
-                    or Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
+                linkTarget = info.LinkTarget;
+                if (linkTarget is not null)
                 {
+                    // Only symlinks (IO_REPARSE_TAG_SYMLINK) and junctions (IO_REPARSE_TAG_MOUNT_POINT)
+                    // have a non-null LinkTarget. Write them as symbolic link entries.
                     entryType = TarEntryType.SymbolicLink;
-                    linkTarget = info.LinkTarget;
+                }
+                else if (isDirectory)
+                {
+                    // Non-symlink directory reparse points (e.g., OneDrive directories)
+                    // are treated as regular directories.
+                    entryType = TarEntryType.Directory;
+                }
+                else if ((attributes & (FileAttributes.Normal | FileAttributes.Archive)) != 0)
+                {
+                    // Non-symlink file reparse points (e.g., deduplication) may have
+                    // transparently accessible content. Classify as regular file and
+                    // attempt to open the content below.
+                    entryType = TarHelpers.GetRegularFileEntryTypeForFormat(Format);
                 }
                 else
                 {
@@ -81,7 +91,16 @@ namespace System.Formats.Tar
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
                 Debug.Assert(entry._header._dataStream == null);
-                entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, fileOptions);
+                try
+                {
+                    entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, fileOptions);
+                }
+                catch (Exception e) when ((attributes & FileAttributes.ReparsePoint) != 0 && (e is IOException or UnauthorizedAccessException))
+                {
+                    // Non-symlink reparse points with inaccessible content (e.g., AppExecLinks)
+                    // cannot be archived as regular files.
+                    throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath), e);
+                }
             }
 
             return entry;
