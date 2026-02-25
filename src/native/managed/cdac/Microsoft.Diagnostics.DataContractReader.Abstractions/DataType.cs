@@ -110,6 +110,7 @@ public enum DataType
     HashMap,
     Bucket,
     UnwindInfo,
+    UnwindCode,
     NonVtableSlot,
     MethodImpl,
     NativeCodeSlot,
@@ -122,7 +123,11 @@ public enum DataType
     DynamicILBlobTable,
     EEJitManager,
     PatchpointInfo,
+<<<<<<< copilot/implement-get-loader-allocator-heap-names
     VirtualCallStubManager,
+=======
+    PortableEntryPoint,
+>>>>>>> main
 
     TransitionBlock,
     DebuggerEval,

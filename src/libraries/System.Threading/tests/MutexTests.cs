@@ -771,7 +771,7 @@ namespace System.Threading.Tests
         private static bool IsRemoteExecutorAndCrossProcessNamedMutexSupported =>
             RemoteExecutor.IsSupported && PlatformDetection.IsNotMobile;
 
-        [ConditionalTheory(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
+        [ConditionalTheory(typeof(MutexTests), nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
         [MemberData(nameof(NameOptionCombinations_MemberData))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(bool currentUserOnly, bool currentSessionOnly)
         {

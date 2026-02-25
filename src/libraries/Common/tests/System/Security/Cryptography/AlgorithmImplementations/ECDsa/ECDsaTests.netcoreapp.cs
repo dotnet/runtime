@@ -312,7 +312,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        [ConditionalFact(typeof(ECDsaTests), nameof(ECExplicitCurvesSupported))]
         public void TestRegenKeyNistP256()
         {
             ECParameters param, param2;
@@ -360,7 +360,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        [ConditionalFact(typeof(ECDsaTests), nameof(ECExplicitCurvesSupported))]
         public void TestPositive256WithExplicitParameters()
         {
             using (ECDsa ecdsa = ECDsaFactory.Create())

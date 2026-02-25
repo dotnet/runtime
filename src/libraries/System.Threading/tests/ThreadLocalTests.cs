@@ -108,7 +108,7 @@ namespace System.Threading.Tests
             });
         }
 
-        [ConditionalFact(nameof(IsThreadingAndPreciseGcSupported))]
+        [ConditionalFact(typeof(ThreadLocalTests), nameof(IsThreadingAndPreciseGcSupported))]
         public static void RunThreadLocalTest5_Dispose()
         {
             // test recycling the combination index;
