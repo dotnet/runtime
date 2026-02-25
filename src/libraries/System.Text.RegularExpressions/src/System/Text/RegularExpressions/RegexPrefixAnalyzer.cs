@@ -495,7 +495,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexNodeKind.Concatenate:
-                        node.TryGetOrdinalCaseInsensitiveString(0, node.ChildCount(), out _, out string? caseInsensitiveString, consumeZeroWidthNodes: true);
+                        node.TryGetOrdinalCaseInsensitiveString(0, node.ChildCount(), out _, out string? caseInsensitiveString, consumeZeroWidthNodes: true, unwrapCaptures: true);
                         return caseInsensitiveString;
 
                     default:

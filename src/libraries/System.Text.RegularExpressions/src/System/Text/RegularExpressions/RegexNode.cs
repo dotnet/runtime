@@ -2953,8 +2953,13 @@ namespace System.Text.RegularExpressions
         /// consumed. true is only valid when used as part of a search to determine where to try a full match, not as part of
         /// actual matching logic.
         /// </param>
+        /// <param name="unwrapCaptures">
+        /// Defaults to false. When true, Capture nodes are transparently unwrapped so the string inside a capture group
+        /// can be extracted. This must only be set to true for prefix analysis, not for the compiler/source generator,
+        /// as the compiler must not skip Capture nodes (they have side effects that need to be emitted).
+        /// </param>
         /// <returns>true if a sequence was found; otherwise, false.</returns>
-        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false)
+        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false, bool unwrapCaptures = false)
         {
             Debug.Assert(Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {Kind}");
 
@@ -2969,10 +2974,15 @@ namespace System.Text.RegularExpressions
             {
                 RegexNode child = Child(i);
 
-                // Unwrap capture groups so their contents can be processed directly.
-                while (child.Kind is RegexNodeKind.Capture)
+                // When used for prefix analysis (unwrapCaptures is true), unwrap capture
+                // groups so their contents can be examined. This must not be done when used by the
+                // compiler/source generator, as it would cause capture side effects to be skipped.
+                if (unwrapCaptures)
                 {
-                    child = child.Child(0);
+                    while (child.Kind is RegexNodeKind.Capture)
+                    {
+                        child = child.Child(0);
+                    }
                 }
 
                 if (child.Kind is RegexNodeKind.One)
@@ -3017,7 +3027,7 @@ namespace System.Text.RegularExpressions
                     // This can occur after unwrapping a Capture whose child is a Concatenate.
                     // Recurse to extract any case-insensitive string from the inner concatenation.
                     if (!StackHelper.TryEnsureSufficientExecutionStack() ||
-                        !child.TryGetOrdinalCaseInsensitiveString(0, child.ChildCount(), out _, out string? innerStr, consumeZeroWidthNodes))
+                        !child.TryGetOrdinalCaseInsensitiveString(0, child.ChildCount(), out _, out string? innerStr, consumeZeroWidthNodes, unwrapCaptures))
                     {
                         break;
                     }
