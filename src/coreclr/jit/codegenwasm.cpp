@@ -2460,7 +2460,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     assert(cpObjNode->GetLayout()->HasGCPtr());
 #endif // DEBUG
 
-    genConsumeRegs(cpObjNode);
+    genConsumeOperands(cpObjNode);
 
     ClassLayout* layout = cpObjNode->GetLayout();
     unsigned     slots  = layout->GetSlotCount();
@@ -2497,11 +2497,11 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         {
             // Compute the actual dest/src of the slot being copied to pass to the helper.
             emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
-            emit->emitIns_I(INS_i32_const, attrDstAddr, offset);
-            emit->emitIns(INS_i32_add);
+            emit->emitIns_I(INS_I_const, attrDstAddr, offset);
+            emit->emitIns(INS_I_add);
             emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
-            emit->emitIns_I(INS_i32_const, attrSrcAddr, offset);
-            emit->emitIns(INS_i32_add);
+            emit->emitIns_I(INS_I_const, attrSrcAddr, offset);
+            emit->emitIns(INS_I_add);
             // Call the byref assign helper. On other targets this updates the dst/src regs but here it won't,
             //  so we have to do the local.get+i32.const+i32.add dance every time.
             genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
@@ -2510,7 +2510,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         ++i;
         offset += TARGET_POINTER_SIZE;
     }
-    assert(gcPtrCount == 0);
+
+    assert(dstOnStack || (gcPtrCount == 0));
 
     if (cpObjNode->IsVolatile())
     {
