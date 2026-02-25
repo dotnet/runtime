@@ -16,7 +16,6 @@ const runMainPromiseController = createPromiseCompletionSource<number>();
 
 // WASM-TODO: downloadOnly - blazor render mode auto pre-download. Really no start.
 // WASM-TODO: debugLevel
-// WASM-TODO: load symbolication json https://github.com/dotnet/runtime/issues/122647
 
 // many things happen in parallel here, but order matters for performance!
 // ideally we want to utilize network and CPU at the same time
