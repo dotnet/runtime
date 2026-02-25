@@ -4399,7 +4399,6 @@ do                                                                      \
                     ip += 3;
                     break;
                 }
-
                 default:
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unimplemented or invalid interpreter opcode\n"));
                     break;
