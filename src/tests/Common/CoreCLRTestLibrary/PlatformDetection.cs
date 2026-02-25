@@ -112,7 +112,7 @@ namespace TestLibrary
         // public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
         public static bool IsMultithreadingSupported => GetIsMultithreadingSupported(null);
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_IsMultithreadingSupported")]
-        static extern bool GetIsMultithreadingSupported([UnsafeAccessorType("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported, System.Private.CoreLib")] object? _);
+        static extern bool GetIsMultithreadingSupported([UnsafeAccessorType("System.Runtime.CompilerServices.RuntimeFeature, System.Private.CoreLib")] object? _);
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
 
         private static bool IsEnvironmentVariableTrue(string variableName)
