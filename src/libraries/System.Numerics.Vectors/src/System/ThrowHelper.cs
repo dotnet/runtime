@@ -12,8 +12,10 @@ namespace System
         internal static void ThrowIfSpanDoesntHaveFourElementsForColor<T>(ReadOnlySpan<T> span,
             [CallerArgumentExpression(nameof(span))] string? paramName = null)
         {
-            if (span.Length != 4)
+            if (span.Length < 4)
+            {
                 ThrowSpanDoesntHaveFourElementsForColor(paramName);
+            }
         }
 
         [StackTraceHidden]

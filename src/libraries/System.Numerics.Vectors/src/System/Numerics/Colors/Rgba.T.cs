@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Numerics.Colors
@@ -66,7 +65,10 @@ namespace System.Numerics.Colors
         {
             ThrowHelper.ThrowIfSpanDoesntHaveFourElementsForColor(values);
 
-            this = Unsafe.As<T, Rgba<T>>(ref MemoryMarshal.GetReference(values));
+            R = values[0];
+            G = values[1];
+            B = values[2];
+            A = values[3];
         }
 
         /// <summary>
@@ -80,7 +82,10 @@ namespace System.Numerics.Colors
         {
             ThrowHelper.ThrowIfSpanDoesntHaveFourElementsForColor((ReadOnlySpan<T>)destination, paramName: nameof(destination));
 
-            Unsafe.As<T, Rgba<T>>(ref MemoryMarshal.GetReference(destination)) = this;
+            destination[0] = R;
+            destination[1] = G;
+            destination[2] = B;
+            destination[3] = A;
         }
 
         /// <summary>
@@ -123,10 +128,10 @@ namespace System.Numerics.Colors
         /// Returns a string representation of this <see cref="Rgba{T}"/> color.
         /// </summary>
         /// <returns>
-        /// A string in the format "[RGBA Color: R, G, B, A]", where R, G, B, and A are the red, green, blue, and alpha
+        /// A string in the format "&lt;R, G, B, A&gt;", where R, G, B, and A are the red, green, blue, and alpha
         /// component values of the color, respectively.
         /// </returns>
-        public override string ToString() => $"[RGBA Color: {R}, {G}, {B}, {A}]";
+        public override string ToString() => $"<{R}, {G}, {B}, {A}>";
 
         /// <summary>
         /// Converts this <see cref="Rgba{T}"/> color to an <see cref="Argb{T}"/> color.

@@ -38,7 +38,6 @@ namespace System.Numerics.Colors.Tests
                 Assert.Throws<ArgumentException>(() => new Argb<byte>(null));
                 Assert.Throws<ArgumentException>(() => new Argb<byte>(default));
                 Assert.Throws<ArgumentException>(() => new Argb<byte>([default, default, default]));
-                Assert.Throws<ArgumentException>(() => new Argb<byte>([default, default, default, default, default]));
             }
 
             {
@@ -69,7 +68,6 @@ namespace System.Numerics.Colors.Tests
                 Assert.Throws<ArgumentException>(() => new Argb<float>(null));
                 Assert.Throws<ArgumentException>(() => new Argb<float>(default));
                 Assert.Throws<ArgumentException>(() => new Argb<float>([default, default, default]));
-                Assert.Throws<ArgumentException>(() => new Argb<float>([default, default, default, default, default]));
             }
         }
 
@@ -114,7 +112,6 @@ namespace System.Numerics.Colors.Tests
                 Assert.Equal(blue, color.B);
 
                 Assert.Throws<ArgumentException>(() => new Argb<byte>([red, green, blue]));
-                Assert.Throws<ArgumentException>(() => new Argb<byte>([alpha, red, green, blue, alpha]));
             }
 
             {
@@ -129,7 +126,6 @@ namespace System.Numerics.Colors.Tests
                 Assert.Equal(blueF, color.B);
 
                 Assert.Throws<ArgumentException>(() => new Argb<float>([redF, greenF, blueF]));
-                Assert.Throws<ArgumentException>(() => new Argb<float>([alphaF, redF, greenF, blueF, alphaF]));
             }
         }
 
@@ -153,7 +149,6 @@ namespace System.Numerics.Colors.Tests
                 Assert.Throws<ArgumentException>(() => color.CopyTo(null));
                 Assert.Throws<ArgumentException>(() => color.CopyTo(default));
                 Assert.Throws<ArgumentException>(() => color.CopyTo(destination.AsSpan(1, 3)));
-                Assert.Throws<ArgumentException>(() => color.CopyTo(destination.AsSpan(1, 5)));
             }
 
             {
@@ -174,7 +169,6 @@ namespace System.Numerics.Colors.Tests
                 Assert.Throws<ArgumentException>(() => color.CopyTo(null));
                 Assert.Throws<ArgumentException>(() => color.CopyTo(default));
                 Assert.Throws<ArgumentException>(() => color.CopyTo(destination.AsSpan(1, 3)));
-                Assert.Throws<ArgumentException>(() => color.CopyTo(destination.AsSpan(1, 5)));
             }
         }
 
@@ -323,7 +317,7 @@ namespace System.Numerics.Colors.Tests
             {
                 var color = new Argb<byte>(alpha, red, green, blue);
 
-                Assert.Equal($"[ARGB Color: {alpha}, {red}, {green}, {blue}]", color.ToString());
+                Assert.Equal($"<{alpha}, {red}, {green}, {blue}>", color.ToString());
             }
 
             {
@@ -331,7 +325,7 @@ namespace System.Numerics.Colors.Tests
                 var blueF = blue.FloatC();
                 var color = new Argb<float>(alphaF, redF, greenF, blueF);
 
-                Assert.Equal($"[ARGB Color: {alphaF}, {redF}, {greenF}, {blueF}]", color.ToString());
+                Assert.Equal($"<{alphaF}, {redF}, {greenF}, {blueF}>", color.ToString());
             }
         }
 
