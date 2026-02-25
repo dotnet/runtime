@@ -264,6 +264,10 @@ set( JIT_S390X_SOURCES
 set( JIT_POWERPC64_SOURCES
   emitppc64le.cpp
   targetppc64le.cpp
+  codegenppc64le.cpp
+  unwindppc64le.cpp
+  lowerppc64le.cpp
+  lsrappc64le.cpp
   # Not supported as JIT target
 )
 

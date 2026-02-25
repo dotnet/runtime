@@ -49,7 +49,7 @@ REGDEF(R28,     28,  0x10000000, "r28")
 REGDEF(R29,     29,  0x20000000, "r29")
 REGDEF(R30,     30,  0x40000000, "r30")
 REGDEF(FP,      31,  0x80000000, "r31")
-REGDEF(LR,      32, 0x100000000, "lr")
+//REGDEF(LR,      32, 0x100000000, "lr")
 
 // Allow us to call IP0,IP1,PR,FP,LR by their register number names
 REGALIAS(R1, SP)
@@ -101,3 +101,12 @@ REGDEF(FPC,    0+NBASE, 0x0000,    "fpc")
 REGDEF(STK,   1+NBASE, 0x0000,    "STK")
 
 
+/*****************************************************************************/
+#undef  RMASK
+#undef  VMASK
+#undef  VBASE
+#undef  NBASE
+#undef  REGDEF
+#undef  REGALIAS
+/*****************************************************************************/
+// clang-format on

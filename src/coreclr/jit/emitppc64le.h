@@ -32,6 +32,30 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
 /************************************************************************/
 /*   enum to allow instruction optimisation to specify register order   */
 /************************************************************************/
+enum RegisterOrder
+{
+    eRO_none = 0,
+    eRO_ascending,
+    eRO_descending
+};
+
+/************************************************************************/
+/*               Private helpers for instruction output                 */
+/************************************************************************/
+
+private:
+bool     emitInsIsCompare(instruction ins);
+bool     emitInsIsLoad(instruction ins);
+bool     emitInsIsStore(instruction ins);
+bool     emitInsIsLoadOrStore(instruction ins);
+bool     emitInsIsVectorRightShift(instruction ins);
+bool     emitInsIsVectorLong(instruction ins);
+bool     emitInsIsVectorNarrow(instruction ins);
+bool     emitInsIsVectorWide(instruction ins);
+bool     emitInsDestIsOp2(instruction ins);
+emitAttr emitInsTargetRegSize(instrDesc* id);
+emitAttr emitInsLoadStoreSize(instrDesc* id);
+
 
 public:
 inline static bool isFloatReg(regNumber reg)

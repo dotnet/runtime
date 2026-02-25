@@ -41,7 +41,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     _ASSERTE(!"NYI POWERPC64");
 }
 
-/------------------------------------------------------------------------
+//------------------------------------------------------------------------
 // emitIns_Mov: Emits a move instruction
 //
 // Arguments:
@@ -126,6 +126,16 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 void emitter::emitIns(instruction ins)
+{
+    //TODO POWERPC64 vikas
+    _ASSERTE(!"NYI POWERPC64");
+}
+
+
+//------------------------------------------------------------------------
+// emitInsIsStore: Returns true if the instruction is some kind of store instruction.
+//
+bool emitter::emitInsIsStore(instruction ins)
 {
     //TODO POWERPC64 vikas
     _ASSERTE(!"NYI POWERPC64");

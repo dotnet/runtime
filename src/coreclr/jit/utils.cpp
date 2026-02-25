@@ -369,6 +369,15 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
                         inRegRange = true;
                         sep        = "-";
                     }
+#elif defined(TARGET_POWERPC64)
+		    // R11 and R28 can't be the start of a range, since the range would include TEB or FP
+		    // TODO POWERPC64
+                    if ((regNum >= REG_R0) && (regNum <= REG_R31))
+		    {
+			regHead    = regNum;
+			inRegRange = true;
+			sep        = "-";
+		    }
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
