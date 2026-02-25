@@ -1073,13 +1073,9 @@ namespace System.Text.Json.SourceGeneration
                     AddPropertyWithConflictResolution(propertySpec, memberInfo, propertyIndex: properties.Count, ref state);
                     properties.Add(propertySpec);
 
-                    // In case of JsonInclude fail if either:
-                    // 1. the getter is not accessible by the source generator or
-                    // 2. neither getter or setter methods are public.
-                    if (propertySpec.HasJsonInclude && (!propertySpec.CanUseGetter || !propertySpec.IsPublic))
-                    {
-                        state.HasInvalidConfigurationForFastPath = true;
-                    }
+                    // Inaccessible [JsonInclude] properties are now supported via
+                    // UnsafeAccessor (when available) or reflection fallback.
+                    // No longer mark the type as invalid for fast-path.
                 }
 
                 bool PropertyIsOverriddenAndIgnored(IPropertySymbol property, Dictionary<string, ISymbol>? ignoredMembers)

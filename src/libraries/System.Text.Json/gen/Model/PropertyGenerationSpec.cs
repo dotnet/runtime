@@ -170,8 +170,9 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
-            // Discard properties without getters
-            if (!CanUseGetter)
+            // Discard properties without getters, unless they have [JsonInclude]
+            // in which case we use UnsafeAccessor or reflection to read the value.
+            if (!CanUseGetter && !HasJsonInclude)
             {
                 return false;
             }

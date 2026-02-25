@@ -768,14 +768,29 @@ namespace System.Text.Json.SourceGeneration
 
                     if (property.CanUseUnsafeAccessors)
                     {
-                        string accessorName = GetUnsafeAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex);
-
-                        if (typeGenerationSpec.TypeRef.IsValueType)
+                        if (property.IsProperty)
                         {
-                            return $"static obj => {accessorName}(ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj))";
-                        }
+                            string accessorName = GetUnsafeAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex);
 
-                        return $"static obj => {accessorName}(({declaringTypeFQN})obj)";
+                            if (typeGenerationSpec.TypeRef.IsValueType)
+                            {
+                                return $"static obj => {accessorName}(ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj))";
+                            }
+
+                            return $"static obj => {accessorName}(({declaringTypeFQN})obj)";
+                        }
+                        else
+                        {
+                            // Field: UnsafeAccessor returns ref T, which can be read directly.
+                            string accessorName = GetUnsafeFieldAccessorName(typeFriendlyName, property.MemberName, propertyIndex);
+
+                            if (typeGenerationSpec.TypeRef.IsValueType)
+                            {
+                                return $"static obj => {accessorName}(ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj))";
+                            }
+
+                            return $"static obj => {accessorName}(({declaringTypeFQN})obj)";
+                        }
                     }
 
                     // Reflection fallback: use a cached delegate for faster access.
@@ -832,14 +847,29 @@ namespace System.Text.Json.SourceGeneration
 
                 if (property.CanUseUnsafeAccessors)
                 {
-                    string accessorName = GetUnsafeAccessorName(typeFriendlyName, "set", property.MemberName, propertyIndex);
-
-                    if (typeGenerationSpec.TypeRef.IsValueType)
+                    if (property.IsProperty)
                     {
-                        return $"""static (obj, value) => {accessorName}(ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj), ({propertyTypeFQN})value!)""";
-                    }
+                        string accessorName = GetUnsafeAccessorName(typeFriendlyName, "set", property.MemberName, propertyIndex);
 
-                    return $"""static (obj, value) => {accessorName}(({declaringTypeFQN})obj, ({propertyTypeFQN})value!)""";
+                        if (typeGenerationSpec.TypeRef.IsValueType)
+                        {
+                            return $"""static (obj, value) => {accessorName}(ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj), ({propertyTypeFQN})value!)""";
+                        }
+
+                        return $"""static (obj, value) => {accessorName}(({declaringTypeFQN})obj, ({propertyTypeFQN})value!)""";
+                    }
+                    else
+                    {
+                        // Field: UnsafeAccessor returns ref T, assign through the ref.
+                        string accessorName = GetUnsafeFieldAccessorName(typeFriendlyName, property.MemberName, propertyIndex);
+
+                        if (typeGenerationSpec.TypeRef.IsValueType)
+                        {
+                            return $"""static (obj, value) => {accessorName}(ref {UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj)) = ({propertyTypeFQN})value!""";
+                        }
+
+                        return $"""static (obj, value) => {accessorName}(({declaringTypeFQN})obj) = ({propertyTypeFQN})value!""";
+                    }
                 }
 
                 // Reflection fallback: use a cached delegate for faster access.
@@ -877,31 +907,43 @@ namespace System.Text.Json.SourceGeneration
                     {
                         string refPrefix = typeGenerationSpec.TypeRef.IsValueType ? "ref " : "";
 
-                        if (needsGetterAccessor)
+                        if (property.IsProperty)
                         {
-                            string getterName = GetUnsafeAccessorName(typeFriendlyName, "get", property.MemberName, i);
-                            writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "get_{property.MemberName}")]""");
-                            writer.WriteLine($"private static extern {propertyTypeFQN} {getterName}({refPrefix}{declaringTypeFQN} obj);");
-                        }
+                            if (needsGetterAccessor)
+                            {
+                                string getterName = GetUnsafeAccessorName(typeFriendlyName, "get", property.MemberName, i);
+                                writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "get_{property.MemberName}")]""");
+                                writer.WriteLine($"private static extern {propertyTypeFQN} {getterName}({refPrefix}{declaringTypeFQN} obj);");
+                            }
 
-                        if (needsSetterAccessor)
+                            if (needsSetterAccessor)
+                            {
+                                string setterName = GetUnsafeAccessorName(typeFriendlyName, "set", property.MemberName, i);
+                                writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "set_{property.MemberName}")]""");
+                                writer.WriteLine($"private static extern void {setterName}({refPrefix}{declaringTypeFQN} obj, {propertyTypeFQN} value);");
+                            }
+                        }
+                        else
                         {
-                            string setterName = GetUnsafeAccessorName(typeFriendlyName, "set", property.MemberName, i);
-                            writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Method, Name = "set_{property.MemberName}")]""");
-                            writer.WriteLine($"private static extern void {setterName}({refPrefix}{declaringTypeFQN} obj, {propertyTypeFQN} value);");
+                            // Field: single accessor that returns ref T, used for both get and set.
+                            string fieldAccessorName = GetUnsafeFieldAccessorName(typeFriendlyName, property.MemberName, i);
+                            writer.WriteLine($"""[{UnsafeAccessorAttributeTypeRef}({UnsafeAccessorKindTypeRef}.Field, Name = "{property.MemberName}")]""");
+                            writer.WriteLine($"private static extern ref {propertyTypeFQN} {fieldAccessorName}({refPrefix}{declaringTypeFQN} obj);");
                         }
                     }
                     else
                     {
                         // Generate cached delegate fields for the reflection fallback.
-                        string declaringTypePropExpr = $"typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!";
+                        string memberAccessExpr = property.IsProperty
+                            ? $"typeof({declaringTypeFQN}).GetProperty({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!"
+                            : $"typeof({declaringTypeFQN}).GetField({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!";
 
                         if (needsGetterAccessor)
                         {
                             string getterCacheName = GetReflectionGetterCacheName(typeFriendlyName, property.MemberName, i);
                             string getterHelperName = GetReflectionGetterHelperName(typeFriendlyName, property.MemberName, i);
                             writer.WriteLine($"private static global::System.Func<object?, object?>? {getterCacheName};");
-                            writer.WriteLine($"private static global::System.Func<object?, object?> {getterHelperName}() => {getterCacheName} ??= {declaringTypePropExpr}.GetValue;");
+                            writer.WriteLine($"private static global::System.Func<object?, object?> {getterHelperName}() => {getterCacheName} ??= {memberAccessExpr}.GetValue;");
                         }
 
                         if (needsSetterAccessor)
@@ -909,7 +951,7 @@ namespace System.Text.Json.SourceGeneration
                             string setterCacheName = GetReflectionSetterCacheName(typeFriendlyName, property.MemberName, i);
                             string setterHelperName = GetReflectionSetterHelperName(typeFriendlyName, property.MemberName, i);
                             writer.WriteLine($"private static global::System.Action<object?, object?>? {setterCacheName};");
-                            writer.WriteLine($"private static global::System.Action<object?, object?> {setterHelperName}() => {setterCacheName} ??= {declaringTypePropExpr}.SetValue;");
+                            writer.WriteLine($"private static global::System.Action<object?, object?> {setterHelperName}() => {setterCacheName} ??= {memberAccessExpr}.SetValue;");
                         }
                     }
                 }
@@ -917,6 +959,9 @@ namespace System.Text.Json.SourceGeneration
 
             private static string GetUnsafeAccessorName(string typeFriendlyName, string accessorKind, string memberName, int propertyIndex)
                 => $"__{accessorKind}_{typeFriendlyName}_{memberName}_{propertyIndex}";
+
+            private static string GetUnsafeFieldAccessorName(string typeFriendlyName, string memberName, int propertyIndex)
+                => $"__field_{typeFriendlyName}_{memberName}_{propertyIndex}";
 
             private static string GetReflectionGetterCacheName(string typeFriendlyName, string memberName, int propertyIndex)
                 => $"s_getter_{typeFriendlyName}_{memberName}_{propertyIndex}";
@@ -929,6 +974,60 @@ namespace System.Text.Json.SourceGeneration
 
             private static string GetReflectionSetterHelperName(string typeFriendlyName, string memberName, int propertyIndex)
                 => $"__GetSetter_{typeFriendlyName}_{memberName}_{propertyIndex}";
+
+            /// <summary>
+            /// Returns the expression for reading a property value in the fast-path serialization handler.
+            /// For accessible properties, this is a direct member access. For inaccessible [JsonInclude]
+            /// properties, this uses UnsafeAccessor or reflection.
+            /// </summary>
+            private static string GetFastPathPropertyValueExpr(
+                PropertyGenerationSpec property,
+                TypeGenerationSpec typeGenSpec,
+                string objectExpr,
+                int propertyIndex)
+            {
+                if (property.CanUseGetter)
+                {
+                    return $"{objectExpr}.{property.NameSpecifiedInSourceCode}";
+                }
+
+                // Inaccessible [JsonInclude] property: use UnsafeAccessor or reflection.
+                string typeFriendlyName = typeGenSpec.TypeInfoPropertyName;
+                string declaringTypeFQN = property.DeclaringType.FullyQualifiedName;
+
+                if (property.CanUseUnsafeAccessors)
+                {
+                    if (property.IsProperty)
+                    {
+                        string accessorName = GetUnsafeAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex);
+                        if (typeGenSpec.TypeRef.IsValueType)
+                        {
+                            return $"{accessorName}(ref {ValueVarName})";
+                        }
+
+                        return property.DeclaringType != typeGenSpec.TypeRef
+                            ? $"{accessorName}(({declaringTypeFQN}){ValueVarName})"
+                            : $"{accessorName}({ValueVarName})";
+                    }
+                    else
+                    {
+                        // Field: UnsafeAccessor returns ref T
+                        string accessorName = GetUnsafeFieldAccessorName(typeFriendlyName, property.MemberName, propertyIndex);
+                        if (typeGenSpec.TypeRef.IsValueType)
+                        {
+                            return $"{accessorName}(ref {ValueVarName})";
+                        }
+
+                        return property.DeclaringType != typeGenSpec.TypeRef
+                            ? $"{accessorName}(({declaringTypeFQN}){ValueVarName})"
+                            : $"{accessorName}({ValueVarName})";
+                    }
+                }
+
+                // Reflection fallback
+                string helperName = GetReflectionGetterHelperName(typeFriendlyName, property.MemberName, propertyIndex);
+                return $"({property.PropertyType.FullyQualifiedName}){helperName}()({objectExpr})!";
+            }
 
             private static void GenerateCtorParamMetadataInitFunc(SourceWriter writer, string ctorParamMetadataInitMethodName, TypeGenerationSpec typeGenerationSpec)
             {
@@ -1050,16 +1149,19 @@ namespace System.Text.Json.SourceGeneration
                         : ValueVarName;
 
                     string propValueExpr;
+                    // For inaccessible [JsonInclude] properties, use UnsafeAccessor or reflection.
+                    string? rawValueExpr = GetFastPathPropertyValueExpr(propertyGenSpec, typeGenSpec, objectExpr, i);
+
                     if (defaultCheckType != SerializedValueCheckType.None)
                     {
                         // Use temporary variable to evaluate property value only once
                         string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode.TrimStart('@')}";
-                        writer.WriteLine($"{propertyGenSpec.PropertyType.FullyQualifiedName} {localVariableName} = {objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode};");
+                        writer.WriteLine($"{propertyGenSpec.PropertyType.FullyQualifiedName} {localVariableName} = {rawValueExpr};");
                         propValueExpr = localVariableName;
                     }
                     else
                     {
-                        propValueExpr = $"{objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode}";
+                        propValueExpr = rawValueExpr;
                     }
 
                     switch (defaultCheckType)
