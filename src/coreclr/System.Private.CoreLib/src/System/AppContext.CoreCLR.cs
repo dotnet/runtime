@@ -21,11 +21,11 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void OnUnhandledException(object* pException, Exception* pOutException)
+        private static unsafe void OnUnhandledException(object* pUnhandledException, Exception* pOutException)
         {
             try
             {
-                OnUnhandledException(*pException);
+                OnUnhandledException(*pUnhandledException);
             }
             catch
             {
