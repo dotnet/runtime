@@ -144,7 +144,7 @@ namespace System
 #else
         public static bool IsMultithreadingSupported => GetIsMultithreadingSupported(null);
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_IsMultithreadingSupported")]
-        static extern bool GetIsMultithreadingSupported([UnsafeAccessorType("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported, System.Private.CoreLib")] object? _);
+        static extern bool GetIsMultithreadingSupported([UnsafeAccessorType("System.Runtime.CompilerServices.RuntimeFeature, System.Private.CoreLib")] object? _);
 #endif
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
         public static bool IsWasmThreadingSupported => IsBrowser && IsMultithreadingSupported;
