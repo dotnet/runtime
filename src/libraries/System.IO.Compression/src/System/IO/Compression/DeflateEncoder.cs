@@ -121,14 +121,20 @@ namespace System.IO.Compression
 
         private static void ValidateQuality(int quality)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(quality, ZLibNative.MinQuality, nameof(quality));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, ZLibNative.MaxQuality, nameof(quality));
+            if (quality != -1)
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThan(quality, ZLibNative.MinQuality, nameof(quality));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, ZLibNative.MaxQuality, nameof(quality));
+            }
         }
 
         private static void ValidateWindowLog(int windowLog)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, ZLibNative.MinWindowLog, nameof(windowLog));
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, ZLibNative.MaxWindowLog, nameof(windowLog));
+            if (windowLog != -1)
+            {
+                ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, ZLibNative.MinWindowLog, nameof(windowLog));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, ZLibNative.MaxWindowLog, nameof(windowLog));
+            }
         }
 
         /// <summary>
