@@ -9,6 +9,8 @@ namespace System.Runtime.Intrinsics.X86
     [CLSCompliant(false)]
     public abstract class Avx512Bmm : Avx512F
     {
+        internal Avx512Bmm() { }
+
         /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
         /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
         /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
@@ -55,5 +57,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBMACXOR16x16x16  zmm1, zmm2, zmm3/m256</para>
         /// </summary>
         public static Vector512<ushort> BitMultiplyMatrix16x16WithXorReduction(Vector512<ushort> addend, Vector512<ushort> left, Vector512<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        [Intrinsic]
+        public new abstract class X64 : Avx512F.X64
+        {
+            internal X64() { }
+
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
+            public static new bool IsSupported { [Intrinsic] get => false; }
+        }
     }
 }
