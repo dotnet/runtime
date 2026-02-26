@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -1349,6 +1349,16 @@ namespace System.Text.Json.SourceGeneration
 
                 const string ArgsVarName = "args";
 
+                // Determine if any non-matching member initializers exist for an inaccessible constructor.
+                // These need post-construction setter calls since object initializer syntax can't be used.
+                bool needsPostCtorInitializers = typeGenerationSpec.ConstructorIsInaccessible
+                    && propertyInitializers.Any(p => !p.MatchesConstructorParameter);
+
+                if (needsPostCtorInitializers)
+                {
+                    return GetParameterizedCtorWithPostInitFunc(typeGenerationSpec, parameters, propertyInitializers);
+                }
+
                 StringBuilder sb;
 
                 if (typeGenerationSpec.ConstructorIsInaccessible)
@@ -1377,30 +1387,116 @@ namespace System.Text.Json.SourceGeneration
 
                 if (propertyInitializers.Count > 0)
                 {
-                    if (typeGenerationSpec.ConstructorIsInaccessible)
+                    Debug.Assert(!typeGenerationSpec.ConstructorIsInaccessible);
+                    sb.Append("{ ");
+                    foreach (PropertyInitializerGenerationSpec property in propertyInitializers)
                     {
-                        // Can't use object initializer syntax with accessor-invoked constructor;
-                        // required properties are handled via individual property setters instead.
-                        // This path shouldn't normally be reached since required properties use
-                        // the object initializer only for accessible constructors.
+                        sb.Append($"{property.Name} = {GetParamUnboxing(property.ParameterType, property.ParameterIndex)}, ");
                     }
-                    else
-                    {
-                        sb.Append("{ ");
-                        foreach (PropertyInitializerGenerationSpec property in propertyInitializers)
-                        {
-                            sb.Append($"{property.Name} = {GetParamUnboxing(property.ParameterType, property.ParameterIndex)}, ");
-                        }
 
-                        sb.Length -= 2; // delete the last ", " token
-                        sb.Append(" }");
-                    }
+                    sb.Length -= 2; // delete the last ", " token
+                    sb.Append(" }");
                 }
 
                 return sb.ToString();
 
                 static string GetParamUnboxing(TypeRef type, int index)
                     => $"({type.FullyQualifiedName}){ArgsVarName}[{index}]";
+            }
+
+            /// <summary>
+            /// Generates a statement-body lambda for inaccessible constructors that also have
+            /// required property member initializers. Since object initializer syntax can't be used
+            /// with accessor-invoked constructors, the required properties are set individually
+            /// after construction using property setters or accessor methods.
+            /// </summary>
+            private static string GetParameterizedCtorWithPostInitFunc(
+                TypeGenerationSpec typeGenerationSpec,
+                ImmutableEquatableArray<ParameterGenerationSpec> parameters,
+                ImmutableEquatableArray<PropertyInitializerGenerationSpec> propertyInitializers)
+            {
+                const string ArgsVarName = "args";
+                const string ObjVarName = "obj";
+                string accessorName = GetConstructorAccessorName(typeGenerationSpec);
+                HashSet<string> duplicateMemberNames = GetDuplicateMemberNames(typeGenerationSpec.PropertyGenSpecs);
+
+                StringBuilder sb = new();
+                sb.AppendLine($"static {ArgsVarName} =>");
+                sb.AppendLine("{");
+
+                // Construct the object via accessor
+                sb.Append($"    var {ObjVarName} = {accessorName}(");
+                if (parameters.Count > 0)
+                {
+                    foreach (ParameterGenerationSpec param in parameters)
+                    {
+                        sb.Append($"({param.ParameterType.FullyQualifiedName}){ArgsVarName}[{param.ParameterIndex}], ");
+                    }
+
+                    sb.Length -= 2;
+                }
+                sb.AppendLine(");");
+
+                // Set member initializer properties post-construction
+                string typeFriendlyName = typeGenerationSpec.TypeInfoPropertyName;
+                foreach (PropertyInitializerGenerationSpec propInit in propertyInitializers)
+                {
+                    if (propInit.MatchesConstructorParameter)
+                    {
+                        continue;
+                    }
+
+                    string value = $"({propInit.ParameterType.FullyQualifiedName}){ArgsVarName}[{propInit.ParameterIndex}]";
+
+                    // Find the matching PropertyGenerationSpec to determine how to set it
+                    PropertyGenerationSpec? matchingProp = null;
+                    int matchingIndex = 0;
+                    for (int i = 0; i < typeGenerationSpec.PropertyGenSpecs.Count; i++)
+                    {
+                        if (typeGenerationSpec.PropertyGenSpecs[i].NameSpecifiedInSourceCode == propInit.Name)
+                        {
+                            matchingProp = typeGenerationSpec.PropertyGenSpecs[i];
+                            matchingIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (matchingProp is not null && (matchingProp.IsInitOnlySetter || NeedsAccessorForSetter(matchingProp)))
+                    {
+                        // Use the accessor method for init-only or inaccessible setters.
+                        bool disambiguate = duplicateMemberNames.Contains(matchingProp.MemberName);
+                        string refPrefix = typeGenerationSpec.TypeRef.IsValueType ? "ref " : "";
+
+                        if (matchingProp.IsProperty)
+                        {
+                            string setterName = GetAccessorName(typeFriendlyName, "set", matchingProp.MemberName, matchingIndex, disambiguate);
+                            sb.AppendLine($"    {setterName}({refPrefix}{ObjVarName}, {value});");
+                        }
+                        else if (matchingProp.CanUseUnsafeAccessors)
+                        {
+                            // UnsafeAccessor field returns ref T: assignment syntax.
+                            string fieldName = GetAccessorName(typeFriendlyName, "field", matchingProp.MemberName, matchingIndex, disambiguate);
+                            sb.AppendLine($"    {fieldName}({refPrefix}{ObjVarName}) = {value};");
+                        }
+                        else
+                        {
+                            // Reflection fallback field setter uses "set" kind and takes (object, T).
+                            string setterName = GetAccessorName(typeFriendlyName, "set", matchingProp.MemberName, matchingIndex, disambiguate);
+                            sb.AppendLine($"    {setterName}({ObjVarName}, {value});");
+                        }
+                    }
+                    else
+                    {
+                        // Direct property assignment for accessible setters
+                        sb.AppendLine($"    {ObjVarName}.{propInit.Name} = {value};");
+                    }
+                }
+
+                sb.Append($"    return {ObjVarName};");
+                sb.AppendLine();
+                sb.Append('}');
+
+                return sb.ToString();
             }
 
             private static string? GetPrimitiveWriterMethod(TypeGenerationSpec type)

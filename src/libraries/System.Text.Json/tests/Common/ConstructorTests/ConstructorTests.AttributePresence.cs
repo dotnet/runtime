@@ -31,6 +31,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType(type, result);
         }
 
+        [Fact]
+        public virtual async Task NonPublicCtor_WithJsonConstructorAttribute_And_RequiredProperty()
+        {
+            var result = await Serializer.DeserializeWrapper<PrivateParameterizedCtor_WithAttribute_And_RequiredProperty>("""{"X":42,"Name":"test"}""");
+            Assert.Equal(42, result.X);
+            Assert.Equal("test", result.Name);
+        }
+
         [Theory]
         [InlineData(typeof(PrivateParameterlessCtor_WithAttribute))]
         [InlineData(typeof(InternalParameterlessCtor_WithAttribute))]
