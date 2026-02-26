@@ -703,7 +703,7 @@ public:
 // utilities that are polymorphic over basic block and scratch ranges
 // faster and simpler.
 //
-// Some non-zero value that will not collide with real tokens for bbCatchTyp
+// Some non-zero value that will not collide with real tokens for bbCatchType
 #define BBCT_NONE                   0x00000000
 #define BBCT_FAULT                  0xFFFFFFFC
 #define BBCT_FINALLY                0xFFFFFFFD
@@ -723,7 +723,7 @@ private:
 
     Statement* bbStmtList; // Head of the statement list for this block
 
-    unsigned bbCatchTyp =
+    unsigned bbCatchType =
         BBCT_NONE; // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
 
     EntryState* bbEntryState = nullptr; // verifier tracked state of all entries in stack.
@@ -1479,25 +1479,25 @@ public:
         }
     }
 
-    unsigned GetCatchTyp() const
+    unsigned GetCatchType() const
     {
-        return bbCatchTyp;
+        return bbCatchType;
     }
 
-    bool CatchTypIs(unsigned catchTyp) const
+    bool CatchTypeIs(unsigned CatchType) const
     {
-        return bbCatchTyp == catchTyp;
+        return bbCatchType == CatchType;
     }
 
     template <typename... T>
-    bool CatchTypIs(unsigned catchTyp, T... rest) const
+    bool CatchTypeIs(unsigned CatchType, T... rest) const
     {
-        return CatchTypIs(catchTyp) || CatchTypIs(rest...);
+        return CatchTypeIs(CatchType) || CatchTypeIs(rest...);
     }
 
-    void SetCatchTyp(unsigned catchTyp)
+    void SetCatchType(unsigned CatchType)
     {
-        bbCatchTyp = catchTyp;
+        bbCatchType = CatchType;
     }
 
     bool hasTryIndex() const

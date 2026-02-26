@@ -667,7 +667,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         {
             if (block == firstHandlerBlock)
             {
-                block->SetCatchTyp(BBCT_NONE);
+                block->SetCatchType(BBCT_NONE);
             }
 
             if (block->getHndIndex() == XTnum)
@@ -1549,7 +1549,7 @@ PhaseStatus Compiler::fgCloneFinally()
         {
             JITDUMP("All callfinallys retargeted; changing finally to fault.\n");
             HBtab->ebdHandlerType = EH_HANDLER_FAULT_WAS_FINALLY;
-            firstBlock->SetCatchTyp(BBCT_FAULT);
+            firstBlock->SetCatchType(BBCT_FAULT);
 
             // Change all BBJ_EHFINALLYRET to BBJ_EHFAULTRET in the now-fault region.
             for (BasicBlock* const block : Blocks(HBtab->ebdHndBeg, HBtab->ebdHndLast))
@@ -1568,7 +1568,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
         // Modify first block of cloned finally to be a "normal" block.
         BasicBlock* firstClonedBlock = blockMap[firstBlock];
-        firstClonedBlock->SetCatchTyp(BBCT_NONE);
+        firstClonedBlock->SetCatchType(BBCT_NONE);
 
         // If we have profile data, compute how the weights split,
         // and update the weights in both the clone and the original.

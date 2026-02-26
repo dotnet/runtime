@@ -294,7 +294,7 @@ void CodeGen::genCodeForBBlist()
            (thanks to GTF_ORDER_SIDEEFF).
          */
 
-        if (handlerGetsXcptnObj(block->GetCatchTyp()))
+        if (handlerGetsXcptnObj(block->GetCatchType()))
         {
             for (GenTree* node : LIR::AsRange(block))
             {

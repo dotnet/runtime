@@ -2338,14 +2338,14 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         m_compiler->unwindPushMaskFloat(maskPushRegsFloat);
     }
 
-    bool isFilter = block->CatchTypIs(BBCT_FILTER);
+    bool isFilter = block->CatchTypeIs(BBCT_FILTER);
 
     regMaskTP maskArgRegsLiveIn;
     if (isFilter)
     {
         maskArgRegsLiveIn = RBM_R0 | RBM_R1;
     }
-    else if (block->CatchTypIs(BBCT_FINALLY, BBCT_FAULT))
+    else if (block->CatchTypeIs(BBCT_FINALLY, BBCT_FAULT))
     {
         maskArgRegsLiveIn = RBM_NONE;
     }

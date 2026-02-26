@@ -1918,7 +1918,7 @@ void Compiler::impSpillSpecialSideEff()
 {
     // Only exception objects need to be carefully handled
 
-    if (compCurBB->CatchTypIs(BBCT_NONE))
+    if (compCurBB->CatchTypeIs(BBCT_NONE))
     {
         return;
     }
@@ -5126,7 +5126,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         FlowEdge* const newEdge = fgAddRefPred(block->GetTarget(), dupBlock);
         dupBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
         dupBlock->copyEHRegion(block);
-        dupBlock->SetCatchTyp(block->GetCatchTyp());
+        dupBlock->SetCatchType(block->GetCatchType());
 
         // Mark this block as
         //  a) not referenced by any other block to make sure that it gets deleted
@@ -6269,7 +6269,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     var_types callTyp    = TYP_COUNT;
     OPCODE    prevOpcode = CEE_ILLEGAL;
 
-    if (!block->CatchTypIs(BBCT_NONE))
+    if (!block->CatchTypeIs(BBCT_NONE))
     {
         if (info.compStmtOffsetsImplicit & ICorDebugInfo::CALL_SITE_BOUNDARIES)
         {
@@ -11567,7 +11567,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
             //
             stackState.esStackDepth = 0;
 
-            if (handlerGetsXcptnObj(hndBegBB->GetCatchTyp()))
+            if (handlerGetsXcptnObj(hndBegBB->GetCatchType()))
             {
                 CORINFO_CLASS_HANDLE clsHnd;
 

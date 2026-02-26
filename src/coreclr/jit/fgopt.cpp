@@ -797,7 +797,7 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
     // If target has multiple incoming edges, we can still compact if block is empty.
     // However, not if it is the beginning of a handler.
     //
-    if (target->countOfInEdges() != 1 && (!block->isEmpty() || !block->CatchTypIs(BBCT_NONE)))
+    if (target->countOfInEdges() != 1 && (!block->isEmpty() || !block->CatchTypeIs(BBCT_NONE)))
     {
         return false;
     }
@@ -4634,7 +4634,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
             }
 
             assert(!bbIsTryBeg(block));
-            noway_assert(block->CatchTypIs(BBCT_NONE));
+            noway_assert(block->CatchTypeIs(BBCT_NONE));
 
             /* Remove unreachable blocks
              *

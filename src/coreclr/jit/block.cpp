@@ -796,7 +796,7 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
     to->CopyFlags(from);
     to->bbWeight = from->bbWeight;
     to->copyEHRegion(from);
-    to->bbCatchTyp    = from->bbCatchTyp;
+    to->bbCatchType    = from->bbCatchType;
     to->bbStkTempsIn  = from->bbStkTempsIn;
     to->bbStkTempsOut = from->bbStkTempsOut;
     to->bbCodeOffs    = from->bbCodeOffs;
@@ -1527,7 +1527,7 @@ bool BasicBlock::isBBCallFinallyPairTail() const
 //
 bool BasicBlock::hasEHBoundaryIn() const
 {
-    return (bbCatchTyp != BBCT_NONE);
+    return (bbCatchType != BBCT_NONE);
 }
 
 //------------------------------------------------------------------------
