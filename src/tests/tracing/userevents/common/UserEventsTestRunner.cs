@@ -283,8 +283,19 @@ namespace Tracing.UserEvents.Tests.Common
                 {
                     foreach (FileInfo fi in ipc)
                     {
-                        Console.WriteLine($"Deleting zombie diagnostic port: {fi.FullName}");
-                        fi.Delete();
+                        try
+                        {
+                            Console.WriteLine($"Deleting zombie diagnostic port: {fi.FullName}");
+                            fi.Delete();
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            Console.WriteLine($"Skipping zombie diagnostic port (permission denied): {fi.FullName}");
+                        }
+                        catch (IOException)
+                        {
+                            Console.WriteLine($"Skipping zombie diagnostic port (I/O error): {fi.FullName}");
+                        }
                     }
                 }
                 else
@@ -295,8 +306,19 @@ namespace Tracing.UserEvents.Tests.Common
                         var duplicates = ipc.OrderBy(fileInfo => fileInfo.CreationTime.Ticks).SkipLast(1);
                         foreach (FileInfo fi in duplicates)
                         {
-                            Console.WriteLine($"Deleting duplicate diagnostic port: {fi.FullName}");
-                            fi.Delete();
+                            try
+                            {
+                                Console.WriteLine($"Deleting duplicate diagnostic port: {fi.FullName}");
+                                fi.Delete();
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                Console.WriteLine($"Skipping duplicate diagnostic port (permission denied): {fi.FullName}");
+                            }
+                            catch (IOException)
+                            {
+                                Console.WriteLine($"Skipping duplicate diagnostic port (I/O error): {fi.FullName}");
+                            }
                         }
                     }
                 }
