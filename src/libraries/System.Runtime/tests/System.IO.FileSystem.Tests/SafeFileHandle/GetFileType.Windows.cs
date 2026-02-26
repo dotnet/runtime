@@ -13,12 +13,12 @@ namespace System.IO.Tests
     public class SafeFileHandle_GetFileType_Windows : FileSystemTest
     {
         [Fact]
-        public unsafe void GetFileType_Directory()
+        public void GetFileType_Directory()
         {
             string path = GetTestFilePath();
             Directory.CreateDirectory(path);
 
-            IntPtr hFile = Interop.Kernel32.CreateFile(
+            using SafeFileHandle handle = Interop.Kernel32.CreateFile(
                 path,
                 Interop.Kernel32.GenericOperations.GENERIC_READ,
                 FileShare.ReadWrite,
@@ -27,7 +27,6 @@ namespace System.IO.Tests
                 Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS,
                 IntPtr.Zero);
 
-            using SafeFileHandle handle = new SafeFileHandle(hFile, ownsHandle: true);
             Assert.False(handle.IsInvalid);
             Assert.Equal(FileType.Directory, handle.GetFileType());
         }
@@ -65,14 +64,14 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
-        public unsafe void GetFileType_SymbolicLink()
+        public void GetFileType_SymbolicLink()
         {
             string targetPath = GetTestFilePath();
             string linkPath = GetTestFilePath();
             File.WriteAllText(targetPath, "test");
             File.CreateSymbolicLink(linkPath, targetPath);
 
-            IntPtr hFile = Interop.Kernel32.CreateFile(
+            using SafeFileHandle handle = Interop.Kernel32.CreateFile(
                 linkPath,
                 Interop.Kernel32.GenericOperations.GENERIC_READ,
                 FileShare.ReadWrite,
@@ -81,7 +80,6 @@ namespace System.IO.Tests
                 Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT | Interop.Kernel32.FileOperations.FILE_FLAG_BACKUP_SEMANTICS,
                 IntPtr.Zero);
 
-            using SafeFileHandle handle = new SafeFileHandle(hFile, ownsHandle: true);
             if (!handle.IsInvalid)
             {
                 Assert.Equal(FileType.SymbolicLink, handle.GetFileType());
