@@ -92,6 +92,28 @@
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_GenerateDumpsForDebuggee"
              Properties="DebuggeeName=%(_DebuggeeWithDumpTypes.Identity);_DebuggeeDumpTypes=%(_DebuggeeWithDumpTypes.DumpTypes)" />
+
+    <!-- Write dump-info.json into each version directory so tests can determine
+         the OS/arch the dumps were generated on. -->
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="_WriteDumpInfo"
+             Properties="DumpRuntimeVersion=%(DumpRuntimeVersion.Identity)" />
+  </Target>
+
+  <!-- Writes dump-info.json for a single runtime version directory. -->
+  <Target Name="_WriteDumpInfo">
+    <PropertyGroup>
+      <_VersionDir>$([MSBuild]::NormalizeDirectory('$(DumpOutputDir)', '$(DumpRuntimeVersion)'))</_VersionDir>
+      <_DumpInfoFile>$([MSBuild]::NormalizePath('$(_VersionDir)', 'dump-info.json'))</_DumpInfoFile>
+      <_DumpOS>$(HostOS)</_DumpOS>
+      <_DumpArch>$(_HostArch)</_DumpArch>
+    </PropertyGroup>
+    <MakeDir Directories="$(_VersionDir)" />
+    <WriteLinesToFile File="$(_DumpInfoFile)" Overwrite="true"
+                     Lines='{%0a  "os": "$(_DumpOS)",%0a  "arch": "$(_DumpArch)"%0a}'
+                     Condition="!Exists('$(_DumpInfoFile)')" />
+    <Message Text="Wrote dump-info.json: $(_DumpInfoFile) (os=$(_DumpOS), arch=$(_DumpArch))"
+             Condition="!Exists('$(_DumpInfoFile)')" Importance="high" />
   </Target>
 
   <Target Name="_GenerateDumpsForDebuggee">
