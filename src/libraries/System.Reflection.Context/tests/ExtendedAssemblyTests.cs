@@ -20,7 +20,7 @@ namespace System.Reflection.Context.Tests
             _customAssembly = _customReflectionContext.MapAssembly(assembly);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void CodeBase_ReturnsValue()
         {
             // CodeBase is obsolete but still covered
