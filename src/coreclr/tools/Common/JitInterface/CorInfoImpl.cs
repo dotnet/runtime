@@ -4488,6 +4488,11 @@ namespace Internal.JitInterface
                 )
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
+
+                // The runtime's stack walker and EH dispatch assume funclets are not
+                // hot/cold split. Async methods have continuation entry points that
+                // behave like funclets, so disable hot/cold splitting for them.
+                flags.Clear(CorJitFlag.CORJIT_FLAG_PROCSPLIT);
             }
 
             return (uint)sizeof(CORJIT_FLAGS);
