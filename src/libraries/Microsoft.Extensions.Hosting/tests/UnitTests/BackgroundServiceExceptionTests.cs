@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             Assert.Equal(3, aggregateException.InnerExceptions.Count);
 
-            Assert.All(aggregateException.InnerExceptions, ex => 
+            Assert.All(aggregateException.InnerExceptions, ex =>
                 Assert.IsType<InvalidOperationException>(ex));
         }
 
@@ -199,7 +199,8 @@ namespace Microsoft.Extensions.Hosting.Tests
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
                 // Await before throwing to make the exception asynchronous
-                await Task.Delay(TimeSpan.FromMilliseconds(100), stoppingToken);
+                // Ignore the cancellation token to ensure this service throws even if the host is trying to shut down
+                await Task.Delay(TimeSpan.FromMilliseconds(100));
                 throw new InvalidOperationException("Asynchronous failure");
             }
         }
