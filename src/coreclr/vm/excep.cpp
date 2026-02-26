@@ -9521,7 +9521,10 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
                 UnmanagedCallersOnlyCaller deliverNotification(METHOD__APPCONTEXT__ON_FIRST_CHANCE_EXCEPTION);
                 deliverNotification.InvokeThrowing(&oThrowable);
             }
-            EX_SWALLOW_NONTERMINAL
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH
 
             GCPROTECT_END();
         }
