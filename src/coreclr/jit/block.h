@@ -715,9 +715,9 @@ private:
 
     Statement* bbStmtList; // Head of the statement list for this block
 
-    unsigned bbCatchTyp; // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
+    unsigned    bbCatchTyp   = BBCT_NONE; // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
 
-    EntryState* bbEntryState; // verifier tracked state of all entries in stack.
+    EntryState* bbEntryState = nullptr;   // verifier tracked state of all entries in stack.
 
     /* The following union describes the jump target(s) of this block */
     union

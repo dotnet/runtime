@@ -12002,9 +12002,9 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     // If the block has not been imported, add to pending set.
     bool addToPending = !block->HasFlag(BBF_IMPORTED);
 
-    // Initialize bbEntryState just the first time we try to add this block to the pending list
-    // Just because bbEntryState is NULL, doesn't mean the pre-state wasn't previously set
-    // We use NULL to indicate the 'common' state to avoid memory allocation
+    // Initialize bbEntryState the first time we try to add this block to the pending list.
+    // A nullptr bbEntryState means that the block does not yet have a recorded pre-state,
+    // which corresponds to having no established (i.e. empty) stack depth on entry.
     if ((block->GetEntryState() == nullptr) && !block->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(block) == 0))
     {
         initBBEntryState(block, &stackState);
