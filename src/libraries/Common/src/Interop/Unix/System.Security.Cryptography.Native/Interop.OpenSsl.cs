@@ -1161,7 +1161,7 @@ internal static partial class Interop
             }
         }
 
-        private static Exception? GetSslError(int result, Ssl.SslErrorCode retVal)
+        internal static Exception? GetSslError(int result, Ssl.SslErrorCode retVal)
         {
             Exception? innerError;
             switch (retVal)

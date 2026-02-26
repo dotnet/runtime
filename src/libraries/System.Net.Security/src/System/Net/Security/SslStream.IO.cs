@@ -23,6 +23,11 @@ namespace System.Net.Security
             Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SECURITY_KTLS") == "1";
 
         private bool _useKtls;
+
+        static SslStream()
+        {
+            System.Console.WriteLine($"kTLS Enabled: {s_ktlsEnabled}");
+        }
 #endif
 
         internal readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
@@ -291,6 +296,8 @@ namespace System.Net.Security
         private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
+            System.Console.WriteLine($"ForceAuthenticationAsync");
+
             bool handshakeCompleted = false;
             ProtocolToken token = default;
 
@@ -450,6 +457,24 @@ namespace System.Net.Security
         }
 
 #if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
+        // With socket BIOs on non-blocking sockets, EAGAIN from recv()/send()
+        // may surface as SSL_ERROR_SYSCALL instead of WANT_READ/WANT_WRITE.
+        private static bool IsKtlsWantRead(Interop.Ssl.SslErrorCode error)
+        {
+            if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ)
+                return true;
+
+            if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_SYSCALL)
+            {
+                int lastError = Marshal.GetLastPInvokeError();
+                const int EAGAIN = 11;
+                const int EWOULDBLOCK = EAGAIN;
+                return lastError == EAGAIN || lastError == EWOULDBLOCK;
+            }
+
+            return false;
+        }
+
         private async Task DoKtlsHandshakeAsync<TIOAdapter>(Socket socket, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -468,7 +493,7 @@ namespace System.Net.Security
                     break;
                 }
 
-                if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ)
+                if (IsKtlsWantRead(error))
                 {
                     await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
                 }
@@ -937,20 +962,29 @@ namespace System.Net.Security
                 if (_useKtls)
                 {
                     SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
+
+                    if (buffer.Length == 0)
+                    {
+                        // kTLS does not like zero-byte reads
+                        await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                        return 0;
+                    }
+
                     while (true)
                     {
+
                         int ret = TryKtlsRead(sslHandle, buffer, out Interop.Ssl.SslErrorCode error);
                         if (ret > 0) return ret;
 
                         if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN) return 0;
 
-                        if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ)
+                        if (IsKtlsWantRead(error))
                         {
                             await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
                             continue;
                         }
 
-                        throw new IOException(SR.net_io_decrypt, Interop.OpenSsl.CreateSslException(SR.net_io_decrypt));
+                        throw new IOException(SR.net_io_decrypt, Interop.OpenSsl.GetSslError(ret, error));
                     }
                 }
 #endif
@@ -1120,7 +1154,8 @@ namespace System.Net.Security
                             continue;
                         }
 
-                        if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE)
+                        if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE ||
+                            IsKtlsWantRead(error)) // SYSCALL+EAGAIN can also mean socket buffer full
                         {
                             await Task.Yield();
                             continue;
