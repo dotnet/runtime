@@ -100,7 +100,7 @@ namespace System.Runtime.CompilerServices
             System.Threading.Thread.AssureBlockingPossible();
         }
 #else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Conditional("unnecessary")]
         internal static void ThrowIfMultithreadingIsNotSupported()
         {
         }
