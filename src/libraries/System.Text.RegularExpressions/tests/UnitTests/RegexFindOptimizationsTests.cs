@@ -132,6 +132,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(?:ab|abc|abd)e", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "ab")]
         // Case-sensitive alternation with branches differing by one (handled by ExtractCommonPrefixText, not Node, but verifies no regression)
         [InlineData(@"(?:ab|abc)d", 0, (int)FindNextStartingPositionMode.LeadingString_LeftToRight, "ab")]
+        // Four-branch alternation mixing single-node and Concat branches after IgnoreCase prefix extraction
+        [InlineData(@"(?:abc|abcd|abce|abcfg)h", (int)RegexOptions.IgnoreCase, (int)FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, "abc")]
         public void LeadingPrefix(string pattern, int options, int expectedMode, string expectedPrefix)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, (RegexOptions)options);
@@ -150,6 +152,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"ab|cd|ef|gh", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "bdfh")]
         [InlineData(@"\bab(?=\w)(?!=\d)c\b", (int)(RegexOptions.IgnoreCase | RegexOptions.RightToLeft), (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "Cc")]
         [InlineData(@"ab|(abc)|(abcd)", (int)RegexOptions.RightToLeft, (int)FindNextStartingPositionMode.LeadingSet_RightToLeft, "bcd")]
+        // Non-IgnoreCase Set-node branch: single-node branch after prefix extraction of character class
+        [InlineData(@"(?:[ab][0-9]|[ab])x", 0, (int)FindNextStartingPositionMode.LeadingSet_LeftToRight, "ab")]
         public void LeadingSet(string pattern, int options, int expectedMode, string expectedChars)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, (RegexOptions)options);
