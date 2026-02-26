@@ -3,6 +3,7 @@
 
 using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -99,7 +100,10 @@ namespace System.Runtime.CompilerServices
             System.Threading.Thread.AssureBlockingPossible();
         }
 #else
-        static partial void ThrowIfMultithreadingIsNotSupported();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowIfMultithreadingIsNotSupported()
+        {
+        }
 #endif
     }
 }
