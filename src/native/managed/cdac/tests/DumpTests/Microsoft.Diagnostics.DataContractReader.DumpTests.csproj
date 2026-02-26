@@ -69,26 +69,29 @@
     </ItemGroup>
     <Copy SourceFiles="@(_XunitConsoleFiles)" DestinationFolder="$(_HelixTestsDir)" SkipUnchangedFiles="true" />
 
-    <!-- Copy each debuggee's build output -->
+    <!-- Copy each debuggee's build output (skipped for x-plat test-only mode) -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="_CopyDebuggeeToHelix"
-             Properties="DebuggeeName=%(DebuggeeCsproj.Filename);_HelixDebuggeesDir=$(_HelixDebuggeesDir)" />
+             Properties="DebuggeeName=%(DebuggeeCsproj.Filename);_HelixDebuggeesDir=$(_HelixDebuggeesDir)"
+             Condition="'$(SkipDebuggeeCopy)' != 'true'" />
 
     <!-- Query dump types from each debuggee csproj and generate a metadata props file
-         so cdac-dump-helix.proj can discover debuggees without hardcoding them. -->
+         so cdac-dump-helix.proj can discover debuggees without hardcoding them.
+         Skipped for x-plat test-only mode (no dump generation). -->
     <MSBuild Projects="@(DebuggeeCsproj)"
              Targets="GetDumpTypes"
-             Properties="Configuration=$(DebuggeeConfiguration)">
+             Properties="Configuration=$(DebuggeeConfiguration)"
+             Condition="'$(SkipDebuggeeCopy)' != 'true'">
       <Output TaskParameter="TargetOutputs" ItemName="_DebuggeeWithTypes" />
     </MSBuild>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(SkipDebuggeeCopy)' != 'true'">
       <_HeapDebuggee Include="@(_DebuggeeWithTypes)" Condition="'%(DumpTypes)' == 'Heap'" DumpDir="heap" MiniDumpType="2" />
       <_FullDebuggee Include="@(_DebuggeeWithTypes)" Condition="'%(DumpTypes)' == 'Full'" DumpDir="full" MiniDumpType="4" />
       <_AllDebuggeeMetadata Include="@(_HeapDebuggee);@(_FullDebuggee)" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(SkipDebuggeeCopy)' != 'true'">
       <_MetadataLines Include="&lt;Project&gt;" />
       <_MetadataLines Include="  &lt;ItemGroup&gt;" />
       <_MetadataLines Include="@(_AllDebuggeeMetadata->'    &lt;_Debuggee Include=&quot;%(Identity)&quot; DumpDir=&quot;%(DumpDir)&quot; MiniDumpType=&quot;%(MiniDumpType)&quot; /&gt;')" />
@@ -96,7 +99,8 @@
       <_MetadataLines Include="&lt;/Project&gt;" />
     </ItemGroup>
 
-    <WriteLinesToFile File="$(HelixPayloadDir)/debuggee-metadata.props" Lines="@(_MetadataLines)" Overwrite="true" />
+    <WriteLinesToFile File="$(HelixPayloadDir)/debuggee-metadata.props" Lines="@(_MetadataLines)" Overwrite="true"
+                     Condition="'$(SkipDebuggeeCopy)' != 'true'" />
 
     <Message Text="Helix payload prepared at $(HelixPayloadDir)" Importance="high" />
   </Target>
