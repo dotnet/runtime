@@ -26,7 +26,6 @@ namespace System.Net.Security
 
         static SslStream()
         {
-            System.Console.WriteLine($"kTLS Enabled: {s_ktlsEnabled}");
         }
 #endif
 
@@ -296,8 +295,6 @@ namespace System.Net.Security
         private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
-            System.Console.WriteLine($"ForceAuthenticationAsync");
-
             bool handshakeCompleted = false;
             ProtocolToken token = default;
 
@@ -459,17 +456,16 @@ namespace System.Net.Security
 #if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
         // With socket BIOs on non-blocking sockets, EAGAIN from recv()/send()
         // may surface as SSL_ERROR_SYSCALL instead of WANT_READ/WANT_WRITE.
-        private static bool IsKtlsWantRead(Interop.Ssl.SslErrorCode error)
+        // The errno must be captured immediately after the P/Invoke call and passed
+        // here, because any intervening P/Invoke with SetLastError=true will overwrite it.
+        private static bool IsKtlsWantRead(Interop.Ssl.SslErrorCode error, Interop.Error errno, bool isReadZeroByte = false)
         {
             if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ)
                 return true;
 
             if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_SYSCALL)
             {
-                int lastError = Marshal.GetLastPInvokeError();
-                const int EAGAIN = 11;
-                const int EWOULDBLOCK = EAGAIN;
-                return lastError == EAGAIN || lastError == EWOULDBLOCK;
+                return errno == Interop.Error.EAGAIN || (isReadZeroByte && errno == Interop.Error.SUCCESS);
             }
 
             return false;
@@ -487,13 +483,14 @@ namespace System.Net.Security
             while (true)
             {
                 int ret = Interop.Ssl.SslDoHandshake(sslHandle, out Interop.Ssl.SslErrorCode error);
+                Interop.Error errno = Interop.Sys.GetLastErrorInfo().Error;
                 if (ret == 1)
                 {
                     sslHandle.MarkHandshakeCompleted();
                     break;
                 }
 
-                if (IsKtlsWantRead(error))
+                if (IsKtlsWantRead(error, errno))
                 {
                     await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
                 }
@@ -511,14 +508,20 @@ namespace System.Net.Security
             CompleteHandshake(_sslAuthenticationOptions);
         }
 
-        private static int TryKtlsRead(SafeSslHandle sslHandle, Memory<byte> buffer, out Interop.Ssl.SslErrorCode error)
+        private static int TryKtlsRead(SafeSslHandle sslHandle, Memory<byte> buffer, out Interop.Ssl.SslErrorCode error, out Interop.Error errno)
         {
-            return Interop.Ssl.SslRead(sslHandle, ref MemoryMarshal.GetReference(buffer.Span), buffer.Length, out error);
+            int ret = Interop.Ssl.SslRead(sslHandle, ref MemoryMarshal.GetReference(buffer.Span), buffer.Length, out error);
+            // Capture errno immediately - any subsequent P/Invoke with SetLastError=true will overwrite it.
+            errno = Interop.Sys.GetLastErrorInfo().Error;
+            return ret;
         }
 
-        private static int TryKtlsWrite(SafeSslHandle sslHandle, ReadOnlyMemory<byte> buffer, out Interop.Ssl.SslErrorCode error)
+        private static int TryKtlsWrite(SafeSslHandle sslHandle, ReadOnlyMemory<byte> buffer, out Interop.Ssl.SslErrorCode error, out Interop.Error errno)
         {
-            return Interop.Ssl.SslWrite(sslHandle, ref MemoryMarshal.GetReference(buffer.Span), buffer.Length, out error);
+            int ret = Interop.Ssl.SslWrite(sslHandle, ref MemoryMarshal.GetReference(buffer.Span), buffer.Length, out error);
+            // Capture errno immediately - any subsequent P/Invoke with SetLastError=true will overwrite it.
+            errno = Interop.Sys.GetLastErrorInfo().Error;
+            return ret;
         }
 #endif
 
@@ -962,25 +965,30 @@ namespace System.Net.Security
                 if (_useKtls)
                 {
                     SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
-
-                    if (buffer.Length == 0)
-                    {
-                        // kTLS does not like zero-byte reads
-                        await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
-                        return 0;
-                    }
+                    NetworkStream ns = (NetworkStream)InnerStream;
 
                     while (true)
                     {
+                        int ret = TryKtlsRead(sslHandle, buffer, out Interop.Ssl.SslErrorCode error, out Interop.Error errno);
 
-                        int ret = TryKtlsRead(sslHandle, buffer, out Interop.Ssl.SslErrorCode error);
                         if (ret > 0) return ret;
 
                         if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN) return 0;
 
-                        if (IsKtlsWantRead(error))
+                        // ret == 0 with SSL_ERROR_SYSCALL and errno == SUCCESS means unexpected EOF
+                        if (ret == 0 && error == Interop.Ssl.SslErrorCode.SSL_ERROR_SYSCALL && errno == Interop.Error.SUCCESS)
+                        {
+                            return 0;
+                        }
+
+                        if (IsKtlsWantRead(error, errno, buffer.Length == 0))
                         {
                             await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                            if (buffer.Length == 0)
+                            {
+                                // Caller is not actually interested in data, we just needed to wait for some data to arrive to continue handshake.
+                                return 0;
+                            }
                             continue;
                         }
 
@@ -1147,7 +1155,7 @@ namespace System.Net.Security
                     while (totalWritten < buffer.Length)
                     {
                         ReadOnlyMemory<byte> remaining = buffer.Slice(totalWritten);
-                        int ret = TryKtlsWrite(sslHandle, remaining, out Interop.Ssl.SslErrorCode error);
+                        int ret = TryKtlsWrite(sslHandle, remaining, out Interop.Ssl.SslErrorCode error, out Interop.Error errno);
                         if (ret > 0)
                         {
                             totalWritten += ret;
@@ -1155,7 +1163,7 @@ namespace System.Net.Security
                         }
 
                         if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE ||
-                            IsKtlsWantRead(error)) // SYSCALL+EAGAIN can also mean socket buffer full
+                            IsKtlsWantRead(error, errno)) // SYSCALL+EAGAIN can also mean socket buffer full
                         {
                             await Task.Yield();
                             continue;
