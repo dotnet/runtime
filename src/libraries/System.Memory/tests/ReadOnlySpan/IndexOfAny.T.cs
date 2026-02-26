@@ -37,6 +37,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchIndexOfAny_TwoInteger()
         {
@@ -173,6 +174,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchIndexOfAny_ThreeInteger()
         {
@@ -314,6 +316,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchIndexOfAny_ManyInteger()
         {
@@ -410,6 +413,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestNoMatchValuesLargerIndexOfAny_ManyInteger()
         {
@@ -488,6 +492,7 @@ namespace System.SpanTests
             Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(Array.Empty<string>()).IndexOfAny("0", "0", comparer)));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void DefaultFilledIndexOfAny_TwoString()
         {
@@ -513,6 +518,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchIndexOfAny_TwoString()
         {
@@ -627,6 +633,7 @@ namespace System.SpanTests
             Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(Array.Empty<string>()).IndexOfAny("0", "0", "0", comparer)));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void DefaultFilledIndexOfAny_ThreeString()
         {
@@ -653,6 +660,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchIndexOfAny_ThreeString()
         {
@@ -777,6 +785,7 @@ namespace System.SpanTests
             Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(Array.Empty<string>()).IndexOfAny(values, comparer)));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void DefaultFilledIndexOfAny_ManyString()
         {
@@ -796,6 +805,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchIndexOfAny_ManyString()
         {
@@ -845,6 +855,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestMatchValuesLargerIndexOfAny_ManyString()
         {
@@ -880,6 +891,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestNoMatchIndexOfAny_ManyString()
         {
@@ -898,6 +910,7 @@ namespace System.SpanTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestNoMatchValuesLargerIndexOfAny_ManyString()
         {

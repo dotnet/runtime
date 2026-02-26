@@ -172,6 +172,7 @@ namespace System.Drawing.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(NamedArgbValues))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ArgbValues(string name, int alpha, int red, int green, int blue)
         {
             Color? color = GetColorByProperty(name);
@@ -221,6 +222,7 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void IsNamedColor()
         {
             Assert.True(Color.AliceBlue.IsNamedColor);
@@ -230,6 +232,7 @@ namespace System.Drawing.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(ColorNames))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void KnownNames(string name)
         {
             Assert.Equal(name, Color.FromName(name).Name);
@@ -250,6 +253,7 @@ namespace System.Drawing.Primitives.Tests
 
         [Theory]
         [MemberData(nameof(ColorNamePairs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void GetHashCodeTest(string name1, string name2)
         {
             Assert.NotEqual(name1, name2);
@@ -276,6 +280,7 @@ namespace System.Drawing.Primitives.Tests
         [Theory]
         [MemberData(nameof(ColorNames))]
         [InlineData("SomeUnknownColorName")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ToStringNamed(string name)
         {
             string expected = $"Color [{name}]";
@@ -571,6 +576,7 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void IsSystemColor()
         {
             Assert.True(Color.FromName("ActiveBorder").IsSystemColor);

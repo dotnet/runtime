@@ -97,6 +97,12 @@ namespace
         *((float*)pRet) = (*fptr)(ARG_F32(0), ARG_I32(1));
     }
 
+    static void CallFunc_I32_I32_RetF32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        float (*fptr)(int32_t, int32_t) = (float (*)(int32_t, int32_t))pcode;
+        *((float*)pRet) = (*fptr)(ARG_I32(0), ARG_I32(1));
+    }
+
     static void CallFunc_Void_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
     {
         int32_t (*fptr)() = (int32_t (*)())pcode;
@@ -143,6 +149,12 @@ namespace
     {
         int32_t (*fptr)(int32_t, double) = (int32_t (*)(int32_t, double))pcode;
         *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_F64(1));
+    }
+
+    static void CallFunc_I32_F64_I32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
+    {
+        int32_t (*fptr)(int32_t, double, int32_t) = (int32_t (*)(int32_t, double, int32_t))pcode;
+        *((int32_t*)pRet) = (*fptr)(ARG_I32(0), ARG_F64(1), ARG_I32(2));
     }
 
     static void CallFunc_I32_F32_RetI32(PCODE pcode, int8_t* pArgs, int8_t* pRet)
@@ -726,6 +738,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "fff", (void*)&CallFunc_F32_F32_RetF32 },
     { "ffff", (void*)&CallFunc_F32_F32_F32_RetF32 },
     { "ffi", (void*)&CallFunc_F32_I32_RetF32 },
+    { "fii", (void*)&CallFunc_I32_I32_RetF32 },
     { "i", (void*)&CallFunc_Void_RetI32 },
     { "id", (void*)&CallFunc_F64_RetI32 },
     { "idfi", (void*)&CallFunc_F64_F32_I32_RetI32 },
@@ -734,6 +747,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "iff", (void*)&CallFunc_F32_F32_RetI32 },
     { "ii", (void*)&CallFunc_I32_RetI32 },
     { "iid", (void*)&CallFunc_I32_F64_RetI32 },
+    { "iidi", (void*)&CallFunc_I32_F64_I32_RetI32 },
     { "iif", (void*)&CallFunc_I32_F32_RetI32 },
     { "iifiif", (void*)&CallFunc_I32_F32_I32_I32_F32_RetI32 },
     { "iii", (void*)&CallFunc_I32_I32_RetI32 },

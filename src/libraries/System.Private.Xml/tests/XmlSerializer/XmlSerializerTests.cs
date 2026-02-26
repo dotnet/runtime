@@ -46,6 +46,7 @@ public static partial class XmlSerializerTests
     public static bool DefaultValueAttributeIsSupported => AppContext.TryGetSwitch("System.ComponentModel.DefaultValueAttribute.IsSupported", out bool isEnabled) ? isEnabled : true;
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_TypeWithDateTimePropertyAsXmlTime()
     {
         DateTime localTime = new DateTime(549269870000L, DateTimeKind.Local);
@@ -492,6 +493,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_BaseClassAndDerivedClassWithSameProperty()
     {
         DerivedClassWithSameProperty value = new DerivedClassWithSameProperty() { DateTimeProperty = new DateTime(100), IntProperty = 5, StringProperty = "TestString", ListProperty = new List<string>() };
@@ -626,6 +628,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_Struct()
     {
         var value = new WithStruct { Some = new SomeStruct { A = 1, B = 2 } };
@@ -658,6 +661,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_Nullables()
     {
         var item = new WithNullables() { Optional = IntEnum.Option1, OptionalInt = 42, Struct1 = new SomeStruct { A = 1, B = 2 } };
@@ -684,6 +688,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_DerivedClasses()
     {
         var dClass = new SimpleDerivedClass() { AttributeString = "derivedClassTest", DateTimeValue = DateTime.Parse("Dec 31, 1999"), BoolValue = true };
@@ -922,6 +927,7 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDefaultTimeSpanProperty()
     {
@@ -965,6 +971,7 @@ public static partial class XmlSerializerTests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDateTimeOffsetProperty()
     {
@@ -1089,6 +1096,7 @@ public static partial class XmlSerializerTests
     [InlineData("02:38:23.40Z", true, "02:38:23.4")]        // My heart will go on
     [InlineData("7:48:07", false)]        // Will live in infamy
     [InlineData("08:32 AM", false)]       // Helen errupts
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_TimeOnlyParseErrors(string timeString, bool succeedsWithCompat, string expected = "")
     {
         // Try straight up
@@ -1135,7 +1143,8 @@ public static partial class XmlSerializerTests
         }
     }
 
-    [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
+    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_TypeWithDateOnlyAndTimeOnly()
     {
         var doSerializer = new XmlSerializer(typeof(TypeWithDateAndTimeOnlyProperties), new XmlRootAttribute("DateAndTime"));
@@ -1196,6 +1205,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_XsdDate_With_DateOnly_And_DateTime()
     {
         var doSerializer = new XmlSerializer(typeof(DateOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
@@ -1261,6 +1271,7 @@ public static partial class XmlSerializerTests
     [InlineData("12:34:56.789", DateTimeKind.Unspecified)]      // Obviously fake
     [InlineData("02:38:23.40"/*Z*/, DateTimeKind.Utc)]          // My heart will go on
     [InlineData("08:32:00"/*-07:00*/, DateTimeKind.Local)]      // Helen errupts
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_XsdTime_With_TimeOnly_And_DateTime(string dateTimeString, DateTimeKind kind)
     {
         var toSerializer = new XmlSerializer(typeof(TimeOnlyWrapper), new XmlRootAttribute("DateAndTimeTest"));
@@ -1446,6 +1457,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_BaseClassAndDerivedClass2WithSameProperty()
     {
         var value = new DerivedClassWithSameProperty2() { DateTimeProperty = new DateTime(100, DateTimeKind.Utc), IntProperty = 5, StringProperty = "TestString", ListProperty = new List<string>() };
@@ -1729,6 +1741,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_TypeWithTypesHavingCustomFormatter()
     {
         var str = "The quick brown fox jumps over the lazy dog.";
@@ -2161,6 +2174,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_DeserializeHiddenMembersTest()
     {
         var xmlSerializer = new XmlSerializer(typeof(DerivedClass1));

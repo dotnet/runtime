@@ -775,6 +775,7 @@ namespace System.Collections.Tests
 
         #region Non-randomized comparers
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Dictionary_Comparer_NonRandomizedStringComparers()
         {
             RunTest(null);

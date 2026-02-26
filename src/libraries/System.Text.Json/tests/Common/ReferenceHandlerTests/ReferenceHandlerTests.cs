@@ -28,6 +28,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         #region Root Object
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public async Task ObjectLoop()
         {
@@ -45,6 +46,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(angelaCopy.Manager, angelaCopy);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public async Task ObjectArrayLoop()
         {
@@ -60,6 +62,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(angelaCopy.Subordinates[0], angelaCopy);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public async Task ObjectDictionaryLoop()
         {
@@ -75,6 +78,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(angelaCopy.Contacts["555-5555"], angelaCopy);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public async Task ObjectPreserveDuplicateObjects()
         {
@@ -93,6 +97,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(angelaCopy.Manager, angelaCopy.Manager2);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public async Task ObjectPreserveDuplicateDictionaries()
         {
@@ -111,6 +116,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(angelaCopy.Contacts, angelaCopy.Contacts2);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public async Task ObjectPreserveDuplicateArrays()
         {
@@ -275,6 +281,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(rootCopy, rootCopy["Self2"]);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public async Task DictionaryObjectLoop()
         {
@@ -324,6 +331,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(rootCopy["Array2"], rootCopy["Array1"]);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public async Task DictionaryPreserveDuplicateObjects()
         {
@@ -468,6 +476,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(rootCopy, rootCopy[2]);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public async Task ArrayObjectLoop()
         {
@@ -483,6 +492,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Same(rootCopy, rootCopy[0].Subordinates);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public async Task ArrayPreserveDuplicateObjects()
         {

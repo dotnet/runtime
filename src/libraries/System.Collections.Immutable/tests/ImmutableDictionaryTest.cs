@@ -105,6 +105,7 @@ namespace System.Collections.Immutable.Tests
             this.ContainsValueTestHelper(ImmutableDictionary<int, GenericParameterHelper>.Empty, 1, new GenericParameterHelper());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void ContainsValue_NoSuchValue_ReturnsFalse()
         {

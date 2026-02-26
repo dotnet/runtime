@@ -941,6 +941,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
             GC.KeepAlive(t);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void DynamicCSharpRunTest()
         {

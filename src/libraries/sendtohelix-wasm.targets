@@ -4,6 +4,8 @@
   <PropertyGroup>
     <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
+    <!-- TODO-WASM CoreCLR interpreter is about 7x slower than Mono at the moment -->
+    <_workItemTimeout Condition="'$(RuntimeFlavor)' == 'CoreCLR'">02:30:00</_workItemTimeout>
 
     <BrowserBuildTargetsDir>$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'build'))</BrowserBuildTargetsDir>
     <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmBuildTargetsDir>

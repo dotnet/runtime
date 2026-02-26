@@ -9,6 +9,7 @@ using Xunit;
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/33894", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public class ServiceProviderCompilationTest
     {
         [Theory]

@@ -4,6 +4,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <XunitShowProgress Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser'">true</XunitShowProgress>
   </PropertyGroup>
 
   <ItemGroup>

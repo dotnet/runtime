@@ -101,6 +101,7 @@ namespace System.Collections.Immutable.Tests
             this.AddDescendingTestHelper(Empty<int, GenericParameterHelper>());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void AddRemoveRandomDataTest()
         {

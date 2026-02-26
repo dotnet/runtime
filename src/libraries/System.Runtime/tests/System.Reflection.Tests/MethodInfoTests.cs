@@ -12,6 +12,7 @@ namespace System.Reflection.Tests
     /// <summary>
     /// These tests use the shared tests from the base class with MethodInfo.Invoke.
     /// </summary>
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public sealed class MethodInfoTests : MethodCommonTests
     {
         public override object? Invoke(MethodInfo methodInfo, object? obj, object?[]? parameters)

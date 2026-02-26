@@ -43,6 +43,7 @@ namespace BasicEventSourceTests
         [Theory]
         [MemberData(nameof(GetListeners))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21564", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Test_Write_T(Listener listener)
         {
             Test_Write_T_Helper(listener);

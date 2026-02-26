@@ -11,6 +11,7 @@ namespace System.Collections.Tests
     public static class HashSet_NonGeneric_Tests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void HashSet_CopyConstructor_ShouldWorkWithRandomizedEffectiveComparer()
         {
             HashSet<string> set = CreateCopyWithRandomizedComparer(new HashSet<string>() { "a", "b" });

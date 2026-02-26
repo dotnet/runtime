@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using TestUtilities;
 using Xunit;
 
 namespace System.Collections.ObjectModel.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public class KeyedCollectionTest
     {
         [Fact]
@@ -62,6 +64,7 @@ namespace System.Collections.ObjectModel.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public class IListTestKeyedCollectionStringString :
         IListTestKeyedCollection<string, string>
     {
@@ -186,6 +189,7 @@ namespace System.Collections.ObjectModel.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public class IListTestKeyedCollectionStringStringBadKey :
         IListTestKeyedCollectionBadKey<string, string>
     {
@@ -217,6 +221,7 @@ namespace System.Collections.ObjectModel.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public class IListTestKeyedCollectionIntStringBadKey :
         IListTestKeyedCollectionBadKey<int, string>
     {
@@ -295,6 +300,7 @@ namespace System.Collections.ObjectModel.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public class KeyedCollectionTestsStringString :
         KeyedCollectionTests<string, string>
     {
@@ -327,6 +333,7 @@ namespace System.Collections.ObjectModel.Tests
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public class KeyedCollectionTestsStringInt :
         KeyedCollectionTests<string, int>
     {

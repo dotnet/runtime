@@ -2206,6 +2206,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Clamp_SignedInt_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Clamp_Decimal(decimal value, decimal min, decimal max, decimal expected)
         {
             Assert.Equal(expected, Math.Clamp(value, min, max));
@@ -2486,6 +2487,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Round_Digits_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Round_Decimal_Digits(decimal x, decimal expected, int digits, MidpointRounding mode)
         {
             Assert.Equal(expected, Math.Round(x, digits, mode));
@@ -2565,6 +2567,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Round_Modes_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Round_Decimal_Modes(decimal x, decimal expected, MidpointRounding mode)
         {
             Assert.Equal(expected, Math.Round(x, 0, mode));

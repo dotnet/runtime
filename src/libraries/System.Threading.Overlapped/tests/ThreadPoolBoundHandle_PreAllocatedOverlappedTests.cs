@@ -10,6 +10,7 @@ public partial class ThreadPoolBoundHandleTests
 {
     [Fact]
     [ActiveIssue("https://github.com/mono/mono/issues/15313", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public unsafe void PreAllocatedOverlapped_NullAsCallback_ThrowsArgumentNullException()
     {
         AssertExtensions.Throws<ArgumentNullException>("callback", () => new PreAllocatedOverlapped(null, new object(), new byte[256]));
@@ -43,6 +44,7 @@ public partial class ThreadPoolBoundHandleTests
 
     [Fact]
     [ActiveIssue("https://github.com/mono/mono/issues/15313", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public unsafe void PreAllocatedOverlapped_NonBlittableTypeAsPinData_Throws()
     {
         Assert.Throws<ArgumentException>(() => new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new NonBlittableType() { s = "foo" }));
@@ -75,6 +77,7 @@ public partial class ThreadPoolBoundHandleTests
 
     [Fact]
     [ActiveIssue("https://github.com/mono/mono/issues/15313", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public unsafe void PreAllocatedOverlapped_ObjectArrayWithNonBlittableTypeAsPinData_Throws()
     {
         var array = new object[]

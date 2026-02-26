@@ -282,6 +282,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(expectedStr, actualStrSequence);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         [MemberData(nameof(LargeTestCases))]
         public static void TestPartialLargeJsonReader(bool compactData, TestCaseType type, string jsonString)
@@ -332,6 +333,7 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         // Skipping large JSON since slicing them (O(n^2)) is too slow.
         [MemberData(nameof(SmallTestCases))]
@@ -3119,6 +3121,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         [MemberData(nameof(LotsOfCommentsTests))]
         public static void ConsumeLotsOfComments(string valueString, bool insideArray, string expectedString)

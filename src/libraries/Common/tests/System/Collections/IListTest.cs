@@ -142,6 +142,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void IsFixedSize()
         {
@@ -154,6 +155,7 @@ namespace Tests.Collections
             Assert.Equal(ExpectedIsReadOnly, GetList(null).IsReadOnly);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [InlineData(int.MinValue)]
         [InlineData(-1)]
@@ -167,6 +169,7 @@ namespace Tests.Collections
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void GetItemArgumentOutOfRangeFilledCollection()
         {
             object[] items = GenerateItems(32);
@@ -450,6 +453,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void AddWithNullValueInMiddle()
         {
@@ -492,6 +496,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void AddWithNullValueAtBeginning()
         {
@@ -521,6 +526,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void AddWithNullValueAtEnd()
         {
@@ -623,6 +629,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void AddAndRemoveAll()
         {
@@ -644,6 +651,7 @@ namespace Tests.Collections
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void AddWithInvalidTypes()
         {
             if (IsGenericCompatibility)
@@ -739,6 +747,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void AddRemoveAllClearAdd()
         {
@@ -759,6 +768,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void ClearOneItem()
         {
@@ -795,6 +805,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void EmptyCollectionAddThenContainsSame()
         {
@@ -808,6 +819,7 @@ namespace Tests.Collections
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void EmptyCollectionAddThenContainsDifferent()
         {
             if (!ExpectedIsFixedSize && !ExpectedIsReadOnly)
@@ -819,6 +831,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void EmptyCollectionAddThenContainsNull()
         {
@@ -896,6 +909,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void ContainsUniqueItems()
         {
@@ -952,6 +966,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void AddIndexOfSameElement()
         {
@@ -965,6 +980,7 @@ namespace Tests.Collections
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void AddIndexOfDifferentElement()
         {
             if (!ExpectedIsReadOnly && !ExpectedIsFixedSize)
@@ -976,6 +992,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void AddIndexOfNull()
         {
@@ -1109,6 +1126,7 @@ namespace Tests.Collections
             CollectionAssert.Equal(items, list);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void InsertInvalidTypes()
         {
@@ -1193,6 +1211,7 @@ namespace Tests.Collections
             CollectionAssert.Equal(items, list);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void InsertExistingValue()
         {
@@ -1234,6 +1253,7 @@ namespace Tests.Collections
             CollectionAssert.Equal(items, list);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void InsertRemoveInsert()
         {
@@ -1282,6 +1302,7 @@ namespace Tests.Collections
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void InsertAndAdd()
         {
             if (ExpectedIsFixedSize || ExpectedIsReadOnly)
@@ -1296,6 +1317,7 @@ namespace Tests.Collections
             CollectionAssert.Equal(items, list);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void InsertAndRemove()
         {
@@ -1366,6 +1388,7 @@ namespace Tests.Collections
             CollectionAssert.Equal(items, list);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void AddRemoveValueEmptyCollection()
         {
@@ -1382,6 +1405,7 @@ namespace Tests.Collections
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void AddRemoveDifferentValueEmptyCollection()
         {
             if (ExpectedIsFixedSize || ExpectedIsReadOnly)
@@ -1398,6 +1422,7 @@ namespace Tests.Collections
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void AddNonNullRemoveNullEmptyCollection()
         {
             if (ExpectedIsFixedSize || ExpectedIsReadOnly)
@@ -1440,6 +1465,7 @@ namespace Tests.Collections
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void AddNullRemoveNonNullEmptyCollection()
         {
             if (ExpectedIsFixedSize || ExpectedIsReadOnly)
@@ -1630,6 +1656,7 @@ namespace Tests.Collections
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [InlineData(32)]
         [InlineData(16)]
@@ -1672,6 +1699,7 @@ namespace Tests.Collections
         [Theory]
         [InlineData(32)]
         [InlineData(16)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void RemoveAtEachIndex(int size)
         {
             if (ExpectedIsFixedSize || ExpectedIsReadOnly)

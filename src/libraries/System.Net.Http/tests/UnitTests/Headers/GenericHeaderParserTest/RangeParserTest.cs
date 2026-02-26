@@ -22,6 +22,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
         {
             CheckValidParsedValue("X bytes=1-2 ", 1, new RangeHeaderValue(1, 2), 12);
