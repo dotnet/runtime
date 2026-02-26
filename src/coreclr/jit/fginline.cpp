@@ -345,7 +345,7 @@ private:
 
         if (InsertMidStatement(inlineInfo, use))
         {
-            m_nextBlock = m_block;
+            m_nextBlock     = m_block;
             m_nextStatement = m_statement;
             return true;
         }
@@ -1360,7 +1360,8 @@ void Compiler::fgMorphCallInlineHelper(InlineInfo&     inlineInfo,
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Expanding inline candidate [%06u] in " FMT_STMT " in " FMT_BB "\n", dspTreeID(call), fgMorphStmt->GetID(), compCurBB->bbNum);
+        printf("Expanding inline candidate [%06u] in " FMT_STMT " in " FMT_BB "\n", dspTreeID(call),
+               fgMorphStmt->GetID(), compCurBB->bbNum);
         if (call->IsImplicitTailCall())
         {
             printf("  Note: candidate is implicit tail call\n");

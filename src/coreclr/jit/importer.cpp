@@ -4434,10 +4434,10 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
             // In contrast, we can only use multi-reg calls directly if they have the exact same ABI.
             // Calling convention equality is a conservative approximation for that check.
             if (call->GetUnmanagedCallConv() == info.compCallConv
-    #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                 // TODO-Review: this seems unnecessary. Return ABI doesn't change under varargs.
                 && !call->IsVarargs()
-    #endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             )
             {
                 return op;
