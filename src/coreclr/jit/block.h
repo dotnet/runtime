@@ -717,6 +717,8 @@ private:
 
     unsigned bbCatchTyp; // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
 
+    EntryState* bbEntryState; // verifier tracked state of all entries in stack.
+
     /* The following union describes the jump target(s) of this block */
     union
     {
@@ -1402,7 +1404,15 @@ public:
         m_lastNode = tree;
     }
 
-    EntryState* bbEntryState; // verifier tracked state of all entries in stack.
+    EntryState* GetEntryState() const
+    {
+        return bbEntryState;
+    }
+
+    void SetEntryState(EntryState* entryState)
+    {
+        bbEntryState = entryState;
+    }
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
 
