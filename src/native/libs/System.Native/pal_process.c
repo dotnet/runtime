@@ -1294,7 +1294,10 @@ int32_t SystemNative_TryWaitForExitCancellable(int32_t pidfd, int32_t pid, int32
     {
         return 1; // Cancellation requested
     }
+
+    return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
 #else
+    (void)ret;
     (void)pidfd;
     (void)pid;
     (void)cancelPipeFd;
@@ -1303,8 +1306,6 @@ int32_t SystemNative_TryWaitForExitCancellable(int32_t pidfd, int32_t pid, int32
     errno = ENOTSUP;
     return -1;
 #endif
-
-    return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
 }
 
 int32_t SystemNative_TryWaitForExit(int32_t pidfd, int32_t pid, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal)
@@ -1347,7 +1348,15 @@ int32_t SystemNative_TryWaitForExit(int32_t pidfd, int32_t pid, int32_t timeout_
     }
 
     close(queue);
+
+    if (ret == 0)
+    {
+        return 1; // Timeout
+    }
+
+    return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
 #else
+    (void)ret;
     (void)pidfd;
     (void)pid;
     (void)timeout_ms;
@@ -1356,13 +1365,6 @@ int32_t SystemNative_TryWaitForExit(int32_t pidfd, int32_t pid, int32_t timeout_
     errno = ENOTSUP;
     return -1;
 #endif
-
-    if (ret == 0)
-    {
-        return 1; // Timeout
-    }
-
-    return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
 }
 
 int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal, int32_t* out_timeout)

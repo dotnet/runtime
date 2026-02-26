@@ -194,42 +194,32 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (!cancellationToken.CanBeCanceled)
             {
-                return await Task.Run(() => WaitForExitCore(), cancellationToken).ConfigureAwait(false);
+                return await Task.Run(WaitForExitCore, cancellationToken).ConfigureAwait(false);
             }
 
-            unsafe
+            CreatePipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
+
+            using (readHandle)
+            using (writeHandle)
             {
-                int* fds = stackalloc int[2];
-                if (Interop.Sys.Pipe(fds, Interop.Sys.PipeFlags.O_CLOEXEC) != 0)
+                using CancellationTokenRegistration registration = cancellationToken.Register(static state =>
                 {
-                    throw new Win32Exception(Marshal.GetLastPInvokeError());
-                }
+                    ((SafeFileHandle)state!).Close(); // Close the write end of the pipe to signal cancellation
+                }, writeHandle);
 
-                SafeFileHandle readHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.ReadEndOfPipe], ownsHandle: true);
-                SafeFileHandle writeHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.WriteEndOfPipe], ownsHandle: true);
-
-                using (readHandle)
-                using (writeHandle)
+                return await Task.Run(() =>
                 {
-                    using CancellationTokenRegistration registration = cancellationToken.Register(static state =>
+                    switch (Interop.Sys.TryWaitForExitCancellable(this, ProcessId, (int)readHandle.DangerousGetHandle(), out int exitCode, out int rawSignal))
                     {
-                        ((SafeFileHandle)state!).Close(); // Close the write end of the pipe to signal cancellation
-                    }, writeHandle);
-
-                    return await Task.Run(() =>
-                    {
-                        switch (Interop.Sys.TryWaitForExitCancellable(this, ProcessId, (int)readHandle.DangerousGetHandle(), out int exitCode, out int rawSignal))
-                        {
-                            case -1:
-                                int errno = Marshal.GetLastPInvokeError();
-                                throw new Win32Exception(errno);
-                            case 1: // canceled
-                                throw new OperationCanceledException(cancellationToken);
-                            default:
-                                return new ProcessExitStatus(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
-                        }
-                    }, cancellationToken).ConfigureAwait(false);
-                }
+                        case -1:
+                            int errno = Marshal.GetLastPInvokeError();
+                            throw new Win32Exception(errno);
+                        case 1: // canceled
+                            throw new OperationCanceledException(cancellationToken);
+                        default:
+                            return new ProcessExitStatus(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
+                    }
+                }, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -237,45 +227,47 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (!cancellationToken.CanBeCanceled)
             {
-                return await Task.Run(() => WaitForExitCore(), cancellationToken).ConfigureAwait(false);
+                return await Task.Run(WaitForExitCore, cancellationToken).ConfigureAwait(false);
             }
 
-            unsafe
+            CreatePipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle);
+
+            using (readHandle)
+            using (writeHandle)
             {
-                int* fds = stackalloc int[2];
-                if (Interop.Sys.Pipe(fds, Interop.Sys.PipeFlags.O_CLOEXEC) != 0)
+                using CancellationTokenRegistration registration = cancellationToken.Register(static state =>
                 {
-                    throw new Win32Exception(Marshal.GetLastPInvokeError());
-                }
+                    ((SafeFileHandle)state!).Close(); // Close the write end of the pipe to signal cancellation
+                }, writeHandle);
 
-                SafeFileHandle readHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.ReadEndOfPipe], ownsHandle: true);
-                SafeFileHandle writeHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.WriteEndOfPipe], ownsHandle: true);
-
-                using (readHandle)
-                using (writeHandle)
+                return await Task.Run(() =>
                 {
-                    using CancellationTokenRegistration registration = cancellationToken.Register(static state =>
+                    switch (Interop.Sys.TryWaitForExitCancellable(this, ProcessId, (int)readHandle.DangerousGetHandle(), out int exitCode, out int rawSignal))
                     {
-                        ((SafeFileHandle)state!).Close(); // Close the write end of the pipe to signal cancellation
-                    }, writeHandle);
-
-                    return await Task.Run(() =>
-                    {
-                        switch (Interop.Sys.TryWaitForExitCancellable(this, ProcessId, (int)readHandle.DangerousGetHandle(), out int exitCode, out int rawSignal))
-                        {
-                            case -1:
-                                int errno = Marshal.GetLastPInvokeError();
-                                throw new Win32Exception(errno);
-                            case 1: // canceled
-                                bool wasKilled = KillCore(throwOnError: false);
-                                ProcessExitStatus status = WaitForExitCore();
-                                return new ProcessExitStatus(status.ExitCode, wasKilled, status.Signal);
-                            default:
-                                return new ProcessExitStatus(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
-                        }
-                    }, cancellationToken).ConfigureAwait(false);
-                }
+                        case -1:
+                            int errno = Marshal.GetLastPInvokeError();
+                            throw new Win32Exception(errno);
+                        case 1: // canceled
+                            bool wasKilled = KillCore(throwOnError: false);
+                            ProcessExitStatus status = WaitForExitCore();
+                            return new ProcessExitStatus(status.ExitCode, wasKilled, status.Signal);
+                        default:
+                            return new ProcessExitStatus(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
+                    }
+                }, cancellationToken).ConfigureAwait(false);
             }
+        }
+
+        private static unsafe void CreatePipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle)
+        {
+            int* fds = stackalloc int[2];
+            if (Interop.Sys.Pipe(fds, Interop.Sys.PipeFlags.O_CLOEXEC) != 0)
+            {
+                throw new Win32Exception(Marshal.GetLastPInvokeError());
+            }
+
+            readHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.ReadEndOfPipe], ownsHandle: true);
+            writeHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.WriteEndOfPipe], ownsHandle: true);
         }
 
         internal bool KillCore(bool throwOnError, bool entireProcessGroup = false)

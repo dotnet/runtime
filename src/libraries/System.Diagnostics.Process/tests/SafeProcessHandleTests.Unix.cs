@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -11,10 +12,10 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [PlatformSpecific(TestPlatforms.OSX)]
     public partial class SafeProcessHandleTests
     {
         [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public static void SendSignal_SIGTERM_TerminatesProcess()
         {
             ProcessStartOptions options = new("sleep") { Arguments = { "60" } };
@@ -30,6 +31,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public static void SendSignal_SIGINT_TerminatesProcess()
         {
             ProcessStartOptions options = new("sleep") { Arguments = { "60" } };
@@ -45,6 +47,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public static void Signal_InvalidSignal_ThrowsArgumentOutOfRangeException()
         {
             ProcessStartOptions options = new("sleep") { Arguments = { "1" } };
@@ -59,6 +62,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public static void SendSignal_ToExitedProcess_ThrowsWin32Exception()
         {
             ProcessStartOptions options = new("echo") { Arguments = { "test" } };
