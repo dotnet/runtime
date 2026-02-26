@@ -1212,25 +1212,29 @@ public:
             case GT_STORE_BLK:
             {
                 assert(TopValue(2).Node() == node);
-                assert(TopValue(1).Node() == node->AsIndir()->Addr());
-                assert(TopValue(0).Node() == node->AsIndir()->Data());
+
+                int dataIndex = TopValue(0).Node() == node->AsIndir()->Data() ? 0 : 1;
+                int addrIndex = dataIndex == 0 ? 1 : 0;
+                assert(TopValue(addrIndex).Node() == node->AsIndir()->Addr());
+                assert(TopValue(dataIndex).Node() == node->AsIndir()->Data());
+
 
                 // Data value always escapes.
-                EscapeValue(TopValue(0), node);
+                EscapeValue(TopValue(dataIndex), node);
 
-                if (node->AsIndir()->IsVolatile() || !TopValue(1).IsAddress())
+                if (node->AsIndir()->IsVolatile() || !TopValue(addrIndex).IsAddress())
                 {
                     // Volatile indirections must not be removed so the address, if any, must be escaped.
-                    EscapeValue(TopValue(1), node);
+                    EscapeValue(TopValue(addrIndex), node);
                 }
                 else
                 {
                     // This consumes the address.
-                    ProcessIndirection(use, TopValue(1), user);
+                    ProcessIndirection(use, TopValue(addrIndex), user);
 
                     if ((m_lclAddrAssertions != nullptr) && (*use)->OperIsLocalStore())
                     {
-                        HandleLocalStoreAssertions((*use)->AsLclVarCommon(), TopValue(0));
+                        HandleLocalStoreAssertions((*use)->AsLclVarCommon(), TopValue(dataIndex));
                     }
                 }
 
