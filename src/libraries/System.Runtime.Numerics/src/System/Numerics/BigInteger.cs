@@ -3468,10 +3468,12 @@ namespace System.Numerics
                 else if (_sign >= 0)
                 {
                     // When the value is positive, we simply need to copy all bits as big endian
+
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
+
                     for (int i = 0; i < bits.Length; i++)
                     {
-                        // Simply multiply the index by the size of the type (4 bytes)
-                        BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(i * sizeof(uint), sizeof(uint)), bits[i]);
+                        uintDestination[bits.Length - 1 - i] = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(bits[i]) : bits[i];
                     }
                 }
                 else
@@ -3479,41 +3481,40 @@ namespace System.Numerics
                     // When the value is negative, we need to copy the two's complement representation
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                    int offset = byteCount - sizeof(uint);
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
+                    int uintCount = byteCount / sizeof(uint);
+
                     int i = 0;
+                    uint part;
 
-                    // first do complement and +1 as long as carry is needed
-                    for (; i < bits.Length; i++)
+                    do
                     {
-                        uint part = ~bits[i] + 1;
-                        BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(offset, sizeof(uint)), part);
-                        offset -= sizeof(uint);
+                        // first do complement and +1 as long as carry is needed
+                        part = ~bits[i] + 1;
 
-                        if (part != 0)
-                        {
-                            i++;
-                            break;
-                        }
+                        uintDestination[uintCount - 1 - i] = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(part) : part;
+                        i++;
+                    }
+                    while ((part == 0) && (i < bits.Length));
+
+                    while (i < bits.Length)
+                    {
+                        // now ones complement is sufficient
+                        part = ~bits[i];
+
+                        uintDestination[uintCount - 1 - i] = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(part) : part;
+                        i++;
                     }
 
-                    // now ones complement is sufficient
-                    for (; i < bits.Length; i++)
-                    {
-                        uint part = ~bits[i];
-                        BinaryPrimitives.WriteUInt32BigEndian(destination.Slice(offset, sizeof(uint)), part);
-                        offset -= sizeof(uint);
-                    }
-
-                    if (offset == 0)
+                    if (uintCount > bits.Length)
                     {
                         // We need one extra part to represent the sign as the most
                         // significant bit of the two's complement value was 0.
-                        BinaryPrimitives.WriteUInt32BigEndian(destination, uint.MaxValue);
+                        uintDestination[0] = uint.MaxValue;
                     }
                     else
                     {
-                        // Otherwise we should have been precisely one part behind offset
-                        Debug.Assert(offset == -sizeof(uint));
+                        Debug.Assert(uintCount == bits.Length);
                     }
                 }
 
@@ -3543,12 +3544,13 @@ namespace System.Numerics
                 }
                 else if (_sign >= 0)
                 {
-                    // When the value is positive, we simply need to copy all bits as big endian
+                    // When the value is positive, we simply need to copy all bits as little endian
+
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
 
                     for (int i = 0; i < bits.Length; i++)
                     {
-                        // Simply multiply the index by the size of the type (4 bytes)
-                        BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(i * sizeof(uint)), bits[i]);
+                        uintDestination[i] = BitConverter.IsLittleEndian ? bits[i] : BinaryPrimitives.ReverseEndianness(bits[i]);
                     }
                 }
                 else
@@ -3556,41 +3558,40 @@ namespace System.Numerics
                     // When the value is negative, we need to copy the two's complement representation
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                    int offset = byteCount - sizeof(uint);
+                    Span<uint> uintDestination = MemoryMarshal.Cast<byte, uint>(destination);
+                    int uintCount = byteCount / sizeof(uint);
+
                     int i = 0;
+                    uint part;
 
-                    // first do complement and +1 as long as carry is needed
-                    for (; i < bits.Length; i++)
+                    do
                     {
-                        uint part = ~bits[i] + 1;
-                        BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(offset, sizeof(uint)), part);
-                        offset -= sizeof(uint);
+                        // first do complement and +1 as long as carry is needed
+                        part = ~bits[i] + 1;
 
-                        if (part != 0)
-                        {
-                            i++;
-                            break;
-                        }
+                        uintDestination[i] = BitConverter.IsLittleEndian ? part : BinaryPrimitives.ReverseEndianness(part);
+                        i++;
+                    }
+                    while ((part == 0) && (i < bits.Length));
+
+                    while (i < bits.Length)
+                    {
+                        // now ones complement is sufficient
+                        part = ~bits[i];
+
+                        uintDestination[i] = BitConverter.IsLittleEndian ? part : BinaryPrimitives.ReverseEndianness(part);
+                        i++;
                     }
 
-                    // now ones complement is sufficient
-                    for (; i < bits.Length; i++)
-                    {
-                        uint part = ~bits[i];
-                        BinaryPrimitives.WriteUInt32LittleEndian(destination.Slice(offset, sizeof(uint)), part);
-                        offset -= sizeof(uint);
-                    }
-
-                    if (offset == 0)
+                    if (uintCount > bits.Length)
                     {
                         // We need one extra part to represent the sign as the most
                         // significant bit of the two's complement value was 0.
-                        BinaryPrimitives.WriteUInt32LittleEndian(destination, uint.MaxValue);
+                        uintDestination[bits.Length] = uint.MaxValue;
                     }
                     else
                     {
-                        // Otherwise we should have been precisely one part behind offset
-                        Debug.Assert(offset == -sizeof(uint));
+                        Debug.Assert(uintCount == bits.Length);
                     }
                 }
 
