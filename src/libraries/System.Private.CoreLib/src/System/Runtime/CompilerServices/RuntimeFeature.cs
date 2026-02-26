@@ -94,13 +94,13 @@ namespace System.Runtime.CompilerServices
         {
             throw new PlatformNotSupportedException();
         }
-#else // FEATURE_SINGLE_THREADED
+#elif FEATURE_WASM_MANAGED_THREADS
         internal static void ThrowIfMultithreadingIsNotSupported()
         {
-#if FEATURE_WASM_MANAGED_THREADS
             System.Threading.Thread.AssureBlockingPossible();
-#endif // FEATURE_WASM_MANAGED_THREADS
         }
-#endif // FEATURE_SINGLE_THREADED
+#else
+        partial static void ThrowIfMultithreadingIsNotSupported();
+endif
     }
 }
