@@ -4,6 +4,7 @@
     and '$(TestNativeAot)' != 'true'
     and ('$(TestReadyToRun)' != 'true' or '$(UseRuntimeAsync)' == 'true')
     and '$(UseNativeAOTRuntime)' != 'true'
+    and '$(TargetOS)' != 'browser'
     and '$(TargetOS)' != 'wasi'
     and '$(TargetOS)' != 'android'
     and '$(TargetsAppleMobile)' != 'true'
