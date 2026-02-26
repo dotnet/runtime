@@ -194,6 +194,7 @@ class CallStubGenerator
     int m_swiftSelfByRefSize = 0;
     CORINFO_SWIFT_LOWERING m_swiftReturnLowering = {};
     bool m_hasSwiftReturnLowering = false;
+    bool m_isSwiftILStub = false;
 
     // Swift routine helpers
     PCODE GetSwiftSelfRoutine();

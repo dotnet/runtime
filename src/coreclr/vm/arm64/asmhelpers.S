@@ -738,6 +738,10 @@ LOCAL_LABEL(HaveInterpThreadContext):
     mov x23, x9 // Save CallStubHeader* for later use
     add x10, x9, #OFFSETOF__CallStubHeader__Routines
     ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
+#ifdef TARGET_APPLE
+    // Initialize Swift error value slot to zero (in extraLocals area)
+    str xzr, [sp, #0]
+#endif
     // x19 contains IR bytecode address
     // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
     ldr x11, [x10], #8
@@ -746,6 +750,12 @@ LOCAL_LABEL(HaveInterpThreadContext):
     ldr x2, [sp, #(__PWTB_ArgumentRegister_FirstArg + 16)]
 
     // Check if this stub has Swift error handling
+    ldr x11, [sp, #0]
+    cbz x11, LOCAL_LABEL(InterpreterStub_NoReverseSwiftError)
+    mov x21, x11
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
+
+LOCAL_LABEL(InterpreterStub_NoReverseSwiftError):
     ldrb w11, [x23, #OFFSETOF__CallStubHeader__HasSwiftError]
     cbz x11, LOCAL_LABEL(InterpreterStub_NoSwiftError)
     EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
@@ -1194,6 +1204,13 @@ LEAF_ENTRY Load_SwiftError
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Load_SwiftError
+
+LEAF_ENTRY Store_SwiftError
+    sub x11, fp, #__PWTB_StackAlloc  // Get address of error value slot from fp (stable across calls)
+    str x11, [x9], #8        // Pass address to managed code as SwiftError* parameter
+    ldr x11, [x10], #8       // Load next routine address
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_SwiftError
 
 LEAF_ENTRY Load_SwiftIndirectResult
     ldr x8, [x9], #8
