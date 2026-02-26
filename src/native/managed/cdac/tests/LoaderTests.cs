@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -197,7 +196,10 @@ public unsafe class LoaderTests
         ISOSDacInterface13 impl = CreateSOSDacImplForHeapTests(arch);
 
         int needed;
-        impl.GetLoaderAllocatorHeaps(new ClrDataAddress(0x100), 0, null, null, &needed);
+        impl.GetLoaderAllocatorHeapNames(0, null, &needed);
+
+        char** names = stackalloc char*[needed];
+        impl.GetLoaderAllocatorHeapNames(needed, names, &needed);
 
         ClrDataAddress* heaps = stackalloc ClrDataAddress[needed];
         int* kinds = stackalloc int[needed];
@@ -205,10 +207,10 @@ public unsafe class LoaderTests
 
         Assert.Equal(HResults.S_OK, hr);
         Assert.Equal(MockHeapDictionary.Count, needed);
-        HashSet<ulong> expectedAddresses = new(MockHeapDictionary.Values.Select(p => (ulong)p));
         for (int i = 0; i < needed; i++)
         {
-            Assert.Contains((ulong)heaps[i], expectedAddresses);
+            string name = Marshal.PtrToStringAnsi((nint)names[i])!;
+            Assert.Equal((ulong)MockHeapDictionary[name], (ulong)heaps[i]);
             Assert.Equal(0, kinds[i]); // LoaderHeapKindNormal
         }
     }

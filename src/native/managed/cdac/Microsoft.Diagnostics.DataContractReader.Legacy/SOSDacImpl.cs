@@ -4461,23 +4461,28 @@ public sealed unsafe partial class SOSDacImpl
     }
 
     private nint[]? _loaderAllocatorHeapNamePtrs;
+    private string[]? _loaderAllocatorHeapNames;
 
-    private nint[] GetOrInitializeHeapNamePtrs()
+    private (nint[] ptrs, string[] names) GetOrInitializeHeapNamePtrs()
     {
         if (_loaderAllocatorHeapNamePtrs is not null)
-            return _loaderAllocatorHeapNamePtrs;
+            return (_loaderAllocatorHeapNamePtrs, _loaderAllocatorHeapNames!);
 
         Contracts.ILoader contract = _target.Contracts.Loader;
         TargetPointer globalLoaderAllocator = contract.GetGlobalLoaderAllocator();
         IReadOnlyDictionary<string, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(globalLoaderAllocator);
         nint[] ptrs = new nint[heaps.Count];
+        string[] names = new string[heaps.Count];
         int i = 0;
         foreach (string name in heaps.Keys)
         {
-            ptrs[i++] = Marshal.StringToHGlobalAnsi(name);
+            ptrs[i] = Marshal.StringToHGlobalAnsi(name);
+            names[i] = name;
+            i++;
         }
+        _loaderAllocatorHeapNames = names;
         _loaderAllocatorHeapNamePtrs = ptrs;
-        return ptrs;
+        return (ptrs, names);
     }
 
     int ISOSDacInterface13.GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded)
@@ -4485,7 +4490,7 @@ public sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            nint[] heapNamePtrs = GetOrInitializeHeapNamePtrs();
+            (nint[] heapNamePtrs, _) = GetOrInitializeHeapNamePtrs();
             int loaderHeapCount = heapNamePtrs.Length;
             if (pNeeded != null)
                 *pNeeded = loaderHeapCount;
@@ -4536,7 +4541,8 @@ public sealed unsafe partial class SOSDacImpl
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
             IReadOnlyDictionary<string, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
-            int loaderHeapCount = heaps.Count;
+            (_, string[] heapNames) = GetOrInitializeHeapNamePtrs();
+            int loaderHeapCount = heapNames.Length;
 
             if (pNeeded != null)
                 *pNeeded = loaderHeapCount;
@@ -4549,12 +4555,12 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 else
                 {
-                    int i = 0;
-                    foreach (TargetPointer heap in heaps.Values)
+                    for (int i = 0; i < loaderHeapCount; i++)
                     {
-                        pLoaderHeaps[i] = heap.ToClrDataAddress(_target);
+                        pLoaderHeaps[i] = heaps.TryGetValue(heapNames[i], out TargetPointer heapAddr)
+                            ? heapAddr.ToClrDataAddress(_target)
+                            : 0;
                         pKinds[i] = 0; // LoaderHeapKindNormal
-                        i++;
                     }
                 }
             }
