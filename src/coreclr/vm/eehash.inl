@@ -87,7 +87,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ClearHashTable()
 
     //_ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, /* fEnable */ true);
 
     if (m_pVolatileBucketTable->m_pBuckets != NULL)
     {
@@ -128,7 +128,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::EmptyHashTable()
 
     _ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, /* fEnable */ true);
 
     if (m_pVolatileBucketTable->m_pBuckets != NULL)
     {
@@ -217,7 +217,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::InsertValue(KeyType p
 
     _ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, /* fEnable */ true);
 
     _ASSERTE(m_pVolatileBucketTable->m_dwNumBuckets != 0);
 
@@ -263,7 +263,7 @@ void EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::InsertKeyAsValue(KeyT
 
     _ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, /* fEnable */ true);
 
     _ASSERTE(m_pVolatileBucketTable->m_dwNumBuckets != 0);
 
@@ -308,7 +308,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::DeleteValue(KeyType p
 
     _ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, /* fEnable */ true);
 
     _ASSERTE(m_pVolatileBucketTable->m_dwNumBuckets != 0);
 
@@ -523,10 +523,8 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
     CONTRACTL_END
 
     // EBR protects against use-after-free of old bucket arrays during GrowHashTable.
-    // Before EE starts there is only one thread, so EBR is not needed.
-    //
 #ifndef DACCESS_COMPILE
-   EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
+   EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, /* fEnable */ true);
 #endif
 
     // Atomic transaction. In any other point of this method or ANY of the callees of this function you can not read
@@ -581,7 +579,7 @@ FORCEINLINE EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>:
     }
     CONTRACTL_END
 
-    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, /* fEnable */ true);
 
     // Atomic transaction. In any other point of this method or ANY of the callees of this function you can not read
     // from m_pVolatileBucketTable!!!!!!! A racing condition would occur.
@@ -638,7 +636,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     CONTRACTL_END
 
 #if defined(_DEBUG)
-    _ASSERTE(!g_fEEStarted || g_EbrCollector.InCriticalRegion());
+    _ASSERTE(g_EbrCollector.InCriticalRegion());
 #endif
 
     // Make the new bucket table 4 times bigger
@@ -658,7 +656,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     // On resizes, we still have an array of old pointers we need to worry about.
     // We can't free these old pointers, for we may hit a race condition where we're
     // resizing and reading from the array at the same time. Old bucket arrays are
-    // deferred for deletion via EBR (or deleted immediately before EE starts).
+    // deferred for deletion via EBR.
     //
 
     EEHashEntry_t **pNewBuckets = AllocateEEHashBuckets(dwNewNumBuckets);
@@ -671,16 +669,13 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
     // Queue old bucket array for EBR deferred deletion before moving entries.
     // We are in an EBR critical region (entered by caller), so the old array
     // won't be freed until we (and all other readers) exit.
-    if (g_fEEStarted)
+    if (!g_EbrCollector.QueueForDeletion(
+        pOldBuckets,
+        DeleteObsoleteEEHashBuckets,
+        (m_pVolatileBucketTable->m_dwNumBuckets + 1) * sizeof(EEHashEntry_t*)))
     {
-        if (!g_EbrCollector.QueueForDeletion(
-            pOldBuckets,
-            DeleteObsoleteEEHashBuckets,
-            (m_pVolatileBucketTable->m_dwNumBuckets + 1) * sizeof(EEHashEntry_t*)))
-        {
-            FreeEEHashBuckets(pNewBuckets);
-            return FALSE;
-        }
+        FreeEEHashBuckets(pNewBuckets);
+        return FALSE;
     }
 
     // Run through the old table and transfer all the entries
@@ -735,12 +730,6 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GrowHashTable()
 
     InterlockedExchange( (LONG *) &m_bGrowing, 0);
 
-    // Before EE starts we're single-threaded; delete old buckets immediately.
-    if (!g_fEEStarted)
-    {
-        FreeEEHashBuckets(pOldBuckets);
-    }
-
     return TRUE;
 }
 
@@ -788,7 +777,7 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::
 
     _ASSERTE_IMPL(OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, g_fEEStarted);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, /* fEnable */ true);
 
     _ASSERTE(pIter->m_pTable == (void *) this);
 
