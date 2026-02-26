@@ -431,7 +431,7 @@ void CodeGen::WasmProduceReg(GenTree* node)
 //
 // If the operand is a candidate, we use that candidate's current register.
 // Otherwise it must have been allocated into a temporary register initialized
-// in 'WasmProduceReg'. To do this, set the LIR::Flags::MultiplyUsed flag during
+// in 'WasmProduceReg'. To do this, call treeNode->SetMultiplyUsed() during
 // lowering or other pre-regalloc phases, and ensure that regalloc is updated to
 // call CollectReferences on the node(s) that need to be used multiple times.
 //

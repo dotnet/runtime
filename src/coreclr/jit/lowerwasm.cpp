@@ -168,8 +168,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     if (binOp->gtOverflow())
     {
-        binOp->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
-        binOp->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        binOp->gtGetOp1()->SetMultiplyUsed();
+        binOp->gtGetOp2()->SetMultiplyUsed();
     }
 
     return binOp->gtNext;
@@ -188,12 +188,12 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
     ExceptionSetFlags exSetFlags = divMod->OperExceptions(m_compiler);
     if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
     {
-        divMod->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
-        divMod->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        divMod->gtGetOp1()->SetMultiplyUsed();
+        divMod->gtGetOp2()->SetMultiplyUsed();
     }
     else if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
     {
-        divMod->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        divMod->gtGetOp2()->SetMultiplyUsed();
     }
 
     ContainCheckDivOrMod(divMod);
@@ -259,11 +259,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
-            dstAddr->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+            dstAddr->SetMultiplyUsed();
             if (src->OperIs(GT_IND))
-                src->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+                src->gtGetOp1()->SetMultiplyUsed();
             else
-                src->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+                src->SetMultiplyUsed();
         }
         else
         {
@@ -300,7 +300,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     if (tree->gtOverflow())
     {
-        tree->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        tree->gtGetOp1()->SetMultiplyUsed();
     }
     ContainCheckCast(tree->AsCast());
 }
@@ -613,6 +613,6 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
     {
         // Prepare for explicit null check
         CallArg* thisArg = call->gtArgs.GetThisArg();
-        thisArg->GetNode()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        thisArg->GetNode()->SetMultiplyUsed();
     }
 }
