@@ -4824,8 +4824,8 @@ HRESULT CordbHeapValue3Impl::GetMonitorEventWaitList(CordbProcess* pProcess,
         VMPTR_Object vmObj;
         IfFailThrow(pDac->GetObject(remoteObjAddress, &vmObj));
         CQuickArrayList<VMPTR_Thread> threads;
-        pDac->EnumerateMonitorEventWaitList(vmObj,
-            (IDacDbiInterface::FP_THREAD_ENUMERATION_CALLBACK)ThreadEnumerationCallback, (VOID*)&threads);
+        IfFailThrow(pDac->EnumerateMonitorEventWaitList(vmObj,
+            (IDacDbiInterface::FP_THREAD_ENUMERATION_CALLBACK)ThreadEnumerationCallback, (VOID*)&threads));
 
         rsThreads = new RSSmartPtr<CordbThread>[threads.Size()];
         {

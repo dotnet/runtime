@@ -131,13 +131,13 @@ HRESULT DacDbiInterfaceImpl::CreateStackWalk(VMPTR_Thread vmThread, DT_CONTEXT *
 
         // initialize the CONTEXT.
         // SetStackWalk will initial the RegDisplay from this context.
-        GetContext(vmThread, pInternalContextBuffer);
+        IfFailThrow(GetContext(vmThread, pInternalContextBuffer));
 
         // initialize the stackwalker
-        SetStackWalkCurrentContext(vmThread,
-                                   *ppSFIHandle,
-                                   SET_CONTEXT_FLAG_ACTIVE_FRAME,
-                                   pInternalContextBuffer);
+        IfFailThrow(SetStackWalkCurrentContext(vmThread,
+                                               *ppSFIHandle,
+                                               SET_CONTEXT_FLAG_ACTIVE_FRAME,
+                                               pInternalContextBuffer));
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -768,7 +768,7 @@ HRESULT DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread, const DT_CONTEXT
     {
 
         DT_CONTEXT ctxLeaf;
-        GetContext(vmThread, &ctxLeaf);
+        IfFailThrow(GetContext(vmThread, &ctxLeaf));
 
         // Call a platform-specific helper to compare the two contexts.
         *pResult = CompareControlRegisters(pContext, &ctxLeaf);

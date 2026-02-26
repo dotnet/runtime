@@ -97,7 +97,14 @@ const DWORD kCurrentDbiVersionFormat = 1;
 
 // Error handling:
 //   Any call on the interface may fail. For example, the data-target may not have access to the necessary memory.
-//   Methods should throw on error.
+//   Methods return HRESULT and catch exceptions internally via EX_TRY/EX_CATCH_HRESULT
+//   in the DAC implementation. This ensures specific error codes like CORDBG_E_CLASS_NOT_LOADED
+//   are preserved across the DAC/DBI DSO boundary.
+//
+//   e.g. on Android (libc++/NDK), C++ exception RTTI does not match across DSO boundaries when
+//   built with -fvisibility=hidden and -Bsymbolic (libc++ uses pointer-only typeinfo comparison,
+//   unlike libstdc++ which falls back to string comparison). By catching exceptions inside the DAC,
+//   the HRESULT is returned as a value and never crosses the boundary as a C++ exception.
 //
 // #Enumeration
 // General rules about Enumerations:
@@ -262,7 +269,7 @@ public:
     //  appdomainId      - "unique appdomain ID". Must be a valid Id.
     //
     // Return Value:
-    //    VMPTR_AppDomain for the corresponding AppDomain ID.  Else throws.
+    //    VMPTR_AppDomain for the corresponding AppDomain ID.  Returns an appropriate failure HRESULT on error.
     //
     // Notes:
     //   This query is based off the lifespan of the AppDomain from the VM's perspective.
@@ -280,7 +287,7 @@ public:
     //  vmAppDomain  - VM pointer to the AppDomain object of interest
     //
     // Return Value:
-    //    AppDomain ID for appdomain. Else throws.
+    //    AppDomain ID for appdomain. Returns an appropriate failure HRESULT on error.
     //
     // Notes:
     //   An AppDomainId is unique for the lifetime of the VM. It is non-zero.
@@ -313,7 +320,7 @@ public:
     //
     // Return Value:
     //      Returns trust status for the assembly.
-    //      Throws on error.
+    //      Returns an appropriate failure HRESULT on error.
     //
     // Notes:
     //      Of course trusted malicious code in the process could always cause this API to lie.  However,
@@ -330,8 +337,8 @@ public:
     //     pStrName    - required out parameter where the name will be stored.
     //
     // Return Value:
-    //     None. On success, sets the string via the holder. Throws on error.
-    //     This either sets pStrName or Throws. It won't do both.
+    //     S_OK on success and sets the string via the holder. Returns an appropriate failure HRESULT on error.
+    //     This either sets pStrName or returns a failure HRESULT. It won't do both.
     //
     // Notes:
     //    AD names have an unbounded length.  AppDomain friendly names can also change, and
@@ -380,7 +387,7 @@ public:
     //
     // Return Value:
     //     None, but pStrFilename will be initialized upon return.
-    //     Throws if there was a problem reading the data with DAC or if there is an OOM exception,
+    //     Returns an appropriate failure HRESULT if there was a problem reading the data with DAC or on OOM,
     //     in which case no string was stored into pStrFilename.
     //
     // Notes:
@@ -409,7 +416,7 @@ public:
     //     TRUE on success, in which case the filename was stored into pStrFilename
     //     FALSE if the assembly has no filename (eg. for in-memory assemblies), in which
     //     case an empty string was stored into pStrFilename.
-    //     Throws if there was a problem reading the data with DAC, in which case
+    //     Returns an appropriate failure HRESULT if there was a problem reading the data with DAC, in which case
     //     no string was stored into pStrFilename.
     //
     // Notes:
@@ -430,7 +437,7 @@ public:
     //     input:  pTypeRefInfo   - domain file and type ref from the referencing module
     //     output: pTargetRefInfo - domain file and type def from the referenced type (this may
     //                              come from a module other than the referencing module)
-    // Note: throws
+    // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT ResolveTypeReference(const TypeRefData * pTypeRefInfo, TypeRefData * pTargetRefInfo) = 0;
     //
     // Get the full path and file name to the module (if any).
@@ -443,7 +450,7 @@ public:
     //     TRUE on success, in which case the filename was stored into pStrFilename
     //     FALSE the module has no filename (eg. for in-memory assemblies), in which
     //     case an empty string was stored into pStrFilename.
-    //     Throws an exception if there was a problem reading the data with DAC, in which case
+    //     Returns an appropriate failure HRESULT if there was a problem reading the data with DAC, in which case
     //     no string was stored into pStrFilename.
     //
     // Notes:
@@ -464,7 +471,7 @@ public:
     // Arguments:
     //    vmModule - target module to get metadata for.
     //    pTargetBuffer - Out parameter to get target-buffer for metadata. Gauranteed to be non-empty on
-    //       return. This will throw CORDBG_E_MISSING_METADATA hr if the buffer is empty.
+    //       return. This will return CORDBG_E_MISSING_METADATA if the buffer is empty.
     //       This does not guarantee that the buffer is readable. For example, in a minidump, buffer's
     //       memory may not be present.
     //
@@ -486,7 +493,7 @@ public:
     //    to a TypeLibConverter using Ref.Emit to emit a module for a very large .tlb file).
     //    - corrupted target,
     //    - or the target had some error(out-of-memory?) generating the metadata.
-    //    This throws CORDBG_E_MISSING_METADATA.
+    //    This returns CORDBG_E_MISSING_METADATA.
     //
     //    2. Target buffer is found, but memory it describes is not present. Likely means a minidump
     //    scenario with missing memory. Client should use alternative metadata location techniques (such as
@@ -517,7 +524,7 @@ public:
     //   converted into an IStream, and passed to ISymUnmanagedBinder::CreateReaderForStream.
     //   2) If the target is valid, but there is no symbols for the module, then pTargetBuffer->IsEmpty() == true
     //   and *pSymbolFormat == kSymbolFormatNone.
-    //   3) Else, throws exception.
+    //   3) Else, returns an appropriate failure HRESULT.
     //
     //
     // Notes:
@@ -588,7 +595,7 @@ public:
     //    address      - address to query type.
     //
     // Return Value:
-    //    Type of address. Throws on error.
+    //    Type of address. Returns an appropriate failure HRESULT on error.
     //
     // Notes:
     //    This is taken exactly from the IXClrData definition.
@@ -625,7 +632,7 @@ public:
     //    pfEnableEnc -    (mandatory output) true iff this module has EnC enabled
     //
     // Return Value:
-    //    Returns on success. Throws on failure.
+    //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
     //    This is used to implement both ICorDebugModule2::GetJitCompilerFlags and
@@ -650,7 +657,7 @@ public:
     //    CORDBG_S_NOT_ALL_BITS_SET - if not all bits are set. Must use GetCompileFlags to
     //      determine which bits were set.
     //    CORDBG_E_CANT_CHANGE_JIT_SETTING_FOR_ZAP_MODULE - if module is ngenned.
-    //    Throw on other errors.
+    //    Returns an appropriate failure HRESULT on other errors.
     //
     // Notes:
     //    Caller can only use this at module-load before any methods are jitted.
@@ -672,7 +679,7 @@ public:
     //    pUserData    - user data to supply for each callback.
     //
     // Return Value:
-    //    Returns on success. Throws on error.
+    //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
     //    Enumerates all appdomains in the process, including the Default-domain.
@@ -693,7 +700,7 @@ public:
     //    pUserData    - required out parameter for type of address.
     //
     // Return Value:
-    //    Returns on success. Throws on error.
+    //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
     //    Enumerates all executable assemblies (both shared and unshared) within an appdomain.
@@ -717,7 +724,7 @@ public:
     //
     // Callback function for EnumerateModulesInAssembly
     //
-    // This can throw on error.
+    // Returns an appropriate failure HRESULT on error.
     //
     // Arguments:
     //    vmModule - new module from the enumeration
@@ -748,7 +755,7 @@ public:
     //
     //
     // Return Value:
-    //    Returns on success. Throws on error.
+    //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
     //    Call this when an event is dispatched (eg, LoadModule) to request the runtime
@@ -785,7 +792,7 @@ public:
     //     None
     //
     // Return Value:
-    //    Returns on success. Throws on error.
+    //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
     //     Attaching means that CORDebuggerPendingAttach() will now return true.
@@ -801,7 +808,7 @@ public:
     //     fAttached - true if we're attaching, false if we're detaching.
     //
     // Return Value:
-    //    Returns on success. Throws on error.
+    //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
     //     Attaching means that CorDebuggerAttached() will now return true.
@@ -1151,7 +1158,7 @@ public:
     //    the current appdomain
     //
     // Notes:
-    //    This function throws if the current appdomain is NULL for whatever reason.
+    //    This function returns a failure HRESULT if the current appdomain is NULL for whatever reason.
     //
 
     virtual HRESULT GetCurrentAppDomain(OUT VMPTR_AppDomain * pRetVal) = 0;
@@ -1167,7 +1174,7 @@ public:
     // Returns:
     //    Assembly that the loader/fusion has bound to the given assembly ref.
     //    Returns NULL if the assembly has not yet been loaded (a common case).
-    //    Throws on error.
+    //    Returns an appropriate failure HRESULT on error.
     //
     // Notes:
     //    A single module has metadata that specifies references via tokens. The
@@ -1192,7 +1199,7 @@ public:
     //       pNativeVarData  space for the native code offset information for locals
     //       pSequencePoints space for the IL/native sequence points
     // Return value:
-    //    none, but may throw an exception
+    //    S_OK on success; otherwise, an appropriate failure HRESULT.
     // Assumptions:
     //    vmMethodDesc, pNativeVarInfo and pSequencePoints are non-NULL
 
@@ -1288,7 +1295,7 @@ public:
     // Return Value:
     //    Return TRUE if we successfully unwind to the next frame.
     //    Return FALSE if there is no more frames to walk.
-    //    Throw on error.
+    //    Returns an appropriate failure HRESULT on error.
     //
 
     virtual HRESULT UnwindStackWalkFrame(StackWalkHandle pSFIHandle, OUT BOOL * pResult) = 0;
@@ -1305,7 +1312,7 @@ public:
     //    Return S_OK if the CONTEXT passes our checks.
     //    Returns CORDBG_E_NON_MATCHING_CONTEXT if the SP in the specified CONTEXT doesn't fall in the stack
     //         range of the thread.
-    //    Throws on error.
+    //    Returns an appropriate failure HRESULT on error.
     //
 
     virtual
@@ -1449,7 +1456,7 @@ public:
     //     input:  vmThread       - the thread for which the context is required
     //     output: pContextBuffer - the address of the CONTEXT to be initialized.
     //                              The memory for this belongs to the caller. It must not be NULL.
-    // Note: throws
+    // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContextBuffer) = 0;
 
     //
@@ -1684,7 +1691,7 @@ public:
     //     input: vmModule      - the module scope in which to look up the type def
     //            metadataToken - the type definition to retrieve
     //
-    // Return value: the type handle if it exists or throws CORDBG_E_CLASS_NOT_LOADED if it isn't loaded
+    // Return value: the type handle if it exists, or returns CORDBG_E_CLASS_NOT_LOADED if it isn't loaded
     //
     virtual HRESULT GetTypeHandle(VMPTR_Module vmModule, mdTypeDef metadataToken, OUT VMPTR_TypeHandle * pRetVal) = 0;
 
@@ -1810,10 +1817,10 @@ public:
     //                              in the scope of vmDomainAssembly.
     //             vmDomainAssembly   - the domainAssembly for simpleType
     // Notes:
-    //    This is inspection-only. If the type is not yet loaded, it will throw CORDBG_E_CLASS_NOT_LOADED.
+    //    This is inspection-only. If the type is not yet loaded, it will return CORDBG_E_CLASS_NOT_LOADED.
     //    It will not try to load a type.
     //    If the type has been loaded, vmDomainAssembly will be non-null unless the target is somehow corrupted.
-    //    In that case, we will throw CORDBG_E_TARGET_INCONSISTENT.
+    //    In that case, we will return CORDBG_E_TARGET_INCONSISTENT.
 
     virtual HRESULT GetSimpleType(VMPTR_AppDomain vmAppDomain, CorElementType simpleType, OUT mdTypeDef * pMetadataToken, OUT VMPTR_Module * pVmModule, OUT VMPTR_DomainAssembly * pVmDomainAssembly) = 0;
 
@@ -1856,7 +1863,7 @@ public:
     //     input:  pTypedByRef - pointer to a TypedByRef struct
     //             vmAppDomain - AppDomain for the type of the object referenced
     //     output: pObjectData - information about the object referenced by pTypedByRef
-    // Note: Throws
+    // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, VMPTR_AppDomain vmAppDomain, DebuggerIPCE_ObjectData * pObjectData) = 0;
 
     // Get the string length and offset to string base for a string object
@@ -1864,7 +1871,7 @@ public:
     //     input:  objPtr - address of a string object
     //     output: pObjectData - fills in the string fields stringInfo.offsetToStringBase and
     //             stringInfo.length
-    // Note: throws
+    // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT GetStringData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData) = 0;
 
     // Get information for an array type referent of an objRef, including rank, upper and lower bounds,
@@ -1878,7 +1885,7 @@ public:
     //                             arrayInfo.componentCount,
     //                             arrayInfo.rank,
     //                             arrayInfo.elementSize,
-    // Note: throws
+    // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT GetArrayData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData) = 0;
 
     // Get information about an object for which we have a reference, including the object size and
@@ -1889,34 +1896,34 @@ public:
     //                             information for the object)
     //             vmAppDomain   - the appdomain to which the object belong
     //     output: pObjectData   - fills in the size and type information fields
-    // Note: throws
+    // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, VMPTR_AppDomain vmAppDomain, DebuggerIPCE_ObjectData * pObjectData) = 0;
 
     // --------------------------------------------------------------------------------------------
 #ifdef TEST_DATA_CONSISTENCY
     // Determine whether a crst is held by the left side. When the DAC is executing VM code that takes a
     // lock, we want to know whether the LS already holds that lock. If it does, we will assume the locked
-    // data is in an inconsistent state and will throw an exception, rather than relying on this data. This
+    // data is in an inconsistent state and will return a failure HRESULT, rather than relying on this data. This
     // function is part of a self-test that will ensure we are correctly detecting when the LS holds a lock
     // on data the RS is trying to inspect.
     // Argument:
     //     input:  vmCrst    - the lock to test
     //     output: none
     // Notes:
-    //     Throws
+    //     Returns an appropriate failure HRESULT on error
     //     For this code to run, the environment variable TestDataConsistency must be set to 1.
     virtual HRESULT TestCrst(VMPTR_Crst vmCrst) = 0;
 
     // Determine whether a crst is held by the left side. When the DAC is executing VM code that takes a
     // lock, we want to know whether the LS already holds that lock. If it does, we will assume the locked
-    // data is in an inconsistent state and will throw an exception, rather than relying on this data. This
+    // data is in an inconsistent state and will return a failure HRESULT, rather than relying on this data. This
     // function is part of a self-test that will ensure we are correctly detecting when the LS holds a lock
     // on data the RS is trying to inspect.
     // Argument:
     //     input:  vmRWLock  - the lock to test
     //     output: none
     // Notes:
-    //     Throws
+    //     Returns an appropriate failure HRESULT on error
     //     For this code to run, the environment variable TestDataConsistency must be set to 1.
 
     virtual HRESULT TestRWLock(VMPTR_SimpleRWLock vmRWLock) = 0;
@@ -1942,7 +1949,7 @@ public:
     //
     // Notes:
     //    The VMPTR this produces can be deconstructed by GetObjectContents.
-    //    This function will throw if given a NULL or otherwise invalid pointer,
+    //    This function will return a failure HRESULT if given a NULL or otherwise invalid pointer,
     //    but if given a valid address to an invalid pointer, it will produce
     //    a VMPTR_Object which points to invalid memory.
     virtual HRESULT GetObjectFromRefPtr(CORDB_ADDRESS ptr, OUT VMPTR_Object * pRetVal) = 0;
@@ -2056,7 +2063,7 @@ public:
     // Return value:
     //     The app domain id of the object of interest
     //
-    // This may throw if the object handle is corrupt (it doesn't refer to a managed object)
+    // This may return a failure HRESULT if the object handle is corrupt (it doesn't refer to a managed object)
     virtual HRESULT GetAppDomainIdFromVmObjectHandle(VMPTR_OBJECTHANDLE vmHandle, OUT ULONG * pRetVal) = 0;
 
 
@@ -2091,7 +2098,7 @@ public:
 
     //
     // Return Value:
-    //    Throws on error. Inside the structure we have:
+    //    Returns an appropriate failure HRESULT on error. Inside the structure we have:
     //    pVmThread         - the owning or thread or VMPTR_Thread::NullPtr() if unowned
     //    pAcquisitionCount - the number of times the lock would need to be released in
     //                        order for it to be unowned
@@ -2107,7 +2114,7 @@ public:
     //    pUserData    - user data to supply for each callback.
     //
     // Return Value:
-    //    Returns on success. Throws on error.
+    //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     //
     virtual HRESULT EnumerateMonitorEventWaitList(VMPTR_Object vmObject, FP_THREAD_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
@@ -2123,7 +2130,7 @@ public:
 
     virtual HRESULT GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly, DWORD & dwTimeStamp, DWORD & dwImageSize, IStringHolder* pStrFilename, OUT bool * pResult) = 0;
 
-        virtual HRESULT IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT bool * pResult) = 0;
+    virtual HRESULT IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT bool * pResult) = 0;
 
 
     typedef void* * HeapWalkHandle;
@@ -2197,7 +2204,7 @@ public:
     //  Returns:
     //      An HRESULT indicating whether it succeeded or failed.
     //  Exceptions:
-    //      Does not throw, but does not catch exceptions either.
+    //      Returns an HRESULT indicating success or failure.
     virtual
     HRESULT CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask) = 0;
 
@@ -2205,7 +2212,7 @@ public:
     // Parameters:
     //      handle - in - the handle of the reference walk to delete
     // Excecptions:
-    //      Does not throw, but does not catch exceptions either.
+    //      Returns an HRESULT indicating success or failure.
     virtual HRESULT DeleteRefWalk(RefWalkHandle handle) = 0;
 
     // Enumerates GC references in the process based on the parameters passed to CreateRefWalk.

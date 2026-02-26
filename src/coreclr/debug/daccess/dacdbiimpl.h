@@ -1048,6 +1048,8 @@ protected:
 
 
 // Use this macro at the start of each DD function.
+// "MAY_THROW" refers to the code within the function body (inside EX_TRY blocks) that may throw;
+// the methods themselves catch all exceptions via EX_CATCH_HRESULT and return HRESULT to callers.
 // This may nest if a DD primitive takes in a callback that then calls another DD primitive.
 #define DD_ENTER_MAY_THROW \
     DDHolder __dacHolder(this, true); \

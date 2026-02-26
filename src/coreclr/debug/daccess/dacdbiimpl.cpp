@@ -34,7 +34,9 @@
 //-----------------------------------------------------------------------------
 // Have standard enter and leave macros at the DacDbi boundary to enforce
 // standard behavior.
-// 1. catch exceptions and convert them at the boundary.
+// 1. Methods return HRESULT and wrap their bodies with EX_TRY/EX_CATCH_HRESULT
+//    to catch exceptions inside the DAC and convert them to HRESULTs before
+//    crossing the DSO boundary.
 // 2. provide a space to hook logging and transitions.
 // 3. provide a hook to verify return values.
 //
@@ -46,11 +48,15 @@
 //  Foo()
 //  {
 //      DD_ENTER_MAY_THROW
-//      ...
-//      if (...) { ThrowHr(E_SOME_FAILURE); }
-//      ...
-//      if (...) { return; } // early success case
-//      ...
+//      HRESULT hr = S_OK;
+//      EX_TRY
+//      {
+//          ...
+//          if (...) { ThrowHR(E_SOME_FAILURE); }
+//          ...
+//      }
+//      EX_CATCH_HRESULT(hr);
+//      return hr;
 //  }
 //-----------------------------------------------------------------------------
 
