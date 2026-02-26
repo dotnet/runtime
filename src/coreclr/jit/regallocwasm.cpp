@@ -52,7 +52,19 @@ void WasmRegAlloc::dumpLsraStatsSummary(FILE* file)
 
 bool WasmRegAlloc::isContainableMemoryOp(GenTree* node)
 {
-    NYI_WASM("isContainableMemoryOp");
+    if (node->isMemoryOp())
+    {
+        return true;
+    }
+    if (node->IsLocal())
+    {
+        if (!m_compiler->compEnregLocals())
+        {
+            return true;
+        }
+        const LclVarDsc* varDsc = m_compiler->lvaGetDesc(node->AsLclVar());
+        return varDsc->lvDoNotEnregister;
+    }
     return false;
 }
 
