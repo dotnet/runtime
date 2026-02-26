@@ -3,9 +3,6 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/123442 -->
-    <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
-
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'Mono'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 </Project>
