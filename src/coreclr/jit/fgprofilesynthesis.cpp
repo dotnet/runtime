@@ -783,7 +783,7 @@ void ProfileSynthesis::ReverseLikelihoods()
     WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
+        SumOutgoingLikelihoods(block, &likelihoods);
 
         if (likelihoods.size() < 2)
         {
