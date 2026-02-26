@@ -1735,7 +1735,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         info->idSize = sz;
 
 #if defined(TARGET_WASM)
-        info->idLclNum = BAD_VAR_NUM;
+        info->idLclNum = 0;
 #endif
         id->idDebugOnlyInfo(info);
     }

@@ -91,7 +91,7 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 
     if (m_debugInfoSize > 0)
     {
-        id->idDebugOnlyInfo()->idLclNum    = varx;
+        id->idDebugOnlyInfo()->idLclNum    = varx + 1;
         id->idDebugOnlyInfo()->idLclOffset = (unsigned)offs;
     }
 
@@ -797,9 +797,9 @@ void emitter::emitDispIns(
         if (m_debugInfoSize > 0)
         {
             unsigned const lclNum = id->idDebugOnlyInfo()->idLclNum;
-            if (lclNum != BAD_VAR_NUM)
+            if (lclNum != 0)
             {
-                printf("      ;; V%02u", lclNum);
+                printf("      ;; V%02u", lclNum - 1);
                 if (id->idDebugOnlyInfo()->idLclOffset != 0)
                 {
                     printf("+%u", id->idDebugOnlyInfo()->idLclOffset);
