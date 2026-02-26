@@ -189,6 +189,10 @@ void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
 
 void* MemPoolAllocator::Alloc(size_t sz) const
 {
+    if (sz == 0)
+    {
+        sz = sizeof(void*); // Arena allocator does not support zero-length allocations, so allocate something of minimum size instead.
+    }
     return m_compiler->getAllocator(m_memKind).allocate<int8_t>(sz);
 }
 void MemPoolAllocator::Free(void* ptr) const { /* no-op */ }
@@ -1356,7 +1360,7 @@ public:
     {
         for (int i = 0; i < 2; i++)
         {
-            m_slotTables[i] = new (compiler->getAllocatorGC()) GcSlotId[m_slotTableSize];
+            m_slotTables[i] = m_slotTableSize > 0 ? new (compiler->getAllocatorGC()) GcSlotId[m_slotTableSize] : NULL;
             // 0 is a valid slot id so default-initialize all the slots to 0xFFFFFFFF
             memset(m_slotTables[i], 0xFF, sizeof(GcSlotId) * m_slotTableSize);
         }
