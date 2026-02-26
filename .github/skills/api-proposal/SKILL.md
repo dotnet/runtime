@@ -307,3 +307,36 @@ Present the user with the following options. Which options appear depends on con
    ```
 
 Include related issue links in the body for all options.
+
+---
+
+### Phase 6: Iterate
+
+When the user provides feedback **after** a proposal has been published and the prototype needs to change:
+
+#### Step 1: Update the prototype
+
+Apply the requested changes, then re-run the full **Phase 2 validation** (build, test, TFM compatibility, `GenerateReferenceAssemblySource`) and **Phase 3 review** (code-review skill) before proceeding.
+
+#### Step 2: Choose push strategy
+
+Before committing, ask the user which push strategy to use:
+
+1. **Incremental commit** — Push a new commit on top of the existing branch. Simple and safe, but the branch will have multiple commits instead of a single clean prototype commit.
+2. **New branch with amended commit** — Create a new branch (`api-proposal/<short-name>-v2`, `-v3`, etc.) with a single amended commit. The original branch is preserved.
+3. **Amend + force push** — Amend the commit in-place and force push to the current branch. Produces the cleanest result but rewrites history — prior commit URLs become invalid.
+
+#### Step 3: Update the published proposal
+
+After pushing, automatically edit the published proposal text (comment, issue, or PR body) to:
+
+- Update the **Prototype** link to the new commit URL.
+- Update the **API Proposal** section if the API surface changed (re-extract from ref source).
+- Append a brief iteration history at the bottom, listing prior prototype branches/commits for reference. Example:
+
+```markdown
+### Iteration History
+
+- **v1**: https://github.com/<owner>/<repo>/commit/<sha1> — initial prototype
+- **v2**: https://github.com/<owner>/<repo>/commit/<sha2> — added `comparer` overloads
+```
