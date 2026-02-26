@@ -903,11 +903,11 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
         NativeCodeFunctionData codeData;
         VMPTR_Module pModule;
         mdMethodDef methodDef;
-        pDac->GetNativeCodeInfoForAddr(
+        IfFailThrow(pDac->GetNativeCodeInfoForAddr(
             diagnosticIP,
             &codeData,
             &pModule,
-            &methodDef);
+            &methodDef));
 
         IDacDbiInterface::DynamicMethodType dynMethodType;
         IfFailThrow(pDac->IsDiagnosticsHiddenOrLCGMethod(codeData.vmNativeCodeMethodDescToken, &dynMethodType));

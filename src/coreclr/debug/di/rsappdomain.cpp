@@ -205,12 +205,13 @@ HRESULT CordbAppDomain::RefreshName()
 
     #ifdef _DEBUG
         // For debug, double-check the cached value against getting the AD via an AppDomainId.
-        VMPTR_AppDomain pAppDomain = pDac->GetAppDomainFromId(m_AppDomainId);
+        VMPTR_AppDomain pAppDomain;
+        IfFailThrow(pDac->GetAppDomainFromId(m_AppDomainId, &pAppDomain));
         _ASSERTE(m_vmAppDomain == pAppDomain);
     #endif
 
         // Get the actual string contents.
-        pDac->GetAppDomainFullName(m_vmAppDomain, &m_strAppDomainName);
+        IfFailThrow(pDac->GetAppDomainFullName(m_vmAppDomain, &m_strAppDomainName));
 
         // Now that m_strAppDomainName is set, don't fail without clearing it.
     }

@@ -2848,10 +2848,10 @@ HRESULT DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_AppDomain vmAppDomain, VM
                 // Fill in the struct using the TypeHandle of the current type parameter if we can.
                 VMPTR_TypeHandle vmTypeHandle = VMPTR_TypeHandle::NullPtr();
                 vmTypeHandle.SetDacTargetPtr(thCurrent.AsTAddr());
-                TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                             vmAppDomain,
-                                             vmTypeHandle,
-                                             &((*pGenericTypeParams)[i]));
+                IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
+                                                         vmAppDomain,
+                                                         vmTypeHandle,
+                                                         &((*pGenericTypeParams)[i])));
             }
             EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
             {
@@ -2859,10 +2859,10 @@ HRESULT DacDbiInterfaceImpl::GetMethodDescParams(VMPTR_AppDomain vmAppDomain, VM
                 VMPTR_TypeHandle vmTHCanon = VMPTR_TypeHandle::NullPtr();
                 TypeHandle thCanon = TypeHandle(g_pCanonMethodTableClass);
                 vmTHCanon.SetDacTargetPtr(thCanon.AsTAddr());
-                TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                             vmAppDomain,
-                                             vmTHCanon,
-                                             &((*pGenericTypeParams)[i]));
+                IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
+                                                         vmAppDomain,
+                                                         vmTHCanon,
+                                                         &((*pGenericTypeParams)[i])));
             }
             EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER
         }
@@ -3291,10 +3291,10 @@ HRESULT DacDbiInterfaceImpl::GetTypeHandleParams(VMPTR_AppDomain vmAppDomain, VM
             VMPTR_TypeHandle thInst = VMPTR_TypeHandle::NullPtr();
             thInst.SetDacTargetPtr(typeHandle.GetInstantiation()[i].AsTAddr());
 
-            TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
-                                         vmAppDomain,
-                                         thInst,
-                                         &((*pParams)[i]));
+            IfFailThrow(TypeHandleToExpandedTypeInfo(NoValueTypeBoxing,
+                                                     vmAppDomain,
+                                                     thInst,
+                                                     &((*pParams)[i])));
         }
 
         LOG((LF_CORDB, LL_INFO10000, "D::GTHP: sending  result"));
@@ -3448,7 +3448,9 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
 
 #ifdef _DEBUG
     // ensure we have a Delegate object
-    IsDelegate(delegateObject);
+    BOOL fIsDelegate = FALSE;
+    IsDelegate(delegateObject, &fIsDelegate);
+    _ASSERTE(fIsDelegate);
 #endif
 
     // Ideally, we would share the implementation of this method with the runtime, or get the same information
@@ -3530,7 +3532,9 @@ HRESULT DacDbiInterfaceImpl::GetDelegateFunctionData(
 
 #ifdef _DEBUG
     // ensure we have a Delegate object
-    IsDelegate(delegateObject);
+    BOOL fIsDelegate = FALSE;
+    IsDelegate(delegateObject, &fIsDelegate);
+    _ASSERTE(fIsDelegate);
 #endif
 
     HRESULT hr = S_OK;
@@ -3570,7 +3574,9 @@ HRESULT DacDbiInterfaceImpl::GetDelegateTargetObject(
 
 #ifdef _DEBUG
     // ensure we have a Delegate object
-    IsDelegate(delegateObject);
+    BOOL fIsDelegate = FALSE;
+    IsDelegate(delegateObject, &fIsDelegate);
+    _ASSERTE(fIsDelegate);
 #endif
 
     HRESULT hr = S_OK;
@@ -6396,7 +6402,7 @@ void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
     pObjectData->objSize = objPtr->GetSize();
     pObjectData->objOffsetToVars = dac_cast<TADDR>((objPtr)->GetData()) - dac_cast<TADDR>(objPtr);
 
-    TypeHandleToExpandedTypeInfo(AllBoxed, vmAppDomain, vmTypeHandle, &(pObjectData->objTypeData));
+    IfFailThrow(TypeHandleToExpandedTypeInfo(AllBoxed, vmAppDomain, vmTypeHandle, &(pObjectData->objTypeData)));
 
     // If this is a string object, set the type to ELEMENT_TYPE_STRING.
     if (objPtr->GetGCSafeMethodTable() == g_pStringClass)

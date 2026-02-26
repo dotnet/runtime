@@ -705,7 +705,7 @@ CordbProcess::CreateDacDbiInterface()
     m_pDacPrimitives = pInterfacePtr;
 
     // Setup DAC target consistency checking based on what we're using for DBI
-    m_pDacPrimitives->DacSetTargetConsistencyChecks( m_fAssertOnTargetInconsistency );
+    IfFailThrow(m_pDacPrimitives->DacSetTargetConsistencyChecks( m_fAssertOnTargetInconsistency ));
 }
 
 //---------------------------------------------------------------------------------------
@@ -2358,7 +2358,7 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 _ASSERTE(cdbAppDomain != NULL);
 
                 DebuggerIPCE_ObjectData objData;
-                m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, cdbAppDomain->GetADToken(), &objData);
+                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, cdbAppDomain->GetADToken(), &objData));
 
                 NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, (ULONG)objData.objSize), &objData));
                 hr = pNewObjectValue->Init();

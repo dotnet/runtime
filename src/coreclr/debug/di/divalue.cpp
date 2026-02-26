@@ -1525,19 +1525,19 @@ void CordbReferenceValue::GetObjectData(CordbProcess *            pProcess,
     // make sure we don't end up with old garbage values in case the reference is bad
     PreInitObjectData(pInfo, objectAddress, type);
 
-    pInterface->GetBasicObjectInfo(objTargetAddr, type, vmAppdomain, pInfo);
+    IfFailThrow(pInterface->GetBasicObjectInfo(objTargetAddr, type, vmAppdomain, pInfo));
 
     if (!pInfo->objRefBad)
     {
         // for certain referent types, we need a bit more information:
         if (pInfo->objTypeData.elementType == ELEMENT_TYPE_STRING)
         {
-            pInterface->GetStringData(objTargetAddr, pInfo);
+            IfFailThrow(pInterface->GetStringData(objTargetAddr, pInfo));
         }
         else if ((pInfo->objTypeData.elementType == ELEMENT_TYPE_ARRAY) ||
                  (pInfo->objTypeData.elementType == ELEMENT_TYPE_SZARRAY))
         {
-            pInterface->GetArrayData(objTargetAddr, pInfo);
+            IfFailThrow(pInterface->GetArrayData(objTargetAddr, pInfo));
         }
     }
 

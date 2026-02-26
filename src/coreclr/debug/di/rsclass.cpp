@@ -791,10 +791,10 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
             if (!vmDomainAssembly.IsNull())
             {
                 DomainAssemblyInfo info;
-                pDac->GetDomainAssemblyData(vmDomainAssembly, &info);
+                IfFailThrow(pDac->GetDomainAssemblyData(vmDomainAssembly, &info));
                 vmAppDomain = info.vmAppDomain;
             }
-            pDac->GetClassInfo(vmAppDomain, vmTypeHandle, &m_classInfo);
+            IfFailThrow(pDac->GetClassInfo(vmAppDomain, vmTypeHandle, &m_classInfo));
 
             BOOL fGotUnallocatedStatic = GotUnallocatedStatic(&m_classInfo.m_fieldList);
 
