@@ -56,8 +56,7 @@ namespace System.IO.Tests
         {
             if (!Console.IsInputRedirected)
             {
-                using FileStream consoleStream = Console.OpenStandardInput();
-                using SafeFileHandle handle = new SafeFileHandle(consoleStream.SafeFileHandle.DangerousGetHandle(), ownsHandle: false);
+                using SafeFileHandle handle = Console.OpenStandardInputHandle();
                 FileType type = handle.GetFileType();
                 
                 Assert.True(type == FileType.CharacterDevice || type == FileType.Pipe || type == FileType.RegularFile,
