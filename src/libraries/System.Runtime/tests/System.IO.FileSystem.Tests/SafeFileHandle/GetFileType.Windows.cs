@@ -13,7 +13,7 @@ namespace System.IO.Tests
     public class SafeFileHandle_GetFileType_Windows : FileSystemTest
     {
         [Fact]
-        public void GetFileType_Directory()
+        public unsafe void GetFileType_Directory()
         {
             string path = GetTestFilePath();
             Directory.CreateDirectory(path);
@@ -64,7 +64,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
-        public void GetFileType_SymbolicLink()
+        public unsafe void GetFileType_SymbolicLink()
         {
             string targetPath = GetTestFilePath();
             string linkPath = GetTestFilePath();
