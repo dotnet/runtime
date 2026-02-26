@@ -335,6 +335,59 @@ namespace System.IO.Pipelines.Tests
             Assert.False(ms.ZeroLengthWriteDetected);
         }
 
+        [Fact]
+        public async Task CopyToAsyncPipeWriterAdvancesBufferedData()
+        {
+            byte[] buffer = "Hello World"u8.ToArray();
+            await Pipe.Writer.WriteAsync(buffer);
+            Pipe.Writer.Complete();
+
+            // Buffer some data via ReadAsync
+            ReadResult readResult = await PipeReader.ReadAsync();
+            PipeReader.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);
+
+            // CopyToAsync should advance past the buffered data
+            var pipe = new Pipe();
+            await PipeReader.CopyToAsync(pipe.Writer);
+            await pipe.Writer.CompleteAsync();
+
+            ReadResult pipeResult = await pipe.Reader.ReadAsync();
+            Assert.Equal(buffer.Length, pipeResult.Buffer.Length);
+            Assert.Equal("Hello World", Encoding.ASCII.GetString(pipeResult.Buffer.ToArray()));
+            pipe.Reader.AdvanceTo(pipeResult.Buffer.End);
+
+            // Verify the reader state is clean - no buffered data should remain
+            readResult = await PipeReader.ReadAsync();
+            Assert.True(readResult.IsCompleted);
+            Assert.Equal(0, readResult.Buffer.Length);
+            PipeReader.AdvanceTo(readResult.Buffer.End);
+        }
+
+        [Fact]
+        public async Task CopyToAsyncStreamAdvancesBufferedData()
+        {
+            byte[] buffer = "Hello World"u8.ToArray();
+            await Pipe.Writer.WriteAsync(buffer);
+            Pipe.Writer.Complete();
+
+            // Buffer some data via ReadAsync
+            ReadResult readResult = await PipeReader.ReadAsync();
+            PipeReader.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);
+
+            // CopyToAsync should advance past the buffered data
+            var destination = new MemoryStream();
+            await PipeReader.CopyToAsync(destination);
+
+            Assert.Equal(buffer.Length, destination.Length);
+            Assert.Equal("Hello World", Encoding.ASCII.GetString(destination.ToArray()));
+
+            // Verify the reader state is clean - no buffered data should remain
+            readResult = await PipeReader.ReadAsync();
+            Assert.True(readResult.IsCompleted);
+            Assert.Equal(0, readResult.Buffer.Length);
+            PipeReader.AdvanceTo(readResult.Buffer.End);
+        }
+
         class LengthCheckStream : MemoryStream
         {
             public bool ZeroLengthWriteDetected { get; private set; }
