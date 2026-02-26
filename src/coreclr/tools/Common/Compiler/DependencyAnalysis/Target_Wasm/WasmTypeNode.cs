@@ -48,10 +48,11 @@ namespace ILCompiler.DependencyAnalysis.Wasm
             byte[] data = new byte[_type.EncodeSize()];
             _type.Encode(data);
 
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
-            builder.AddSymbol(this);
-            builder.EmitBytes(data);
-            return builder.ToObjectData();
+            return new ObjectData(
+                   data: data,
+                   relocs: Array.Empty<Relocation>(),
+                   alignment: 1,
+                   definedSymbols: new ISymbolDefinitionNode[] { this });
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
