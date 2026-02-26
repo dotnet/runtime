@@ -48,7 +48,7 @@ public:
     }
 };
 
-struct InternalRegStack
+struct TemporaryRegStack
 {
     unsigned Count    = 0;
     unsigned MaxCount = 0;
@@ -56,20 +56,20 @@ struct InternalRegStack
     unsigned Push()
     {
         unsigned index = Count++;
-        assert(Count <= InternalRegs::MAX_REG_COUNT);
+        MaxCount       = max(MaxCount, Count);
         return index;
     }
 
-    void PopAll()
+    unsigned Pop()
     {
-        MaxCount = max(MaxCount, Count);
-        Count    = 0;
+        assert(Count > 0);
+        return --Count;
     }
 };
 
 struct VirtualRegReferences
 {
-    GenTreeLclVarCommon*  Nodes[16];
+    GenTree*              Nodes[16];
     VirtualRegReferences* Prev = nullptr;
 };
 
@@ -81,13 +81,13 @@ class WasmRegAlloc : public RegAllocInterface
     VirtualRegStack       m_virtualRegs[static_cast<int>(WasmValueType::Count)];
     unsigned              m_lastVirtualRegRefsCount = 0;
     VirtualRegReferences* m_virtualRegRefs          = nullptr;
-    InternalRegStack      m_internalRegs[static_cast<int>(WasmValueType::Count)];
+    TemporaryRegStack     m_temporaryRegs[static_cast<int>(WasmValueType::Count)];
 
     // The meaning of these fields is borrowed (partially) from the C ABI for WASM. We define "the SP" to be the local
     // which is used to make calls - the stack on entry to callees. We term "the FP" to be the local which is used to
     // access the fixed potion of the frame. For fixed-size frames (no localloc), these will be the same.
-    LclVarDsc* m_spVarDsc = nullptr;
-    regNumber  m_fpReg    = REG_NA;
+    regNumber m_spReg = REG_NA;
+    regNumber m_fpReg = REG_NA;
 
 public:
     WasmRegAlloc(Compiler* compiler);
@@ -108,20 +108,28 @@ private:
 
     void      IdentifyCandidates();
     void      InitializeCandidate(LclVarDsc* varDsc);
-    regNumber AllocateStackPointer();
+    void      InitializeStackPointer();
+    void      AllocateStackPointer();
     void      AllocateFramePointer();
     regNumber AllocateVirtualRegister(var_types type);
     regNumber AllocateVirtualRegister(WasmValueType type);
-    regNumber AllocateInternalRegister(var_types type);
-    void      FreeInternalRegisters();
+    regNumber AllocateTemporaryRegister(var_types type);
+    regNumber ReleaseTemporaryRegister(var_types type);
+    regNumber ReleaseTemporaryRegister(WasmValueType wasmType);
 
-    void CollectReferences();
-    void CollectReferencesForBlock(BasicBlock* block);
-    void CollectReferencesForNode(GenTree* node);
-    void CollectReferencesForDivMod(GenTreeOp* divModNode);
-    void RewriteLocalStackStore(GenTreeLclVarCommon* node);
-    void CollectReference(GenTreeLclVarCommon* node);
-    void RequestInternalRegForOperand(GenTree* node, GenTree* operand DEBUGARG(const char* reason));
+    void      CollectReferences();
+    void      CollectReferencesForBlock(BasicBlock* block);
+    void      CollectReferencesForNode(GenTree* node);
+    void      CollectReferencesForDivMod(GenTreeOp* divModNode);
+    void      CollectReferencesForCall(GenTreeCall* callNode);
+    void      CollectReferencesForCast(GenTreeOp* castNode);
+    void      CollectReferencesForBinop(GenTreeOp* binOpNode);
+    void      CollectReferencesForLclVar(GenTreeLclVar* lclVar);
+    void      RewriteLocalStackStore(GenTreeLclVarCommon* node);
+    void      CollectReference(GenTree* node);
+    void      RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);
+    regNumber RequestInternalRegister(GenTree* node, var_types type);
+    void      ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const char* reason));
 
     void ResolveReferences();
 

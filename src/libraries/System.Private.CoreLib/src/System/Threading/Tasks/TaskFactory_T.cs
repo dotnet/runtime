@@ -676,7 +676,7 @@ namespace System.Threading.Tasks
             }
             else
             {
-                Thread.ThrowIfSingleThreaded();
+                Thread.ThrowIfMultithreadingIsNotSupported();
 
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44544
                 ThreadPool.RegisterWaitForSingleObject(

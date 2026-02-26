@@ -16,6 +16,7 @@ public static class Constants
 
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
         public const string FeatureOnStackReplacement = nameof(FeatureOnStackReplacement);
+        public const string FeaturePortableEntrypoints = nameof(FeaturePortableEntrypoints);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
@@ -32,7 +33,10 @@ public static class Constants
         public const string OffsetOfCurrentThreadInfo = nameof(OffsetOfCurrentThreadInfo);
         public const string TlsIndexBase = nameof(TlsIndexBase);
         public const string ThinlockThreadIdDispenser = nameof(ThinlockThreadIdDispenser);
+        public const string DispatchThisPtrMask = nameof(DispatchThisPtrMask);
+        public const string ComWrappersVtablePtrs = nameof(ComWrappersVtablePtrs);
         public const string GcNotificationFlags = nameof(GcNotificationFlags);
+        public const string GlobalAllocContext = nameof(GlobalAllocContext);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
         public const string StressLogHasModuleTable = nameof(StressLogHasModuleTable);
@@ -68,8 +72,6 @@ public static class Constants
         public const string FieldOffsetBigRVA = nameof(FieldOffsetBigRVA);
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
-
-        public const string MethodDescSizeTable = nameof(MethodDescSizeTable);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);

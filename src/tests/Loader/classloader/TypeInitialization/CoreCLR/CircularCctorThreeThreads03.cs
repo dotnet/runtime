@@ -145,7 +145,7 @@ public class Test_CircularCctorThreeThreads03
 	}
 
 
- [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

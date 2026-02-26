@@ -922,7 +922,7 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
     }
 
-    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
+    [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDefaultTimeSpanProperty()
     {
         var obj = new TypeWithDefaultTimeSpanProperty { TimeSpanProperty2 = new TimeSpan(0, 1, 0) };
@@ -965,7 +965,7 @@ public static partial class XmlSerializerTests
         }
     }
 
-    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
+    [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDateTimeOffsetProperty()
     {
         var now = new DateTimeOffset(DateTime.Now);
@@ -990,7 +990,7 @@ public static partial class XmlSerializerTests
         Assert.True(deserializedObj.NullableDTOWithDefault == null);
     }
 
-    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
+    [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_DeserializeTypeWithEmptyDateTimeOffsetProperties()
     {
         //var def = DateTimeOffset.Parse("3/17/1977 5:00:01 PM -05:00");  //  "1977-03-17T17:00:01-05:00"
@@ -1135,7 +1135,7 @@ public static partial class XmlSerializerTests
         }
     }
 
-    [ConditionalFact(nameof(DefaultValueAttributeIsSupported))]
+    [ConditionalFact(typeof(XmlSerializerTests), nameof(DefaultValueAttributeIsSupported))]
     public static void Xml_TypeWithDateOnlyAndTimeOnly()
     {
         var doSerializer = new XmlSerializer(typeof(TypeWithDateAndTimeOnlyProperties), new XmlRootAttribute("DateAndTime"));
@@ -1276,7 +1276,7 @@ public static partial class XmlSerializerTests
         // Use the latter approach here.
 
         var ignoreUtc = AppContext.TryGetSwitch("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", out bool isEnabled) && isEnabled;
-        DateTime testTime = DateTime.SpecifyKind(DateTime.Parse(dateTimeString), kind); 
+        DateTime testTime = DateTime.SpecifyKind(DateTime.Parse(dateTimeString), kind);
         Assert.Equal(kind, testTime.Kind);
 
         // Verify TimeOnly -> DateTime
@@ -2569,6 +2569,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 #endif
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/95928", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
     public static void Xml_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
@@ -3078,7 +3079,7 @@ internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
         Assert.NotNull(fi);
         fi.SetValue(null, 0);
     }
-    
+
     private static string GuessCachedName(string name)
     {
         // Switch names are typically of the form "Switch.System.Xml.SomeFeature"

@@ -29,9 +29,8 @@ namespace ILCompiler.DependencyAnalysis
     /// * Generate N bytes of zeros.
     /// * Generate a relocation to Nth entry in the lookup table that supplements the dehydrated stream.
     /// </remarks>
-    internal sealed class DehydratedDataNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class DehydratedDataNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
 
         public override bool IsShareable => false;
 
@@ -42,8 +41,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
 
         public int Offset => 0;
-
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -106,6 +103,8 @@ namespace ILCompiler.DependencyAnalysis
             if (lastProfitableReloc > 0)
                 Array.Resize(ref relocSort, lastProfitableReloc);
             var relocs = new Dictionary<ISymbolNode, int>(relocSort);
+
+            ObjectDataBuilder.Reservation dehydratedDataLengthReservation = builder.ReserveInt();
 
             // Walk all the ObjectDatas and generate the dehydrated instruction stream.
             byte[] buff = new byte[4];
@@ -309,7 +308,7 @@ namespace ILCompiler.DependencyAnalysis
                 dehydratedSegmentPosition += o.Data.Length;
             }
 
-            _size = builder.CountBytes;
+            builder.EmitInt(dehydratedDataLengthReservation, builder.CountBytes);
 
             // Dehydrated data is followed by the reloc lookup table.
             for (int i = 0; i < relocSort.Length; i++)
