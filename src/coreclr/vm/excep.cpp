@@ -2166,7 +2166,7 @@ void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF* ppMessage)
 
     if (wszResourceName == NULL || *wszResourceName == W('\0'))
     {
-        ppMessage = NULL;
+        *ppMessage = NULL;
         return;
     }
 
