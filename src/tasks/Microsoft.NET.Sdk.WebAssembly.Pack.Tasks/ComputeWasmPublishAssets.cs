@@ -475,7 +475,7 @@ public class ComputeWasmPublishAssets : Task
 
             // Try exact match first, then fall back to filename-based lookup.
             // Normalize to .dll when webcil is enabled since assetsToUpdateByFileName
-            // keys are normalized to .dll (line 448) but RelatedAsset paths use .wasm.
+            // keys are normalized to .dll (above) but RelatedAsset paths use .wasm.
             var relatedAssetFileName = Path.GetFileName(relatedAsset);
             if (IsWebCilEnabled)
                 relatedAssetFileName = Path.ChangeExtension(relatedAssetFileName, ".dll");
@@ -543,7 +543,7 @@ public class ComputeWasmPublishAssets : Task
                 default:
                     // Satellite assembliess and compressed assets
                     TaskItem newAsset = CreatePromotedAsset(asset);
-                    UpdateRelatedAssetProperty(asset, newAsset, updatedAssetsMap);
+                    UpdateRelatedAssetProperty(asset, newAsset, updatedAssetsMap, IsWebCilEnabled);
                     Log.LogMessage(MessageImportance.Low, "Promoting asset '{0}' to Publish asset.", asset.ItemSpec);
 
                     promotedAssets.Add(newAsset);
@@ -596,17 +596,24 @@ public class ComputeWasmPublishAssets : Task
         return runtimeAssetsToUpdate;
     }
 
-    private static void UpdateRelatedAssetProperty(ITaskItem asset, TaskItem newAsset, Dictionary<string, ITaskItem> updatedAssetsMap)
+    private static void UpdateRelatedAssetProperty(ITaskItem asset, TaskItem newAsset, Dictionary<string, ITaskItem> updatedAssetsMap, bool isWebCilEnabled)
     {
         var relatedAsset = asset.GetMetadata("RelatedAsset");
         if (!updatedAssetsMap.TryGetValue(relatedAsset, out var updatedRelatedAsset))
         {
             // Fall back to filename matching when RelatedAsset uses a different base path
             // than the asset's build-time Identity (e.g., OutputPath/wwwroot vs obj/webcil).
-            var relatedBaseName = Path.GetFileNameWithoutExtension(relatedAsset);
+            // Match by full filename (with extension) to avoid ambiguity between .dll/.pdb etc.
+            // Normalize .wasm → .dll when webcil is enabled since keys use .dll extensions.
+            var relatedFileName = Path.GetFileName(relatedAsset);
+            if (isWebCilEnabled)
+                relatedFileName = Path.ChangeExtension(relatedFileName, ".dll");
             foreach (var kvp in updatedAssetsMap)
             {
-                if (string.Equals(Path.GetFileNameWithoutExtension(kvp.Key), relatedBaseName, StringComparison.OrdinalIgnoreCase))
+                var candidateFileName = Path.GetFileName(kvp.Key);
+                if (isWebCilEnabled)
+                    candidateFileName = Path.ChangeExtension(candidateFileName, ".dll");
+                if (string.Equals(candidateFileName, relatedFileName, StringComparison.OrdinalIgnoreCase))
                 {
                     updatedRelatedAsset = kvp.Value;
                     break;

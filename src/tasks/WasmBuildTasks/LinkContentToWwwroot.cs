@@ -64,7 +64,8 @@ public class LinkContentToWwwroot : Task
                 wasmFiles.Add(new TaskItem(targetPath));
 
                 // Content: ContentRoot = Identity with TargetPath removed, TargetPath = wwwroot\TargetPath
-                var contentRoot = Path.GetDirectoryName(identity)!;
+                var isRooted = Path.IsPathRooted(identity);
+                var contentRoot = isRooted ? Path.GetDirectoryName(identity)! : Path.GetDirectoryName(Path.GetFullPath(identity, MSBuildProjectDirectory))!;
                 var outIdentity = CopyToVfsIfNeeded(identity, targetPath, ref contentRoot);
 
                 var outItem = new TaskItem(outIdentity, item.CloneCustomMetadata());
