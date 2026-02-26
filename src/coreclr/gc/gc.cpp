@@ -53537,7 +53537,6 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 {
     bool v2 = gcDacVars->minor_version_number >= 2;
     bool v4 = gcDacVars->minor_version_number >= 4;
-    bool v6 = gcDacVars->minor_version_number >= 6;
     bool v8 = gcDacVars->minor_version_number >= 8;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
