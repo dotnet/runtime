@@ -576,7 +576,7 @@ namespace System.IO.Pipelines.Tests
             PipeReader reader1 = PipeReader.Create(new MemoryStream(new byte[10]));
             PipeReader reader2 = PipeReader.Create(new MemoryStream(new byte[1000]));
 
-            ReadResult result1 = await reader1.ReadAsync();
+            _ = await reader1.ReadAsync();
             ReadResult result2 = await reader2.ReadAsync();
 
             SequencePosition posFrom2 = result2.Buffer.End;
