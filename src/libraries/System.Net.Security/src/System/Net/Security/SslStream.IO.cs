@@ -987,31 +987,71 @@ namespace System.Net.Security
                 {
                     SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
                     Socket socket = ((NetworkStream)InnerStream).Socket;
+                    int totalRead = 0;
 
                     while (true)
                     {
-                        int ret = TryKtlsRead(sslHandle, buffer, out Interop.Ssl.SslErrorCode error, out Interop.Error errno);
+                        if (totalRead >= buffer.Length)
+                        {
+                            return totalRead;
+                        }
 
-                        if (ret > 0) return ret;
+                        Memory<byte> remaining = buffer.Slice(totalRead);
+                        int ret = TryKtlsRead(sslHandle, remaining, out Interop.Ssl.SslErrorCode error, out Interop.Error errno);
 
-                        if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN) return 0;
+                        if (ret > 0)
+                        {
+                            totalRead += ret;
+                            // Try to fill the buffer with more data without waiting.
+                            // This avoids extra peek+SSL_read round trips when multiple
+                            // TLS records are already buffered in the kernel.
+                            continue;
+                        }
+
+                        if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN)
+                        {
+                            return totalRead;
+                        }
 
                         // ret == 0 with SSL_ERROR_SYSCALL and errno == SUCCESS means unexpected EOF
                         if (ret == 0 && error == Interop.Ssl.SslErrorCode.SSL_ERROR_SYSCALL && errno == Interop.Error.SUCCESS)
                         {
-                            return 0;
+                            return totalRead;
                         }
 
-                        if (IsKtlsWantRead(error, errno, buffer.Length == 0))
+                        if (IsKtlsWantRead(error, errno, remaining.Length == 0))
                         {
+                            // Return any data already read before waiting.
+                            if (totalRead > 0)
+                            {
+                                return totalRead;
+                            }
+
                             // Use 1-byte MSG_PEEK recv to properly wait for data via epoll.
                             // Zero-byte reads on Socket complete immediately without waiting.
-                            await socket.ReceiveAsync(s_peekBuffer, SocketFlags.Peek, cancellationToken).ConfigureAwait(false);
-                            if (buffer.Length == 0)
+                            try
+                            {
+                                await socket.ReceiveAsync(s_peekBuffer, SocketFlags.Peek, cancellationToken).ConfigureAwait(false);
+                            }
+                            catch (SocketException) when (!cancellationToken.IsCancellationRequested)
+                            {
+                                // When the peer closes the connection, the kTLS socket may
+                                // report an error (e.g. ECONNRESET) on recv() instead of a
+                                // clean EOF. Continue to SSL_read to get the TLS-level status.
+                            }
+
+                            if (remaining.Length == 0)
                             {
                                 return 0;
                             }
+
                             continue;
+                        }
+
+                        // If we already read some data, return it rather than throwing.
+                        if (totalRead > 0)
+                        {
+                            return totalRead;
                         }
 
                         throw new IOException(SR.net_io_decrypt, Interop.OpenSsl.GetSslError(ret, error));
