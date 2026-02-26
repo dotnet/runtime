@@ -1,17 +1,14 @@
 project(System.Native C)
 
-if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_WASI)
+if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
 
 set(NATIVE_SOURCES
     pal_errno.c
-    pal_interfaceaddresses.c
     pal_io.c
     pal_maphardwaretype.c
     pal_memory.c
-    pal_networking.c
-    pal_networkstatistics.c
     pal_random.c
     pal_runtimeinformation.c
     pal_string.c
@@ -21,21 +18,39 @@ set(NATIVE_SOURCES
     pal_sysctl.c
 )
 
-if (NOT CLR_CMAKE_TARGET_WASI)
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES
         pal_dynamicload.c
+        pal_interfaceaddresses.c
         pal_mount.c
+        pal_networking.c
+        pal_networkstatistics.c
         pal_process.c
         pal_signal.c
         pal_threading.c
         pal_uid.c
     )
-else()
+elseif (CLR_CMAKE_TARGET_BROWSER)
     list (APPEND NATIVE_SOURCES
-        pal_dynamicload_wasi.c
+        pal_dynamicload_wasm.c
+        pal_interfaceaddresses_browser.c
+        pal_mount.c
+        pal_networking_browser.c
+        pal_networkstatistics_wasm.c
+        pal_process.c
+        pal_signal_wasm.c
+        pal_threading.c
+        pal_uid.c
+    )
+else() # WASI
+    list (APPEND NATIVE_SOURCES
+        pal_dynamicload_wasm.c
+        pal_interfaceaddresses.c
         pal_mount_wasi.c
+        pal_networking.c
+        pal_networkstatistics_wasm.c
         pal_process_wasi.c
-        pal_signal_wasi.c
+        pal_signal_wasm.c
         pal_threading_wasi.c
         pal_uid_wasi.c
     )
@@ -84,8 +99,8 @@ else()
         pal_log.c
         pal_iossupportversion.c)
 
-    if (CLR_CMAKE_TARGET_WASI)
-        list (APPEND NATIVE_SOURCES pal_console_wasi.c)
+    if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+        list (APPEND NATIVE_SOURCES pal_console_wasm.c)
     else()
         list (APPEND NATIVE_SOURCES pal_console.c)
     endif()

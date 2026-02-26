@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ExternalTypeMapObjectNode(ExternalReferencesTableNode externalReferences) : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ExternalTypeMapObjectNode(ExternalReferencesTableNode externalReferences) : ObjectNode, ISymbolDefinitionNode
     {
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -33,8 +33,6 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] hashTableBytes = writer.Save();
 
-            Size = hashTableBytes.Length;
-
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, [this]);
         }
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -42,7 +40,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__external_type_map__"u8);
         }
 
-        public int Size { get; private set; }
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => externalReferences.GetSection(factory);

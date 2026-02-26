@@ -344,14 +344,14 @@ typedef jitstd::vector<ICorJitInfo::PgoInstrumentationSchema> Schema;
 class Instrumentor
 {
 protected:
-    Compiler* m_comp;
+    Compiler* m_compiler;
     unsigned  m_schemaCount;
     unsigned  m_instrCount;
     bool      m_modifiedFlow;
 
 protected:
     Instrumentor(Compiler* comp)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_schemaCount(0)
         , m_instrCount(0)
         , m_modifiedFlow(false)
@@ -454,7 +454,7 @@ void BlockCountInstrumentor::Prepare(bool preImport)
 #ifdef DEBUG
     // Set schema index to invalid value
     //
-    for (BasicBlock* const block : m_comp->Blocks())
+    for (BasicBlock* const block : m_compiler->Blocks())
     {
         block->bbCountSchemaIndex = -1;
     }
@@ -475,7 +475,8 @@ void BlockCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_comp->opts.IsInstrumentedAndOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_compiler->opts.IsInstrumentedAndOptimized() ||
+        ((m_compiler->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -486,7 +487,7 @@ void BlockCountInstrumentor::RelocateProbes()
 
     // Keep track of return blocks needing special treatment.
     //
-    ArrayStack<BasicBlock*> criticalPreds(m_comp->getAllocator(CMK_Pgo));
+    ArrayStack<BasicBlock*> criticalPreds(m_compiler->getAllocator(CMK_Pgo));
 
     // Walk blocks looking for BBJ_RETURNs that are successors of potential tail calls.
     //
@@ -494,7 +495,7 @@ void BlockCountInstrumentor::RelocateProbes()
     // via an intermediary block. That block will subsequently hold the relocated block
     // probe for the returnBlock for those preds.
     //
-    for (BasicBlock* const block : m_comp->Blocks())
+    for (BasicBlock* const block : m_compiler->Blocks())
     {
         // Ignore blocks that we won't process.
         //
@@ -543,10 +544,10 @@ void BlockCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* const intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
+            BasicBlock* const intermediary = m_compiler->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
             intermediary->SetFlags(BBF_IMPORTED | BBF_MARKED);
             intermediary->inheritWeight(block);
-            FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
+            FlowEdge* const newEdge = m_compiler->fgAddRefPred(block, intermediary);
             intermediary->SetTargetEdge(newEdge);
             SetModifiedFlow();
 
@@ -556,7 +557,7 @@ void BlockCountInstrumentor::RelocateProbes()
 
                 // Redirect any jumps
                 //
-                m_comp->fgReplaceJumpTarget(pred, block, intermediary);
+                m_compiler->fgReplaceJumpTarget(pred, block, intermediary);
             }
         }
     }
@@ -599,7 +600,7 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     ICorJitInfo::PgoInstrumentationSchema schemaElem;
     schemaElem.Count               = numCountersPerProbe;
     schemaElem.Other               = 0;
-    schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
+    schemaElem.InstrumentationKind = m_compiler->opts.compCollect64BitCounts
                                          ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
                                          : ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
     schemaElem.ILOffset            = offset;
@@ -659,7 +660,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     var_types typ =
         entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
 
-    GenTree* incCount = CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
+    GenTree* incCount = CreateCounterIncrement(m_compiler, addrOfCurrentExecutionCount, typ);
 
     if (block->HasFlag(BBF_TAILCALL_SUCCESSOR))
     {
@@ -677,16 +678,16 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
             JITDUMP("Placing copy of block probe for " FMT_BB " in pred " FMT_BB "\n", block->bbNum, pred->bbNum);
             if (!first)
             {
-                incCount = m_comp->gtCloneExpr(incCount);
+                incCount = m_compiler->gtCloneExpr(incCount);
             }
-            m_comp->fgNewStmtAtBeg(pred, incCount);
+            m_compiler->fgNewStmtAtBeg(pred, incCount);
             pred->RemoveFlags(BBF_MARKED);
             first = false;
         }
     }
     else
     {
-        m_comp->fgNewStmtAtBeg(block, incCount);
+        m_compiler->fgNewStmtAtBeg(block, incCount);
     }
 
     m_instrCount++;
@@ -1204,7 +1205,7 @@ private:
     //
     Probe* NewProbe(BasicBlock* block, BasicBlock* source, BasicBlock* target)
     {
-        Probe* p       = new (m_comp, CMK_Pgo) Probe();
+        Probe* p       = new (m_compiler, CMK_Pgo) Probe();
         p->source      = source;
         p->target      = target;
         p->kind        = EdgeKind::Unknown;
@@ -1377,7 +1378,7 @@ void EfficientEdgeCountInstrumentor::Prepare(bool preImport)
     if (preImport)
     {
         JITDUMP("\nEfficientEdgeCountInstrumentor: preparing for instrumentation\n");
-        m_comp->WalkSpanningTree(this);
+        m_compiler->WalkSpanningTree(this);
         JITDUMP("%u blocks, %u probes (%u on critical edges)\n", m_blockCount, m_probeCount, m_edgeProbeCount);
         return;
     }
@@ -1419,7 +1420,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
     unsigned edgesSplit   = 0;
     unsigned edgesIgnored = 0;
 
-    for (BasicBlock* const block : m_comp->Blocks())
+    for (BasicBlock* const block : m_compiler->Blocks())
     {
         if (!ShouldProcess(block))
         {
@@ -1476,7 +1477,7 @@ void EfficientEdgeCountInstrumentor::SplitCriticalEdges()
 
                     if (found)
                     {
-                        instrumentedBlock = m_comp->fgSplitEdge(block, target);
+                        instrumentedBlock = m_compiler->fgSplitEdge(block, target);
                         instrumentedBlock->SetFlags(BBF_IMPORTED);
                         edgesSplit++;
 
@@ -1532,7 +1533,8 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_comp->opts.IsInstrumentedAndOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_compiler->opts.IsInstrumentedAndOptimized() ||
+        ((m_compiler->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -1543,7 +1545,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 
     // We may need to track the critical predecessors of some blocks.
     //
-    ArrayStack<BasicBlock*> criticalPreds(m_comp->getAllocator(CMK_Pgo));
+    ArrayStack<BasicBlock*> criticalPreds(m_compiler->getAllocator(CMK_Pgo));
 
     // Walk probe list looking for probes that would appear in BBJ_RETURNs
     // that are successors of potential tail calls, and relocate them.
@@ -1552,7 +1554,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
     // via an intermediary block. That block will subsequently hold the relocated edge
     // probe for the return for those preds.
     //
-    for (BasicBlock* const block : m_comp->Blocks())
+    for (BasicBlock* const block : m_compiler->Blocks())
     {
         if (!ShouldProcess(block))
         {
@@ -1615,9 +1617,9 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
         //
         if (criticalPreds.Height() > 0)
         {
-            BasicBlock* intermediary = m_comp->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
+            BasicBlock* intermediary = m_compiler->fgNewBBbefore(BBJ_ALWAYS, block, /* extendRegion */ true);
             intermediary->SetFlags(BBF_IMPORTED);
-            FlowEdge* const newEdge = m_comp->fgAddRefPred(block, intermediary);
+            FlowEdge* const newEdge = m_compiler->fgAddRefPred(block, intermediary);
             intermediary->SetTargetEdge(newEdge);
             NewRelocatedProbe(intermediary, probe->source, probe->target, &leader);
             SetModifiedFlow();
@@ -1633,11 +1635,11 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
             while (criticalPreds.Height() > 0)
             {
                 BasicBlock* const pred = criticalPreds.Pop();
-                m_comp->fgReplaceJumpTarget(pred, block, intermediary);
+                m_compiler->fgReplaceJumpTarget(pred, block, intermediary);
 
                 if (pred->hasProfileWeight())
                 {
-                    FlowEdge* const predIntermediaryEdge = m_comp->fgGetPredForBlock(intermediary, pred);
+                    FlowEdge* const predIntermediaryEdge = m_compiler->fgGetPredForBlock(intermediary, pred);
                     weight += predIntermediaryEdge->getLikelyWeight();
                 }
                 else
@@ -1713,7 +1715,7 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
         schemaElem.Count               = numCountersPerProbe;
         schemaElem.Other               = targetKey;
-        schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
+        schemaElem.InstrumentationKind = m_compiler->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
                                              : ICorJitInfo::PgoInstrumentationKind::EdgeIntCount;
         schemaElem.ILOffset            = sourceKey;
@@ -1787,7 +1789,7 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
             // Write the current synthesized count as the profile data
             //
             // Todo: handle pseudo edges!
-            FlowEdge* const edge = m_comp->fgGetPredForBlock(source, target);
+            FlowEdge* const edge = m_compiler->fgGetPredForBlock(source, target);
 
             if (edge != nullptr)
             {
@@ -1839,8 +1841,9 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
         var_types typ =
             entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount ? TYP_INT : TYP_LONG;
 
-        GenTree* incCount = BlockCountInstrumentor::CreateCounterIncrement(m_comp, addrOfCurrentExecutionCount, typ);
-        m_comp->fgNewStmtAtBeg(instrumentedBlock, incCount);
+        GenTree* incCount =
+            BlockCountInstrumentor::CreateCounterIncrement(m_compiler, addrOfCurrentExecutionCount, typ);
+        m_compiler->fgNewStmtAtBeg(instrumentedBlock, incCount);
 
         if (probe->kind != EdgeKind::Duplicate)
         {
@@ -2350,7 +2353,7 @@ void HandleHistogramProbeInstrumentor::Prepare(bool isPreImport)
 #ifdef DEBUG
     // Set schema index to invalid value
     //
-    for (BasicBlock* const block : m_comp->Blocks())
+    for (BasicBlock* const block : m_compiler->Blocks())
     {
         block->bbHistogramSchemaIndex = -1;
     }
@@ -2378,7 +2381,7 @@ void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Sc
     // Scan the statements and identify the class probes
     //
     BuildHandleHistogramProbeSchemaGen                              schemaGen(schema, m_schemaCount);
-    HandleHistogramProbeVisitor<BuildHandleHistogramProbeSchemaGen> visitor(m_comp, schemaGen);
+    HandleHistogramProbeVisitor<BuildHandleHistogramProbeSchemaGen> visitor(m_compiler, schemaGen);
     for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -2411,7 +2414,7 @@ void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& sch
     assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
 
     HandleHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
-    HandleHistogramProbeVisitor<HandleHistogramProbeInserter> visitor(m_comp, insertProbes);
+    HandleHistogramProbeVisitor<HandleHistogramProbeInserter> visitor(m_compiler, insertProbes);
     for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -2428,7 +2431,7 @@ void ValueInstrumentor::Prepare(bool isPreImport)
 #ifdef DEBUG
     // Set schema index to invalid value
     //
-    for (BasicBlock* const block : m_comp->Blocks())
+    for (BasicBlock* const block : m_compiler->Blocks())
     {
         block->bbCountSchemaIndex = -1;
     }
@@ -2445,7 +2448,7 @@ void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
     block->bbHistogramSchemaIndex = (int)schema.size();
 
     BuildValueHistogramProbeSchemaGen                             schemaGen(schema, m_schemaCount);
-    ValueHistogramProbeVisitor<BuildValueHistogramProbeSchemaGen> visitor(m_comp, schemaGen);
+    ValueHistogramProbeVisitor<BuildValueHistogramProbeSchemaGen> visitor(m_compiler, schemaGen);
     for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -2463,7 +2466,7 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
     assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
 
     ValueHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
-    ValueHistogramProbeVisitor<ValueHistogramProbeInserter> visitor(m_comp, insertProbes);
+    ValueHistogramProbeVisitor<ValueHistogramProbeInserter> visitor(m_compiler, insertProbes);
     for (Statement* const stmt : block->Statements())
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -3098,7 +3101,7 @@ bool Compiler::fgIncorporateBlockCounts()
 class EfficientEdgeCountReconstructor : public SpanningTreeVisitor
 {
 private:
-    Compiler*     m_comp;
+    Compiler*     m_compiler;
     CompAllocator m_allocator;
     unsigned      m_blocks;
     unsigned      m_edges;
@@ -3226,7 +3229,7 @@ private:
 public:
     EfficientEdgeCountReconstructor(Compiler* comp)
         : SpanningTreeVisitor()
-        , m_comp(comp)
+        , m_compiler(comp)
         , m_allocator(comp->getAllocator(CMK_Pgo))
         , m_blocks(0)
         , m_edges(0)
@@ -3371,7 +3374,7 @@ void EfficientEdgeCountReconstructor::Prepare()
 
     // Create per-block info, and set up the key to block map.
     //
-    for (BasicBlock* const block : m_comp->Blocks())
+    for (BasicBlock* const block : m_compiler->Blocks())
     {
         m_keyToBlockMap.Set(EfficientEdgeCountBlockToKey(block), block);
         BlockInfo* const info = new (m_allocator) BlockInfo();
@@ -3393,9 +3396,9 @@ void EfficientEdgeCountReconstructor::Prepare()
     // Create edges for schema entries with edge counts, and set them up in
     // the edge key to edge map.
     //
-    for (UINT32 iSchema = 0; iSchema < m_comp->fgPgoSchemaCount; iSchema++)
+    for (UINT32 iSchema = 0; iSchema < m_compiler->fgPgoSchemaCount; iSchema++)
     {
-        const ICorJitInfo::PgoInstrumentationSchema& schemaEntry = m_comp->fgPgoSchema[iSchema];
+        const ICorJitInfo::PgoInstrumentationSchema& schemaEntry = m_compiler->fgPgoSchema[iSchema];
         switch (schemaEntry.InstrumentationKind)
         {
             case ICorJitInfo::PgoInstrumentationKind::EdgeIntCount:
@@ -3432,8 +3435,8 @@ void EfficientEdgeCountReconstructor::Prepare()
                 //
                 uint64_t profileCount =
                     schemaEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount
-                        ? *(uint32_t*)(m_comp->fgPgoData + schemaEntry.Offset)
-                        : *(uint64_t*)(m_comp->fgPgoData + schemaEntry.Offset);
+                        ? *(uint32_t*)(m_compiler->fgPgoData + schemaEntry.Offset)
+                        : *(uint64_t*)(m_compiler->fgPgoData + schemaEntry.Offset);
 
 #ifdef DEBUG
                 // Optional stress mode to use a random count. Because edge profile counters have
@@ -3448,7 +3451,7 @@ void EfficientEdgeCountReconstructor::Prepare()
                     // Config setting will serve as the random seed, if no other seed has been supplied already.
                     //
                     CLRRandom* const random =
-                        m_comp->impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomEdgeCounts());
+                        m_compiler->impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomEdgeCounts());
 
                     const bool isReturn = sourceBlock->KindIs(BBJ_RETURN);
 
@@ -3535,19 +3538,19 @@ void EfficientEdgeCountReconstructor::Solve()
     // Note it's possible the original method transferred control to the
     // OSR method many times, so the actual weight might need to be larger.
     //
-    if (m_comp->opts.IsOSR())
+    if (m_compiler->opts.IsOSR())
     {
-        EdgeKey key(m_comp->fgOSREntryBB, m_comp->fgFirstBB);
+        EdgeKey key(m_compiler->fgOSREntryBB, m_compiler->fgFirstBB);
         Edge*   edge = nullptr;
         if (!m_edgeKeyToEdgeMap.Lookup(key, &edge))
         {
             JITDUMP("Method is OSR, adding pseudo edge from osr entry to first block\n");
-            edge = new (m_allocator) Edge(m_comp->fgOSREntryBB, m_comp->fgFirstBB);
+            edge = new (m_allocator) Edge(m_compiler->fgOSREntryBB, m_compiler->fgFirstBB);
             m_edges++;
             edge->m_weightKnown = true;
             edge->m_weight      = 1.0;
             m_edgeKeyToEdgeMap.Set(key, edge);
-            VisitNonTreeEdge(m_comp->fgOSREntryBB, m_comp->fgFirstBB, EdgeKind::Pseudo);
+            VisitNonTreeEdge(m_compiler->fgOSREntryBB, m_compiler->fgFirstBB, EdgeKind::Pseudo);
         }
         else
         {
@@ -3572,7 +3575,7 @@ void EfficientEdgeCountReconstructor::Solve()
         // The ideal solver order is likely reverse postorder over the depth-first spanning tree.
         // We approximate it here by running from last node to first.
         //
-        for (BasicBlock* block = m_comp->fgLastBB; (block != nullptr); block = block->Prev())
+        for (BasicBlock* block = m_compiler->fgLastBB; (block != nullptr); block = block->Prev())
         {
             BlockInfo* const info = BlockToInfo(block);
 
@@ -3755,7 +3758,7 @@ void EfficientEdgeCountReconstructor::Solve()
     // If, after solving, the entry weight ends up as zero, note
     // this so we can run a profile repair immediately.
     //
-    BlockInfo* const firstInfo = BlockToInfo(m_comp->fgFirstBB);
+    BlockInfo* const firstInfo = BlockToInfo(m_compiler->fgFirstBB);
     if (firstInfo->m_weight == BB_ZERO_WEIGHT)
     {
         assert(!m_allWeightsZero);
@@ -3781,32 +3784,32 @@ void EfficientEdgeCountReconstructor::Propagate()
     {
         // Make sure nothing else in the jit looks at the count profile data.
         //
-        m_comp->fgPgoHaveWeights = false;
+        m_compiler->fgPgoHaveWeights = false;
 
         if (m_badcode)
         {
-            m_comp->fgPgoFailReason = "PGO data available, but IL was malformed";
+            m_compiler->fgPgoFailReason = "PGO data available, but IL was malformed";
         }
         else if (m_mismatch)
         {
-            m_comp->fgPgoFailReason = "PGO data available, but IL did not match";
+            m_compiler->fgPgoFailReason = "PGO data available, but IL did not match";
         }
         else if (m_failedToConverge)
         {
-            m_comp->fgPgoFailReason = "PGO data available, but solver did not converge";
+            m_compiler->fgPgoFailReason = "PGO data available, but solver did not converge";
         }
         else
         {
-            m_comp->fgPgoFailReason = "PGO data available, profile data was all zero";
+            m_compiler->fgPgoFailReason = "PGO data available, profile data was all zero";
         }
 
-        JITDUMP("... discarding profile count data: %s\n", m_comp->fgPgoFailReason);
+        JITDUMP("... discarding profile count data: %s\n", m_compiler->fgPgoFailReason);
         return;
     }
 
     // Set weight on all blocks and edges.
     //
-    for (BasicBlock* const block : m_comp->Blocks())
+    for (BasicBlock* const block : m_compiler->Blocks())
     {
         BlockInfo* const info = BlockToInfo(block);
         assert(info->m_weightKnown);
@@ -3820,7 +3823,7 @@ void EfficientEdgeCountReconstructor::Propagate()
             continue;
         }
 
-        bool const isOSREntry = m_comp->opts.IsOSR() && (block == m_comp->fgOSREntryBB);
+        bool const isOSREntry = m_compiler->opts.IsOSR() && (block == m_compiler->fgOSREntryBB);
 
         if (isOSREntry)
         {
@@ -3878,10 +3881,10 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
     // block in the method is a self-loop and we put a patchpoint there), we won't have
     // a pseudo-edge.
     //
-    if ((block != m_comp->fgFirstBB) && (pseudoEdge == nullptr))
+    if ((block != m_compiler->fgFirstBB) && (pseudoEdge == nullptr))
     {
         JITDUMP("Missing special OSR pseudo-edge from " FMT_BB "-> " FMT_BB "\n", block->bbNum,
-                m_comp->fgFirstBB->bbNum);
+                m_compiler->fgFirstBB->bbNum);
         assert(pseudoEdge != nullptr);
     }
 
@@ -3910,7 +3913,7 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
         }
 
         assert(!edge->m_isPseudoEdge);
-        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(edge->m_targetBlock, block);
+        FlowEdge* const flowEdge = m_compiler->fgGetPredForBlock(edge->m_targetBlock, block);
 
         assert(flowEdge != nullptr);
 
@@ -4032,7 +4035,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
     for (Edge* edge = info->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
     {
         assert(block == edge->m_sourceBlock);
-        FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(edge->m_targetBlock, block);
+        FlowEdge* const flowEdge = m_compiler->fgGetPredForBlock(edge->m_targetBlock, block);
         assert(flowEdge != nullptr);
         weight_t likelihood = 0;
 

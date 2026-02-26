@@ -939,7 +939,7 @@ IniKey1=IniValue2");
             Assert.True(token.HasChanged);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
             WriteTestFiles();

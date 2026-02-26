@@ -300,10 +300,24 @@ namespace System.IO.Compression
                         case ZipArchiveMode.Read:
                             break;
                         case ZipArchiveMode.Create:
+                            WriteFile();
+                            break;
                         case ZipArchiveMode.Update:
                         default:
-                            Debug.Assert(_mode == ZipArchiveMode.Update || _mode == ZipArchiveMode.Create);
-                            WriteFile();
+                            Debug.Assert(_mode == ZipArchiveMode.Update);
+                            // Only write if the archive has been modified
+                            if (IsModified)
+                            {
+                                WriteFile();
+                            }
+                            else
+                            {
+                                // Even if we didn't write, unload any entry buffers that may have been loaded
+                                foreach (ZipArchiveEntry entry in _entries)
+                                {
+                                    entry.UnloadStreams();
+                                }
+                            }
                             break;
                     }
                 }
@@ -314,7 +328,6 @@ namespace System.IO.Compression
                 }
             }
         }
-
         /// <summary>
         /// Finishes writing the archive and releases all resources used by the ZipArchive object, unless the object was constructed with leaveOpen as true. Any streams from opened entries in the ZipArchive still open will throw exceptions on subsequent writes, as the underlying streams will have been closed.
         /// </summary>
@@ -381,6 +394,39 @@ namespace System.IO.Compression
         // This property's value only relates to the top-level fields of the archive (such as the archive comment.)
         // New entries in the archive won't change its state.
         internal ChangeState Changed { get; private set; }
+
+        /// <summary>
+        /// Determines whether the archive has been modified and needs to be written.
+        /// </summary>
+        private bool IsModified
+        {
+            get
+            {
+                // A new archive (created on empty stream) always needs to write the structure
+                if (_archiveStream.Length == 0)
+                {
+                    return true;
+                }
+                // Archive-level changes (e.g., comment)
+                if (Changed != ChangeState.Unchanged)
+                {
+                    return true;
+                }
+                // Any deleted entries
+                if (_firstDeletedEntryOffset != long.MaxValue)
+                {
+                    return true;
+                }
+                // Check if any entry was modified or added
+                foreach (ZipArchiveEntry entry in _entries)
+                {
+                    if (!entry.OriginallyInArchive || entry.Changes != ChangeState.Unchanged)
+                        return true;
+                }
+
+                return false;
+            }
+        }
 
         private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
         {

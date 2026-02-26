@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -88,6 +89,18 @@ namespace System
             byte junkByte = 0x41;
             int r = Interop.Kernel32.WriteFile(outErrHandle, &junkByte, 0, out _, IntPtr.Zero);
             return r != 0; // In Win32 apps w/ no console, bResult should be 0 for failure.
+        }
+
+        public static SafeFileHandle OpenStandardInputHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE);
+
+        public static SafeFileHandle OpenStandardOutputHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE);
+
+        public static SafeFileHandle OpenStandardErrorHandle() => OpenStandardHandle(Interop.Kernel32.HandleTypes.STD_ERROR_HANDLE);
+
+        private static SafeFileHandle OpenStandardHandle(int handleType)
+        {
+            IntPtr handle = Interop.Kernel32.GetStdHandle(handleType);
+            return new SafeFileHandle(handle, ownsHandle: false);
         }
 
         public static Encoding InputEncoding

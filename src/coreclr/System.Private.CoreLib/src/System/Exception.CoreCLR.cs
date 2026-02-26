@@ -257,8 +257,45 @@ namespace System
             return true;
         }
 
+#if FEATURE_COMINTEROP
         // used by vm
-        internal string? GetHelpContext(out uint helpContext)
+        [UnmanagedCallersOnly]
+        internal static unsafe IntPtr GetDescriptionBstr(Exception* obj, Exception* pException)
+        {
+            try
+            {
+                string message = obj->Message;
+                if (string.IsNullOrEmpty(message))
+                    message = obj->GetClassName();
+
+                // Allocate the description BSTR.
+                return Marshal.StringToBSTR(message);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return IntPtr.Zero;
+            }
+        }
+
+        // used by vm
+        [UnmanagedCallersOnly]
+        internal static unsafe IntPtr GetSourceBstr(Exception* obj, Exception* pException)
+        {
+            try
+            {
+                string? source = obj->Source;
+
+                return Marshal.StringToBSTR(source);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return IntPtr.Zero;
+            }
+        }
+
+        private string? GetHelpContext(out uint helpContext)
         {
             helpContext = 0;
             string? helpFile = HelpLink;
@@ -283,5 +320,23 @@ namespace System
 
             return helpFile;
         }
+
+        // used by vm
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetHelpContextBstr(Exception* obj, IntPtr* bstr, uint* helpContext, Exception* pException)
+        {
+            *bstr = IntPtr.Zero;
+            try
+            {
+                string? helpFile = obj->GetHelpContext(out *helpContext);
+
+                *bstr = Marshal.StringToBSTR(helpFile);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
     }
 }

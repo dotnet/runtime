@@ -153,6 +153,7 @@ enum class RejitFlags : uint32_t
     // called back to the profiler to get any info or indicate that the ReJit has
     // started. (This Info can be 'reused' for a new ReJit if the
     // profiler calls RequestRejit again before we transition to the next state.)
+    // [cDAC] [ReJIT]: Contract depends on this value.
     kStateRequested = 0x00000000,
 
     // The CLR has initiated the call to the profiler's GetReJITParameters() callback
@@ -164,8 +165,10 @@ enum class RejitFlags : uint32_t
 
     // We have asked the profiler about this method via ICorProfilerFunctionControl,
     // and have thus stored the IL and codegen flags the profiler specified.
+    // [cDAC] [ReJIT]: Contract depends on this value.
     kStateActive = 0x00000002,
 
+    // [cDAC] [ReJIT]: Contract depends on this value.
     kStateMask = 0x0000000F,
 
     // Indicates that the method being ReJITted is an inliner of the actual
@@ -315,6 +318,7 @@ private:
     DAC_IGNORE(const) unsigned m_ilOffset;
 #endif
 
+    // [cDAC] [CodeVersions]: Contract depends on the value of IsActiveChildFlag.
     enum NativeCodeVersionNodeFlags
     {
         IsActiveChildFlag = 1
@@ -496,6 +500,7 @@ public:
 private:
     PTR_MethodDesc m_pMethodDesc;
 
+    // [cDAC] [CodeVersions]: Contract depends on the value of IsDefaultVersionActiveChildFlag.
     enum MethodDescVersioningStateFlags
     {
         IsDefaultVersionActiveChildFlag = 0x4
