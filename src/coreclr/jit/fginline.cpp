@@ -307,6 +307,36 @@ private:
                                                          DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
             }
 
+#if FEATURE_MULTIREG_RET
+            if (varTypeIsStruct(call) && call->HasMultiRegRetVal())
+            {
+                // If an inline was rejected and the call returns a struct, we may
+                // have deferred some work when importing call for cases where the
+                // struct is returned in multiple registers.
+                //
+                // See the bail-out clauses in impFixupCallStructReturn for inline
+                // candidates.
+                //
+                // Do the deferred work now.
+                if ((*use)->IsCall() && varTypeIsStruct(*use) && (*use)->AsCall()->HasMultiRegRetVal())
+                {
+                    // See assert below, we only look one level above for a store parent.
+                    if (parent->OperIsStore())
+                    {
+                        // The inlinee can only be the value.
+                        assert(parent->Data() == *use);
+                        AttachStructInlineeToStore(parent, (*use)->AsCall()->gtRetClsHnd);
+                    }
+                    else
+                    {
+                        // Just store the inlinee to a variable to keep it simple.
+                        *use = StoreStructInlineeToVar(*use, (*use)->AsCall()->gtRetClsHnd);
+                    }
+                    m_madeChanges = true;
+                }
+            }
+#endif
+
             return false;
         }
 

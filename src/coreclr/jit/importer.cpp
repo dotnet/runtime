@@ -4424,25 +4424,29 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
             return op;
         }
 
-        // In contrast, we can only use multi-reg calls directly if they have the exact same ABI.
-        // Calling convention equality is a conservative approximation for that check.
-        if (op->IsCall() &&
-            (op->AsCall()->GetUnmanagedCallConv() == info.compCallConv)
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // TODO-Review: this seems unnecessary. Return ABI doesn't change under varargs.
-            && !op->AsCall()->IsVarargs()
-#endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        )
+        // We can sometimes use calls directly as multi-reg returns, but only
+        // if they're not inline candidates. Inline candidates can be replaced by
+        // arbitrary nodes that would not be legal to use as multi-reg returns.
+        // TODO-CQ: Delay this fixup to after we have resolved the inline candidate.
+        if (op->IsCall() && !op->AsCall()->IsInlineCandidate())
         {
-            return op;
-        }
+            GenTreeCall* call = op->AsCall();
+            // In contrast, we can only use multi-reg calls directly if they have the exact same ABI.
+            // Calling convention equality is a conservative approximation for that check.
+            if (call->GetUnmanagedCallConv() == info.compCallConv
+    #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                // TODO-Review: this seems unnecessary. Return ABI doesn't change under varargs.
+                && !call->IsVarargs()
+    #endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            )
+            {
+                return op;
+            }
 
-        if (op->IsCall())
-        {
             // We cannot tail call because control needs to return to fixup the calling convention
             // for result return.
-            op->AsCall()->gtCallMoreFlags &= ~GTF_CALL_M_TAILCALL;
-            op->AsCall()->gtCallMoreFlags &= ~GTF_CALL_M_EXPLICIT_TAILCALL;
+            call->gtCallMoreFlags &= ~GTF_CALL_M_TAILCALL;
+            call->gtCallMoreFlags &= ~GTF_CALL_M_EXPLICIT_TAILCALL;
         }
 
         // The backend does not support other struct-producing nodes (e. g. OBJs) as sources of multi-reg returns.
