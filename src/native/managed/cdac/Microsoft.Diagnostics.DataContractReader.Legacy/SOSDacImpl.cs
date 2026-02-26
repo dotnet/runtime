@@ -2656,28 +2656,35 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.TypeHandle typeHandle = rts.GetTypeHandle(mt);
 
             TargetPointer modulePointer = rts.GetModule(typeHandle);
-            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
-            if (!loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _))
+            if (modulePointer == TargetPointer.Null)
             {
                 OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, "<Unloaded Type>");
             }
             else
             {
-                StringBuilder classNameBuilder = new();
-                try
+                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
+                if (!loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _))
                 {
-                    TypeNameBuilder.AppendType(_target, classNameBuilder, typeHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+                    OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, "<Unloaded Type>");
                 }
-                catch
+                else
                 {
-                    string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt);
-                    if (fallbackName != null)
+                    StringBuilder classNameBuilder = new();
+                    try
                     {
-                        classNameBuilder.Clear();
-                        classNameBuilder.Append(fallbackName);
+                        TypeNameBuilder.AppendType(_target, classNameBuilder, typeHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
                     }
+                    catch
+                    {
+                        string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt);
+                        if (fallbackName != null)
+                        {
+                            classNameBuilder.Clear();
+                            classNameBuilder.Append(fallbackName);
+                        }
+                    }
+                    OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, classNameBuilder.ToString());
                 }
-                OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, classNameBuilder.ToString());
             }
         }
         catch (System.Exception ex)
