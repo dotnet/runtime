@@ -4699,12 +4699,12 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
 
     if (stmt != nullptr)
     {
-        newBlock->bbStmtList = stmt->GetNextStmt();
-        if (newBlock->bbStmtList != nullptr)
+        newBlock->SetFirstStmt(stmt->GetNextStmt());
+        if (newBlock->firstStmt() != nullptr)
         {
-            newBlock->bbStmtList->SetPrevStmt(curr->bbStmtList->GetPrevStmt());
+            newBlock->firstStmt()->SetPrevStmt(curr->firstStmt()->GetPrevStmt());
         }
-        curr->bbStmtList->SetPrevStmt(stmt);
+        curr->firstStmt()->SetPrevStmt(stmt);
         stmt->SetNextStmt(nullptr);
 
         // Update the IL offsets of the blocks to match the split.
@@ -4722,7 +4722,7 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
     }
     else
     {
-        assert(curr->bbStmtList == nullptr); // if no tree was given then it better be an empty block
+        assert(curr->firstStmt() == nullptr); // if no tree was given then it better be an empty block
     }
 
     return newBlock;
@@ -4856,7 +4856,7 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
     }
     else
     {
-        assert(curr->bbStmtList == nullptr); // if no node was given then it better be an empty block
+        assert(curr->firstStmt() == nullptr); // if no node was given then it better be an empty block
     }
 
     return newBlock;
@@ -4881,8 +4881,8 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
     }
     else
     {
-        newBlock->bbStmtList = curr->bbStmtList;
-        curr->bbStmtList     = nullptr;
+        newBlock->SetFirstStmt(curr->firstStmt());
+        curr->SetFirstStmt(nullptr);
     }
 
     // The new block now has all the code, and the old block has none. Update the

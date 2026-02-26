@@ -243,7 +243,7 @@ void Compiler::impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement
 
     /* Store the tree list in the basic block */
 
-    block->bbStmtList = firstStmt;
+    block->SetFirstStmt(firstStmt);
 
     /* The block should not already be marked as imported */
     assert(!block->HasFlag(BBF_IMPORTED));

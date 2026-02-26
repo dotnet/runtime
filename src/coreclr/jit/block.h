@@ -713,6 +713,8 @@ private:
 
     BBKinds bbKind; // jump (if any) at the end of this block
 
+    Statement* bbStmtList; // Head of the statement list for this block
+
     /* The following union describes the jump target(s) of this block */
     union
     {
@@ -1373,7 +1375,10 @@ public:
         return bbRefs;
     }
 
-    Statement* bbStmtList;
+    void SetFirstStmt(Statement* stmt)
+    {
+        bbStmtList = stmt;
+    }
 
     GenTree* GetFirstLIRNode() const
     {

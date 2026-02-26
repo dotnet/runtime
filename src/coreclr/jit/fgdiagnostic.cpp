@@ -3140,7 +3140,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     // Make sure the one return BB is not changed.
     if (genReturnBB != nullptr)
     {
-        assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->bbStmtList != nullptr);
+        assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->firstStmt() != nullptr);
         assert(genReturnBB->KindIs(BBJ_RETURN));
     }
 
@@ -3844,13 +3844,13 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
 {
     for (Statement* const stmt : block->Statements())
     {
-        // Verify that bbStmtList is threaded correctly.
+        // Verify that the statement list is threaded correctly.
         // Note that for the statements list, the GetPrevStmt() list is circular.
         // The GetNextStmt() list is not: GetNextStmt() of the last statement in a block is nullptr.
 
         noway_assert(stmt->GetPrevStmt() != nullptr);
 
-        if (stmt == block->bbStmtList)
+        if (stmt == block->firstStmt())
         {
             noway_assert(stmt->GetPrevStmt()->GetNextStmt() == nullptr);
         }

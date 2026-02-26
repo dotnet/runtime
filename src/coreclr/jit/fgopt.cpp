@@ -957,8 +957,8 @@ void Compiler::fgCompactBlock(BasicBlock* block)
                     blkFirst->SetPrevStmt(targetLastPhi);
                 }
 
-                // Now update the bbStmtList of "target".
-                target->bbStmtList = targetNonPhi1;
+                // Now update the first statement of "target".
+                target->SetFirstStmt(targetNonPhi1);
                 if (targetNonPhi1 != nullptr)
                 {
                     targetNonPhi1->SetPrevStmt(targetLast);
@@ -970,7 +970,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
                 {
                     // First, targetPhis at start of block.
                     Statement* blkLast = blkFirst->GetPrevStmt();
-                    block->bbStmtList  = targetFirst;
+                    block->SetFirstStmt(targetFirst);
                     // Now, rest of "block" (if it exists) after last phi of "target".
                     Statement* targetLastPhi =
                         (targetNonPhi1 != nullptr) ? targetNonPhi1->GetPrevStmt() : targetFirst->GetPrevStmt();
@@ -978,8 +978,8 @@ void Compiler::fgCompactBlock(BasicBlock* block)
                     targetFirst->SetPrevStmt(blkLast);
                     targetLastPhi->SetNextStmt(blkFirst);
                     blkFirst->SetPrevStmt(targetLastPhi);
-                    // Now update the bbStmtList of "target"
-                    target->bbStmtList = targetNonPhi1;
+                    // Now update the first statement of "target"
+                    target->SetFirstStmt(targetNonPhi1);
                     if (targetNonPhi1 != nullptr)
                     {
                         targetNonPhi1->SetPrevStmt(targetLast);
@@ -998,7 +998,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
         {
             Statement* stmtLast1 = block->lastStmt();
 
-            /* The second block may be a GOTO statement or something with an empty bbStmtList */
+            /* The second block may be a GOTO statement or something with an empty statement list */
             if (stmtList2 != nullptr)
             {
                 Statement* stmtLast2 = target->lastStmt();
@@ -1013,7 +1013,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
         else
         {
             /* block was formerly empty and now has target's statements */
-            block->bbStmtList = stmtList2;
+            block->SetFirstStmt(stmtList2);
         }
     }
 
@@ -1213,20 +1213,20 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
         // Anyway, remove any phis.
 
         Statement* firstNonPhi = block->FirstNonPhiDef();
-        if (block->bbStmtList != firstNonPhi)
+        if (block->firstStmt() != firstNonPhi)
         {
             if (firstNonPhi != nullptr)
             {
                 firstNonPhi->SetPrevStmt(block->lastStmt());
             }
-            block->bbStmtList = firstNonPhi;
+            block->SetFirstStmt(firstNonPhi);
         }
 
         for (Statement* const stmt : block->Statements())
         {
             fgRemoveStmt(block, stmt);
         }
-        noway_assert(block->bbStmtList == nullptr);
+        noway_assert(block->firstStmt() == nullptr);
     }
 
     // Mark the block as removed
@@ -2660,7 +2660,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
     else
     {
-        bJump->bbStmtList = newStmtList;
+        bJump->SetFirstStmt(newStmtList);
         newStmtList->SetPrevStmt(newLastStmt);
     }
 

@@ -4219,7 +4219,7 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
         }
 
 #ifdef DEBUG
-        if (block->bbStmtList == stmt)
+        if (block->firstStmt() == stmt)
         {
             /* first statement in the list */
             assert(stmt->GetPrevStmt()->GetNextStmt() == nullptr);
