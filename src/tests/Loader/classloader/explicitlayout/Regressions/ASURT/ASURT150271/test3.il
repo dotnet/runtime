@@ -28,6 +28,10 @@
 	    01 00 00 00
 	)
 	.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('Won\'t fix https://github.com/dotnet/corert/issues/2396') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+            string('Needs triage')
+            int32(0x2) // Mono
+        }
 	.entrypoint
 
     .locals init (class [mscorlib]System.Exception e2)
