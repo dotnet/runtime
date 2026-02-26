@@ -58,26 +58,26 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecurityCritical_ReturnsValue()
         {
             bool value = _customConstructor.IsSecurityCritical;
-            // In .NET Core, all code is security transparent
             Assert.True(value);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
             bool value = _customConstructor.IsSecuritySafeCritical;
-            // In .NET Core, this is always false
             Assert.False(value);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecurityTransparent_ReturnsValue()
         {
             bool value = _customConstructor.IsSecurityTransparent;
-            // In .NET Core, this is typically false
             Assert.False(value);
         }
 

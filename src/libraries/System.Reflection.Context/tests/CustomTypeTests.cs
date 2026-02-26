@@ -61,6 +61,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99459", TestRuntimes.Mono)]
         public void GUID_ReturnsValue()
         {
             Guid guid = _customTypeInfo.GUID;

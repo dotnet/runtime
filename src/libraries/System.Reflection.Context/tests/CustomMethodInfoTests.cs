@@ -58,6 +58,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecurityCritical_ReturnsValue()
         {
             bool value = _customMethod.IsSecurityCritical;
@@ -65,6 +66,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
             bool value = _customMethod.IsSecuritySafeCritical;
@@ -72,6 +74,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecurityTransparent_ReturnsValue()
         {
             bool value = _customMethod.IsSecurityTransparent;

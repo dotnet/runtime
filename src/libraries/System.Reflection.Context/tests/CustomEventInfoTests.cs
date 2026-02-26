@@ -110,6 +110,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void GetOtherMethods_ReturnsEmpty()
         {
             MethodInfo[] otherMethods = _customEvent.GetOtherMethods(false);
