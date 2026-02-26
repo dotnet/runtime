@@ -42,18 +42,6 @@ static unsigned int  emitGetLclVarDeclCount(const instrDesc* id);
 /*  Private members that deal with target-dependent instr. descriptors  */
 /************************************************************************/
 
-private:
-instrDesc* emitNewInstrCallDir(
-    int argCnt, VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize, bool hasAsyncRet);
-
-instrDesc* emitNewInstrCallInd(int              argCnt,
-                               ssize_t          disp,
-                               VARSET_VALARG_TP GCvars,
-                               regMaskTP        gcrefRegs,
-                               regMaskTP        byrefRegs,
-                               emitAttr         retSize,
-                               bool             hasAsyncRet);
-
 /************************************************************************/
 /*               Private helpers for instruction output                 */
 /************************************************************************/
@@ -67,3 +55,5 @@ size_t emitOutputULEB128(uint8_t* destination, uint64_t value);
 size_t emitOutputSLEB128(uint8_t* destination, int64_t value);
 size_t emitRawBytes(uint8_t* destination, const void* source, size_t count);
 size_t emitOutputOpcode(BYTE* dst, instruction ins);
+size_t emitOutputPaddedReloc(uint8_t* destination);
+size_t emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType);

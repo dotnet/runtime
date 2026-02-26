@@ -44,7 +44,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReadToEndAsync()
         {
             using (CharArrayTextReader tr = new CharArrayTextReader(TestDataProvider.LargeData))
@@ -55,7 +55,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReadToEndAsync_WithCancellationToken()
         {
             using var tr = new CharArrayTextReader(TestDataProvider.LargeData);
@@ -63,7 +63,7 @@ namespace System.IO.Tests
             Assert.Equal(5000, result.Length);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReadToEndAsync_WithCanceledCancellationToken()
         {
             using var tr = new CharArrayTextReader(TestDataProvider.LargeData);
@@ -182,7 +182,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReadBlockAsyncCharArr()
         {
             (char[] chArr, CharArrayTextReader textReader) baseInfo = GetCharArray();
@@ -200,7 +200,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReadAsync()
         {
             (char[] chArr, CharArrayTextReader textReader) baseInfo = GetCharArray();
@@ -256,7 +256,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReadLineAsyncContinuousNewLinesAndTabs()
         {
             char[] newLineTabData = new char[] { '\n', '\n', '\r', '\r', '\n' };

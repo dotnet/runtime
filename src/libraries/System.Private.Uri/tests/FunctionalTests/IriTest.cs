@@ -241,7 +241,11 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void Iri_UnicodePlane3_13()
         {
-            EscapeUnescapeTestUnicodePlane(0x30000, 0xDFFFF);
+            // Process the range in chunks of 0x10000 to avoid allocating large strings
+            for (int start = 0x30000; start < 0xE0000; start += 0x10000)
+            {
+                EscapeUnescapeTestUnicodePlane(start, start + 0x10000);
+            }
         }
 
         [Fact]

@@ -21,7 +21,7 @@ namespace System.Configuration
         {
             _minLength = minLength;
             _maxLength = maxLength;
-            _invalidChars = invalidCharacters;
+            _invalidChars = invalidCharacters ?? string.Empty;
         }
 
         public override bool CanValidate(Type type)
@@ -42,14 +42,9 @@ namespace System.Configuration
                 throw new ArgumentException(SR.Format(SR.Validator_string_max_length, _maxLength));
 
             // Check if the string contains any invalid characters
-            if ((len > 0) && !string.IsNullOrEmpty(_invalidChars))
+            if (data.AsSpan().ContainsAny(_invalidChars))
             {
-                char[] array = new char[_invalidChars.Length];
-
-                _invalidChars.CopyTo(0, array, 0, _invalidChars.Length);
-
-                if (data.IndexOfAny(array) != -1)
-                    throw new ArgumentException(SR.Format(SR.Validator_string_invalid_chars, _invalidChars));
+                throw new ArgumentException(SR.Format(SR.Validator_string_invalid_chars, _invalidChars));
             }
         }
     }

@@ -3,6 +3,7 @@
 
 
 .assembly extern System.Console { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern xunit.core {}
 .assembly extern System.Threading.Thread { auto }
 .assembly extern legacy library mscorlib { auto }
@@ -2992,7 +2993,7 @@ call void Thread_EA::Dispatch(method explicit instance void *(int32), int32)
 {
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
         type([TestLibrary]TestLibrary.PlatformDetection)
-        string[1] ('IsThreadingSupported')
+        string[1] ('IsMultithreadingSupported')
     }
   .maxstack  4
   .entrypoint

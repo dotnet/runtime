@@ -104,8 +104,9 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Get the parent type declaration so that we can inspect its methods as well as check if we need to add the partial keyword.
+            // Skip extension blocks, as they can't be partial and can't contain generated regex members.
             SyntaxNode? typeDeclarationOrCompilationUnit =
-                nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault() ??
+                nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault(t => t is not ExtensionBlockDeclarationSyntax) ??
                 await nodeToFix.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
 
             // Calculate what name should be used for the generated static partial property.
@@ -210,7 +211,7 @@ namespace System.Text.RegularExpressions.Generator
                         SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
                             .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)))));
 
-            var typeDeclarationOrCompilationUnit = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault() ?? root;
+            var typeDeclarationOrCompilationUnit = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault(t => t is not ExtensionBlockDeclarationSyntax) ?? root;
 
             ImmutableArray<IArgumentOperation> operationArguments =
                 operation is IObjectCreationOperation objectCreation ?
@@ -255,7 +256,7 @@ namespace System.Text.RegularExpressions.Generator
                         SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
                             .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)))));
 
-            var typeDeclarationOrCompilationUnit = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault() ?? root;
+            var typeDeclarationOrCompilationUnit = nodeToFix.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault(t => t is not ExtensionBlockDeclarationSyntax) ?? root;
 
             ImmutableArray<IArgumentOperation> operationArguments =
                 operation is IObjectCreationOperation objectCreation ?
@@ -342,7 +343,7 @@ namespace System.Text.RegularExpressions.Generator
             var trackedRoot = root.TrackNodes(parent is null ? [nodeToFix] : [nodeToFix, parent]);
 
             root = trackedRoot.ReplaceNodes(
-                trackedRoot.GetCurrentNode(nodeToFix)!.Ancestors().OfType<TypeDeclarationSyntax>(),
+                trackedRoot.GetCurrentNode(nodeToFix)!.Ancestors().OfType<TypeDeclarationSyntax>().Where(t => t is not ExtensionBlockDeclarationSyntax),
                 (_, typeDeclaration) =>
                     typeDeclaration.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)) ?
                         typeDeclaration :

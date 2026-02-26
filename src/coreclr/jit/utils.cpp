@@ -1546,13 +1546,6 @@ void HelperCallProperties::init()
                 exceptions = ExceptionSetFlags::None;
                 break;
 
-            // Arithmetic helpers that *can* throw.
-
-            // This (or these) are not pure, in that they have "VM side effects"...but they don't mutate the heap.
-            case CORINFO_HELP_ENDCATCH:
-                exceptions = ExceptionSetFlags::None;
-                break;
-
             // Arithmetic helpers that may throw
             case CORINFO_HELP_LMOD: // Mods throw div-by zero, and signed mods have problems with the smallest integer
                                     // mod -1,
@@ -1841,6 +1834,13 @@ void HelperCallProperties::init()
                 mutatesHeap = false;
                 isPure      = true;
                 exceptions  = ExceptionSetFlags::NullReferenceException;
+                break;
+
+            case CORINFO_HELP_ALLOC_CONTINUATION:
+            case CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
+            case CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
+                mutatesHeap = true;
+                isAllocator = true;
                 break;
 
             default:

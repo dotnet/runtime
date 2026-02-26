@@ -417,7 +417,7 @@ typedef JitHashTable<LocalEqualsLocalAddrAssertion, AssertionKeyFuncs, unsigned>
 
 class LocalEqualsLocalAddrAssertions
 {
-    Compiler*                                 m_comp;
+    Compiler*                                 m_compiler;
     LoopDefinitions*                          m_loopDefs;
     ArrayStack<LocalEqualsLocalAddrAssertion> m_assertions;
     AssertionToIndexMap                       m_map;
@@ -433,7 +433,7 @@ public:
     uint64_t AlwaysAssertions  = 0;
 
     LocalEqualsLocalAddrAssertions(Compiler* comp, LoopDefinitions* loopDefs)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_loopDefs(loopDefs)
         , m_assertions(comp->getAllocator(CMK_LocalAddressVisitor))
         , m_map(comp->getAllocator(CMK_LocalAddressVisitor))
@@ -464,13 +464,13 @@ public:
     //
     bool IsMarkedForExposure(unsigned lclNum)
     {
-        BitVecTraits traits(m_comp->lvaCount, m_comp);
+        BitVecTraits traits(m_compiler->lvaCount, m_compiler);
         if (BitVecOps::IsMember(&traits, m_localsToExpose, lclNum))
         {
             return true;
         }
 
-        LclVarDsc* dsc = m_comp->lvaGetDesc(lclNum);
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
         if (dsc->lvIsStructField && BitVecOps::IsMember(&traits, m_localsToExpose, dsc->lvParentLcl))
         {
             return true;
@@ -495,16 +495,16 @@ public:
             return;
         }
 
-        FlowEdge*             preds = m_comp->BlockPredsWithEH(block);
+        FlowEdge*             preds = m_compiler->BlockPredsWithEH(block);
         bool                  first = true;
         FlowGraphNaturalLoop* loop  = nullptr;
 
-        uint64_t* assertionMap = m_comp->bbIsHandlerBeg(block) ? m_alwaysTrueAssertions : m_outgoingAssertions;
+        uint64_t* assertionMap = m_compiler->bbIsHandlerBeg(block) ? m_alwaysTrueAssertions : m_outgoingAssertions;
 
         for (FlowEdge* predEdge = preds; predEdge != nullptr; predEdge = predEdge->getNextPredEdge())
         {
             BasicBlock* pred = predEdge->getSourceBlock();
-            if (!m_comp->m_dfsTree->Contains(pred))
+            if (!m_compiler->m_dfsTree->Contains(pred))
             {
                 // Edges induced due to implicit EH flow can come from
                 // unreachable blocks; skip those.
@@ -513,7 +513,7 @@ public:
 
             if (pred->bbPostorderNum <= block->bbPostorderNum)
             {
-                loop = m_comp->m_loops->GetLoopByHeader(block);
+                loop = m_compiler->m_loops->GetLoopByHeader(block);
                 if ((loop != nullptr) && loop->ContainsBlock(pred))
                 {
                     JITDUMP("Ignoring loop backedge " FMT_BB "->" FMT_BB "\n", pred->bbNum, block->bbNum);
@@ -590,7 +590,7 @@ public:
     void OnExposed(unsigned lclNum)
     {
         JITDUMP("On exposed: V%02u\n", lclNum);
-        BitVecTraits localsTraits(m_comp->lvaCount, m_comp);
+        BitVecTraits localsTraits(m_compiler->lvaCount, m_compiler);
         BitVecOps::AddElemD(&localsTraits, m_localsToExpose, lclNum);
     }
 
@@ -686,7 +686,7 @@ public:
     //
     BitVec_ValRet_T GetLocalsWithAssertions()
     {
-        BitVecTraits localsTraits(m_comp->lvaCount, m_comp);
+        BitVecTraits localsTraits(m_compiler->lvaCount, m_compiler);
         BitVec       result(BitVecOps::MakeEmpty(&localsTraits));
 
         for (int i = 0; i < m_assertions.Height(); i++)

@@ -41,7 +41,7 @@ namespace System.Text
             return enc;
         }
 
-        public virtual IEnumerable<EncodingInfo> GetEncodings() => Array.Empty<EncodingInfo>();
+        public virtual IEnumerable<EncodingInfo> GetEncodings() => [];
 
         internal static void AddProvider(EncodingProvider provider)
         {

@@ -321,7 +321,7 @@ namespace System.Diagnostics.Tests
 
         private static bool CanRunInInvariantMode => RemoteExecutor.IsSupported && !PlatformDetection.IsNetFramework;
 
-        [ConditionalTheory(nameof(CanRunInInvariantMode))]
+        [ConditionalTheory(typeof(PerformanceCounterTests), nameof(CanRunInInvariantMode))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]

@@ -445,6 +445,7 @@ enum BasicBlockFlags : uint64_t
     BBF_HAS_NEWARR                     = MAKE_BBFLAG(34), // BB contains 'new' of an array type.
     BBF_MAY_HAVE_BOUNDS_CHECKS         = MAKE_BBFLAG(35), // BB *likely* has a bounds check (after rangecheck phase).
     BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(36), // Block is a resumption block in an async method
+    BBF_THROW_HELPER                   = MAKE_BBFLAG(37), // Block is a call to a throw helper
 
     // The following are sets of flags.
 
@@ -455,7 +456,7 @@ enum BasicBlockFlags : uint64_t
 
     // Flags a block should not have had before it is split.
 
-    BBF_SPLIT_NONEXIST = BBF_RETLESS_CALL | BBF_COLD,
+    BBF_SPLIT_NONEXIST = BBF_RETLESS_CALL | BBF_COLD | BBF_THROW_HELPER,
 
     // Flags lost by the top block when a block is split.
     // Note, this is a conservative guess.
