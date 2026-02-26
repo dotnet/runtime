@@ -28,4 +28,8 @@ internal interface IGCHeap
     TargetPointer CompactReasons { get; }
     TargetPointer ExpandMechanisms { get; }
     TargetPointer InterestingMechanismBits { get; }
+
+    TargetPointer? FreeableSohSegment { get; }
+    TargetPointer? FreeableUohSegment { get; }
+    TargetPointer? FreeRegions { get; }
 }

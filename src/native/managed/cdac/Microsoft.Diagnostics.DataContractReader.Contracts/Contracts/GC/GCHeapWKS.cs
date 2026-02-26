@@ -32,6 +32,13 @@ internal sealed class GCHeapWKS : IGCHeap
         CompactReasons = target.ReadGlobalPointer(Constants.Globals.GCHeapCompactReasons);
         ExpandMechanisms = target.ReadGlobalPointer(Constants.Globals.GCHeapExpandMechanisms);
         InterestingMechanismBits = target.ReadGlobalPointer(Constants.Globals.GCHeapInterestingMechanismBits);
+
+        if (target.TryReadGlobalPointer(Constants.Globals.GCHeapFreeableSohSegment, out TargetPointer? freeableSohPtr))
+            FreeableSohSegment = target.ReadPointer(freeableSohPtr.Value);
+        if (target.TryReadGlobalPointer(Constants.Globals.GCHeapFreeableUohSegment, out TargetPointer? freeableUohPtr))
+            FreeableUohSegment = target.ReadPointer(freeableUohPtr.Value);
+        if (target.TryReadGlobalPointer(Constants.Globals.GCHeapFreeRegions, out TargetPointer? freeRegionsPtr))
+            FreeRegions = freeRegionsPtr.Value;
     }
 
     public TargetPointer MarkArray { get; }
@@ -57,4 +64,8 @@ internal sealed class GCHeapWKS : IGCHeap
     public TargetPointer CompactReasons { get; }
     public TargetPointer ExpandMechanisms { get; }
     public TargetPointer InterestingMechanismBits { get; }
+
+    public TargetPointer? FreeableSohSegment { get; }
+    public TargetPointer? FreeableUohSegment { get; }
+    public TargetPointer? FreeRegions { get; }
 }
