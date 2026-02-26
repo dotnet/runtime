@@ -18,7 +18,18 @@ namespace Tracing.UserEvents.Tests.Common
         private const int SIGINT = 2;
         private const int DefaultTraceeExitTimeoutMs = 5000;
         private const int DefaultRecordTraceExitTimeoutMs = 20000;
-        private const int DefaultTraceeDelayToSetupTracepointsMs = 200;
+
+        // Delay before the tracee performs its event-generating action. record-trace
+        // must discover the process, send an EventPipe IPC command that the runtime
+        // processes to register user_events tracepoints, and enable its PerfSession
+        // (ring buffer collection). The tracee has no callback to know when these steps
+        // are complete, so this delay provides a sufficient window. Without it, events
+        // can be lost if the tracee writes before PerfSession is enabled — a race
+        // observed when the tracee is discovered during record-trace's /proc scan.
+        // Empirically measured on a 2-core system, both tracepoint registration and
+        // PerfSession enable completed within 229ms (p99). 700ms provides a ~3x safety
+        // margin.
+        private const int EventGenerationDelayMs = 700;
 
         [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
         private static extern int Kill(int pid, int sig);
@@ -29,15 +40,11 @@ namespace Tracing.UserEvents.Tests.Common
             Action traceeAction,
             Func<EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout = DefaultTraceeExitTimeoutMs,
-            int recordTraceExitTimeout = DefaultRecordTraceExitTimeoutMs,
-            int traceeDelayToSetupTracepoints = DefaultTraceeDelayToSetupTracepointsMs)
+            int recordTraceExitTimeout = DefaultRecordTraceExitTimeoutMs)
         {
             if (args.Length > 0 && args[0].Equals("tracee", StringComparison.OrdinalIgnoreCase))
             {
-                if (traceeDelayToSetupTracepoints > 0)
-                {
-                    Thread.Sleep(traceeDelayToSetupTracepoints);
-                }
+                Thread.Sleep(EventGenerationDelayMs);
 
                 traceeAction();
                 return 0;
@@ -119,7 +126,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.WriteLine($"[record-trace] {args.Data}");
+                    Console.WriteLine($"[record-trace][stdout] {args.Data}");
                 }
             };
             recordTraceProcess.BeginOutputReadLine();
@@ -127,7 +134,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.Error.WriteLine($"[record-trace] {args.Data}");
+                    Console.WriteLine($"[record-trace][stderr] {args.Data}");
                 }
             };
             recordTraceProcess.BeginErrorReadLine();
@@ -173,7 +180,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.WriteLine($"[tracee] {args.Data}");
+                    Console.WriteLine($"[tracee][stdout] {args.Data}");
                 }
             };
             traceeProcess.BeginOutputReadLine();
@@ -181,7 +188,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.Error.WriteLine($"[tracee] {args.Data}");
+                    Console.WriteLine($"[tracee][stderr] {args.Data}");
                 }
             };
             traceeProcess.BeginErrorReadLine();
