@@ -39,13 +39,9 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::AcquireHeaderThinLock(Thread*
         return HeaderLockResult::Failure;
     }
 
-    if (oldValue & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
-    {
-        return HeaderLockResult::UseSlowPath;
-    }
-
-    // The header is transitioning - use the slow path
-    if (oldValue & BIT_SBLK_SPIN_LOCK)
+    // The header either has a sync block, will need a sync block to represent the lock
+    // or is in the process of transitioning to a sync block. In any of these cases, we need to take the slow path.
+    if (oldValue & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK))
     {
         return HeaderLockResult::UseSlowPath;
     }
@@ -94,14 +90,13 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::ReleaseHeaderThinLock(Thread*
     if ((syncBlockValue & (BIT_SBLK_SPIN_LOCK + BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) == 0)
     {
         DWORD tid = pCurThread->GetThreadId();
-        if (tid > SBLK_MASK_LOCK_THREADID)
-        {
-            return HeaderLockResult::UseSlowPath;
-        }
 
         if ((syncBlockValue & SBLK_MASK_LOCK_THREADID) != tid)
         {
             // This thread does not own the lock.
+            // We don't need to check if the thread id could be stored in the lock
+            // as we know we are in the thin lock case.
+            // The lock is definitely not being held by this thread.
             return HeaderLockResult::Failure;
         }
 
@@ -118,8 +113,6 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::ReleaseHeaderThinLock(Thread*
             {
                 return HeaderLockResult::Success;
             }
-
-            return HeaderLockResult::UseSlowPath;
         }
         else
         {
@@ -133,8 +126,6 @@ FORCEINLINE ObjHeader::HeaderLockResult ObjHeader::ReleaseHeaderThinLock(Thread*
             {
                 return HeaderLockResult::Success;
             }
-
-            return HeaderLockResult::UseSlowPath;
         }
     }
 
