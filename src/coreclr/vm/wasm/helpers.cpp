@@ -690,32 +690,33 @@ namespace
 
     const ReverseThunkMapValue* LookupThunk(MethodDesc* pMD)
     {
-        HashToReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
-        if (table == nullptr)
-        {
-            table = CreateReverseThunkHashTable(false /* fallback */);
-        }
+        // WASM-TODO: fix primary lookup
+        // HashToReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
+        // if (table == nullptr)
+        // {
+        //     table = CreateReverseThunkHashTable(false /* fallback */);
+        // }
 
-        ULONG key = CreateKey(pMD);
+        // ULONG key = CreateKey(pMD);
 
-        // Try primary key, it is based on Assembly fully qualified name and method token
-        const ReverseThunkMapValue* thunk;
-        if (table->Lookup(key, &thunk))
-        {
-            return thunk;
-        }
+        // // Try primary key, it is based on Assembly fully qualified name and method token
+        // const ReverseThunkMapValue* thunk;
+        // if (table->Lookup(key, &thunk))
+        // {
+        //     return thunk;
+        // }
 
         // Try fallback key, that is based on method properties and assembly name
         // The fallback is used when the assembly is trimmed and the token and assembly fully qualified name
         // may change.
-        table = VolatileLoad(&reverseThunkFallbackCache);
+        HashToReverseThunkHash* table = VolatileLoad(&reverseThunkFallbackCache);
         if (table == nullptr)
         {
             table = CreateReverseThunkHashTable(true /* fallback */);
         }
 
-        key = CreateFallbackKey(pMD);
-
+        ULONG key = CreateFallbackKey(pMD);
+        const ReverseThunkMapValue* thunk;
         bool success = table->Lookup(key, &thunk);
         return success ? thunk : nullptr;
     }

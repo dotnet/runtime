@@ -16,7 +16,7 @@ namespace Internal.Runtime
         public const uint Signature = 0x00525452; // 'RTR'
 
         public const ushort CurrentMajorVersion = 18;
-        public const ushort CurrentMinorVersion = 1;
+        public const ushort CurrentMinorVersion = 2;
     }
 #if READYTORUN
 #pragma warning disable 0169
@@ -101,11 +101,5 @@ namespace Internal.Runtime
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
         ReadonlyBlobRegionStart = 300,
         ReadonlyBlobRegionEnd = 399,
-    }
-
-    [Flags]
-    internal enum ModuleInfoFlags : int
-    {
-        HasEndPointer = 0x1,
     }
 }

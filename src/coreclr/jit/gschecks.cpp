@@ -39,7 +39,16 @@ PhaseStatus Compiler::gsPhase()
     }
     else
     {
-        JITDUMP("No GS security needed\n");
+#ifdef DEBUG
+        if (compGSSecurityCheckBlocker != nullptr)
+        {
+            JITDUMP("GS security check requested, but not provided: %s\n", compGSSecurityCheckBlocker);
+        }
+        else
+        {
+            JITDUMP("No GS security needed\n");
+        }
+#endif
     }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;

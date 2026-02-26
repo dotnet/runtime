@@ -916,7 +916,7 @@ elf_w (load_debuginfo) (const char* file, struct elf_image *ei, int is_local)
     {
       char linkbuf[shdr->sh_size];
       char *link = ((char *) ei->image) + shdr->sh_offset;
-      char *p;
+      const char *p;
       static const char *debugdir = "/usr/lib/debug";
       char basedir[strlen(file) + 1];
       char newname[shdr->sh_size + strlen (debugdir) + strlen (file) + 9];

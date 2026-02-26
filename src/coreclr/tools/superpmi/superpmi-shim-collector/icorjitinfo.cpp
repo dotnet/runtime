@@ -798,14 +798,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(CORINFO_OBJECT_HANDLE typeO
 }
 
 bool interceptor_ICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
                                            CORINFO_METHOD_HANDLE   callerHandle,
                                            CORINFO_CONST_LOOKUP*   pLookup)
 {
     mc->cr->AddCall("getReadyToRunHelper");
-    bool result = original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
-    mc->recGetReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup, result);
+    bool result = original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup);
+    mc->recGetReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup, result);
     return result;
 }
 
@@ -1452,6 +1451,14 @@ void interceptor_ICJI::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORIN
     mc->cr->AddCall("getFpStructLowering");
     original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
     mc->recGetFpStructLowering(structHnd, pLowering);
+}
+
+CorInfoWasmType interceptor_ICJI::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    mc->cr->AddCall("getWasmLowering");
+    CorInfoWasmType result = original_ICorJitInfo->getWasmLowering(structHnd);
+    mc->recGetWasmLowering(structHnd, result);
+    return result;
 }
 
 // Stuff on ICorDynamicInfo

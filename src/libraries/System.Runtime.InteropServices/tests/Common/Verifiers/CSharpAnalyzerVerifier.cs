@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop;
 
 namespace Microsoft.Interop.UnitTests.Verifiers
 {
@@ -40,6 +41,22 @@ namespace Microsoft.Interop.UnitTests.Verifiers
         // Code fix tests support both analyzer and code fix testing. This test class is derived from the code fix test
         // to avoid the need to maintain duplicate copies of the customization work.
         internal class Test : CSharpCodeFixVerifier<TAnalyzer, EmptyCodeFixProvider>.Test
-        { }
+        {
+            public Test() : base()
+            {
+                // Disable SYSLIB1092 recommendation diagnostic by default (same as source generator tests)
+                DisabledDiagnostics.Add(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
+            }
+
+            // Exclude CS8795 (Partial method must have an implementation) since without the generator,
+            // partial methods won't have implementations.
+            // Exclude CS0751 (A partial member must be declared within a partial type) since tests
+            // intentionally test non-partial types containing LibraryImport methods.
+            // Other compiler diagnostics are still checked.
+            protected override bool IsCompilerDiagnosticIncluded(Diagnostic diagnostic, CompilerDiagnostics compilerDiagnostics)
+                => base.IsCompilerDiagnosticIncluded(diagnostic, compilerDiagnostics)
+                    && diagnostic.Id != "CS8795"
+                    && diagnostic.Id != "CS0751";
+        }
     }
 }

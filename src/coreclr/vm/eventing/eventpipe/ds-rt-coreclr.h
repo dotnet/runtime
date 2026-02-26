@@ -362,12 +362,8 @@ ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path)
 			GCX_COOP();
 
 			// Load and call startup hook since managed execution is already running.
-			MethodDescCallSite callStartupHook(METHOD__STARTUP_HOOK_PROVIDER__CALL_STARTUP_HOOK);
-
-			ARG_SLOT args[1];
-			args[0] = PtrToArgSlot(startup_hook_path);
-
-			callStartupHook.Call(args);
+			UnmanagedCallersOnlyCaller callStartupHook(METHOD__STARTUP_HOOK_PROVIDER__CALL_STARTUP_HOOK);
+			callStartupHook.InvokeThrowing(startup_hook_path);
 		}
 		EX_CATCH_HRESULT (hr);
 
