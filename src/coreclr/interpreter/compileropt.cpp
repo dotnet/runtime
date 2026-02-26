@@ -7,7 +7,7 @@
 
 // Allocates the offset for var at the stack position identified by
 // *pPos while bumping the pointer to point to the next stack location
-int32_t InterpCompiler::AllocVarOffset(int var, int32_t *pPos)
+int32_t InterpCompiler::AllocVarOffset(int32_t var, int32_t *pPos)
 {
     int32_t size, offset;
 

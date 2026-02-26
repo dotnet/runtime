@@ -45,7 +45,6 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
-
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>
 
@@ -159,7 +158,7 @@ void InterpCompiler::dumpMethodMemStats()
             printf("Allocations for %s\n", m_methodName.GetUnderlyingArray());
             m_arenaAllocator->getStats().Print(stdout);
         }
-#endif
+#endif // MEASURE_MEM_ALLOC
     }
 #endif // DEBUG
 }
@@ -190,7 +189,7 @@ void AssertOpCodeNotImplemented(const uint8_t *ip, size_t offset)
 
 void* MemPoolAllocator::Alloc(size_t sz) const
 {
-    return m_compiler->getAllocator(m_memKind).allocate<char>(sz);
+    return m_compiler->getAllocator(m_memKind).allocate<int8_t>(sz);
 }
 void MemPoolAllocator::Free(void* ptr) const { /* no-op */ }
 
@@ -401,7 +400,7 @@ int32_t InterpCompiler::GetInsLength(InterpInst *ins)
     return len;
 }
 
-void InterpCompiler::ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int*, void*))
+void InterpCompiler::ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int32_t*, void*))
 {
     int numSVars = g_interpOpSVars[ins->opcode];
     if (numSVars)
@@ -411,7 +410,7 @@ void InterpCompiler::ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCo
             if (ins->sVars [i] == CALL_ARGS_SVAR)
             {
                 if (ins->info.pCallInfo && ins->info.pCallInfo->pCallArgs) {
-                    int *callArgs = ins->info.pCallInfo->pCallArgs;
+                    int32_t *callArgs = ins->info.pCallInfo->pCallArgs;
                     while (*callArgs != CALL_ARGS_TERMINATOR)
                     {
                         (this->*callback) (callArgs, pData);
@@ -427,7 +426,7 @@ void InterpCompiler::ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCo
     }
 }
 
-void InterpCompiler::ForEachInsVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int*, void*))
+void InterpCompiler::ForEachInsVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int32_t*, void*))
 {
     ForEachInsSVar(ins, pData, callback);
 
@@ -635,8 +634,8 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
 
     for (int i = 0; i < pTargetBB->stackHeight; i++)
     {
-        int sVar = m_pStackBase[i].var;
-        int dVar = pTargetBB->pStackState[i].var;
+        int32_t sVar = m_pStackBase[i].var;
+        int32_t dVar = pTargetBB->pStackState[i].var;
         if (sVar != dVar)
         {
             InterpType interpType = g_interpTypeFromStackType[m_pStackBase[i].GetStackType()];
@@ -862,7 +861,7 @@ int32_t InterpCompiler::ComputeCodeSize()
     return codeSize;
 }
 
-int32_t InterpCompiler::GetLiveStartOffset(int var)
+int32_t InterpCompiler::GetLiveStartOffset(int32_t var)
 {
     if (m_pVars[var].global)
     {
@@ -875,7 +874,7 @@ int32_t InterpCompiler::GetLiveStartOffset(int var)
     }
 }
 
-int32_t InterpCompiler::GetLiveEndOffset(int var)
+int32_t InterpCompiler::GetLiveEndOffset(int32_t var)
 {
     if (m_pVars[var].global)
     {
@@ -1390,7 +1389,7 @@ public:
         );
     }
 
-    void ReportLiveRange(uint32_t offsetBytes, GcSlotFlags flags, int varIndex)
+    void ReportLiveRange(uint32_t offsetBytes, GcSlotFlags flags, int32_t varIndex)
     {
         GcSlotId *pSlot = LocateGcSlotTableEntry(offsetBytes, flags);
         assert(varIndex < m_compiler->m_varsSize);
@@ -1557,7 +1556,7 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
     // separate it will not cause double reporting faults, and because the frame is zero'd it won't generate unsafe
     // memory access.
 
-    for (int i = 0; i < m_varsSize; i++)
+    for (int32_t i = 0; i < m_varsSize; i++)
     {
         InterpVar *pVar = &m_pVars[i];
 
@@ -1922,8 +1921,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 InterpCompiler::~InterpCompiler()
 {
     // Clean up allocated memory if non-null
-    if (m_pILToNativeMap != nullptr)
-        m_compHnd->freeArray(m_pILToNativeMap);
+    m_compHnd->freeArray(m_pILToNativeMap);
 }
 
 InterpMethod* InterpCompiler::CompileMethod()
@@ -2114,7 +2112,7 @@ void InterpCompiler::CreateILVars()
         hasThisPointerShadowCopyAsParamIndex = true;
         m_shadowCopyOfThisPointerHasVar = true;
     }
-    int paramArgIndex = hasParamArg ? hasThis ? 1 : 0 : INT_MAX;
+    int32_t paramArgIndex = hasParamArg ? hasThis ? 1 : 0 : INT_MAX;
     int32_t offset;
     int numArgs = hasThis + m_methodInfo->args.numArgs;
     int numILLocals = m_methodInfo->locals.numArgs;
@@ -3167,7 +3165,7 @@ void InterpCompiler::EmitPushSyncObject()
         }
         else
         {
-            int classHandleVar = -1;
+            int32_t classHandleVar = -1;
             assert(m_paramArgIndex != -1);
 
             switch (kind.runtimeLookupKind)
@@ -3794,7 +3792,7 @@ CORINFO_CLASS_HANDLE InterpCompiler::getClassFromContext(CORINFO_CONTEXT_HANDLE 
     }
 }
 
-int InterpCompiler::getParamArgIndex()
+int32_t InterpCompiler::getParamArgIndex()
 {
     return m_paramArgIndex;
 }
@@ -3847,7 +3845,7 @@ InterpCompiler::GenericHandleData InterpCompiler::GenericHandleToGenericHandleDa
 void InterpCompiler::EmitPushHelperCall_2(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack)
 {
     PushStackType(resultStackType, clsHndStack);
-    int resultVar = m_pStackPointer[-1].var;
+    int32_t resultVar = m_pStackPointer[-1].var;
 
     GenericHandleData handleData = GenericHandleToGenericHandleData(arg1);
 
@@ -3874,7 +3872,7 @@ void InterpCompiler::EmitPushHelperCall_2(const CorInfoHelpFunc ftn, const CORIN
 void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack)
 {
     PushStackType(resultStackType, clsHndStack);
-    int resultVar = m_pStackPointer[-1].var;
+    int32_t resultVar = m_pStackPointer[-1].var;
 
     PushStackType(StackTypeByRef, NULL);
     int32_t intermediateVar = m_pStackPointer[-1].var;
@@ -3917,7 +3915,7 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
 void InterpCompiler::EmitPushUnboxAnyNullable(const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack)
 {
     PushStackType(resultStackType, clsHndStack);
-    int resultVar = m_pStackPointer[-1].var;
+    int32_t resultVar = m_pStackPointer[-1].var;
 
     GenericHandleData handleData = GenericHandleToGenericHandleData(arg1);
 
@@ -3944,7 +3942,7 @@ void InterpCompiler::EmitPushUnboxAnyNullable(const CORINFO_GENERICHANDLE_RESULT
 void InterpCompiler::EmitPushHelperCall_Addr2(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, int arg2, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack)
 {
     PushStackType(resultStackType, clsHndStack);
-    int resultVar = m_pStackPointer[-1].var;
+    int32_t resultVar = m_pStackPointer[-1].var;
 
     GenericHandleData handleData = GenericHandleToGenericHandleData(arg1);
 
@@ -3971,7 +3969,7 @@ void InterpCompiler::EmitPushHelperCall_Addr2(const CorInfoHelpFunc ftn, const C
 void InterpCompiler::EmitPushHelperCall(const CorInfoHelpFunc ftn, const CORINFO_GENERICHANDLE_RESULT& arg1, StackType resultStackType, CORINFO_CLASS_HANDLE clsHndStack)
 {
     PushStackType(resultStackType, clsHndStack);
-    int resultVar = m_pStackPointer[-1].var;
+    int32_t resultVar = m_pStackPointer[-1].var;
 
     GenericHandleData handleData = GenericHandleToGenericHandleData(arg1);
 
@@ -3997,7 +3995,7 @@ void InterpCompiler::EmitPushHelperCall(const CorInfoHelpFunc ftn, const CORINFO
 void InterpCompiler::EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup)
 {
     PushStackType(StackTypeI, NULL);
-    int resultVar = m_pStackPointer[-1].var;
+    int32_t resultVar = m_pStackPointer[-1].var;
 
     CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind = lookup.lookupKind.runtimeLookupKind;
     InterpGenericLookup runtimeLookup;
@@ -4021,10 +4019,10 @@ void InterpCompiler::EmitPushCORINFO_LOOKUP(const CORINFO_LOOKUP& lookup)
     m_pLastNewIns->SetDVar(resultVar);
 }
 
-int InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo)
+int32_t InterpCompiler::EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo)
 {
     PushStackType(StackTypeI, NULL);
-    int resultVar = m_pStackPointer[-1].var;
+    int32_t resultVar = m_pStackPointer[-1].var;
     m_pStackPointer--;
 
     GenericHandleData handleData = GenericHandleToGenericHandleData(embedInfo);
@@ -4061,11 +4059,11 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     CORINFO_GENERICHANDLE_RESULT embedInfo;
     m_compHnd->embedGenericHandle(pResolvedToken, true, m_methodInfo->ftn, &embedInfo);
     assert(embedInfo.compileTimeHandle != NULL);
-    int typeVar = EmitGenericHandleAsVar(embedInfo);
+    int32_t typeVar = EmitGenericHandleAsVar(embedInfo);
 
     m_compHnd->embedGenericHandle(pResolvedToken, false, m_methodInfo->ftn, &embedInfo);
     assert(embedInfo.compileTimeHandle != NULL);
-    int methodVar = EmitGenericHandleAsVar(embedInfo);
+    int32_t methodVar = EmitGenericHandleAsVar(embedInfo);
 
     CORINFO_METHOD_HANDLE getVirtualFunctionPtrHelper;
     m_compHnd->getHelperFtn(CORINFO_HELP_VIRTUAL_FUNC_PTR, NULL, &getVirtualFunctionPtrHelper);
@@ -4074,7 +4072,7 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     PushInterpType(InterpTypeI, NULL);
     int32_t dVar = m_pStackPointer[-1].var;
 
-    int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(3 + 1);
+    int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(3 + 1);
     callArgs[0] = thisVar;
     callArgs[1] = typeVar;
     callArgs[2] = methodVar;
@@ -4563,7 +4561,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
         m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
         int32_t numArgs = 3;
-        int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(numArgs + 1);
+        int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
         callArgs[0] = isStartedArg;
         callArgs[1] = execContextAddressVar;
         callArgs[2] = syncContextAddressVar;
@@ -4582,7 +4580,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     CORINFO_CALL_INFO callInfo;
     bool doCallInsteadOfNew = false;
 
-    int callIFunctionPointerVar = -1;
+    int32_t callIFunctionPointerVar = -1;
     void* calliCookie = NULL;
 
     ContinuationContextHandling continuationContextHandling = ContinuationContextHandling::None;
@@ -4783,7 +4781,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         numArgs++;
     }
 
-    int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(numArgs + 1);
+    int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
     CORINFO_ARG_LIST_HANDLE args;
     args = callInfo.sig.args;
 
@@ -5944,9 +5942,7 @@ void InterpCompiler::AllocateIntervalMapData_ForVars(InterpIntervalMapEntry** pp
     }
     nextIndex = 0;
 
-    size_t size = sizeof(InterpIntervalMapEntry) * intervalCount;
-    *ppIntervalMap = getAllocator(IMK_IntervalMap).allocate<InterpIntervalMapEntry>(intervalCount);
-    memset(*ppIntervalMap, 0, size);
+    *ppIntervalMap = getAllocator(IMK_IntervalMap).allocateZeroed<InterpIntervalMapEntry>(intervalCount);
     for (int32_t intervalMapIndex = 0; intervalMapIndex < intervalCount; intervalMapIndex++)
     {
         (*ppIntervalMap)[intervalMapIndex] = ComputeNextIntervalMapEntry_ForVars(vars, &nextIndex);
@@ -6751,7 +6747,7 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
     EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
     // Setup the arguments for the call
-    int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(3 + extraArgCount + 1);
+    int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(3 + extraArgCount + 1);
     callArgs[3 + extraArgCount] = CALL_ARGS_TERMINATOR;
     for (int i = 0; i < 2 + extraArgCount; i++)
     {
@@ -7970,7 +7966,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
         m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
         int32_t numArgs = 2;
-        int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(numArgs + 1);
+        int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
         callArgs[0] = execContextAddressVar;
         callArgs[1] = syncContextAddressVar;
         callArgs[2] = CALL_ARGS_TERMINATOR;
@@ -9872,7 +9868,7 @@ retry_emit:
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
                 m_compHnd->embedGenericHandle(&resolvedToken, true, m_methodInfo->ftn, &embedInfo);
                 assert(embedInfo.compileTimeHandle != NULL);
-                int typeVar = EmitGenericHandleAsVar(embedInfo);
+                int32_t typeVar = EmitGenericHandleAsVar(embedInfo);
 
                 PushInterpType(InterpTypeVT, m_compHnd->getBuiltinClass(CLASSID_TYPED_BYREF));
 
@@ -9909,7 +9905,7 @@ retry_emit:
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
                 m_compHnd->embedGenericHandle(&resolvedToken, true, m_methodInfo->ftn, &embedInfo);
                 assert(embedInfo.compileTimeHandle != NULL);
-                int typeVar = EmitGenericHandleAsVar(embedInfo);
+                int32_t typeVar = EmitGenericHandleAsVar(embedInfo);
 
                 CORINFO_METHOD_HANDLE getRefAnyHelper;
                 m_compHnd->getHelperFtn(CORINFO_HELP_GETREFANY, NULL, &getRefAnyHelper);
@@ -9918,7 +9914,7 @@ retry_emit:
                 PushInterpType(InterpTypeByRef, NULL);
                 int32_t dVar = m_pStackPointer[-1].var;
 
-                int *callArgs = getAllocator(IMK_CallInfo).allocate<int>(2 + 1);
+                int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(2 + 1);
                 callArgs[0] = typeVar;
                 callArgs[1] = typedRefVar;
                 callArgs[2] = CALL_ARGS_TERMINATOR;

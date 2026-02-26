@@ -99,13 +99,13 @@ public:
 template <typename TMemKindTraits>
 inline void* operator new(size_t n, CompAllocatorT<TMemKindTraits> alloc)
 {
-    return alloc.template allocate<char>(n);
+    return alloc.template allocate<int8_t>(n);
 }
 
 template <typename TMemKindTraits>
 inline void* operator new[](size_t n, CompAllocatorT<TMemKindTraits> alloc)
 {
-    return alloc.template allocate<char>(n);
+    return alloc.template allocate<int8_t>(n);
 }
 
 // CompIAllocatorT is a CompAllocatorT wrapper that implements the IAllocator interface.
@@ -134,7 +134,7 @@ public:
         }
         else
         {
-            return m_alloc.template allocate<char>(sz);
+            return m_alloc.template allocate<int8_t>(sz);
         }
     }
 
@@ -153,7 +153,7 @@ public:
                 TMemKindTraits::outOfMemory();
             }
 
-            return m_alloc.template allocate<char>(elems * elemSize);
+            return m_alloc.template allocate<int8_t>(elems * elemSize);
         }
     }
 

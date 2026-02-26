@@ -10,7 +10,7 @@
 #include "../../native/containers/dn-simdhash-utils.h"
 #include "interpalloc.h"
 
-struct dn_simdhash_arenaallocator : public dn_allocator_t
+struct dn_simdhash_arenaallocator final : public dn_allocator_t
 {
     InterpAllocator m_arenaAllocator;
     static _dn_allocator_vtable_t vtable;
@@ -61,6 +61,7 @@ public:
         Value = other.Value;
         ArenaAllocator = other.ArenaAllocator;
         other.Value = nullptr;
+        other.ArenaAllocator = nullptr;
     }
     dn_simdhash_ptr_ptr_holder& operator=(dn_simdhash_ptr_ptr_holder&& other)
     {
@@ -69,6 +70,7 @@ public:
             Value = other.Value;
             ArenaAllocator = other.ArenaAllocator;
             other.Value = nullptr;
+            other.ArenaAllocator = nullptr;
         }
         return *this;
     }
@@ -109,6 +111,7 @@ public:
         Value = other.Value;
         ArenaAllocator = other.ArenaAllocator;
         other.Value = nullptr;
+        other.ArenaAllocator = nullptr;
     }
     dn_simdhash_u32_ptr_holder& operator=(dn_simdhash_u32_ptr_holder&& other)
     {
@@ -117,6 +120,7 @@ public:
             Value = other.Value;
             ArenaAllocator = other.ArenaAllocator;
             other.Value = nullptr;
+            other.ArenaAllocator = nullptr;
         }
         return *this;
     }

@@ -26,7 +26,7 @@
 //
 // Thread-safety: record() uses atomic operations for thread-safe counting.
 
-class Histogram : public Dumpable
+class Histogram final : public Dumpable
 {
 public:
     Histogram(const unsigned* const sizeTable);

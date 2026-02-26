@@ -437,11 +437,11 @@ struct StackInfo
 private:
     StackType type = (StackType)0;
 public:
-
-    CORINFO_CLASS_HANDLE clsHnd = nullptr;
     // The var associated with the value of this stack entry. Every time we push on
     // the stack a new var is created.
-    int var = 0;
+    int32_t var = 0;
+
+    CORINFO_CLASS_HANDLE clsHnd = nullptr;
 
     StackType GetStackType()
     {
@@ -486,7 +486,7 @@ public:
         }
     }
 
-    StackInfo() {}
+    StackInfo() = default;
 
     StackInfo(StackType type, CORINFO_CLASS_HANDLE clsHnd, int var)
     {
@@ -729,7 +729,7 @@ private:
     CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
     CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
     CORINFO_CLASS_HANDLE    getClassFromContext(CORINFO_CONTEXT_HANDLE context);
-    int                     getParamArgIndex(); // Get the index into the m_pVars array of the Parameter argument. This is either the this pointer, a methoddesc or a class handle
+    int32_t                 getParamArgIndex(); // Get the index into the m_pVars array of the Parameter argument. This is either the this pointer, a methoddesc or a class handle
 
     struct InterpEmbedGenericResult
     {
@@ -779,7 +779,7 @@ private:
     InterpEmbedGenericResult EmitGenericHandle(CORINFO_RESOLVED_TOKEN* resolvedToken, GenericHandleEmbedOptions options);
 
     // Do a generic handle lookup and acquire the result as either a var or a data item.
-    int EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo);
+    int32_t EmitGenericHandleAsVar(const CORINFO_GENERICHANDLE_RESULT &embedInfo);
 
     // Emit a generic dictionary lookup and push the result onto the interpreter stack
     void CopyToInterpGenericLookup(InterpGenericLookup* dst, const CORINFO_RUNTIME_LOOKUP *src);
@@ -825,8 +825,8 @@ private:
     InterpInst* PrevRealIns(InterpInst *pIns);
     void        ClearIns(InterpInst *pIns);
 
-    void        ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int*, void*));
-    void        ForEachInsVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int*, void*));
+    void        ForEachInsSVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int32_t*, void*));
+    void        ForEachInsVar(InterpInst *ins, void *pData, void (InterpCompiler::*callback)(int32_t*, void*));
 
     // Basic blocks
     int m_BBCount = 0;
@@ -888,10 +888,10 @@ private:
     int32_t m_paramAreaOffset = 0;
     int32_t m_ILLocalsOffset;
     int32_t m_ILLocalsSize;
-    void    AllocVarOffsetCB(int *pVar, void *pData);
-    int32_t AllocVarOffset(int var, int32_t *pPos);
-    int32_t GetLiveStartOffset(int var);
-    int32_t GetLiveEndOffset(int var);
+    void    AllocVarOffsetCB(int32_t *pVar, void *pData);
+    int32_t AllocVarOffset(int32_t var, int32_t *pPos);
+    int32_t GetLiveStartOffset(int32_t var);
+    int32_t GetLiveEndOffset(int32_t var);
 
     int32_t GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, InterpType interpType, int32_t *pAlign);
     void    CreateILVars();
