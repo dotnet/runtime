@@ -81,17 +81,11 @@ namespace System.Runtime.CompilerServices
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
         [FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported")]
-        public static bool IsMultithreadingSupported { get; }
-#if TARGET_BROWSER
+        public static bool IsMultithreadingSupported
 #if FEATURE_SINGLE_THREADED
-            = false;
+            => false;
 #else
-            = true;
-#endif
-#elif TARGET_WASI
-            = false;
-#else
-            = true;
+            => true;
 #endif
 
 #if FEATURE_SINGLE_THREADED
