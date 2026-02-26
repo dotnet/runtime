@@ -3096,14 +3096,9 @@ namespace System.Runtime.Intrinsics
             TVectorDouble transformMask = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(0.5));
 
             // For |x| >= 0.5: r = 0.5 * (1.0 - ax), s = sqrt(r)
-            TVectorDouble r_transform = TVectorDouble.Create(0.5) * (TVectorDouble.One - ax);
-            TVectorDouble s = TVectorDouble.Sqrt(r_transform);
-
-            // For |x| < 0.5: r = ax * ax
-            TVectorDouble r_normal = ax * ax;
-
-            // Select r based on transform
-            TVectorDouble r = TVectorDouble.ConditionalSelect(transformMask, r_transform, r_normal);
+            // For |x| < 0.5:  r = ax * ax
+            TVectorDouble r = TVectorDouble.ConditionalSelect(transformMask, TVectorDouble.Create(0.5) * (TVectorDouble.One - ax), ax * ax);
+            TVectorDouble s = TVectorDouble.Sqrt(r);
 
             // Evaluate numerator polynomial: C1 + r*(C2 + r*(C3 + r*(C4 + r*(C5 + r*C6))))
             TVectorDouble poly_num = TVectorDouble.Create(C6);
@@ -3211,13 +3206,8 @@ namespace System.Runtime.Intrinsics
 
             TVectorDouble gtHalf = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(0.5));
 
-            TVectorDouble g_hi = TVectorDouble.Create(0.5) * (TVectorDouble.One - ax);
-            TVectorDouble y_hi = TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(g_hi);
-
-            TVectorDouble g_lo = ax * ax;
-
-            TVectorDouble g = TVectorDouble.ConditionalSelect(gtHalf, g_hi, g_lo);
-            TVectorDouble y = TVectorDouble.ConditionalSelect(gtHalf, y_hi, ax);
+            TVectorDouble g = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(0.5) * (TVectorDouble.One - ax), ax * ax);
+            ax = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(g), ax);
 
             TVectorDouble poly = TVectorDouble.Create(C9);
             poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C8));
@@ -3229,9 +3219,7 @@ namespace System.Runtime.Intrinsics
             poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C2));
             poly = TVectorDouble.MultiplyAddEstimate(poly, g, TVectorDouble.Create(C1));
 
-            TVectorDouble yPoly = y + y * g * poly;
-
-            return TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(PIBY2) + yPoly, yPoly);
+            return ax + ax * g * poly + (TVectorDouble.Create(PIBY2) & gtHalf);
         }
 
         public static TVectorDouble AsinhDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
@@ -3705,15 +3693,9 @@ namespace System.Runtime.Intrinsics
             TVectorDouble gtHalf = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(HALF));
 
             // For |x| >= 0.5: z = 0.5*(1-ax), ax = -2*sqrt(z)
-            TVectorDouble z_hi = TVectorDouble.Create(HALF) * (TVectorDouble.One - ax);
-            TVectorDouble y_hi = TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z_hi);
-
-            // For |x| < 0.5: z = ax*ax (use n=1 reconstruction)
-            TVectorDouble z_lo = ax * ax;
-
-            // Select z and ax based on region
-            TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, z_hi, z_lo);
-            ax = TVectorDouble.ConditionalSelect(gtHalf, y_hi, ax);
+            // For |x| < 0.5:  z = ax*ax, ax unchanged
+            TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(HALF) * (TVectorDouble.One - ax), ax * ax);
+            ax = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z), ax);
 
             // Polynomial: C1 + z*(C2 + z*(C3 + ... + z*C12))
             TVectorDouble poly = TVectorDouble.Create(C12);
@@ -3821,13 +3803,8 @@ namespace System.Runtime.Intrinsics
 
             TVectorDouble gtHalf = TVectorDouble.GreaterThanOrEqual(ax, TVectorDouble.Create(0.5));
 
-            TVectorDouble z_hi = TVectorDouble.Create(0.5) * (TVectorDouble.One - ax);
-            TVectorDouble y_hi = TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z_hi);
-
-            TVectorDouble z_lo = ax * ax;
-
-            TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, z_hi, z_lo);
-            ax = TVectorDouble.ConditionalSelect(gtHalf, y_hi, ax);
+            TVectorDouble z = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(0.5) * (TVectorDouble.One - ax), ax * ax);
+            ax = TVectorDouble.ConditionalSelect(gtHalf, TVectorDouble.Create(-2.0) * TVectorDouble.Sqrt(z), ax);
 
             TVectorDouble poly = TVectorDouble.Create(C5);
             poly = TVectorDouble.MultiplyAddEstimate(poly, z, TVectorDouble.Create(C4));
