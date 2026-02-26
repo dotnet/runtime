@@ -1354,14 +1354,14 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     assert((maskSaveRegsInt & RBM_LR) != 0);
     assert((maskSaveRegsInt & RBM_FP) != 0);
 
-    bool isFilter = (block->bbCatchTyp == BBCT_FILTER);
+    bool isFilter = (block->GetCatchTyp() == BBCT_FILTER);
 
     regMaskTP maskArgRegsLiveIn;
     if (isFilter)
     {
         maskArgRegsLiveIn = RBM_R0 | RBM_R1;
     }
-    else if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
+    else if ((block->GetCatchTyp() == BBCT_FINALLY) || (block->GetCatchTyp() == BBCT_FAULT))
     {
         maskArgRegsLiveIn = RBM_NONE;
     }

@@ -2094,7 +2094,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
 
     int cnt = 0;
 
-    switch (block->bbCatchTyp)
+    switch (block->GetCatchTyp())
     {
         case BBCT_NONE:
             break;
@@ -2120,7 +2120,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
             break;
     }
 
-    if (block->bbCatchTyp != BBCT_NONE)
+    if (block->GetCatchTyp() != BBCT_NONE)
     {
         cnt += 2;
         printf("{ ");
@@ -2715,7 +2715,7 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     }
 
     // Our try block can call our finally block
-    if ((block->bbCatchTyp == BBCT_FINALLY) && blockPred->KindIs(BBJ_CALLFINALLY) &&
+    if ((block->GetCatchTyp() == BBCT_FINALLY) && blockPred->KindIs(BBJ_CALLFINALLY) &&
         m_compiler->ehCallFinallyInCorrectRegion(blockPred, block->getHndIndex()))
     {
         return true;
@@ -2994,7 +2994,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             }
         }
 
-        if (block->bbCatchTyp == BBCT_FILTER)
+        if (block->GetCatchTyp() == BBCT_FILTER)
         {
             // A filter has no predecessors
             assert(block->bbPreds == nullptr);

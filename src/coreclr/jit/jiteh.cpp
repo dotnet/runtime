@@ -285,11 +285,11 @@ void EHblkDsc::DispEntry(unsigned XTnum)
     ////////////// Handler region
     //////////////
 
-    if (ebdHndBeg->bbCatchTyp == BBCT_FINALLY)
+    if (ebdHndBeg->GetCatchTyp() == BBCT_FINALLY)
     {
         printf("Finally");
     }
-    else if (ebdHndBeg->bbCatchTyp == BBCT_FAULT)
+    else if (ebdHndBeg->GetCatchTyp() == BBCT_FAULT)
     {
         printf("Fault  ");
     }
@@ -2298,8 +2298,8 @@ bool Compiler::fgNormalizeEHCase1()
                 newHndStart->setTryIndex(eh->ebdEnclosingTryIndex);
             }
             newHndStart->setHndIndex(XTnum);
-            newHndStart->bbCatchTyp    = handlerStart->bbCatchTyp;
-            handlerStart->bbCatchTyp   = BBCT_NONE; // Now handlerStart is no longer the start of a handler...
+            newHndStart->SetCatchTyp(handlerStart->GetCatchTyp());
+            handlerStart->SetCatchTyp(BBCT_NONE); // Now handlerStart is no longer the start of a handler...
             newHndStart->bbCodeOffs    = handlerStart->bbCodeOffs;
             newHndStart->bbCodeOffsEnd = newHndStart->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
             newHndStart->inheritWeight(handlerStart);
@@ -2464,7 +2464,7 @@ bool Compiler::fgNormalizeEHCase2()
 
                         newTryStart->copyEHRegion(tryStart);       // Copy the EH region info
                         newTryStart->setTryIndex(ehOuterTryIndex); // ... but overwrite the 'try' index
-                        newTryStart->bbCatchTyp = BBCT_NONE;
+                        newTryStart->SetCatchTyp(BBCT_NONE);
                         newTryStart->bbCodeOffs = tryStart->bbCodeOffs;
                         newTryStart->bbCodeOffsEnd =
                             newTryStart->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
@@ -2654,14 +2654,14 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             filterBb->SetKindAndTargetEdge(BBJ_EHFILTERRET, newEdge);
             fgNewStmtAtEnd(filterBb, retFilt, handlerBb->firstStmt()->GetDebugInfo());
 
-            filterBb->bbCatchTyp = BBCT_FILTER;
+            filterBb->SetCatchTyp(BBCT_FILTER);
             filterBb->bbCodeOffs = handlerBb->bbCodeOffs;
             filterBb->bbHndIndex = handlerBb->bbHndIndex;
             filterBb->bbTryIndex = handlerBb->bbTryIndex;
             filterBb->inheritWeightPercentage(handlerBb, 0);
             filterBb->SetFlags(BBF_INTERNAL | BBF_DONT_REMOVE);
 
-            handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;
+            handlerBb->SetCatchTyp(BBCT_FILTER_HANDLER);
             eh->ebdHandlerType    = EH_HANDLER_FILTER;
             eh->ebdFilter         = filterBb;
 
@@ -2950,8 +2950,8 @@ bool Compiler::fgNormalizeEHCase3()
                         newLast->setHndIndex(ehOuterIndex);
                     }
 
-                    newLast->bbCatchTyp =
-                        BBCT_NONE; // bbCatchTyp is only set on the first block of a handler, which is this not
+                    newLast->SetCatchTyp(
+                        BBCT_NONE); // bbCatchTyp is only set on the first block of a handler, which is this not
                     newLast->bbCodeOffs    = insertAfterBlk->bbCodeOffsEnd;
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
@@ -3611,7 +3611,7 @@ void Compiler::fgVerifyHandlerTab()
 
         if (HBtab->HasFilter())
         {
-            assert(HBtab->ebdFilter->bbCatchTyp == BBCT_FILTER);
+            assert(HBtab->ebdFilter->GetCatchTyp() == BBCT_FILTER);
             assert(!blockHndBegSet[HBtab->ebdFilter->bbNum]);
             blockHndBegSet[HBtab->ebdFilter->bbNum] = true;
         }
@@ -3620,21 +3620,21 @@ void Compiler::fgVerifyHandlerTab()
 
         if (HBtab->HasFilter())
         {
-            assert(HBtab->ebdHndBeg->bbCatchTyp == BBCT_FILTER_HANDLER);
+            assert(HBtab->ebdHndBeg->GetCatchTyp() == BBCT_FILTER_HANDLER);
         }
         else if (HBtab->HasCatchHandler())
         {
-            assert((HBtab->ebdHndBeg->bbCatchTyp != BBCT_NONE) && (HBtab->ebdHndBeg->bbCatchTyp != BBCT_FAULT) &&
-                   (HBtab->ebdHndBeg->bbCatchTyp != BBCT_FINALLY) && (HBtab->ebdHndBeg->bbCatchTyp != BBCT_FILTER) &&
-                   (HBtab->ebdHndBeg->bbCatchTyp != BBCT_FILTER_HANDLER));
+            assert((HBtab->ebdHndBeg->GetCatchTyp() != BBCT_NONE) && (HBtab->ebdHndBeg->GetCatchTyp() != BBCT_FAULT) &&
+                   (HBtab->ebdHndBeg->GetCatchTyp() != BBCT_FINALLY) && (HBtab->ebdHndBeg->GetCatchTyp() != BBCT_FILTER) &&
+                   (HBtab->ebdHndBeg->GetCatchTyp() != BBCT_FILTER_HANDLER));
         }
         else if (HBtab->HasFaultHandler())
         {
-            assert(HBtab->ebdHndBeg->bbCatchTyp == BBCT_FAULT);
+            assert(HBtab->ebdHndBeg->GetCatchTyp() == BBCT_FAULT);
         }
         else if (HBtab->HasFinallyHandler())
         {
-            assert(HBtab->ebdHndBeg->bbCatchTyp == BBCT_FINALLY);
+            assert(HBtab->ebdHndBeg->GetCatchTyp() == BBCT_FINALLY);
         }
     }
 
@@ -3718,7 +3718,7 @@ void Compiler::fgVerifyHandlerTab()
         // already have bbCatchTyp set properly.
         if (!blockHndBegSet[block->bbNum])
         {
-            assert(block->bbCatchTyp == BBCT_NONE);
+            assert(block->GetCatchTyp() == BBCT_NONE);
 
             // If this block wasn't marked as an EH handler 'begin' block,
             // it shouldn't be the beginning of a funclet.
@@ -4416,8 +4416,8 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
     bPrev->copyEHRegion(block);
 
     // The first block (and only the first block) of a handler has bbCatchTyp set
-    bPrev->bbCatchTyp = block->bbCatchTyp;
-    block->bbCatchTyp = BBCT_NONE;
+    bPrev->SetCatchTyp(block->GetCatchTyp());
+    block->SetCatchTyp(BBCT_NONE);
 
     for (EHblkDsc* const HBtab : EHClauses(this))
     {
@@ -4505,8 +4505,8 @@ void Compiler::fgExtendEHRegionAfter(BasicBlock* block)
     assert(newBlk != nullptr);
 
     newBlk->copyEHRegion(block);
-    newBlk->bbCatchTyp =
-        BBCT_NONE; // Only the first block of a catch has this set, and 'newBlk' can't be the first block of a catch.
+    newBlk->SetCatchTyp(
+        BBCT_NONE); // Only the first block of a catch has this set, and 'newBlk' can't be the first block of a catch.
 
     // TODO-Throughput: if the block is not in an EH region, then we don't need to walk the EH table looking for 'last'
     // block pointers to update.

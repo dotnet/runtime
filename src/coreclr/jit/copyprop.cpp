@@ -427,7 +427,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                 }
 
                 // TODO-Review: EH successor/predecessor iteration seems broken.
-                if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
+                if ((block->GetCatchTyp() == BBCT_FINALLY) || (block->GetCatchTyp() == BBCT_FAULT))
                 {
                     continue;
                 }

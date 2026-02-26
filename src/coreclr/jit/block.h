@@ -715,6 +715,8 @@ private:
 
     Statement* bbStmtList; // Head of the statement list for this block
 
+    unsigned bbCatchTyp; // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
+
     /* The following union describes the jump target(s) of this block */
     union
     {
@@ -1458,8 +1460,15 @@ public:
         }
     }
 
-    // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
-    unsigned bbCatchTyp;
+    unsigned GetCatchTyp() const
+    {
+        return bbCatchTyp;
+    }
+
+    void SetCatchTyp(unsigned catchTyp)
+    {
+        bbCatchTyp = catchTyp;
+    }
 
     bool hasTryIndex() const
     {

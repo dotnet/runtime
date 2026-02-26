@@ -413,7 +413,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     m_compiler->unwindBegProlog();
 
-    bool isFilter  = (block->bbCatchTyp == BBCT_FILTER);
+    bool isFilter  = (block->GetCatchTyp() == BBCT_FILTER);
     int  frameSize = genFuncletInfo.fiSpDelta;
     assert(frameSize < 0);
 
@@ -422,7 +422,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     {
         maskArgRegsLiveIn = RBM_A0 | RBM_A1;
     }
-    else if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
+    else if ((block->GetCatchTyp() == BBCT_FINALLY) || (block->GetCatchTyp() == BBCT_FAULT))
     {
         maskArgRegsLiveIn = RBM_NONE;
     }
@@ -4370,7 +4370,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CATCH_ARG:
 
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->bbCatchTyp));
+            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchTyp()));
 
             /* Catch arguments get passed in a register. genCodeForBBlist()
                would have marked it as holding a GC object, but not used. */

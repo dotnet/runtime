@@ -1476,7 +1476,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         tryBegBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
 
         faultBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
-        faultBB->bbCatchTyp = BBCT_FAULT;
+        faultBB->SetCatchTyp(BBCT_FAULT);
 
         tryBegBB->setTryIndex(XTnew);
         tryBegBB->clearHndIndex();
