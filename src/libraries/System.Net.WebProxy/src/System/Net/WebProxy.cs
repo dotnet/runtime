@@ -35,9 +35,6 @@ namespace System.Net
     /// When a request uses a <see cref="WebProxy"/> instance in this state, no proxy is used to send the request.
     /// </para>
     /// <para>
-    /// In .NET Framework, the <see cref="GetDefaultProxy"/> method returns an instance of the <see cref="WebProxy"/> class with the <see cref="Address"/>, <see cref="BypassProxyOnLocal"/>, and <see cref="BypassList"/> properties set to the values used by the local computer.
-    /// </para>
-    /// <para>
     /// The <see cref="WebProxy"/> class supports automatic detection and execution of proxy configuration scripts. This feature is also known as Web Proxy Auto-Discovery (WPAD).
     /// When using automatic proxy configuration, a configuration script, typically named Wpad.dat, must be located, downloaded, compiled, and run.
     /// If these operations are successful, the script returns the proxies that can be used for a request.
@@ -65,9 +62,6 @@ namespace System.Net
         /// Initializes a new instance of the <see cref="WebProxy" /> class from the specified <see cref="Uri" /> instance.
         /// </summary>
         /// <param name="Address">The address of the proxy server.</param>
-        /// <remarks>
-        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to the <paramref name="Address"/> parameter.
-        /// </remarks>
         public WebProxy(Uri? Address) : this(Address, false, null, null) { }
 
         /// <summary>
@@ -75,9 +69,6 @@ namespace System.Net
         /// </summary>
         /// <param name="Address">A <see cref="Uri" /> instance that contains the address of the proxy server.</param>
         /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
-        /// <remarks>
-        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to <paramref name="Address"/> and with the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>.
-        /// </remarks>
         public WebProxy(Uri? Address, bool BypassOnLocal) : this(Address, BypassOnLocal, null, null) { }
 
         /// <summary>
@@ -86,9 +77,6 @@ namespace System.Net
         /// <param name="Address">A <see cref="Uri" /> instance that contains the address of the proxy server.</param>
         /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
         /// <param name="BypassList">An array of regular expression strings that contains the URIs of the servers to bypass.</param>
-        /// <remarks>
-        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to <paramref name="Address"/>, the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>, and the <see cref="BypassList"/> property set to <paramref name="BypassList"/>.
-        /// </remarks>
         public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList) : this(Address, BypassOnLocal, BypassList, null) { }
 
         /// <summary>
@@ -98,9 +86,6 @@ namespace System.Net
         /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
         /// <param name="BypassList">An array of regular expression strings that contains the URIs of the servers to bypass.</param>
         /// <param name="Credentials">An <see cref="ICredentials" /> instance to submit to the proxy server for authentication.</param>
-        /// <remarks>
-        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to <paramref name="Address"/>, the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>, the <see cref="BypassList"/> property set to <paramref name="BypassList"/>, and the <see cref="Credentials"/> property set to <paramref name="Credentials"/>.
-        /// </remarks>
         public WebProxy(Uri? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
         {
             this.Address = Address;
@@ -132,9 +117,6 @@ namespace System.Net
         /// </summary>
         /// <param name="Address">The URI of the proxy server.</param>
         /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
-        /// <remarks>
-        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to a <see cref="Uri"/> instance containing <paramref name="Address"/>.
-        /// </remarks>
         public WebProxy(string? Address)
             : this(CreateProxyUri(Address), false, null, null)
         {
@@ -146,9 +128,6 @@ namespace System.Net
         /// <param name="Address">The URI of the proxy server.</param>
         /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
         /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
-        /// <remarks>
-        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to a <see cref="Uri"/> instance that contains <paramref name="Address"/> and the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>.
-        /// </remarks>
         public WebProxy(string? Address, bool BypassOnLocal)
             : this(CreateProxyUri(Address), BypassOnLocal, null, null)
         {
@@ -161,9 +140,6 @@ namespace System.Net
         /// <param name="BypassOnLocal"><see langword="true" /> to bypass the proxy for local addresses; otherwise, <see langword="false" />.</param>
         /// <param name="BypassList">An array of regular expression strings that contain the URIs of the servers to bypass.</param>
         /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
-        /// <remarks>
-        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to a <see cref="Uri"/> instance that contains <paramref name="Address"/>, the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>, and the <see cref="BypassList"/> property set to <paramref name="BypassList"/>.
-        /// </remarks>
         public WebProxy(string? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, null)
         {
@@ -177,9 +153,6 @@ namespace System.Net
         /// <param name="BypassList">An array of regular expression strings that contains the URIs of the servers to bypass.</param>
         /// <param name="Credentials">An <see cref="ICredentials" /> instance to submit to the proxy server for authentication.</param>
         /// <exception cref="UriFormatException"><paramref name="Address" /> is an invalid URI.</exception>
-        /// <remarks>
-        /// The <see cref="WebProxy"/> instance is initialized with the <see cref="Address"/> property set to a <see cref="Uri"/> instance that contains <paramref name="Address"/>, the <see cref="BypassProxyOnLocal"/> property set to <paramref name="BypassOnLocal"/>, the <see cref="BypassList"/> property set to <paramref name="BypassList"/>, and the <see cref="Credentials"/> property set to <paramref name="Credentials"/>.
-        /// </remarks>
         public WebProxy(string? Address, bool BypassOnLocal, [StringSyntax(StringSyntaxAttribute.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)] string[]? BypassList, ICredentials? Credentials)
             : this(CreateProxyUri(Address), BypassOnLocal, BypassList, Credentials)
         {
