@@ -1996,6 +1996,46 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetDoubleDouble, _TEXT
 
+//==========================================================================
+// Create a real TransitionBlock and call CallInterpreterFuncletWorker
+// to execute an interpreter funclet (catch/finally/filter handler).
+//
+// extern "C" DWORD_PTR CallInterpreterFunclet(
+//     OBJECTREF throwable,        // rdi
+//     void* pHandler,             // rsi
+//     REGDISPLAY *pRD,            // rdx
+//     ExInfo *pExInfo,            // rcx
+//     bool isFilter               // r8
+// );
+//==========================================================================
+NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        // Pass TransitionBlock* as last (6th) argument
+        // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+        // Original args: rdi=throwable, rsi=pHandler, rdx=pRD, rcx=pExInfo, r8=isFilter
+
+        lea     r9, [rsp + __PWTB_TransitionBlock]         // TransitionBlock* as 6th param (r9)
+
+        // rdi, rsi, rdx, rcx, r8 remain unchanged (throwable, pHandler, pRD, pExInfo, isFilter)
+
+        call    C_FUNC(CallInterpreterFuncletWorker)
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END CallInterpreterFunclet, _TEXT
+
+NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea rdx, [rsp + __PWTB_TransitionBlock]
+        call C_FUNC(AsyncHelpers_ResumeInterpreterContinuationWorker)
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END AsyncHelpers_ResumeInterpreterContinuation, _TEXT
+
 #endif // FEATURE_INTERPRETER
 
 // ------------------------------------------------------------------

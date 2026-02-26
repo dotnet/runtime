@@ -5,6 +5,13 @@ parameters:
   displayName: Diagnostics Branch
   type: string
   default: main
+- name: cdacDumpPlatforms
+  displayName: cDAC Dump Platforms
+  type: object
+  default:
+    - windows_x64
+    - linux_x64
+    # - osx_x64 # Temporarily due to CI capacity constraints. Will re-enable once osx queues are more available.
 
 resources:
   repositories:
@@ -100,6 +107,20 @@ extends:
                 buildConfiguration: $(_BuildConfig)
               continueOnError: true
               condition: always()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
+                artifactName: 'Dumps_cDAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Crash Dumps'
+              continueOnError: true
+              condition: failed()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
+                artifactName: 'TestResults_cDAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Test Results and SOS Logs'
+              continueOnError: true
+              condition: failed()
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
@@ -134,3 +155,102 @@ extends:
                 buildConfiguration: $(_BuildConfig)
               continueOnError: true
               condition: always()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
+                artifactName: 'Dumps_DAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Crash Dumps'
+              continueOnError: true
+              condition: failed()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
+                artifactName: 'TestResults_DAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Test Results and SOS Logs'
+              continueOnError: true
+              condition: failed()
+
+    #
+    # cDAC Dump Creation — Build runtime, create crash dumps, publish dump artifacts
+    #
+    - stage: DumpCreation
+      dependsOn: []
+      jobs:
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms: ${{ parameters.cdacDumpPlatforms }}
+          jobParameters:
+            buildArgs: -s clr+libs+tools.cdac -c $(_BuildConfig) -rc $(_BuildConfig) -lc $(_BuildConfig)
+            nameSuffix: CdacDumpGeneration
+            timeoutInMinutes: 120
+            postBuildSteps:
+            - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) msbuild
+                $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
+                /t:GenerateAllDumps
+                /p:CIDumpVersionsOnly=true
+                /p:SetDisableAuxProviderSignatureCheck=true
+                /p:TargetArchitecture=$(archType)
+                -bl:$(Build.SourcesDirectory)/artifacts/log/DumpGeneration.binlog
+              displayName: 'Generate cDAC Dumps'
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(Build.SourcesDirectory)/artifacts/dumps/cdac
+                includeRootFolder: false
+                archiveType: tar
+                archiveExtension: .tar.gz
+                tarCompression: gz
+                artifactName: CdacDumps_$(osGroup)_$(archType)
+                displayName: cDAC Dump Artifacts
+
+    #
+    # cDAC Dump Tests — Download dumps from all platforms, run tests cross-platform
+    #
+    - stage: DumpTest
+      dependsOn:
+      - DumpCreation
+      jobs:
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms: ${{ parameters.cdacDumpPlatforms }}
+          jobParameters:
+            buildArgs: -s tools.cdacdumptests /p:SkipDumpVersions=net10.0
+            nameSuffix: CdacDumpTests
+            timeoutInMinutes: 60
+            postBuildSteps:
+            # Download and test against dumps from each platform
+            - ${{ each dumpPlatform in parameters.cdacDumpPlatforms }}:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: CdacDumps_${{ dumpPlatform }}
+                  artifactFileName: CdacDumps_${{ dumpPlatform }}.tar.gz
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/dumps/${{ dumpPlatform }}
+                  displayName: '${{ dumpPlatform }} Dumps'
+              - script: $(Build.SourcesDirectory)$(dir).dotnet$(dir)dotnet$(exeExt) test
+                  $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/Microsoft.Diagnostics.DataContractReader.DumpTests.csproj
+                  --no-build
+                  --logger "trx;LogFileName=CdacDumpTests_${{ dumpPlatform }}.trx"
+                  --results-directory $(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/${{ dumpPlatform }}
+                displayName: 'Run cDAC Dump Tests (${{ dumpPlatform }} dumps)'
+                continueOnError: true
+                env:
+                  CDAC_DUMP_ROOT: $(Build.SourcesDirectory)/artifacts/dumps/${{ dumpPlatform }}
+              - task: PublishTestResults@2
+                displayName: 'Publish Results ($(osGroup)-$(archType) → ${{ dumpPlatform }})'
+                inputs:
+                  testResultsFormat: VSTest
+                  testResultsFiles: '**/*.trx'
+                  searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)/${{ dumpPlatform }}'
+                  testRunTitle: 'cDAC Dump Tests $(osGroup)-$(archType) → ${{ dumpPlatform }}'
+                  failTaskOnFailedTests: true
+                  publishRunAttachments: true
+                  buildConfiguration: $(_BuildConfig)
+                continueOnError: true
+                condition: always()
+            # Fail the job if any test or publish step above reported issues.
+            - script: echo "One or more dump test steps failed." && exit 1
+              displayName: 'Fail if tests failed'
+              condition: eq(variables['Agent.JobStatus'], 'SucceededWithIssues')

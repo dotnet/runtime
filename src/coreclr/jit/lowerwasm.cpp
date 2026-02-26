@@ -97,6 +97,7 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
     assert(mul->OperIs(GT_MUL));
+    LowerBinaryArithmetic(mul);
     ContainCheckMul(mul);
     return mul->gtNext;
 }
@@ -165,6 +166,13 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
     ContainCheckBinary(binOp);
+
+    if (binOp->gtOverflow())
+    {
+        binOp->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        binOp->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+
     return binOp->gtNext;
 }
 

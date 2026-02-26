@@ -28,7 +28,7 @@ public class ManualTests : TarTestsBase
         }
     }
 
-    [ConditionalTheory(nameof(ManualTestsEnabled))]
+    [ConditionalTheory(typeof(ManualTests), nameof(ManualTestsEnabled))]
     [MemberData(nameof(WriteEntry_LongFileSize_TheoryData))]
     [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Needs too much disk space.")]
     public void WriteEntry_LongFileSize(TarEntryFormat entryFormat, long size, bool unseekableStream)
@@ -39,7 +39,7 @@ public class ManualTests : TarTestsBase
 
         using (TarWriter writer = new(s, leaveOpen: true))
         {
-            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, entryFormat is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, "foo");
+            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, GetRegularFileEntryTypeForFormat(entryFormat), "foo");
             writeEntry.DataStream = new SimulatedDataStream(size);
             writer.WriteEntry(writeEntry);
         }
