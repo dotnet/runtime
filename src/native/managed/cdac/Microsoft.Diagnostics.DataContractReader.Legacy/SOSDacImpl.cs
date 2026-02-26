@@ -3179,8 +3179,42 @@ public sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockCleanupData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetSyncBlockData(uint number, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockData(number, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetThreadAllocData(thread, data) : HResults.E_NOTIMPL;
+
+    int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, DacpAllocData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (thread == 0)
+                throw new ArgumentException();
+            if (data is null)
+                throw new NullReferenceException();
+
+            Contracts.IThread contract = _target.Contracts.Thread;
+            contract.GetThreadAllocContext(thread.ToTargetPointer(_target), out long allocBytes, out long allocBytesLoh);
+            data->allocBytes = (ClrDataAddress)(ulong)allocBytes;
+            data->allocBytesLoh = (ClrDataAddress)(ulong)allocBytesLoh;
+        }
+        catch (global::System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpAllocData dataLocal = default;
+            int hrLocal = _legacyImpl.GetThreadAllocData(thread, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->allocBytes == dataLocal.allocBytes, $"cDAC: {data->allocBytes:x}, DAC: {dataLocal.allocBytes:x}");
+                Debug.Assert(data->allocBytesLoh == dataLocal.allocBytesLoh, $"cDAC: {data->allocBytesLoh:x}, DAC: {dataLocal.allocBytesLoh:x}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     int ISOSDacInterface.GetThreadData(ClrDataAddress thread, DacpThreadData* data)
     {

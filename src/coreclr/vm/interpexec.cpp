@@ -993,13 +993,15 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     return result;
 }
 
-void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont, uint8_t* resultStorage)
+extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(ContinuationObject* cont, uint8_t* resultStorage, TransitionBlock* pTransitionBlock)
 {
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
 
     Thread *pThread = GetThread();
     InterpThreadContext *threadContext = pThread->GetOrCreateInterpThreadContext();
@@ -1017,9 +1019,9 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
         {
         }
     }
-    frames(NULL);
+    frames(pTransitionBlock);
 
-    CONTINUATIONREF contRef = (CONTINUATIONREF)ObjectToOBJECTREF(cont.Get());
+    CONTINUATIONREF contRef = (CONTINUATIONREF)ObjectToOBJECTREF(cont);
     NULL_CHECK(contRef);
 
     // We are working with an interpreter async continuation, move things around to get the InterpAsyncSuspendData
@@ -1070,11 +1072,24 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
         }
     }
 
-    cont.Set(frames.interpreterFrame.GetContinuation());
+    contRef = (CONTINUATIONREF)frames.interpreterFrame.GetContinuation();
     frames.interpreterFrame.Pop();
 
-    END_QCALL;
+    return (ContinuationObject*)OBJECTREFToObject(contRef);
 }
+
+#ifdef TARGET_WASM
+FCIMPL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage)
+{
+    STATIC_CONTRACT_WRAPPER;
+
+    TransitionBlock transitionBlock{};
+    transitionBlock.m_ReturnAddress = (TADDR)&AsyncHelpers_ResumeInterpreterContinuation;
+
+    return AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, &transitionBlock);
+}
+FCIMPLEND
+#endif // TARGET_WASM
 
 static void DECLSPEC_NORETURN HandleInterpreterStackOverflow(InterpreterFrame* pInterpreterFrame)
 {
