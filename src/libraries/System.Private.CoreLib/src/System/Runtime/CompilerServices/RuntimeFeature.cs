@@ -99,7 +99,7 @@ namespace System.Runtime.CompilerServices
             System.Threading.Thread.AssureBlockingPossible();
         }
 #else
-        partial static void ThrowIfMultithreadingIsNotSupported();
+        static partial void ThrowIfMultithreadingIsNotSupported();
 #endif
     }
 }
