@@ -100,7 +100,7 @@ DEFINE_CLASS(APPCONTEXT,            System,                 AppContext)
 DEFINE_METHOD(APPCONTEXT,   SETUP,              Setup,          SM_PtrPtrChar_PtrPtrChar_Int_PtrException_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_PROCESS_EXIT,    OnProcessExit,  SM_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  SM_Obj_RetVoid)
-DEFINE_METHOD(APPCONTEXT,   ON_FIRST_CHANCE_EXCEPTION,  OnFirstChanceException, SM_PtrObj_PtrException_RetVoid)
+DEFINE_METHOD(APPCONTEXT,   ON_FIRST_CHANCE_EXCEPTION,  OnFirstChanceException, SM_PtrException_PtrException_RetVoid)
 
 DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
 DEFINE_CLASS_U(System,              ArgIterator,            VARARGS)  // Includes a SigPointer.

@@ -38,9 +38,6 @@
 #endif // TARGET_UNIX
 
 
-// Support for extracting MethodDesc of a delegate.
-#include "comdelegate.h"
-
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
@@ -9478,91 +9475,12 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
 
 #ifndef DACCESS_COMPILE
 
-static Volatile<BOOL> g_firstChanceExceptionHasHandler = FALSE;
+static Volatile<bool> g_firstChanceExceptionHasHandler = false;
 
 extern "C" void QCALLTYPE AppDomain_SetFirstChanceExceptionHandler()
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
-    g_firstChanceExceptionHasHandler.Store(TRUE);
-}
-
-// This SEH filter will be invoked when an exception escapes out of the exception notification
-// callback and enters the runtime. In such a case, we ill simply failfast.
-static LONG ExceptionNotificationFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVOID pParam)
-{
-    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    return -1;
-}
-
-// This method wraps the call to the actual 'DeliverNotificationInternal' method in an SEH filter
-// so that if an exception escapes out of the notification callback, we will trigger failfast from
-// our filter.
-void ExceptionNotifications::DeliverNotification(ExceptionNotificationHandlerType notificationType,
-                                                 OBJECTREF *pThrowable)
-{
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_NOTHROW; // NOTHROW because incase of an exception, we will FailFast.
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    struct TryArgs
-    {
-        ExceptionNotificationHandlerType notificationType;
-        OBJECTREF *pThrowable;
-    } args;
-
-    args.notificationType = notificationType;
-    args.pThrowable = pThrowable;
-
-    PAL_TRY(TryArgs *, pArgs, &args)
-    {
-        // Make the call to the actual method that will invoke the callbacks
-        ExceptionNotifications::DeliverNotificationInternal(pArgs->notificationType,
-            pArgs->pThrowable);
-    }
-    PAL_EXCEPT_FILTER(ExceptionNotificationFilter)
-    {
-        // We should never be entering this handler since there should be
-        // no exception escaping out of a callback. If we are here,
-        // failfast.
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    }
-    PAL_ENDTRY;
-}
-
-// This method will deliver the exception notification to the current AppDomain.
-void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
-                                                 OBJECTREF *pThrowable)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-
-        // Unhandled Exception Notification is delivered via Unhandled Exception Processing
-        // mechanism.
-        PRECONDITION(notificationType != UnhandledExceptionHandler);
-        PRECONDITION((pThrowable != NULL) && (*pThrowable != NULL));
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(IsException((*pThrowable)->GetMethodTable()));
-
-    // Prevent any async exceptions from this moment on this thread
-    ThreadPreventAsyncHolder prevAsync;
-
-    EX_TRY
-    {
-        _ASSERTE(notificationType == FirstChanceExceptionHandler);
-        UnmanagedCallersOnlyCaller deliverNotification(METHOD__APPCONTEXT__ON_FIRST_CHANCE_EXCEPTION);
-        deliverNotification.InvokeThrowing(pThrowable);
-    }
-    EX_CATCH
-    {
-        LOG((LF_EH, LL_INFO100, "ExceptionNotifications::DeliverNotificationInternal: Exception during notification delivery.\n"));
-        RethrowTerminalExceptions();
-    }
-    EX_END_CATCH
+    g_firstChanceExceptionHasHandler.Store(true);
 }
 
 void ExceptionNotifications::DeliverFirstChanceNotification()
@@ -9575,10 +9493,7 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     }
     CONTRACTL_END;
 
-    // We check for FirstChance notification delivery after setting up the corruption severity
-    // so that we can determine if the callback delegate can handle CSE (or not).
-    //
-    // Deliver it only if not already done and someone has wiredup to receive it.
+    // Deliver it only if not already done and someone has wired up to receive it.
     //
     // We do this provided this is the first frame of a new exception
     // that was thrown or a rethrown exception. We dont want to do this
@@ -9588,7 +9503,7 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     _ASSERTE(pCurTES->GetCurrentExceptionTracker());
     _ASSERTE(!(pCurTES->GetCurrentExceptionTracker()->DeliveredFirstChanceNotification()));
     {
-        if (g_firstChanceExceptionHasHandler.Load() != FALSE)
+        if (g_firstChanceExceptionHasHandler.Load())
         {
             GCX_COOP();
             OBJECTREF oThrowable = NULL;
@@ -9596,10 +9511,19 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
 
             oThrowable = pCurTES->GetThrowable();
             _ASSERTE(oThrowable != NULL);
+            _ASSERTE(IsException(oThrowable->GetMethodTable()));
 
-            ExceptionNotifications::DeliverNotification(FirstChanceExceptionHandler, &oThrowable);
+            // Prevent any async exceptions from this moment on this thread
+            ThreadPreventAsyncHolder prevAsync;
+
+            EX_TRY
+            {
+                UnmanagedCallersOnlyCaller deliverNotification(METHOD__APPCONTEXT__ON_FIRST_CHANCE_EXCEPTION);
+                deliverNotification.InvokeThrowing(&oThrowable);
+            }
+            EX_SWALLOW_NONTERMINAL
+
             GCPROTECT_END();
-
         }
 
         // Mark the exception tracker as having delivered the first chance notification

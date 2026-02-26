@@ -9,7 +9,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
 using System.Security;
@@ -84,21 +83,15 @@ namespace System
             add
             {
                 AppContext.FirstChanceException += value;
-#if CORECLR
                 // Once a handler is added, the runtime will attempt
                 // to deliver first chance notifications for all exceptions.
                 // We don't care if handlers are removed.
                 SetFirstChanceExceptionHandler();
-#endif
             }
             remove { AppContext.FirstChanceException -= value; }
         }
 
-#if CORECLR
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_SetFirstChanceExceptionHandler")]
-        [SuppressGCTransition]
-        private static partial void SetFirstChanceExceptionHandler();
-#endif
+        static partial void SetFirstChanceExceptionHandler();
 
         public event EventHandler? ProcessExit;
 

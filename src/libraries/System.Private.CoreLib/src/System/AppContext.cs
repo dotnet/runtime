@@ -109,22 +109,20 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe void OnFirstChanceException(object* pException, Exception* pOutException)
+        internal static unsafe void OnFirstChanceException(Exception* pException, Exception* pOutException)
         {
             try
             {
                 if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
                 {
-                    FirstChanceExceptionEventArgs args = new((Exception)(*pException));
+                    var appDomain = AppDomain.CurrentDomain;
+                    FirstChanceExceptionEventArgs args = new(*pException);
                     foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
                     {
-                        try
-                        {
-                            handler(AppDomain.CurrentDomain, args);
-                        }
-                        catch
-                        {
-                        }
+                        // If any handler throws, we want to stop invoking the rest of the handlers and
+                        // propagate the exception back to the caller. This follows the .NET Framework behavior
+                        // but is being done without any reason other than the noted compatibility.
+                        handler(appDomain, args);
                     }
                 }
             }
