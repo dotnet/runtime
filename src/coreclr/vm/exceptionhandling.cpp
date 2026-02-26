@@ -1562,7 +1562,7 @@ void NormalizeThrownObject(OBJECTREF *ppThrowable)
     }
 }
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, EXCEPTION_RECORD* pExceptionRecord)
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, EXCEPTION_RECORD* pExceptionRecord, ExKind exKind  /* = ExKind::None */)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1585,12 +1585,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     {
         newExceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
         newExceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
-        newExceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF))&DispatchManagedException;
+        newExceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF, ExKind))&DispatchManagedException;
         newExceptionRecord.NumberParameters = MarkAsThrownByUs(newExceptionRecord.ExceptionInformation, hr);
         newExceptionRecord.ExceptionRecord = NULL;
     }
 
-    ExInfo exInfo(pThread, &newExceptionRecord, pExceptionContext, ExKind::Throw);
+    ExInfo exInfo(pThread, &newExceptionRecord, pExceptionContext, (ExKind)((uint8_t)ExKind::Throw | (uint8_t)exKind));
 
 #ifdef HOST_WINDOWS
     // On Windows, this enables the possibility to propagate a longjmp across managed frames. Longjmp
@@ -1642,7 +1642,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     UNREACHABLE();
 }
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable)
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExKind exKind /*= ExKind::None*/)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1651,7 +1651,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable)
     CONTEXT exceptionContext;
     ClrCaptureContext(&exceptionContext);
 
-    DispatchManagedException(throwable, &exceptionContext);
+    DispatchManagedException(throwable, &exceptionContext, NULL, exKind);
     UNREACHABLE();
 }
 
@@ -3717,6 +3717,14 @@ NOINLINE static void NotifyFunctionEnterHelper(StackFrameIterator *pThis, Thread
 {
     MethodDesc *pMD = pThis->m_crawl.GetFunction();
 
+    if (pExInfo->m_reportedFunctionEnterWasForFunclet && (pMD == pExInfo->m_pMDToReportFunctionLeave))
+    {
+        // In case of a funclet, the pMD represents the parent of the funclet. We only want to report entering and leaving
+        // the method once. So we ignore transitions from the funclet to the parent method or the funclet into another funclet
+        // of the same parent method.
+        return;
+    }
+
     if (pExInfo->m_passNumber == 1)
     {
         if (pExInfo->m_pMDToReportFunctionLeave != NULL)
@@ -3735,6 +3743,7 @@ NOINLINE static void NotifyFunctionEnterHelper(StackFrameIterator *pThis, Thread
     }
 
     pExInfo->m_pMDToReportFunctionLeave = pMD;
+    pExInfo->m_reportedFunctionEnterWasForFunclet = pThis->m_crawl.IsFunclet();
 }
 
 static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)

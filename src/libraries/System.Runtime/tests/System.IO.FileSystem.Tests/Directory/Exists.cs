@@ -266,7 +266,7 @@ namespace System.IO.Tests
 
         }
 
-        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device names
+        [ConditionalTheory(typeof(Directory_Exists), nameof(ReservedDeviceNamesAreBlocked))] // device names
         [MemberData(nameof(PathsWithReservedDeviceNames))]
         [OuterLoop]
         public void PathWithReservedDeviceNameAsPath_ReturnsFalse(string component)

@@ -7,10 +7,13 @@
 
 using System;
 using System.Runtime;
+using TestLibrary;
 using Xunit;
 
 class VirtualStaticMethodReabstraction
 {
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Compatible TypeLoadException for invalid inputs", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     static int Main()
     {
         Assert.Throws<AmbiguousImplementationException>(() => { Call<BarStruct>(); });

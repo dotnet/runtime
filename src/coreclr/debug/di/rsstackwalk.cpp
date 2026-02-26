@@ -879,46 +879,62 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
     if (m_pCurrentFrame != NULL)
         return S_OK;
 
-    // If we have reached the end of the stack, we can't populate any frame
-    if (m_continuationAddress == 0)
-        return CORDBG_E_PAST_END_OF_STACK;
-
     HRESULT hr;
     IDacDbiInterface* pDac = m_pProcess->GetDAC();
 
-    PCODE diagnosticIP;
-    CORDB_ADDRESS nextContinuation;
-    UINT32 state;
-    IfFailRet(pDac->ParseContinuation(
-        m_continuationAddress,
-        &diagnosticIP,
-        &nextContinuation,
-        &state));
+    while (true)
+    {
+        PCODE diagnosticIP;
+        CORDB_ADDRESS nextContinuation;
+        UINT32 state;
 
-    NativeCodeFunctionData codeData;
-    VMPTR_Module pModule;
-    mdMethodDef methodDef;
-    pDac->GetNativeCodeInfoForAddr(
-        diagnosticIP,
-        &codeData,
-        &pModule,
-        &methodDef);
-    CordbAsyncFrame * frame = new CordbAsyncFrame(
-        GetProcess(),
-        pModule,
-        methodDef,
-        codeData.vmNativeCodeMethodDescToken,
-        codeData.m_rgCodeRegions[kHot].pAddress,
-        diagnosticIP,
-        m_continuationAddress,
-        state);
-    
-    IfFailRet(frame->Init());
-    m_pCurrentFrame.Assign(frame);
+        // If we have reached the end of the stack, we can't populate any frame
+        if (m_continuationAddress == 0)
+            return CORDBG_E_PAST_END_OF_STACK;
+
+        IfFailRet(pDac->ParseContinuation(
+            m_continuationAddress,
+            &diagnosticIP,
+            &nextContinuation,
+            &state));
+
+        NativeCodeFunctionData codeData;
+        VMPTR_Module pModule;
+        mdMethodDef methodDef;
+        pDac->GetNativeCodeInfoForAddr(
+            diagnosticIP,
+            &codeData,
+            &pModule,
+            &methodDef);
+
+        IDacDbiInterface::DynamicMethodType dynMethodType = pDac->IsDiagnosticsHiddenOrLCGMethod(codeData.vmNativeCodeMethodDescToken);
+        if (dynMethodType == IDacDbiInterface::kDiagnosticHidden)
+        {
+            // Skipping async frame creation for async thunks. These can not be converted to a CordbAsyncFrame as they lack DebugInfo
+            // Async Thunks appear on the continuation chain when runtime async calls library async code through a thunk.
+            // This is acceptable to skip as these frames will be represented in the stack by the library async method frames.
+            m_continuationAddress = nextContinuation;
+            continue;
+        }
+
+        CordbAsyncFrame * frame = new CordbAsyncFrame(
+            GetProcess(),
+            pModule,
+            methodDef,
+            codeData.vmNativeCodeMethodDescToken,
+            codeData.m_rgCodeRegions[kHot].pAddress,
+            diagnosticIP,
+            m_continuationAddress,
+            state);
+
+        IfFailRet(frame->Init());
+        m_pCurrentFrame.Assign(frame);
+
+        break;
+    }
 
     return S_OK;
 }
-
 HRESULT CordbAsyncStackWalk::GetContext(ULONG32   contextFlags,
                                         ULONG32   contextBufSize,
                                         ULONG32 * pContextSize,

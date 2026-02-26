@@ -40,7 +40,7 @@ namespace System.Runtime.CompilerServices
 
                 if (length == 0)
                 {
-                    return Array.Empty<T>();
+                    return [];
                 }
 
                 dest = new T[length];

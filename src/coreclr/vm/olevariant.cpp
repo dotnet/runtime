@@ -1241,50 +1241,40 @@ void OleVariant::MarshalInterfaceArrayOleToCom(void *oleArray, BASEARRAYREF *pCo
     IUnknown **pOle = (IUnknown **) oleArray;
     IUnknown **pOleEnd = pOle + elementCount;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    OBJECTREF *pCom = (OBJECTREF *) unprotectedArray->GetDataPtr();
+    OBJECTREF *pCom = (OBJECTREF *) (*pComArray)->GetDataPtr();
 
     OBJECTREF obj = NULL;
     GCPROTECT_BEGIN(obj)
     {
-        while (pOle < pOleEnd)
+        GCPROTECT_BEGININTERIOR(pCom)
         {
-            IUnknown *unk = *pOle++;
-
-            if (unk == NULL)
-                obj = NULL;
-            else
-                GetObjectRefFromComIP(&obj, unk);
-
-            //
-            // Make sure the object can be cast to the destination type.
-            //
-
-            if (pElementMT != NULL && !CanCastComObject(obj, pElementMT))
+            while (pOle < pOleEnd)
             {
-                StackSString ssObjClsName;
-                StackSString ssDestClsName;
-                obj->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
-                pElementMT->_GetFullyQualifiedNameForClass(ssDestClsName);
-                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,
-                             ssObjClsName.GetUnicode(), ssDestClsName.GetUnicode());
+                IUnknown *unk = *pOle++;
+
+                if (unk == NULL)
+                    obj = NULL;
+                else
+                    GetObjectRefFromComIP(&obj, unk);
+
+                //
+                // Make sure the object can be cast to the destination type.
+                //
+
+                if (pElementMT != NULL && !CanCastComObject(obj, pElementMT))
+                {
+                    StackSString ssObjClsName;
+                    StackSString ssDestClsName;
+                    obj->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
+                    pElementMT->_GetFullyQualifiedNameForClass(ssDestClsName);
+                    COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,
+                                 ssObjClsName.GetUnicode(), ssDestClsName.GetUnicode());
+                }
+
+                SetObjectReference(pCom++, obj);
             }
-
-            //
-            // Reset pCom pointer only if array object has moved, rather than
-            // recomputing every time through the loop.  Beware implicit calls to
-            // ValidateObject inside OBJECTREF methods.
-            //
-
-            if (*(void **)&unprotectedArray != *(void **)&*pComArray)
-            {
-                SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-                unprotectedArray = *pComArray;
-                pCom = (OBJECTREF *) (unprotectedArray->GetAddress() + currentOffset);
-            }
-
-            SetObjectReference(pCom++, obj);
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
@@ -1348,36 +1338,25 @@ void OleVariant::MarshalBSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComArra
     STRINGREF stringObj = NULL;
     GCPROTECT_BEGIN(stringObj)
     {
-    ASSERT_PROTECTED(pComArray);
-    SIZE_T elementCount = (*pComArray)->GetNumComponents();
+        ASSERT_PROTECTED(pComArray);
+        SIZE_T elementCount = (*pComArray)->GetNumComponents();
 
-    BSTR *pOle = (BSTR *) oleArray;
-    BSTR *pOleEnd = pOle + elementCount;
+        BSTR *pOle = (BSTR *) oleArray;
+        BSTR *pOleEnd = pOle + elementCount;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    STRINGREF *pCom = (STRINGREF *) unprotectedArray->GetDataPtr();
-
-    while (pOle < pOleEnd)
-    {
-        BSTR bstr = *pOle++;
-
-            ConvertBSTRToString(bstr, &stringObj);
-
-        //
-        // Reset pCom pointer only if array object has moved, rather than
-        // recomputing it every time through the loop.  Beware implicit calls to
-        // ValidateObject inside OBJECTREF methods.
-        //
-
-        if (*(void **)&unprotectedArray != *(void **)&*pComArray)
+        STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
+        GCPROTECT_BEGININTERIOR(pCom)
         {
-            SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-            unprotectedArray = *pComArray;
-            pCom = (STRINGREF *) (unprotectedArray->GetAddress() + currentOffset);
-        }
+            while (pOle < pOleEnd)
+            {
+                BSTR bstr = *pOle++;
 
-            SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) stringObj);
+                ConvertBSTRToString(bstr, &stringObj);
+
+                SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) stringObj);
+            }
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
@@ -1401,25 +1380,22 @@ void OleVariant::MarshalBSTRArrayComToOle(BASEARRAYREF *pComArray, void *oleArra
     STRINGREF stringObj = NULL;
     GCPROTECT_BEGIN(stringObj)
     {
-    ASSERT_PROTECTED(pComArray);
+        ASSERT_PROTECTED(pComArray);
 
-    BSTR *pOle = (BSTR *) oleArray;
-    BSTR *pOleEnd = pOle + cElements;
+        BSTR *pOle = (BSTR *) oleArray;
+        BSTR *pOleEnd = pOle + cElements;
 
-    STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
-
-    while (pOle < pOleEnd)
-    {
-            stringObj = *pCom++;
-            BSTR bstr = ConvertStringToBSTR(&stringObj);
-
-        //
-        // We aren't calling anything which might cause a GC, so don't worry about
-        // the array moving here.
-        //
-
-            *pOle++ = bstr;
+        STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
+        GCPROTECT_BEGININTERIOR(pCom)
+        {
+            while (pOle < pOleEnd)
+            {
+                stringObj = *pCom++;
+                BSTR bstr = ConvertStringToBSTR(&stringObj);
+                *pOle++ = bstr;
+            }
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
@@ -1475,16 +1451,18 @@ void OleVariant::MarshalNonBlittableRecordArrayOleToCom(void *oleArray, BASEARRA
     BYTE *pOle = (BYTE *) oleArray;
     BYTE *pOleEnd = pOle + elemSize * elementCount;
 
-    SIZE_T dstofs = ArrayBase::GetDataPtrOffset( (*pComArray)->GetMethodTable() );
-    while (pOle < pOleEnd)
+    BYTE *managedData = (*pComArray)->GetDataPtr();
+    GCPROTECT_BEGININTERIOR(managedData)
     {
-        BYTE* managedData = (BYTE*)(*(LPVOID*)pComArray) + dstofs;
+        while (pOle < pOleEnd)
+        {
+            MarshalStructViaILStubCode(pManagedMarshalerCode, managedData, pOle, StructMarshalStubs::MarshalOperation::Unmarshal);
 
-        MarshalStructViaILStubCode(pManagedMarshalerCode, managedData, pOle, StructMarshalStubs::MarshalOperation::Unmarshal);
-
-        dstofs += (*pComArray)->GetComponentSize();
-        pOle += elemSize;
+            managedData += (*pComArray)->GetComponentSize();
+            pOle += elemSize;
+        }
     }
+    GCPROTECT_END();
 }
 
 void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
@@ -1517,15 +1495,18 @@ void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray,
     }
 
     const SIZE_T compSize = (*pComArray)->GetComponentSize();
-    SIZE_T offset = 0;
-    while (pOle < pOleEnd)
+    BYTE *managedData = (*pComArray)->GetDataPtr();
+    GCPROTECT_BEGININTERIOR(managedData)
     {
-        BYTE* managedData = (*pComArray)->GetDataPtr() + offset;
-        MarshalStructViaILStubCode(pManagedMarshalerCode, managedData, pOle, StructMarshalStubs::MarshalOperation::Marshal);
+        while (pOle < pOleEnd)
+        {
+            MarshalStructViaILStubCode(pManagedMarshalerCode, managedData, pOle, StructMarshalStubs::MarshalOperation::Marshal);
 
-        pOle += elemSize;
-        offset += compSize;
+            pOle += elemSize;
+            managedData += compSize;
+        }
     }
+    GCPROTECT_END();
 }
 
 void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, MethodTable *pInterfaceMT, PCODE pManagedMarshalerCode)
@@ -1577,34 +1558,23 @@ void OleVariant::MarshalLPWSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComAr
     LPWSTR *pOle = (LPWSTR *) oleArray;
     LPWSTR *pOleEnd = pOle + elementCount;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    STRINGREF *pCom = (STRINGREF *) unprotectedArray->GetDataPtr();
-
-    while (pOle < pOleEnd)
+    STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
+    GCPROTECT_BEGININTERIOR(pCom)
     {
-        LPWSTR lpwstr = *pOle++;
-
-        STRINGREF string;
-        if (lpwstr == NULL)
-            string = NULL;
-        else
-            string = StringObject::NewString(lpwstr);
-
-        //
-        // Reset pCom pointer only if array object has moved, rather than
-        // recomputing it every time through the loop.  Beware implicit calls to
-        // ValidateObject inside OBJECTREF methods.
-        //
-
-        if (*(void **)&unprotectedArray != *(void **)&*pComArray)
+        while (pOle < pOleEnd)
         {
-            SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-            unprotectedArray = *pComArray;
-            pCom = (STRINGREF *) (unprotectedArray->GetAddress() + currentOffset);
-        }
+            LPWSTR lpwstr = *pOle++;
 
-        SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) string);
+            STRINGREF string;
+            if (lpwstr == NULL)
+                string = NULL;
+            else
+                string = StringObject::NewString(lpwstr);
+
+            SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) string);
+        }
     }
+    GCPROTECT_END();
 }
 
 void OleVariant::MarshalLPWSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
@@ -1722,34 +1692,23 @@ void OleVariant::MarshalLPSTRArrayOleToCom(void *oleArray, BASEARRAYREF *pComArr
     LPSTR *pOle = (LPSTR *) oleArray;
     LPSTR *pOleEnd = pOle + elementCount;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    STRINGREF *pCom = (STRINGREF *) unprotectedArray->GetDataPtr();
-
-    while (pOle < pOleEnd)
+    STRINGREF *pCom = (STRINGREF *) (*pComArray)->GetDataPtr();
+    GCPROTECT_BEGININTERIOR(pCom)
     {
-        LPSTR lpstr = *pOle++;
-
-        STRINGREF string;
-        if (lpstr == NULL)
-            string = NULL;
-        else
-            string = StringObject::NewString(lpstr);
-
-        //
-        // Reset pCom pointer only if array object has moved, rather than
-        // recomputing it every time through the loop.  Beware implicit calls to
-        // ValidateObject inside OBJECTREF methods.
-        //
-
-        if (*(void **)&unprotectedArray != *(void **)&*pComArray)
+        while (pOle < pOleEnd)
         {
-            SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-            unprotectedArray = *pComArray;
-            pCom = (STRINGREF *) (unprotectedArray->GetAddress() + currentOffset);
-        }
+            LPSTR lpstr = *pOle++;
 
-        SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) string);
+            STRINGREF string;
+            if (lpstr == NULL)
+                string = NULL;
+            else
+                string = StringObject::NewString(lpstr);
+
+            SetObjectReference((OBJECTREF*) pCom++, (OBJECTREF) string);
+        }
     }
+    GCPROTECT_END();
 }
 
 void OleVariant::MarshalLPSTRRArrayComToOle(BASEARRAYREF *pComArray, void *oleArray,
@@ -2892,54 +2851,50 @@ void OleVariant::MarshalInterfaceArrayComToOleHelper(BASEARRAYREF *pComArray, vo
     IUnknown **pOleEnd = pOle + cElements;
 
     // Retrieve the start of the data in the managed array.
-    BASEARRAYREF unprotectedArray = *pComArray;
-    OBJECTREF *pCom = (OBJECTREF *) unprotectedArray->GetDataPtr();
+    OBJECTREF *pCom = (OBJECTREF *) (*pComArray)->GetDataPtr();
 
     OBJECTREF TmpObj = NULL;
     GCPROTECT_BEGIN(TmpObj)
     {
-        MethodTable *pLastElementMT = NULL;
-
-        while (pOle < pOleEnd)
+        GCPROTECT_BEGININTERIOR(pCom)
         {
-            TmpObj = *pCom++;
+            MethodTable *pLastElementMT = NULL;
 
-            IUnknown *unk;
-            if (TmpObj == NULL)
-                unk = NULL;
-            else
+            while (pOle < pOleEnd)
             {
-                if (bHeterogenous)
+                TmpObj = *pCom++;
+
+                IUnknown *unk;
+                if (TmpObj == NULL)
+                    unk = NULL;
+                else
                 {
-                    // Inspect the type of each element separately (cache the last type for perf).
-                    if (TmpObj->GetMethodTable() != pLastElementMT)
+                    if (bHeterogenous)
                     {
-                        pLastElementMT = TmpObj->GetMethodTable();
-                        pElementMT = GetDefaultInterfaceMTForClass(pLastElementMT, &bDispatch);
+                        // Inspect the type of each element separately (cache the last type for perf).
+                        if (TmpObj->GetMethodTable() != pLastElementMT)
+                        {
+                            pLastElementMT = TmpObj->GetMethodTable();
+                            pElementMT = GetDefaultInterfaceMTForClass(pLastElementMT, &bDispatch);
+                        }
+                    }
+
+                    if (pElementMT)
+                    {
+                        // Convert to COM IP based on an interface MT (a specific interface will be exposed).
+                        unk = GetComIPFromObjectRef(&TmpObj, pElementMT);
+                    }
+                    else
+                    {
+                        // Convert to COM IP exposing either IDispatch or IUnknown.
+                        unk = GetComIPFromObjectRef(&TmpObj, (bDispatch ? ComIpType_Dispatch : ComIpType_Unknown), NULL);
                     }
                 }
 
-                if (pElementMT)
-                {
-                    // Convert to COM IP based on an interface MT (a specific interface will be exposed).
-                    unk = GetComIPFromObjectRef(&TmpObj, pElementMT);
-                }
-                else
-                {
-                    // Convert to COM IP exposing either IDispatch or IUnknown.
-                    unk = GetComIPFromObjectRef(&TmpObj, (bDispatch ? ComIpType_Dispatch : ComIpType_Unknown), NULL);
-                }
-            }
-
-            *pOle++ = unk;
-
-            if (*(void **)&unprotectedArray != *(void **)&*pComArray)
-            {
-                SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-                unprotectedArray = *pComArray;
-                pCom = (OBJECTREF *) (unprotectedArray->GetAddress() + currentOffset);
+                *pOle++ = unk;
             }
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
@@ -3129,28 +3084,22 @@ void OleVariant::MarshalVariantArrayOleToCom(void *oleArray, BASEARRAYREF *pComA
     VARIANT *pOle = (VARIANT *) oleArray;
     VARIANT *pOleEnd = pOle + elementCount;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    OBJECTREF *pCom = (OBJECTREF *) unprotectedArray->GetDataPtr();
+    OBJECTREF *pCom = (OBJECTREF *) (*pComArray)->GetDataPtr();
 
     OBJECTREF TmpObj = NULL;
     GCPROTECT_BEGIN(TmpObj)
     {
-        while (pOle < pOleEnd)
+        GCPROTECT_BEGININTERIOR(pCom)
         {
-            // Marshal the OLE variant into a temp managed variant.
-            MarshalObjectForOleVariant(pOle++, &TmpObj);
-
-            // Reset pCom pointer only if array object has moved, rather than
-            // recomputing it every time through the loop.  Beware implicit calls to
-            // ValidateObject inside OBJECTREF methods.
-            if (*(void **)&unprotectedArray != *(void **)&*pComArray)
+            while (pOle < pOleEnd)
             {
-                SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-                unprotectedArray = *pComArray;
-                pCom = (OBJECTREF *) (unprotectedArray->GetAddress() + currentOffset);
+                // Marshal the OLE variant into a temp managed variant.
+                MarshalObjectForOleVariant(pOle++, &TmpObj);
+
+                SetObjectReference(pCom++, TmpObj);
             }
-            SetObjectReference(pCom++, TmpObj);
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }
@@ -3197,47 +3146,41 @@ void OleVariant::MarshalVariantArrayComToOle(BASEARRAYREF *pComArray, void *oleA
     VARIANT *pOle = (VARIANT *) oleArray;
     VARIANT *pOleEnd = pOle + elementCount * nOleArrayStepLength;
 
-    BASEARRAYREF unprotectedArray = *pComArray;
-    OBJECTREF *pCom = (OBJECTREF *) unprotectedArray->GetDataPtr();
+    OBJECTREF *pCom = (OBJECTREF *) (*pComArray)->GetDataPtr();
 
     OBJECTREF TmpObj = NULL;
     GCPROTECT_BEGIN(TmpObj)
     {
-        while (pOle != pOleEnd)
+        GCPROTECT_BEGININTERIOR(pCom)
         {
-            // Reset pCom pointer only if array object has moved, rather than
-            // recomputing it every time through the loop.  Beware implicit calls to
-            // ValidateObject inside OBJECTREF methods.
-            if (*(void **)&unprotectedArray != *(void **)&*pComArray)
+            while (pOle != pOleEnd)
             {
-                SIZE_T currentOffset = ((BYTE *)pCom) - (*(Object **) &unprotectedArray)->GetAddress();
-                unprotectedArray = *pComArray;
-                pCom = (OBJECTREF *) (unprotectedArray->GetAddress() + currentOffset);
-            }
-            TmpObj = *pCom++;
+                TmpObj = *pCom++;
 
-            // Marshal the temp managed variant into the OLE variant.
-            if (fOleArrayIsValid)
-            {
-                // We firstly try MarshalCommonOleRefVariantForObject for VT_BYREF variant because
-                // MarshalOleVariantForObject() VariantClear the variant and does not keep the VT_BYREF.
-                // For back compating the old behavior(we used MarshalOleVariantForObject in the previous
-                //  version) that casts the managed object to Variant based on the object's MethodTable,
-                // MarshalCommonOleRefVariantForObject is used instead of MarshalOleRefVariantForObject so
-                // that cast will not be done based on the VT of the variant.
-                if (!((pOle->vt & VT_BYREF) &&
-                       SUCCEEDED(MarshalCommonOleRefVariantForObject(&TmpObj, pOle))))
-                    if (pOle->vt & VT_BYREF || !fMarshalByrefArgOnly)
-                        MarshalOleVariantForObject(&TmpObj, pOle);
-            }
-            else
-            {
-                // The contents of pOle is undefined, don't try to handle byrefs.
-                MarshalOleVariantForObject(&TmpObj, pOle);
-            }
+                // Marshal the temp managed variant into the OLE variant.
+                if (fOleArrayIsValid)
+                {
+                    // We firstly try MarshalCommonOleRefVariantForObject for VT_BYREF variant because
+                    // MarshalOleVariantForObject() VariantClear the variant and does not keep the VT_BYREF.
+                    // For back compating the old behavior(we used MarshalOleVariantForObject in the previous
+                    //  version) that casts the managed object to Variant based on the object's MethodTable,
+                    // MarshalCommonOleRefVariantForObject is used instead of MarshalOleRefVariantForObject so
+                    // that cast will not be done based on the VT of the variant.
+                    if (!((pOle->vt & VT_BYREF) &&
+                           SUCCEEDED(MarshalCommonOleRefVariantForObject(&TmpObj, pOle))))
+                        if (pOle->vt & VT_BYREF || !fMarshalByrefArgOnly)
+                            MarshalOleVariantForObject(&TmpObj, pOle);
+                }
+                else
+                {
+                    // The contents of pOle is undefined, don't try to handle byrefs.
+                    MarshalOleVariantForObject(&TmpObj, pOle);
+                }
 
-            pOle += nOleArrayStepLength;
+                pOle += nOleArrayStepLength;
+            }
         }
+        GCPROTECT_END();
     }
     GCPROTECT_END();
 }

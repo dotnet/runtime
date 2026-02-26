@@ -40,6 +40,19 @@ class SyncBlockCache;
 class SyncTableEntry;
 class ThreadStore;
 namespace ETW { class CEtwTracer; };
+#ifdef FEATURE_COMWRAPPERS
+inline constexpr size_t g_numKnownQueryInterfaceImplementations = 2;
+namespace InteropLib { namespace ABI {
+    struct ComInterfaceDispatch;
+    using QueryInterfaceMethod = HRESULT (STDMETHODCALLTYPE *)(InteropLib::ABI::ComInterfaceDispatch*, REFIID, void**);
+#ifndef DACCESS_COMPILE
+    extern QueryInterfaceMethod g_knownQueryInterfaceImplementations[g_numKnownQueryInterfaceImplementations];
+#endif // !DACCESS_COMPILE
+} }
+
+GARY_DECL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
+
+#endif // FEATURE_COMWRAPPERS
 class DebugInterface;
 class DebugInfoManager;
 class EEDbgInterfaceImpl;

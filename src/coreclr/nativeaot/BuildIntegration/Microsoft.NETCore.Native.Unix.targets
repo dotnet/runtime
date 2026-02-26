@@ -79,7 +79,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">15.2</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">17.0</AppleMinOSVersion>
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos')))">13.0</AppleMinOSVersion>
 
       <_AppleSdkName Condition="'$(_targetOS)' == 'ios'">iphoneos</_AppleSdkName>
@@ -99,7 +99,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_targetOS)' == 'osx'">
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == ''">12.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == ''">14.0</AppleMinOSVersion>
       <TargetTriple Condition="'$(_targetArchitecture)' == 'x64'">x86_64-apple-macos$(AppleMinOSVersion)</TargetTriple>
       <TargetTriple Condition="'$(_targetArchitecture)' == 'arm64'">arm64-apple-macos$(AppleMinOSVersion)</TargetTriple>
     </PropertyGroup>
@@ -284,13 +284,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-Wl,-z,max-page-size=16384" Condition=" '$(_linuxLibcFlavor)' == 'bionic' and '$(NativeLib)' == 'Shared' and ('$(_targetArchitecture)' == 'x64' or '$(_targetArchitecture)' == 'arm64')" />
     </ItemGroup>
 
-    <Exec Command="clang --version" Condition="'$(_IsApplePlatform)' == 'true' and '$(UseLdClassicXCodeLinker)' == ''" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+    <Exec Command="xcodebuild -version" Condition="'$(_IsApplePlatform)' == 'true' and '$(UseLdClassicXCodeLinker)' == ''" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
       <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
     </Exec>
 
     <PropertyGroup Condition="('$(_XcodeVersionStringExitCode)' == '0' or '$(_XcodeVersionStringExitCode)' == '1') and '$(_XcodeVersionString)' != ''">
-      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '[1-9]\d*'))</_XcodeVersion>
+      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '(?&lt;=Xcode\s)[1-9]\d*'))</_XcodeVersion>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false' and '$(_IsApplePlatform)' == 'true'">

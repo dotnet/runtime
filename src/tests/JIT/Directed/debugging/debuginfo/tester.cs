@@ -13,12 +13,15 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Tracing.Tests.Common;
+using TestLibrary;
 using DebugInfoMethodsD = tests_d::DebugInfoMethods;
 using DebugInfoMethodsR = tests_r::DebugInfoMethods;
 using Xunit;
 
 public unsafe class DebugInfoTest
 {
+    [ActiveIssue("Just-in-time compilation test", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("Tests coreclr JIT's debug info generation", TestRuntimes.Mono)]
     [Fact]
     public static unsafe int TestEntryPoint()
     {

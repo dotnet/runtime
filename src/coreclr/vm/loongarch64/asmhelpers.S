@@ -956,8 +956,7 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
-    // $a0 = pointer to TransitionBlock
-    addi.d  $a0, $sp, __PWTB_TransitionBlock
+    addi.d  $a0, $sp, __PWTB_TransitionBlock // TransitionBlock *
     bl      C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
@@ -1066,79 +1065,3 @@ NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
     break 0
 NESTED_END IL_Rethrow, _TEXT
 
-// ------------------------------------------------------------------
-// ClrRestoreNonvolatileContextWorker
-//
-// Restores registers based on ContextFlags and jumps to target PC.
-// When CONTEXT_INTEGER is set, restores ALL integer registers
-// because exception handling needs $a0 (exception object).
-// When CONTEXT_FLOATING_POINT is set, restores non-volatile FP regs (f24-f31).
-//
-// Arguments:
-//   $a0 - pointer to CONTEXT structure
-//   $a1 - unused (SSP, not supported on LoongArch64)
-// ------------------------------------------------------------------
-LEAF_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT
-
-    // Save CONTEXT pointer in $t0 before we potentially clobber $a0
-    move    $t0, $a0
-
-    // Check if CONTEXT_FLOATING_POINT is set
-    ld.w    $t1, $t0, OFFSETOF__CONTEXT__ContextFlags
-    andi    $t2, $t1, (1 << CONTEXT_FLOATING_POINT_BIT)
-    beqz    $t2, LOCAL_LABEL(SkipFloatingPointRestore)
-
-    // Restore non-volatile FP registers f24-f31
-    // F24 is at OFFSETOF__CONTEXT__F + 24*8 = 0x110 + 0xC0 = 0x1D0
-    fld.d   $f24, $t0, (OFFSETOF__CONTEXT__F + 24*8)
-    fld.d   $f25, $t0, (OFFSETOF__CONTEXT__F + 25*8)
-    fld.d   $f26, $t0, (OFFSETOF__CONTEXT__F + 26*8)
-    fld.d   $f27, $t0, (OFFSETOF__CONTEXT__F + 27*8)
-    fld.d   $f28, $t0, (OFFSETOF__CONTEXT__F + 28*8)
-    fld.d   $f29, $t0, (OFFSETOF__CONTEXT__F + 29*8)
-    fld.d   $f30, $t0, (OFFSETOF__CONTEXT__F + 30*8)
-    fld.d   $f31, $t0, (OFFSETOF__CONTEXT__F + 31*8)
-
-LOCAL_LABEL(SkipFloatingPointRestore):
-    // Check if CONTEXT_INTEGER is set
-    andi    $t2, $t1, (1 << CONTEXT_INTEGER_BIT)
-    beqz    $t2, LOCAL_LABEL(SkipIntegerRestore)
-
-    // Restore ALL integer registers (needed by exception handling)
-    // Argument registers a1-a7 (a0 last since we use it)
-    ld.d    $a1, $t0, (OFFSETOF__CONTEXT__A0 + 8)
-    ld.d    $a2, $t0, (OFFSETOF__CONTEXT__A0 + 16)
-    ld.d    $a3, $t0, (OFFSETOF__CONTEXT__A0 + 24)
-    ld.d    $a4, $t0, (OFFSETOF__CONTEXT__A0 + 32)
-    ld.d    $a5, $t0, (OFFSETOF__CONTEXT__A0 + 40)
-    ld.d    $a6, $t0, (OFFSETOF__CONTEXT__A0 + 48)
-    ld.d    $a7, $t0, (OFFSETOF__CONTEXT__A0 + 56)
-
-    // Callee-saved registers s0-s8
-    ld.d    $s0, $t0, OFFSETOF__CONTEXT__S0
-    ld.d    $s1, $t0, (OFFSETOF__CONTEXT__S0 + 8)
-    ld.d    $s2, $t0, (OFFSETOF__CONTEXT__S0 + 16)
-    ld.d    $s3, $t0, (OFFSETOF__CONTEXT__S0 + 24)
-    ld.d    $s4, $t0, (OFFSETOF__CONTEXT__S0 + 32)
-    ld.d    $s5, $t0, (OFFSETOF__CONTEXT__S0 + 40)
-    ld.d    $s6, $t0, (OFFSETOF__CONTEXT__S0 + 48)
-    ld.d    $s7, $t0, (OFFSETOF__CONTEXT__S0 + 56)
-    ld.d    $s8, $t0, (OFFSETOF__CONTEXT__S0 + 64)
-
-    // Restore $a0 last (exception object for exception handling)
-    ld.d    $a0, $t0, OFFSETOF__CONTEXT__A0
-
-LOCAL_LABEL(SkipIntegerRestore):
-    // Restore fp, ra
-    ld.d    $fp, $t0, OFFSETOF__CONTEXT__Fp
-    ld.d    $ra, $t0, OFFSETOF__CONTEXT__Ra
-
-    // Load sp and pc ($t0 will be overwritten)
-    ld.d    $t1, $t0, OFFSETOF__CONTEXT__Pc
-    ld.d    $t0, $t0, OFFSETOF__CONTEXT__Sp
-
-    // Set sp and jump
-    move    $sp, $t0
-    jr      $t1
-
-LEAF_END ClrRestoreNonvolatileContextWorker, _TEXT

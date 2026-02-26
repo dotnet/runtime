@@ -309,6 +309,21 @@ C_FUNC(\Name\()_End):
 
 .endm
 
+// Same as EPILOG_WITH_TRANSITION_BLOCK_RETURN but skips restoring x21 (SwiftError)
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
+
+        EPILOG_STACK_FREE                 __PWTB_StackAlloc
+
+        EPILOG_RESTORE_REG_PAIR   x19, x20, 16
+        EPILOG_RESTORE_REG   x22, 40
+        EPILOG_RESTORE_REG_PAIR   x23, x24, 48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, 64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, 80
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
+        ret
+
+.endm
+
 //-----------------------------------------------------------------------------
 // Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and ends by preparing for tail-calling.
 // Since this is a tail call argument registers are restored.
@@ -410,7 +425,7 @@ C_FUNC(\Name\()_End):
         PROLOG_SAVE_REG_PAIR   x27, x28, 80
 
         mov     \target, sp
-.endm 
+.endm
 
 .macro POP_COOP_PINVOKE_FRAME
         EPILOG_RESTORE_REG_PAIR   x19, x20, 16
@@ -466,29 +481,6 @@ C_FUNC(\Name\()_End):
 
         // Set target to TransitionBlock pointer
         add     \target, sp, #192
-.endm
-
-// Epilog for PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS - restores FP callee-saved and returns
-.macro POP_COOP_PINVOKE_FRAME_WITH_FLOATS_RETURN
-
-        // Restore FP callee-saved registers (d8-d15) from sp+0
-        ldp     d8,  d9,  [sp, #0]
-        ldp     d10, d11, [sp, #16]
-        ldp     d12, d13, [sp, #32]
-        ldp     d14, d15, [sp, #48]
-
-        // Deallocate space for FloatArgumentRegisters + FP callee-saved
-        EPILOG_STACK_FREE 192
-
-        // Restore callee-saved registers
-        EPILOG_RESTORE_REG_PAIR   x27, x28, 80
-        EPILOG_RESTORE_REG_PAIR   x25, x26, 64
-        EPILOG_RESTORE_REG_PAIR   x23, x24, 48
-        EPILOG_RESTORE_REG_PAIR   x21, x22, 32
-        EPILOG_RESTORE_REG_PAIR   x19, x20, 16
-
-        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 176
-        ret
 .endm
 
 // ------------------------------------------------------------------

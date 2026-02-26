@@ -417,14 +417,14 @@ void _DacGlobals::Initialize()
 // Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
-void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet)
+void InvokeCalliStub(CalliStubParam* pParam)
 {
-    _ASSERTE(ftn != (PCODE)NULL);
-    _ASSERTE(cookie != NULL);
+    _ASSERTE(pParam->ftn != (PCODE)NULL);
+    _ASSERTE(pParam->cookie != NULL);
 
     // WASM-TODO: Reconcile calling conventions for managed calli.
-    PCODE actualFtn = (PCODE)PortableEntryPoint::GetActualCode(ftn);
-    ((void(*)(PCODE, int8_t*, int8_t*))cookie)(actualFtn, pArgs, pRet);
+    PCODE actualFtn = (PCODE)PortableEntryPoint::GetActualCode(pParam->ftn);
+    ((void(*)(PCODE, int8_t*, int8_t*))pParam->cookie)(actualFtn, pParam->pArgs, pParam->pRet);
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
@@ -434,7 +434,7 @@ void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
 }
 
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
+void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam)
 {
     PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
 }
@@ -690,32 +690,33 @@ namespace
 
     const ReverseThunkMapValue* LookupThunk(MethodDesc* pMD)
     {
-        HashToReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
-        if (table == nullptr)
-        {
-            table = CreateReverseThunkHashTable(false /* fallback */);
-        }
+        // WASM-TODO: fix primary lookup
+        // HashToReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
+        // if (table == nullptr)
+        // {
+        //     table = CreateReverseThunkHashTable(false /* fallback */);
+        // }
 
-        ULONG key = CreateKey(pMD);
+        // ULONG key = CreateKey(pMD);
 
-        // Try primary key, it is based on Assembly fully qualified name and method token
-        const ReverseThunkMapValue* thunk;
-        if (table->Lookup(key, &thunk))
-        {
-            return thunk;
-        }
+        // // Try primary key, it is based on Assembly fully qualified name and method token
+        // const ReverseThunkMapValue* thunk;
+        // if (table->Lookup(key, &thunk))
+        // {
+        //     return thunk;
+        // }
 
         // Try fallback key, that is based on method properties and assembly name
         // The fallback is used when the assembly is trimmed and the token and assembly fully qualified name
         // may change.
-        table = VolatileLoad(&reverseThunkFallbackCache);
+        HashToReverseThunkHash* table = VolatileLoad(&reverseThunkFallbackCache);
         if (table == nullptr)
         {
             table = CreateReverseThunkHashTable(true /* fallback */);
         }
 
-        key = CreateFallbackKey(pMD);
-
+        ULONG key = CreateFallbackKey(pMD);
+        const ReverseThunkMapValue* thunk;
         bool success = table->Lookup(key, &thunk);
         return success ? thunk : nullptr;
     }
@@ -757,14 +758,15 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
     return value->EntryPoint;
 }
 
-void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
+void InvokeManagedMethod(ManagedMethodParam *pParam)
 {
-    MetaSig sig(pMD);
+    MetaSig sig(pParam->pMD);
     void* cookie = GetCookieForCalliSig(sig);
 
     _ASSERTE(cookie != NULL);
 
-    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pContinuationRet);
+    CalliStubParam param = { pParam->target == NULL ? pParam->pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : pParam->target, cookie, pParam->pArgs, pParam->pRet, pParam->pContinuationRet };
+    InvokeCalliStub(&param);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)

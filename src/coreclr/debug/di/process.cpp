@@ -1167,7 +1167,8 @@ HRESULT ShimProcess::CreateProcess(
 //
 // Arguments:
 //     pCordb - root under which this all lives
-//     dwProcessID - OS process ID to attach to
+//     pRemoteTarget - Not used.
+//     pProcessDescriptor - descriptor of process to attach to
 //     fWin32Attach - are we interop debugging?
 //-----------------------------------------------------------------------------
 HRESULT ShimProcess::DebugActiveProcess(
@@ -1187,7 +1188,7 @@ HRESULT ShimProcess::DebugActiveProcess(
     {
         pShim.Assign(new ShimProcess());
 
-        // Indicate that this process was attached to, asopposed to being started under the debugger.
+        // Indicate that this process was attached to, as opposed to being started under the debugger.
         pShim->m_attached = true;
 
         hr = pShim->CreateAndStartWin32ET(pCordb);
@@ -5270,7 +5271,7 @@ void CordbProcess::RawDispatchEvent(
                 pCallback1->UnloadModule(pAppDomain, module);
             }
 
-            pAppDomain->m_modules.RemoveBase(VmPtrToCookie(pEvent->UnloadModuleData.vmDomainAssembly));
+            pAppDomain->m_modules.RemoveBase(VmPtrToCookie(module->m_vmModule));
         }
         break;
 
@@ -15132,10 +15133,8 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
     // and dispatch it inband w/the other callbacks.
     if (!fDetach)
     {
-#ifdef TARGET_UNIX
-        // Cleanup the transport pipe and semaphore files that might be left by the target (LS) process.
+        // Cleanup resources that might be left by the target (LS) process.
         m_pNativePipeline->CleanupTargetProcess();
-#endif
         ExitProcessWorkItem * pItem = new (nothrow) ExitProcessWorkItem(m_pProcess);
         if (pItem != NULL)
         {

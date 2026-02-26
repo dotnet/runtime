@@ -46,6 +46,7 @@
 #endif // HAVE_GCCOVER
 
 #include "exinfo.h"
+#include "exkind.h"
 
 //----------------------------------------------------------------------------
 //
@@ -2617,7 +2618,7 @@ OBJECTREF StackTraceInfo::GetKeepAliveObject(MethodDesc* pMethod)
 }
 
 //
-// Append stack frame to an exception stack trace.
+// Append stack frame to an exception stack trace - handle version.
 //
 void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
 {
@@ -2642,19 +2643,62 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
 
     LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
 
-    if ((pFunc != NULL && pFunc->IsDiagnosticsHidden()))
-        return;
-
     // Do not save stacktrace to preallocated exception.  These are shared.
     if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
     {
-        // Preallocated exceptions will never have this flag set. However, its possible
-        // that after this flag is set for a regular exception but before we throw, we have an async
-        // exception like a RudeThreadAbort, which will replace the exception
-        // containing the restored stack trace.
-
         return;
     }
+
+    AppendElementImpl(ObjectFromHandle(hThrowable), currentIP, currentSP, pFunc, pCf, pThread, fRaisingForeignException);
+}
+
+//
+// Append stack frame to an exception stack trace - objectref version for runtime-async stack frames.
+//
+void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        NOTHROW;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
+    Thread *pThread = GetThread();
+    MethodTable* pMT = pThrowable->GetMethodTable();
+    _ASSERTE(IsException(pMT));
+
+    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
+    AppendElementImpl(pThrowable, currentIP, currentSP, pFunc, pCf, pThread, FALSE /* fRaisingForeignException */);
+}
+
+//
+// Append stack frame to an exception stack trace.
+//
+void StackTraceInfo::AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf, Thread* pThread, BOOL fRaisingForeignException)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        NOTHROW;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END
+
+    if ((pFunc != NULL && pFunc->IsDiagnosticsHidden()))
+        return;
+
+    struct
+    {
+        StackTraceArrayProtect stackTrace;
+        PTRARRAYREF pKeepAliveArray = NULL; // Object array of Managed Resolvers / Loader Allocators of methods that can be collected
+        OBJECTREF keepAliveObject = NULL;
+        EXCEPTIONREF pThrowable = NULL;
+    } gc;
+
+    GCPROTECT_BEGIN_THREAD(pThread, gc);
+    gc.pThrowable = (EXCEPTIONREF)pThrowable;
 
     StackTraceElement stackTraceElem;
 
@@ -2683,25 +2727,21 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
             stackTraceElem.flags |= STEF_IP_ADJUSTED;
         }
     }
+    else
+    {
+        stackTraceElem.flags |= STEF_CONTINUATION;
+    }
 
 #ifndef TARGET_UNIX // Watson is supported on Windows only
-    SetupWatsonBucket(currentIP, pCf);
+    if (pCf != NULL)
+        SetupWatsonBucket(currentIP, pCf);
 #endif // !TARGET_UNIX
 
     EX_TRY
     {
-        struct
-        {
-            StackTraceArrayProtect stackTrace;
-            PTRARRAYREF pKeepAliveArray = NULL; // Object array of Managed Resolvers / Loader Allocators of methods that can be collected
-            OBJECTREF keepAliveObject = NULL;
-        } gc;
-
-        GCPROTECT_BEGIN_THREAD(pThread, gc);
-
         // Fetch the stacktrace and the keepAlive array from the exception object. It returns clones of those arrays in case the
         // stack trace was created by a different thread.
-        ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace.m_pStackTraceArray, &gc.pKeepAliveArray, pThread);
+        gc.pThrowable->GetStackTrace(gc.stackTrace.m_pStackTraceArray, &gc.pKeepAliveArray, pThread);
 
         // The stack trace returned by the GetStackTrace has to be created by the current thread or be NULL.
         _ASSERTE((gc.stackTrace.m_pStackTraceArray.Get() == NULL) || (gc.stackTrace.m_pStackTraceArray.GetObjectThread() == pThread));
@@ -2759,23 +2799,23 @@ void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
         {
             _ASSERTE(keepAliveItemsCount > 0);
             gc.pKeepAliveArray->SetAt(0, gc.stackTrace.m_pStackTraceArray.Get());
-            ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.pKeepAliveArray));
+            gc.pThrowable->SetStackTrace(dac_cast<OBJECTREF>(gc.pKeepAliveArray));
         }
         else
         {
             _ASSERTE(keepAliveItemsCount == 0);
-            ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.stackTrace.m_pStackTraceArray.Get()));
+            gc.pThrowable->SetStackTrace(dac_cast<OBJECTREF>(gc.stackTrace.m_pStackTraceArray.Get()));
         }
 
         // Clear the _stackTraceString field as it no longer matches the stack trace
-        ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTraceString(NULL);
-
-        GCPROTECT_END();    // gc
+        gc.pThrowable->SetStackTraceString(NULL);
     }
     EX_CATCH
     {
     }
     EX_END_CATCH
+
+    GCPROTECT_END();
 }
 
 void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP)
@@ -4312,6 +4352,14 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 
     LONG retVal = EXCEPTION_CONTINUE_SEARCH;
 
+#ifdef TARGET_WINDOWS
+    if (NtCurrentTeb()->ThreadLocalStoragePointer == NULL)
+    {
+        // Early out when TLS is not available due to unhandled exception during early thread initialization
+        return retVal;
+    }
+#endif // TARGET_WINDOWS
+
     // Incase of unhandled exceptions on managed threads, we kick in our UE processing at the thread base and also invoke
     // UEF callbacks that various runtimes have registered with us. Once the callbacks return, we return back to the OS
     // to give other registered UEFs a chance to do their custom processing.
@@ -5463,9 +5511,8 @@ static uintptr_t writeBarrierAVLocations[] =
 };
 
 // Check if the passed in instruction pointer is in one of the
-// write barrier helper functions. These are leaf functions that do not
-// set up a frame, so we can unwind them with a simple LR/RA extraction.
-static bool IsIPInWriteBarrierHelper(PCODE uControlPc)
+// JIT helper functions.
+bool IsIPInMarkedJitHelper(PCODE uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -5483,136 +5530,27 @@ static bool IsIPInWriteBarrierHelper(PCODE uControlPc)
             return true;
     }
 
-#define CHECK_WRITE_BARRIER_RANGE(name) \
+#define CHECK_RANGE(name) \
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
 
 #ifndef TARGET_X86
-    CHECK_WRITE_BARRIER_RANGE(JIT_WriteBarrier)
-    CHECK_WRITE_BARRIER_RANGE(JIT_CheckedWriteBarrier)
-    CHECK_WRITE_BARRIER_RANGE(JIT_ByRefWriteBarrier)
+    CHECK_RANGE(JIT_WriteBarrier)
+    CHECK_RANGE(JIT_CheckedWriteBarrier)
+    CHECK_RANGE(JIT_ByRefWriteBarrier)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+    CHECK_RANGE(JIT_StackProbe)
+#endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #else
-    CHECK_WRITE_BARRIER_RANGE(JIT_WriteBarrierGroup)
-    CHECK_WRITE_BARRIER_RANGE(JIT_PatchedWriteBarrierGroup)
+    CHECK_RANGE(JIT_WriteBarrierGroup)
+    CHECK_RANGE(JIT_PatchedWriteBarrierGroup)
 #endif // TARGET_X86
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
-    CHECK_WRITE_BARRIER_RANGE(JIT_WriteBarrier_Debug)
+    CHECK_RANGE(JIT_WriteBarrier_Debug)
 #endif
-
-#undef CHECK_WRITE_BARRIER_RANGE
 #endif // !FEATURE_PORTABLE_HELPERS
 
     return false;
-}
-
-// Check if the passed in instruction pointer is in JIT_StackProbe.
-// JIT_StackProbe exists on AMD64 and ARM only.
-static bool IsIPInJITStackProbe(PCODE uControlPc)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifndef FEATURE_PORTABLE_HELPERS
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    if (GetEEFuncEntryPoint(JIT_StackProbe) <= uControlPc && uControlPc < GetEEFuncEntryPoint(JIT_StackProbe_End))
-        return true;
-#endif // !TARGET_X86 && !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
-#endif // !FEATURE_PORTABLE_HELPERS
-
-    return false;
-}
-
-// Check if the passed in instruction pointer is in one of the
-// JIT helper functions.
-bool IsIPInMarkedJitHelper(PCODE uControlPc)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (IsIPInWriteBarrierHelper(uControlPc))
-        return true;
-
-    if (IsIPInJITStackProbe(uControlPc))
-        return true;
-
-    return false;
-}
-
-// Unwind JIT_StackProbe to its caller. JIT_StackProbe has different frame layouts
-// depending on the platform:
-// - AMD64 Windows: leaf function (no frame), return address at [RSP]
-// - AMD64 Unix: RBP frame (push rbp; mov rbp, rsp), return address at [RBP+8]
-// - ARM: R7 frame (push {r7}; mov r7, sp), return address in LR (already saved by caller)
-static void UnwindJITStackProbeToCaller(CONTEXT* pContext)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#if defined(TARGET_AMD64)
-#ifdef TARGET_UNIX
-    // AMD64 Unix: JIT_StackProbe has an RBP frame (push rbp; mov rbp, rsp)
-    // Return address is at [RBP + 8], saved RBP is at [RBP]
-    TADDR rbp = GetFP(pContext);
-    PCODE returnAddress = *dac_cast<PTR_PCODE>(rbp + 8);
-    SetIP(pContext, returnAddress);
-    SetFP(pContext, *dac_cast<PTR_PCODE>(rbp)); // restore RBP
-    SetSP(pContext, rbp + 16); // RSP after ret = RBP + 16
-#else // TARGET_WINDOWS
-    // AMD64 Windows: JIT_StackProbe is a leaf function (no frame)
-    // Return address is at [RSP], simulate a ret instruction
-    PCODE returnAddress = *dac_cast<PTR_PCODE>(GetSP(pContext));
-    SetIP(pContext, returnAddress);
-    SetSP(pContext, GetSP(pContext) + sizeof(void*)); // pop the stack
-#endif // TARGET_UNIX
-#elif defined(TARGET_ARM)
-    // ARM: JIT_StackProbe has an R7 frame (push {r7}; mov r7, sp)
-    // At the point of AV, R7 contains the frame pointer.
-    // Return address is in LR (ARM calling convention, caller saved LR before call).
-    // Saved R7 is at [R7], we need to restore R7 and SP.
-    TADDR r7 = pContext->R7;
-    SetIP(pContext, pContext->Lr);
-    pContext->R7 = *dac_cast<PTR_TADDR>(r7); // restore R7
-    SetSP(pContext, r7 + 4); // SP after pop {r7} and ret
-#else
-    // JIT_StackProbe doesn't exist on other architectures
-    UNREACHABLE();
-#endif
-}
-
-// Unwind a write barrier helper to its caller. Write barriers are leaf functions
-// that do not set up a frame, so we can unwind them by simply extracting the
-// return address from LR/RA (on ARM/RISC-V) or from the stack (on x86/x64).
-//
-// Similar to NativeAOT's UnwindSimpleHelperToCaller in EHHelpers.cpp.
-static void UnwindWriteBarrierToCaller(CONTEXT* pContext)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#if defined(TARGET_AMD64)
-    // On x64, return address is at [RSP], simulate a ret instruction
-    PCODE returnAddress = *dac_cast<PTR_PCODE>(GetSP(pContext));
-    SetIP(pContext, returnAddress);
-    SetSP(pContext, GetSP(pContext) + sizeof(void*)); // pop the stack
-#elif defined(TARGET_X86)
-    // On x86, return address is at [ESP], simulate a ret instruction
-    PCODE returnAddress = *dac_cast<PTR_PCODE>(GetSP(pContext));
-    SetIP(pContext, returnAddress);
-    SetSP(pContext, GetSP(pContext) + sizeof(void*)); // pop the stack
-#elif defined(TARGET_ARM64)
-    // On ARM64, return address is in LR, no stack adjustment needed for leaf
-    SetIP(pContext, pContext->Lr);
-#elif defined(TARGET_ARM)
-    // On ARM, return address is in LR
-    SetIP(pContext, pContext->Lr);
-#elif defined(TARGET_LOONGARCH64)
-    // On LoongArch64, return address is in RA
-    SetIP(pContext, pContext->Ra);
-#elif defined(TARGET_RISCV64)
-    // On RISC-V64, return address is in RA
-    SetIP(pContext, pContext->Ra);
-#elif defined(TARGET_WASM)
-    // WASM uses interpreter, write barriers don't fault
-    UNREACHABLE();
-#else
-#error "UnwindWriteBarrierToCaller not implemented for this architecture"
-#endif
 }
 
 // Returns TRUE if caller should resume execution.
@@ -5721,32 +5659,33 @@ AdjustContextForJITHelpers(
             pContext = &tempContext;
         }
 
-        if (IsIPInWriteBarrierHelper(f_IP))
-        {
-            // Write barriers are leaf functions that do not set up a frame.
-            // We can unwind them with a simple LR/RA/stack-pop extraction.
-            UnwindWriteBarrierToCaller(pContext);
+        Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // On ARM/ARM64/LoongArch64/RISC-V, adjust IP to point to the call instruction
-            // rather than the return address, so the exception appears to originate
-            // from the managed code that called the write barrier.
-            PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
-            SetIP(pContext, ControlPCPostAdjustment);
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-        }
-        else
-        {
-            // JIT_StackProbe has a known frame layout on each platform.
-            UnwindJITStackProbeToCaller(pContext);
+        // We had an AV in the writebarrier that needs to be treated
+        // as originating in managed code. At this point, the stack (growing
+        // from left->right) looks like this:
+        //
+        // ManagedFunc -> Native_WriteBarrierInVM -> AV
+        //
+        // We just performed an unwind from the write-barrier
+        // and now have the context in ManagedFunc. Since
+        // ManagedFunc called into the write-barrier, the return
+        // address in the unwound context corresponds to the
+        // instruction where the call will return.
+        //
+        // On ARM, just like we perform ControlPC adjustment
+        // during exception dispatch (refer to ExInfo::InitializeCrawlFrame),
+        // we will need to perform the corresponding adjustment of IP
+        // we got from unwind above, so as to indicate that the AV
+        // happened "before" the call to the writebarrier and not at
+        // the instruction at which the control will return.
+       PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
 
-#if defined(TARGET_ARM)
-            // On ARM, adjust IP to point to the call instruction
-            // rather than the return address.
-            PCODE ControlPCPostAdjustment = GetIP(pContext) - STACKWALK_CONTROLPC_ADJUST_OFFSET;
-            SetIP(pContext, ControlPCPostAdjustment);
-#endif // TARGET_ARM
-        }
+       // Now we save the address back into the context so that it gets used
+       // as the faulting address.
+       SetIP(pContext, ControlPCPostAdjustment);
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         // Unwind the frame chain - On Win64, this is required since we may handle the managed fault and to do so,
         // we will replace the exception context with the managed context and "continue execution" there. Thus, we do not
@@ -6906,6 +6845,39 @@ size_t GetSSPForFrameOnCurrentStack(TADDR ip);
 void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP)
 {
     throw ResumeAfterCatchException(resumeSP, resumeIP);
+}
+
+VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    CONTEXT context;
+    ClrCaptureContext(&context);
+
+    // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
+    Thread::VirtualUnwindToFirstManagedCallFrame(&context);
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    size_t targetSSP = GetSSPForFrameOnCurrentStack(GetIP(&context));
+#else
+    size_t targetSSP = 0;
+#endif
+
+    // Skip all managed frames upto a native frame
+    while (ExecutionManager::IsManagedCode(GetIP(&context)))
+    {
+        Thread::VirtualUnwindCallFrame(&context);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+        if (targetSSP != 0)
+        {
+            targetSSP += sizeof(size_t);
+        }
+#endif
+    }
+
+    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, &context, targetSSP, resumeSP, resumeIP);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -10770,9 +10742,9 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-#if defined(DACCESS_COMPILE) && defined(TARGET_X86)
-// X86 unwinding always works in terms of context pointers, so they need to be in the correct address space when debugging
-// This may work for other architectures as well, but that isn't tested.
+#if defined(DACCESS_COMPILE)
+// Context pointers in m_ContextPointers reference the target process address space and cannot be used directly.
+// Point them at the local context copy instead.
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &pRD->pCurrentContext->regname;
 #else
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = m_ContextPointers.regname;
@@ -10846,9 +10818,9 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
 
     // Read FP callee-saved registers (xmm6-xmm15) from the stack
     // They are stored at negative offsets from TransitionBlock:
-    // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [padding (8)] [CalleeSavedRegs] [RetAddr] [ArgRegs]
-    // xmm6 is at sp+32, TransitionBlock is at sp+264, so xmm6 is at TransitionBlock - 232
-    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 232);
+    // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [arg regs (32)] [padding (8)] [CalleeSavedRegs] [RetAddr]
+    // xmm6 is at sp+32, TransitionBlock is at sp+296, so xmm6 is at TransitionBlock - 264
+    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 264);
 
     m_Context.Xmm6 = pFpCalleeSaved[0];
     m_Context.Xmm7 = pFpCalleeSaved[1];
@@ -11215,156 +11187,5 @@ void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
 
     Push(pThread);
 }
-
-// Static helper to populate a CONTEXT from a TransitionBlock for OSR transitions.
-// This shares similar logic with UpdateContextFromTransitionBlock but also handles
-// platform-specific adjustments needed for OSR (like simulating the call stack alignment).
-//
-// Returns the adjusted SP and FP values that the OSR method should use.
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-void SoftwareExceptionFrame::UpdateContextForOSRTransition(TransitionBlock* pTransitionBlock, CONTEXT* pContext, 
-                                                           UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#if defined(TARGET_AMD64)
-#if defined(TARGET_WINDOWS)
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
-
-    // Read FP callee-saved registers (xmm6-xmm15) from the stack
-    // Layout: [shadow (32)] [xmm6-xmm15 (160)] [xmm0-xmm3 (64)] [padding (8)] [CalleeSavedRegs] [RetAddr] [ArgRegs]
-    // xmm6 is at sp+32, TransitionBlock is at sp+264, so xmm6 is at TransitionBlock - 232
-    M128A *pFpCalleeSaved = (M128A*)((BYTE*)pTransitionBlock - 232);
-
-    pContext->Xmm6 = pFpCalleeSaved[0];
-    pContext->Xmm7 = pFpCalleeSaved[1];
-    pContext->Xmm8 = pFpCalleeSaved[2];
-    pContext->Xmm9 = pFpCalleeSaved[3];
-    pContext->Xmm10 = pFpCalleeSaved[4];
-    pContext->Xmm11 = pFpCalleeSaved[5];
-    pContext->Xmm12 = pFpCalleeSaved[6];
-    pContext->Xmm13 = pFpCalleeSaved[7];
-    pContext->Xmm14 = pFpCalleeSaved[8];
-    pContext->Xmm15 = pFpCalleeSaved[9];
-
-    // Initialize FP control/status
-    pContext->FltSave.ControlWord = 0x27F;
-    pContext->FltSave.MxCsr = 0x1F80;
-    pContext->FltSave.MxCsr_Mask = 0x1FFF;
-    pContext->MxCsr = 0x1F80;
-#else // UNIX_AMD64_ABI
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-#endif
-
-    // Copy integer callee-saved registers from TransitionBlock
-    pContext->Rbx = pTransitionBlock->m_calleeSavedRegisters.Rbx;
-    pContext->Rbp = pTransitionBlock->m_calleeSavedRegisters.Rbp;
-    pContext->R12 = pTransitionBlock->m_calleeSavedRegisters.R12;
-    pContext->R13 = pTransitionBlock->m_calleeSavedRegisters.R13;
-    pContext->R14 = pTransitionBlock->m_calleeSavedRegisters.R14;
-    pContext->R15 = pTransitionBlock->m_calleeSavedRegisters.R15;
-#if defined(TARGET_WINDOWS)
-    pContext->Rdi = pTransitionBlock->m_calleeSavedRegisters.Rdi;
-    pContext->Rsi = pTransitionBlock->m_calleeSavedRegisters.Rsi;
-#endif
-
-    // SP points just past the TransitionBlock (after return address)
-    // Adjust for call simulation: OSR method expects SP as if a call just happened
-    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
-    _ASSERTE(*pCurrentSP % 16 == 0);
-    *pCurrentSP -= 8;  // Simulate the call pushing return address
-    *pCurrentFP = pTransitionBlock->m_calleeSavedRegisters.Rbp;
-
-#elif defined(TARGET_ARM64)
-    // Restore control and integer registers, matching the x64 approach
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-
-    // Copy callee-saved registers x19-x28 from TransitionBlock
-    // These are the values F() had when it called JIT_Patchpoint
-    pContext->X19 = pTransitionBlock->m_calleeSavedRegisters.x19;
-    pContext->X20 = pTransitionBlock->m_calleeSavedRegisters.x20;
-    pContext->X21 = pTransitionBlock->m_calleeSavedRegisters.x21;
-    pContext->X22 = pTransitionBlock->m_calleeSavedRegisters.x22;
-    pContext->X23 = pTransitionBlock->m_calleeSavedRegisters.x23;
-    pContext->X24 = pTransitionBlock->m_calleeSavedRegisters.x24;
-    pContext->X25 = pTransitionBlock->m_calleeSavedRegisters.x25;
-    pContext->X26 = pTransitionBlock->m_calleeSavedRegisters.x26;
-    pContext->X27 = pTransitionBlock->m_calleeSavedRegisters.x27;
-    pContext->X28 = pTransitionBlock->m_calleeSavedRegisters.x28;
-
-    // F()'s FP points to where F() saved [caller_fp, caller_lr]
-    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.x29;
-    // Read Test()'s FP and LR from F()'s stack frame
-    TADDR callerFP = *((TADDR*)managedFrameFP);          // Test()'s FP at [F's FP + 0]
-    TADDR callerLR = *((TADDR*)(managedFrameFP + 8));    // LR to Test() at [F's FP + 8]
-
-    // CRITICAL: Use Test()'s FP (callerFP), not F()'s FP (managedFrameFP)!
-    pContext->Fp = callerFP;
-    pContext->Lr = callerLR;
-
-    // SP = F()'s SP when it called JIT_Patchpoint
-    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
-    // FP output should also be caller's FP
-    *pCurrentFP = callerFP;
-
-#elif defined(TARGET_LOONGARCH64)
-    // Restore control and integer registers, matching the ARM64 approach
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-
-    // Copy callee-saved registers s0-s8 from TransitionBlock
-    pContext->S0 = pTransitionBlock->m_calleeSavedRegisters.s0;
-    pContext->S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
-    pContext->S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
-    pContext->S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
-    pContext->S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
-    pContext->S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
-    pContext->S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
-    pContext->S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
-    pContext->S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
-
-    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
-    TADDR callerFP = *((TADDR*)managedFrameFP);
-    TADDR callerRA = *((TADDR*)(managedFrameFP + 8));
-
-    pContext->Fp = callerFP;
-    pContext->Ra = callerRA;
-
-    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
-    *pCurrentFP = callerFP;
-
-#elif defined(TARGET_RISCV64)
-    // Restore control and integer registers, matching the ARM64 approach
-    pContext->ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-
-    // Copy callee-saved registers s1-s11 from TransitionBlock
-    pContext->S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
-    pContext->S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
-    pContext->S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
-    pContext->S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
-    pContext->S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
-    pContext->S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
-    pContext->S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
-    pContext->S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
-    pContext->S9 = pTransitionBlock->m_calleeSavedRegisters.s9;
-    pContext->S10 = pTransitionBlock->m_calleeSavedRegisters.s10;
-    pContext->S11 = pTransitionBlock->m_calleeSavedRegisters.s11;
-    pContext->Tp = pTransitionBlock->m_calleeSavedRegisters.tp;
-    pContext->Gp = pTransitionBlock->m_calleeSavedRegisters.gp;
-
-    UINT_PTR managedFrameFP = pTransitionBlock->m_calleeSavedRegisters.fp;
-    TADDR callerFP = *((TADDR*)managedFrameFP);
-    TADDR callerRA = *((TADDR*)(managedFrameFP + 8));
-
-    pContext->Fp = callerFP;
-    pContext->Ra = callerRA;
-
-    *pCurrentSP = (UINT_PTR)(pTransitionBlock + 1);
-    *pCurrentFP = callerFP;
-
-#else
-#error "Unsupported platform for OSR TransitionBlock-based context capture"
-#endif
-}
-#endif // FEATURE_ON_STACK_REPLACEMENT
 
 #endif // DACCESS_COMPILE
