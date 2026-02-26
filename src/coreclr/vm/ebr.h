@@ -122,6 +122,7 @@ private:
 // bucket arrays during resize).
 extern EbrCollector g_EbrCollector;
 
+#ifndef DACCESS_COMPILE
 // RAII holder for EBR critical regions, analogous to GCX_COOP pattern.
 // When fEnable is false, the holder is a no-op.
 class EbrCriticalRegionHolder final
@@ -150,5 +151,6 @@ public:
 private:
     EbrCollector* m_pCollector;
 };
+#endif // !DACCESS_COMPILE
 
 #endif // __EBR_H__

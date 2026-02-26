@@ -525,7 +525,7 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
     // EBR protects against use-after-free of old bucket arrays during GrowHashTable.
 #ifndef DACCESS_COMPILE
    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, /* fEnable */ true);
-#endif
+#endif // !DACCESS_COMPILE
 
     // Atomic transaction. In any other point of this method or ANY of the callees of this function you can not read
     // from m_pVolatileBucketTable!!!!!!! A racing condition would occur.
@@ -579,7 +579,9 @@ FORCEINLINE EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>:
     }
     CONTRACTL_END
 
+#ifndef DACCESS_COMPILE
     EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, /* fEnable */ true);
+#endif // !DACCESS_COMPILE
 
     // Atomic transaction. In any other point of this method or ANY of the callees of this function you can not read
     // from m_pVolatileBucketTable!!!!!!! A racing condition would occur.
@@ -777,7 +779,9 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::
 
     _ASSERTE_IMPL(OwnLock());
 
+#ifndef DACCESS_COMPILE
     EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, /* fEnable */ true);
+#endif // !DACCESS_COMPILE
 
     _ASSERTE(pIter->m_pTable == (void *) this);
 
