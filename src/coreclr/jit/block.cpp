@@ -522,7 +522,10 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_ALIGN, "has-align"},
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
+        {BBF_HAS_VALUE_PROFILE, "val-prof"},
+        {BBF_MAY_HAVE_BOUNDS_CHECKS, "bnds-chk"},
         {BBF_ASYNC_RESUMPTION, "resume"},
+        {BBF_THROW_HELPER, "throw-hlpr"},
     };
 
     bool first = true;

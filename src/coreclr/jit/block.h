@@ -548,7 +548,7 @@ enum class BasicBlockVisit
 // for every edge weight. These two fields, 'flEdgeWeightMin' and 'flEdgeWeightMax'
 // are used to hold a bounded range.  Most often these will converge such
 // that both values are the same and that value is the exact edge weight.
-// Sometimes we are left with a rage of possible values between [Min..Max]
+// Sometimes we are left with a range of possible values between [Min..Max]
 // which represents an inexact edge weight.
 //
 // The bbPreds list is initially created by Compiler::fgLinkBasicBlocks()
@@ -643,7 +643,7 @@ public:
     }
 
     void setLikelihood(weight_t likelihood);
-    void addLikelihood(weight_t addedLikelihod);
+    void addLikelihood(weight_t addedLikelihood);
 
     void clearLikelihood()
     {
@@ -1262,11 +1262,11 @@ public:
     // Similar to inheritWeight(), but we're splitting a block (such as creating blocks for qmark removal).
     // So, specify a percentage (0 to 100) of the weight the block should inherit.
     //
-    // Can be invoked as a self-rescale, eg: block->inheritWeightPecentage(block, 50))
+    // Can be invoked as a self-rescale, eg: block->inheritWeightPercentage(block, 50)
     //
     void inheritWeightPercentage(BasicBlock* bSrc, unsigned percentage)
     {
-        assert(0 <= percentage && percentage <= 100);
+        assert(percentage <= 100);
 
         this->bbWeight                         = (bSrc->bbWeight * percentage) / 100;
         const BasicBlockFlags hasProfileWeight = bSrc->GetFlagsRaw() & BBF_PROF_WEIGHT;
@@ -1323,7 +1323,7 @@ public:
         return KindIs(kind) || KindIs(rest...);
     }
 
-    bool HasTerminator()
+    bool HasTerminator() const
     {
         return KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_COND, BBJ_SWITCH, BBJ_RETURN);
     }
@@ -1829,7 +1829,7 @@ public:
     // SuccEdges: convenience method for enabling range-based `for` iteration over unique successor edges, e.g.:
     //    for (FlowEdge* const edge : block->SuccEdges()) ...
     //
-    BBSuccList<FlowEdgeArrayIterator> SuccEdges()
+    BBSuccList<FlowEdgeArrayIterator> SuccEdges() const
     {
         return BBSuccList<FlowEdgeArrayIterator>(this);
     }
