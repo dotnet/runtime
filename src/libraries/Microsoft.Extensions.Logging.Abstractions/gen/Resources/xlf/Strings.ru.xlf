@@ -204,22 +204,22 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
         <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported params or scoped parameter modifier</target>
+        <target state="translated">Аргумент "{0}" использует неподдерживаемые параметры или модификатор параметра с ограниченной областью</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
         <source>Argument is using the unsupported params or scoped parameter modifier</source>
-        <target state="new">Argument is using the unsupported params or scoped parameter modifier</target>
+        <target state="translated">Аргумент использует неподдерживаемые параметры или модификатор параметра с ограниченной областью</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
         <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
-        <target state="new">Parameter '{0}' is a ref struct, which is not supported by the logging source generator</target>
+        <target state="translated">Параметр "{0}" — это структура ref, которая не поддерживается генератором исходных данных для ведения журнала</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
         <source>Logging method parameter is a ref struct</source>
-        <target state="new">Logging method parameter is a ref struct</target>
+        <target state="translated">Параметр метода ведения журнала — это структура ref</target>
         <note />
       </trans-unit>
     </body>
