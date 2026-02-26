@@ -2438,7 +2438,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     assert(intrin.numOperands == 4);
 
-                    ssize_t shift = 0;
+                    ssize_t   shift   = 0;
                     regNumber tempReg = internalRegisters.GetSingle(node, RBM_ALLFLOAT);
 
                     if (intrin.id == NI_Sve2_Scatter16BitNarrowingNonTemporal)
