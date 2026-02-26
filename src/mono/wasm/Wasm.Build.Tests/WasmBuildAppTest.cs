@@ -105,7 +105,7 @@ namespace Wasm.Build.Tests
                 public class TestClass {
                     public static int Main() => throw new Exception("MessageFromMyException");
                 }
-                """, config, aot, expectedExitCode: 1, expectedOutput: "Error: MessageFromMyException");
+                """, config, aot, expectedExitCode: 1, expectedOutput: "MessageFromMyException");
 
         private static string s_bug49588_ProgramCS = @"
             using System;
