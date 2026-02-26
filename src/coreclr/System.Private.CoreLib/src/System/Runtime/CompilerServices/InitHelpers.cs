@@ -49,5 +49,28 @@ namespace System.Runtime.CompilerServices
             else
                 InitClassSlow(pMT);
         }
+
+
+        [DebuggerHidden]
+        [UnmanagedCallersOnly]
+        internal static void CallClassConstructor(delegate* unmanaged<void> cctor, MethodTable* instantiatingArg, Exception* pException)
+        {
+            try
+            {
+                if (instantiatingArg == null)
+                {
+                    cctor();
+                }
+                else
+                {
+                    RuntimeHelpers.SetNextCallGenericContext(instantiatingArg);
+                    cctor();
+                }
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

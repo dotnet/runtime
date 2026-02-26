@@ -110,40 +110,6 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 }
 #endif // !defined(HOST_64BIT) && defined(_DEBUG)
 
-void DispatchCallDebuggerWrapper(
-    CallDescrData *   pCallDescrData,
-    BOOL fCriticalCall
-)
-{
-    // Use static contracts b/c we have SEH.
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    struct Param : NotifyOfCHFFilterWrapperParam
-    {
-        CallDescrData * pCallDescrData;
-        BOOL fCriticalCall;
-    } param;
-
-    param.pFrame = NULL;
-    param.pCallDescrData = pCallDescrData;
-    param.fCriticalCall = fCriticalCall;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        CallDescrWorkerWithHandler(
-            pParam->pCallDescrData,
-            pParam->fCriticalCall);
-    }
-    PAL_EXCEPT_FILTER(AppDomainTransitionExceptionFilter)
-    {
-        // Should never reach here b/c handler should always continue search.
-        _ASSERTE(!"Unreachable");
-    }
-    PAL_ENDTRY
-}
-
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info,
     bool handleGcRefs)
@@ -232,16 +198,7 @@ void* DispatchCallSimple(
     }
 #endif // TARGET_WASM
 
-    if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
-    {
-        DispatchCallDebuggerWrapper(
-            &callDescrData,
-            dwDispatchCallSimpleFlags & DispatchCallSimple_CriticalCall);
-    }
-    else
-    {
-        CallDescrWorkerWithHandler(&callDescrData, dwDispatchCallSimpleFlags & DispatchCallSimple_CriticalCall);
-    }
+    CallDescrWorkerWithHandler(&callDescrData, dwDispatchCallSimpleFlags & DispatchCallSimple_CriticalCall);
 
     return *(void **)(&callDescrData.returnValue);
 }
@@ -606,13 +563,9 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     MethodDesc *pMD = pMT->GetDefaultConstructor();
 
-    PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
-    DECLARE_ARGHOLDER_ARRAY(CtorArgs, 1);
-    CtorArgs[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(ref);
+    UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
 
-    // Call the ctor...
-    CATCH_HANDLER_FOUND_NOTIFICATION_CALLSITE;
-    CALL_MANAGED_METHOD_NORET(CtorArgs);
+    defaultCtorInvoker.InvokeThrowing(&ref, pMD->GetSingleCallableAddrOfCode());
 
     GCPROTECT_END ();
 }

@@ -502,7 +502,6 @@ enum EEToManagedCallFlags
 enum DispatchCallSimpleFlags
 {
     DispatchCallSimple_CriticalCall                  = 0x0001,
-    DispatchCallSimple_CatchHandlerFoundNotification = 0x0002,
 };
 
 #define ARGHOLDER_TYPE LPVOID
@@ -566,25 +565,11 @@ enum DispatchCallSimpleFlags
         SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, __pObjMT);                       \
         PCODE __pSlot = (PCODE) __pObjMT->GetRestoredSlot(slotNumber);
 
-#define PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD)   \
-        PCODE __pSlot = (pMD)->GetSingleCallableAddrOfCode();
-
 #define PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pCode)       \
         PCODE __pSlot = pCode;
 
 #define CRITICAL_CALLSITE                                   \
         __dwDispatchCallSimpleFlags |= DispatchCallSimple_CriticalCall;
-
-// This flag should be used for callsites that catch exception up the stack inside the VM. The most common causes are
-// such as END_DOMAIN_TRANSITION or EX_CATCH. Catching exceptions in the managed code is properly instrumented and
-// does not need this notification.
-//
-// The notification is what enables both the managed 'unhandled exception' dialog and the 'user unhandled' dialog when
-// JMC is turned on. Many things that VS puts up the unhandled exception dialog for are actually cases where the native
-// exception was caught, for example catching exceptions at the thread base. JMC requires further accuracy - in that case
-// VS is checking to see if an exception escaped particular ranges of managed code frames.
-#define CATCH_HANDLER_FOUND_NOTIFICATION_CALLSITE            \
-        __dwDispatchCallSimpleFlags |= DispatchCallSimple_CatchHandlerFoundNotification;
 
 #define PERFORM_CALL    \
         void * __retval = NULL;                         \
@@ -761,7 +746,7 @@ public:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        
+
         // Sanity check - UnmanagedCallersOnly methods must be in CoreLib.
         // See below load level override.
         _ASSERTE(_pMD->GetModule()->IsSystem());
