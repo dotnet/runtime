@@ -23,9 +23,11 @@ public class GCTests
         ulong[] fillPointers = [0x1000, 0x2000, 0x3000, 0x4000, 0x5000, 0x6000, 0x7000];
 
         Target target = new TestPlaceholderTarget.Builder(arch)
-            .AddGCHeapWks(gc => gc
-                .SetGenerations(generations)
-                .SetFillPointers(fillPointers))
+            .AddGCHeapWks(gc =>
+            {
+                gc.Generations = generations;
+                gc.FillPointers = fillPointers;
+            })
             .Build();
         IGC gc = target.Contracts.GC;
 
@@ -56,9 +58,11 @@ public class GCTests
         ulong[] fillPointers = [0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666, 0x7777];
 
         Target target = new TestPlaceholderTarget.Builder(arch)
-            .AddGCHeapWks(gc => gc
-                .SetGenerations(generations)
-                .SetFillPointers(fillPointers))
+            .AddGCHeapWks(gc =>
+            {
+                gc.Generations = generations;
+                gc.FillPointers = fillPointers;
+            })
             .Build();
         IGC gc = target.Contracts.GC;
 
@@ -87,9 +91,11 @@ public class GCTests
         ulong[] fillPointers = [0x1001, 0x2002, 0x3003, 0x4004, 0x5005, 0x6006, 0x7007];
 
         Target target = new TestPlaceholderTarget.Builder(arch)
-            .AddGCHeapWks(gc => gc
-                .SetGenerations(generations)
-                .SetFillPointers(fillPointers))
+            .AddGCHeapWks(gc =>
+            {
+                gc.Generations = generations;
+                gc.FillPointers = fillPointers;
+            })
             .Build();
         IGC gc = target.Contracts.GC;
 

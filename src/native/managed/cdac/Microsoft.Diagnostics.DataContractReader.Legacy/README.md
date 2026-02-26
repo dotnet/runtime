@@ -11,13 +11,13 @@ replace it with a cDAC implementation following this pattern:
 ```csharp
 int ISOSDacInterface8.ExampleMethod(uint* pResult)
 {
-    // 1. Validate pointer arguments before the try block
-    if (pResult == null)
-        return HResults.E_INVALIDARG;
-
     int hr = HResults.S_OK;
     try
     {
+        // 1. Validate pointer arguments inside the try block
+        if (pResult is null)
+            throw new ArgumentException();
+
         // 2. Get the relevant contract and call it
         IGC gc = _target.Contracts.GC;
         *pResult = gc.SomeMethod();
@@ -48,8 +48,8 @@ int ISOSDacInterface8.ExampleMethod(uint* pResult)
 
 - **HResult returns**: Methods return `int` HResult codes, not exceptions.
   Use `HResults.S_OK`, `HResults.S_FALSE`, `HResults.E_INVALIDARG`, etc.
-- **Null pointer checks**: Validate output pointer arguments *before* the try block
-  and return `E_INVALIDARG`. This matches the native DAC behavior.
+- **Null pointer checks**: Validate output pointer arguments *inside* the try block
+  and throw `ArgumentException`. The catch block converts this to an HResult code.
 - **Exception handling**: Wrap all contract calls in try/catch. The catch converts
   exceptions to HResult codes via `ex.HResult`. When the native DAC has an explicit
   readability check (e.g., `ptr.IsValid()` or `DACGetMethodTableFromObjectPointer`
@@ -88,7 +88,7 @@ int GetSomeTable(uint count, Data* buffer, uint* pNeeded)
 
 The protocol is:
 1. Always set `*pNeeded` to the required count (if `pNeeded` is not null).
-2. If `count > 0 && buffer == null`: return `E_INVALIDARG`.
+2. If `count > 0 && buffer is null`: throw `ArgumentException`.
 3. If `count < needed`: return `S_FALSE` (buffer too small, but `*pNeeded` is set).
 4. If `count >= needed`: populate `buffer` and return `S_OK`.
 

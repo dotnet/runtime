@@ -2980,16 +2980,6 @@ public sealed unsafe partial class SOSDacImpl
             }
 
         }
-        catch (VirtualReadException)
-        {
-            // The native DAC returns E_INVALIDARG when it cannot read the object's
-            // method table pointer (DACGetMethodTableFromObjectPointer returns NULL)
-            // or when the method table fails structural validation
-            // (DacValidateMethodTable returns false). Both of these cases surface as
-            // VirtualReadException in the cDAC when GetMethodTableAddress or
-            // GetTypeHandle attempt to read unreadable target memory.
-            hr = HResults.E_INVALIDARG;
-        }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
@@ -4509,11 +4499,12 @@ public sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         try
         {
-            if (pGenerations == null)
+            if (pGenerations is null)
                 throw new ArgumentException();
 
-            // Read the total generation count from the global
-            uint totalGenerationCount = _target.ReadGlobal<uint>(Constants.Globals.TotalGenerationCount);
+            IGC gc = _target.Contracts.GC;
+            GCHeapData heapData = gc.GetHeapData();
+            uint totalGenerationCount = (uint)heapData.GenerationTable.Count;
             *pGenerations = totalGenerationCount;
         }
         catch (System.Exception ex)
@@ -4536,18 +4527,19 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface8.GetGenerationTable(uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded)
+    int ISOSDacInterface8.GetGenerationTable(uint cGenerations, DacpGenerationData* pGenerationData, uint* pNeeded)
     {
-        if (cGenerations > 0 && pGenerationData == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
-            IGC gc = _target.Contracts.GC;
-            uint totalGenerationCount = _target.ReadGlobal<uint>(Constants.Globals.TotalGenerationCount);
+            if (cGenerations > 0 && pGenerationData is null)
+                throw new ArgumentException();
 
-            if (pNeeded != null)
+            IGC gc = _target.Contracts.GC;
+            GCHeapData heapData = gc.GetHeapData();
+            uint totalGenerationCount = (uint)heapData.GenerationTable.Count;
+
+            if (pNeeded is not null)
                 *pNeeded = totalGenerationCount;
 
             if (cGenerations < totalGenerationCount)
@@ -4556,16 +4548,13 @@ public sealed unsafe partial class SOSDacImpl
             }
             else
             {
-                GCHeapData heapData = gc.GetHeapData();
-                DacpGenerationData* genData = (DacpGenerationData*)pGenerationData;
-
-                for (int i = 0; i < (int)totalGenerationCount && i < heapData.GenerationTable.Count; i++)
+                for (int i = 0; i < (int)totalGenerationCount; i++)
                 {
                     GCGenerationData gen = heapData.GenerationTable[i];
-                    genData[i].start_segment = gen.StartSegment.ToClrDataAddress(_target);
-                    genData[i].allocation_start = gen.AllocationStart.ToClrDataAddress(_target);
-                    genData[i].allocContextPtr = gen.AllocationContextPointer.ToClrDataAddress(_target);
-                    genData[i].allocContextLimit = gen.AllocationContextLimit.ToClrDataAddress(_target);
+                    pGenerationData[i].start_segment = gen.StartSegment.ToClrDataAddress(_target);
+                    pGenerationData[i].allocation_start = gen.AllocationStart.ToClrDataAddress(_target);
+                    pGenerationData[i].allocContextPtr = gen.AllocationContextPointer.ToClrDataAddress(_target);
+                    pGenerationData[i].allocContextLimit = gen.AllocationContextLimit.ToClrDataAddress(_target);
                 }
             }
         }
@@ -4578,11 +4567,25 @@ public sealed unsafe partial class SOSDacImpl
         if (_legacyImpl8 is not null)
         {
             uint pNeededLocal;
-            int hrLocal = _legacyImpl8.GetGenerationTable(cGenerations, pGenerationData, &pNeededLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            if (pNeeded is not null)
+            DacpGenerationData[]? genDataLocal = cGenerations > 0 ? new DacpGenerationData[cGenerations] : null;
+            fixed (DacpGenerationData* pGenDataLocal = genDataLocal)
             {
-                Debug.Assert(*pNeeded == pNeededLocal);
+                int hrLocal = _legacyImpl8.GetGenerationTable(cGenerations, pGenDataLocal, &pNeededLocal);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (pNeeded is not null)
+                {
+                    Debug.Assert(*pNeeded == pNeededLocal);
+                }
+                if (hr == HResults.S_OK && pGenerationData is not null)
+                {
+                    for (int i = 0; i < (int)cGenerations; i++)
+                    {
+                        Debug.Assert(pGenDataLocal[i].start_segment == pGenerationData[i].start_segment);
+                        Debug.Assert(pGenDataLocal[i].allocation_start == pGenerationData[i].allocation_start);
+                        Debug.Assert(pGenDataLocal[i].allocContextPtr == pGenerationData[i].allocContextPtr);
+                        Debug.Assert(pGenDataLocal[i].allocContextLimit == pGenerationData[i].allocContextLimit);
+                    }
+                }
             }
         }
 #endif
@@ -4591,17 +4594,17 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface8.GetFinalizationFillPointers(uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded)
     {
-        if (cFillPointers > 0 && pFinalizationFillPointers == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (cFillPointers > 0 && pFinalizationFillPointers is null)
+                throw new ArgumentException();
+
             IGC gc = _target.Contracts.GC;
             GCHeapData heapData = gc.GetHeapData();
             uint numFillPointers = (uint)heapData.FillPointers.Count;
 
-            if (pNeeded != null)
+            if (pNeeded is not null)
                 *pNeeded = numFillPointers;
 
             if (cFillPointers < numFillPointers)
@@ -4625,29 +4628,41 @@ public sealed unsafe partial class SOSDacImpl
         if (_legacyImpl8 is not null)
         {
             uint pNeededLocal;
-            int hrLocal = _legacyImpl8.GetFinalizationFillPointers(cFillPointers, pFinalizationFillPointers, &pNeededLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            if (pNeeded is not null)
+            ClrDataAddress[]? fillPointersLocal = cFillPointers > 0 ? new ClrDataAddress[cFillPointers] : null;
+            fixed (ClrDataAddress* pFillPointersLocal = fillPointersLocal)
             {
-                Debug.Assert(*pNeeded == pNeededLocal);
+                int hrLocal = _legacyImpl8.GetFinalizationFillPointers(cFillPointers, pFillPointersLocal, &pNeededLocal);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (pNeeded is not null)
+                {
+                    Debug.Assert(*pNeeded == pNeededLocal);
+                }
+                if (hr == HResults.S_OK && pFinalizationFillPointers is not null)
+                {
+                    for (int i = 0; i < (int)cFillPointers; i++)
+                    {
+                        Debug.Assert(pFillPointersLocal[i] == pFinalizationFillPointers[i]);
+                    }
+                }
             }
         }
 #endif
         return hr;
     }
 
-    int ISOSDacInterface8.GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded)
+    int ISOSDacInterface8.GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, DacpGenerationData* pGenerationData, uint* pNeeded)
     {
-        if (heapAddr == 0 || (cGenerations > 0 && pGenerationData == null))
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
-            IGC gc = _target.Contracts.GC;
-            uint totalGenerationCount = _target.ReadGlobal<uint>(Constants.Globals.TotalGenerationCount);
+            if (heapAddr == 0 || (cGenerations > 0 && pGenerationData is null))
+                throw new ArgumentException();
 
-            if (pNeeded != null)
+            IGC gc = _target.Contracts.GC;
+            GCHeapData heapData = gc.GetHeapData(heapAddr.ToTargetPointer(_target));
+            uint totalGenerationCount = (uint)heapData.GenerationTable.Count;
+
+            if (pNeeded is not null)
                 *pNeeded = totalGenerationCount;
 
             if (cGenerations < totalGenerationCount)
@@ -4656,16 +4671,13 @@ public sealed unsafe partial class SOSDacImpl
             }
             else
             {
-                GCHeapData heapData = gc.GetHeapData(heapAddr.ToTargetPointer(_target));
-                DacpGenerationData* genData = (DacpGenerationData*)pGenerationData;
-
-                for (int i = 0; i < (int)totalGenerationCount && i < heapData.GenerationTable.Count; i++)
+                for (int i = 0; i < (int)totalGenerationCount; i++)
                 {
                     GCGenerationData gen = heapData.GenerationTable[i];
-                    genData[i].start_segment = gen.StartSegment.ToClrDataAddress(_target);
-                    genData[i].allocation_start = gen.AllocationStart.ToClrDataAddress(_target);
-                    genData[i].allocContextPtr = gen.AllocationContextPointer.ToClrDataAddress(_target);
-                    genData[i].allocContextLimit = gen.AllocationContextLimit.ToClrDataAddress(_target);
+                    pGenerationData[i].start_segment = gen.StartSegment.ToClrDataAddress(_target);
+                    pGenerationData[i].allocation_start = gen.AllocationStart.ToClrDataAddress(_target);
+                    pGenerationData[i].allocContextPtr = gen.AllocationContextPointer.ToClrDataAddress(_target);
+                    pGenerationData[i].allocContextLimit = gen.AllocationContextLimit.ToClrDataAddress(_target);
                 }
             }
         }
@@ -4678,11 +4690,25 @@ public sealed unsafe partial class SOSDacImpl
         if (_legacyImpl8 is not null)
         {
             uint pNeededLocal;
-            int hrLocal = _legacyImpl8.GetGenerationTableSvr(heapAddr, cGenerations, pGenerationData, &pNeededLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            if (pNeeded is not null)
+            DacpGenerationData[]? genDataLocal = cGenerations > 0 ? new DacpGenerationData[cGenerations] : null;
+            fixed (DacpGenerationData* pGenDataLocal = genDataLocal)
             {
-                Debug.Assert(*pNeeded == pNeededLocal);
+                int hrLocal = _legacyImpl8.GetGenerationTableSvr(heapAddr, cGenerations, pGenDataLocal, &pNeededLocal);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (pNeeded is not null)
+                {
+                    Debug.Assert(*pNeeded == pNeededLocal);
+                }
+                if (hr == HResults.S_OK && pGenerationData is not null)
+                {
+                    for (int i = 0; i < (int)cGenerations; i++)
+                    {
+                        Debug.Assert(pGenDataLocal[i].start_segment == pGenerationData[i].start_segment);
+                        Debug.Assert(pGenDataLocal[i].allocation_start == pGenerationData[i].allocation_start);
+                        Debug.Assert(pGenDataLocal[i].allocContextPtr == pGenerationData[i].allocContextPtr);
+                        Debug.Assert(pGenDataLocal[i].allocContextLimit == pGenerationData[i].allocContextLimit);
+                    }
+                }
             }
         }
 #endif
@@ -4691,17 +4717,17 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface8.GetFinalizationFillPointersSvr(ClrDataAddress heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded)
     {
-        if (heapAddr == 0 || (cFillPointers > 0 && pFinalizationFillPointers == null))
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (heapAddr == 0 || (cFillPointers > 0 && pFinalizationFillPointers is null))
+                throw new ArgumentException();
+
             IGC gc = _target.Contracts.GC;
             GCHeapData heapData = gc.GetHeapData(heapAddr.ToTargetPointer(_target));
             uint numFillPointers = (uint)heapData.FillPointers.Count;
 
-            if (pNeeded != null)
+            if (pNeeded is not null)
                 *pNeeded = numFillPointers;
 
             if (cFillPointers < numFillPointers)
@@ -4725,11 +4751,22 @@ public sealed unsafe partial class SOSDacImpl
         if (_legacyImpl8 is not null)
         {
             uint pNeededLocal;
-            int hrLocal = _legacyImpl8.GetFinalizationFillPointersSvr(heapAddr, cFillPointers, pFinalizationFillPointers, &pNeededLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            if (pNeeded is not null)
+            ClrDataAddress[]? fillPointersLocal = cFillPointers > 0 ? new ClrDataAddress[cFillPointers] : null;
+            fixed (ClrDataAddress* pFillPointersLocal = fillPointersLocal)
             {
-                Debug.Assert(*pNeeded == pNeededLocal);
+                int hrLocal = _legacyImpl8.GetFinalizationFillPointersSvr(heapAddr, cFillPointers, pFillPointersLocal, &pNeededLocal);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (pNeeded is not null)
+                {
+                    Debug.Assert(*pNeeded == pNeededLocal);
+                }
+                if (hr == HResults.S_OK && pFinalizationFillPointers is not null)
+                {
+                    for (int i = 0; i < (int)cFillPointers; i++)
+                    {
+                        Debug.Assert(pFillPointersLocal[i] == pFinalizationFillPointers[i]);
+                    }
+                }
             }
         }
 #endif

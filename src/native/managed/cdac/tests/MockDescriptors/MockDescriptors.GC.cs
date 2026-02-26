@@ -14,26 +14,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 /// </summary>
 internal class GCHeapBuilder
 {
-    private GCHeapBuilder.GenerationInput[]? _generations;
-    private ulong[]? _fillPointers;
+    // The native GC sizes m_FillPointers as total_generation_count + ExtraSegCount.
+    private const int DefaultGenerationCount = 4;
+    private const int ExtraSegCount = 2;
 
-    public GCHeapBuilder SetGenerations(params GenerationInput[] generations)
-    {
-        _generations = generations;
-        return this;
-    }
-
-    public GCHeapBuilder SetFillPointers(params ulong[] fillPointers)
-    {
-        _fillPointers = fillPointers;
-        return this;
-    }
-
-    internal GenerationInput[] GetGenerationsOrDefault(uint defaultCount) =>
-        _generations ?? new GenerationInput[defaultCount];
-
-    internal ulong[] GetFillPointersOrDefault(uint generationCount) =>
-        _fillPointers ?? [];
+    public GenerationInput[] Generations { get; set; } = new GenerationInput[DefaultGenerationCount];
+    public ulong[] FillPointers { get; set; } = new ulong[DefaultGenerationCount + ExtraSegCount];
 
     public record struct GenerationInput
     {
@@ -48,7 +34,6 @@ internal static class GCHeapBuilderExtensions
 {
     private const ulong DefaultAllocationRangeStart = 0x0010_0000;
     private const ulong DefaultAllocationRangeEnd = 0x0020_0000;
-    private const uint DefaultGenerationCount = 4;
 
     public static TestPlaceholderTarget.Builder AddGCHeapWks(
         this TestPlaceholderTarget.Builder targetBuilder,
@@ -250,9 +235,9 @@ internal static class GCHeapBuilderExtensions
         TargetTestHelpers helpers = memBuilder.TargetTestHelpers;
         MockMemorySpace.BumpAllocator allocator = memBuilder.CreateAllocator(DefaultAllocationRangeStart, DefaultAllocationRangeEnd);
 
-        GCHeapBuilder.GenerationInput[] generations = config.GetGenerationsOrDefault(DefaultGenerationCount);
+        GCHeapBuilder.GenerationInput[] generations = config.Generations;
         uint genCount = (uint)generations.Length;
-        ulong[] fillPointers = config.GetFillPointersOrDefault(genCount);
+        ulong[] fillPointers = config.FillPointers;
         uint fpLength = (uint)fillPointers.Length;
 
         var types = GetBaseTypes(helpers);
@@ -353,9 +338,9 @@ internal static class GCHeapBuilderExtensions
         TargetTestHelpers helpers = memBuilder.TargetTestHelpers;
         MockMemorySpace.BumpAllocator allocator = memBuilder.CreateAllocator(DefaultAllocationRangeStart, DefaultAllocationRangeEnd);
 
-        GCHeapBuilder.GenerationInput[] generations = config.GetGenerationsOrDefault(DefaultGenerationCount);
+        GCHeapBuilder.GenerationInput[] generations = config.Generations;
         uint genCount = (uint)generations.Length;
-        ulong[] fillPointers = config.GetFillPointersOrDefault(genCount);
+        ulong[] fillPointers = config.FillPointers;
         uint fpLength = (uint)fillPointers.Length;
 
         var types = GetSvrTypes(helpers, genCount);

@@ -52,24 +52,33 @@ only the data the test needs — everything else defaults to zero.
 ```csharp
 // Contract-level test
 Target target = new TestPlaceholderTarget.Builder(arch)
-    .AddGCHeapWks(gc => gc
-        .SetGenerations(gen0, gen1, gen2, gen3)
-        .SetFillPointers(0x1000, 0x2000, 0x3000))
+    .AddGCHeapWks(gc =>
+    {
+        gc.Generations = [gen0, gen1, gen2, gen3];
+        gc.FillPointers = [0x1000, 0x2000, 0x3000];
+    })
     .Build();
 IGC gc = target.Contracts.GC;
 
 // SOSDacImpl-level test
 ISOSDacInterface8 dac8 = new SOSDacImpl(
     new TestPlaceholderTarget.Builder(arch)
-        .AddGCHeapWks(gc => gc.SetGenerations(generations).SetFillPointers(fillPointers))
+        .AddGCHeapWks(gc =>
+        {
+            gc.Generations = generations;
+            gc.FillPointers = fillPointers;
+        })
         .Build(),
     legacyObj: null);
 
 // Server GC — heap address returned via out parameter
 ISOSDacInterface8 dac8 = new SOSDacImpl(
     new TestPlaceholderTarget.Builder(arch)
-        .AddGCHeapSvr(gc => gc.SetGenerations(generations).SetFillPointers(fillPointers),
-            out var heapAddr)
+        .AddGCHeapSvr(gc =>
+        {
+            gc.Generations = generations;
+            gc.FillPointers = fillPointers;
+        }, out var heapAddr)
         .Build(),
     legacyObj: null);
 ```

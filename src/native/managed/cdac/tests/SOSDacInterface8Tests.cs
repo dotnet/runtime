@@ -25,9 +25,11 @@ public unsafe class SOSDacInterface8Tests
     {
         return new SOSDacImpl(
             new TestPlaceholderTarget.Builder(arch)
-                .AddGCHeapWks(gc => gc
-                    .SetGenerations(s_generations)
-                    .SetFillPointers(s_fillPointers))
+                .AddGCHeapWks(gc =>
+                {
+                    gc.Generations = s_generations;
+                    gc.FillPointers = s_fillPointers;
+                })
                 .Build(),
             legacyObj: null);
     }
@@ -36,9 +38,11 @@ public unsafe class SOSDacInterface8Tests
     {
         return new SOSDacImpl(
             new TestPlaceholderTarget.Builder(arch)
-                .AddGCHeapSvr(gc => gc
-                    .SetGenerations(s_generations)
-                    .SetFillPointers(s_fillPointers), out heapAddr)
+                .AddGCHeapSvr(gc =>
+                {
+                    gc.Generations = s_generations;
+                    gc.FillPointers = s_fillPointers;
+                }, out heapAddr)
                 .Build(),
             legacyObj: null);
     }
@@ -78,9 +82,11 @@ public unsafe class SOSDacInterface8Tests
 
         ISOSDacInterface8 dac8 = new SOSDacImpl(
             new TestPlaceholderTarget.Builder(arch)
-                .AddGCHeapWks(gc => gc
-                    .SetGenerations(fiveGenerations)
-                    .SetFillPointers(s_fillPointers))
+                .AddGCHeapWks(gc =>
+                {
+                    gc.Generations = fiveGenerations;
+                    gc.FillPointers = s_fillPointers;
+                })
                 .Build(),
             legacyObj: null);
 
