@@ -233,6 +233,8 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 #else
     dst->UserFlags = 0;
 #endif
+
+    dst->HardLinkCount = (uint32_t)src->st_nlink;
 }
 
 int32_t SystemNative_Stat(const char* path, FileStatus* output)
