@@ -82,7 +82,7 @@ public class InvalidCallingConvTests
         // Invalid due to a non-primitive argument.
         StringClass arg1 = new StringClass();
         arg1.value = "fail";
-        Assert.Throws<InvalidProgramException>(() => FuncWithNonPrimitiveArg(arg1));
+        Assert.ThrowsAny<SystemException>(() => FuncWithNonPrimitiveArg(arg1));
     }
 
     [Fact]

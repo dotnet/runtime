@@ -2943,7 +2943,8 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
                 pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
                 pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)) ||
                 pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR512T)) ||
-                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
+                pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)) ||
+                (pArgMT->IsIntrinsicType() && pArgMT->IsHFA()))
             {
                 COMPlusThrow(kInvalidProgramException);
             }
@@ -2972,6 +2973,10 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
 
             if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))
             {
+                if (argType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    COMPlusThrow(kInvalidProgramException);
+                }
                 swiftErrorCount++;
                 m_hasSwiftError = true;
                 if (swiftErrorCount > 1)
