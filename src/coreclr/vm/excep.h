@@ -679,8 +679,6 @@ private:
         OBJECTREF *pThrowable);
 
 public:
-    BOOL static CanDeliverNotificationToCurrentAppDomain(ExceptionNotificationHandlerType notificationType);
-
     void static DeliverNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pThrowable);
 
 public:

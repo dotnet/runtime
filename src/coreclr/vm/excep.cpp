@@ -9478,37 +9478,20 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
 
 #ifndef DACCESS_COMPILE
 
+static Volatile<BOOL> g_firstChanceExceptionHasHandler = FALSE;
+
+extern "C" void QCALLTYPE AppDomain_SetFirstChanceExceptionHandler()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+    g_firstChanceExceptionHasHandler.Store(TRUE);
+}
+
 // This SEH filter will be invoked when an exception escapes out of the exception notification
 // callback and enters the runtime. In such a case, we ill simply failfast.
 static LONG ExceptionNotificationFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVOID pParam)
 {
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     return -1;
-}
-
-// This method returns a BOOL to indicate if the AppDomain is ready to receive exception notifications or not.
-BOOL ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(ExceptionNotificationHandlerType notificationType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(GetThreadNULLOk() != NULL);
-        PRECONDITION(notificationType  != UnhandledExceptionHandler);
-    }
-    CONTRACTL_END;
-
-    // Do we have handler(s) of the specific type wired up?
-    if (notificationType == FirstChanceExceptionHandler)
-    {
-        return CoreLibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF() != NULL;
-    }
-    else
-    {
-        _ASSERTE(!"Invalid exception notification handler specified!");
-        return FALSE;
-    }
 }
 
 // This method wraps the call to the actual 'DeliverNotificationInternal' method in an SEH filter
@@ -9560,18 +9543,17 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
         // mechanism.
         PRECONDITION(notificationType != UnhandledExceptionHandler);
         PRECONDITION((pThrowable != NULL) && (*pThrowable != NULL));
-        PRECONDITION(ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(notificationType));
     }
     CONTRACTL_END;
 
     _ASSERTE(IsException((*pThrowable)->GetMethodTable()));
-    _ASSERTE(notificationType == FirstChanceExceptionHandler);
 
     // Prevent any async exceptions from this moment on this thread
     ThreadPreventAsyncHolder prevAsync;
 
     EX_TRY
     {
+        _ASSERTE(notificationType == FirstChanceExceptionHandler);
         UnmanagedCallersOnlyCaller deliverNotification(METHOD__APPCONTEXT__ON_FIRST_CHANCE_EXCEPTION);
         deliverNotification.InvokeThrowing(pThrowable);
     }
@@ -9606,9 +9588,9 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     _ASSERTE(pCurTES->GetCurrentExceptionTracker());
     _ASSERTE(!(pCurTES->GetCurrentExceptionTracker()->DeliveredFirstChanceNotification()));
     {
-        GCX_COOP();
-        if (ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(FirstChanceExceptionHandler))
+        if (g_firstChanceExceptionHasHandler.Load() != FALSE)
         {
+            GCX_COOP();
             OBJECTREF oThrowable = NULL;
             GCPROTECT_BEGIN(oThrowable);
 
