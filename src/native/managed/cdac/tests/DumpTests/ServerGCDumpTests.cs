@@ -140,6 +140,10 @@ public class ServerGCDumpTests : DumpTestBase
         Assert.True(weakShortHandles.Count >= 1, "Expected at least 1 weak-short handle");
         Assert.All(weakShortHandles, handle => Assert.NotEqual(TargetPointer.Null, handle.Handle));
 
+        var weakLongHandles = gcContract.GetHandles([HandleType.WeakLong]);
+        Assert.True(weakLongHandles.Count >= 1, "Expected at least 1 weak-long handle");
+        Assert.All(weakLongHandles, handle => Assert.NotEqual(TargetPointer.Null, handle.Handle));
+
         var dependentHandles = gcContract.GetHandles([HandleType.Dependent]);
         Assert.True(dependentHandles.Count >= 1, "Expected at least 1 dependent handle");
         Assert.All(dependentHandles, handle => Assert.NotEqual(TargetPointer.Null, handle.Handle));
