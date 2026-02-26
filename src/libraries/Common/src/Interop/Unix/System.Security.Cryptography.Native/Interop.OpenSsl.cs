@@ -527,8 +527,31 @@ internal static partial class Interop
 
         internal static SafeSslHandle AllocateSslHandleForKtls(SslAuthenticationOptions sslAuthenticationOptions, int socketFd)
         {
-            // For kTLS, we don't cache SSL contexts since the socket BIO makes context sharing less useful
-            using SafeSslContextHandle sslCtxHandle = GetOrCreateSslContextHandle(sslAuthenticationOptions, allowCached: false);
+            bool cacheSslContext = sslAuthenticationOptions.AllowTlsResume && !SslStream.DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
+
+            if (cacheSslContext)
+            {
+                if (sslAuthenticationOptions.IsClient)
+                {
+                    if (!Interop.Ssl.Capabilities.Tls13Supported ||
+                       string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ||
+                       IPAddress.IsValid(sslAuthenticationOptions.TargetHost) ||
+                       (sslAuthenticationOptions.CertificateContext == null && sslAuthenticationOptions.CertSelectionDelegate != null))
+                    {
+                        cacheSslContext = false;
+                    }
+                }
+                else
+                {
+                    Debug.Assert(sslAuthenticationOptions.CertificateContext != null);
+                    if (sslAuthenticationOptions.CertificateContext == null)
+                    {
+                        cacheSslContext = false;
+                    }
+                }
+            }
+
+            using SafeSslContextHandle sslCtxHandle = GetOrCreateSslContextHandle(sslAuthenticationOptions, cacheSslContext);
 
             GCHandle alpnHandle = default;
             SafeSslHandle sslHandle;
@@ -540,6 +563,13 @@ internal static partial class Interop
                 {
                     sslHandle.Dispose();
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
+                }
+
+                if (cacheSslContext)
+                {
+                    bool success = sslCtxHandle.TryAddRentCount();
+                    Debug.Assert(success);
+                    sslHandle.SslContextHandle = sslCtxHandle;
                 }
 
                 // Configuration is the same as for normal SSL handles
@@ -573,6 +603,11 @@ internal static partial class Interop
                         if (!Ssl.SslSetTlsExtHostName(sslHandle, sslAuthenticationOptions.TargetHost))
                         {
                             Crypto.ErrClearError();
+                        }
+
+                        if (cacheSslContext)
+                        {
+                            sslCtxHandle.TrySetSession(sslHandle, sslAuthenticationOptions.TargetHost);
                         }
                     }
 

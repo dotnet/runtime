@@ -23,6 +23,15 @@ namespace System.Net.Security
             Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SECURITY_KTLS") == "1";
 
         private bool _useKtls;
+
+        // Buffer for peek-based socket readiness notification. A 1-byte MSG_PEEK recv
+        // properly waits via epoll, unlike zero-byte reads which complete immediately.
+        private static readonly byte[] s_peekBuffer = new byte[1];
+
+        static SslStream()
+        {
+            System.Console.WriteLine($"kTLS Enabled: {s_ktlsEnabled}");
+        }
 #endif
 
         internal readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
@@ -475,24 +484,28 @@ namespace System.Net.Security
             _securityContext = sslHandle;
 
             // Non-blocking handshake loop: SSL_do_handshake reads/writes the socket directly.
-            // On WANT_READ we await data via zero-byte read on InnerStream.
+            // On WANT_READ we use a 1-byte MSG_PEEK recv to wait for data via epoll,
+            // since zero-byte reads on Socket complete immediately without waiting.
             while (true)
             {
                 int ret = Interop.Ssl.SslDoHandshake(sslHandle, out Interop.Ssl.SslErrorCode error);
                 Interop.Error errno = Interop.Sys.GetLastErrorInfo().Error;
                 if (ret == 1)
                 {
+                    System.Console.WriteLine($"kTLS handshake completed: kTLS recv: {Interop.Ssl.SslGetKtlsRecv(sslHandle)}, kTLS send: {Interop.Ssl.SslGetKtlsSend(sslHandle)}");
                     sslHandle.MarkHandshakeCompleted();
                     break;
                 }
 
                 if (IsKtlsWantRead(error, errno))
                 {
-                    await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                    await socket.ReceiveAsync(s_peekBuffer, SocketFlags.Peek, cancellationToken).ConfigureAwait(false);
                 }
                 else if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE)
                 {
-                    await TIOAdapter.FlushAsync(InnerStream, cancellationToken).ConfigureAwait(false);
+                    // Wait for socket writability. Socket doesn't expose an async writability
+                    // wait, but WANT_WRITE during handshake is short-lived.
+                    await Task.Delay(1, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -961,6 +974,7 @@ namespace System.Net.Security
                 if (_useKtls)
                 {
                     SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
+                    Socket socket = ((NetworkStream)InnerStream).Socket;
 
                     while (true)
                     {
@@ -978,10 +992,11 @@ namespace System.Net.Security
 
                         if (IsKtlsWantRead(error, errno, buffer.Length == 0))
                         {
-                            await TIOAdapter.ReadAsync(InnerStream, Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                            // Use 1-byte MSG_PEEK recv to properly wait for data via epoll.
+                            // Zero-byte reads on Socket complete immediately without waiting.
+                            await socket.ReceiveAsync(s_peekBuffer, SocketFlags.Peek, cancellationToken).ConfigureAwait(false);
                             if (buffer.Length == 0)
                             {
-                                // Caller is not actually interested in data, we just needed to wait for some data to arrive to continue handshake.
                                 return 0;
                             }
                             continue;
@@ -1160,7 +1175,9 @@ namespace System.Net.Security
                         if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE ||
                             IsKtlsWantRead(error, errno)) // SYSCALL+EAGAIN can also mean socket buffer full
                         {
-                            await Task.Yield();
+                            // Wait briefly for socket buffer to drain. Socket doesn't expose
+                            // an async writability wait, but WANT_WRITE is rare and short-lived.
+                            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
                             continue;
                         }
 
