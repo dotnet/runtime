@@ -530,9 +530,8 @@ enum class BasicBlockVisit
 // (The list of zero edges is represented by NULL.)
 // Every BasicBlock has a field called bbPreds of this type.  This field
 // represents the list of "edges" that flow into this BasicBlock.
-// The FlowEdge type only stores the BasicBlock* of the source for the
-// control flow edge.  The destination block for the control flow edge
-// is implied to be the block which contained the bbPreds field.
+// The FlowEdge type stores the BasicBlock* of both the source and
+// destination for the control flow edge.
 //
 // For a switch branch target there may be multiple "edges" that have
 // the same source block (and destination block).  We need to count the
@@ -540,16 +539,8 @@ enum class BasicBlockVisit
 // we have zero of them.  Rather than have extra FlowEdge entries we
 // track this via the DupCount property.
 //
-// When we have Profile weight for the BasicBlocks we can usually compute
-// the number of times each edge was executed by examining the adjacent
-// BasicBlock weights.  As we are doing for BasicBlocks, we call the number
-// of times that a control flow edge was executed the "edge weight".
-// In order to compute the edge weights we need to use a bounded range
-// for every edge weight. These two fields, 'flEdgeWeightMin' and 'flEdgeWeightMax'
-// are used to hold a bounded range.  Most often these will converge such
-// that both values are the same and that value is the exact edge weight.
-// Sometimes we are left with a range of possible values between [Min..Max]
-// which represents an inexact edge weight.
+// Each edge has a likelihood value in [0..1] indicating the probability
+// that the source block transfers control along this edge.
 //
 // The bbPreds list is initially created by Compiler::fgLinkBasicBlocks()
 // and is incrementally kept up to date.
