@@ -415,7 +415,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ConsoleLoggerTest), nameof(IsThreadingAndRemoteExecutorSupported))]
         public void AddConsole_IsOutputRedirected_ColorDisabled()
         {
             RemoteExecutor.Invoke(() =>

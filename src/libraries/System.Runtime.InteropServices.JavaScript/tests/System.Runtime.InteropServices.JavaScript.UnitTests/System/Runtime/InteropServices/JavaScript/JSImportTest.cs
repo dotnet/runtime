@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(32, sizeof(JSMarshalerArgument));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))] // not V8 shell
         public unsafe void PrototypeNotEqual()
         {
             using var temp1 = JSHost.GlobalThis.GetPropertyAsJSObject("EventTarget");

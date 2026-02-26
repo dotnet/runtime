@@ -10,6 +10,8 @@
 #include "regallocwasm.h"
 #include "fgwasm.h"
 
+static const int LINEAR_MEMORY_INDEX = 0;
+
 #ifdef TARGET_64BIT
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
@@ -603,6 +605,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genLeaInstruction(treeNode->AsAddrMode());
             break;
 
+        case GT_STORE_BLK:
+            genCodeForStoreBlk(treeNode->AsBlk());
+            break;
+
         case GT_MEMORYBARRIER:
             // No-op for single-threaded wasm.
             assert(!WASM_THREAD_SUPPORT);
@@ -611,6 +617,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_INTRINSIC:
             genIntrinsic(treeNode->AsIntrinsic());
+            break;
+
+        case GT_PINVOKE_PROLOG:
+            // TODO-WASM-CQ re-establish the global stack pointer here?
             break;
 
         default:
@@ -1030,19 +1040,21 @@ void CodeGen::genFloatToFloatCast(GenTree* tree)
 //
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
+    if (treeNode->gtOverflow())
+    {
+        genCodeForBinaryOverflow(treeNode);
+        return;
+    }
+
     genConsumeOperands(treeNode);
 
     instruction ins;
     switch (PackOperAndType(treeNode->OperGet(), treeNode->TypeGet()))
     {
         case PackOperAndType(GT_ADD, TYP_INT):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i32_add;
             break;
         case PackOperAndType(GT_ADD, TYP_LONG):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i64_add;
             break;
         case PackOperAndType(GT_ADD, TYP_FLOAT):
@@ -1053,13 +1065,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         case PackOperAndType(GT_SUB, TYP_INT):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i32_sub;
             break;
         case PackOperAndType(GT_SUB, TYP_LONG):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i64_sub;
             break;
         case PackOperAndType(GT_SUB, TYP_FLOAT):
@@ -1070,13 +1078,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         case PackOperAndType(GT_MUL, TYP_INT):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i32_mul;
             break;
         case PackOperAndType(GT_MUL, TYP_LONG):
-            if (treeNode->gtOverflow())
-                NYI_WASM("Overflow checks");
             ins = INS_i64_mul;
             break;
         case PackOperAndType(GT_MUL, TYP_FLOAT):
@@ -1114,6 +1118,152 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     }
 
     GetEmitter()->emitIns(ins);
+    WasmProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForBinaryOverflow: Generate code for a binary arithmetic operator
+//   with overflow checking
+//
+// Arguments:
+//    treeNode - The binary operation for which we are generating code.
+//
+void CodeGen::genCodeForBinaryOverflow(GenTreeOp* treeNode)
+{
+    assert(treeNode->gtOverflow());
+    assert(varTypeIsIntegral(treeNode->TypeGet()));
+
+    // TODO-WASM-CQ: consider using helper calls for all these cases
+
+    genConsumeOperands(treeNode);
+
+    const bool    is64BitOp = treeNode->TypeIs(TYP_LONG);
+    InternalRegs* regs      = internalRegisters.GetAll(treeNode);
+    regNumber     op1Reg    = GetMultiUseOperandReg(treeNode->gtGetOp1());
+    regNumber     op2Reg    = GetMultiUseOperandReg(treeNode->gtGetOp2());
+
+    switch (treeNode->OperGet())
+    {
+        case GT_ADD:
+        {
+            // We require an internal register.
+            assert(regs->Count() == 1);
+            regNumber resultReg = regs->Extract();
+            assert(WasmRegToType(resultReg) == TypeToWasmValueType(treeNode->TypeGet()));
+
+            // Add and save the sum
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_add : INS_i32_add);
+            GetEmitter()->emitIns_I(INS_local_set, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+            // See if addends had the same sign. XOR leaves a non-negative result if they had the same sign.
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+
+            // TODO-WASM-CQ: consider branchless alternative here (and for sub)
+            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_ge_s : INS_i32_ge_s);
+            GetEmitter()->emitIns(INS_if);
+            {
+                // Operands have the same sign. If the sum has a different sign, then the add overflowed.
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+                GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
+                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            }
+            GetEmitter()->emitIns(INS_end);
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+            break;
+        }
+
+        case GT_SUB:
+        {
+            // We require an internal register.
+            assert(regs->Count() == 1);
+            regNumber resultReg = regs->Extract();
+            assert(WasmRegToType(resultReg) == TypeToWasmValueType(treeNode->TypeGet()));
+
+            // Subtract and save the difference
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_sub : INS_i32_sub);
+            GetEmitter()->emitIns_I(INS_local_set, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+            // See if operands had a different sign. XOR leaves a negative result if they had different signs.
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+            GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
+            GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
+            GetEmitter()->emitIns(INS_if);
+            {
+                // Operands have different signs. If the difference has a different sign than op1, then the subtraction
+                // overflowed.
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+                GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op1Reg));
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_xor : INS_i32_xor);
+                GetEmitter()->emitIns_I(is64BitOp ? INS_i64_const : INS_i32_const, emitActualTypeSize(treeNode), 0);
+                GetEmitter()->emitIns(is64BitOp ? INS_i64_lt_s : INS_i32_lt_s);
+                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            }
+            GetEmitter()->emitIns(INS_end);
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(resultReg));
+            break;
+        }
+
+        case GT_MUL:
+        {
+            if (is64BitOp)
+            {
+                assert(!"64 bit multiply with overflow should have been transformed into a helper call by morph");
+            }
+
+            // We require an I64 internal register
+            assert(regs->Count() == 1);
+            regNumber wideReg = regs->Extract();
+            assert(WasmRegToType(wideReg) == WasmValueType::I64);
+
+            // 32 bit multiply... check by doing a 64 bit multiply and then range-checking the result
+            const bool isUnsigned = treeNode->IsUnsigned();
+            // Both operands are on the stack as I32. Drop the second, extend the first, then extend the second.
+            //
+            // TODO-WASM-CQ: consider transforming this to a (u)long multiply plus a checked cast, either in morph or
+            // lower.
+            GetEmitter()->emitIns(INS_drop);
+            GetEmitter()->emitIns(isUnsigned ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32);
+            GetEmitter()->emitIns_I(INS_local_get, emitActualTypeSize(treeNode), WasmRegToIndex(op2Reg));
+            GetEmitter()->emitIns(isUnsigned ? INS_i64_extend_u_i32 : INS_i64_extend_s_i32);
+            GetEmitter()->emitIns(INS_i64_mul);
+
+            // Save the wide result, and then overflow check it.
+            GetEmitter()->emitIns_I(INS_local_tee, EA_8BYTE, WasmRegToIndex(wideReg));
+
+            if (isUnsigned)
+            {
+                // For unsigned multiply, we just need to check if the result is greater than UINT32_MAX.
+                GetEmitter()->emitIns_I(INS_i64_const, EA_8BYTE, UINT32_MAX);
+                GetEmitter()->emitIns(INS_i64_gt_u);
+                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            }
+            else
+            {
+                GetEmitter()->emitIns(INS_i64_extend32_s);
+                GetEmitter()->emitIns_I(INS_local_get, EA_8BYTE, WasmRegToIndex(wideReg));
+                GetEmitter()->emitIns(INS_i64_ne);
+                genJumpToThrowHlpBlk(SCK_OVERFLOW);
+            }
+
+            // If the check succeeds, the multiplication result is in range for a 32-bit int.
+            // We just need to return the low 32 bits of the result.
+            GetEmitter()->emitIns_I(INS_local_get, EA_8BYTE, WasmRegToIndex(wideReg));
+            GetEmitter()->emitIns(INS_i32_wrap_i64);
+
+            break;
+        }
+
+        default:
+            unreached();
+            break;
+    }
+
     WasmProduceReg(treeNode);
 }
 
@@ -2233,6 +2383,68 @@ void CodeGen::genCompareFloat(GenTreeOp* treeNode)
     }
 
     WasmProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreBlk: Produce code for a GT_STORE_BLK node.
+//
+// Arguments:
+//    blkOp - the node
+//
+void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
+{
+    assert(blkOp->OperIs(GT_STORE_BLK));
+
+    bool isCopyBlk = blkOp->OperIsCopyBlkOp();
+
+    switch (blkOp->gtBlkOpKind)
+    {
+        case GenTreeBlk::BlkOpKindCpObjUnroll:
+            genCodeForCpObj(blkOp->AsBlk());
+            break;
+
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
+            break;
+
+        case GenTreeBlk::BlkOpKindNativeOpcode:
+            genConsumeOperands(blkOp);
+            // Emit the size constant expected by the memory.copy and memory.fill opcodes
+            GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
+            GetEmitter()->emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
+            break;
+
+        default:
+            unreached();
+    }
+}
+
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
+{
+    NYI_WASM("genCodeForCpObj");
+}
+
+//------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
+//
+// Arguments:
+//    blkOp - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* blkOp)
+{
+    // TODO-WASM: In multi-threaded wasm we will need to generate a for loop that atomically zeroes one GC ref
+    //  at a time. Right now we're single-threaded, so we can just use memory.fill.
+    assert(!WASM_THREAD_SUPPORT);
+
+    genConsumeOperands(blkOp);
+    // Emit the value constant expected by the memory.fill opcode (zero)
+    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, 0);
+    // Emit the size constant expected by the memory.copy and memory.fill opcodes
+    GetEmitter()->emitIns_I(INS_i32_const, EA_4BYTE, blkOp->Size());
+    GetEmitter()->emitIns_I(INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
 }
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
