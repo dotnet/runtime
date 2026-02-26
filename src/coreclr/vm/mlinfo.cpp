@@ -2543,7 +2543,7 @@ void MarshalInfo::GenerateFieldIL(PInvokeStubLinker* psl,
         pcsUnmarshal->EmitNOP("// field { ");
     }
 
-    pMarshaler->EmitMarshalField(pcsMarshal, pcsUnmarshal, m_paramidx, managedOffset, nativeOffset, dwMarshalFlags, &m_args);
+    pMarshaler->EmitMarshalField(pcsMarshal, pcsUnmarshal, m_paramidx, managedOffset, nativeOffset, MARSHAL_FLAG_FIELD | dwMarshalFlags, &m_args);
 
 
     if (dwMarshalFlags & MARSHAL_FLAG_IN)

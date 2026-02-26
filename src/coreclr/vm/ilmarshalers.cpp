@@ -2053,7 +2053,7 @@ void ILCSTRMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
         (m_pargs->m_pMarshalInfo->GetBestFitMapping() & 0xFF) |
         (m_pargs->m_pMarshalInfo->GetThrowOnUnmappableChar() << 8);
 
-    bool bPassByValueInOnly = IsIn(m_dwMarshalFlags) && !IsOut(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags);
+    bool bPassByValueInOnly = IsIn(m_dwMarshalFlags) && !IsOut(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && !IsFieldMarshal(m_dwMarshalFlags);
     if (bPassByValueInOnly)
     {
         DWORD dwBufSize = pslILEmit->NewLocal(ELEMENT_TYPE_I4);

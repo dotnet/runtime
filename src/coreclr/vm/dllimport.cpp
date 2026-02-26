@@ -4106,6 +4106,8 @@ static void CreateStructMarshalIL(MethodDesc* pMD, DynamicResolver** resolver, C
 
     slIL->LogILStub(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB, &sInstructions);
 
+    fprintf(stderr, "Generated IL for struct marshal stub %s:\n%s\n", pMT->GetDebugClassName(), sInstructions.GetUTF8());
+
     NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
     ilResolver->SetStubMethodDesc(pMD);
     *methodILDecoder = ilResolver->FinalizeILStub(slIL);
@@ -6040,72 +6042,31 @@ VOID PInvokeMethodDesc::SetPInvokeTarget(LPVOID pTarget)
     m_pPInvokeTarget = pTarget;
 }
 
-void MarshalStructWithStructMarshaler(MethodDesc* pPrimaryMD, MethodTable* pMT, void* pManagedData, void* pNativeData, void** ppCleanupWorkList)
+MethodDesc* GetStructMarshallingMethod(BinderMethodID methodId, MethodTable* pMT)
 {
-    CONTRACTL
+    CONTRACT(MethodDesc*)
     {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pPrimaryMD));
         PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->IsValueType());
+        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACTL_END;
+    CONTRACT_END;
+
+    GCX_PREEMP();
 
     TypeHandle th(pMT);
 
     MethodDesc* pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-        pPrimaryMD,
+        CoreLibBinder::GetMethod(methodId),
         TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).GetMethodTable(),
         FALSE,
         Instantiation(),
         TRUE);
 
-    PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pManagedData);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(pNativeData);
-    args[ARGNUM_2] = PTR_TO_ARGHOLDER(ppCleanupWorkList);
-
-    CALL_MANAGED_METHOD_NORET(args);
+    RETURN pMD;
 }
-
-void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pStubMD));
-    }
-    CONTRACTL_END;
-
-    MarshalStructViaILStubCode(pStubMD->GetSingleCallableAddrOfCode(), pManagedData, pNativeData, operation, ppCleanupWorkList);
-}
-
-void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pStubCode != NULL);
-    }
-    CONTRACTL_END;
-
-    PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(pStubCode);
-    DECLARE_ARGHOLDER_ARRAY(args, 4);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pManagedData);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(pNativeData);
-    args[ARGNUM_2] = DWORD_TO_ARGHOLDER(operation);
-    args[ARGNUM_3] = PTR_TO_ARGHOLDER(ppCleanupWorkList);
-
-    CALL_MANAGED_METHOD_NORET(args);
-}
-
 
 //==========================================================================
 // This function is reached only via PInvokeImportThunk. It's purpose

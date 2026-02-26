@@ -1451,10 +1451,15 @@ void OleVariant::MarshalNonBlittableRecordArrayOleToCom(void *oleArray, BASEARRA
     BYTE *managedData = (*pComArray)->GetDataPtr();
     GCPROTECT_BEGININTERIOR(managedData)
     {
+        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pInterfaceMT));
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
         while (pOle < pOleEnd)
         {
-            MarshalStructWithStructMarshaler(CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED), pInterfaceMT, managedData, pOle);
+            args[ARGNUM_0] = PTR_TO_ARGHOLDER(managedData);
+            args[ARGNUM_1] = PTR_TO_ARGHOLDER(pOle);
+            args[ARGNUM_2] = PTR_TO_ARGHOLDER(nullptr);
 
+            CALL_MANAGED_METHOD_NORET(args);
             managedData += (*pComArray)->GetComponentSize();
             pOle += elemSize;
         }
@@ -1495,12 +1500,18 @@ void OleVariant::MarshalNonBlittableRecordArrayComToOle(BASEARRAYREF *pComArray,
     BYTE *managedData = (*pComArray)->GetDataPtr();
     GCPROTECT_BEGININTERIOR(managedData)
     {
+        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, pInterfaceMT));
+        DECLARE_ARGHOLDER_ARRAY(args, 4);
         while (pOle < pOleEnd)
         {
-            MarshalStructWithStructMarshaler(CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED), pInterfaceMT, managedData, pOle);
+            args[ARGNUM_0] = PTR_TO_ARGHOLDER(managedData);
+            args[ARGNUM_1] = PTR_TO_ARGHOLDER(pOle);
+            args[ARGNUM_2] = DWORD_TO_ARGHOLDER(elemSize);
+            args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
 
+            CALL_MANAGED_METHOD_NORET(args);
+            managedData += (*pComArray)->GetComponentSize();
             pOle += elemSize;
-            managedData += compSize;
         }
     }
     GCPROTECT_END();
@@ -1524,7 +1535,17 @@ void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, 
     BYTE *pOleEnd = pOle + elemSize * cElements;
     while (pOle < pOleEnd)
     {
-        MarshalStructWithStructMarshaler(CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__FREE), pInterfaceMT, nullptr, pOle);
+        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__FREE, pInterfaceMT));
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        while (pOle < pOleEnd)
+        {
+            args[ARGNUM_0] = PTR_TO_ARGHOLDER(nullptr);
+            args[ARGNUM_1] = PTR_TO_ARGHOLDER(pOle);
+            args[ARGNUM_2] = PTR_TO_ARGHOLDER(nullptr);
+
+            CALL_MANAGED_METHOD_NORET(args);
+            pOle += elemSize;
+        }
 
         pOle += elemSize;
     }
@@ -3794,14 +3815,14 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     V_RECORD(pRecHolder) = V_RECORDINFO(pRecHolder)->RecordCreate();
     IfNullThrow(V_RECORD(pRecHolder));
 
-    // Marshal the contents of the value class into the record.
-    MethodDesc* pStructMarshalStub;
-    {
-        GCX_PREEMP();
-        pStructMarshalStub = PInvoke::CreateStructMarshalILStub(pValueClassMT);
-    }
+    PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, pValueClassMT));
+    DECLARE_ARGHOLDER_ARRAY(args, 4);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER((*pBoxedValueClass)->GetData());
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(V_RECORD(pRecHolder));
+    args[ARGNUM_2] = DWORD_TO_ARGHOLDER(pValueClassMT->GetNativeSize());
+    args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
 
-    MarshalStructViaILStub(pStructMarshalStub, (*pBoxedValueClass)->GetData(), (BYTE*)V_RECORD(pRecHolder), StructMarshalStubs::MarshalOperation::Marshal);
+    CALL_MANAGED_METHOD_NORET(args);
 
     pRecHolder.SuppressRelease();
 }
