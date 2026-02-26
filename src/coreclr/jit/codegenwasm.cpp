@@ -2437,13 +2437,29 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     GenTree*  dstAddr     = cpObjNode->Addr();
     GenTree*  source      = cpObjNode->Data();
     var_types srcAddrType = TYP_BYREF;
+    regNumber dstReg      = GetMultiUseOperandReg(dstAddr);
+    unsigned  dstOffset   = 0;
+    regNumber srcReg;
+    unsigned  srcOffset;
 
-    assert(source->isContained());
+    // Identify the register containing our source base address, either a multi-use
+    //  reg representing the operand of a GT_IND, or the frame pointer for LCL_VAR/LCL_FLD.
     if (source->OperIs(GT_IND))
     {
         source = source->gtGetOp1();
         assert(!source->isContained());
         srcAddrType = source->TypeGet();
+        srcReg = GetMultiUseOperandReg(source);
+        srcOffset = 0;
+    }
+    else
+    {
+        noway_assert(source->OperIs(GT_LCL_FLD, GT_LCL_VAR));
+        GenTreeLclVarCommon *lclVar = source->AsLclVarCommon();
+        bool fpBased;
+        srcOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
+        noway_assert(fpBased);
+        srcReg = GetFramePointerReg();
     }
 
     noway_assert(source->IsLocal());
@@ -2463,9 +2479,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     genConsumeOperands(cpObjNode);
 
-    regNumber srcReg = GetMultiUseOperandReg(source);
-    regNumber dstReg = GetMultiUseOperandReg(dstAddr);
-
     if (cpObjNode->IsVolatile())
     {
         // TODO-WASM: Memory barrier
@@ -2483,7 +2496,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
 
-    unsigned i = 0, offset = 0;
+    unsigned i = 0;
     while (i < slots)
     {
         // Copy the pointer-sized non-gc-pointer slots one at a time using regular I-sized load/store pairs,
@@ -2493,17 +2506,17 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             // Do a pointer-sized load+store pair at the appropriate offset relative to dest and source
             emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
             emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
-            emit->emitIns_I(INS_I_load, EA_PTRSIZE, offset);
-            emit->emitIns_I(INS_I_store, EA_PTRSIZE, offset);
+            emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
+            emit->emitIns_I(INS_I_store, EA_PTRSIZE, dstOffset);
         }
         else
         {
             // Compute the actual dest/src of the slot being copied to pass to the helper.
             emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
-            emit->emitIns_I(INS_I_const, attrDstAddr, offset);
+            emit->emitIns_I(INS_I_const, attrDstAddr, dstOffset);
             emit->emitIns(INS_I_add);
             emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
-            emit->emitIns_I(INS_I_const, attrSrcAddr, offset);
+            emit->emitIns_I(INS_I_const, attrSrcAddr, srcOffset);
             emit->emitIns(INS_I_add);
             // Call the byref assign helper. On other targets this updates the dst/src regs but here it won't,
             //  so we have to do the local.get+i32.const+i32.add dance every time.
@@ -2511,7 +2524,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             gcPtrCount--;
         }
         ++i;
-        offset += TARGET_POINTER_SIZE;
+        srcOffset += TARGET_POINTER_SIZE;
+        dstOffset += TARGET_POINTER_SIZE;
     }
 
     assert(gcPtrCount == 0);

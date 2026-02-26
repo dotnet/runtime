@@ -262,8 +262,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             dstAddr->SetMultiplyUsed();
             if (src->OperIs(GT_IND))
                 src->gtGetOp1()->SetMultiplyUsed();
-            else
-                src->SetMultiplyUsed();
         }
         else
         {
