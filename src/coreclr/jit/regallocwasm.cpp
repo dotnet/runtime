@@ -91,7 +91,7 @@ void WasmRegAlloc::IdentifyCandidates()
         }
     }
 
-    if (anyFrameLocals)
+    if (anyFrameLocals || m_compiler->compLocallocUsed)
     {
         AllocateFramePointer();
     }
@@ -272,10 +272,21 @@ void WasmRegAlloc::CollectReferences()
 void WasmRegAlloc::CollectReferencesForBlock(BasicBlock* block)
 {
     m_currentBlock = block;
-    for (GenTree* node : LIR::AsRange(block))
+
+    // We may modify the range while iterating.
+    //
+    // For now, we assume reordering happens only for already visited
+    // nodes, and any newly introduced nodes do not need collection.
+    //
+    GenTree* node = LIR::AsRange(block).FirstNode();
+
+    while (node != nullptr)
     {
+        GenTree* nextNode = node->gtNext;
         CollectReferencesForNode(node);
+        node = nextNode;
     }
+
     m_currentBlock = nullptr;
 }
 
@@ -316,6 +327,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForDivMod(node->AsOp());
             break;
 
+        case GT_LCLHEAP:
+            CollectReferencesForLclHeap(node->AsOp());
+            break;
+
         case GT_CALL:
             CollectReferencesForCall(node->AsCall());
             break;
@@ -350,6 +365,25 @@ void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 {
     ConsumeTemporaryRegForOperand(divModNode->gtGetOp2() DEBUGARG("div-by-zero / overflow check"));
     ConsumeTemporaryRegForOperand(divModNode->gtGetOp1() DEBUGARG("div-by-zero / overflow check"));
+}
+
+//------------------------------------------------------------------------
+// CollectReferencesForLclHeap: Collect virtual register references for a LCLHEAP.
+//
+// Reserves internal register for unknown-sized LCLHEAP operations
+//
+// Arguments:
+//    lclHeapNode - The LCLHEAP node
+//
+void WasmRegAlloc::CollectReferencesForLclHeap(GenTreeOp* lclHeapNode)
+{
+    // Known-sized allocations have contained size operand, so they don't require internal register.
+    if (!lclHeapNode->gtGetOp1()->isContainedIntOrIImmed())
+    {
+        regNumber internalReg = RequestInternalRegister(lclHeapNode, TYP_I_IMPL);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 }
 
 //------------------------------------------------------------------------
