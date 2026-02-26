@@ -2151,7 +2151,6 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
 }
 
 // This function does poentially a LOT of work (loading possibly 50 classes).
-// The return value is an un-GC-protected string ref, or possibly NULL.
 void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF* ppMessage)
 {
     CONTRACTL
