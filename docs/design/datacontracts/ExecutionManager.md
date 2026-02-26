@@ -25,6 +25,13 @@ struct CodeBlockHandle
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle);
     // Get the instruction pointer address of the start of the funclet containing the code block
     TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle);
+    // Get the method region info (hot and cold code size, and cold code start address)
+    void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize);
+    // Get the JIT type
+    uint GetJITType(CodeBlockHandle codeInfoHandle);
+    // Attempt to get the method desc of an entrypoint
+    TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint);
+
     // Gets the unwind info of the code block at the specified code pointer
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle);
     // Gets the base address the UnwindInfo of codeInfoHandle is relative to
@@ -33,7 +40,6 @@ struct CodeBlockHandle
     // the flag byte which modifies how DebugInfo is parsed.
     TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte);
     // Gets the GCInfo associated with the code block and its version
-    // **Currently GetGCInfo only supports X86**
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion);
     // Gets the offset of the codeInfoHandle inside of the code block
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
@@ -96,6 +102,7 @@ Data descriptors used:
 | `Bucket` | `Keys` | Array of keys of `HashMapSlotsPerBucket` length |
 | `Bucket` | `Values` | Array of values of `HashMapSlotsPerBucket` length |
 | `UnwindInfo` | `FunctionLength` | Length of the associated function in bytes. Only exists on some platforms |
+| `PortableEntryPoint` | `MethodDesc` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -107,11 +114,15 @@ Global variables used:
 | `FeatureEHFunclets` | uint8 | 1 if EH funclets are enabled, 0 otherwise |
 | `GCInfoVersion` | uint32 | JITted code GCInfo version |
 | `FeatureOnStackReplacement` | uint8 | 1 if FEATURE_ON_STACK_REPLACEMENT is enabled, 0 otherwise |
+| `FeaturePortableEntrypoints` | uint8 | 1 if FEATURE_PORTABLE_ENTRYPOINTS is enabled, 0 otherwise |
 
 Contracts used:
 | Contract Name |
 | --- |
 | `PlatformMetadata` |
+| `GCInfo` |
+| `PrecodeStubs` |
+| `RuntimeInfo` |
 
 The bulk of the work is done by the `GetCodeBlockHandle` API that maps a code pointer to information about the containing jitted method. This relies the [range section lookup](#rangesectionmap).
 
@@ -220,6 +231,80 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
 }
 ```
 
+The EE JitManager `GetMethodRegionInfo` determines the method's hot size by decoding the GC info associated with the code block to retrieve the code length. Cold regions are not supported for JIT-compiled code.
+
+```csharp
+public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
+{
+    // Cold regions are not supported for JITted code
+    coldStart = TargetPointer.Null;
+    coldSize = 0;
+
+    IGCInfo gcInfo = Target.Contracts.GCInfo;
+    GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
+    IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+    hotSize = gcInfo.GetCodeLength(gcInfoHandle);
+}
+```
+
+The R2R JitManager `GetMethodRegionInfo` also uses the GC info to retrieve the total code length, then adjusts for hot/cold splitting. If the method is found in the hot/cold map, the cold region size is computed from the cold runtime function bounds and subtracted from the total to get the hot size.
+
+```csharp
+public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out uint hotSize, out TargetPointer coldStart, out uint coldSize)
+{
+    coldSize = 0;
+    coldStart = TargetPointer.Null;
+
+    IGCInfo gcInfo = Target.Contracts.GCInfo;
+    GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
+    IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+    hotSize = gcInfo.GetCodeLength(gcInfoHandle);
+
+    // Look up hot/cold map in the R2R module
+    if (/* found in hot/cold map */)
+    {
+        // Compute cold region bounds from cold runtime function start/end indices
+        coldStart = imageBase + coldStartFunc.BeginAddress;
+        coldSize = coldEndOffset - coldBeginOffset;
+        hotSize -= coldSize;
+    }
+}
+
+```
+
+`GetJitType` returns the JIT type by finding the JIT manager for the data range containing the relevant code block. We return TYPE_JIT for the EEJitManager, TYPE_R2R for the R2RJitManager, and TYPE_UNKNOWN for any other value.
+```csharp
+private enum JITTypes
+{
+    TYPE_UNKNOWN = 0,
+    TYPE_JIT = 1,
+    TYPE_R2R = 2,
+    TYPE_INTERPRETER = 3
+};
+```
+`NonVirtualEntry2MethodDesc` attempts to find a method desc from an entrypoint. If portable entrypoints are enabled, we attempt to read the entrypoint data structure to find the method table. We also attempt to find the method desc from a precode stub. Finally, we attempt to find the method desc using `GetMethodInfo` as described above.
+```csharp
+TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
+{
+    TargetPointer rangeSection = // find range section corresponding to jittedCodeAddress - see RangeSectionMap
+    if (/* no corresponding range section */)
+        return null;
+
+    if (/* range flags indicate RangeList */)
+    {
+        IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
+        return precodeStubs.GetMethodDescFromStubAddress(entrypoint);
+    }
+    else
+    {
+        // get the jit manager
+        // attempt to get the method info from a code block
+    }
+    return TargetPointer.Null;
+}
+```
+
+
 The `CodeBlock` encapsulates the `MethodDesc` data from the target runtime together with the start of the jitted method
 
 ```csharp
@@ -284,7 +369,7 @@ For R2R images, `hasFlagByte` is always `false`.
 
 * For jitted code (`EEJitManager`) a pointer to the `GCInfo` is stored on the `RealCodeHeader` which is accessed in the same way as `GetMethodInfo` described above. This can simply be returned as is. The `GCInfoVersion` is defined by the runtime global `GCInfoVersion`.
 
-* For R2R code (`ReadyToRunJitManager`), the `GCInfo` is stored directly after the `UnwindData`. This in turn is found by looking up the `UnwindInfo` (`RUNTIME_FUNCTION`) and reading the `UnwindData` offset. We find the `UnwindInfo` as described above in `IExecutionManager.GetUnwindInfo`. Once we have the relevant unwind data, we calculate the size of the unwind data and return a pointer to the following byte (first byte of the GCInfo). The size of the unwind data is a platform specific. Currently only X86 is supported with a constant unwind data size of 32-bits.
+* For R2R code (`ReadyToRunJitManager`), the `GCInfo` is stored directly after the `UnwindData`. This in turn is found by looking up the `UnwindInfo` (`RUNTIME_FUNCTION`) and reading the `UnwindData` offset. We find the `UnwindInfo` as described above in `IExecutionManager.GetUnwindInfo`. Once we have the relevant unwind data, we calculate the size of the unwind data and return a pointer to the following byte (first byte of the GCInfo). The size of the unwind data is a platform specific. See src/coreclr/vm/codeman.cpp GetUnwindDataBlob for more details.
     * The `GCInfoVersion` of R2R code is mapped from the R2R MajorVersion and MinorVersion which is read from the ReadyToRunHeader which itself is read from the ReadyToRunInfo (can be found as in GetMethodInfo). The current GCInfoVersion mapping is:
         * MajorVersion >= 11 and MajorVersion < 15 => 4
 

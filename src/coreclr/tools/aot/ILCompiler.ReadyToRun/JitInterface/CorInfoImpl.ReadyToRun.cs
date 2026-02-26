@@ -2440,6 +2440,10 @@ namespace Internal.JitInterface
                 {
                     // alllowed, non-virtual method's on Object will never become virtual, and will also always trigger a BOX_THIS pattern
                 }
+                else if (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(constrainedType))
+                {
+                    // The constrained value type is within the version bubble, so target method will always require boxing
+                }
                 else
                 {
                     throw new RequiresRuntimeJitException(pResult->thisTransform.ToString());

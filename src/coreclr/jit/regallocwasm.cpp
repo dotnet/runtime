@@ -234,7 +234,21 @@ regNumber WasmRegAlloc::AllocateTemporaryRegister(var_types type)
 regNumber WasmRegAlloc::ReleaseTemporaryRegister(var_types type)
 {
     WasmValueType wasmType = TypeToWasmValueType(type);
-    unsigned      index    = m_temporaryRegs[static_cast<unsigned>(wasmType)].Pop();
+    return ReleaseTemporaryRegister(wasmType);
+}
+
+//------------------------------------------------------------------------
+// ReleaseTemporaryRegister: Release the most recently allocated temporary register.
+//
+// Arguments:
+//    wasmType - The register's wasm type
+//
+// Return Value:
+//    The released register.
+//
+regNumber WasmRegAlloc::ReleaseTemporaryRegister(WasmValueType wasmType)
+{
+    unsigned index = m_temporaryRegs[static_cast<unsigned>(wasmType)].Pop();
     return MakeWasmReg(index, wasmType);
 }
 
@@ -310,6 +324,12 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForCast(node->AsOp());
             break;
 
+        case GT_ADD:
+        case GT_SUB:
+        case GT_MUL:
+            CollectReferencesForBinop(node->AsOp());
+            break;
+
         default:
             assert(!node->OperIsLocalStore());
             break;
@@ -361,6 +381,40 @@ void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
 void WasmRegAlloc::CollectReferencesForCast(GenTreeOp* castNode)
 {
     ConsumeTemporaryRegForOperand(castNode->gtGetOp1() DEBUGARG("cast overflow check"));
+}
+
+//------------------------------------------------------------------------
+// CollectReferencesForBinop: Collect virtual register references for a binary operation.
+//
+// Consumes temporary registers for a binary operation.
+//
+// Arguments:
+//    binopNode - The binary operation node
+//
+void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
+{
+    regNumber internalReg = REG_NA;
+    if (binopNode->gtOverflow())
+    {
+        if (binopNode->OperIs(GT_ADD) || binopNode->OperIs(GT_SUB))
+        {
+            internalReg = RequestInternalRegister(binopNode, binopNode->TypeGet());
+        }
+        else if (binopNode->OperIs(GT_MUL))
+        {
+            assert(binopNode->TypeIs(TYP_INT));
+            internalReg = RequestInternalRegister(binopNode, TYP_LONG);
+        }
+    }
+
+    if (internalReg != REG_NA)
+    {
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
+
+    ConsumeTemporaryRegForOperand(binopNode->gtGetOp2() DEBUGARG("binop overflow check"));
+    ConsumeTemporaryRegForOperand(binopNode->gtGetOp1() DEBUGARG("binop overflow check"));
 }
 
 //------------------------------------------------------------------------
@@ -512,6 +566,25 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 
     operand->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
     JITDUMP("Consumed a temporary reg for [%06u]: %s\n", Compiler::dspTreeID(operand), reason);
+}
+
+//------------------------------------------------------------------------
+// RequestInternalRegister: request an internal register for a node with specific type.
+//
+// To be later assigned a physical register.
+//
+// Arguments:
+//    node - node whose codegen will need an internal register
+//    type - type of the internal register
+//
+// Returns:
+//    reg number of internal register.
+//
+regNumber WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
+{
+    regNumber reg = AllocateTemporaryRegister(genActualType(type));
+    m_codeGen->internalRegisters.Add(node, reg);
+    return reg;
 }
 
 //------------------------------------------------------------------------
