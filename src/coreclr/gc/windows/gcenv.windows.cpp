@@ -1117,6 +1117,8 @@ uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 //  Number of processors on the machine
 uint32_t GCToOSInterface::GetTotalProcessorCount()
 {
+    if (g_totalCpuCount != 0)
+        return g_totalCpuCount;
     if (CanEnableGCCPUGroups())
     {
         g_totalCpuCount = g_nProcessors;
