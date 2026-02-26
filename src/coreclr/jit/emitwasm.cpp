@@ -91,8 +91,8 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 
     if (m_debugInfoSize > 0)
     {
-        id->idDebugOnlyInfo()->idVarRefOffs  = varx;
-        id->idDebugOnlyInfo()->idVarRefOffs2 = (unsigned)offs;
+        id->idDebugOnlyInfo()->idLclNum    = varx;
+        id->idDebugOnlyInfo()->idLclOffset = (unsigned)offs;
     }
 
     dispIns(id);
@@ -796,13 +796,13 @@ void emitter::emitDispIns(
     auto dispLclVarInfoIfAny = [this, id]() {
         if (m_debugInfoSize > 0)
         {
-            unsigned const lclNum = id->idDebugOnlyInfo()->idVarRefOffs;
+            unsigned const lclNum = id->idDebugOnlyInfo()->idLclNum;
             if (lclNum != BAD_VAR_NUM)
             {
                 printf("      ;; V%02u", lclNum);
-                if (id->idDebugOnlyInfo()->idVarRefOffs2 != 0)
+                if (id->idDebugOnlyInfo()->idLclOffset != 0)
                 {
-                    printf("+%u", id->idDebugOnlyInfo()->idVarRefOffs2);
+                    printf("+%u", id->idDebugOnlyInfo()->idLclOffset);
                 }
             }
         }

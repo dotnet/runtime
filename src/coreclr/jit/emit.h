@@ -640,7 +640,9 @@ protected:
         BasicBlock*       idTargetBlock; // Target block for branches
 
 #ifdef TARGET_WASM
-        int lclBaseIndex; // Base index of the WASM locals being declared
+        int      lclBaseIndex; // Base index of the WASM locals being declared
+        unsigned idLclNum;     // LclVar number for this instruction
+        unsigned idLclOffset;  // LclVar field offset for this instruction
 #endif
     };
 
