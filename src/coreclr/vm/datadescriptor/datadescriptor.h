@@ -26,3 +26,8 @@
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
+
+#ifdef FEATURE_COMINTEROP
+#include "runtimecallablewrapper.h"
+#include "comcache.h"
+#endif // FEATURE_COMINTEROP

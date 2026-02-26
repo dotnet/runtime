@@ -3565,7 +3565,61 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, void* pCallback, void* token)
-        => _legacyImpl is not null ? _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, pCallback, token) : HResults.E_NOTIMPL;
+    {
+        if (pCallback == null)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.S_OK;
+        int entryCount = 0;
+        try
+        {
+            Contracts.IComWrappers contract = _target.Contracts.ComWrappers;
+            var visitCallback = (delegate* unmanaged<ulong, ulong, ulong, int, void*, int>)pCallback;
+            foreach (Contracts.RCWCleanupData entry in contract.GetRCWCleanupList(cleanupListPtr.ToTargetPointer(_target)))
+            {
+                visitCallback(
+                    entry.RCW.ToClrDataAddress(_target).Value,
+                    entry.Context.ToClrDataAddress(_target).Value,
+                    entry.STAThread.ToClrDataAddress(_target).Value,
+                    entry.IsFreeThreaded ? 1 : 0,
+                    token);
+                entryCount++;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int legacyCount = 0;
+            void* legacyToken = GCHandle.ToIntPtr(GCHandle.Alloc(new int[1])).ToPointer();
+            try
+            {
+                int hrLocal = _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, (delegate* unmanaged<ulong, ulong, ulong, int, void*, int>)&TraverseRCWCleanupListCountCallback, legacyToken);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                legacyCount = ((int[])GCHandle.FromIntPtr((nint)legacyToken).Target!)[0];
+            }
+            finally
+            {
+                GCHandle.FromIntPtr((nint)legacyToken).Free();
+            }
+            Debug.Assert(legacyCount == entryCount, $"cDAC: {entryCount} entries, DAC: {legacyCount} entries");
+        }
+#endif
+        return hr;
+    }
+
+#if DEBUG
+    [UnmanagedCallersOnly]
+    private static int TraverseRCWCleanupListCountCallback(ulong rcw, ulong ctx, ulong thread, int isFreeThreaded, void* token)
+    {
+        var counter = (int[])GCHandle.FromIntPtr((nint)token).Target!;
+        counter[0]++;
+        return 1; // TRUE - continue enumeration
+    }
+#endif
     int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, int heaptype, void* pCallback)
         => _legacyImpl is not null ? _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, pCallback) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface

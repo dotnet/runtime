@@ -35,6 +35,7 @@ public static class Constants
         public const string ThinlockThreadIdDispenser = nameof(ThinlockThreadIdDispenser);
         public const string DispatchThisPtrMask = nameof(DispatchThisPtrMask);
         public const string ComWrappersVtablePtrs = nameof(ComWrappersVtablePtrs);
+        public const string RCWCleanupList = nameof(RCWCleanupList);
         public const string GcNotificationFlags = nameof(GcNotificationFlags);
         public const string GlobalAllocContext = nameof(GlobalAllocContext);
 

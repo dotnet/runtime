@@ -147,6 +147,27 @@ CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, RCW, cdac_data<InteropSyncBlo
 #endif // FEATURE_COMINTEROP
 CDAC_TYPE_END(InteropSyncBlockInfo)
 
+#ifdef FEATURE_COMINTEROP
+CDAC_TYPE_BEGIN(RCWCleanupList)
+CDAC_TYPE_INDETERMINATE(RCWCleanupList)
+CDAC_TYPE_FIELD(RCWCleanupList, /*pointer*/, FirstBucket, cdac_data<RCWCleanupList>::FirstBucket)
+CDAC_TYPE_END(RCWCleanupList)
+
+CDAC_TYPE_BEGIN(RCW)
+CDAC_TYPE_INDETERMINATE(RCW)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, NextRCW, cdac_data<RCW>::NextRCW)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, NextCleanupBucket, cdac_data<RCW>::NextCleanupBucket)
+CDAC_TYPE_FIELD(RCW, /*uint32*/, Flags, cdac_data<RCW>::Flags)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, CtxCookie, cdac_data<RCW>::CtxCookie)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, CtxEntry, cdac_data<RCW>::CtxEntry)
+CDAC_TYPE_END(RCW)
+
+CDAC_TYPE_BEGIN(CtxEntry)
+CDAC_TYPE_INDETERMINATE(CtxEntry)
+CDAC_TYPE_FIELD(CtxEntry, /*pointer*/, STAThread, cdac_data<CtxEntry>::STAThread)
+CDAC_TYPE_END(CtxEntry)
+#endif // FEATURE_COMINTEROP
+
 CDAC_TYPE_BEGIN(SyncBlock)
 CDAC_TYPE_INDETERMINATE(SyncBlock)
 CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, InteropInfo, cdac_data<SyncBlock>::InteropInfo)
@@ -1152,6 +1173,9 @@ CDAC_GLOBAL_POINTER(ThinlockThreadIdDispenser, &::g_pThinLockThreadIdDispenser)
 CDAC_GLOBAL(DispatchThisPtrMask, uintptr_t, InteropLib::ABI::DispatchThisPtrMask)
 CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, InteropLib::ABI::g_knownQueryInterfaceImplementations)
 #endif // FEATURE_COMWRAPPERS
+#ifdef FEATURE_COMINTEROP
+CDAC_GLOBAL_POINTER(RCWCleanupList, &::g_pRCWCleanupList)
+#endif // FEATURE_COMINTEROP
 CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
 CDAC_GLOBAL_POINTER(GlobalAllocContext, &::g_global_alloc_context)
 CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)

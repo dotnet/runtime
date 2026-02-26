@@ -83,4 +83,71 @@ internal readonly struct ComWrappers_1 : IComWrappers
         TargetPointer typeHandlePtr = rts.GetTypeByNameAndModule(NativeObjectWrapperName, NativeObjectWrapperNamespace, moduleHandle).Address;
         return mt == typeHandlePtr;
     }
+
+    public IEnumerable<RCWCleanupData> GetRCWCleanupList(TargetPointer cleanupListAddress)
+    {
+        // FEATURE_COMINTEROP is Windows-only; return empty if the feature is not enabled
+        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) == 0)
+            yield break;
+
+        TargetPointer listAddress = cleanupListAddress;
+        if (listAddress == TargetPointer.Null)
+        {
+            // Use the global cleanup list if no explicit address was provided
+            if (!_target.TryReadGlobalPointer(Constants.Globals.RCWCleanupList, out TargetPointer? globalListPtr)
+                || globalListPtr is null)
+            {
+                yield break;
+            }
+            listAddress = globalListPtr.Value;
+        }
+
+        if (listAddress == TargetPointer.Null)
+            yield break;
+
+        Data.RCWCleanupList cleanupList = _target.ProcessedData.GetOrAdd<Data.RCWCleanupList>(listAddress);
+        TargetPointer bucketAddress = cleanupList.FirstBucket;
+
+        while (bucketAddress != TargetPointer.Null)
+        {
+            // Each bucket-head RCW shares context/thread/freethreaded state with all
+            // RCWs in its bucket (they all belong to the same COM apartment/context).
+            Data.RCW bucketHead = _target.ProcessedData.GetOrAdd<Data.RCW>(bucketAddress);
+            TargetPointer ctxCookie = bucketHead.CtxCookie;
+            TargetPointer staThread = GetSTAThreadFromRCW(bucketHead);
+            bool isFreeThreaded = GetIsFreeThreaded(bucketHead.Flags);
+
+            TargetPointer rcwAddress = bucketAddress;
+            while (rcwAddress != TargetPointer.Null)
+            {
+                yield return new RCWCleanupData(rcwAddress, ctxCookie, staThread, isFreeThreaded);
+
+                Data.RCW rcw = _target.ProcessedData.GetOrAdd<Data.RCW>(rcwAddress);
+                rcwAddress = rcw.NextRCW;
+            }
+
+            bucketAddress = bucketHead.NextCleanupBucket;
+        }
+    }
+
+    private TargetPointer GetSTAThreadFromRCW(Data.RCW rcw)
+    {
+        // The low bit of m_pCtxEntry is used for synchronization; mask it off to get the real pointer.
+        const ulong CtxEntrySyncBitMask = ~(ulong)1;
+        TargetPointer ctxEntryAddress = rcw.CtxEntry & CtxEntrySyncBitMask;
+        if (ctxEntryAddress == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        Data.CtxEntry ctxEntry = _target.ProcessedData.GetOrAdd<Data.CtxEntry>(ctxEntryAddress);
+        return ctxEntry.STAThread;
+    }
+
+    private static bool GetIsFreeThreaded(uint flags)
+    {
+        // MarshalingType occupies bits 7-8 of the flags DWORD; MarshalingType_FreeThreaded = 2
+        const uint marshalingTypeMask = 3u;
+        const int marshalingTypeShift = 7;
+        const uint marshalingTypeFreeThreaded = 2u;
+        return ((flags >> marshalingTypeShift) & marshalingTypeMask) == marshalingTypeFreeThreaded;
+    }
 }

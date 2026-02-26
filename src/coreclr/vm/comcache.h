@@ -40,6 +40,7 @@ class CtxEntry
     // The CtxEntryCache needs to be able to see the internals
     // of the CtxEntry.
     friend CtxEntryCache;
+    friend struct ::cdac_data<CtxEntry>;
 
     // NewHolder<CtxEntry> needs to be able to call the destructor of CtxEntry.
     // DISABLE Warning C4396, the inline specifier cannot be used when a friend declaration refers to a specialization of a function template
@@ -92,6 +93,12 @@ private:
     Thread*         m_pSTAThread;           // STA thread associated with the context, if any
 };
 
+template<>
+struct cdac_data<CtxEntry>
+{
+    static constexpr size_t STAThread = offsetof(CtxEntry, m_pSTAThread);
+};
+
 //==============================================================
 // IUnkEntry: represent a single COM component
 struct IUnkEntry
@@ -100,6 +107,7 @@ struct IUnkEntry
     friend CtxEntry;
     // RCW need to access IUnkEntry
     friend RCW;
+    friend struct ::cdac_data<RCW>;
 
 #ifdef _DEBUG
     // Does not throw if m_pUnknown is no longer valid, debug only.
