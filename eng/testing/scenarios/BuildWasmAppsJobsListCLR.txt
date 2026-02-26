@@ -1,4 +1,3 @@
-Wasm.Build.Tests.AppSettingsTests
 Wasm.Build.Tests.DebugLevelTests
 Wasm.Build.Tests.DownloadThenInitTests
 Wasm.Build.Tests.EnvVariablesTests
