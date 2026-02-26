@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tests
 
             if (!Interop.Kernel32.GenerateConsoleCtrlEvent((int)dwCtrlEvent, processId))
             {
-                int error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastPInvokeError();
                 if (error == Interop.Errors.ERROR_INVALID_FUNCTION && PlatformDetection.IsInContainer)
                 {
                     // Docker in CI runs without a console attached.

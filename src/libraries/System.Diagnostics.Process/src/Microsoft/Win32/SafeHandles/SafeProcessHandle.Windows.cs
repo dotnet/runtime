@@ -65,9 +65,10 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            if (_threadHandle != IntPtr.Zero)
+            IntPtr threadHandle = Interlocked.Exchange(ref _threadHandle, IntPtr.Zero);
+            if (threadHandle != IntPtr.Zero)
             {
-                Interop.Kernel32.CloseHandle(_threadHandle);
+                Interop.Kernel32.CloseHandle(threadHandle);
             }
 
             if (_processGroupJobHandle != IntPtr.Zero)
@@ -159,11 +160,11 @@ namespace Microsoft.Win32.SafeHandles
                 if (options.KillOnParentExit || options.CreateNewProcessGroup)
                     attributeCount++;
 
-                IntPtr size = IntPtr.Zero;
+                nuint size = 0;
                 Interop.Kernel32.LPPROC_THREAD_ATTRIBUTE_LIST emptyList = default;
                 Interop.Kernel32.InitializeProcThreadAttributeList(emptyList, attributeCount, 0, ref size);
 
-                attributeListBuffer = NativeMemory.Alloc((nuint)size);
+                attributeListBuffer = NativeMemory.Alloc(size);
                 attributeList.AttributeList = (IntPtr)attributeListBuffer;
 
                 if (!Interop.Kernel32.InitializeProcThreadAttributeList(attributeList, attributeCount, 0, ref size))
@@ -176,9 +177,9 @@ namespace Microsoft.Win32.SafeHandles
                     0,
                     (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
                     handlesToInherit,
-                    (IntPtr)(handleCount * sizeof(IntPtr)),
+                    (nuint)(handleCount * sizeof(IntPtr)),
                     null,
-                    IntPtr.Zero))
+                    0))
                 {
                     throw new Win32Exception();
                 }
@@ -198,9 +199,9 @@ namespace Microsoft.Win32.SafeHandles
                         0,
                         Interop.Kernel32.PROC_THREAD_ATTRIBUTE_JOB_LIST,
                         pJobHandle,
-                        jobsCount * sizeof(IntPtr),
+                        (nuint)(jobsCount * sizeof(IntPtr)),
                         null,
-                        IntPtr.Zero))
+                        0))
                     {
                         throw new Win32Exception();
                     }
@@ -429,13 +430,13 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (cancellationToken.CanBeCanceled)
                 {
-                    ctr = cancellationToken.Register(
+                    ctr = cancellationToken.UnsafeRegister(
                         static state =>
                         {
-                            var taskSource = (TaskCompletionSource<bool>)state!;
-                            taskSource.TrySetCanceled();
+                            var (taskSource, token) = ((TaskCompletionSource<bool> taskSource, CancellationToken token))state!;
+                            taskSource.TrySetCanceled(token);
                         },
-                        tcs);
+                        (tcs, cancellationToken));
                 }
 
                 await tcs.Task.ConfigureAwait(false);
@@ -469,14 +470,13 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (cancellationToken.CanBeCanceled)
                 {
-                    ctr = cancellationToken.Register(
+                    ctr = cancellationToken.UnsafeRegister(
                         static state =>
                         {
-                            var (handle, taskSource, wasCancelled) = ((SafeProcessHandle, TaskCompletionSource<bool>, StrongBox<bool>))state!;
+                            var (handle, wasCancelled) = ((SafeProcessHandle, StrongBox<bool>))state!;
                             wasCancelled.Value = handle.KillCore(throwOnError: false);
-                            taskSource.TrySetResult(true);
                         },
-                        (this, tcs, wasKilledBox));
+                        (this, wasKilledBox));
                 }
 
                 await tcs.Task.ConfigureAwait(false);
@@ -572,11 +572,8 @@ namespace Microsoft.Win32.SafeHandles
                 throw new Win32Exception(error);
             }
 
-            // Transfer ownership: take the handle from the returned SafeProcessHandle and
-            // create a new one with the ProcessId set properly.
-            IntPtr rawHandle = safeHandle.DangerousGetHandle();
-            safeHandle.SetHandleAsInvalid(); // Prevent the original from closing it
-            return new SafeProcessHandle(rawHandle, IntPtr.Zero, IntPtr.Zero, processId);
+            safeHandle.ProcessId = processId;
+            return safeHandle;
         }
     }
 }

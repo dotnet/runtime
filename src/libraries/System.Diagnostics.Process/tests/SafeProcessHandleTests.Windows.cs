@@ -14,19 +14,10 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void SendSignal_SIGINT_TerminatesProcessInNewProcessGroup()
         {
-            if (Console.IsInputRedirected)
-            {
-                return;
-            }
+            ProcessStartOptions options = CreateTenSecondSleep();
+            options.CreateNewProcessGroup = true;
 
-            ProcessStartOptions options = new("timeout")
-            {
-                Arguments = { "/t", "3", "/nobreak" },
-                CreateNewProcessGroup = true
-            };
-
-            using SafeFileHandle stdin = Console.OpenStandardInputHandle();
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: stdin, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
             bool hasExited = processHandle.TryWaitForExit(TimeSpan.Zero, out _);
             Assert.False(hasExited, "Process should still be running before signal is sent");
@@ -41,19 +32,10 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void Signal_SIGQUIT_TerminatesProcessInNewProcessGroup()
         {
-            if (Console.IsInputRedirected)
-            {
-                return;
-            }
+            ProcessStartOptions options = CreateTenSecondSleep();
+            options.CreateNewProcessGroup = true;
 
-            ProcessStartOptions options = new("timeout")
-            {
-                Arguments = { "/t", "3", "/nobreak" },
-                CreateNewProcessGroup = true
-            };
-
-            using SafeFileHandle stdin = Console.OpenStandardInputHandle();
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: stdin, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
             bool hasExited = processHandle.TryWaitForExit(TimeSpan.Zero, out _);
             Assert.False(hasExited, "Process should still be running before signal is sent");
@@ -68,19 +50,10 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void Signal_UnsupportedSignal_ThrowsArgumentException()
         {
-            if (Console.IsInputRedirected)
-            {
-                return;
-            }
+            ProcessStartOptions options = CreateTenSecondSleep();
+            options.CreateNewProcessGroup = true;
 
-            ProcessStartOptions options = new("timeout")
-            {
-                Arguments = { "/t", "3", "/nobreak" },
-                CreateNewProcessGroup = true
-            };
-
-            using SafeFileHandle stdin = Console.OpenStandardInputHandle();
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: stdin, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
             try
             {
@@ -112,42 +85,11 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public void Kill_EntireProcessGroup_WithoutCreateNewProcessGroup_Throws()
         {
-            if (Console.IsInputRedirected)
-            {
-                return;
-            }
-
-            ProcessStartOptions options = new("timeout")
-            {
-                Arguments = { "/t", "3", "/nobreak" },
-                CreateNewProcessGroup = false
-            };
-
-            using SafeFileHandle stdin = Console.OpenStandardInputHandle();
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: stdin, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             Assert.Throws<InvalidOperationException>(() => processHandle.KillProcessGroup());
 
             Assert.True(processHandle.Kill());
-        }
-
-        [Fact]
-        public void StartSuspended_ResumeCompletes()
-        {
-            ProcessStartOptions options = new("cmd.exe")
-            {
-                Arguments = { "/c", "echo test" }
-            };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.StartSuspended(options, input: null, output: null, error: null);
-
-            bool hasExited = processHandle.TryWaitForExit(TimeSpan.FromMilliseconds(200), out _);
-            Assert.False(hasExited, "Suspended process should not have exited yet");
-
-            processHandle.Resume();
-
-            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(5));
-            Assert.Equal(0, exitStatus.ExitCode);
         }
 
         [Fact]

@@ -45,7 +45,7 @@ internal static partial class Interop
             LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList,
             int dwAttributeCount,
             int dwFlags,
-            ref IntPtr lpSize);
+            ref nuint lpSize);
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -54,9 +54,9 @@ internal static partial class Interop
             int dwFlags,
             IntPtr attribute,
             void* lpValue,
-            IntPtr cbSize,
+            nuint cbSize,
             void* lpPreviousValue,
-            IntPtr lpReturnSize);
+            nuint lpReturnSize);
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static unsafe partial void DeleteProcThreadAttributeList(LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList);

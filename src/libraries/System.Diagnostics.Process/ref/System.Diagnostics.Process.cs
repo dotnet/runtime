@@ -10,7 +10,6 @@ namespace Microsoft.Win32.SafeHandles
     {
         public SafeProcessHandle() : base (default(bool)) { }
         public SafeProcessHandle(System.IntPtr existingHandle, bool ownsHandle) : base (default(bool)) { }
-        public int ProcessId { get { throw null; } }
         public bool Kill() { throw null; }
         public bool KillProcessGroup() { throw null; }
         public static Microsoft.Win32.SafeHandles.SafeProcessHandle Open(int processId) { throw null; }
@@ -19,7 +18,6 @@ namespace Microsoft.Win32.SafeHandles
         public void Signal(System.Runtime.InteropServices.PosixSignal signal) { }
         public void SignalProcessGroup(System.Runtime.InteropServices.PosixSignal signal) { }
         public static Microsoft.Win32.SafeHandles.SafeProcessHandle Start(System.Diagnostics.ProcessStartOptions options, Microsoft.Win32.SafeHandles.SafeFileHandle? input, Microsoft.Win32.SafeHandles.SafeFileHandle? output, Microsoft.Win32.SafeHandles.SafeFileHandle? error) { throw null; }
-        public static Microsoft.Win32.SafeHandles.SafeProcessHandle StartSuspended(System.Diagnostics.ProcessStartOptions options, Microsoft.Win32.SafeHandles.SafeFileHandle? input, Microsoft.Win32.SafeHandles.SafeFileHandle? output, Microsoft.Win32.SafeHandles.SafeFileHandle? error) { throw null; }
         public bool TryWaitForExit(System.TimeSpan timeout, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Diagnostics.ProcessExitStatus? exitStatus) { throw null; }
         public System.Diagnostics.ProcessExitStatus WaitForExit() { throw null; }
         public System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

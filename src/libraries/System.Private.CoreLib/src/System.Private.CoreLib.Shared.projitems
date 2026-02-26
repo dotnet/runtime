@@ -2095,7 +2095,7 @@
       <Link>Common\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConsoleCtrl.cs">
-      <Link>Common\Interop\Windows\Interop.SetConsoleCtrlHandler.cs</Link>
+      <Link>Common\Interop\Windows\Kernel32\Interop.ConsoleCtrl.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SetCurrentDirectory.cs</Link>

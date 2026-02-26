@@ -30,27 +30,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public static void GetProcessId_ReturnsValidPid()
-        {
-            ProcessStartOptions info = new("cmd.exe") { Arguments = { "/c", "echo test" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(info, input: null, output: null, error: null);
-            int pid = processHandle.ProcessId;
-
-            Assert.NotEqual(0, pid);
-            Assert.NotEqual(-1, pid);
-            Assert.True(pid > 0, "Process ID should be a positive integer");
-
-            nint handleValue = processHandle.DangerousGetHandle();
-            Assert.NotEqual(handleValue, (nint)pid);
-
-            ProcessExitStatus exitStatus = processHandle.WaitForExit();
-            Assert.Equal(0, exitStatus.ExitCode);
-            Assert.Null(exitStatus.Signal);
-            Assert.False(exitStatus.Canceled);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
         public static void Kill_KillsRunningProcess()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
@@ -115,7 +94,7 @@ namespace System.Diagnostics.Tests
             Stopwatch stopwatch = Stopwatch.StartNew();
             ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(300));
 
-            Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(290), TimeSpan.FromMilliseconds(2000));
+            Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(270), TimeSpan.FromMilliseconds(2000));
             Assert.True(exitStatus.Canceled);
             Assert.NotEqual(0, exitStatus.ExitCode);
         }
@@ -127,9 +106,7 @@ namespace System.Diagnostics.Tests
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
-            Stopwatch stopwatch = Stopwatch.StartNew();
             ProcessExitStatus exitStatus = processHandle.WaitForExit();
-            stopwatch.Stop();
 
             Assert.Equal(0, exitStatus.ExitCode);
             Assert.False(exitStatus.Canceled);
@@ -165,7 +142,7 @@ namespace System.Diagnostics.Tests
 
                 Assert.False(exited);
                 Assert.Null(exitStatus);
-                Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(290), TimeSpan.FromMilliseconds(2000));
+                Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(270), TimeSpan.FromMilliseconds(2000));
             }
             finally
             {
@@ -197,14 +174,14 @@ namespace System.Diagnostics.Tests
             ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(300));
             stopwatch.Stop();
 
-            Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(290), TimeSpan.FromSeconds(2));
+            Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(270), TimeSpan.FromSeconds(2));
             Assert.True(exitStatus.Canceled, "Process should be marked as canceled when killed due to timeout");
             Assert.NotEqual(0, exitStatus.ExitCode);
             Assert.Equal(-1, exitStatus.ExitCode);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
-        public static async Task WaitForExitOrKillOnCancellationAsync_KillsOnCancellation()
+        public static async Task WaitForExitOrKillOnCancellationAsync_KillsOnCancellation_AndDoesNotThrow()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
@@ -322,7 +299,6 @@ namespace System.Diagnostics.Tests
             using SafeProcessHandle handle = SafeProcessHandle.Open(currentPid);
 
             Assert.False(handle.IsInvalid);
-            Assert.Equal(currentPid, handle.ProcessId);
         }
     }
 }

@@ -20,9 +20,9 @@ namespace Microsoft.Win32.SafeHandles
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
 
         /// <summary>
-        /// Gets the process ID.
+        /// Gets or sets the process ID.
         /// </summary>
-        public int ProcessId { get; private set; }
+        internal int ProcessId { get; set; }
 
         /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeProcessHandle" />.
@@ -90,7 +90,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="error">Standard error handle.</param>
         /// <returns>A handle to the suspended process. Call <see cref="Resume"/> to start execution.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is null.</exception>
-        public static SafeProcessHandle StartSuspended(ProcessStartOptions options, SafeFileHandle? input, SafeFileHandle? output, SafeFileHandle? error)
+        internal static SafeProcessHandle StartSuspended(ProcessStartOptions options, SafeFileHandle? input, SafeFileHandle? output, SafeFileHandle? error)
         {
             return StartInternal(options, input, output, error, createSuspended: true);
         }
