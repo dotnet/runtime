@@ -921,15 +921,22 @@ namespace ILCompiler.ObjectWriter
                             break;
                         case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                         {
-                            long targetOffset = symbolImageOffset + addend;
+                            if (addend != 0)
+                            {
+                                throw new NotSupportedException();
+                            }
                             int sourcePageRVA = (int)(relocOffset & ~0xFFF);
-                            long delta = ((targetOffset - sourcePageRVA) >> 12) & 0x1f_ffff;
+                            long delta = ((long)symbolImageOffset - sourcePageRVA >> 12) & 0x1f_ffff;
                             Relocation.WriteValue(reloc.Type, pData, delta);
                             break;
                         }
                         case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                         case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
-                            Relocation.WriteValue(reloc.Type, pData, (symbolImageOffset + addend) & 0xfff);
+                            if (addend != 0)
+                            {
+                                throw new NotSupportedException();
+                            }
+                            Relocation.WriteValue(reloc.Type, pData, symbolImageOffset & 0xfff);
                             break;
                         case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                         {
