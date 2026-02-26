@@ -2479,14 +2479,20 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     genConsumeOperands(cpObjNode);
 
+    emitter* emit = GetEmitter();
+
+    // TODO-WASM: Implicit null check
+
+    // TODO-WASM: Remove the need to do this somehow
+    // The dst and src may be on the evaluation stack, but we can't reliably use them, so drop them.
+    emit->emitIns(INS_drop);
+    if (!source->isContained())
+        emit->emitIns(INS_drop);
+
     if (cpObjNode->IsVolatile())
     {
         // TODO-WASM: Memory barrier
     }
-
-    // TODO: Do we need an implicit null check here?
-
-    emitter* emit = GetEmitter();
 
     ClassLayout* layout = cpObjNode->GetLayout();
     unsigned     slots  = layout->GetSlotCount();
@@ -2511,6 +2517,9 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         }
         else
         {
+            // Load the sp onto the stack for the helper call.
+            // TODO-WASM: Implement a special calling convention for this helper that doesn't accept sp/pep.
+            emit->emitIns_I(INS_local_get, EA_4BYTE, WasmRegToIndex(GetStackPointerReg()));
             // Compute the actual dest/src of the slot being copied to pass to the helper.
             emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
             emit->emitIns_I(INS_I_const, attrDstAddr, dstOffset);
@@ -2518,6 +2527,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
             emit->emitIns_I(INS_I_const, attrSrcAddr, srcOffset);
             emit->emitIns(INS_I_add);
+            // TODO-WASM: Load the PEP value for the helper onto the stack here? Right now genEmitHelperCall does it.
             // Call the byref assign helper. On other targets this updates the dst/src regs but here it won't,
             //  so we have to do the local.get+i32.const+i32.add dance every time.
             genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
