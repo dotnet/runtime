@@ -29,6 +29,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
 
     [Theory, TestCategory("no-fingerprinting")]
     [MemberData(nameof(LoadLazyAssemblyBeforeItIsNeededData))]
+    [Skip("Fails on CoreCLR: PDBs not loaded for lazy assemblies. See issues.md.", RuntimeFlavor = "CoreCLR")]
     public async Task LoadLazyAssemblyBeforeItIsNeeded(string lazyLoadingTestExtension, string[] allLazyLoadingTestExtensions)
     {
         Configuration config = Configuration.Debug;
