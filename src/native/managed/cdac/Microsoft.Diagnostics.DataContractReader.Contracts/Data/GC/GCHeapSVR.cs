@@ -46,11 +46,11 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
         const string FreeRegionsName = "FreeRegions";
 
         if (type.Fields.ContainsKey(FreeableSohSegmentName))
-            ((IGCHeap)this).FreeableSohSegment = target.ReadPointer(address + (ulong)type.Fields[FreeableSohSegmentName].Offset);
+            FreeableSohSegment = target.ReadPointer(address + (ulong)type.Fields[FreeableSohSegmentName].Offset);
         if (type.Fields.ContainsKey(FreeableUohSegmentName))
-            ((IGCHeap)this).FreeableUohSegment = target.ReadPointer(address + (ulong)type.Fields[FreeableUohSegmentName].Offset);
+            FreeableUohSegment = target.ReadPointer(address + (ulong)type.Fields[FreeableUohSegmentName].Offset);
         if (type.Fields.ContainsKey(FreeRegionsName))
-            ((IGCHeap)this).FreeRegions = address + (ulong)type.Fields[FreeRegionsName].Offset;
+            FreeRegions = address + (ulong)type.Fields[FreeRegionsName].Offset;
     }
 
     public TargetPointer MarkArray { get; }
@@ -77,7 +77,7 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
     public TargetPointer ExpandMechanisms { get; }
     public TargetPointer InterestingMechanismBits { get; }
 
-    TargetPointer? IGCHeap.FreeableSohSegment { get; }
-    TargetPointer? IGCHeap.FreeableUohSegment { get; }
-    TargetPointer? IGCHeap.FreeRegions { get; }
+    public TargetPointer? FreeableSohSegment { get; }
+    public TargetPointer? FreeableUohSegment { get; }
+    public TargetPointer? FreeRegions { get; }
 }

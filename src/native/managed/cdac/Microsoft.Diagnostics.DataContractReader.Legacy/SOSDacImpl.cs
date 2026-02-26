@@ -4497,12 +4497,60 @@ public sealed unsafe partial class SOSDacImpl
         => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeapNames(count, ppNames, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
         => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, count, pLoaderHeaps, pKinds, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface13.GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetHandleTableMemoryRegions(ppEnum) : HResults.E_NOTIMPL;
-    int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetGCBookkeepingMemoryRegions(ppEnum) : HResults.E_NOTIMPL;
-    int ISOSDacInterface13.GetGCFreeRegions(/*ISOSMemoryEnum*/ void** ppEnum)
-        => _legacyImpl13 is not null ? _legacyImpl13.GetGCFreeRegions(ppEnum) : HResults.E_NOTIMPL;
+    int ISOSDacInterface13.GetHandleTableMemoryRegions(out ISOSMemoryEnum? ppEnum)
+    {
+        int hr = HResults.S_OK;
+        ppEnum = default;
+
+        try
+        {
+            IGC gc = _target.Contracts.GC;
+            IEnumerable<GCMemoryRegionData> regions = gc.GetHandleTableMemoryRegions();
+            ppEnum = new SOSMemoryEnum(regions);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+    int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(out ISOSMemoryEnum? ppEnum)
+    {
+        int hr = HResults.S_OK;
+        ppEnum = default;
+
+        try
+        {
+            IGC gc = _target.Contracts.GC;
+            IEnumerable<GCMemoryRegionData> regions = gc.GetGCBookkeepingMemoryRegions();
+            ppEnum = new SOSMemoryEnum(regions);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+    int ISOSDacInterface13.GetGCFreeRegions(out ISOSMemoryEnum? ppEnum)
+    {
+        int hr = HResults.S_OK;
+        ppEnum = default;
+
+        try
+        {
+            IGC gc = _target.Contracts.GC;
+            IEnumerable<GCMemoryRegionData> regions = gc.GetGCFreeRegions();
+            ppEnum = new SOSMemoryEnum(regions);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
     int ISOSDacInterface13.LockedFlush()
         => _legacyImpl13 is not null ? _legacyImpl13.LockedFlush() : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface13
@@ -4642,6 +4690,85 @@ public sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface14
 
     #region ISOSDacInterface15
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSMemoryEnum : ISOSMemoryEnum
+    {
+        private uint _iteratorIndex;
+        private readonly List<SOSMemoryRegion> _regions;
+
+        public SOSMemoryEnum(IEnumerable<GCMemoryRegionData> regions)
+        {
+            _regions = [];
+            foreach (GCMemoryRegionData region in regions)
+            {
+                _regions.Add(new SOSMemoryRegion()
+                {
+                    Start = (ClrDataAddress)region.Start,
+                    Size = (ClrDataAddress)region.Size,
+                    ExtraData = (ClrDataAddress)region.ExtraData,
+                    Heap = region.Heap,
+                });
+            }
+        }
+
+        int ISOSMemoryEnum.Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegion, uint* pNeeded)
+        {
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pNeeded is null)
+                    throw new NullReferenceException();
+                if (memRegion is null)
+                    throw new NullReferenceException();
+
+                uint i = 0;
+                while (i < count && _iteratorIndex < _regions.Count)
+                {
+                    memRegion[i++] = _regions[(int)_iteratorIndex++];
+                }
+
+                *pNeeded = i;
+
+                hr = i < count ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+
+            return hr;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _iteratorIndex += count;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            _iteratorIndex = 0;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pCount == null)
+                    throw new NullReferenceException();
+
+                *pCount = (uint)_regions.Count;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+            return hr;
+        }
+    }
+
     [GeneratedComClass]
     internal sealed unsafe partial class SOSMethodEnum : ISOSMethodEnum
     {
