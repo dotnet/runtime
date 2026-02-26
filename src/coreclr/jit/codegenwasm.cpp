@@ -2451,14 +2451,14 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         source = source->gtGetOp1();
         assert(!source->isContained());
         srcAddrType = source->TypeGet();
-        srcReg = GetMultiUseOperandReg(source);
-        srcOffset = 0;
+        srcReg      = GetMultiUseOperandReg(source);
+        srcOffset   = 0;
     }
     else
     {
         noway_assert(source->OperIs(GT_LCL_FLD, GT_LCL_VAR));
-        GenTreeLclVarCommon *lclVar = source->AsLclVarCommon();
-        bool fpBased;
+        GenTreeLclVarCommon* lclVar = source->AsLclVarCommon();
+        bool                 fpBased;
         srcOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
         noway_assert(fpBased);
         srcReg = GetFramePointerReg();

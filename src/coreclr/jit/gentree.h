@@ -1229,7 +1229,8 @@ public:
     //   These helper methods, along with the flag values they manipulate, are defined in lir.h
     //
 #ifdef TARGET_WASM
-    // Asks the register allocator to allocate a dedicated register for this node so we can use its value multiple times.
+    // Asks the register allocator to allocate a dedicated register for this node so we can use its value multiple
+    // times.
     inline void SetMultiplyUsed();
 #endif
     // UnusedValue indicates that, although this node produces a value, it is unused.
