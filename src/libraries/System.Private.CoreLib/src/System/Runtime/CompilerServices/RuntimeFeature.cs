@@ -71,7 +71,6 @@ namespace System.Runtime.CompilerServices
             };
         }
 
-
         /// <summary>
         /// Gets a value that indicates whether the runtime supports multithreading, including
         /// creating threads and using blocking synchronization primitives. This property
@@ -101,6 +100,6 @@ namespace System.Runtime.CompilerServices
         }
 #else
         partial static void ThrowIfMultithreadingIsNotSupported();
-endif
+#endif
     }
 }
