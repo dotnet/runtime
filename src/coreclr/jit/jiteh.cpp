@@ -2950,8 +2950,8 @@ bool Compiler::fgNormalizeEHCase3()
                         newLast->setHndIndex(ehOuterIndex);
                     }
 
-                    newLast->SetCatchType(BBCT_NONE); // bbCatchType is only set on the first block of a handler, which is
-                                                     // this not
+                    newLast->SetCatchType(BBCT_NONE); // bbCatchType is only set on the first block of a handler, which
+                                                      // is this not
                     newLast->bbCodeOffs    = insertAfterBlk->bbCodeOffsEnd;
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
@@ -4505,7 +4505,7 @@ void Compiler::fgExtendEHRegionAfter(BasicBlock* block)
 
     newBlk->copyEHRegion(block);
     newBlk->SetCatchType(BBCT_NONE); // Only the first block of a catch has this set, and 'newBlk' can't be the first
-                                    // block of a catch.
+                                     // block of a catch.
 
     // TODO-Throughput: if the block is not in an EH region, then we don't need to walk the EH table looking for 'last'
     // block pointers to update.

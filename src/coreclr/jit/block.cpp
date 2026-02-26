@@ -796,7 +796,7 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
     to->CopyFlags(from);
     to->bbWeight = from->bbWeight;
     to->copyEHRegion(from);
-    to->bbCatchType    = from->bbCatchType;
+    to->bbCatchType   = from->bbCatchType;
     to->bbStkTempsIn  = from->bbStkTempsIn;
     to->bbStkTempsOut = from->bbStkTempsOut;
     to->bbCodeOffs    = from->bbCodeOffs;
