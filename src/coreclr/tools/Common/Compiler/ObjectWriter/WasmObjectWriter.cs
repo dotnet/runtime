@@ -303,7 +303,10 @@ namespace ILCompiler.ObjectWriter
             {
                 if (_sectionEmitOrder == null)
                 {
-                    _sectionEmitOrder = SectionOrder.Select(name => _sectionNameToIndex[name]).ToArray();
+                    _sectionEmitOrder = SectionOrder
+                        .Where(name => _sectionNameToIndex.ContainsKey(name))
+                        .Select(name => _sectionNameToIndex[name])
+                        .ToArray();
                 }
 
                 return _sectionEmitOrder;
