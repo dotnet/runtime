@@ -303,7 +303,6 @@ DEFINE_CLASS(EXCEPTION,             System,                 Exception)
 DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, SM_PtrException_PtrException_RetVoid)
 DEFINE_METHOD(EXCEPTION,            CREATE_RUNTIME_WRAPPED_EXCEPTION, CreateRuntimeWrappedException, SM_PtrObj_PtrObj_PtrException_RetVoid)
 DEFINE_METHOD(EXCEPTION,            CREATE_TYPE_INIT_EXCEPTION, CreateTypeInitializationException, SM_PtrChar_PtrException_PtrObj_PtrException_RetVoid)
-DEFINE_METHOD(EXCEPTION,            GET_TO_STRING,          GetToString,                SM_PtrObj_PtrStr_PtrException_RetVoid)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            GET_DESCRIPTION_BSTR,   GetDescriptionBstr,         SM_PtrException_PtrException_RetIntPtr)
 DEFINE_METHOD(EXCEPTION,            GET_SOURCE_BSTR,        GetSourceBstr,              SM_PtrException_PtrException_RetIntPtr)
@@ -604,7 +603,6 @@ DEFINE_METHOD(READONLY_SPAN,        GET_ITEM,               get_Item, IM_Int_Ret
 // DEFINE_CLASS(OBJECT,                System,                 Object)
 DEFINE_METHOD(OBJECT,               CTOR,                   .ctor,                      IM_RetVoid)
 DEFINE_METHOD(OBJECT,               FINALIZE,               Finalize,                   IM_RetVoid)
-DEFINE_METHOD(OBJECT,               TO_STRING,              ToString,                   IM_RetStr)
 DEFINE_METHOD(OBJECT,               GET_TYPE,               GetType,                    IM_RetType)
 DEFINE_METHOD(OBJECT,               GET_HASH_CODE,          GetHashCode,                IM_RetInt)
 DEFINE_METHOD(OBJECT,               EQUALS,                 Equals,                     IM_Obj_RetBool)
@@ -691,6 +689,7 @@ DEFINE_METHOD(RUNTIME_HELPERS,      COPY_CONSTRUCT,         CopyConstruct, NoSig
 #endif // FEATURE_IJW
 DEFINE_METHOD(RUNTIME_HELPERS,      SET_NEXT_CALL_GENERIC_CONTEXT, SetNextCallGenericContext, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      SET_NEXT_CALL_ASYNC_CONTINUATION, SetNextCallAsyncContinuation, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      CALL_TO_STRING,         CallToString,               SM_PtrObj_PtrStr_PtrException_RetVoid)
 
 DEFINE_CLASS(ASYNC_HELPERS,       CompilerServices,          AsyncHelpers)
 DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION,        AllocContinuation, NoSig)

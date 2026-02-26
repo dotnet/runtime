@@ -244,8 +244,8 @@ STRINGREF GetExceptionMessage(OBJECTREF throwable)
     GCPROTECT_BEGIN(gc);
 
     // Call Object.ToString(). Note that exceptions do not have to inherit from System.Exception
-    UnmanagedCallersOnlyCaller getToString(METHOD__EXCEPTION__GET_TO_STRING);
-    getToString.InvokeThrowing(&gc.throwable, &gc.pString);
+    UnmanagedCallersOnlyCaller callToString(METHOD__RUNTIME_HELPERS__CALL_TO_STRING);
+    callToString.InvokeThrowing(&gc.throwable, &gc.pString);
 
     GCPROTECT_END();
 
