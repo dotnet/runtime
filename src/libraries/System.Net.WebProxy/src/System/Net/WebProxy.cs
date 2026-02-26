@@ -17,28 +17,8 @@ namespace System.Net
     /// Contains HTTP proxy settings for the <see cref="T:System.Net.Http.HttpClient" /> class.
     /// </summary>
     /// <remarks>
-    /// <para>
     /// The <see cref="WebProxy"/> class contains the proxy settings that <see cref="T:System.Net.Http.HttpClient"/> instances use to determine whether a Web proxy is used to send requests.
-    /// Global Web proxy settings can be specified in machine and application configuration files, and applications can use instances of the <see cref="WebProxy"/> class to customize Web proxy use.
     /// The <see cref="WebProxy"/> class is the base implementation of the <see cref="IWebProxy"/> interface.
-    /// </para>
-    /// <para>
-    /// To obtain instances of the Web proxy class, you can use any of the following methods:
-    /// </para>
-    /// <list type="bullet">
-    /// <item>The <see cref="WebProxy()"/> constructor.</item>
-    /// <item>The <see cref="GetDefaultProxy"/> method.</item>
-    /// </list>
-    /// <para>
-    /// These methods each supply a <see cref="WebProxy"/> instance that you can further customize; the difference between them is how the instance is initialized before it is returned to your application.
-    /// The <see cref="WebProxy()"/> constructor returns an instance of the <see cref="WebProxy"/> class with the <see cref="Address"/> property set to <see langword="null"/>.
-    /// When a request uses a <see cref="WebProxy"/> instance in this state, no proxy is used to send the request.
-    /// </para>
-    /// <para>
-    /// The <see cref="WebProxy"/> class supports automatic detection and execution of proxy configuration scripts. This feature is also known as Web Proxy Auto-Discovery (WPAD).
-    /// When using automatic proxy configuration, a configuration script, typically named Wpad.dat, must be located, downloaded, compiled, and run.
-    /// If these operations are successful, the script returns the proxies that can be used for a request.
-    /// </para>
     /// </remarks>
     public partial class WebProxy : IWebProxy, ISerializable
     {

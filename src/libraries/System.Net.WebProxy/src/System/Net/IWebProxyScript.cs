@@ -30,12 +30,6 @@ namespace System.Net
         /// <returns>
         /// A <see cref="string"/> that describes how to connect to the destination, such as a proxy configuration directive (for example, <c>"DIRECT"</c> or <c>"PROXY host:port"</c>).
         /// </returns>
-        /// <remarks>
-        /// <para>
-        /// When the object is run, it might need to run the WPAD (Web Proxy Automatic Detection) protocol to detect whether a proxy is required for reaching the destination URL.
-        /// During this process, the system downloads and compiles the PAC (Proxy Auto-Configuration) script in memory and tries to execute the FindProxyForURL function as per the PAC specification.
-        /// </para>
-        /// </remarks>
         string Run(string url, string host);
     }
 }
