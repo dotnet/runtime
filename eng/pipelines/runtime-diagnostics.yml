@@ -79,18 +79,18 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
+          # Workaround: microsoft/azure-pipelines-tasks#21871
+          # PublishTestResults v2.270.0 garbles parameterized xUnit test names containing dots.
+          # Unsetting this feature flag restores v2.262.0 behavior until a permanent fix ships.
+          variables:
+            - name: AllowPtrToDetectTestRunRetryFiles
+              value: false
           jobParameters:
             name: cDAC
             useCdac: true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
-            # Workaround: microsoft/azure-pipelines-tasks#21871
-            # PublishTestResults v2.270.0 garbles parameterized xUnit test names containing dots.
-            # Unsetting this feature flag restores v2.262.0 behavior until a permanent fix ships.
-            variables:
-              - name: AllowPtrToDetectTestRunRetryFiles
-                value: false
             dependsOn:
             - build_windows_x64_release_AllSubsets_CoreCLR
             preBuildSteps:
@@ -133,16 +133,16 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
+          # Workaround: microsoft/azure-pipelines-tasks#21871
+          variables:
+            - name: AllowPtrToDetectTestRunRetryFiles
+              value: false
           jobParameters:
             name: DAC
             useCdac: false
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
             timeoutInMinutes: 360
-            # Workaround: microsoft/azure-pipelines-tasks#21871
-            variables:
-              - name: AllowPtrToDetectTestRunRetryFiles
-                value: false
             dependsOn:
             - build_windows_x64_release_AllSubsets_CoreCLR
             preBuildSteps:
