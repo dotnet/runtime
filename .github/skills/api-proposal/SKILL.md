@@ -85,7 +85,9 @@ The skill contains baked-in examples and guidelines for writing good proposals (
 
 > **If the user already has a prototype**, ask for the published branch link and/or commit hash. Skip steps 1–3 below, but still run all steps in **Prototype Validation** against the provided branch/commit before proceeding to Phase 3.
 
-1. Create a new branch: `api-proposal/<short-name>`. The prototype must be pushed as a **single commit** on this branch.
+1. Create a new branch: `api-proposal/<short-name>`. The prototype must be kept as a **single commit** on this branch.
+   - Commit the initial prototype as a single commit.
+   - When addressing review feedback, amend the existing commit or squash locally and force-push so that the branch history remains a single commit.
 
 2. Implement the API surface with:
    - Complete triple-slash XML documentation on all public members
