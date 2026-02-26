@@ -41,7 +41,7 @@
   </PropertyGroup>
 
   <!-- Enable runtime async for Native AOT -->
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(TargetArchitecture)' != 'riscv64' and '$(TargetArchitecture)' != 'loongarch64'">
     <Features>$(Features);runtime-async=on</Features>
     <!-- Suppress warnings for using methods that require opting into preview features (AsyncHelpers.Await calls) -->
     <NoWarn>$(NoWarn);CA2252</NoWarn>
