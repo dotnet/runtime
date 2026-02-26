@@ -22,6 +22,8 @@ internal sealed class Thread : IData<Thread>
             RuntimeThreadLocals = target.ProcessedData.GetOrAdd<RuntimeThreadLocals>(runtimeThreadLocalsPointer);
 
         Frame = target.ReadPointer(address + (ulong)type.Fields[nameof(Frame)].Offset);
+        CachedStackBase = target.ReadPointer(address + (ulong)type.Fields[nameof(CachedStackBase)].Offset);
+        CachedStackLimit = target.ReadPointer(address + (ulong)type.Fields[nameof(CachedStackLimit)].Offset);
 
         // TEB does not exist on certain platforms
         TEB = type.Fields.TryGetValue(nameof(TEB), out Target.FieldInfo fieldInfo)
@@ -46,6 +48,8 @@ internal sealed class Thread : IData<Thread>
     public uint PreemptiveGCDisabled { get; init; }
     public RuntimeThreadLocals? RuntimeThreadLocals { get; init; }
     public TargetPointer Frame { get; init; }
+    public TargetPointer CachedStackBase { get; init; }
+    public TargetPointer CachedStackLimit { get; init; }
     public TargetPointer TEB { get; init; }
     public ObjectHandle LastThrownObject { get; init; }
     public TargetPointer LinkNext { get; init; }

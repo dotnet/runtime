@@ -19,6 +19,7 @@ public static class Constants
         public const string FeatureObjCMarshal = nameof(FeatureObjCMarshal);
         public const string FeatureJavaMarshal = nameof(FeatureJavaMarshal);
         public const string FeatureOnStackReplacement = nameof(FeatureOnStackReplacement);
+        public const string FeaturePortableEntrypoints = nameof(FeaturePortableEntrypoints);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
@@ -38,6 +39,7 @@ public static class Constants
         public const string DispatchThisPtrMask = nameof(DispatchThisPtrMask);
         public const string ComWrappersVtablePtrs = nameof(ComWrappersVtablePtrs);
         public const string GcNotificationFlags = nameof(GcNotificationFlags);
+        public const string GlobalAllocContext = nameof(GlobalAllocContext);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
         public const string StressLogHasModuleTable = nameof(StressLogHasModuleTable);

@@ -126,6 +126,8 @@ public interface IGC : IContract
     List<HandleData> GetHandles(HandleType[] types) => throw new NotImplementedException();
     HandleType[] GetSupportedHandleTypes() => throw new NotImplementedException();
     HandleType[] GetHandleTypes(uint[] types) => throw new NotImplementedException();
+
+    void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit) => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

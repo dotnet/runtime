@@ -34,7 +34,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_BeginRead_Generic), nameof(HasOneSerialPort))]
         public void ReadAfterClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -50,7 +50,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(SerialStream_BeginRead_Generic), nameof(HasOneSerialPort))]
         public void ReadAfterSerialStreamClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -63,7 +63,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_BeginRead_Generic), nameof(HasNullModem))]
         public void TimeoutIsIgnoredForBeginRead()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -92,14 +92,14 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_BeginRead_Generic), nameof(HasNullModem))]
         public void DefaultParityReplaceByte()
         {
             VerifyParityReplaceByte(-1, numRndBytesPairty - 2);
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_BeginRead_Generic), nameof(HasNullModem))]
         public void NoParityReplaceByte()
         {
             var rndGen = new Random(-55);
@@ -109,7 +109,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_BeginRead_Generic), nameof(HasNullModem))]
         public void RNDParityReplaceByte()
         {
             var rndGen = new Random(-55);
@@ -118,7 +118,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_BeginRead_Generic), nameof(HasNullModem))]
         public void ParityErrorOnLastByte()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -186,7 +186,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_BeginRead_Generic), nameof(HasNullModem))]
         public void BytesToRead_RND_Buffer_Size()
         {
             var rndGen = new Random(-55);
@@ -195,7 +195,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_BeginRead_Generic), nameof(HasNullModem))]
         public void BytesToRead_1_Buffer_Size()
         {
             //         if (!VerifyBytesToRead(1, new System.Text.UTF7Encoding())){
@@ -203,7 +203,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(SerialStream_BeginRead_Generic), nameof(HasNullModem))]
         public void BytesToRead_Equal_Buffer_Size()
         {
             VerifyBytesToRead(numRndBytesToRead, new UTF8Encoding());

@@ -1378,7 +1378,7 @@ namespace System.Net.Http
 
         private void WriteLiteralHeader(string name, ReadOnlySpan<string> values, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values.ToArray())}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values)}");
 
             int bytesWritten;
             while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparatorBytes, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
@@ -1391,7 +1391,7 @@ namespace System.Net.Http
 
         private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, byte[]? separator, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(Encoding.ASCII.GetString(separator ?? []), values.ToArray())}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(Encoding.ASCII.GetString(separator ?? []), values)}");
 
             int bytesWritten;
             while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))

@@ -114,6 +114,8 @@ public readonly struct GCOomData
     HandleType[] GetSupportedHandleTypes();
     // Converts integer types into HandleType enum
     HandleType[] GetHandleTypes(uint[] types);
+    // Gets the global allocation context pointer and limit
+    void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit);
 ```
 
 ## Version 1
@@ -173,6 +175,9 @@ Data descriptors used:
 | `TableSegment` | RgAllocation | GC | Circular block-list links per block |
 | `TableSegment` | RgValue | GC | Start of handle value storage |
 | `TableSegment` | RgUserData | GC | Auxiliary per-block metadata (e.g. secondary handle blocks) |
+| `GCAllocContext` | AllocBytes | VM | Number of bytes allocated on SOH by this context |
+| `GCAllocContext` | AllocBytesLoh | VM | Number of bytes allocated not on SOH by this context |
+| `EEAllocContext` | GCAllocationContext | VM | The `GCAllocContext` struct within an `EEAllocContext` |
 
 Global variables used:
 | Global Name | Type | Source | Purpose |
@@ -222,6 +227,7 @@ Global variables used:
 | `FeatureComWrappers` | byte | VM | Non-zero when `ComWrappers` support is enabled |
 | `FeatureObjCMarshal` | byte | VM | Non-zero when Objective-C marshal support is enabled |
 | `FeatureJavaMarshal` | byte | VM | Non-zero when Java marshal support is enabled |
+| `GlobalAllocContext` | TargetPointer | VM | Pointer to the global `EEAllocContext` |
 
 Contracts used:
 | Contract Name |
@@ -717,5 +723,14 @@ private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, ui
 
     return handleData;
 }
+```
 
+GetGlobalAllocationContext
+```csharp
+void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit)
+{
+    TargetPointer globalAllocContextAddress = target.ReadGlobalPointer("GlobalAllocContext");
+    allocPtr = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Pointer offset */);
+    allocLimit = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Limit offset */);
+}
 ```

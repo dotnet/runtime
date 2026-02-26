@@ -94,8 +94,6 @@ public class WorkstationGCDumpTests : DumpTestBase
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void WorkstationGC_CanEnumerateExpectedHandles(TestConfiguration config)
     {
-        InitializeDumpTest(config);
-        IGC gcContract = Target.Contracts.GC;
 
         var pinnedHandles = gcContract.GetHandles([HandleType.Pinned]);
         Assert.True(
@@ -119,5 +117,22 @@ public class WorkstationGCDumpTests : DumpTestBase
         Assert.Contains(
             dependentHandles,
             handle => handle.Secondary != TargetPointer.Null);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_GlobalAllocationContextIsReadable(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
+        gcContract.GetGlobalAllocationContext(out TargetPointer pointer, out TargetPointer limit);
+
+        if (pointer != TargetPointer.Null)
+        {
+            Assert.NotEqual(TargetPointer.Null, limit);
+            Assert.True(pointer <= limit,
+                $"Expected allocPtr (0x{pointer:X}) <= allocLimit (0x{limit:X})");
+        }
     }
 }
