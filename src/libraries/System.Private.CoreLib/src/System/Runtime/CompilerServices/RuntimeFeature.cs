@@ -83,7 +83,7 @@ namespace System.Runtime.CompilerServices
         [FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported")]
         public static bool IsMultithreadingSupported { get; }
 #if TARGET_BROWSER
-            = AppContext.TryGetSwitch("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported", out bool isMultithreadingSupported) ? isMultithreadingSupported : true;
+            = AppContext.TryGetSwitch("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported", out bool isMultithreadingSupported) ? isMultithreadingSupported : false;
 #elif TARGET_WASI
             = false;
 #else
