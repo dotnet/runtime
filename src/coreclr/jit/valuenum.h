@@ -508,6 +508,8 @@ public:
     // Unpacks the information stored by VNForCastOper in the constant represented by the value number.
     void GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool* pSrcIsUnsigned);
 
+    ValueNum VNIgnoreIntToLongCast(ValueNum vn);
+
     // We keep handle values in a separate pool, so we don't confuse a handle with an int constant
     // that happens to be the same...
     ValueNum VNForHandle(ssize_t cnsVal, GenTreeFlags iconFlags);
@@ -888,7 +890,7 @@ public:
 
     unsigned DecodePhysicalSelector(ValueNum selector, unsigned* pSize);
 
-    ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, unsigned* pSize);
+    ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, ValueSize* pSize);
 
     // These functions parallel the ones above, except that they take liberal/conservative VN pairs
     // as arguments, and return such a pair (the pair of the function applied to the liberal args, and
@@ -991,28 +993,28 @@ public:
 
     ValueNum VNForLoad(ValueNumKind vnk,
                        ValueNum     locationValue,
-                       unsigned     locationSize,
+                       ValueSize    locationSize,
                        var_types    loadType,
                        ssize_t      offset,
-                       unsigned     loadSize);
+                       ValueSize    loadSize);
 
     ValueNumPair VNPairForLoad(
-        ValueNumPair locationValue, unsigned locationSize, var_types loadType, ssize_t offset, unsigned loadSize);
+        ValueNumPair locationValue, ValueSize locationSize, var_types loadType, ssize_t offset, ValueSize loadSize);
 
     ValueNum VNForStore(
-        ValueNum locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNum value);
+        ValueNum locationValue, ValueSize locationSize, ssize_t offset, ValueSize storeSize, ValueNum value);
 
     ValueNumPair VNPairForStore(
-        ValueNumPair locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNumPair value);
+        ValueNumPair locationValue, ValueSize locationSize, ssize_t offset, ValueSize storeSize, ValueNumPair value);
 
-    static bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize)
+    static bool LoadStoreIsEntire(ValueSize locationSize, ssize_t offset, ValueSize indSize)
     {
         return (offset == 0) && (locationSize == indSize);
     }
 
-    ValueNum VNForLoadStoreBitCast(ValueNum value, var_types indType, unsigned indSize);
+    ValueNum VNForLoadStoreBitCast(ValueNum value, var_types indType, ValueSize indSize);
 
-    ValueNumPair VNPairForLoadStoreBitCast(ValueNumPair value, var_types indType, unsigned indSize);
+    ValueNumPair VNPairForLoadStoreBitCast(ValueNumPair value, var_types indType, ValueSize indSize);
 
     // Compute the ValueNumber for a cast
     ValueNum VNForCast(ValueNum  srcVN,
@@ -1028,13 +1030,13 @@ public:
                                bool         srcIsUnsigned    = false,
                                bool         hasOverflowCheck = false);
 
-    ValueNum EncodeBitCastType(var_types castToType, unsigned size);
+    ValueNum EncodeBitCastType(var_types castToType, ValueSize size);
 
     var_types DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSize);
 
-    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType, unsigned size);
+    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType, ValueSize size);
 
-    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, unsigned size);
+    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, ValueSize size);
 
     ValueNum VNForFieldSeq(FieldSeq* fieldSeq);
 

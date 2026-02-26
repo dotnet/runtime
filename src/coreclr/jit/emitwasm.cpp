@@ -28,6 +28,19 @@ void emitter::emitIns(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// emitIns_BlockTy: Emit a block instruction with simple type signature
+//
+// Arguments:
+//   ins      - instruction to emit
+//   valType  - type of object left on the stack at block end (for the block sig),
+//              with WasmValueType::Invalid representing no object left on the stack.
+//
+void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
+{
+    emitIns_I(ins, EA_4BYTE, (cnsval_ssize_t)valType);
+}
+
+//------------------------------------------------------------------------
 // emitIns_I: Emit an instruction with an immediate operand.
 //
 // Arguments:
@@ -154,9 +167,9 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     {
         case EC_FUNC_TOKEN:
             ins = params.isJump ? INS_return_call : INS_call;
-            id  = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: function index reloc */);
+            id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, 0 /* FIXME-WASM: function index reloc */);
             id->idIns(ins);
-            id->idInsFmt(IF_ULEB128);
+            id->idInsFmt(IF_FUNCIDX);
             break;
         case EC_INDIR_R:
         {
@@ -167,10 +180,11 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
             // TODO-WASM: Generate actual list of types and generate reloc
             // This is here to exercise the new JIT-EE API
-            CorInfoWasmType types[] = {CORINFO_WASM_TYPE_VOID};
-            codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, 1);
+            CorInfoWasmType                 types[] = {CORINFO_WASM_TYPE_VOID};
+            CORINFO_WASM_TYPE_SYMBOL_HANDLE typeHandle =
+                codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, 1);
 
-            id = emitNewInstrSC(EA_8BYTE, 0 /* FIXME-WASM: type index reloc */);
+            id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void*)typeHandle);
             id->idIns(ins);
             id->idInsFmt(IF_CALL_INDIRECT);
             break;
@@ -368,14 +382,15 @@ static uint8_t GetWasmValueTypeCode(WasmValueType type)
     return typecode_mapping[static_cast<unsigned>(type)];
 }
 
-unsigned emitter::instrDesc::idCodeSize() const
-{
 #ifdef TARGET_WASM32
-    static const unsigned PADDED_RELOC_SIZE = 5;
+// NOTE: Keep in sync with Relocation.cs
+static const unsigned PADDED_RELOC_SIZE = 5;
 #else
 #error WASM64
 #endif
 
+unsigned emitter::instrDesc::idCodeSize() const
+{
     unsigned int opcode = GetInsOpcode(idIns());
 
     // Currently, all our instructions have 1 or 2 byte opcodes.
@@ -399,15 +414,18 @@ unsigned emitter::instrDesc::idCodeSize() const
             size             = SizeOfULEB128(emitGetLclVarDeclCount(this)) + sizeof(typeCode);
             break;
         }
+        case IF_FUNCIDX:
         case IF_ULEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
+        case IF_MEMADDR:
+        case IF_FUNCPTR:
         case IF_SLEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfSLEB128(emitGetInsSC(this));
             break;
         case IF_CALL_INDIRECT:
         {
-            size += SizeOfULEB128(emitGetInsSC(this));
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             size += SizeOfULEB128(0);
             break;
         }
@@ -422,6 +440,12 @@ unsigned emitter::instrDesc::idCodeSize() const
             uint64_t align = emitGetAlignHintLog2(this);
             assert(align < 64); // spec says align > 2^6 produces a memidx for multiple memories.
             size += SizeOfULEB128(align);
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
+            break;
+        }
+        case IF_MEMIDX_MEMIDX:
+        {
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
         }
@@ -506,8 +530,54 @@ size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
     return sz;
 }
 
+size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
+{
+    static_assert(PADDED_RELOC_SIZE > 1);
+    // Write zeroes with the bit set that indicates another byte is coming
+    for (unsigned i = 0; i < PADDED_RELOC_SIZE - 1; i++)
+    {
+        destination += emitOutputByte(destination, 0x80);
+    }
+
+    emitOutputByte(destination, 0x0);
+    return PADDED_RELOC_SIZE;
+}
+
+size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType)
+{
+    if (id->idIsCnsReloc())
+    {
+        emitRecordRelocation(destination, (void*)emitGetInsSC(id), relocType);
+        return emitOutputPaddedReloc(destination);
+    }
+
+    if (isSigned)
+    {
+        return emitOutputSLEB128(destination, (int64_t)emitGetInsSC(id));
+    }
+    else
+    {
+        return emitOutputULEB128(destination, (uint64_t)emitGetInsSC(id));
+    }
+}
+
+size_t emitter::emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype)
+{
+    if (valtype == WasmValueType::Invalid)
+    {
+        return emitOutputByte(destination, 0x40 /* block type of void */);
+    }
+    else
+    {
+        return emitOutputByte(destination, GetWasmValueTypeCode(valtype));
+    }
+}
+
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
+    const bool SIGNED   = true;
+    const bool UNSIGNED = false;
+
     BYTE*       dst    = *dp;
     size_t      sz     = emitSizeOfInsDsc(id);
     instruction ins    = id->idIns();
@@ -522,27 +592,47 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         }
         case IF_BLOCK:
-            dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputByte(dst, 0x40 /* block type of void */);
-            break;
-        case IF_ULEB128:
         {
             dst += emitOutputOpcode(dst, ins);
-            cnsval_ssize_t constant = emitGetInsSC(id);
-            dst += emitOutputULEB128(dst, (uint64_t)constant);
+            dst += emitOutputValtypeSig(dst, (WasmValueType)emitGetInsSC(id));
+            break;
+        }
+        case IF_ULEB128:
+        {
+            assert(!id->idIsCnsReloc());
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputULEB128(dst, (uint64_t)emitGetInsSC(id));
             break;
         }
         case IF_SLEB128:
         {
+            assert(!id->idIsCnsReloc());
             dst += emitOutputOpcode(dst, ins);
-            cnsval_ssize_t constant = emitGetInsSC(id);
-            dst += emitOutputSLEB128(dst, (int64_t)constant);
+            dst += emitOutputSLEB128(dst, (int64_t)emitGetInsSC(id));
+            break;
+        }
+        case IF_MEMADDR:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_MEMORY_ADDR_SLEB);
+            break;
+        }
+        case IF_FUNCPTR:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
+            break;
+        }
+        case IF_FUNCIDX:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
             break;
         }
         case IF_CALL_INDIRECT:
         {
             dst += emitOutputByte(dst, opcode);
-            dst += emitOutputULEB128(dst, (uint64_t)emitGetInsSC(id));
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_TYPE_INDEX_LEB);
             dst += emitOutputULEB128(dst, 0);
             break;
         }
@@ -592,6 +682,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             uint8_t        valType = GetWasmValueTypeCode(emitGetLclVarDeclType(id));
             dst += emitOutputULEB128(dst, (uint64_t)count);
             dst += emitOutputByte(dst, valType);
+            break;
+        }
+        case IF_MEMIDX_MEMIDX:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            cnsval_ssize_t constant = emitGetInsSC(id);
+            dst += emitOutputULEB128(dst, (uint64_t)constant);
+            dst += emitOutputULEB128(dst, (uint64_t)constant);
             break;
         }
         default:
@@ -694,7 +792,7 @@ void emitter::emitDispIns(
             BasicBlock* const targetBlock = id->idDebugOnlyInfo()->idTargetBlock;
             if (targetBlock != nullptr)
             {
-                printf("      ;;");
+                printf("      ;; ");
                 insGroup* const targetGroup = (insGroup*)emitCodeGetCookie(targetBlock);
                 assert(targetGroup != nullptr);
                 emitPrintLabel(targetGroup);
@@ -714,11 +812,21 @@ void emitter::emitDispIns(
     switch (fmt)
     {
         case IF_OPCODE:
-        case IF_BLOCK:
             break;
+
+        case IF_BLOCK:
+        {
+            WasmValueType valType = (WasmValueType)emitGetInsSC(id);
+            if (valType != WasmValueType::Invalid)
+            {
+                printf(" %s", WasmValueTypeName(valType));
+            }
+            break;
+        }
 
         case IF_RAW_ULEB128:
         case IF_ULEB128:
+        case IF_FUNCIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
@@ -734,7 +842,12 @@ void emitter::emitDispIns(
             dispHandleIfAny();
         }
         break;
-
+        case IF_MEMIDX_MEMIDX:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf(" %llu %llu", (uint64_t)imm, (uint64_t)imm);
+        }
+        break;
         case IF_LOCAL_DECL:
         {
             unsigned int  count   = emitGetLclVarDeclCount(id);
@@ -762,6 +875,8 @@ void emitter::emitDispIns(
         }
         break;
 
+        case IF_MEMADDR:
+        case IF_FUNCPTR:
         case IF_SLEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);

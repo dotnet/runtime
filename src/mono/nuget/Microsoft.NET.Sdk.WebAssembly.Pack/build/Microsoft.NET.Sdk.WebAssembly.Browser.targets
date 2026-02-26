@@ -334,6 +334,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnableThreads="$(_WasmEnableThreads)"
       EnableDiagnostics="$(_WasmEmitDiagnosticModuleBuild)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
+      EmitSymbolMap="$(WasmEmitSymbolMap)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       FingerprintDotnetJs="$(_WasmFingerprintDotnetJs)"
     >
@@ -363,6 +364,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintPatterns Include="DllFiles" Pattern="*.dll" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DatFiles" Pattern="*.dat" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="Pdb" Pattern="*.pdb" Expression="#[.{fingerprint}]!" />
+      <_WasmFingerprintPatterns Include="Symbols" Pattern="*.js.symbols" Expression="#[.{fingerprint}]!" />
     </ItemGroup>
 
     <DefineStaticWebAssets
@@ -711,6 +713,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnableThreads="$(_WasmEnableThreads)"
       EnableDiagnostics="$(_WasmEmitDiagnosticModulePublish)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
+      EmitSymbolMap="$(WasmEmitSymbolMap)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
     >

@@ -58,6 +58,8 @@
 #endif // TARGET_AMD64 || TARGET_ARM64
 #include "introsort.h"
 
+extern uint32_t g_totalCpuCount;
+
 #ifdef SERVER_GC
 namespace SVR {
 #else // SERVER_GC
@@ -44461,7 +44463,7 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
 #endif //MULTIPLE_HEAPS
 
         size_t total_new_allocation = new_allocation * num_heaps;
-        size_t total_min_allocation = MIN_YOUNGEST_GEN_DESIRED * num_heaps;
+        size_t total_min_allocation = (size_t)MIN_YOUNGEST_GEN_DESIRED * num_heaps;
 
         if ((settings.entry_memory_load >= MAX_ALLOWED_MEM_LOAD) ||
             (total_new_allocation > max (youngest_gen_desired_th, total_min_allocation)))
@@ -53401,6 +53403,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     bool v2 = gcDacVars->minor_version_number >= 2;
     bool v4 = gcDacVars->minor_version_number >= 4;
     bool v6 = gcDacVars->minor_version_number >= 6;
+    bool v8 = gcDacVars->minor_version_number >= 8;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -53432,7 +53435,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     // work differently than .Net SOS.  When making breaking changes here you may need to
     // find NativeAOT's equivalent of SOS_BREAKING_CHANGE_VERSION and increment it.
     gcDacVars->major_version_number = 2;
-    gcDacVars->minor_version_number = 4;
+    gcDacVars->minor_version_number = 8;
     if (v2)
     {
         gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
@@ -53547,6 +53550,12 @@ void PopulateDacVars(GcDacVars *gcDacVars)
         gcDacVars->gc_descriptor = (void*)&GCContractDescriptorWKS;
 #endif // MULTIPLE_HEAPS
 #endif // GC_DESCRIPTOR
+    }
+    if (v8)
+    {
+#ifdef MULTIPLE_HEAPS
+        gcDacVars->g_totalCpuCount = &::g_totalCpuCount;
+#endif // MULTIPLE_HEAPS
     }
 }
 

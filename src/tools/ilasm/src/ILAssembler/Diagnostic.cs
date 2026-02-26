@@ -51,6 +51,7 @@ public static class DiagnosticIds
     public const string ParameterIndexOutOfRange = "ILA0029";
     public const string DuplicateMethod = "ILA0030";
     public const string MissingExportedTypeImplementation = "ILA0031";
+    public const string KeyFileError = "ILA0032";
 }
 
 internal static class DiagnosticMessageTemplates

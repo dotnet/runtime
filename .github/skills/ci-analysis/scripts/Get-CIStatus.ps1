@@ -360,6 +360,16 @@ function Get-AzDOBuildIdFromPR {
         throw "Failed to fetch CI status for PR #$PR in $Repository - check PR number and permissions"
     }
 
+    # Check if PR has merge conflicts (no CI runs when mergeable_state is dirty)
+    $prMergeState = $null
+    $prMergeStateOutput = & gh api "repos/$Repository/pulls/$PR" --jq '.mergeable_state' 2>$null
+    $ghMergeStateExitCode = $LASTEXITCODE
+    if ($ghMergeStateExitCode -eq 0 -and $prMergeStateOutput) {
+        $prMergeState = $prMergeStateOutput.Trim()
+    } else {
+        Write-Verbose "Could not determine PR merge state (gh exit code $ghMergeStateExitCode)."
+    }
+
     # Find ALL failing Azure DevOps builds
     $failingBuilds = @{}
     foreach ($line in $checksOutput) {
@@ -382,11 +392,19 @@ function Get-AzDOBuildIdFromPR {
                 $buildIdStr = $anyBuildMatch.Groups[1].Value
                 $buildIdInt = 0
                 if ([int]::TryParse($buildIdStr, [ref]$buildIdInt)) {
-                    return @($buildIdInt)
+                    return @{ BuildIds = @($buildIdInt); Reason = $null; MergeState = $prMergeState }
                 }
             }
         }
-        throw "No CI build found for PR #$PR in $Repository - the CI pipeline has not been triggered yet"
+        if ($prMergeState -eq 'dirty') {
+            Write-Host "`nPR #$PR has merge conflicts (mergeable_state: dirty)" -ForegroundColor Red
+            Write-Host "CI will not run until conflicts are resolved." -ForegroundColor Yellow
+            Write-Host "Resolve conflicts and push to trigger CI, or use -BuildId to analyze a previous build." -ForegroundColor Gray
+            return @{ BuildIds = @(); Reason = "MERGE_CONFLICTS"; MergeState = $prMergeState }
+        }
+        Write-Host "`nNo CI build found for PR #$PR in $Repository" -ForegroundColor Red
+        Write-Host "The CI pipeline has not been triggered yet." -ForegroundColor Yellow
+        return @{ BuildIds = @(); Reason = "NO_BUILDS"; MergeState = $prMergeState }
     }
 
     # Return all unique failing build IDs
@@ -399,7 +417,7 @@ function Get-AzDOBuildIdFromPR {
         }
     }
 
-    return $buildIds
+    return @{ BuildIds = $buildIds; Reason = $null; MergeState = $prMergeState }
 }
 
 function Get-BuildAnalysisKnownIssues {
@@ -525,38 +543,42 @@ function Get-PRChangedFiles {
 function Get-PRCorrelation {
     param(
         [array]$ChangedFiles,
-        [string]$FailureInfo
+        [array]$AllFailures
     )
 
-    # Extract potential file/test names from the failure info
-    $correlations = @()
+    $result = @{ CorrelatedFiles = @(); TestFiles = @() }
+    if ($ChangedFiles.Count -eq 0 -or $AllFailures.Count -eq 0) { return $result }
+
+    $failureText = ($AllFailures | ForEach-Object {
+        $_.TaskName
+        $_.JobName
+        $_.Errors -join "`n"
+        $_.HelixLogs -join "`n"
+        $_.FailedTests -join "`n"
+    }) -join "`n"
 
     foreach ($file in $ChangedFiles) {
         $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
         $fileNameWithExt = [System.IO.Path]::GetFileName($file)
+        $baseTestName = $fileName -replace '\.[^.]+$', ''
 
-        # Check if the failure mentions this file
-        if ($FailureInfo -match [regex]::Escape($fileName) -or
-            $FailureInfo -match [regex]::Escape($fileNameWithExt)) {
-            $correlations += @{
-                File = $file
-                MatchType = "direct"
-            }
+        $isCorrelated = $false
+        if ($failureText -match [regex]::Escape($fileName) -or
+            $failureText -match [regex]::Escape($fileNameWithExt) -or
+            $failureText -match [regex]::Escape($file) -or
+            ($baseTestName -and $failureText -match [regex]::Escape($baseTestName))) {
+            $isCorrelated = $true
         }
 
-        # Check for test file patterns
-        if ($file -match '\.Tests?\.' -or $file -match '/tests?/' -or $file -match '\\tests?\\') {
-            # This is a test file - check if the test name appears in failures
-            if ($FailureInfo -match [regex]::Escape($fileName)) {
-                $correlations += @{
-                    File = $file
-                    MatchType = "test"
-                }
-            }
+        if ($isCorrelated) {
+            $isTestFile = $file -match '\.Tests?\.' -or $file -match '[/\\]tests?[/\\]' -or $file -match 'Test\.cs$' -or $file -match 'Tests\.cs$'
+            if ($isTestFile) { $result.TestFiles += $file } else { $result.CorrelatedFiles += $file }
         }
     }
 
-    return $correlations | Select-Object -Unique -Property File, MatchType
+    $result.CorrelatedFiles = @($result.CorrelatedFiles | Select-Object -Unique)
+    $result.TestFiles = @($result.TestFiles | Select-Object -Unique)
+    return $result
 }
 
 function Show-PRCorrelationSummary {
@@ -569,50 +591,9 @@ function Show-PRCorrelationSummary {
         return
     }
 
-    # Combine all failure info into searchable text
-    $failureText = ($AllFailures | ForEach-Object {
-        $_.TaskName
-        $_.JobName
-        $_.Errors -join "`n"
-        $_.HelixLogs -join "`n"
-        $_.FailedTests -join "`n"
-    }) -join "`n"
-
-    # Also include the raw local test failure messages which may contain test class names
-    # These come from the "issues" property on local failures
-
-    # Find correlations
-    $correlatedFiles = @()
-    $testFiles = @()
-
-    foreach ($file in $ChangedFiles) {
-        $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
-        $fileNameWithExt = [System.IO.Path]::GetFileName($file)
-
-        # For files like NtAuthTests.FakeServer.cs, also check NtAuthTests
-        $baseTestName = $fileName -replace '\.[^.]+$', ''  # Remove .FakeServer etc.
-
-        # Check if this file appears in any failure
-        $isCorrelated = $false
-
-        if ($failureText -match [regex]::Escape($fileName) -or
-            $failureText -match [regex]::Escape($fileNameWithExt) -or
-            $failureText -match [regex]::Escape($file) -or
-            ($baseTestName -and $failureText -match [regex]::Escape($baseTestName))) {
-            $isCorrelated = $true
-        }
-
-        # Track test files separately
-        $isTestFile = $file -match '\.Tests?\.' -or $file -match '[/\\]tests?[/\\]' -or $file -match 'Test\.cs$' -or $file -match 'Tests\.cs$'
-
-        if ($isCorrelated) {
-            if ($isTestFile) {
-                $testFiles += $file
-            } else {
-                $correlatedFiles += $file
-            }
-        }
-    }
+    $correlation = Get-PRCorrelation -ChangedFiles $ChangedFiles -AllFailures $AllFailures
+    $correlatedFiles = $correlation.CorrelatedFiles
+    $testFiles = $correlation.TestFiles
 
     # Show results
     if ($correlatedFiles.Count -gt 0 -or $testFiles.Count -gt 0) {
@@ -644,7 +625,7 @@ function Show-PRCorrelationSummary {
             }
         }
 
-        Write-Host "`nThese failures are likely PR-related." -ForegroundColor Yellow
+        Write-Host "`nCorrelated files found — check JSON summary for details." -ForegroundColor Yellow
     }
 }
 
@@ -1390,7 +1371,7 @@ function Get-HelixWorkItemDetails {
         # (https://github.com/dotnet/dnceng/issues/6072). ListFiles returns direct
         # blob storage URIs that always work.
         $listFiles = Get-HelixWorkItemFiles -JobId $JobId -WorkItemName $WorkItemName
-        if ($listFiles) {
+        if ($null -ne $listFiles) {
             $response.Files = @($listFiles | ForEach-Object {
                 [PSCustomObject]@{
                     FileName = $_.Name
@@ -1494,6 +1475,8 @@ function Format-TestFailure {
     $failureCount = 0
 
     # Expanded failure detection patterns
+    # CAUTION: These trigger "failure block" capture. Overly broad patterns (e.g. \w+Error:)
+    # will grab Python harness/reporter noise and swamp the real test failure.
     $failureStartPatterns = @(
         '\[FAIL\]',
         'Assert\.\w+\(\)\s+Failure',
@@ -1501,7 +1484,8 @@ function Format-TestFailure {
         'BUG:',
         'FAILED\s*$',
         'END EXECUTION - FAILED',
-        'System\.\w+Exception:'
+        'System\.\w+Exception:',
+        'Timed Out \(timeout'
     )
     $combinedPattern = ($failureStartPatterns -join '|')
 
@@ -1737,8 +1721,43 @@ try {
     $buildIds = @()
     $knownIssuesFromBuildAnalysis = @()
     $prChangedFiles = @()
+    $noBuildReason = $null
     if ($PSCmdlet.ParameterSetName -eq 'PRNumber') {
-        $buildIds = @(Get-AzDOBuildIdFromPR -PR $PRNumber)
+        $buildResult = Get-AzDOBuildIdFromPR -PR $PRNumber
+        if ($buildResult.Reason) {
+            # No builds found — emit summary with reason and exit
+            $noBuildReason = $buildResult.Reason
+            $buildIds = @()
+            $summary = [ordered]@{
+                mode = "PRNumber"
+                repository = $Repository
+                prNumber = $PRNumber
+                builds = @()
+                totalFailedJobs = 0
+                totalLocalFailures = 0
+                lastBuildJobSummary = [ordered]@{
+                    total = 0; succeeded = 0; failed = 0; canceled = 0; pending = 0; warnings = 0; skipped = 0
+                }
+                failedJobNames = @()
+                failedJobDetails = @()
+                canceledJobNames = @()
+                knownIssues = @()
+                prCorrelation = [ordered]@{
+                    changedFileCount = 0
+                    hasCorrelation = $false
+                    correlatedFiles = @()
+                }
+                recommendationHint = if ($noBuildReason -eq "MERGE_CONFLICTS") { "MERGE_CONFLICTS" } else { "NO_BUILDS" }
+                noBuildReason = $noBuildReason
+                mergeState = $buildResult.MergeState
+            }
+            Write-Host ""
+            Write-Host "[CI_ANALYSIS_SUMMARY]"
+            Write-Host ($summary | ConvertTo-Json -Depth 5)
+            Write-Host "[/CI_ANALYSIS_SUMMARY]"
+            exit 0
+        }
+        $buildIds = @($buildResult.BuildIds)
 
         # Check Build Analysis for known issues
         $knownIssuesFromBuildAnalysis = @(Get-BuildAnalysisKnownIssues -PR $PRNumber)
@@ -1757,6 +1776,10 @@ try {
     $totalFailedJobs = 0
     $totalLocalFailures = 0
     $allFailuresForCorrelation = @()
+    $allFailedJobNames = @()
+    $allCanceledJobNames = @()
+    $allFailedJobDetails = @()
+    $lastBuildJobSummary = $null
 
     foreach ($currentBuildId in $buildIds) {
         Write-Host "`n=== Azure DevOps Build $currentBuildId ===" -ForegroundColor Yellow
@@ -1799,6 +1822,36 @@ try {
 
         # Also check for local test failures (non-Helix)
         $localTestFailures = Get-LocalTestFailures -Timeline $timeline -BuildId $currentBuildId
+
+        # Accumulate totals and compute job summary BEFORE any continue branches
+        $totalFailedJobs += $failedJobs.Count
+        $totalLocalFailures += $localTestFailures.Count
+        $allFailedJobNames += @($failedJobs | ForEach-Object { $_.name })
+        $allCanceledJobNames += @($canceledJobs | ForEach-Object { $_.name })
+
+        $allJobs = @()
+        $succeededJobs = 0
+        $pendingJobs = 0
+        $canceledJobCount = 0
+        $skippedJobs = 0
+        $warningJobs = 0
+        if ($timeline -and $timeline.records) {
+            $allJobs = @($timeline.records | Where-Object { $_.type -eq "Job" })
+            $succeededJobs = @($allJobs | Where-Object { $_.result -eq "succeeded" }).Count
+            $warningJobs = @($allJobs | Where-Object { $_.result -eq "succeededWithIssues" }).Count
+            $pendingJobs = @($allJobs | Where-Object { -not $_.result -or $_.state -eq "pending" -or $_.state -eq "inProgress" }).Count
+            $canceledJobCount = @($allJobs | Where-Object { $_.result -eq "canceled" }).Count
+            $skippedJobs = @($allJobs | Where-Object { $_.result -eq "skipped" }).Count
+        }
+        $lastBuildJobSummary = [ordered]@{
+            total = $allJobs.Count
+            succeeded = $succeededJobs
+            failed = if ($failedJobs) { $failedJobs.Count } else { 0 }
+            canceled = $canceledJobCount
+            pending = $pendingJobs
+            warnings = $warningJobs
+            skipped = $skippedJobs
+        }
 
         if ((-not $failedJobs -or $failedJobs.Count -eq 0) -and $localTestFailures.Count -eq 0) {
             if ($buildStatus -and $buildStatus.Status -eq "inProgress") {
@@ -1885,7 +1938,6 @@ try {
             Write-Host "`n=== Summary ===" -ForegroundColor Yellow
             Write-Host "Local test failures: $($localTestFailures.Count)" -ForegroundColor Red
             Write-Host "Build URL: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId" -ForegroundColor Cyan
-            $totalLocalFailures += $localTestFailures.Count
             continue
         }
 
@@ -1914,6 +1966,15 @@ try {
                 Write-Host "`n--- $($job.name) ---" -ForegroundColor Cyan
                 Write-Host "  Build: https://dev.azure.com/$Organization/$Project/_build/results?buildId=$currentBuildId&view=logs&j=$($job.id)" -ForegroundColor Gray
 
+                # Track per-job failure details for JSON summary
+                $jobDetail = [ordered]@{
+                    jobName = $job.name
+                    buildId = $currentBuildId
+                    errorSnippet = ""
+                    helixWorkItems = @()
+                    errorCategory = "unclassified"
+                }
+
                 # Get Helix tasks for this job
                 $helixTasks = Get-HelixJobInfo -Timeline $timeline -JobId $job.id
 
@@ -1941,6 +2002,8 @@ try {
                                         HelixLogs = @()
                                         FailedTests = $failures | ForEach-Object { $_.TestName }
                                     }
+                                    $jobDetail.errorCategory = "test-failure"
+                                    $jobDetail.errorSnippet = ($failures | Select-Object -First 3 | ForEach-Object { $_.TestName }) -join "; "
                                 }
 
                             # Extract and optionally fetch Helix URLs
@@ -1956,6 +2019,7 @@ try {
                                     $workItemName = ""
                                     if ($url -match '/workitems/([^/]+)/console') {
                                         $workItemName = $Matches[1]
+                                        $jobDetail.helixWorkItems += $workItemName
                                     }
 
                                     $helixLog = Get-HelixConsoleLog -Url $url
@@ -1964,8 +2028,40 @@ try {
                                         if ($failureInfo) {
                                             Write-Host $failureInfo -ForegroundColor White
 
+                                            # Categorize failure from log content
+                                            if ($failureInfo -match 'Timed Out \(timeout') {
+                                                $jobDetail.errorCategory = "test-timeout"
+                                            } elseif ($failureInfo -match 'Exit Code:\s*(139|134|-4)' -or $failureInfo -match 'createdump') {
+                                                # Crash takes highest precedence — don't downgrade
+                                                if ($jobDetail.errorCategory -notin @("crash")) {
+                                                    $jobDetail.errorCategory = "crash"
+                                                }
+                                            } elseif ($failureInfo -match 'Traceback \(most recent call last\)' -and $helixLog -match 'Tests run:.*Failures:\s*0') {
+                                                # Work item failed (non-zero exit from reporter crash) but all tests passed.
+                                                # The Python traceback is from Helix infrastructure, not from the test itself.
+                                                if ($jobDetail.errorCategory -notin @("crash", "test-timeout")) {
+                                                    $jobDetail.errorCategory = "tests-passed-reporter-failed"
+                                                }
+                                            } elseif ($jobDetail.errorCategory -eq "unclassified") {
+                                                $jobDetail.errorCategory = "test-failure"
+                                            }
+                                            if (-not $jobDetail.errorSnippet) {
+                                                $jobDetail.errorSnippet = $failureInfo.Substring(0, [Math]::Min(200, $failureInfo.Length))
+                                            }
+
                                             # Search for known issues
                                             Show-KnownIssues -TestName $workItemName -ErrorMessage $failureInfo -IncludeMihuBot:$SearchMihuBot
+                                        }
+                                        else {
+                                            # No failure pattern matched — show tail of log
+                                            $lines = $helixLog -split "`n"
+                                            $lastLines = $lines | Select-Object -Last 20
+                                            $tailText = $lastLines -join "`n"
+                                            Write-Host $tailText -ForegroundColor White
+                                            if (-not $jobDetail.errorSnippet) {
+                                                $jobDetail.errorSnippet = $tailText.Substring(0, [Math]::Min(200, $tailText.Length))
+                                            }
+                                            Show-KnownIssues -TestName $workItemName -ErrorMessage $tailText -IncludeMihuBot:$SearchMihuBot
                                         }
                                     }
                                 }
@@ -2007,6 +2103,11 @@ try {
                                         HelixLogs = @()
                                         FailedTests = @()
                                     }
+                                    $jobDetail.errorCategory = "build-error"
+                                    if (-not $jobDetail.errorSnippet) {
+                                        $snippet = ($buildErrors | Select-Object -First 2) -join "; "
+                                        $jobDetail.errorSnippet = $snippet.Substring(0, [Math]::Min(200, $snippet.Length))
+                                    }
 
                                     # Extract Helix log URLs from the full log content
                                     $helixLogUrls = Extract-HelixLogUrls -LogContent $logContent
@@ -2042,6 +2143,7 @@ try {
                     }
                 }
 
+            $allFailedJobDetails += $jobDetail
             $processedJobs++
         }
         catch {
@@ -2053,25 +2155,6 @@ try {
                 throw [System.Exception]::new("Error processing job '$($job.name)': $($_.Exception.Message)", $_.Exception)
             }
         }
-    }
-
-    $totalFailedJobs += $failedJobs.Count
-    $totalLocalFailures += $localTestFailures.Count
-
-    # Compute job summary from timeline
-    $allJobs = @()
-    $succeededJobs = 0
-    $pendingJobs = 0
-    $canceledJobCount = 0
-    $skippedJobs = 0
-    $warningJobs = 0
-    if ($timeline -and $timeline.records) {
-        $allJobs = @($timeline.records | Where-Object { $_.type -eq "Job" })
-        $succeededJobs = @($allJobs | Where-Object { $_.result -eq "succeeded" }).Count
-        $warningJobs = @($allJobs | Where-Object { $_.result -eq "succeededWithIssues" }).Count
-        $pendingJobs = @($allJobs | Where-Object { -not $_.result -or $_.state -eq "pending" -or $_.state -eq "inProgress" }).Count
-        $canceledJobCount = @($allJobs | Where-Object { $_.result -eq "canceled" }).Count
-        $skippedJobs = @($allJobs | Where-Object { $_.result -eq "skipped" }).Count
     }
 
     Write-Host "`n=== Build $currentBuildId Summary ===" -ForegroundColor Yellow
@@ -2121,53 +2204,66 @@ if ($buildIds.Count -gt 1) {
     }
 }
 
-# Smart retry recommendation
-Write-Host "`n=== Recommendation ===" -ForegroundColor Magenta
-
-if ($knownIssuesFromBuildAnalysis.Count -gt 0) {
-    $knownIssueCount = $knownIssuesFromBuildAnalysis.Count
-    Write-Host "KNOWN ISSUES DETECTED" -ForegroundColor Yellow
-    Write-Host "$knownIssueCount tracked issue(s) found that may correlate with failures above." -ForegroundColor White
-    Write-Host "Review the failure details and linked issues to determine if retry is needed." -ForegroundColor Gray
-}
-elseif ($totalFailedJobs -eq 0 -and $totalLocalFailures -eq 0) {
-    Write-Host "BUILD SUCCESSFUL" -ForegroundColor Green
-    Write-Host "No failures detected." -ForegroundColor White
-}
-elseif ($prChangedFiles.Count -gt 0 -and $allFailuresForCorrelation.Count -gt 0) {
-    # Check if failures correlate with PR changes
-    $hasCorrelation = $false
-    foreach ($failure in $allFailuresForCorrelation) {
-        $failureText = ($failure.Errors + $failure.HelixLogs + $failure.FailedTests) -join " "
-        foreach ($file in $prChangedFiles) {
-            $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
-            if ($failureText -match [regex]::Escape($fileName)) {
-                $hasCorrelation = $true
-                break
-            }
+# Build structured summary and emit as JSON
+$summary = [ordered]@{
+    mode = $PSCmdlet.ParameterSetName
+    repository = $Repository
+    prNumber = if ($PSCmdlet.ParameterSetName -eq 'PRNumber') { $PRNumber } else { $null }
+    builds = @($buildIds | ForEach-Object {
+        [ordered]@{
+            buildId = $_
+            url = "https://dev.azure.com/$Organization/$Project/_build/results?buildId=$_"
         }
-        if ($hasCorrelation) { break }
+    })
+    totalFailedJobs = $totalFailedJobs
+    totalLocalFailures = $totalLocalFailures
+    lastBuildJobSummary = if ($lastBuildJobSummary) { $lastBuildJobSummary } else { [ordered]@{
+        total = 0; succeeded = 0; failed = 0; canceled = 0; pending = 0; warnings = 0; skipped = 0
+    } }
+    failedJobNames = @($allFailedJobNames)
+    failedJobDetails = @($allFailedJobDetails)
+    failedJobDetailsTruncated = ($allFailedJobNames.Count -gt $allFailedJobDetails.Count)
+    canceledJobNames = @($allCanceledJobNames)
+    knownIssues = @($knownIssuesFromBuildAnalysis | ForEach-Object {
+        [ordered]@{ number = $_.Number; title = $_.Title; url = $_.Url }
+    })
+    prCorrelation = [ordered]@{
+        changedFileCount = $prChangedFiles.Count
+        hasCorrelation = $false
+        correlatedFiles = @()
     }
-    
-    if ($hasCorrelation) {
-        Write-Host "LIKELY PR-RELATED" -ForegroundColor Red
-        Write-Host "Failures appear to correlate with files changed in this PR." -ForegroundColor White
-        Write-Host "Review the 'PR Change Correlation' section above and fix the issues before retrying." -ForegroundColor Gray
-    }
-    else {
-        Write-Host "POSSIBLY TRANSIENT" -ForegroundColor Yellow
-        Write-Host "No known issues matched, but failures don't clearly correlate with PR changes." -ForegroundColor White
-        Write-Host "Consider:" -ForegroundColor Gray
-        Write-Host "  1. Check if same tests are failing on main branch" -ForegroundColor Gray
-        Write-Host "  2. Search for existing issues: gh issue list --label 'Known Build Error' --search '<test name>'" -ForegroundColor Gray
-        Write-Host "  3. If infrastructure-related (device not found, network errors), retry may help" -ForegroundColor Gray
-    }
+    recommendationHint = ""
 }
-else {
-    Write-Host "REVIEW REQUIRED" -ForegroundColor Yellow
-    Write-Host "Could not automatically determine failure cause." -ForegroundColor White
-    Write-Host "Review the failures above to determine if they are PR-related or infrastructure issues." -ForegroundColor Gray
+
+# Compute PR correlation using shared helper
+if ($prChangedFiles.Count -gt 0 -and $allFailuresForCorrelation.Count -gt 0) {
+    $correlation = Get-PRCorrelation -ChangedFiles $prChangedFiles -AllFailures $allFailuresForCorrelation
+    $allCorrelated = @($correlation.CorrelatedFiles) + @($correlation.TestFiles) | Select-Object -Unique
+    $summary.prCorrelation.hasCorrelation = $allCorrelated.Count -gt 0
+    $summary.prCorrelation.correlatedFiles = @($allCorrelated)
 }
+
+# Compute recommendation hint
+# Priority: KNOWN_ISSUES wins over LIKELY_PR_RELATED intentionally.
+# When both exist, SKILL.md "Mixed signals" guidance tells the agent to separate them.
+if (-not $lastBuildJobSummary -and $buildIds.Count -gt 0) {
+    $summary.recommendationHint = "REVIEW_REQUIRED"
+} elseif ($knownIssuesFromBuildAnalysis.Count -gt 0) {
+    $summary.recommendationHint = "KNOWN_ISSUES_DETECTED"
+} elseif ($totalFailedJobs -eq 0 -and $totalLocalFailures -eq 0) {
+    $summary.recommendationHint = "BUILD_SUCCESSFUL"
+} elseif ($summary.prCorrelation.hasCorrelation) {
+    $summary.recommendationHint = "LIKELY_PR_RELATED"
+} elseif ($prChangedFiles.Count -gt 0 -and $allFailuresForCorrelation.Count -gt 0) {
+    $summary.recommendationHint = "POSSIBLY_TRANSIENT"
+} else {
+    $summary.recommendationHint = "REVIEW_REQUIRED"
+}
+
+Write-Host ""
+Write-Host "[CI_ANALYSIS_SUMMARY]"
+Write-Host ($summary | ConvertTo-Json -Depth 5)
+Write-Host "[/CI_ANALYSIS_SUMMARY]"
 
 }
 catch {

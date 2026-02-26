@@ -102,6 +102,8 @@ public interface IGC : IContract
     GCOomData GetOomData() => throw new NotImplementedException();
     // server variant
     GCOomData GetOomData(TargetPointer heapAddress) => throw new NotImplementedException();
+
+    void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit) => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

@@ -1457,12 +1457,13 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
         }
     } while (changed && dfsTree->HasCycle());
 
-    // If we had unremovable blocks that are not in the DFS tree then make
-    // the 'keepAlive' set live in them. This would normally not be
-    // necessary assuming those blocks are actually unreachable; however,
-    // throw helpers fall into this category because we do not model them
-    // correctly, and those will actually end up reachable. Fix that up
-    // here.
+    // Now that we create throw helper blocks after lower,
+    // we don't need to search for them and set up liveness
+    // during lower.
+    assert(!m_compiler->fgRngChkThrowAdded);
+
+#ifdef DEBUG
+    // Double-check that no unreachable throw helper blocks exist.
     if (m_compiler->fgBBcount != dfsTree->GetPostOrderCount())
     {
         for (BasicBlock* block : m_compiler->Blocks())
@@ -1472,26 +1473,10 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
                 continue;
             }
 
-            VarSetOps::ClearD(m_compiler, block->bbLiveOut);
-            if (keepAliveThis)
-            {
-                unsigned thisVarIndex = m_compiler->lvaGetDesc(m_compiler->info.compThisArg)->lvVarIndex;
-                VarSetOps::AddElemD(m_compiler, block->bbLiveOut, thisVarIndex);
-            }
-
-            if (block->HasPotentialEHSuccs(m_compiler))
-            {
-                block->VisitEHSuccs(m_compiler, [=](BasicBlock* succ) {
-                    VarSetOps::UnionD(m_compiler, block->bbLiveOut, succ->bbLiveIn);
-                    return BasicBlockVisit::Continue;
-                });
-            }
-
-            VarSetOps::Assign(m_compiler, block->bbLiveIn, block->bbLiveOut);
+            assert(!block->HasFlag(BBF_THROW_HELPER));
         }
     }
 
-#ifdef DEBUG
     if (m_compiler->verbose)
     {
         printf("\nBB liveness after DoLiveVarAnalysis():\n\n");
@@ -1613,6 +1598,34 @@ void Compiler::fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveV
         memoryLiveness |= succ->bbMemoryLiveIn;
         return BasicBlockVisit::Continue;
     });
+}
+
+//------------------------------------------------------------------------
+// fgSetThrowHelpBlockLiveness: set liveness for throw helper block
+//
+// Arguments:
+//  block -- potential throw helper block
+//
+void Compiler::fgSetThrowHelpBlockLiveness(BasicBlock* block)
+{
+    VarSetOps::ClearD(this, block->bbLiveOut);
+
+    const bool keepAliveThis = lvaKeepAliveAndReportThis() && lvaTable[info.compThisArg].lvTracked;
+    if (keepAliveThis)
+    {
+        unsigned thisVarIndex = lvaGetDesc(info.compThisArg)->lvVarIndex;
+        VarSetOps::AddElemD(this, block->bbLiveOut, thisVarIndex);
+    }
+
+    if (block->HasPotentialEHSuccs(this))
+    {
+        block->VisitEHSuccs(this, [=](BasicBlock* succ) {
+            VarSetOps::UnionD(this, block->bbLiveOut, succ->bbLiveIn);
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    VarSetOps::Assign(this, block->bbLiveIn, block->bbLiveOut);
 }
 
 #ifdef DEBUG

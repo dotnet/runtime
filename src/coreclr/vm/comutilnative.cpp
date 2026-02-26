@@ -124,30 +124,6 @@ extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandl
 
 #ifdef FEATURE_COMINTEROP
 
-static BSTR BStrFromString(STRINGREF s)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    WCHAR *wz;
-    int cch;
-    BSTR bstr;
-
-    if (s == NULL)
-        return NULL;
-
-    s->RefInterpretGetStringValuesDangerousForGC(&wz, &cch);
-
-    bstr = SysAllocString(wz);
-    if (bstr == NULL)
-        COMPlusThrowOM();
-
-    return bstr;
-}
-
 static BSTR GetExceptionDescription(OBJECTREF objException)
 {
     CONTRACTL
@@ -161,30 +137,11 @@ static BSTR GetExceptionDescription(OBJECTREF objException)
 
     BSTR bstrDescription;
 
-    STRINGREF MessageString = NULL;
-    GCPROTECT_BEGIN(MessageString)
     GCPROTECT_BEGIN(objException)
     {
-        // read Exception.Message property
-        MethodDescCallSite getMessage(METHOD__EXCEPTION__GET_MESSAGE, &objException);
-
-        ARG_SLOT GetMessageArgs[] = { ObjToArgSlot(objException)};
-        MessageString = getMessage.Call_RetSTRINGREF(GetMessageArgs);
-
-        // if the message string is empty then use the exception classname.
-        if (MessageString == NULL || MessageString->GetStringLength() == 0) {
-            // call GetClassName
-            MethodDescCallSite getClassName(METHOD__EXCEPTION__GET_CLASS_NAME, &objException);
-            ARG_SLOT GetClassNameArgs[] = { ObjToArgSlot(objException)};
-            MessageString = getClassName.Call_RetSTRINGREF(GetClassNameArgs);
-            _ASSERTE(MessageString != NULL && MessageString->GetStringLength() != 0);
-        }
-
-        // Allocate the description BSTR.
-        int DescriptionLen = MessageString->GetStringLength();
-        bstrDescription = SysAllocStringLen(MessageString->GetBuffer(), DescriptionLen);
+        UnmanagedCallersOnlyCaller getDescriptionBstr(METHOD__EXCEPTION__GET_DESCRIPTION_BSTR);
+        bstrDescription = getDescriptionBstr.InvokeThrowing_Ret<BSTR>(&objException);
     }
-    GCPROTECT_END();
     GCPROTECT_END();
 
     return bstrDescription;
@@ -200,19 +157,17 @@ static BSTR GetExceptionSource(OBJECTREF objException)
         PRECONDITION( IsException(objException->GetMethodTable()) );
     }
     CONTRACTL_END;
+    
+    BSTR bstrSource;
 
-    STRINGREF refRetVal;
     GCPROTECT_BEGIN(objException)
-
-    // read Exception.Source property
-    MethodDescCallSite getSource(METHOD__EXCEPTION__GET_SOURCE, &objException);
-
-    ARG_SLOT GetSourceArgs[] = { ObjToArgSlot(objException)};
-
-    refRetVal = getSource.Call_RetSTRINGREF(GetSourceArgs);
-
+    {
+        UnmanagedCallersOnlyCaller getSourceBstr(METHOD__EXCEPTION__GET_SOURCE_BSTR);
+        bstrSource = getSourceBstr.InvokeThrowing_Ret<BSTR>(&objException);
+    }
     GCPROTECT_END();
-    return BStrFromString(refRetVal);
+
+    return bstrSource;
 }
 
 static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD *pdwHelpContext)
@@ -229,20 +184,11 @@ static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD 
     }
     CONTRACTL_END;
 
-    *pdwHelpContext = 0;
-
-    GCPROTECT_BEGIN(objException);
-
-    // call managed code to parse help context
-    MethodDescCallSite getHelpContext(METHOD__EXCEPTION__GET_HELP_CONTEXT, &objException);
-
-    ARG_SLOT GetHelpContextArgs[] =
+    GCPROTECT_BEGIN(objException)
     {
-        ObjToArgSlot(objException),
-        PtrToArgSlot(pdwHelpContext)
-    };
-    *pbstrHelpFile = BStrFromString(getHelpContext.Call_RetSTRINGREF(GetHelpContextArgs));
-
+        UnmanagedCallersOnlyCaller getHelpContextBstr(METHOD__EXCEPTION__GET_HELP_CONTEXT_BSTR);
+        getHelpContextBstr.InvokeThrowing(&objException, pbstrHelpFile, pdwHelpContext);
+    }
     GCPROTECT_END();
 }
 

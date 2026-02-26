@@ -18,10 +18,12 @@ function libDotnetFactory() {
     libNativeBrowser(exports);
 
     let commonDeps = [
+        "$FS",
         "$BROWSER_UTILS",
         "SystemJS_ExecuteTimerCallback",
         "SystemJS_ExecuteBackgroundJobCallback",
         "SystemJS_ExecuteFinalizationCallback",
+        "__funcs_on_exit",
     ];
     const mergeDotnet = {
         $DOTNET: {

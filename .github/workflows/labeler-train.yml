@@ -48,7 +48,7 @@ env:
   CACHE_KEY: ${{ inputs.cache_key_suffix }}
   REPOSITORY: ${{ github.repository }}
   LABEL_PREFIX: "area-"
-  THRESHOLD: "0.40"
+  THRESHOLD: ${{ vars.ISSUE_LABELER_PREDICTION_THRESHOLD || '0.05' }}
   LIMIT: ${{ inputs.limit }}
   PAGE_SIZE: ${{ inputs.page_size }}
   PAGE_LIMIT: ${{ inputs.page_limit }}
