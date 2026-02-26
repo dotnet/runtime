@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         public static bool SupportsRsaOaepCerts => PlatformDetection.IsWindows;
         public static bool DoesNotSupportRsaOaepCerts => !SupportsRsaOaepCerts;
 
-        [ConditionalFact(nameof(SupportsRsaOaepCerts))]
+        [ConditionalFact(typeof(KeyTransRecipientInfoRsaOaepCertTests), nameof(SupportsRsaOaepCerts))]
         public static void TestKeyTransEncryptKey_RsaOaepCertificate_NoParameters_DefaultToSha1()
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(s_rsaOaepSha1Parameters, recipient.KeyEncryptionAlgorithm.Parameters);
         }
 
-        [ConditionalFact(nameof(SupportsRsaOaepCerts))]
+        [ConditionalFact(typeof(KeyTransRecipientInfoRsaOaepCertTests), nameof(SupportsRsaOaepCerts))]
         public static void TestKeyTransEncryptKey_RsaOaepCertificate_Sha256Parameters()
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(s_rsaOaepSha256Parameters, recipient.KeyEncryptionAlgorithm.Parameters);
         }
 
-        [ConditionalFact(nameof(DoesNotSupportRsaOaepCerts))]
+        [ConditionalFact(typeof(KeyTransRecipientInfoRsaOaepCertTests), nameof(DoesNotSupportRsaOaepCerts))]
         public static void TestKeyTransEncryptKey_RsaOaepCertificate_NoPlatformSupport_Throws()
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });

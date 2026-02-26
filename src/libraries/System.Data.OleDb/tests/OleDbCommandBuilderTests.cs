@@ -12,13 +12,13 @@ namespace System.Data.OleDb.Tests
     [Collection("System.Data.OleDb")] // not let tests run in parallel
     public class OleDbCommandBuilderTests : OleDbTestBase
     {
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void DeriveParameters_NullCommand_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => OleDbCommandBuilder.DeriveParameters(null));
         }
 
-        [ConditionalTheory(Helpers.IsDriverAvailable)]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         [InlineData(CommandType.Text)]
         [InlineData(CommandType.TableDirect)]
         public void DeriveParameters_InvalidCommandType_Throws(CommandType commandType)
@@ -32,7 +32,7 @@ namespace System.Data.OleDb.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void DeriveParameters_NullCommandText_Throws()
         {
             using (var cmd = (OleDbCommand)OleDbFactory.Instance.CreateCommand())
@@ -46,7 +46,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void DeriveParameters_NullConnection_Throws()
         {
             RunTest((command, tableName) => {
@@ -64,7 +64,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void DeriveParameters_ClosedConnection_Throws()
         {
             RunTest((command, tableName) => {
@@ -83,7 +83,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void QuoteUnquoteIdentifier_Null_Throws()
         {
             RunTest((command, tableName) => {
@@ -117,7 +117,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void QuoteUnquote_CustomPrefixSuffix_Success()
         {
             RunTest((command, tableName) => {

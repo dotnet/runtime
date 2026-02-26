@@ -395,6 +395,26 @@ public unsafe partial interface ISOSEnum
     int GetCount(uint* pCount);
 }
 
+public enum JitTypes
+{
+    TYPE_UNKNOWN = 0,
+    TYPE_JIT,
+    TYPE_PJIT,
+    TYPE_INTERPRETER
+}
+
+public struct DacpCodeHeaderData
+{
+    public ClrDataAddress GCInfo;
+    public JitTypes JITType;
+    public ClrDataAddress MethodDescPtr;
+    public ClrDataAddress MethodStart;
+    public uint MethodSize;
+    public ClrDataAddress ColdRegionStart;
+    public uint ColdRegionSize;
+    public uint HotRegionSize;
+}
+
 public struct DacpFieldDescData
 {
     public CorElementType Type;
@@ -498,7 +518,7 @@ public unsafe partial interface ISOSDacInterface
 
     // JIT Data
     [PreserveSig]
-    int GetCodeHeaderData(ClrDataAddress ip, /*struct DacpCodeHeaderData*/ void* data);
+    int GetCodeHeaderData(ClrDataAddress ip, DacpCodeHeaderData* data);
     [PreserveSig]
     int GetJitManagerList(uint count, /*struct DacpJitManagerInfo*/ void* managers, uint* pNeeded);
     [PreserveSig]
