@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
-    public partial class AppContext
+    public static partial class AppContext
     {
         [UnmanagedCallersOnly]
         private static unsafe void OnProcessExit(Exception* pException)
@@ -21,7 +21,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void OnUnhandledException(object* pUnhandledException, Exception* pOutException)
+        private static unsafe void OnUnhandledException(object* pUnhandledException, Exception* _)
         {
             try
             {

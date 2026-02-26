@@ -598,9 +598,14 @@ OBJECTREF InvokeUtil::CreateTargetExcept(OBJECTREF* except) {
     }
     CONTRACT_END;
 
-    OBJECTREF oRet = 0;
-
-    GCPROTECT_BEGIN(oRet);
+    struct
+    {
+        OBJECTREF oRet;
+        OBJECTREF innerEx;
+    } gc;
+    gc.oRet = NULL;
+    gc.innerEx = NULL;
+    GCPROTECT_BEGIN(gc);
 
     UnmanagedCallersOnlyCaller createTargetExcept(METHOD__EXCEPTION__CREATE_TARGET_INVOCATION_EXCEPTION);
 
@@ -608,14 +613,12 @@ OBJECTREF InvokeUtil::CreateTargetExcept(OBJECTREF* except) {
     // don't check and this could cause us grief.
     _ASSERTE(!except || IsException((*except)->GetMethodTable()));  // how do we get non-exceptions?
 
-    OBJECTREF innerEx = (except && IsException((*except)->GetMethodTable())) ? *except : NULL;
-    GCPROTECT_BEGIN(innerEx);
+    gc.innerEx = (except && IsException((*except)->GetMethodTable())) ? *except : NULL;
 
-    createTargetExcept.InvokeThrowing(&innerEx, &oRet);
+    createTargetExcept.InvokeThrowing(&gc.innerEx, &gc.oRet);
 
     GCPROTECT_END();
-    GCPROTECT_END();
-    RETURN oRet;
+    RETURN gc.oRet;
 }
 
 // Ensure that the field is declared on the type or subtype of the type to which the typed reference refers.
