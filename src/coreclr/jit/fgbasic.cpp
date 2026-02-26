@@ -3789,14 +3789,14 @@ void Compiler::fgFindBasicBlocks()
             if (clause.Flags & CORINFO_EH_CLAUSE_FINALLY)
             {
                 hndBegBB->SetCatchTyp(BBCT_FINALLY);
-                HBtab->ebdTyp        = 0;
+                HBtab->ebdTyp = 0;
             }
             else
             {
                 if (clause.Flags & CORINFO_EH_CLAUSE_FAULT)
                 {
                     hndBegBB->SetCatchTyp(BBCT_FAULT);
-                    HBtab->ebdTyp        = 0;
+                    HBtab->ebdTyp = 0;
                 }
                 else
                 {
@@ -3808,7 +3808,7 @@ void Compiler::fgFindBasicBlocks()
                     }
 
                     hndBegBB->SetCatchTyp(clause.ClassToken);
-                    HBtab->ebdTyp        = clause.ClassToken;
+                    HBtab->ebdTyp = clause.ClassToken;
 
                     noway_assert(clause.ClassToken != BBCT_FAULT);
                     noway_assert(clause.ClassToken != BBCT_FINALLY);

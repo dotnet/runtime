@@ -1548,7 +1548,7 @@ PhaseStatus Compiler::fgCloneFinally()
         if (retargetedAllCalls)
         {
             JITDUMP("All callfinallys retargeted; changing finally to fault.\n");
-            HBtab->ebdHandlerType  = EH_HANDLER_FAULT_WAS_FINALLY;
+            HBtab->ebdHandlerType = EH_HANDLER_FAULT_WAS_FINALLY;
             firstBlock->SetCatchTyp(BBCT_FAULT);
 
             // Change all BBJ_EHFINALLYRET to BBJ_EHFAULTRET in the now-fault region.

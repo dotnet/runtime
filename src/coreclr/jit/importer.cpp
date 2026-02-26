@@ -12375,7 +12375,7 @@ void Compiler::initBBEntryState(BasicBlock* block, EntryState* srcState)
 
     block->SetEntryState(getAllocator(CMK_ImpStack).allocate<EntryState>(1));
 
-    block->GetEntryState()->esStackDepth= srcState->esStackDepth;
+    block->GetEntryState()->esStackDepth = srcState->esStackDepth;
 
     if (srcState->esStackDepth > 0)
     {
@@ -12385,7 +12385,7 @@ void Compiler::initBBEntryState(BasicBlock* block, EntryState* srcState)
         memcpy(block->GetEntryState()->esStack, srcState->esStack, stackSize);
         for (unsigned level = 0; level < srcState->esStackDepth; level++)
         {
-            GenTree* tree                                     = srcState->esStack[level].val;
+            GenTree* tree                              = srcState->esStack[level].val;
             block->GetEntryState()->esStack[level].val = gtCloneExpr(tree);
         }
     }

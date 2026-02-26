@@ -2662,8 +2662,8 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             filterBb->SetFlags(BBF_INTERNAL | BBF_DONT_REMOVE);
 
             handlerBb->SetCatchTyp(BBCT_FILTER_HANDLER);
-            eh->ebdHandlerType    = EH_HANDLER_FILTER;
-            eh->ebdFilter         = filterBb;
+            eh->ebdHandlerType = EH_HANDLER_FILTER;
+            eh->ebdFilter      = filterBb;
 
 #ifdef DEBUG
             if (verbose)
@@ -2950,8 +2950,8 @@ bool Compiler::fgNormalizeEHCase3()
                         newLast->setHndIndex(ehOuterIndex);
                     }
 
-                    newLast->SetCatchTyp(
-                        BBCT_NONE); // bbCatchTyp is only set on the first block of a handler, which is this not
+                    newLast->SetCatchTyp(BBCT_NONE); // bbCatchTyp is only set on the first block of a handler, which is
+                                                     // this not
                     newLast->bbCodeOffs    = insertAfterBlk->bbCodeOffsEnd;
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
@@ -3624,7 +3624,8 @@ void Compiler::fgVerifyHandlerTab()
         }
         else if (HBtab->HasCatchHandler())
         {
-            assert(!HBtab->ebdHndBeg->CatchTypIs(BBCT_NONE, BBCT_FAULT, BBCT_FINALLY, BBCT_FILTER, BBCT_FILTER_HANDLER));
+            assert(
+                !HBtab->ebdHndBeg->CatchTypIs(BBCT_NONE, BBCT_FAULT, BBCT_FINALLY, BBCT_FILTER, BBCT_FILTER_HANDLER));
         }
         else if (HBtab->HasFaultHandler())
         {
@@ -4503,8 +4504,8 @@ void Compiler::fgExtendEHRegionAfter(BasicBlock* block)
     assert(newBlk != nullptr);
 
     newBlk->copyEHRegion(block);
-    newBlk->SetCatchTyp(
-        BBCT_NONE); // Only the first block of a catch has this set, and 'newBlk' can't be the first block of a catch.
+    newBlk->SetCatchTyp(BBCT_NONE); // Only the first block of a catch has this set, and 'newBlk' can't be the first
+                                    // block of a catch.
 
     // TODO-Throughput: if the block is not in an EH region, then we don't need to walk the EH table looking for 'last'
     // block pointers to update.
