@@ -229,7 +229,7 @@ namespace Microsoft.Win32.SafeHandles
         /// Terminates all processes in the job object. If the process was not started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/>=true,
         /// throws an <see cref="InvalidOperationException"/>.
         /// </remarks>
-        public bool KillProcessGroup()
+        internal bool KillProcessGroup()
         {
             Validate();
 
@@ -245,7 +245,7 @@ namespace Microsoft.Win32.SafeHandles
         /// This method can only be called once. After the process has been resumed, calling this method again will throw an <see cref="InvalidOperationException"/>.
         /// This is not a general purpose process resume (like <c>NtResumeProcess</c>). It can only resume processes created via <see cref="StartSuspended"/>.
         /// </remarks>
-        public void Resume()
+        internal void Resume()
         {
             Validate();
 

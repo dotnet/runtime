@@ -14,7 +14,9 @@ namespace System.Diagnostics.Tests
     [PlatformSpecific(TestPlatforms.Windows)]
     public partial class SafeProcessHandleTests
     {
-        private static ProcessStartOptions CreateTenSecondSleep() => new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
+        private static ProcessStartOptions CreateTenSecondSleep() => PlatformDetection.IsWindowsNanoServer
+            ? new("ping") { Arguments = { "127.0.0.1", "-n", "11" } }
+            : new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
 
         [Fact]
         public static void Start_WithNoArguments_Succeeds()
@@ -42,7 +44,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(-1, exitStatus.ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [Fact]
         public static void Kill_CanBeCalledMultipleTimes()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
@@ -56,7 +58,7 @@ namespace System.Diagnostics.Tests
             Assert.False(secondKill);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [Fact]
         public static void WaitForExit_Called_After_Kill_ReturnsExitCodeImmediately()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
@@ -86,7 +88,7 @@ namespace System.Diagnostics.Tests
             Assert.False(wasKilled);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [Fact]
         public static void WaitForExitOrKillOnTimeout_KillsOnTimeout()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
@@ -129,7 +131,7 @@ namespace System.Diagnostics.Tests
             Assert.Null(exitStatus.Signal);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [Fact]
         public static void TryWaitForExit_ReturnsFalseWhenProcessDoesNotExitBeforeTimeout()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
@@ -165,7 +167,7 @@ namespace System.Diagnostics.Tests
             Assert.Null(exitStatus.Signal);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [Fact]
         public static void WaitForExitOrKillOnTimeout_KillsAndWaitsWhenTimeoutOccurs()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
@@ -180,7 +182,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(-1, exitStatus.ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [Fact]
         public static async Task WaitForExitOrKillOnCancellationAsync_KillsOnCancellation_AndDoesNotThrow()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
@@ -195,7 +197,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, exitStatus.ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [Fact]
         public static async Task WaitForExitAsync_ThrowsOnCancellation()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);

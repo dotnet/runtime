@@ -11,7 +11,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class SafeProcessHandleTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [Fact]
         public void SendSignal_SIGINT_TerminatesProcessInNewProcessGroup()
         {
             ProcessStartOptions options = CreateTenSecondSleep();
@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, exitStatus.ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [Fact]
         public void Signal_SIGQUIT_TerminatesProcessInNewProcessGroup()
         {
             ProcessStartOptions options = CreateTenSecondSleep();
@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, exitStatus.ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
+        [Fact]
         public void Signal_UnsupportedSignal_ThrowsArgumentException()
         {
             ProcessStartOptions options = CreateTenSecondSleep();
@@ -80,31 +80,6 @@ namespace System.Diagnostics.Tests
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
             ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(5));
             Assert.Equal(0, exitStatus.ExitCode);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
-        public void Kill_EntireProcessGroup_WithoutCreateNewProcessGroup_Throws()
-        {
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
-
-            Assert.Throws<InvalidOperationException>(() => processHandle.KillProcessGroup());
-
-            Assert.True(processHandle.Kill());
-        }
-
-        [Fact]
-        public void Resume_OnNonSuspendedProcess_ThrowsInvalidOperationException()
-        {
-            ProcessStartOptions options = new("cmd.exe")
-            {
-                Arguments = { "/c", "echo test" }
-            };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
-
-            Assert.Throws<InvalidOperationException>(() => processHandle.Resume());
-
-            processHandle.WaitForExit();
         }
     }
 }
