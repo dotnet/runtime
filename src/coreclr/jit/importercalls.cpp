@@ -6267,7 +6267,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 if (varTypeIsLong(baseType))
                 {
                     uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
-                    result        = gtNewLconNode((int32_t)BitOperations::RotateRight(cns1, cns2));
+                    result        = gtNewLconNode((int64_t)BitOperations::RotateRight(cns1, cns2));
                 }
                 else
                 {
