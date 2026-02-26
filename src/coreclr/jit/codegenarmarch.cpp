@@ -5105,10 +5105,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     // first, then load the target through x11 into the call target register.
                     if (addrInfo.accessType == IAT_PVALUE)
                     {
-                        instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, REG_R2R_INDIRECT_PARAM,
-                                               (ssize_t)addrInfo.addr);
-                        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, params.ireg,
-                                                    REG_R2R_INDIRECT_PARAM, 0);
+                        instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, REG_R2R_INDIRECT_PARAM, (ssize_t)addrInfo.addr);
+                        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, params.ireg, REG_R2R_INDIRECT_PARAM, 0);
                         regSet.verifyRegUsed(params.ireg);
                     }
                     else
