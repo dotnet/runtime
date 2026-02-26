@@ -1267,6 +1267,30 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AllocContinuationClass;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_CONTEXTS:
+                    id = ReadyToRunHelper.AsyncCaptureContexts;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_CONTEXTS:
+                    id = ReadyToRunHelper.AsyncRestoreContexts;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_EXECUTION_CONTEXT:
+                    id = ReadyToRunHelper.AsyncCaptureExecCtx;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT:
+                    id = ReadyToRunHelper.AsyncRestoreExecCtx;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION:
+                    id = ReadyToRunHelper.AsyncRestoreCtxOnSusp;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT:
+                    id = ReadyToRunHelper.AsyncCaptureContinCtx;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                     id = ReadyToRunHelper.InitClass;
                     break;
@@ -1302,8 +1326,7 @@ namespace Internal.JitInterface
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
         {
             var method = HandleToObject(ftn);
-            var entrypoint = _compilation.NodeFactory.MethodEntrypoint(new MethodWithToken(method, _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(method, true, true), null, false, MethodBeingCompiled), false, false, false);
-            pResult = CreateConstLookupToSymbol(entrypoint);
+            throw new RequiresRuntimeJitException($"getFunctionEntryPoint called for {method} from {MethodBeingCompiled}");
         }
 
         private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)

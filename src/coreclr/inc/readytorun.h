@@ -475,6 +475,13 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_AllocContinuationClass    = 0x114,
     READYTORUN_HELPER_AllocContinuationMethod   = 0x115,
 
+    READYTORUN_HELPER_AsyncCaptureContexts      = 0x118,
+    READYTORUN_HELPER_AsyncRestoreContexts      = 0x119,
+    READYTORUN_HELPER_AsyncCaptureExecCtx       = 0x11A,
+    READYTORUN_HELPER_AsyncRestoreExecCtx       = 0x11B,
+    READYTORUN_HELPER_AsyncRestoreCtxOnSusp     = 0x11C,
+    READYTORUN_HELPER_AsyncCaptureContinCtx     = 0x11D,
+
     READYTORUN_HELPER_InitClass                 = 0x116,
     READYTORUN_HELPER_InitInstClass             = 0x117,
 };
