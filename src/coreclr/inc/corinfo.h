@@ -2288,6 +2288,9 @@ public:
         ) = 0;
 
     // Get the other variant of an async method, if possible.
+    // If this is a method with async calling convention: returns the corresponding task-returning method.
+    // If this is a task-returning method: returns the corresponding method with async calling convention.
+    // Otherwise returns null.
     virtual CORINFO_METHOD_HANDLE getAsyncOtherVariant(
         CORINFO_METHOD_HANDLE ftn,
         bool*                 variantIsThunk

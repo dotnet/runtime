@@ -4592,6 +4592,10 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 // non-async task-returning call. There is no reason to create
                 // and go through the thunk.
                 ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedCallToken);
+
+                // Reset back to the IP after the original call instruction.
+                // FindAndApplyPeep above modified it to be after the "Await"
+                // call, but now we want to process the await separately.
                 m_ip = origIP + 5;
                 continuationContextHandling = ContinuationContextHandling::None;
                 m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
