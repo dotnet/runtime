@@ -114,7 +114,7 @@ typedef cpuset_t cpu_set_t;
 
 
 // The cached total number of CPUs that can be used in the OS.
-static uint32_t g_totalCpuCount = 0;
+uint32_t g_totalCpuCount = 0;
 
 size_t GetRestrictedPhysicalMemoryLimit();
 bool GetPhysicalMemoryUsed(size_t* val);
