@@ -83,7 +83,7 @@ The skill contains baked-in examples and guidelines for writing good proposals (
 
 ### Phase 2: Prototype
 
-> **If the user already has a prototype**, ask for the published branch link and skip to Phase 3.
+> **If the user already has a prototype**, ask for the published branch link and/or commit hash. Skip steps 1–3 below, but still run all steps in **Prototype Validation** against the provided branch/commit before proceeding to Phase 3.
 
 1. Create a new branch: `api-proposal/<short-name>`. The prototype must be pushed as a **single commit** on this branch.
 
