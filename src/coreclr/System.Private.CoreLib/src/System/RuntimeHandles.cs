@@ -2259,5 +2259,60 @@ namespace System
                 *pException = ex;
             }
         }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ResolveToken(Resolver* pResolver, int token, IntPtr* pTypeHandle, IntPtr* pMethodHandle, IntPtr* pFieldHandle, Exception* pException)
+        {
+            try
+            {
+                pResolver->ResolveToken(token, out IntPtr typeHandle, out IntPtr methodHandle, out IntPtr fieldHandle);
+                *pTypeHandle = typeHandle;
+                *pMethodHandle = methodHandle;
+                *pFieldHandle = fieldHandle;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ResolveSignature(Resolver* pResolver, int token, int fromMethod, byte[]* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->ResolveSignature(token, fromMethod);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetRawEHInfo(Resolver* pResolver, byte[]* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->GetRawEHInfo();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetEHInfo(Resolver* pResolver, int EHNumber, void* exception, Exception* pException)
+        {
+            try
+            {
+                pResolver->GetEHInfo(EHNumber, exception);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

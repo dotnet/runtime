@@ -1398,20 +1398,26 @@ void LCGMethodResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken
 
     GCX_COOP();
 
-    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__RESOLVE_TOKEN, ObjectFromHandle(m_managedResolver));
+    struct
+    {
+        OBJECTREF Resolver;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    VALIDATEOBJECTREF(gc.Resolver); // gc root must be up the stack
 
-    DECLARE_ARGHOLDER_ARRAY(args, 5);
+    GCPROTECT_BEGIN(gc);
 
-    TypeHandle handle;
-    MethodDesc* pMD = NULL;
-    FieldDesc* pFD = NULL;
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(token);
-    args[ARGNUM_2] = &handle;
-    args[ARGNUM_3] = &pMD;
-    args[ARGNUM_4] = &pFD;
+    UnmanagedCallersOnlyCaller resolveToken(METHOD__RESOLVER__RESOLVE_TOKEN);
+    TADDR typeHandleValue = 0;
+    TADDR methodHandleValue = 0;
+    TADDR fieldHandleValue = 0;
+    resolveToken.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), &typeHandleValue, &methodHandleValue, &fieldHandleValue);
 
-    CALL_MANAGED_METHOD_NORET(args);
+    TypeHandle handle = TypeHandle::FromTAddr(typeHandleValue);
+    MethodDesc* pMD = reinterpret_cast<MethodDesc*>(methodHandleValue);
+    FieldDesc* pFD = reinterpret_cast<FieldDesc*>(fieldHandleValue);
+
+    GCPROTECT_END();
 
     _ASSERTE(pMD == NULL || pFD == NULL);
 
@@ -1443,24 +1449,33 @@ LCGMethodResolver::ResolveSignature(
 
     GCX_COOP();
 
-    U1ARRAYREF dataArray = NULL;
+    struct
+    {
+        OBJECTREF Resolver;
+        OBJECTREF DataArray;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.DataArray = NULL;
+    VALIDATEOBJECTREF(gc.Resolver); // gc root must be up the stack
 
-    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__RESOLVE_SIGNATURE, ObjectFromHandle(m_managedResolver));
+    DWORD cbSig = 0;
+    PCCOR_SIGNATURE pSig = NULL;
 
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
+    GCPROTECT_BEGIN(gc);
 
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(token);
-    args[ARGNUM_2] = DWORD_TO_ARGHOLDER(0);
+    UnmanagedCallersOnlyCaller resolveSignature(METHOD__RESOLVER__RESOLVE_SIGNATURE);
+    resolveSignature.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), 0, &gc.DataArray);
 
-    CALL_MANAGED_METHOD_RETREF(dataArray, U1ARRAYREF, args);
-
+    U1ARRAYREF dataArray = (U1ARRAYREF)gc.DataArray;
     if (dataArray == NULL)
         COMPlusThrow(kInvalidProgramException);
 
-    DWORD cbSig = dataArray->GetNumComponents();
-    PCCOR_SIGNATURE pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
+    cbSig = dataArray->GetNumComponents();
+    pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
     memcpy((void *)pSig, dataArray->GetDataPtr(), cbSig);
+
+    GCPROTECT_END();
+
     return SigPointer(pSig, cbSig);
 } // LCGMethodResolver::ResolveSignature
 
@@ -1474,24 +1489,33 @@ LCGMethodResolver::ResolveSignatureForVarArg(
 
     GCX_COOP();
 
-    U1ARRAYREF dataArray = NULL;
+    struct
+    {
+        OBJECTREF Resolver;
+        OBJECTREF DataArray;
+    } gc;
+    gc.Resolver = ObjectFromHandle(m_managedResolver);
+    gc.DataArray = NULL;
+    VALIDATEOBJECTREF(gc.Resolver); // gc root must be up the stack
 
-    PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__RESOLVE_SIGNATURE, ObjectFromHandle(m_managedResolver));
+    DWORD cbSig = 0;
+    PCCOR_SIGNATURE pSig = NULL;
 
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
+    GCPROTECT_BEGIN(gc);
 
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-    args[ARGNUM_1] = DWORD_TO_ARGHOLDER(token);
-    args[ARGNUM_2] = DWORD_TO_ARGHOLDER(1);
+    UnmanagedCallersOnlyCaller resolveSignature(METHOD__RESOLVER__RESOLVE_SIGNATURE);
+    resolveSignature.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), 1, &gc.DataArray);
 
-    CALL_MANAGED_METHOD_RETREF(dataArray, U1ARRAYREF, args);
-
+    U1ARRAYREF dataArray = (U1ARRAYREF)gc.DataArray;
     if (dataArray == NULL)
         COMPlusThrow(kInvalidProgramException);
 
-    DWORD cbSig = dataArray->GetNumComponents();
-    PCCOR_SIGNATURE pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
+    cbSig = dataArray->GetNumComponents();
+    pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
     memcpy((void *)pSig, dataArray->GetDataPtr(), cbSig);
+
+    GCPROTECT_END();
+
     return SigPointer(pSig, cbSig);
 } // LCGMethodResolver::ResolveSignatureForVarArg
 
@@ -1505,16 +1529,21 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
 
     // attempt to get the raw EHInfo first
     {
-        U1ARRAYREF dataArray;
+        struct
+        {
+            OBJECTREF Resolver;
+            OBJECTREF DataArray;
+        } gc;
+        gc.Resolver = ObjectFromHandle(m_managedResolver);
+        gc.DataArray = NULL;
+        VALIDATEOBJECTREF(gc.Resolver); // gc root must be up the stack
 
-        PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__GET_RAW_EH_INFO, ObjectFromHandle(m_managedResolver));
+        GCPROTECT_BEGIN(gc);
 
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
+        UnmanagedCallersOnlyCaller getRawEhInfo(METHOD__RESOLVER__GET_RAW_EH_INFO);
+        getRawEhInfo.InvokeThrowing(&gc.Resolver, &gc.DataArray);
 
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-
-        CALL_MANAGED_METHOD_RETREF(dataArray, U1ARRAYREF, args);
-
+        U1ARRAYREF dataArray = (U1ARRAYREF)gc.DataArray;
         if (dataArray != NULL)
         {
             COR_ILMETHOD_SECT_EH* pEH = (COR_ILMETHOD_SECT_EH*)dataArray->GetDataPtr();
@@ -1530,21 +1559,28 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
             clause->HandlerLength = ehInfo->GetHandlerLength();
             clause->ClassToken = ehInfo->GetClassToken();
             clause->FilterOffset = ehInfo->GetFilterOffset();
+            GCPROTECT_END();
             return;
         }
+
+        GCPROTECT_END();
     }
 
     // failed, get the info off the ilgenerator
     {
-        PREPARE_SIMPLE_VIRTUAL_CALLSITE(METHOD__RESOLVER__GET_EH_INFO, ObjectFromHandle(m_managedResolver));
+        struct
+        {
+            OBJECTREF Resolver;
+        } gc;
+        gc.Resolver = ObjectFromHandle(m_managedResolver);
+        VALIDATEOBJECTREF(gc.Resolver); // gc root must be up the stack
 
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        GCPROTECT_BEGIN(gc);
 
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(ObjectFromHandle(m_managedResolver));
-        args[ARGNUM_1] = DWORD_TO_ARGHOLDER(EHnumber);
-        args[ARGNUM_2] = PTR_TO_ARGHOLDER(clause);
+        UnmanagedCallersOnlyCaller getEhInfo(METHOD__RESOLVER__GET_EH_INFO);
+        getEhInfo.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(EHnumber), clause);
 
-        CALL_MANAGED_METHOD_NORET(args);
+        GCPROTECT_END();
     }
 }
 
