@@ -30,7 +30,8 @@ internal partial class MockDescriptors
             DataType = DataType.ProfControlBlock,
             Fields =
             [
-                new(nameof(Data.ProfControlBlock.GlobalEventMask), DataType.uint64)
+                new(nameof(Data.ProfControlBlock.GlobalEventMask), DataType.uint64),
+                new(nameof(Data.ProfControlBlock.RejitOnAttachEnabled), DataType.uint8),
             ]
         };
 
@@ -43,11 +44,11 @@ internal partial class MockDescriptors
 
         private readonly MockMemorySpace.BumpAllocator _rejitAllocator;
 
-        public ReJIT(MockTarget.Architecture arch)
-            : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
+        public ReJIT(MockTarget.Architecture arch, bool rejitOnAttachEnabled = true)
+            : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), rejitOnAttachEnabled)
         { }
 
-        public ReJIT(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+        public ReJIT(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool rejitOnAttachEnabled = true)
         {
             Builder = builder;
             _rejitAllocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
@@ -58,7 +59,7 @@ internal partial class MockDescriptors
 
             Globals =
             [
-                (nameof(Constants.Globals.ProfilerControlBlock), AddProfControlBlock()),
+                (nameof(Constants.Globals.ProfilerControlBlock), AddProfControlBlock(rejitOnAttachEnabled)),
             ];
         }
 
@@ -84,13 +85,14 @@ internal partial class MockDescriptors
             return types;
         }
 
-        private ulong AddProfControlBlock()
+        private ulong AddProfControlBlock(bool rejitOnAttachEnabled)
         {
             Target.TypeInfo info = Types[DataType.ProfControlBlock];
             MockMemorySpace.HeapFragment fragment = _rejitAllocator.Allocate((ulong)Types[DataType.ProfControlBlock].Size, "ProfControlBlock");
             Builder.AddHeapFragment(fragment);
             Span<byte> pcb = Builder.BorrowAddressRange(fragment.Address, fragment.Data.Length);
             Builder.TargetTestHelpers.Write(pcb.Slice(info.Fields[nameof(Data.ProfControlBlock.GlobalEventMask)].Offset, sizeof(ulong)), 0ul);
+            Builder.TargetTestHelpers.Write(pcb.Slice(info.Fields[nameof(Data.ProfControlBlock.RejitOnAttachEnabled)].Offset, sizeof(byte)), rejitOnAttachEnabled ? (byte)1 : (byte)0);
             return fragment.Address;
         }
     }
