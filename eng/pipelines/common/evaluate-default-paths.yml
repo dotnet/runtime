@@ -228,6 +228,7 @@ jobs:
       - eng/download-wasi-sdk.ps1
       - eng/testing/scenarios/BuildWasiAppsJobsList.txt
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - eng/testing/scenarios/BuildWasmAppsJobsListCLR.txt
       - eng/testing/tests.browser.targets
       - eng/testing/tests.was*.targets
       - src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
