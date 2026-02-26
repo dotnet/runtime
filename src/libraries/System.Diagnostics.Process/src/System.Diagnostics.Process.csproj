@@ -266,6 +266,10 @@
              Link="Common\Interop\Unix\Interop.SysConf.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ForkAndExecProcess.cs"
              Link="Common\Interop\Unix\Interop.ForkAndExecProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SpawnProcess.cs"
+             Link="Common\Interop\Unix\Interop.SpawnProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pipe.cs"
+             Link="Common\Interop\Unix\Interop.Pipe.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetGroupList.cs"
              Link="Common\Interop\Unix\Interop.GetGroupList.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"

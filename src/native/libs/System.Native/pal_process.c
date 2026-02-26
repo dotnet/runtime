@@ -20,10 +20,11 @@
 #if HAVE_CRT_EXTERNS_H
 #include <crt_externs.h>
 #endif
-#if HAVE_PIPE2
 #include <fcntl.h>
-#endif
 #include <pthread.h>
+#include <poll.h>
+#include <time.h>
+#include <sys/time.h>
 
 #if HAVE_SCHED_SETAFFINITY || HAVE_SCHED_GETAFFINITY
 #include <sched.h>
@@ -37,6 +38,14 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
+#endif
+
+#if HAVE_SYS_EVENT_H
+#include <sys/event.h>
+#endif
+
+#if HAVE_POSIX_SPAWN
+#include <spawn.h>
 #endif
 
 #include <minipal/getexepath.h>
@@ -901,4 +910,500 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
 char* SystemNative_GetProcessPath(void)
 {
     return minipal_getexepath();
+}
+
+// Map managed PosixSignal enum values to native signal numbers
+static int map_managed_signal_to_native(int managed_signal)
+{
+    switch (managed_signal)
+    {
+        case -1: return SIGHUP;
+        case -2: return SIGINT;
+        case -3: return SIGQUIT;
+        case -4: return SIGTERM;
+        case -5: return SIGCHLD;
+        case -6: return SIGCONT;
+        case -7: return SIGWINCH;
+        case -8: return SIGTTIN;
+        case -9: return SIGTTOU;
+        case -10: return SIGTSTP;
+        case -11: return SIGKILL;
+        case -12: return SIGSTOP;
+        default: return 0;
+    }
+}
+
+static int map_native_signal_to_managed(int native_signal)
+{
+    switch (native_signal)
+    {
+        case SIGHUP: return -1;
+        case SIGINT: return -2;
+        case SIGQUIT: return -3;
+        case SIGTERM: return -4;
+        case SIGCHLD: return -5;
+        case SIGCONT: return -6;
+        case SIGWINCH: return -7;
+        case SIGTTIN: return -8;
+        case SIGTTOU: return -9;
+        case SIGTSTP: return -10;
+        case SIGKILL: return -11;
+        case SIGSTOP: return -12;
+        default: return 0;
+    }
+}
+
+int32_t SystemNative_SpawnProcess(
+    const char* path,
+    char* const argv[],
+    char* const envp[],
+    int32_t stdin_fd,
+    int32_t stdout_fd,
+    int32_t stderr_fd,
+    const char* working_dir,
+    int32_t* out_pid,
+    int32_t* out_pidfd,
+    int32_t kill_on_parent_death,
+    int32_t create_suspended,
+    int32_t create_new_process_group,
+    int32_t detached,
+    const int32_t* inherited_handles,
+    int32_t inherited_handles_count)
+{
+#if HAVE_POSIX_SPAWN && HAVE_POSIX_SPAWN_CLOEXEC_DEFAULT && HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDINHERIT_NP
+    // ========== POSIX_SPAWN PATH (macOS) ==========
+
+#if !HAVE_POSIX_SPAWN_START_SUSPENDED
+    if (create_suspended)
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
+#ifndef POSIX_SPAWN_SETSID
+    if (detached)
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
+    pid_t child_pid;
+    posix_spawn_file_actions_t file_actions;
+    posix_spawnattr_t attr;
+    int result;
+
+    if ((result = posix_spawnattr_init(&attr)) != 0)
+    {
+        errno = result;
+        return -1;
+    }
+
+    short flags = POSIX_SPAWN_CLOEXEC_DEFAULT | POSIX_SPAWN_SETSIGDEF;
+#if HAVE_POSIX_SPAWN_START_SUSPENDED
+    if (create_suspended)
+    {
+        flags |= POSIX_SPAWN_START_SUSPENDED;
+    }
+#endif
+    if (detached)
+    {
+#ifdef POSIX_SPAWN_SETSID
+        flags |= POSIX_SPAWN_SETSID;
+#endif
+    }
+    if (create_new_process_group)
+    {
+        flags |= POSIX_SPAWN_SETPGROUP;
+    }
+    if ((result = posix_spawnattr_setflags(&attr, flags)) != 0)
+    {
+        int saved_errno = result;
+        posix_spawnattr_destroy(&attr);
+        errno = saved_errno;
+        return -1;
+    }
+
+    if (create_new_process_group)
+    {
+        if ((result = posix_spawnattr_setpgroup(&attr, 0)) != 0)
+        {
+            int saved_errno = result;
+            posix_spawnattr_destroy(&attr);
+            errno = saved_errno;
+            return -1;
+        }
+    }
+
+    // Reset all signal handlers to default
+    sigset_t all_signals;
+    sigfillset(&all_signals);
+    if ((result = posix_spawnattr_setsigdefault(&attr, &all_signals)) != 0)
+    {
+        int saved_errno = result;
+        posix_spawnattr_destroy(&attr);
+        errno = saved_errno;
+        return -1;
+    }
+
+    if ((result = posix_spawn_file_actions_init(&file_actions)) != 0)
+    {
+        int saved_errno = result;
+        posix_spawnattr_destroy(&attr);
+        errno = saved_errno;
+        return -1;
+    }
+
+    // Redirect stdin/stdout/stderr
+    if ((result = posix_spawn_file_actions_adddup2(&file_actions, stdin_fd, 0)) != 0
+        || (result = posix_spawn_file_actions_adddup2(&file_actions, stdout_fd, 1)) != 0
+        || (result = posix_spawn_file_actions_adddup2(&file_actions, stderr_fd, 2)) != 0)
+    {
+        int saved_errno = result;
+        posix_spawn_file_actions_destroy(&file_actions);
+        posix_spawnattr_destroy(&attr);
+        errno = saved_errno;
+        return -1;
+    }
+
+    // Add user-provided inherited handles
+    if (inherited_handles != NULL && inherited_handles_count > 0)
+    {
+        for (int i = 0; i < inherited_handles_count; i++)
+        {
+            int fd = inherited_handles[i];
+            if (fd != 0 && fd != 1 && fd != 2)
+            {
+                if ((result = posix_spawn_file_actions_addinherit_np(&file_actions, fd)) != 0)
+                {
+                    int saved_errno = result;
+                    posix_spawn_file_actions_destroy(&file_actions);
+                    posix_spawnattr_destroy(&attr);
+                    errno = saved_errno;
+                    return -1;
+                }
+            }
+        }
+    }
+
+    // Change working directory if specified
+    if (working_dir != NULL)
+    {
+#if HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
+        if ((result = posix_spawn_file_actions_addchdir_np(&file_actions, working_dir)) != 0)
+        {
+            int saved_errno = result;
+            posix_spawn_file_actions_destroy(&file_actions);
+            posix_spawnattr_destroy(&attr);
+            errno = saved_errno;
+            return -1;
+        }
+#else
+        posix_spawn_file_actions_destroy(&file_actions);
+        posix_spawnattr_destroy(&attr);
+        errno = ENOTSUP;
+        return -1;
+#endif
+    }
+
+    // Spawn the process
+    // If envp is NULL, use the current environment
+    char* const* env;
+    if (envp != NULL)
+    {
+        env = envp;
+    }
+    else
+    {
+#if HAVE_CRT_EXTERNS_H
+        env = *_NSGetEnviron();
+#else
+        extern char **environ;
+        env = environ;
+#endif
+    }
+    result = posix_spawn(&child_pid, path, &file_actions, &attr, argv, env);
+
+    posix_spawn_file_actions_destroy(&file_actions);
+    posix_spawnattr_destroy(&attr);
+
+    if (result != 0)
+    {
+        errno = result;
+        return -1;
+    }
+
+    // kill_on_parent_death is not supported with posix_spawn on macOS
+    (void)kill_on_parent_death;
+
+    if (out_pid != NULL)
+    {
+        *out_pid = child_pid;
+    }
+    if (out_pidfd != NULL)
+    {
+        *out_pidfd = -1; // pidfd not supported on macOS
+    }
+    return 0;
+#else
+    // posix_spawn with required features not available
+    (void)path;
+    (void)argv;
+    (void)envp;
+    (void)stdin_fd;
+    (void)stdout_fd;
+    (void)stderr_fd;
+    (void)working_dir;
+    (void)out_pid;
+    (void)out_pidfd;
+    (void)kill_on_parent_death;
+    (void)create_suspended;
+    (void)create_new_process_group;
+    (void)detached;
+    (void)inherited_handles;
+    (void)inherited_handles_count;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+int32_t SystemNative_SendSignal(int32_t pidfd, int32_t pid, int32_t managed_signal)
+{
+    int native_signal = map_managed_signal_to_native(managed_signal);
+    if (native_signal == 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    (void)pidfd;
+    return kill(pid, native_signal);
+}
+
+static int map_wait_status(int status, int32_t* out_exitCode, int32_t* out_signal)
+{
+    if (WIFEXITED(status))
+    {
+        *out_exitCode = WEXITSTATUS(status);
+        *out_signal = 0;
+        return 0;
+    }
+    else if (WIFSIGNALED(status))
+    {
+        int sig = WTERMSIG(status);
+        *out_exitCode = 128 + sig;
+        *out_signal = map_native_signal_to_managed(sig);
+        return 0;
+    }
+    return -1;
+}
+
+int32_t SystemNative_TryGetExitCode(int32_t pidfd, int32_t pid, int32_t* out_exitCode, int32_t* out_signal)
+{
+    (void)pidfd;
+    int status;
+    int ret;
+    while ((ret = waitpid(pid, &status, WNOHANG)) < 0 && errno == EINTR);
+
+    if (ret > 0)
+    {
+        return map_wait_status(status, out_exitCode, out_signal);
+    }
+    return -1;
+}
+
+int32_t SystemNative_WaitForExitAndReap(int32_t pidfd, int32_t pid, int32_t* out_exitCode, int32_t* out_signal)
+{
+    (void)pidfd;
+    int status;
+    int ret;
+    while ((ret = waitpid(pid, &status, 0)) < 0 && errno == EINTR);
+
+    if (ret != -1)
+    {
+        return map_wait_status(status, out_exitCode, out_signal);
+    }
+    return -1;
+}
+
+#if HAVE_KQUEUE
+static int create_kqueue_cloexec(void)
+{
+    int queue = kqueue();
+    if (queue == -1)
+    {
+        return -1;
+    }
+
+    if (fcntl(queue, F_SETFD, FD_CLOEXEC) == -1)
+    {
+        int saved_errno = errno;
+        close(queue);
+        errno = saved_errno;
+        return -1;
+    }
+
+    return queue;
+}
+#endif
+
+int32_t SystemNative_TryWaitForExitCancellable(int32_t pidfd, int32_t pid, int32_t cancelPipeFd, int32_t* out_exitCode, int32_t* out_signal)
+{
+    int ret;
+#if HAVE_KQUEUE
+    int queue = create_kqueue_cloexec();
+    if (queue == -1)
+    {
+        return -1;
+    }
+
+    struct kevent change_list[2];
+    memset(change_list, 0, sizeof(change_list));
+
+    change_list[0].ident = (uintptr_t)pid;
+    change_list[0].filter = EVFILT_PROC;
+    change_list[0].fflags = NOTE_EXIT;
+    change_list[0].flags = EV_ADD | EV_CLEAR;
+
+    change_list[1].ident = (uintptr_t)cancelPipeFd;
+    change_list[1].filter = EVFILT_READ;
+    change_list[1].flags = EV_ADD | EV_CLEAR;
+
+    struct kevent event_list;
+    memset(&event_list, 0, sizeof(event_list));
+
+    while ((ret = kevent(queue, change_list, 2, &event_list, 1, NULL)) < 0 && errno == EINTR);
+
+    if (ret < 0)
+    {
+        int saved_errno = errno;
+        close(queue);
+
+        if (saved_errno == ESRCH && SystemNative_TryGetExitCode(pidfd, pid, out_exitCode, out_signal) != -1)
+        {
+            return 0;
+        }
+        errno = saved_errno;
+        return -1;
+    }
+
+    close(queue);
+
+    if (event_list.filter == EVFILT_READ && event_list.ident == (uintptr_t)cancelPipeFd)
+    {
+        return 1; // Cancellation requested
+    }
+#else
+    (void)pidfd;
+    (void)pid;
+    (void)cancelPipeFd;
+    (void)out_exitCode;
+    (void)out_signal;
+    errno = ENOTSUP;
+    return -1;
+#endif
+
+    return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
+}
+
+int32_t SystemNative_TryWaitForExit(int32_t pidfd, int32_t pid, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal)
+{
+    int ret;
+#if HAVE_KQUEUE
+    int queue = create_kqueue_cloexec();
+    if (queue == -1)
+    {
+        return -1;
+    }
+
+    struct kevent change_list;
+    memset(&change_list, 0, sizeof(change_list));
+    change_list.ident = (uintptr_t)pid;
+    change_list.filter = EVFILT_PROC;
+    change_list.fflags = NOTE_EXIT;
+    change_list.flags = EV_ADD | EV_CLEAR;
+
+    struct kevent event_list;
+    memset(&event_list, 0, sizeof(event_list));
+
+    struct timespec timeout;
+    timeout.tv_sec = timeout_ms / 1000;
+    timeout.tv_nsec = (timeout_ms % 1000) * 1000 * 1000;
+
+    while ((ret = kevent(queue, &change_list, 1, &event_list, 1, &timeout)) < 0 && errno == EINTR);
+
+    if (ret < 0)
+    {
+        int saved_errno = errno;
+        close(queue);
+
+        if (saved_errno == ESRCH && SystemNative_TryGetExitCode(pidfd, pid, out_exitCode, out_signal) != -1)
+        {
+            return 0;
+        }
+        errno = saved_errno;
+        return -1;
+    }
+
+    close(queue);
+#else
+    (void)pidfd;
+    (void)pid;
+    (void)timeout_ms;
+    (void)out_exitCode;
+    (void)out_signal;
+    errno = ENOTSUP;
+    return -1;
+#endif
+
+    if (ret == 0)
+    {
+        return 1; // Timeout
+    }
+
+    return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
+}
+
+int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal, int32_t* out_timeout)
+{
+    *out_timeout = 0;
+    int ret = SystemNative_TryWaitForExit(pidfd, pid, timeout_ms, out_exitCode, out_signal);
+    if (ret != 1)
+    {
+        return ret; // Either process exited (0) or error occurred (-1)
+    }
+
+    *out_timeout = 1;
+    ret = SystemNative_SendSignal(pidfd, pid, map_native_signal_to_managed(SIGKILL));
+
+    if (ret == -1)
+    {
+        if (errno == ESRCH)
+        {
+            *out_timeout = 0;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
+}
+
+int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd)
+{
+    *out_pidfd = -1;
+
+    siginfo_t info;
+    memset(&info, 0, sizeof(info));
+    int waitid_ret = waitid(P_PID, (id_t)pid, &info, WNOHANG | WNOWAIT | WEXITED | WSTOPPED | WCONTINUED);
+
+    if (waitid_ret != 0)
+    {
+        return -1;
+    }
+
+    return 0;
 }

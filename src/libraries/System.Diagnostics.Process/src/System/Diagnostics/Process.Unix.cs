@@ -607,22 +607,7 @@ namespace System.Diagnostics
         /// <summary>Converts the environment variables information from a ProcessStartInfo into an envp array.</summary>
         /// <param name="psi">The ProcessStartInfo.</param>
         /// <returns>The envp array.</returns>
-        private static string[] CreateEnvp(ProcessStartInfo psi)
-        {
-            var envp = new string[psi.Environment.Count];
-            int index = 0;
-            foreach (KeyValuePair<string, string?> pair in psi.Environment)
-            {
-                // Ignore null values for consistency with Environment.SetEnvironmentVariable
-                if (pair.Value != null)
-                {
-                    envp[index++] = pair.Key + "=" + pair.Value;
-                }
-            }
-            // Resize the array in case we skipped some entries
-            Array.Resize(ref envp, index);
-            return envp;
-        }
+        private static string[] CreateEnvp(ProcessStartInfo psi) => ProcessUtils.CreateEnvp(psi.Environment);
 
         private static string? ResolveExecutableForShellExecute(string filename, string? workingDirectory)
         {

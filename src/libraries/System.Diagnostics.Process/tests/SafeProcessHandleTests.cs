@@ -11,17 +11,27 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.Windows)]
     public partial class SafeProcessHandleTests
     {
-        private static ProcessStartOptions CreateTenSecondSleep() => PlatformDetection.IsWindowsNanoServer
-            ? new("ping") { Arguments = { "127.0.0.1", "-n", "11" } }
-            : new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
+        private static ProcessStartOptions CreateTenSecondSleep()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return PlatformDetection.IsWindowsNanoServer
+                    ? new("ping") { Arguments = { "127.0.0.1", "-n", "11" } }
+                    : new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
+            }
+
+            return new("sleep") { Arguments = { "60" } };
+        }
 
         [Fact]
         public static void Start_WithNoArguments_Succeeds()
         {
-            ProcessStartOptions options = new("hostname");
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("hostname")
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -41,7 +51,14 @@ namespace System.Diagnostics.Tests
 
             ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(5));
             Assert.False(exitStatus.Canceled);
-            Assert.Equal(-1, exitStatus.ExitCode);
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.Equal(-1, exitStatus.ExitCode);
+            }
+            else
+            {
+                Assert.NotEqual(0, exitStatus.ExitCode);
+            }
         }
 
         [Fact]
@@ -77,7 +94,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void Kill_OnAlreadyExitedProcess_ReturnsFalse()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -104,7 +123,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void WaitForExit_WaitsIndefinitelyForProcessToComplete()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -118,7 +139,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void TryWaitForExit_ReturnsTrueWhenProcessExitsBeforeTimeout()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -156,7 +179,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void WaitForExitOrKillOnTimeout_DoesNotKillWhenProcessExitsBeforeTimeout()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -179,7 +204,10 @@ namespace System.Diagnostics.Tests
             Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(270), TimeSpan.FromSeconds(2));
             Assert.True(exitStatus.Canceled, "Process should be marked as canceled when killed due to timeout");
             Assert.NotEqual(0, exitStatus.ExitCode);
-            Assert.Equal(-1, exitStatus.ExitCode);
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.Equal(-1, exitStatus.ExitCode);
+            }
         }
 
         [Fact]
@@ -226,7 +254,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static async Task WaitForExitAsync_CompletesNormallyWhenProcessExits()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -241,7 +271,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static async Task WaitForExitAsync_WithoutCancellationToken_CompletesNormally()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -255,7 +287,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static async Task WaitForExitOrKillOnCancellationAsync_CompletesNormallyWhenProcessExits()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -270,7 +304,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void KillOnParentExit_CanBeSetToTrue()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" }, KillOnParentExit = true };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" }, KillOnParentExit = true }
+                : new("echo") { Arguments = { "test" }, KillOnParentExit = true };
 
             Assert.True(options.KillOnParentExit);
 
@@ -283,7 +319,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void KillOnParentExit_DefaultsToFalse()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
             Assert.False(options.KillOnParentExit);
         }
 

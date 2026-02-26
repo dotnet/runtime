@@ -144,6 +144,12 @@
 #cmakedefine01 HAVE_MAKEDEV_SYSMACROSH
 #cmakedefine01 HAVE_GETGRGID_R
 #cmakedefine01 HAVE_TERMIOS2
+#cmakedefine01 HAVE_SYS_EVENT_H
+#cmakedefine01 HAVE_POSIX_SPAWN
+#cmakedefine01 HAVE_POSIX_SPAWN_CLOEXEC_DEFAULT
+#cmakedefine01 HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
+#cmakedefine01 HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDINHERIT_NP
+#cmakedefine01 HAVE_POSIX_SPAWN_START_SUSPENDED
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5
