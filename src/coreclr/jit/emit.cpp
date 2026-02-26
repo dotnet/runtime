@@ -1733,6 +1733,10 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 
         info->idNum  = emitInsCount;
         info->idSize = sz;
+
+#if defined(TARGET_WASM)
+        info->idVarRefOffs = BAD_VAR_NUM;
+#endif
         id->idDebugOnlyInfo(info);
     }
 
