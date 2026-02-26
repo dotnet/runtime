@@ -285,11 +285,11 @@ void EHblkDsc::DispEntry(unsigned XTnum)
     ////////////// Handler region
     //////////////
 
-    if (ebdHndBeg->GetCatchTyp() == BBCT_FINALLY)
+    if (ebdHndBeg->CatchTypIs(BBCT_FINALLY))
     {
         printf("Finally");
     }
-    else if (ebdHndBeg->GetCatchTyp() == BBCT_FAULT)
+    else if (ebdHndBeg->CatchTypIs(BBCT_FAULT))
     {
         printf("Fault  ");
     }
@@ -3611,7 +3611,7 @@ void Compiler::fgVerifyHandlerTab()
 
         if (HBtab->HasFilter())
         {
-            assert(HBtab->ebdFilter->GetCatchTyp() == BBCT_FILTER);
+            assert(HBtab->ebdFilter->CatchTypIs(BBCT_FILTER));
             assert(!blockHndBegSet[HBtab->ebdFilter->bbNum]);
             blockHndBegSet[HBtab->ebdFilter->bbNum] = true;
         }
@@ -3620,21 +3620,19 @@ void Compiler::fgVerifyHandlerTab()
 
         if (HBtab->HasFilter())
         {
-            assert(HBtab->ebdHndBeg->GetCatchTyp() == BBCT_FILTER_HANDLER);
+            assert(HBtab->ebdHndBeg->CatchTypIs(BBCT_FILTER_HANDLER));
         }
         else if (HBtab->HasCatchHandler())
         {
-            assert((HBtab->ebdHndBeg->GetCatchTyp() != BBCT_NONE) && (HBtab->ebdHndBeg->GetCatchTyp() != BBCT_FAULT) &&
-                   (HBtab->ebdHndBeg->GetCatchTyp() != BBCT_FINALLY) && (HBtab->ebdHndBeg->GetCatchTyp() != BBCT_FILTER) &&
-                   (HBtab->ebdHndBeg->GetCatchTyp() != BBCT_FILTER_HANDLER));
+            assert(!HBtab->ebdHndBeg->CatchTypIs(BBCT_NONE, BBCT_FAULT, BBCT_FINALLY, BBCT_FILTER, BBCT_FILTER_HANDLER));
         }
         else if (HBtab->HasFaultHandler())
         {
-            assert(HBtab->ebdHndBeg->GetCatchTyp() == BBCT_FAULT);
+            assert(HBtab->ebdHndBeg->CatchTypIs(BBCT_FAULT));
         }
         else if (HBtab->HasFinallyHandler())
         {
-            assert(HBtab->ebdHndBeg->GetCatchTyp() == BBCT_FINALLY);
+            assert(HBtab->ebdHndBeg->CatchTypIs(BBCT_FINALLY));
         }
     }
 
@@ -3718,7 +3716,7 @@ void Compiler::fgVerifyHandlerTab()
         // already have bbCatchTyp set properly.
         if (!blockHndBegSet[block->bbNum])
         {
-            assert(block->GetCatchTyp() == BBCT_NONE);
+            assert(block->CatchTypIs(BBCT_NONE));
 
             // If this block wasn't marked as an EH handler 'begin' block,
             // it shouldn't be the beginning of a funclet.

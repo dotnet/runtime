@@ -10883,7 +10883,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // We do need to allocate the outgoing argument space, in case there are calls here.
 
     regMaskTP maskArgRegsLiveIn;
-    if ((block->GetCatchTyp() == BBCT_FINALLY) || (block->GetCatchTyp() == BBCT_FAULT))
+    if (block->CatchTypIs(BBCT_FINALLY, BBCT_FAULT))
     {
         maskArgRegsLiveIn = RBM_ARG_0;
     }

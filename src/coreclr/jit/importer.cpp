@@ -1918,7 +1918,7 @@ void Compiler::impSpillSpecialSideEff()
 {
     // Only exception objects need to be carefully handled
 
-    if (!compCurBB->GetCatchTyp())
+    if (compCurBB->CatchTypIs(BBCT_NONE))
     {
         return;
     }
@@ -6269,7 +6269,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     var_types callTyp    = TYP_COUNT;
     OPCODE    prevOpcode = CEE_ILLEGAL;
 
-    if (block->GetCatchTyp())
+    if (!block->CatchTypIs(BBCT_NONE))
     {
         if (info.compStmtOffsetsImplicit & ICorDebugInfo::CALL_SITE_BOUNDARIES)
         {

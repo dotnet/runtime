@@ -1465,6 +1465,17 @@ public:
         return bbCatchTyp;
     }
 
+    bool CatchTypIs(unsigned catchTyp) const
+    {
+        return bbCatchTyp == catchTyp;
+    }
+
+    template <typename... T>
+    bool CatchTypIs(unsigned catchTyp, T... rest) const
+    {
+        return CatchTypIs(catchTyp) || CatchTypIs(rest...);
+    }
+
     void SetCatchTyp(unsigned catchTyp)
     {
         bbCatchTyp = catchTyp;
