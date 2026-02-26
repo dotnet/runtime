@@ -7532,7 +7532,7 @@ void DacHandleWalker::WalkHandles()
         if (g_gcDacGlobals->minor_version_number >= 8)
             max_slots = *g_gcDacGlobals->g_totalCpuCount;
         else
-            max_slots = GcHeapCount();
+            max_slots = GCHeapCount();
     }
 #endif // FEATURE_SVR_GC
 
