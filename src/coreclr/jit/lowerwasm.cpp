@@ -360,16 +360,6 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     {
         return;
     }
-
-    // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
-    // LEA doesn't overflow. It will involve creating a new frontend node to represent "nuw" (offset) addition.
-    GenTree* addr = indirNode->Addr();
-    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
-    {
-        // These nodes go into an addr mode:
-        // - GT_LCL_ADDR is a stack addr mode.
-        MakeSrcContained(indirNode, addr);
-    }
 }
 
 //------------------------------------------------------------------------
