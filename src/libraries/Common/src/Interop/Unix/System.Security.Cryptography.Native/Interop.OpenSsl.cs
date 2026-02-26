@@ -346,7 +346,7 @@ internal static partial class Interop
         }
 
         // This essentially wraps SSL* SSL_new()
-        internal static SafeSslHandle AllocateSslHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        internal static SafeSslHandle AllocateSslHandle(SslAuthenticationOptions sslAuthenticationOptions, int socketFd = -1)
         {
             SafeSslHandle? sslHandle = null;
             bool cacheSslContext = sslAuthenticationOptions.AllowTlsResume && !SslStream.DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
@@ -391,7 +391,9 @@ internal static partial class Interop
             GCHandle alpnHandle = default;
             try
             {
-                sslHandle = SafeSslHandle.Create(sslCtxHandle, sslAuthenticationOptions.IsServer);
+                sslHandle = socketFd >= 0
+                    ? SafeSslHandle.CreateForKtls(sslCtxHandle, sslAuthenticationOptions.IsServer, socketFd)
+                    : SafeSslHandle.Create(sslCtxHandle, sslAuthenticationOptions.IsServer);
                 Debug.Assert(sslHandle != null, "Expected non-null return value from SafeSslHandle.Create");
                 if (sslHandle.IsInvalid)
                 {
@@ -505,131 +507,6 @@ internal static partial class Interop
 
                         byte[]? ocspResponse = sslAuthenticationOptions.CertificateContext.GetOcspResponseNoWaiting();
 
-                        if (ocspResponse != null)
-                        {
-                            Ssl.SslStapleOcsp(sslHandle, ocspResponse);
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                if (alpnHandle.IsAllocated)
-                {
-                    alpnHandle.Free();
-                }
-
-                throw;
-            }
-
-            return sslHandle;
-        }
-
-        internal static SafeSslHandle AllocateSslHandleForKtls(SslAuthenticationOptions sslAuthenticationOptions, int socketFd)
-        {
-            bool cacheSslContext = sslAuthenticationOptions.AllowTlsResume && !SslStream.DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
-
-            if (cacheSslContext)
-            {
-                if (sslAuthenticationOptions.IsClient)
-                {
-                    if (!Interop.Ssl.Capabilities.Tls13Supported ||
-                       string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ||
-                       IPAddress.IsValid(sslAuthenticationOptions.TargetHost) ||
-                       (sslAuthenticationOptions.CertificateContext == null && sslAuthenticationOptions.CertSelectionDelegate != null))
-                    {
-                        cacheSslContext = false;
-                    }
-                }
-                else
-                {
-                    Debug.Assert(sslAuthenticationOptions.CertificateContext != null);
-                    if (sslAuthenticationOptions.CertificateContext == null)
-                    {
-                        cacheSslContext = false;
-                    }
-                }
-            }
-
-            using SafeSslContextHandle sslCtxHandle = GetOrCreateSslContextHandle(sslAuthenticationOptions, cacheSslContext);
-
-            GCHandle alpnHandle = default;
-            SafeSslHandle sslHandle;
-            try
-            {
-                sslHandle = SafeSslHandle.CreateForKtls(sslCtxHandle, sslAuthenticationOptions.IsServer, socketFd);
-                Debug.Assert(sslHandle != null, "Expected non-null return value from SafeSslHandle.CreateForKtls");
-                if (sslHandle.IsInvalid)
-                {
-                    sslHandle.Dispose();
-                    throw CreateSslException(SR.net_allocate_ssl_context_failed);
-                }
-
-                if (cacheSslContext)
-                {
-                    bool success = sslCtxHandle.TryAddRentCount();
-                    Debug.Assert(success);
-                    sslHandle.SslContextHandle = sslCtxHandle;
-                }
-
-                // Configuration is the same as for normal SSL handles
-                if (!sslAuthenticationOptions.AllowRsaPssPadding || !sslAuthenticationOptions.AllowRsaPkcs1Padding)
-                {
-                    ConfigureSignatureAlgorithms(sslHandle, sslAuthenticationOptions.AllowRsaPssPadding, sslAuthenticationOptions.AllowRsaPkcs1Padding);
-                }
-
-                if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
-                {
-                    if (sslAuthenticationOptions.IsServer)
-                    {
-                        Debug.Assert(Interop.Ssl.SslGetData(sslHandle) == IntPtr.Zero);
-                        alpnHandle = GCHandle.Alloc(sslAuthenticationOptions.ApplicationProtocols);
-                        Interop.Ssl.SslSetData(sslHandle, GCHandle.ToIntPtr(alpnHandle));
-                        sslHandle.AlpnHandle = alpnHandle;
-                    }
-                    else
-                    {
-                        if (Interop.Ssl.SslSetAlpnProtos(sslHandle, sslAuthenticationOptions.ApplicationProtocols) != 0)
-                        {
-                            throw CreateSslException(SR.net_alpn_config_failed);
-                        }
-                    }
-                }
-
-                if (sslAuthenticationOptions.IsClient)
-                {
-                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !IPAddress.IsValid(sslAuthenticationOptions.TargetHost))
-                    {
-                        if (!Ssl.SslSetTlsExtHostName(sslHandle, sslAuthenticationOptions.TargetHost))
-                        {
-                            Crypto.ErrClearError();
-                        }
-
-                        if (cacheSslContext)
-                        {
-                            sslCtxHandle.TrySetSession(sslHandle, sslAuthenticationOptions.TargetHost);
-                        }
-                    }
-
-                    if (sslAuthenticationOptions.CertificateContext != null ||
-                        sslAuthenticationOptions.ClientCertificates?.Count > 0 ||
-                        sslAuthenticationOptions.CertSelectionDelegate != null)
-                    {
-                        Ssl.SslSetPostHandshakeAuth(sslHandle, 1);
-                    }
-
-                    Ssl.SslSetClientCertCallback(sslHandle, 1);
-                }
-                else
-                {
-                    if (sslAuthenticationOptions.RemoteCertRequired)
-                    {
-                        Ssl.SslSetVerifyPeer(sslHandle);
-                    }
-
-                    if (sslAuthenticationOptions.CertificateContext != null)
-                    {
-                        byte[]? ocspResponse = sslAuthenticationOptions.CertificateContext.GetOcspResponseNoWaiting();
                         if (ocspResponse != null)
                         {
                             Ssl.SslStapleOcsp(sslHandle, ocspResponse);

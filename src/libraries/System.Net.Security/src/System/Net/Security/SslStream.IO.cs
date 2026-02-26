@@ -480,7 +480,7 @@ namespace System.Net.Security
             where TIOAdapter : IReadWriteAdapter
         {
             int fd = (int)socket.Handle;
-            SafeSslHandle sslHandle = Interop.OpenSsl.AllocateSslHandleForKtls(_sslAuthenticationOptions, fd);
+            SafeSslHandle sslHandle = Interop.OpenSsl.AllocateSslHandle(_sslAuthenticationOptions, fd);
             _securityContext = sslHandle;
 
             // Non-blocking handshake loop: SSL_do_handshake reads/writes the socket directly.
