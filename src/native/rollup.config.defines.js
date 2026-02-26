@@ -16,11 +16,12 @@ if (process.env.ProductVersion === undefined) {
 }
 
 export const configuration = process.env.Configuration !== "Release" && process.env.Configuration !== "RELEASE" ? "Debug" : "Release";
+export const runtimeFlavor = process.env.RuntimeFlavor || "CoreCLR";
 export const productVersion = process.env.ProductVersion;
 export const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
-export const staticLibDestination = process.env.StaticLibDestination || "../../artifacts/bin/browser-wasm.Debug/corehost";
+export const staticLibDestination = process.env.StaticLibDestination || `../../artifacts/obj/native/net${productVersion}-browser-${configuration}-wasm/lib`;
 
-console.log(`Rollup configuration: Configuration=${configuration}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
+console.log(`Rollup configuration: Configuration=${configuration}, RuntimeFlavor=${runtimeFlavor}, ProductVersion=${productVersion}, ContinuousIntegrationBuild=${isContinuousIntegrationBuild}`);
 
 export const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n//! This is generated file, see src/native/rollup.config.js\n\n";
 export const banner_dts = banner + "//! This is not considered public API with backward compatibility guarantees. \n";
@@ -36,7 +37,7 @@ export const reserved = [
 
 export const externalDependencies = ["module", "process", "perf_hooks", "node:crypto"];
 export const artifactsObjDir = "../../artifacts/obj";
-export const isDebug = process.env.Configuration !== "Release" && !isContinuousIntegrationBuild;
+export const isDebug = process.env.Configuration !== "Release";
 
 export let gitHash;
 try {
@@ -49,6 +50,7 @@ try {
 export const envConstants = {
     productVersion,
     configuration,
+    runtimeFlavor,
     gitHash,
     isContinuousIntegrationBuild,
 };

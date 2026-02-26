@@ -10,6 +10,9 @@
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="fieldlayouttests.cs" />
     <Compile Include="../../../coreclr/tools/aot/ILCompiler.TypeSystem.Tests/CoreTestAssembly/InstanceFieldLayout.cs" />
   </ItemGroup>

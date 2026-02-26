@@ -3,12 +3,14 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using Xunit;
+using TestLibrary;
 
 public class KeepAliveBoxFieldsTest
 {
     private static string _failedTest;
     private static string _failedFieldName;
 
+    [ActiveIssue("Relies on precise finalization and thus precise GC", TestRuntimes.Mono)]
     [Fact]
     public static void TestEntryPoint()
     {

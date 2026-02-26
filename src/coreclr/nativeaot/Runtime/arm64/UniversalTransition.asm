@@ -89,7 +89,7 @@
     TEXTAREA
 
     MACRO
-        UNIVERSAL_TRANSITION $FunctionName
+        UNIVERSAL_TRANSITION $FunctionName, $ReturnResult
 
     NESTED_ENTRY Rhp$FunctionName
 
@@ -142,13 +142,20 @@
         ;; Restore FP and LR registers, and free the allocated stack block
         EPILOG_RESTORE_REG_PAIR   fp, lr, #STACK_SIZE!
 
+        IF $ReturnResult == 0
         ;; Tailcall to the target address.
         EPILOG_NOP br x12
+        ELSE
+        ;; Return target address
+        EPILOG_NOP mov x15, x12
+        ret
+        ENDIF
 
     NESTED_END Rhp$FunctionName
 
     MEND
 
-    UNIVERSAL_TRANSITION UniversalTransitionTailCall
+    UNIVERSAL_TRANSITION UniversalTransitionTailCall, 0
+    UNIVERSAL_TRANSITION UniversalTransitionReturnResult, 1
 
     END

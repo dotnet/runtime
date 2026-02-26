@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Runtime.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public sealed class ControlledExecutionTests
     {
         private volatile bool _readyForCancellation;

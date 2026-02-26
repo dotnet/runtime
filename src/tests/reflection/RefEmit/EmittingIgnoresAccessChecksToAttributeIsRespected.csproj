@@ -6,6 +6,9 @@
   <ItemGroup>
     <Compile Include="EmittingIgnoresAccessChecksToAttributeIsRespected.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="Dependency.csproj" />

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 using Xunit;
+using TestLibrary;
 
 public unsafe class Program
 {
@@ -164,6 +165,7 @@ public unsafe class Program
         }
     }
 
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

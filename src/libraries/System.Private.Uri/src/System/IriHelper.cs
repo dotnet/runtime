@@ -71,12 +71,8 @@ namespace System
 
         // IRI normalization for strings containing characters that are not allowed or
         // escaped characters that should be unescaped in the context of the specified Uri component.
-        internal static string EscapeUnescapeIri(ReadOnlySpan<char> span, bool isQuery)
+        public static void EscapeUnescapeIri(ref ValueStringBuilder dest, scoped ReadOnlySpan<char> span, bool isQuery)
         {
-            var dest = span.Length <= Uri.StackallocThreshold
-                ? new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold])
-                : new ValueStringBuilder(span.Length);
-
             Span<byte> maxUtf8EncodedSpan = stackalloc byte[4];
 
             for (int i = 0; (uint)i < (uint)span.Length; i++)
@@ -129,7 +125,7 @@ namespace System
 
                     char ch2 = '\0';
 
-                    if ((char.IsHighSurrogate(ch)) && (uint)(i + 1) < (uint)span.Length)
+                    if (char.IsHighSurrogate(ch) && (uint)(i + 1) < (uint)span.Length)
                     {
                         ch2 = span[i + 1];
                         isInIriUnicodeRange = CheckIriUnicodeRange(ch, ch2, out surrogatePair, isQuery);
@@ -179,8 +175,6 @@ namespace System
                 // ASCII, just copy the character
                 dest.Append(ch);
             }
-
-            return dest.ToString();
         }
     }
 }

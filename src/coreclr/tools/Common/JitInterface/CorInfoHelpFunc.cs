@@ -109,8 +109,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_FIELD_ACCESS_EXCEPTION,
         CORINFO_HELP_CLASS_ACCESS_EXCEPTION,
 
-        CORINFO_HELP_ENDCATCH,          // call back into the EE at the end of a catch block
-
         /* Synchronization */
 
         CORINFO_HELP_MON_ENTER,
@@ -171,6 +169,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
         CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
         CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT,
+        CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE,
         /* Debugger */
 
         CORINFO_HELP_DBG_IS_JUST_MY_CODE,    // Check if this is "JustMyCode" and needs to be stepped through.
@@ -264,6 +263,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
 
         CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
+        CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT,  // Resolve a non-generic interface method from this pointer and dispatch cell
 
         CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 

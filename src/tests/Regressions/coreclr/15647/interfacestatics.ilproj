@@ -4,6 +4,9 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Partial trimming works around https://github.com/dotnet/runtime/issues/122013 -->
     <TrimMode>partial</TrimMode>
+
+    <!-- https://github.com/dotnet/runtime/issues/34390 -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="interfacestatics.il" />

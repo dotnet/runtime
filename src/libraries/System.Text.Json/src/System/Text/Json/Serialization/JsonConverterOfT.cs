@@ -458,8 +458,11 @@ namespace System.Text.Json.Serialization
             {
                 // If not JsonDictionaryConverter<T> then we are JsonObject.
                 // Avoid a type reference to JsonObject and its converter to support trimming.
+                // The WriteExtensionDataValue virtual method is overridden by the JsonObject converter.
                 Debug.Assert(Type == typeof(Nodes.JsonObject));
-                return TryWrite(writer, value, options, ref state);
+                WriteExtensionDataValue(writer, value!, options);
+
+                return true;
             }
 
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
@@ -491,6 +494,19 @@ namespace System.Text.Json.Serialization
             state.Pop(success);
 
             return success;
+        }
+
+        /// <summary>
+        /// Used to support JsonObject as an extension property in a loosely-typed, trimmable manner.
+        /// </summary>
+        /// <remarks>
+        /// Writes the extension data contents without wrapping object braces.
+        /// </remarks>
+        internal virtual void WriteExtensionDataValue(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        {
+            Debug.Fail("Should not be reachable.");
+
+            throw new InvalidOperationException();
         }
 
         /// <inheritdoc/>

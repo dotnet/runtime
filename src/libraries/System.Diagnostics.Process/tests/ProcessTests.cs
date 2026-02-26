@@ -93,6 +93,10 @@ namespace System.Diagnostics.Tests
             {
                 foreach (PosixSignal signal in Enum.GetValues<PosixSignal>())
                 {
+                    if (signal == PosixSignal.SIGKILL)
+                    {
+                        continue; // SIGKILL cannot be caught or ignored
+                    }
                     yield return new object[] { signal };
                 }
                 // Test a few raw signals.
@@ -405,7 +409,7 @@ namespace System.Diagnostics.Tests
 
         private static bool IsNotAppSandbox => PlatformDetection.IsNotAppSandbox;
 
-        [ConditionalFact(nameof(UseShellExecuteExecuteOrderIsRunnablePlatform), nameof(IsNotAppSandbox))]
+        [ConditionalFact(typeof(ProcessTests), nameof(UseShellExecuteExecuteOrderIsRunnablePlatform), nameof(IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_ExecuteOrder()
         {
@@ -652,7 +656,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -700,7 +704,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD()) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 

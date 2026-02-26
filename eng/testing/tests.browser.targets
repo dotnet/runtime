@@ -12,7 +12,6 @@
     <DisableBuildCompression>true</DisableBuildCompression>
     <PublishTrimmed>false</PublishTrimmed>
     <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
-    <WasmTestSupport Condition="'$(RuntimeFlavor)' == 'CoreCLR'">true</WasmTestSupport>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
 
     <ResolveWasmOutputsDependsOn>
@@ -53,9 +52,21 @@
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <WasmTestSupport>true</WasmTestSupport>
+    <WasmTestExitOnUnhandledError>true</WasmTestExitOnUnhandledError>
+    <WasmTestAppendElementOnExit>true</WasmTestAppendElementOnExit>
+    <WasmTestLogExitCode>true</WasmTestLogExitCode>
+  </PropertyGroup>
+
+  <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120248 (CoreCLR on wasm defaults) -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <WasmEnableWebcil>false</WasmEnableWebcil>
+  </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="$(MonoProjectRoot)browser\test-main.js" Link="wwwroot\test-main.js" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
+    <Content Include="$(MonoProjectRoot)browser\test-main.mjs" Link="wwwroot\test-main.mjs" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
     <Content Include="$(MonoProjectRoot)browser\test-index.html" Link="wwwroot\index.html" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
   </ItemGroup>
 
@@ -113,7 +124,7 @@
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
     <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
-    <!-- help unit test with PlatformDetection.IsThreadingSupported via IsBrowserThreadingSupported env variable -->
+    <!-- help unit test with PlatformDetection.IsMultithreadingSupported via IsBrowserThreadingSupported env variable -->
     <WasmXHarnessMonoArgs Condition="'$(WasmEnableThreads)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsBrowserThreadingSupported=true</WasmXHarnessMonoArgs>
     <WasmXHarnessMaxParallelThreads Condition="'$(WasmEnableThreads)' == 'true' and '$(WasmXHarnessMaxParallelThreads)' == ''">8</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>
@@ -317,7 +328,7 @@
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\browser\test-main.js</WasmMainJSPath>
+      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\browser\test-main.mjs</WasmMainJSPath>
       <WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</WasmMainJSFileName>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>

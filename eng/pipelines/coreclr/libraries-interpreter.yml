@@ -1,0 +1,42 @@
+trigger: none
+
+schedules:
+- cron: "0 13 * * 1,3,5"
+  displayName: Every Monday, Wednesday and Friday at 5:00 AM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          - osx_arm64
+          - linux_x64
+          helixQueueGroup: libraries
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            runInterpreter: true
+            timeoutInMinutes: 300
+            buildArgs: -s clr+libs+libs.tests -rc Checked -c $(_BuildConfig) /p:ArchiveTests=true
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  extraHelixArguments: /maxcpucount:10
+                  scenarios:
+                  - interpmode3

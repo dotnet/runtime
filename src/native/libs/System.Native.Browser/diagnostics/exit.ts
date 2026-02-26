@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { LoaderConfigInternal } from "./types";
-import { dotnetLogger, dotnetLoaderExports, dotnetApi, dotnetBrowserUtilsExports } from "./cross-module";
+import { dotnetLogger, dotnetLoaderExports, dotnetApi, dotnetRuntimeExports } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB } from "./per-module";
 import { teardownProxyConsole } from "./console-proxy";
-import { symbolicateStackTrace } from "./symbolicate";
 
 let loaderConfig: LoaderConfigInternal = null as any;
 export function registerExit() {
@@ -24,6 +23,9 @@ export function registerExit() {
 function onExit(exitCode: number, reason: any, silent: boolean): boolean {
     if (!loaderConfig) {
         return true;
+    }
+    if (exitCode === 0 && loaderConfig.interopCleanupOnExit) {
+        dotnetRuntimeExports.forceDisposeProxies(true, true);
     }
     uninstallUnhandledErrorHandler();
     if (loaderConfig.logExitCode) {
@@ -50,31 +52,21 @@ function onExit(exitCode: number, reason: any, silent: boolean): boolean {
     return true;
 }
 
-function logExitReason(exit_code: number, reason: any) {
-    if (exit_code !== 0 && reason) {
-        const exitStatus = isExitStatus(reason);
-        if (typeof reason === "string") {
-            dotnetLogger.error(reason);
+function logExitReason(exitCode: number, reason: any) {
+    if (exitCode !== 0 && reason) {
+        const hasExitStatus = typeof reason === "object" && reason.status !== undefined;
+        if (dotnetLoaderExports.normalizeException) {
+            reason = dotnetLoaderExports.normalizeException(reason);
         } else {
-            if (reason.stack === undefined && !exitStatus) {
-                reason.stack = new Error().stack + "";
-            }
-            const message = reason.message
-                ? symbolicateStackTrace(reason.message + "\n" + reason.stack)
-                : reason.toString();
-
-            if (exitStatus) {
-                dotnetLogger.debug(message);
-            } else {
-                dotnetLogger.error(message);
-            }
+            reason = reason + "";
+        }
+        const msg = "dotnet exited with: " + exitCode;
+        if (hasExitStatus) {
+            dotnetLogger.debug(msg, reason);
+        } else {
+            dotnetLogger.error(msg, reason);
         }
     }
-}
-
-function isExitStatus(reason: any): boolean {
-    const ExitStatus = dotnetBrowserUtilsExports.getExitStatus();
-    return ExitStatus && reason instanceof ExitStatus;
 }
 
 function logExitCode(exitCode: number): void {
@@ -133,11 +125,11 @@ function fatalHandler(event: any, reason: any, type: string) {
         }
         reason.stack = reason.stack + "";// string conversion (it could be getter)
         if (!reason.silent) {
-            dotnetLogger.error("Unhandled error:", reason);
+            dotnetLogger.error("Unhandled error: ", reason);
             dotnetApi.exit(1, reason);
         }
-    } catch (err) {
-        // no not re-throw from the fatal handler
+    } catch (error: any) {
+        // do not re-throw from the fatal handler
     }
 }
 
@@ -161,6 +153,6 @@ async function flushNodeStreams() {
         await Promise.race([Promise.all([stdoutFlushed, stderrFlushed]), timeout]);
         clearTimeout(timeoutId);
     } catch (err) {
-        dotnetLogger.error(`flushing std* streams failed: ${err}`);
+        dotnetLogger.error("flushing std* streams failed: ", err);
     }
 }

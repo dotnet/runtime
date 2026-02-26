@@ -9,12 +9,7 @@ class AllocHeap
 
     bool Init();
 
-    bool Init(uint8_t *    pbInitialMem,
-              uintptr_t cbInitialMemCommit,
-              uintptr_t cbInitialMemReserve,
-              bool       fShouldFreeInitialMem);
-
-    ~AllocHeap();
+    void Destroy();
 
     // If AllocHeap was created with a MemAccessMgr, pRWAccessHolder must be non-NULL.
     // On return, the holder will permit R/W access to the allocated memory until it
@@ -29,41 +24,26 @@ class AllocHeap
 
   private:
     // Allocation Helpers
-    uint8_t* _Alloc(uintptr_t cbMem, uintptr_t alignment);
-    bool _AllocNewBlock(uintptr_t cbMem);
+    bool _AllocNewBlock(uintptr_t cbMem, uintptr_t alignment);
     uint8_t* _AllocFromCurBlock(uintptr_t cbMem, uintptr_t alignment);
-    bool _CommitFromCurBlock(uintptr_t cbMem);
 
-    // Access protection helpers
-    bool _UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd, uint8_t* pFreeReserveEnd);
-    bool _UpdateMemPtrs(uint8_t* pNextFree, uint8_t* pFreeCommitEnd);
-    bool _UpdateMemPtrs(uint8_t* pNextFree);
+    static const uintptr_t BLOCK_SIZE = 4096;
 
     struct BlockListElem
     {
-        BlockListElem(uint8_t * pbMem, uintptr_t  cbMem)
-            : m_pbMem(pbMem), m_cbMem(cbMem), m_pNext(NULL)
-            {}
-
-        uint8_t* GetStart() const { return m_pbMem; }
-        uintptr_t GetLength() const { return m_cbMem; }
-
-        uint8_t *   m_pbMem;
-        uintptr_t   m_cbMem;
         BlockListElem* m_pNext;
+        uintptr_t m_cbMem;
+
+        uintptr_t GetLength() const { return m_cbMem; }
+        uint8_t* GetDataStart() const { return (uint8_t*)this + sizeof(BlockListElem); }
     };
 
     typedef SList<BlockListElem>    BlockList;
     BlockList                       m_blockList;
 
-    uint8_t *                         m_pNextFree;
-    uint8_t *                         m_pFreeCommitEnd;
-    uint8_t *                         m_pFreeReserveEnd;
+    uintptr_t                       m_cbCurBlockUsed;
 
-    uint8_t *                         m_pbInitialMem;
-    bool                            m_fShouldFreeInitialMem;
-
-    Crst                            m_lock;
+    CrstStatic                      m_lock;
 
     INDEBUG(bool                    m_fIsInit;)
 };

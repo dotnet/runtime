@@ -98,13 +98,17 @@ namespace System.Threading
             {
                 fixed (char* pThreadName = _name)
                 {
-                    StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, _isThreadPool ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, pThreadName);
+                    Exception? exception = null;
+                    if (StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, _isThreadPool ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, pThreadName, ObjectHandleOnStack.Create(ref exception)) == Interop.BOOL.FALSE)
+                    {
+                        throw new ThreadStartException(exception);
+                    }
                 }
             }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
-        private static unsafe partial void StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName);
+        private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception);
 
         // Called from the runtime
         private void StartCallback()
@@ -141,6 +145,8 @@ namespace System.Threading
         /// </summary>
         public static void SpinWait(int iterations)
         {
+            if (!Thread.IsMultithreadingSupported) return;
+
             if (iterations < SpinWaitCoopThreshold)
             {
                 SpinWaitInternal(iterations);
@@ -480,13 +486,6 @@ namespace System.Threading
         /// Get the ThreadStaticBase used for this threads TLS data. This ends up being a pointer to the pNativeThread field on the ThreadLocalData,
         /// which is at a well known offset from the start of the ThreadLocalData
         /// </summary>
-        ///
-        /// <remarks>
-        /// We use BypassReadyToRunAttribute to ensure that this method is not compiled using ReadyToRun. This avoids an issue where we might
-        /// fail to use the JIT_GetNonGCThreadStaticBaseOptimized2 JIT helpers to access the field, which would result in a stack overflow, as accessing
-        /// this field would recursively call this method.
-        /// </remarks>
-        [System.Runtime.BypassReadyToRunAttribute]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DebuggerHidden]
         [DebuggerStepThrough]

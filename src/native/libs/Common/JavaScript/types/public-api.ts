@@ -325,10 +325,6 @@ export interface AssetEntry {
      */
     culture?: string;
     /**
-     * If true, an attempt will be made to load the asset from each location in LoaderConfig.remoteSources.
-     */
-    loadRemote?: boolean;
-    /**
      * If true, the runtime startup would not fail if the asset download was not successful.
      */
     isOptional?: boolean;
@@ -409,7 +405,12 @@ export type AssetBehaviors = SingleAssetBehaviors |
     /**
      * The javascript module that came from nuget package .
      */
-    | "js-module-library-initializer";
+    | "js-module-library-initializer"
+    /**
+     * Managed assembly packaged as Webcil v 1.0
+     */
+    | "webcil10"
+    ;
 export declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.

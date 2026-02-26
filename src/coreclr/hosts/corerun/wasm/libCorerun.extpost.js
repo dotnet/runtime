@@ -2,23 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* eslint-disable no-undef */
-/* eslint-disable space-before-function-paren */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 var fetch = fetch || undefined; var dotnetNativeModuleLoaded = false; var dotnetInternals = null;
 export function selfRun() {
     const Module = {};
-    const corePreRun = () => {
-        // copy all node/shell env variables to emscripten env
-        if (globalThis.process && globalThis.process.env) {
-            for (const [key, value] of Object.entries(process.env)) {
-                Module.ENV[key] = value;
-            }
-        }
-
-        Module.ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
-    };
-    Module.preRun = [corePreRun];
-
     const runtimeApi = {
         Module,
         INTERNAL: {},
@@ -31,12 +18,22 @@ export function selfRun() {
             wasmEnableSIMD: true,
             wasmEnableExceptionHandling: true,
         },
+        exit: (exitCode, error) => {
+            // do not propagate ExitStatus exception
+            if (error && typeof error.status !== "number") {
+                console.error(error);
+            }
+            process.exit(exitCode);
+        },
     };
     dotnetInternals = [
         runtimeApi,
         [],
     ];
 
+    // this will create the emscripten emulator and run corerun.cpp main()
+    // but the nodejs process will be kept alive by any pending async work
     createDotnetRuntime(runtimeApi.Module);
 }
+
 selfRun();

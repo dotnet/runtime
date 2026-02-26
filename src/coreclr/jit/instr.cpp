@@ -895,7 +895,7 @@ void CodeGen::inst_set_SV_var(GenTree* tree)
 {
 #ifdef DEBUG
     assert((tree != nullptr) && (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) || tree->IsLclVarAddr()));
-    assert(tree->AsLclVarCommon()->GetLclNum() < compiler->lvaCount);
+    assert(tree->AsLclVarCommon()->GetLclNum() < m_compiler->lvaCount);
 
     GetEmitter()->emitVarRefOffs = tree->AsLclVar()->gtLclILoffs;
 
@@ -989,7 +989,7 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
 #endif // DEBUG
 
     unsigned varNum = tree->AsLclVarCommon()->GetLclNum();
-    assert(varNum < compiler->lvaCount);
+    assert(varNum < m_compiler->lvaCount);
 #if CPU_LOAD_STORE_ARCH
 #ifdef TARGET_ARM64
     // Workaround until https://github.com/dotnet/runtime/issues/105512 is fixed.
@@ -1155,7 +1155,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                         INT64          scalarValue = hwintrinsicChild->AsIntConCommon()->IntegralValue();
                         UNATIVE_OFFSET cnum        = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
                                                                          genTypeSize(simdBaseType), simdBaseType);
-                        return OperandDesc(compiler->eeFindJitDataOffs(cnum));
+                        return OperandDesc(m_compiler->eeFindJitDataOffs(cnum));
                     }
                     else
                     {
@@ -1218,7 +1218,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
                 break;
 
             case GT_LCL_VAR:
-                assert(op->IsRegOptional() || !compiler->lvaGetDesc(op->AsLclVar())->lvIsRegCandidate());
+                assert(op->IsRegOptional() || !m_compiler->lvaGetDesc(op->AsLclVar())->lvIsRegCandidate());
                 varNum = op->AsLclVar()->GetLclNum();
                 offset = 0;
                 break;
@@ -1229,7 +1229,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
             case GT_CNS_INT:
             {
                 assert(op->isContainedIntOrIImmed());
-                return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
+                return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(m_compiler));
             }
 
 #if defined(FEATURE_SIMD)
@@ -1900,8 +1900,8 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
     return
         // If we are running the altjit for AOT, then assume we can use the "BL" instruction.
         // This matches the usual behavior for AOT, since we normally do generate "BL".
-        (!compiler->info.compMatchedVM && compiler->IsAot()) ||
-        (compiler->eeGetRelocTypeHint((void*)addr) == CorInfoReloc::ARM32_THUMB_BRANCH24);
+        (!m_compiler->info.compMatchedVM && m_compiler->IsAot()) ||
+        (m_compiler->eeGetRelocTypeHint((void*)addr) == CorInfoReloc::ARM32_THUMB_BRANCH24);
 }
 
 #endif // TARGET_ARM
@@ -2104,6 +2104,14 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         case TYP_REF:
         case TYP_BYREF:
             return ins_Load(TYP_I_IMPL, aligned);
+        case TYP_BYTE:
+            return INS_i32_load8_s;
+        case TYP_UBYTE:
+            return INS_i32_load8_u;
+        case TYP_SHORT:
+            return INS_i32_load16_s;
+        case TYP_USHORT:
+            return INS_i32_load16_u;
         case TYP_INT:
             return INS_i32_load;
         case TYP_LONG:
@@ -2507,6 +2515,12 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         case TYP_REF:
         case TYP_BYREF:
             return ins_Store(TYP_I_IMPL, aligned);
+        case TYP_BYTE:
+        case TYP_UBYTE:
+            return INS_i32_store8;
+        case TYP_SHORT:
+        case TYP_USHORT:
+            return INS_i32_store16;
         case TYP_INT:
             return INS_i32_store;
         case TYP_LONG:
@@ -2758,11 +2772,6 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 //
 instruction CodeGen::ins_FloatConv(var_types to, var_types from)
 {
-    // AVX: Supports following conversions
-    //   srcType = int16/int64                     castToType = float
-    // AVX512: Supports following conversions
-    //   srcType = ulong                           castToType = double/float
-    bool isAvx10v2 = false;
     switch (from)
     {
         case TYP_INT:
@@ -2814,56 +2823,12 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
             break;
 
         case TYP_FLOAT:
-            if (to == TYP_FLOAT)
-            {
-                return ins_Move_Extend(TYP_FLOAT, false);
-            }
-            else if (to == TYP_DOUBLE)
-            {
-                return INS_cvtss2sd;
-            }
-            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
-
-            switch (to)
-            {
-                case TYP_INT:
-                    return isAvx10v2 ? INS_vcvttss2sis32 : INS_cvttss2si32;
-                case TYP_LONG:
-                    return isAvx10v2 ? INS_vcvttss2sis64 : INS_cvttss2si64;
-                case TYP_ULONG:
-                    return isAvx10v2 ? INS_vcvttss2usis64 : INS_vcvttss2usi64;
-                case TYP_UINT:
-                    return isAvx10v2 ? INS_vcvttss2usis32 : INS_vcvttss2usi32;
-                default:
-                    unreached();
-            }
-            break;
+            assert(to == TYP_DOUBLE);
+            return INS_cvtss2sd;
 
         case TYP_DOUBLE:
-            if (to == TYP_FLOAT)
-            {
-                return INS_cvtsd2ss;
-            }
-            else if (to == TYP_DOUBLE)
-            {
-                return ins_Move_Extend(TYP_DOUBLE, false);
-            }
-            isAvx10v2 = compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
-
-            switch (to)
-            {
-                case TYP_INT:
-                    return isAvx10v2 ? INS_vcvttsd2sis32 : INS_cvttsd2si32;
-                case TYP_LONG:
-                    return isAvx10v2 ? INS_vcvttsd2sis64 : INS_cvttsd2si64;
-                case TYP_ULONG:
-                    return isAvx10v2 ? INS_vcvttsd2usis64 : INS_vcvttsd2usi64;
-                case TYP_UINT:
-                    return isAvx10v2 ? INS_vcvttsd2usis32 : INS_vcvttsd2usi32;
-                default:
-                    unreached();
-            }
-            break;
+            assert(to == TYP_FLOAT);
+            return INS_cvtsd2ss;
 
         default:
             unreached();

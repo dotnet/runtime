@@ -137,13 +137,13 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
 
 class SharedTempsScope
 {
-    Compiler*             m_comp;
+    Compiler*             m_compiler;
     ArrayStack<unsigned>  m_usedSharedTemps;
     ArrayStack<unsigned>* m_prevUsedSharedTemps;
 
 public:
     SharedTempsScope(Compiler* comp)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_usedSharedTemps(comp->getAllocator(CMK_CallArgs))
         , m_prevUsedSharedTemps(comp->fgUsedSharedTemps)
     {
@@ -152,11 +152,11 @@ public:
 
     ~SharedTempsScope()
     {
-        m_comp->fgUsedSharedTemps = m_prevUsedSharedTemps;
+        m_compiler->fgUsedSharedTemps = m_prevUsedSharedTemps;
 
         for (int i = 0; i < m_usedSharedTemps.Height(); i++)
         {
-            m_comp->fgAvailableOutgoingArgTemps->setBit((indexType)m_usedSharedTemps.Top(i));
+            m_compiler->fgAvailableOutgoingArgTemps->setBit((indexType)m_usedSharedTemps.Top(i));
         }
     }
 };
@@ -322,7 +322,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             if (!tree->gtOverflow())
             {
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
                 return nullptr;
 #else
                 if (!varTypeIsLong(dstType))
@@ -339,7 +339,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     default:
                         unreached();
                 }
-#endif // TARGET_64BIT
+#endif // TARGET_64BIT || TARGET_WASM
             }
             else
             {
@@ -682,6 +682,10 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "AsyncExecutionContext";
         case WellKnownArg::AsyncSynchronizationContext:
             return "AsyncSynchronizationContext";
+        case WellKnownArg::WasmShadowStackPointer:
+            return "WasmShadowStackPointer";
+        case WellKnownArg::WasmPortableEntryPoint:
+            return "WasmPortableEntryPoint";
     }
 
     return "N/A";
@@ -1021,12 +1025,12 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
     }
 
-    // When CFG is enabled and this is a delegate call or vtable call we must
+    // When CFG is enabled and this is a delegate call or virtual call we must
     // compute the call target before all late args. However this will
     // effectively null-check 'this', which should happen only after all
     // arguments are evaluated. Thus we must evaluate all args with side
     // effects to a temp.
-    if (comp->opts.IsCFGEnabled() && (call->IsVirtualVtable() || call->IsDelegateInvoke()))
+    if (comp->opts.IsCFGEnabled() && (call->IsVirtual() || call->IsDelegateInvoke()))
     {
         // Always evaluate 'this' to temp.
         assert(HasThisPointer());
@@ -1769,9 +1773,13 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     {
         assert(!call->IsUnmanaged());
 
-        GenTree* arg = call->gtCallCookie;
-        noway_assert(arg != nullptr);
+        GenTree* arg       = comp->gtNewIconEmbHndNode(call->gtCallCookie, GTF_ICON_PINVKI_HDL, nullptr);
         call->gtCallCookie = nullptr;
+
+        // TODO: this is preserving existing behavior, but do we actually need these NO_CSEs?
+        GenTree* argConst = arg->OperIs(GT_IND) ? arg->AsIndir()->Addr() : arg;
+        argConst->gtFlags |= GTF_DONT_CSE;
+        arg->gtFlags |= GTF_DONT_CSE;
 
         // All architectures pass the cookie in a register.
         InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
@@ -1825,6 +1833,20 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         InsertAfterThisOrFirst(comp, indirCellAddrArg);
     }
 #endif
+
+#if defined(TARGET_WASM)
+    // On WASM, we need to add an initial argument for the stack pointer for managed calls.
+    if (!call->IsUnmanaged())
+    {
+        GenTree* const stackPointer = comp->gtNewLclVarNode(comp->lvaWasmSpArg, TYP_I_IMPL);
+        PushFront(comp, NewCallArg::Primitive(stackPointer).WellKnown(WellKnownArg::WasmShadowStackPointer));
+
+        // TODO-WASM: pass proper portable entry point as the last argument for managed calls
+        GenTree* const pePointer = comp->gtNewZeroConNode(TYP_I_IMPL);
+        PushBack(comp, NewCallArg::Primitive(pePointer).WellKnown(WellKnownArg::WasmPortableEntryPoint));
+    }
+
+#endif // defined(TARGET_WASM)
 
     ClassifierInfo info;
     info.CallConv = call->GetUnmanagedCallConv();
@@ -2961,13 +2983,6 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         indexAddr->Index() = fgMorphTree(indexAddr->Index());
         indexAddr->AddAllEffectsFlags(indexAddr->Arr(), indexAddr->Index());
 
-        // Mark the indirection node as needing a range check if necessary.
-        // Note this will always be true unless JitSkipArrayBoundCheck() is used
-        if (indexAddr->IsBoundsChecked())
-        {
-            fgAddCodeRef(compCurBB, SCK_RNGCHK_FAIL);
-        }
-
         return indexAddr;
     }
 
@@ -3196,7 +3211,6 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         addr->SetHasOrderingSideEffect();
 
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), boundsCheck, tree);
-        fgAddCodeRef(compCurBB, boundsCheck->gtThrowKind);
     }
 
     if (indexDefn != nullptr)
@@ -6500,10 +6514,11 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // This needs to be done after the arguments are morphed to ensure constant propagation has already taken place.
     if (opts.OptimizationEnabled() && call->IsHelperCall(this, CORINFO_HELP_ARRADDR_ST))
     {
-        assert(call->gtArgs.CountArgs() == 3);
-        GenTree* arr   = call->gtArgs.GetArgByIndex(0)->GetNode();
-        GenTree* index = call->gtArgs.GetArgByIndex(1)->GetNode();
-        GenTree* value = call->gtArgs.GetArgByIndex(2)->GetNode();
+        assert(call->gtArgs.CountUserArgs() == 3);
+
+        GenTree* arr   = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+        GenTree* index = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+        GenTree* value = call->gtArgs.GetUserArgByIndex(2)->GetNode();
 
         if (gtCanSkipCovariantStoreCheck(value, arr))
         {
@@ -7116,6 +7131,22 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 }
             }
 #endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+
+#if defined(TARGET_WASM)
+            if (tree->gtOverflow())
+            {
+                // For long multiply with overflow, call the helper.
+                if (tree->TypeIs(TYP_LONG))
+                {
+                    helper = tree->IsUnsigned() ? CORINFO_HELP_ULMUL_OVF : CORINFO_HELP_LMUL_OVF;
+                    goto USE_HELPER_FOR_ARITH;
+                }
+                else
+                {
+                    // TODO-WASM_CQ: Transform to a long multiply and then a checked cast?
+                }
+            }
+#endif
             break;
 
         case GT_ARR_LENGTH:
@@ -7782,10 +7813,6 @@ DONE_MORPHING_CHILDREN:
             {
                 return tree;
             }
-            if (tree->OperIs(GT_CAST) && tree->gtOverflow())
-            {
-                fgAddCodeRef(compCurBB, SCK_OVERFLOW);
-            }
 
             typ  = tree->TypeGet();
             oper = tree->OperGet();
@@ -8014,21 +8041,13 @@ DONE_MORPHING_CHILDREN:
 
                 if ((oper == GT_DIV) || (oper == GT_MOD))
                 {
-                    if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
-                    {
-                        fgAddCodeRef(compCurBB, SCK_OVERFLOW);
-                    }
-                    else
+                    if ((exSetFlags & ExceptionSetFlags::ArithmeticException) == ExceptionSetFlags::None)
                     {
                         tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
                     }
                 }
 
-                if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
-                {
-                    fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
-                }
-                else
+                if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) == ExceptionSetFlags::None)
                 {
                     tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
                 }
@@ -8093,12 +8112,7 @@ DONE_MORPHING_CHILDREN:
         CM_OVF_OP:
             if (tree->gtOverflow())
             {
-                // Add the excptn-throwing basic block to jump to on overflow
-
-                fgAddCodeRef(compCurBB, SCK_OVERFLOW);
-
                 // We can't do any commutative morphing for overflow instructions
-
                 break;
             }
 
@@ -8194,13 +8208,10 @@ DONE_MORPHING_CHILDREN:
         case GT_CKFINITE:
 
             noway_assert(varTypeIsFloating(op1->TypeGet()));
-
-            fgAddCodeRef(compCurBB, SCK_ARITH_EXCPN);
             break;
 
         case GT_BOUNDS_CHECK:
             setMethodHasBoundsChecks();
-            fgAddCodeRef(compCurBB, tree->AsBoundsChk()->gtThrowKind);
             break;
 
         case GT_IND:
@@ -8381,7 +8392,7 @@ DONE_MORPHING_CHILDREN:
                 // So we change it into a GT_COMMA as well.
                 JITDUMP("Also bashing [%06d] (a relop) into a GT_COMMA.\n", dspTreeID(op1));
                 op1->ChangeOper(GT_COMMA);
-                op1->gtFlags &= ~GTF_UNSIGNED; // Clear the unsigned flag if it was set on the relop
+                op1->ClearUnsigned(); // Clear the unsigned flag if it was set on the relop
                 op1->gtType = op1->AsOp()->gtOp1->gtType;
 
                 return tree;
@@ -9229,7 +9240,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
                 // ("expr > 0") equivalent to ("expr != 0")
                 // ("expr <= 0") equivalent to ("expr == 0")
                 oper = (oper == GT_LE) ? GT_EQ : GT_NE;
-                cmp->gtFlags &= ~GTF_UNSIGNED;
+                cmp->ClearUnsigned();
             }
             // LE_UN/GT_UN(expr, int/long.MaxValue) => GE/LT(expr, 0).
             // LE/GT(non-negative expr, int/long.MaxValue) => GE/LT(expr, 0)
@@ -9237,7 +9248,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
                      ((genActualType(op1) == TYP_INT) && (op2Value == INT32_MAX)))
             {
                 oper = (oper == GT_LE) ? GT_GE : GT_LT;
-                cmp->gtFlags &= ~GTF_UNSIGNED;
+                cmp->ClearUnsigned();
             }
             // LE_UN/GT_UN(expr, uint.MaxValue) => EQ/NE(RSZ(expr, 32), 0).
             // LE/GT(non-negative expr, uint.MaxValue) => EQ/NE(RSZ(expr, 32), 0).
@@ -11349,14 +11360,6 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         hasImmediateOperand = true;
     }
 
-#ifdef TARGET_XARCH
-    if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division)
-    {
-        fgAddCodeRef(compCurBB, SCK_DIV_BY_ZERO);
-        fgAddCodeRef(compCurBB, SCK_OVERFLOW);
-    }
-#endif // TARGET_XARCH
-
     // ------------------------------------------------------------------------
     // Process the operands, if any
     //
@@ -12559,11 +12562,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             {
                 tree->gtFlags |= tree->AsArrElem()->gtArrInds[dim]->gtFlags & GTF_ALL_EFFECT;
             }
-
-            if (fgGlobalMorph)
-            {
-                fgAddCodeRef(compCurBB, SCK_RNGCHK_FAIL);
-            }
             break;
 
         case GT_PHI:
@@ -12642,14 +12640,15 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
         {
             if (BitVecOps::IsMember(apTraits, killed, index - 1))
             {
-                AssertionDsc* curAssertion = optGetAssertion(index);
-                noway_assert((curAssertion->op1.lclNum == lclNum) ||
-                             ((curAssertion->op2.kind == O2K_LCLVAR_COPY) && (curAssertion->op2.lclNum == lclNum)));
+                const AssertionDsc& curAssertion = optGetAssertion(index);
+                noway_assert(
+                    (curAssertion.GetOp1().GetLclNum() == lclNum) ||
+                    (curAssertion.GetOp2().KindIs(O2K_LCLVAR_COPY) && (curAssertion.GetOp2().GetLclNum() == lclNum)));
                 if (verbose)
                 {
                     printf("\nThe store ");
                     printTreeID(tree);
-                    printf(" using V%02u removes: ", curAssertion->op1.lclNum);
+                    printf(" using V%02u removes: ", curAssertion.GetOp1().GetLclNum());
                     optPrintAssertion(curAssertion, index);
                 }
             }
@@ -12763,24 +12762,21 @@ void Compiler::fgAssertionGen(GenTree* tree)
     // assertion for that local, in case this local is used as a bool.
     //
     auto addImpliedAssertions = [=](AssertionIndex index, ASSERT_TP& assertions) {
-        AssertionDsc* const assertion = optGetAssertion(index);
-        if ((assertion->assertionKind == OAK_EQUAL) && (assertion->op1.kind == O1K_LCLVAR) &&
-            (assertion->op2.kind == O2K_CONST_INT))
+        const AssertionDsc& assertion = optGetAssertion(index);
+        if (assertion.KindIs(OAK_EQUAL) && assertion.GetOp1().KindIs(O1K_LCLVAR) &&
+            assertion.GetOp2().KindIs(O2K_CONST_INT))
         {
-            LclVarDsc* const lclDsc = lvaGetDesc(assertion->op1.lclNum);
+            LclVarDsc* const lclDsc = lvaGetDesc(assertion.GetOp1().GetLclNum());
 
             if (varTypeIsIntegral(lclDsc->TypeGet()))
             {
-                ssize_t iconVal = assertion->op2.u1.iconVal;
+                ssize_t iconVal = assertion.GetOp2().GetIntConstant();
                 if ((iconVal == 0) || (iconVal == 1))
                 {
-                    AssertionDsc extraAssertion = {OAK_SUBRANGE};
-                    extraAssertion.op1.kind     = O1K_LCLVAR;
-                    extraAssertion.op1.lclNum   = assertion->op1.lclNum;
-                    extraAssertion.op2.kind     = O2K_SUBRANGE;
-                    extraAssertion.op2.u2       = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
-
-                    AssertionIndex extraIndex = optFinalizeCreatingAssertion(&extraAssertion);
+                    auto         range = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::One);
+                    AssertionDsc extraAssertion =
+                        AssertionDsc::CreateSubrange(this, assertion.GetOp1().GetLclNum(), range);
+                    AssertionIndex extraIndex = optAddAssertion(extraAssertion);
                     if (extraIndex != NO_ASSERTION_INDEX)
                     {
                         unsigned const bvIndex = extraIndex - 1;
@@ -13586,7 +13582,7 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
         {
             // Each block starts with an empty table, and no available assertions
             //
-            optAssertionReset(0);
+            optAssertionReset();
             BitVecOps::ClearD(apTraits, apLocal);
             BitVecOps::ClearD(apTraits, apLocalPostorder);
         }
@@ -14405,7 +14401,7 @@ GenTree* Compiler::fgInitThisClass()
             // base of the class that owns the method being compiled". If we're in this method, it means we're not
             // inlining and there's no ambiguity.
             return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, TYP_BYREF,
-                                             &kind, ctxTree);
+                                             ctxTree);
         }
 #endif
 

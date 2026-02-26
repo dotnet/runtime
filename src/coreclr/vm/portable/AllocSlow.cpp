@@ -4,12 +4,14 @@
 
 #include <fcall.h>
 
+// WASM-TODO: make fcalls follow the new calling convention https://github.com/dotnet/runtime/issues/123437
 EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, uintptr_t numElements, TransitionBlock* pTransitionBlock);
+EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool isOverflow, TransitionBlock* pTransitionBlock);
 
 void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
 {
-    PORTABILITY_ASSERT("RhExceptionHandling_FailedAllocation is not yet implemented");
+    RhExceptionHandling_FailedAllocation_Helper(pMT, isOverflow, nullptr);
 }
 
 EXTERN_C FCDECL1(Object*, RhpNew, MethodTable* pMT)

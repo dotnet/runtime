@@ -112,11 +112,11 @@ HRESULT EEConfig::Init()
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fStressLog = false;
-    fForceEnc = false;
 
     INDEBUG(fStressLog = true;)
 
     fDebuggable = false;
+    modifiableAssemblies = MODIFIABLE_ASSM_UNSET;
 
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
@@ -439,19 +439,27 @@ HRESULT EEConfig::sync()
     }
 #endif
     fStressLog        =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
-    fForceEnc         =  CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_ForceEnc) != 0;
 
     {
         NewArrayHolder<WCHAR> wszModifiableAssemblies;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_MODIFIABLE_ASSEMBLIES, &wszModifiableAssemblies));
         if (wszModifiableAssemblies)
-            fDebugAssembliesModifiable = _wcsicmp(wszModifiableAssemblies, W("debug")) == 0;
+        {
+            if (_wcsicmp(wszModifiableAssemblies, W("debug")) == 0)
+            {
+                modifiableAssemblies = MODIFIABLE_ASSM_DEBUG;
+            }
+            else if (_wcsicmp(wszModifiableAssemblies, W("none")) == 0)
+            {
+                modifiableAssemblies = MODIFIABLE_ASSM_NONE;
+            }
+        }
     }
 
     pReadyToRunExcludeList = NULL;
 
 #ifdef FEATURE_INTERPRETER
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
     LPWSTR interpreterConfig;
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
     if (interpreterConfig == NULL)
@@ -467,7 +475,7 @@ HRESULT EEConfig::sync()
     }
 #else
     enableInterpreter = true;
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 #endif // FEATURE_INTERPRETER
 
     enableHWIntrinsic = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic) != 0);

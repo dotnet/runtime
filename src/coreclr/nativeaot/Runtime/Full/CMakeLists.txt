@@ -19,18 +19,14 @@ if (CLR_CMAKE_TARGET_WIN32)
     # Needed to include AsmOffsets.inc
     include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
     preprocess_files(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
-    if (CMAKE_GENERATOR MATCHES "Visual Studio")
-      # Replaces .asm files in RUNTIME_SOURCES_ARCH_ASM with the corresponding .obj files
-      compile_asm(TARGET Runtime.WorkstationGC ASM_FILES ${RUNTIME_SOURCES_ARCH_ASM} OUTPUT_OBJECTS RUNTIME_ARCH_ASM_OBJECTS)
-    endif()
   endif()
 endif (CLR_CMAKE_TARGET_WIN32)
 
-add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${RUNTIME_ARCH_ASM_OBJECTS})
+add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
 target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal)
 
-add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
+add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.ServerGC aot_eventing_headers)
 target_link_libraries(Runtime.ServerGC PRIVATE aotminipal)
 
@@ -92,11 +88,14 @@ set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc" PROPERT
 # Avoid a race condition by adding this target as a dependency for both libraries.
 add_custom_target(
   RuntimeAsmHelpers
-  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc" "${RUNTIME_ARCH_ASM_OBJECTS}"
+  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
 )
 
-add_dependencies(Runtime.WorkstationGC RuntimeAsmHelpers)
-add_dependencies(Runtime.ServerGC RuntimeAsmHelpers)
+add_library(Runtime.AsmHelpers OBJECT ${RUNTIME_SOURCES_ARCH_ASM})
+add_dependencies(Runtime.AsmHelpers RuntimeAsmHelpers)
+
+target_link_libraries(Runtime.WorkstationGC PRIVATE Runtime.AsmHelpers)
+target_link_libraries(Runtime.ServerGC PRIVATE Runtime.AsmHelpers)
 
 install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 install_static_library(Runtime.ServerGC aotsdk nativeaot)

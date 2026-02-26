@@ -646,10 +646,10 @@ namespace System.Threading
 
             public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize, ref LockHolder lockHolder)
             {
+                lockHolder.Dispose();
                 LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
                 try
                 {
-                    lockHolder.Dispose();
                     MutexTryAcquireLockResult result = _processDataHeader._processData!.TryAcquireLock(waitInfo, timeoutMilliseconds, ref scope);
                     return result switch
                     {

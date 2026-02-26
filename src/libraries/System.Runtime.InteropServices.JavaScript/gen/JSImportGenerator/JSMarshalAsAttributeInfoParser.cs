@@ -28,7 +28,7 @@ namespace Microsoft.Interop.JavaScript
             {
                 string gt = jsTypeArgs.ConstructUnboundGenericType().ToDisplayString();
                 string name = gt.Substring(gt.IndexOf("JSType") + "JSType.".Length);
-                name = name.Substring(0, name.IndexOf("<"));
+                name = name.Substring(0, name.IndexOf('<'));
 
                 Enum.TryParse(name, out jsType);
 

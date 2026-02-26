@@ -470,6 +470,16 @@ public:
     }
 
     //
+    // Bring the base class operator= into scope.
+    //
+    using Volatile<P>::operator=;
+
+    //
+    // Copy assignment operator.
+    //
+    inline VolatilePtr<T,P>& operator=(const VolatilePtr<T,P>& other) {this->Store(other.Load()); return *this;}
+
+    //
     // Cast to the pointer type
     //
     inline operator P() const

@@ -89,7 +89,7 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            Thread.ThrowIfNoThreadStart();
+            Thread.ThrowIfMultithreadingIsNotSupported();
             return PortableThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
         }
 

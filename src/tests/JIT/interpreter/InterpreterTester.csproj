@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
-    <DisableProjectBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64' and '$(TargetArchitecture)' != 'riscv64'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64' and '$(TargetArchitecture)' != 'riscv64' and '$(TargetArchitecture)' != 'armel'">true</DisableProjectBuild>
     <!-- Interpreter is CoreCLR-VM specific -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
     <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/112827 -->

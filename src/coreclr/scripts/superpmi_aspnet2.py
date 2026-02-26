@@ -152,6 +152,10 @@ def setup_and_run_crank_agent(workdir: Path):
     os.environ['DOTNET_CLI_TELEMETRY_OPTOUT'] = '1'
     os.environ['DOTNET_MULTILEVEL_LOOKUP'] = '0'
     os.environ['UseSharedCompilation'] = 'false'
+    os.environ['NUGET_PLUGINS_CACHE_PATH'] = str(workdir / "NUGET_PLUGINS_CACHE_PATH")
+    os.environ['NUGET_PACKAGES'] = str(workdir / "NUGET_PACKAGES")
+    os.environ['NUGET_HTTP_CACHE_PATH'] = str(workdir / "NUGET_HTTP_CACHE_PATH")
+    os.environ['NUGET_SCRATCH'] = str(workdir / "NUGET_SCRATCH")
 
     print("Installing tools ...")
     logs_dir.mkdir(parents=True, exist_ok=True)
@@ -212,6 +216,7 @@ profiles:
             "--log-path", str(logs_dir),
             "--build-path", str(build_dir),
             "--dotnethome", str(dotnethome_dir),
+            "--build-timeout", "30"
         ],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
         creationflags=creation_flags,
@@ -223,10 +228,11 @@ profiles:
 
 
 # Run crank scenario
-def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work_dir: Path, core_root_path: Path, config_path: Path, dryrun: bool, *extra_args: str):
+def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work_dir: Path, core_root_path: Path, config_path: Path, dryrun: bool, env_vars: dict, *extra_args: str):
     spmi_shim = native_dll("superpmi-shim-collector")
     clrjit = native_dll("clrjit")
     coreclr = native_dll("coreclr")
+    systemNative = native_dll("System.Native")
     spcorelib = "System.Private.CoreLib.dll"
     cmd = [
         str(crank_app),
@@ -239,14 +245,12 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
         "--profile", "Localhost",
         "--scenario", scenario_name,
         "--application.framework", framework,
-        "--application.Channel", "latest", # should be 'edge', but it causes random build failures sometimes.
+        "--application.channel", "edge",
+        "--application.sdkVersion", "latest",
         "--application.noGlobalJson", "false",
-        "--application.collectDependencies", "false",
-        "--application.options.collectCounters", "false",
         "--load.options.reuseBuild", "true",
-        "--load.variables.duration", "45",
-        "--load.variables.warmup", "15",
         "--load.job", "bombardier", # Bombardier is more cross-platform friendly (wrk is linux only)
+        "--load.variables.connections", "16",
     ]
     
     # Only add SPMI collection environment variables and output files if not in dry run mode
@@ -260,6 +264,13 @@ def run_crank_scenario(crank_app: Path, scenario_name: str, framework: str, work
             "--application.options.outputFiles", str(core_root_path / clrjit),
             "--application.options.outputFiles", str(core_root_path / coreclr),
             "--application.options.outputFiles", str(core_root_path / spcorelib),
+            "--application.options.outputFiles", str(core_root_path / systemNative),
+        ])
+    
+    # Add custom environment variables for this run
+    for var_name, var_value in env_vars.items():
+        cmd.extend([
+            "--application.environmentVariables", f"DOTNET_{var_name}={var_value}"
         ])
     
     # Append any extra scenario-specific arguments
@@ -314,6 +325,11 @@ def main():
     print(f"Using temp work directory: {work_dir_base}")
 
     work_dir_base = work_dir_base / "crank_data"
+    # delete crank_data if it already exists from a previous run to ensure a clean state
+    if work_dir_base.exists():
+        print(f"Cleaning existing work directory {work_dir_base} from previous run...")
+        shutil.rmtree(work_dir_base)
+
     work_dir_base.mkdir(parents=True, exist_ok=True)
 
     # Set current working directory to work_dir_base
@@ -344,19 +360,30 @@ def main():
                 "--config", "https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml"),
         ]
 
+        # Define the environment variable sets to run for each scenario
+        env_var_sets = [
+            {"Dummy": "0"}, # Baseline with no environment variables set
+            {"TieredCompilation": "0", "ReadyToRun": "0"},
+            {"TC_PartialCompilation": "1"},
+        ]
+
         for entry in scenarios:
             scenario_name, *extra = entry
-            print(f"### Running {scenario_name} benchmark... ###")
-            run_crank_scenario(
-                crank_app_path,
-                scenario_name,
-                args.tfm,
-                work_dir_base,
-                core_root_path,
-                config_path,
-                args.dryrun,
-                *extra,
-            )
+            # Run each scenario with all environment variable sets
+            for idx, env_vars in enumerate(env_var_sets, 1):
+                env_vars_str = ", ".join(f"{k}={v}" for k, v in env_vars.items())
+                print(f"### Running {scenario_name} benchmark (set {idx}/{len(env_var_sets)}: {env_vars_str})... ###")
+                run_crank_scenario(
+                    crank_app_path,
+                    scenario_name,
+                    args.tfm,
+                    work_dir_base,
+                    core_root_path,
+                    config_path,
+                    args.dryrun,
+                    env_vars,
+                    *extra,
+                )
 
         print("Finished running benchmarks.")
 

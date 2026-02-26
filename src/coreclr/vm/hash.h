@@ -347,11 +347,9 @@ private:
 
     // compute the new size, based on the number of free slots
     // available, compact or expand
-    UPTR            NewSize();
+    UPTR            NewSize() const;
     // create a new bucket array and rehash the non-deleted entries
     void            Rehash();
-    static DWORD    GetSize(PTR_Bucket rgBuckets);
-    static void     SetSize(Bucket* rgBuckets, size_t size);
     PTR_Bucket      Buckets();
     UPTR            CompareValues(const UPTR value1, const UPTR value2);
 
@@ -792,16 +790,5 @@ public:
     }
 #endif // DACCESS_COMPILE
 };
-
-//---------------------------------------------------------------------
-//  inline Bucket*& NextObsolete (Bucket* rgBuckets)
-//  get the next obsolete bucket in the chain
-inline
-Bucket*& NextObsolete (Bucket* rgBuckets)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return *(Bucket**)&((size_t*)rgBuckets)[1];
-}
 
 #endif // !_HASH_H_

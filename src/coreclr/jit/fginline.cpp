@@ -544,32 +544,6 @@ private:
     }
 #endif // FEATURE_MULTIREG_RET
 
-    CORINFO_METHOD_HANDLE GetMethodHandle(GenTreeCall* call)
-    {
-        assert(call->IsDevirtualizationCandidate(m_compiler));
-        if (call->IsVirtual())
-        {
-            return call->gtCallMethHnd;
-        }
-        else
-        {
-            GenTree* runtimeMethHndNode =
-                call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
-            assert(runtimeMethHndNode != nullptr);
-            switch (runtimeMethHndNode->OperGet())
-            {
-                case GT_RUNTIMELOOKUP:
-                    return runtimeMethHndNode->AsRuntimeLookup()->GetMethodHandle();
-                case GT_CNS_INT:
-                    return CORINFO_METHOD_HANDLE(runtimeMethHndNode->AsIntCon()->IconValue());
-                default:
-                    assert(!"Unexpected type in RuntimeMethodHandle arg.");
-                    return nullptr;
-            }
-            return nullptr;
-        }
-    }
-
     //------------------------------------------------------------------------
     // LateDevirtualization: re-examine calls after inlining to see if we
     //   can do more devirtualization
@@ -612,9 +586,8 @@ private:
 
         if (tree->OperIs(GT_CALL))
         {
-            GenTreeCall* call = tree->AsCall();
-            // TODO-CQ: Drop `call->gtCallType == CT_USER_FUNC` once we have GVM devirtualization
-            bool tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler) && (call->gtCallType == CT_USER_FUNC);
+            GenTreeCall* call          = tree->AsCall();
+            bool         tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
@@ -630,9 +603,9 @@ private:
                 }
 #endif // DEBUG
 
+                CORINFO_METHOD_HANDLE  method                 = call->gtLateDevirtualizationInfo->methodHnd;
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
                 InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
-                CORINFO_METHOD_HANDLE  method                 = GetMethodHandle(call);
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
@@ -1241,7 +1214,7 @@ Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWal
     GenTree* tree = *pTree;
     if (tree->OperIs(GT_CALL))
     {
-        Compiler*    compiler = data->compiler;
+        Compiler*    compiler = data->m_compiler;
         Statement*   stmt     = (Statement*)data->pCallbackData;
         GenTreeCall* call     = tree->AsCall();
 
@@ -2060,12 +2033,16 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     // Note that if the root method needs GS cookie then this has already been taken care of.
     if (!getNeedsGSSecurityCookie() && InlineeCompiler->getNeedsGSSecurityCookie())
     {
-        setNeedsGSSecurityCookie();
-        const unsigned dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
-        LclVarDsc*     gsCookieDummy = lvaGetDesc(dummy);
-        gsCookieDummy->lvType        = TYP_INT;
-        gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
-        lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        bool canHaveCookie = setNeedsGSSecurityCookie();
+
+        if (canHaveCookie)
+        {
+            const unsigned dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
+            LclVarDsc*     gsCookieDummy = lvaGetDesc(dummy);
+            gsCookieDummy->lvType        = TYP_INT;
+            gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
+            lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        }
     }
 
     //

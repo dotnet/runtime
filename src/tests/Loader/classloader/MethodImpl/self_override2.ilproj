@@ -5,4 +5,7 @@
   <ItemGroup>
     <Compile Include="Desktop\self_override2.il" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

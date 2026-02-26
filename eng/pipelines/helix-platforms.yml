@@ -130,9 +130,9 @@ variables:
     value: (Fedora.42.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-42-helix-amd64
 
   # openSUSE x64
-  # Latest: 15.6
+  # Latest: 16.0
   - name: helix_linux_x64_opensuse_latest
-    value: (openSUSE.15.6.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.6-helix-amd64
+    value: (openSUSE.16.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-16.0-helix-amd64
 
   # Oldest: 15.5
   - name: helix_linux_x64_opensuse_oldest

@@ -16,24 +16,28 @@ namespace System.IO.Compression
         // Delegate that will be invoked on stream disposing
         private readonly Action<ZipArchiveEntry?>? _onClosed;
 
+        // When true, notifies the entry on first write operation
+        private bool _notifyEntryOnWrite;
+
         // Instance that will be passed to _onClose delegate
         private readonly ZipArchiveEntry? _zipArchiveEntry;
         private bool _isDisposed;
 
         internal WrappedStream(Stream baseStream, bool closeBaseStream)
-            : this(baseStream, closeBaseStream, null, null) { }
+            : this(baseStream, closeBaseStream, entry: null, onClosed: null, notifyEntryOnWrite: false) { }
 
-        private WrappedStream(Stream baseStream, bool closeBaseStream, ZipArchiveEntry? entry, Action<ZipArchiveEntry?>? onClosed)
+        private WrappedStream(Stream baseStream, bool closeBaseStream, ZipArchiveEntry? entry, Action<ZipArchiveEntry?>? onClosed, bool notifyEntryOnWrite)
         {
             _baseStream = baseStream;
             _closeBaseStream = closeBaseStream;
             _onClosed = onClosed;
+            _notifyEntryOnWrite = notifyEntryOnWrite;
             _zipArchiveEntry = entry;
             _isDisposed = false;
         }
 
-        internal WrappedStream(Stream baseStream, ZipArchiveEntry entry, Action<ZipArchiveEntry?>? onClosed)
-            : this(baseStream, false, entry, onClosed) { }
+        internal WrappedStream(Stream baseStream, ZipArchiveEntry entry, Action<ZipArchiveEntry?>? onClosed, bool notifyEntryOnWrite = false)
+            : this(baseStream, false, entry, onClosed, notifyEntryOnWrite) { }
 
         public override long Length
         {
@@ -144,6 +148,7 @@ namespace System.IO.Compression
             ThrowIfCantSeek();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.SetLength(value);
         }
 
@@ -152,6 +157,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.Write(buffer, offset, count);
         }
 
@@ -160,6 +166,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.Write(source);
         }
 
@@ -168,6 +175,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.WriteByte(value);
         }
 
@@ -176,6 +184,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             return _baseStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
@@ -184,7 +193,17 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             return _baseStream.WriteAsync(buffer, cancellationToken);
+        }
+
+        private void NotifyWrite()
+        {
+            if (_notifyEntryOnWrite)
+            {
+                _zipArchiveEntry?.MarkAsModified();
+                _notifyEntryOnWrite = false; // Only notify once
+            }
         }
 
         public override void Flush()
@@ -315,7 +334,7 @@ namespace System.IO.Compression
             if (_superStream.Position != _positionInSuperStream)
                 _superStream.Seek(_positionInSuperStream, SeekOrigin.Begin);
             if (_positionInSuperStream + count > _endInSuperStream)
-                count = (int)(_endInSuperStream - _positionInSuperStream);
+                count = (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream);
 
             Debug.Assert(count >= 0);
             Debug.Assert(count <= origCount);
@@ -338,7 +357,7 @@ namespace System.IO.Compression
             if (_superStream.Position != _positionInSuperStream)
                 _superStream.Seek(_positionInSuperStream, SeekOrigin.Begin);
             if (_positionInSuperStream + count > _endInSuperStream)
-                count = (int)(_endInSuperStream - _positionInSuperStream);
+                count = (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream);
 
             Debug.Assert(count >= 0);
             Debug.Assert(count <= origCount);
@@ -376,7 +395,7 @@ namespace System.IO.Compression
 
                 if (_positionInSuperStream > _endInSuperStream - buffer.Length)
                 {
-                    buffer = buffer.Slice(0, (int)(_endInSuperStream - _positionInSuperStream));
+                    buffer = buffer.Slice(0, (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream));
                 }
 
                 int ret = await _superStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);

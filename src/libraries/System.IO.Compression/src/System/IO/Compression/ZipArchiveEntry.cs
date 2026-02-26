@@ -379,6 +379,60 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Opens the entry with the specified access mode. This allows for more granular control over the returned stream's capabilities.
+        /// </summary>
+        /// <param name="access">The file access mode for the returned stream.</param>
+        /// <returns>A <see cref="Stream"/> that represents the contents of the entry with the specified access capabilities.</returns>
+        /// <remarks>
+        /// <para>The allowed <paramref name="access"/> values depend on the <see cref="ZipArchiveMode"/>:</para>
+        /// <list type="bullet">
+        /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed (both write-only).</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> reads directly from the archive. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="Open()"/>).</description></item>
+        /// </list>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
+        /// <exception cref="InvalidOperationException">The requested access is not compatible with the archive's open mode.</exception>
+        /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
+        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        public Stream Open(FileAccess access)
+        {
+            ThrowIfInvalidArchive();
+
+            if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
+                throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+
+            // Validate that the requested access is compatible with the archive's mode
+            switch (_archive.Mode)
+            {
+                case ZipArchiveMode.Read:
+                    if (access != FileAccess.Read)
+                        throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+                    return OpenInReadMode(checkOpenable: true);
+
+                case ZipArchiveMode.Create:
+                    if (access == FileAccess.Read)
+                        throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
+                    return OpenInWriteMode();
+
+                case ZipArchiveMode.Update:
+                default:
+                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                    switch (access)
+                    {
+                        case FileAccess.Read:
+                            return OpenInReadMode(checkOpenable: true);
+                        case FileAccess.Write:
+                            return OpenInUpdateMode(loadExistingContent: false);
+                        case FileAccess.ReadWrite:
+                        default:
+                            return OpenInUpdateMode(loadExistingContent: true);
+                    }
+            }
+        }
+
+        /// <summary>
         /// Returns the FullName of the entry.
         /// </summary>
         /// <returns>FullName of the entry</returns>
@@ -454,16 +508,15 @@ namespace System.IO.Compression
                     }
                 }
 
-                // if they start modifying it and the compression method is not "store", we should make sure it will get deflated
-                if (CompressionMethod != ZipCompressionMethod.Stored)
-                {
-                    CompressionMethod = ZipCompressionMethod.Deflate;
-                }
+                // NOTE: CompressionMethod normalization is deferred to MarkAsModified() to avoid
+                // corrupting entries that are opened in Update mode but not actually written to.
+                // If we normalized here and the entry wasn't modified, we'd write a header with
+                // CompressionMethod=Deflate but the original _compressedBytes would still be in
+                // their original format (e.g., Deflate64), producing an invalid entry.
             }
 
             return _storedUncompressedData;
         }
-
         // does almost everything you need to do to forget about this entry
         // writes the local header/data, gets rid of all the data,
         // closes all of the streams except for the very outermost one that
@@ -525,11 +578,10 @@ namespace System.IO.Compression
             {
                 offsetOfLocalHeaderTruncated = ZipHelper.Mask32Bit;
 
-                // If we have one of the sizes, the other must go in there as speced for LH, but not necessarily for CH, but we do it anyways
-                zip64ExtraField = new()
-                {
-                    LocalHeaderOffset = _offsetOfLocalHeader
-                };
+                // If we already created a zip64 extra field for sizes, add the offset to it
+                // Otherwise, create a new one for just the offset
+                zip64ExtraField ??= new();
+                zip64ExtraField.LocalHeaderOffset = _offsetOfLocalHeader;
             }
             else
             {
@@ -800,6 +852,11 @@ namespace System.IO.Compression
             // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderAndDataIfNeeded
             _archive.DebugAssertIsStillArchiveStreamOwner(this);
 
+            return OpenInWriteModeCore();
+        }
+
+        private WrappedStream OpenInWriteModeCore()
+        {
             _everOpenedForWrite = true;
             Changes |= ZipArchive.ChangeState.StoredData;
             CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(_archive.ArchiveStream, true, (object? o, EventArgs e) =>
@@ -814,27 +871,51 @@ namespace System.IO.Compression
             return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
         }
 
-        private WrappedStream OpenInUpdateMode()
+        private WrappedStream OpenInUpdateMode(bool loadExistingContent = true)
         {
             if (_currentlyOpenForWrite)
                 throw new IOException(SR.UpdateModeOneStream);
 
-            ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: true);
+            if (loadExistingContent)
+            {
+                ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: true);
+            }
 
+            _currentlyOpenForWrite = true;
+
+            if (loadExistingContent)
+            {
+                _storedUncompressedData = GetUncompressedData();
+            }
+            else
+            {
+                _storedUncompressedData?.Dispose();
+                _storedUncompressedData = new MemoryStream();
+                // Opening with loadExistingContent: false discards existing content, which is a modification
+                MarkAsModified();
+            }
+
+            _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+
+            return new WrappedStream(_storedUncompressedData, this,
+                onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,
+                notifyEntryOnWrite: true);
+        }
+
+        /// <summary>
+        /// Marks this entry as modified, indicating that its data has changed and needs to be rewritten.
+        /// </summary>
+        internal void MarkAsModified()
+        {
             _everOpenedForWrite = true;
             Changes |= ZipArchive.ChangeState.StoredData;
-            _currentlyOpenForWrite = true;
-            // always put it at the beginning for them
-            Stream uncompressedData = GetUncompressedData();
-            uncompressedData.Seek(0, SeekOrigin.Begin);
-            return new WrappedStream(uncompressedData, this, thisRef =>
+
+            // Normalize compression method when actually modifying - Deflate64 data will be
+            // re-compressed as Deflate since we don't support writing Deflate64.
+            if (CompressionMethod != ZipCompressionMethod.Stored)
             {
-                // once they close, we know uncompressed length, but still not compressed length
-                // so we don't fill in any size information
-                // those fields get figured out when we call GetCompressor as we write it to
-                // the actual archive
-                thisRef!._currentlyOpenForWrite = false;
-            });
+                CompressionMethod = ZipCompressionMethod.Deflate;
+            }
         }
 
         private bool IsOpenable(bool needToUncompress, bool needToLoadIntoMemory, out string? message)
@@ -1104,6 +1185,18 @@ namespace System.IO.Compression
 
         private void WriteLocalFileHeaderAndDataIfNeeded(bool forceWrite)
         {
+            // Check if the entry's stored data was actually modified (StoredData flag is set).
+            // If _storedUncompressedData is loaded but StoredData is not set, it means the entry
+            // was opened for update but no writes occurred - we should use the original compressed bytes.
+            bool storedDataModified = (Changes & ZipArchive.ChangeState.StoredData) != 0;
+
+            // If _storedUncompressedData is loaded but not modified, clear it so we use _compressedBytes
+            if (_storedUncompressedData != null && !storedDataModified)
+            {
+                _storedUncompressedData.Dispose();
+                _storedUncompressedData = null;
+            }
+
             // _storedUncompressedData gets frozen here, and is what gets written to the file
             if (_storedUncompressedData != null || _compressedBytes != null)
             {
@@ -1329,7 +1422,7 @@ namespace System.IO.Compression
             return bytesToWrite;
         }
 
-        private void UnloadStreams()
+        internal void UnloadStreams()
         {
             _storedUncompressedData?.Dispose();
             _compressedBytes = null;

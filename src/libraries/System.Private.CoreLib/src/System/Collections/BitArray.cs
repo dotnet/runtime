@@ -98,6 +98,8 @@ namespace System.Collections
             {
                 BinaryPrimitives.ReverseEndianness(array, MemoryMarshal.Cast<byte, int>((Span<byte>)_array));
             }
+
+            ClearHighExtraBits();
         }
 
         /// <summary>Generates serialization data for the BitArray in a way that's compatible with the original .NET Framework implementation.</summary>
@@ -603,6 +605,8 @@ namespace System.Collections
                     }
                     intSpan[lastIndex] = ReverseIfBE(ReverseIfBE(intSpan[fromindex]) << shiftCount);
                 }
+
+                ClearHighExtraBits();
             }
             else
             {
@@ -878,6 +882,19 @@ namespace System.Collections
 
             byte mask = (byte)((1 << (int)extraBits) - 1);
             return (_array[byteCount] & mask) != 0;
+        }
+
+        /// <summary>Computes the number of bits that are set in the <see cref="BitArray"/>.</summary>
+        /// <returns>The number of set bits in the <see cref="BitArray"/>.</returns>
+        public int PopCount()
+        {
+            int count = 0;
+            foreach (int i in MemoryMarshal.Cast<byte, int>(_array))
+            {
+                count += int.PopCount(i);
+            }
+
+            return count;
         }
 
         /// <summary>Gets the number of elements contained in the <see cref="BitArray"/>.</summary>

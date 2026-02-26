@@ -120,8 +120,13 @@ GenTree* Lowering::LowerNeg(GenTreeOp* node)
     // For integer types (TYP_INT and TYP_LONG), NEG(x) ==> SUB(0, x)
     //
     GenTree* x    = node->gtGetOp1();
-    GenTree* zero = comp->gtNewZeroConNode(node->TypeGet());
-    BlockRange().InsertBefore(x, zero);
+    GenTree* zero = m_compiler->gtNewZeroConNode(node->TypeGet());
+
+    // To preserve stack order we must insert the zero before the entire
+    // tree rooted at x.
+    //
+    GenTree* insertBefore = x->gtFirstNodeInOperandOrder();
+    BlockRange().InsertBefore(insertBefore, zero);
     LowerNode(zero);
     node->ChangeOper(GT_SUB);
     node->gtOp1 = zero;
@@ -160,7 +165,38 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
     ContainCheckBinary(binOp);
+
+    if (binOp->gtOverflow())
+    {
+        binOp->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        binOp->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+
     return binOp->gtNext;
+}
+
+//------------------------------------------------------------------------
+// LowerDivOrMod: Lowers a GT_[U]DIV/GT_[U]MOD node.
+//
+// Mark operands that need multiple uses for exception-inducing checks.
+//
+// Arguments:
+//    divMod - the node to be lowered
+//
+void Lowering::LowerDivOrMod(GenTreeOp* divMod)
+{
+    ExceptionSetFlags exSetFlags = divMod->OperExceptions(m_compiler);
+    if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+    {
+        divMod->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        divMod->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+    else if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+    {
+        divMod->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+
+    ContainCheckDivOrMod(divMod);
 }
 
 //------------------------------------------------------------------------
@@ -171,7 +207,61 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
-    NYI_WASM("LowerBlockStore");
+    GenTree* dstAddr = blkNode->Addr();
+    GenTree* src     = blkNode->Data();
+
+    if (blkNode->OperIsInitBlkOp())
+    {
+        if (src->OperIs(GT_INIT_VAL))
+        {
+            src->SetContained();
+            src = src->AsUnOp()->gtGetOp1();
+        }
+
+        if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            src->SetContained();
+        }
+        else
+        {
+            // memory.fill
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        }
+    }
+    else
+    {
+        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+        src->SetContained();
+
+        if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
+        }
+
+        ClassLayout* layout  = blkNode->GetLayout();
+        bool         doCpObj = layout->HasGCPtr();
+
+        // CopyObj or CopyBlk
+        if (doCpObj)
+        {
+            // Try to use bulk copy helper
+            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
+            {
+                return;
+            }
+
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
+        }
+        else
+        {
+            assert(blkNode->OperIs(GT_STORE_BLK));
+            // memory.copy
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -197,6 +287,11 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
 void Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperIs(GT_CAST));
+
+    if (tree->gtOverflow())
+    {
+        tree->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
     ContainCheckCast(tree->AsCast());
 }
 
@@ -342,11 +437,118 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 }
 
 //------------------------------------------------------------------------
-// ContainCheckSelect : determine whether the source of a select should be contained.
+// ContainCheckSelect: determine whether the source of a select should be contained.
 //
 // Arguments:
 //    node - pointer to the node
 //
 void Lowering::ContainCheckSelect(GenTreeOp* node)
 {
+}
+
+//------------------------------------------------------------------------
+// AfterLowerBlock: stackify the nodes in this block.
+//
+// Stackification involves moving nodes around and inserting temporaries
+// as necessary. We expect the vast majority of IR to already be in correct
+// shape as our frontend is itself tree-based.
+//
+// It is done right after lowering, thus before RA and liveness, so that
+// the introduced temporaries can get enregistered and the last-use info
+// on LCL_VAR nodes in RA is readily correct.
+//
+void Lowering::AfterLowerBlock()
+{
+    class Stackifier
+    {
+        Lowering* m_lower;
+        bool      m_anyChanges = false;
+
+    public:
+        Stackifier(Lowering* lower)
+            : m_lower(lower)
+        {
+        }
+
+        void StackifyCurrentBlock()
+        {
+            GenTree* node = m_lower->BlockRange().LastNode();
+            while (node != nullptr)
+            {
+                assert(IsDataFlowRoot(node));
+                node = StackifyTree(node);
+            }
+
+            if (!m_anyChanges)
+            {
+                JITDUMP(FMT_BB ": already in WASM value stack order\n", m_lower->m_block->bbNum);
+            }
+        }
+
+        GenTree* StackifyTree(GenTree* root)
+        {
+            ArrayStack<GenTree*>* stack        = &m_lower->m_stackificationStack;
+            int                   initialDepth = stack->Height();
+
+            // Simple greedy algorithm working backwards. The invariant is that the stack top must be placed right next
+            // to (in normal linear order - before) the node we last stackified.
+            stack->Push(root);
+            GenTree* current = root->gtNext;
+            while (stack->Height() != initialDepth)
+            {
+                GenTree* node = stack->Pop();
+                GenTree* prev = (current != nullptr) ? current->gtPrev : root;
+                while (node != prev)
+                {
+                    // Maybe this is an intervening void-equivalent node that we can also just stackify.
+                    if (IsDataFlowRoot(prev))
+                    {
+                        prev = StackifyTree(prev);
+                        continue;
+                    }
+
+                    // At this point, we'll have to modify the IR in some way. In general, these cases should be quite
+                    // rare, introduced in lowering only. All HIR-induced cases (such as from "gtSetEvalOrder") should
+                    // instead be ifdef-ed out for WASM.
+                    m_anyChanges = true;
+
+                    JITDUMP("node==[%06u] prev==[%06u]\n", Compiler::dspTreeID(node), Compiler::dspTreeID(prev));
+                    NYI_WASM("IR not in a stackified form");
+                }
+
+                // In stack order, the last operand is closest to its parent, thus put on top here.
+                node->VisitOperands([stack](GenTree* operand) {
+                    stack->Push(operand);
+                    return GenTree::VisitResult::Continue;
+                });
+                current = node;
+            }
+
+            return current->gtPrev;
+        }
+
+        bool IsDataFlowRoot(GenTree* node)
+        {
+            return !node->IsValue() || node->IsUnusedValue();
+        }
+    };
+
+    Stackifier stackifier(this);
+    stackifier.StackifyCurrentBlock();
+}
+
+//------------------------------------------------------------------------
+// AfterLowerArgsForCall: post processing after call args are lowered
+//
+// Arguments:
+//    call - Call node
+//
+void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
+{
+    if (call->NeedsNullCheck())
+    {
+        // Prepare for explicit null check
+        CallArg* thisArg = call->gtArgs.GetThisArg();
+        thisArg->GetNode()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
 }

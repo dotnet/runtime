@@ -7959,16 +7959,34 @@ namespace System.Buffers.Text
 {
     public static partial class Base64
     {
+        public static byte[] DecodeFromChars(System.ReadOnlySpan<char> source) { throw null; }
+        public static int DecodeFromChars(System.ReadOnlySpan<char> source, System.Span<byte> destination) { throw null; }
+        public static System.Buffers.OperationStatus DecodeFromChars(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten, bool isFinalBlock = true) { throw null; }
+        public static byte[] DecodeFromUtf8(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int DecodeFromUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static System.Buffers.OperationStatus DecodeFromUtf8(System.ReadOnlySpan<byte> utf8, System.Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) { throw null; }
         public static System.Buffers.OperationStatus DecodeFromUtf8InPlace(System.Span<byte> buffer, out int bytesWritten) { throw null; }
+        public static char[] EncodeToChars(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int EncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination) { throw null; }
+        public static System.Buffers.OperationStatus EncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesConsumed, out int charsWritten, bool isFinalBlock = true) { throw null; }
+        public static string EncodeToString(System.ReadOnlySpan<byte> source) { throw null; }
+        public static byte[] EncodeToUtf8(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int EncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static System.Buffers.OperationStatus EncodeToUtf8(System.ReadOnlySpan<byte> bytes, System.Span<byte> utf8, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) { throw null; }
         public static System.Buffers.OperationStatus EncodeToUtf8InPlace(System.Span<byte> buffer, int dataLength, out int bytesWritten) { throw null; }
+        public static int GetEncodedLength(int bytesLength) { throw null; }
         public static int GetMaxDecodedFromUtf8Length(int length) { throw null; }
+        public static int GetMaxDecodedLength(int base64Length) { throw null; }
         public static int GetMaxEncodedToUtf8Length(int length) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<byte> base64TextUtf8) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<byte> base64TextUtf8, out int decodedLength) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<char> base64Text) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<char> base64Text, out int decodedLength) { throw null; }
+        public static bool TryDecodeFromChars(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryDecodeFromUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryEncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryEncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryEncodeToUtf8InPlace(System.Span<byte> buffer, int dataLength, out int bytesWritten) { throw null; }
     }
     public static partial class Base64Url
     {
@@ -8874,7 +8892,7 @@ namespace System.Diagnostics
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public string VisualizerTypeName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class StackTraceHiddenAttribute : System.Attribute
     {
         public StackTraceHiddenAttribute() { }
@@ -8994,7 +9012,7 @@ namespace System.Diagnostics.CodeAnalysis
         public System.Type? Type { get { throw null; } }
         public string? TypeName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
     public sealed partial class ExcludeFromCodeCoverageAttribute : System.Attribute
     {
         public ExcludeFromCodeCoverageAttribute() { }
@@ -9096,9 +9114,11 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class StringSyntaxAttribute : System.Attribute
     {
         public const string CompositeFormat = "CompositeFormat";
+        public const string CSharp = "C#";
         public const string DateOnlyFormat = "DateOnlyFormat";
         public const string DateTimeFormat = "DateTimeFormat";
         public const string EnumFormat = "EnumFormat";
+        public const string FSharp = "F#";
         public const string GuidFormat = "GuidFormat";
         public const string Json = "Json";
         public const string NumericFormat = "NumericFormat";
@@ -9106,6 +9126,7 @@ namespace System.Diagnostics.CodeAnalysis
         public const string TimeOnlyFormat = "TimeOnlyFormat";
         public const string TimeSpanFormat = "TimeSpanFormat";
         public const string Uri = "Uri";
+        public const string VisualBasic = "Visual Basic";
         public const string Xml = "Xml";
         public StringSyntaxAttribute(string syntax) { }
         public StringSyntaxAttribute(string syntax, params object?[] arguments) { }
@@ -9605,6 +9626,8 @@ namespace System.Globalization
         public string GetUnicode(string ascii) { throw null; }
         public string GetUnicode(string ascii, int index) { throw null; }
         public string GetUnicode(string ascii, int index, int count) { throw null; }
+        public bool TryGetAscii(System.ReadOnlySpan<char> unicode, System.Span<char> destination, out int charsWritten) { throw null; }
+        public bool TryGetUnicode(System.ReadOnlySpan<char> ascii, System.Span<char> destination, out int charsWritten) { throw null; }
     }
     public static partial class ISOWeek
     {
@@ -10336,6 +10359,7 @@ namespace System.IO
         public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
         public static System.IO.FileStream Open(string path, System.IO.FileStreamOptions options) { throw null; }
         public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenHandle(string path, System.IO.FileMode mode = System.IO.FileMode.Open, System.IO.FileAccess access = System.IO.FileAccess.Read, System.IO.FileShare share = System.IO.FileShare.Read, System.IO.FileOptions options = System.IO.FileOptions.None, long preallocationSize = (long)0) { throw null; }
+        public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenNullHandle() { throw null; }
         public static System.IO.FileStream OpenRead(string path) { throw null; }
         public static System.IO.StreamReader OpenText(string path) { throw null; }
         public static System.IO.FileStream OpenWrite(string path) { throw null; }
@@ -11533,6 +11557,14 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(nuint value) { throw null; }
     }
+    public enum DivisionRounding
+    {
+        Truncate = 0,
+        Floor = 1,
+        Ceiling = 2,
+        AwayFromZero = 3,
+        Euclidean = 4,
+    }
     public partial interface IAdditionOperators<TSelf, TOther, TResult> where TSelf : System.Numerics.IAdditionOperators<TSelf, TOther, TResult>?
     {
         static abstract TResult operator +(TSelf left, TOther right);
@@ -11547,7 +11579,10 @@ namespace System.Numerics
     }
     public partial interface IBinaryInteger<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IBinaryNumber<TSelf>, System.Numerics.IBitwiseOperators<TSelf, TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumber<TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.IShiftOperators<TSelf, int, TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.IBinaryInteger<TSelf>?
     {
+        static virtual TSelf Divide(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
         static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right) { throw null; }
+        static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
+        static virtual TSelf Remainder(TSelf left, TSelf right, System.Numerics.DivisionRounding mode) { throw null; }
         int GetByteCount();
         int GetShortestBitLength();
         static virtual TSelf LeadingZeroCount(TSelf value) { throw null; }
@@ -14166,25 +14201,15 @@ namespace System.Runtime.CompilerServices
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class AsyncHelpers
     {
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void Await(System.Threading.Tasks.Task task) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void Await(System.Threading.Tasks.ValueTask task) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static T Await<T>(System.Threading.Tasks.ValueTask<T> task) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable configuredAwaitable) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable configuredAwaitable) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw null; }
         public static void HandleAsyncEntryPoint(System.Threading.Tasks.Task task) { }
         public static int HandleAsyncEntryPoint(System.Threading.Tasks.Task<int> task) { throw null; }
@@ -14534,6 +14559,7 @@ namespace System.Runtime.InteropServices
     public enum ExtendedLayoutKind
     {
         CStruct = 0,
+        CUnion = 1,
     }
     public partial class ExternalException : System.SystemException
     {
@@ -17038,6 +17064,7 @@ namespace System
     public partial class Uri : System.IEquatable<System.Uri>, System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
+        public static readonly string UriSchemeData;
         public static readonly string UriSchemeFile;
         public static readonly string UriSchemeFtp;
         public static readonly string UriSchemeFtps;
@@ -17058,12 +17085,12 @@ namespace System
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected Uri(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public Uri([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uriString) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use Uri(string) instead.")]
         public Uri([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uriString, bool dontEscape) { }
         public Uri([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uriString, in System.UriCreationOptions creationOptions) { }
         public Uri([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri", new object[]{ "uriKind"})] string uriString, System.UriKind uriKind) { }
         public Uri(System.Uri baseUri, string? relativeUri) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string) instead.")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use Uri(Uri, string) instead.")]
         public Uri(System.Uri baseUri, string? relativeUri, bool dontEscape) { }
         public Uri(System.Uri baseUri, System.Uri relativeUri) { }
         public string AbsolutePath { get { throw null; } }
