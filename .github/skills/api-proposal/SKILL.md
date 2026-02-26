@@ -259,6 +259,13 @@ Present the complete draft to the user for review. Iterate based on feedback bef
 
 ### Phase 5: Publish
 
+> **Agent disclaimer:** When publishing to GitHub on behalf of a user account, prepend the following disclaimer to the proposal body:
+>
+> ```markdown
+> > [!NOTE]
+> > This proposal was drafted with the help of an AI agent. Please review for accuracy and remove this notice once you're satisfied with the content.
+> ```
+
 #### Step 1: Push and capture commit URL
 
 Commit prototype changes and push the branch to the user's fork (default) or ask for an alternative remote. Capture the commit URL for inclusion in the proposal (e.g., `https://github.com/<owner>/<repo>/commit/<sha>`).
