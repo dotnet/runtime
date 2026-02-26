@@ -358,8 +358,9 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
                 parameters:
                   displayName: 'Send cDAC X-Plat Dump Tests to Helix'
-                  sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-xplat-test-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues=$(CdacHelixQueue) /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /p:SourcePlatforms="${{ join(';', parameters.cdacDumpPlatforms) }}" /bl:$(Build.SourcesDirectory)/artifacts/log/SendXPlatTestToHelix.binlog
+                  sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-xplat-test-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues=$(CdacHelixQueue) /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendXPlatTestToHelix.binlog
                   environment:
                     _Creator: dotnet-bot
                     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
                     NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
+                    SourcePlatforms: ${{ join(';', parameters.cdacDumpPlatforms) }}
