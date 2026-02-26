@@ -603,10 +603,10 @@ List<HandleData> IGC.GetHandles(HandleType[] types)
     TargetPointer handleTableMap = target.ReadGlobalPointer("HandleTableMap");
     string[] gcIdentifiers = GetGCIdentifiers();
     uint tableCount = 0;
-    if (!gcType.Contains("workstation"))
+    if (gcType.Contains("workstation"))
         tableCount = 1;
     else
-        tableCount = _target.Read<uint>(_target.ReadGlobalPointer("TotalCpuCount")),
+        tableCount = target.Read<uint>(target.ReadGlobalPointer("TotalCpuCount"));
     // for each handleTableMap in the linked list
     while (handleTableMap != TargetPointer.Null)
     {
