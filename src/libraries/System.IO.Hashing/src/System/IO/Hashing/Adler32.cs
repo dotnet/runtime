@@ -196,17 +196,12 @@ namespace System.IO.Hashing
                 Vector128.IsHardwareAccelerated &&
                 source.Length >= Vector128<byte>.Count * 2)
             {
-                if (AdvSimd.IsSupported)
-                {
-                    return UpdateArm128(adler, source);
-                }
-
-                if (Avx512BW.IsSupported && source.Length >= Vector512<byte>.Count)
+                if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && source.Length >= Vector512<byte>.Count)
                 {
                     return UpdateVector512(adler, source);
                 }
 
-                if (Avx2.IsSupported && source.Length >= Vector256<byte>.Count)
+                if (Vector256.IsHardwareAccelerated && Avx2.IsSupported && source.Length >= Vector256<byte>.Count)
                 {
                     return UpdateVector256(adler, source);
                 }
@@ -285,6 +280,25 @@ namespace System.IO.Hashing
 
                         vs2 += Sse2.MultiplyAddAdjacent(Ssse3.MultiplyAddAdjacent(bytes1, tap1), Vector128<short>.One).AsUInt32();
                         vs2 += Sse2.MultiplyAddAdjacent(Ssse3.MultiplyAddAdjacent(bytes2, tap2), Vector128<short>.One).AsUInt32();
+                    }
+                    else if (AdvSimd.IsSupported)
+                    {
+                        // Widening byte sum (equivalent of SumAbsoluteDifferences against zero)
+                        vs1 = AdvSimd.AddPairwiseWideningAndAdd(
+                            vs1,
+                            AdvSimd.AddPairwiseWideningAndAdd(
+                                AdvSimd.AddPairwiseWidening(bytes1),
+                                bytes2));
+
+                        // Widening multiply + horizontal add (equivalent of MultiplyAddAdjacent chain).
+                        // Because weights are all positive (1-32), unsigned byte * unsigned byte multiply is valid.
+                        Vector128<ushort> wprod1 = AdvSimd.MultiplyWideningLower(bytes1.GetLower(), tap1.AsByte().GetLower());
+                        wprod1 = AdvSimd.MultiplyWideningUpperAndAdd(wprod1, bytes1, tap1.AsByte());
+                        vs2 = AdvSimd.AddPairwiseWideningAndAdd(vs2, wprod1);
+
+                        Vector128<ushort> wprod2 = AdvSimd.MultiplyWideningLower(bytes2.GetLower(), tap2.AsByte().GetLower());
+                        wprod2 = AdvSimd.MultiplyWideningUpperAndAdd(wprod2, bytes2, tap2.AsByte());
+                        vs2 = AdvSimd.AddPairwiseWideningAndAdd(vs2, wprod2);
                     }
                     else
                     {
@@ -444,81 +458,6 @@ namespace System.IO.Hashing
             {
                 return UpdateVector256((s2 << 16) | s1, MemoryMarshal.CreateReadOnlySpan(ref sourceRef, length));
             }
-
-            if (length > 0)
-            {
-                UpdateScalarTail(ref sourceRef, length, ref s1, ref s2);
-            }
-
-            return (s2 << 16) | s1;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static uint UpdateArm128(uint adler, ReadOnlySpan<byte> source)
-        {
-            Debug.Assert(source.Length >= Vector128<byte>.Count * 2);
-
-            const int BlockSize = 32; // two Vector128<byte> loads
-
-            uint s1 = adler & 0xFFFF;
-            uint s2 = (adler >> 16) & 0xFFFF;
-
-            ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-            int length = source.Length;
-
-            do
-            {
-                int n = Math.Min(length, NMax);
-                int blocks = n / BlockSize;
-                n = blocks * BlockSize;
-                length -= n;
-
-                Vector128<uint> vs1 = Vector128<uint>.Zero;
-                Vector128<uint> vps = Vector128.CreateScalar(s1 * (uint)blocks);
-
-                Vector128<ushort> vColumnSum1 = Vector128<ushort>.Zero;
-                Vector128<ushort> vColumnSum2 = Vector128<ushort>.Zero;
-                Vector128<ushort> vColumnSum3 = Vector128<ushort>.Zero;
-                Vector128<ushort> vColumnSum4 = Vector128<ushort>.Zero;
-
-                do
-                {
-                    Vector128<byte> bytes1 = Vector128.LoadUnsafe(ref sourceRef);
-                    Vector128<byte> bytes2 = Vector128.LoadUnsafe(ref sourceRef, 16);
-                    sourceRef = ref Unsafe.Add(ref sourceRef, BlockSize);
-
-                    vps += vs1;
-
-                    vs1 = AdvSimd.AddPairwiseWideningAndAdd(
-                        vs1,
-                        AdvSimd.AddPairwiseWideningAndAdd(
-                            AdvSimd.AddPairwiseWidening(bytes1),
-                            bytes2));
-
-                    vColumnSum1 = AdvSimd.AddWideningLower(vColumnSum1, bytes1.GetLower());
-                    vColumnSum2 = AdvSimd.AddWideningLower(vColumnSum2, bytes1.GetUpper());
-                    vColumnSum3 = AdvSimd.AddWideningLower(vColumnSum3, bytes2.GetLower());
-                    vColumnSum4 = AdvSimd.AddWideningLower(vColumnSum4, bytes2.GetUpper());
-                }
-                while (--blocks > 0);
-
-                Vector128<uint> vs2 = vps << 5;
-                vs2 = AdvSimd.MultiplyWideningLowerAndAdd(vs2, vColumnSum1.GetLower(), Vector64.Create((ushort)32, 31, 30, 29));
-                vs2 = AdvSimd.MultiplyWideningLowerAndAdd(vs2, vColumnSum1.GetUpper(), Vector64.Create((ushort)28, 27, 26, 25));
-                vs2 = AdvSimd.MultiplyWideningLowerAndAdd(vs2, vColumnSum2.GetLower(), Vector64.Create((ushort)24, 23, 22, 21));
-                vs2 = AdvSimd.MultiplyWideningLowerAndAdd(vs2, vColumnSum2.GetUpper(), Vector64.Create((ushort)20, 19, 18, 17));
-                vs2 = AdvSimd.MultiplyWideningLowerAndAdd(vs2, vColumnSum3.GetLower(), Vector64.Create((ushort)16, 15, 14, 13));
-                vs2 = AdvSimd.MultiplyWideningLowerAndAdd(vs2, vColumnSum3.GetUpper(), Vector64.Create((ushort)12, 11, 10, 9));
-                vs2 = AdvSimd.MultiplyWideningLowerAndAdd(vs2, vColumnSum4.GetLower(), Vector64.Create((ushort)8, 7, 6, 5));
-                vs2 = AdvSimd.MultiplyWideningLowerAndAdd(vs2, vColumnSum4.GetUpper(), Vector64.Create((ushort)4, 3, 2, 1));
-
-                s1 += Vector128.Sum(vs1);
-                s2 += Vector128.Sum(vs2);
-
-                s1 %= ModBase;
-                s2 %= ModBase;
-            }
-            while (length >= BlockSize);
 
             if (length > 0)
             {
