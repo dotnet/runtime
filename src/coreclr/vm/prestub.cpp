@@ -2317,10 +2317,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
 
             // Use this method's own PortableEntryPoint rather than the helper's.
-            // Setting pCode to the helper's PortableEntryPoint would write a foreign
-            // MethodDesc pointer into this method's slot, breaking MethodDesc lookups
-            // and access checks (e.g. private Delegate.DelegateConstruct exposed on
-            // delegate ctor slots causes MethodAccessException).
+            // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
             PCODE entryPoint = GetPortableEntryPoint();
             if (ilStubInterpData != NULL)
             {
