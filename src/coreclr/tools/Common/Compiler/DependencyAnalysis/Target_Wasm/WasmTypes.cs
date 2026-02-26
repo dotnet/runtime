@@ -82,7 +82,7 @@ namespace ILCompiler.DependencyAnalysis.Wasm
 
         public override int GetHashCode()
         {
-            if (_types == null || _types.Length == 0)
+            if (_types.Length == 0)
                 return 0;
 
             int code = _types[0].GetHashCode();
