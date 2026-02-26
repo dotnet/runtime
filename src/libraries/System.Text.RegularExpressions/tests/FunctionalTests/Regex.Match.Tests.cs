@@ -2328,7 +2328,7 @@ namespace System.Text.RegularExpressions.Tests
 
         private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
 
-        [ConditionalTheory(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
+        [ConditionalTheory(typeof(RegexMatchTests), nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", ~RuntimeConfiguration.Release)]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeTestModes.JitMinOpts)]
