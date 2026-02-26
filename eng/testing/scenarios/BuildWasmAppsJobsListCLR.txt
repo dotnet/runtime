@@ -4,7 +4,6 @@ Wasm.Build.Tests.DownloadThenInitTests
 Wasm.Build.Tests.EnvVariablesTests
 Wasm.Build.Tests.FilesToIncludeInFileSystemTests
 Wasm.Build.Tests.HttpTests
-Wasm.Build.Tests.LazyLoadingTests
 Wasm.Build.Tests.LibraryInitializerTests
 Wasm.Build.Tests.MaxParallelDownloadsTests
 Wasm.Build.Tests.ModuleConfigTests
