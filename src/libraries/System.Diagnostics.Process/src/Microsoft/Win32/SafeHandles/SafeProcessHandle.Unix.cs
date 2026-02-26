@@ -47,6 +47,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 Debug.Assert(_handle is not null);
                 _handle.DangerousRelease();
+                return true;
             }
 
             return (int)handle switch
