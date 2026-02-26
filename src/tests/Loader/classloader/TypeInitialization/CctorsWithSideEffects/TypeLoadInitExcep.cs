@@ -3,6 +3,7 @@
 
 /*
 
+using TestLibrary;
 A .cctor has only one chance to run in any appdomain. 
 If it fails, the 2nd time we try to access a static field we check if .cctor has been run. And it has, but failed so we fail again.
 
@@ -14,6 +15,7 @@ Expected: Should return the same exception.
 
 using System;
 using Xunit;
+using TestLibrary;
 
 
 public class A 
@@ -48,6 +50,7 @@ public struct B
 
 public class Test_TypeLoadInitExcep
 {	
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{ 

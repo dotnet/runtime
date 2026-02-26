@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="vsw515341.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

@@ -9,6 +9,7 @@
 
 #define INTF_FOR_TASK
 
+using TestLibrary;
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -100,6 +101,7 @@ namespace V8.Richards
 
         public const int DATA_SIZE = 4;
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

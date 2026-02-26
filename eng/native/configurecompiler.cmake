@@ -20,6 +20,21 @@ include(CheckLinkerFlag)
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 
+# Validate tryrun cache version matches current Emscripten version (browser-wasm only)
+if(CLR_CMAKE_TARGET_BROWSER AND DEFINED TRYRUN_BROWSER_EMSCRIPTEN_VERSION)
+    file(READ "${CMAKE_CURRENT_LIST_DIR}/../../src/mono/browser/emscripten-version.txt" CURRENT_EMSCRIPTEN_VERSION)
+    string(STRIP "${CURRENT_EMSCRIPTEN_VERSION}" CURRENT_EMSCRIPTEN_VERSION)
+    
+    if(NOT TRYRUN_BROWSER_EMSCRIPTEN_VERSION STREQUAL CURRENT_EMSCRIPTEN_VERSION)
+        message(WARNING 
+            "Emscripten version mismatch detected!\n"
+            "  Current Emscripten: ${CURRENT_EMSCRIPTEN_VERSION}\n"
+            "  Cached features for: ${TRYRUN_BROWSER_EMSCRIPTEN_VERSION}\n"
+            "  The CMake feature cache (eng/native/tryrun.browser.cmake) may be outdated.\n"
+            "  Consider regenerating the cache - see instructions in eng/native/tryrun.browser.cmake")
+    endif()
+endif()
+
 #-----------------------------------------------------
 # Initialize Cmake compiler flags and other variables
 #-----------------------------------------------------
@@ -712,6 +727,8 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
       endif()
     endif()
     add_link_options(${DISABLE_OVERRIDING_MIN_VERSION_ERROR})
+    # Keep the Catalyst version in the -target triples below in sync
+    # with MacCatalystVersionMin in SetOSTargetMinVersions in Directory.Build.props.
     if(CLR_CMAKE_HOST_ARCH_ARM64)
       set(CLR_CMAKE_MACCATALYST_COMPILER_TARGET "arm64-apple-ios17.0-macabi")
       add_link_options(-target ${CLR_CMAKE_MACCATALYST_COMPILER_TARGET})

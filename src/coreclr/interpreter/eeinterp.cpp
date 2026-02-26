@@ -85,7 +85,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                 break;
         }
 
-#if !defined(FEATURE_JIT)
+#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
         // interpret everything when we do not have a JIT
         doInterpret = true;
 #else
@@ -188,6 +188,13 @@ INTERPRETER_NORETURN void BADCODE(const char* message)
     if (IsInterpDumpActive())
         printf("Error during interpreter method compilation: %s\n", message ? message : "unknown error");
     throw InterpException(message, CORJIT_BADCODE);
+}
+
+INTERPRETER_NORETURN void SKIPCODE(const char* message)
+{
+    if (IsInterpDumpActive())
+        printf("Skip during interpreter method compilation: %s\n", message ? message : "unknown error");
+    throw InterpException(message, CORJIT_SKIPPED);
 }
 
 INTERPRETER_NORETURN void NOMEM()

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /******************************************************************************
+using TestLibrary;
  * This file is auto-generated from a template file by the GenerateTests.csx  *
  * script in tests\src\JIT\HardwareIntrinsics\X86\Shared. In order to make    *
  * changes, please update the corresponding template and run according to the *
@@ -15,11 +16,13 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
+using TestLibrary;
 
 namespace JIT.HardwareIntrinsics.X86._Sse41.handwritten
 {
     public static partial class Program
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75767", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
         [Fact]
         public static void ConvertToVector128Int64Byte()
         {

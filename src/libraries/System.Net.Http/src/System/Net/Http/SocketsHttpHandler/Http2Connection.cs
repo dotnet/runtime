@@ -255,8 +255,10 @@ namespace System.Net.Http
                     throw;
                 }
 
-                // TODO: Review this case!
-                throw new IOException(SR.net_http_http2_connection_not_established, e);
+                // Use _abortException if available, as it contains the real reason for the connection failure.
+                // For example, when ProcessIncomingFramesAsync detects a server-initiated disconnect and calls Abort(),
+                // _abortException will have the original IOException, while 'e' here may be an uninformative ObjectDisposedException.
+                throw new IOException(SR.net_http_http2_connection_not_established, _abortException ?? e);
             }
 
             // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
@@ -1376,7 +1378,7 @@ namespace System.Net.Http
 
         private void WriteLiteralHeader(string name, ReadOnlySpan<string> values, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values.ToArray())}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values)}");
 
             int bytesWritten;
             while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparatorBytes, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
@@ -1389,7 +1391,7 @@ namespace System.Net.Http
 
         private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, byte[]? separator, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(Encoding.ASCII.GetString(separator ?? []), values.ToArray())}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(Encoding.ASCII.GetString(separator ?? []), values)}");
 
             int bytesWritten;
             while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))

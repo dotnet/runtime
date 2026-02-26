@@ -3,10 +3,12 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class Test_runtest
 
 {
+   [ActiveIssue("https://github.com/dotnet/runtime/issues/102741", typeof(Utilities), nameof(Utilities.IsNativeAot))]
    [Fact]
    public static int TestEntryPoint()
    {

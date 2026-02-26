@@ -43,7 +43,7 @@ namespace System.Text.Json
                 return JsonReaderHelper.GetUnescapedString(span);
             }
 
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!span.Contains(JsonConstants.BackSlash));
             return JsonReaderHelper.TranscodeHelper(span);
         }
 
@@ -838,7 +838,7 @@ namespace System.Text.Json
                 return JsonReaderHelper.TryGetUnescapedBase64Bytes(span, out value);
             }
 
-            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+            Debug.Assert(!span.Contains(JsonConstants.BackSlash));
             return JsonReaderHelper.TryDecodeBase64(span, out value);
         }
 

@@ -3,9 +3,11 @@
 using System;
 using System.Globalization;
 using Xunit;
+using TestLibrary;
 public class Test72162
 {
     // Bug 72162 dealt with the number of significant digits being incorrectly done on the Mac
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint()
     {

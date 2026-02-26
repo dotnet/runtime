@@ -29,11 +29,13 @@
   -->
 
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" />
+  <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" />
 
   <PropertyGroup>
     <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
-    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' != 'true'">$(Scenario)-ST-</WorkItemPrefix>
-    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' == 'true'">$(Scenario)-MT-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">$(Scenario)-CLR-ST-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' != 'true'">$(Scenario)-MONO-ST-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' == 'true'">$(Scenario)-MONO-MT-</WorkItemPrefix>
 
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'WasmTestOnV8' or 
                                       '$(Scenario)' == 'WasmTestOnChrome' or 
@@ -50,7 +52,6 @@
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'browser', 'emsdk'))</EMSDK_PATH>
     <EmSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\emsdk</EmSdkDirForHelixPayload>
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
@@ -59,7 +60,7 @@
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'BuildWasmApps'">false</NeedsEMSDKNode>
     <NeedsToRunOnChrome Condition="'$(Scenario)' == 'WasmTestOnChrome' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnChrome>
     <NeedsToRunOnFirefox Condition="'$(Scenario)' == 'WasmTestOnFirefox'">true</NeedsToRunOnFirefox>
-    <NeedsToRunOnV8 Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnV8>
+    <NeedsToRunOnV8 Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'BuildWasmApps' or '$(Scenario)' == 'WasmTestOnV8'">true</NeedsToRunOnV8>
     <NeedsBuiltNugets Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsBuiltNugets>
 
     <IncludeXHarnessCli>true</IncludeXHarnessCli>

@@ -242,7 +242,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                _parameterTypes = Array.Empty<RuntimeType>();
+                _parameterTypes = [];
             }
 
             // check and store the return value

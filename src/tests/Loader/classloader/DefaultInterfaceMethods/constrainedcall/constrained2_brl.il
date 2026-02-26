@@ -3,7 +3,7 @@
 
 .assembly extern System.Console { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
-.assembly extern Microsoft.DotNet.XUnitExtensions {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern xunit.core {}
 .assembly constrained2_brl { }
 

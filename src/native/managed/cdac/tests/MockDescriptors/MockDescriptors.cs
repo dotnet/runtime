@@ -167,7 +167,7 @@ internal partial class MockDescriptors
             new(nameof(Data.Assembly.IsDynamic), DataType.uint8),
             new(nameof(Data.Assembly.Error), DataType.pointer),
             new(nameof(Data.Assembly.NotifyFlags), DataType.uint32),
-            new(nameof(Data.Assembly.Level), DataType.uint32),
+            new(nameof(Data.Assembly.IsLoaded), DataType.uint8),
         ]
     };
 
@@ -193,6 +193,8 @@ internal partial class MockDescriptors
             new(nameof(Data.Thread.PreemptiveGCDisabled), DataType.uint32),
             new(nameof(Data.Thread.RuntimeThreadLocals), DataType.pointer),
             new(nameof(Data.Thread.Frame), DataType.pointer),
+            new(nameof(Data.Thread.CachedStackBase), DataType.pointer),
+            new(nameof(Data.Thread.CachedStackLimit), DataType.pointer),
             new(nameof(Data.Thread.TEB), DataType.pointer),
             new(nameof(Data.Thread.LastThrownObject), DataType.pointer),
             new(nameof(Data.Thread.LinkNext), DataType.pointer),

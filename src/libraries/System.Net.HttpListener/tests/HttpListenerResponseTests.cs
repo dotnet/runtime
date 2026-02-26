@@ -50,7 +50,7 @@ namespace System.Net.Tests
 
         protected async Task<HttpListenerResponse> GetResponse(string httpVersion = "1.1")
         {
-            Client.Send(Factory.GetContent(httpVersion, "POST", null, "Give me a context, please", null, headerOnly: false));
+            await Client.SendAsync(Factory.GetContent(httpVersion, "POST", null, "Give me a context, please", null, headerOnly: false));
             HttpListenerContext context = await Factory.GetListener().GetContextAsync();
             return context.Response;
         }
@@ -154,10 +154,10 @@ namespace System.Net.Tests
         }
 
         // The managed implementation should also dispose the OutputStream after calling Abort.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21808", TestPlatforms.AnyUnix)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21808", TestPlatforms.AnyUnix)]
         public async Task Abort_Invoke_ForciblyTerminatesConnection()
         {
-            Client.Send(Factory.GetContent("1.1", "POST", null, "Give me a context, please", null, headerOnly: false));
+            await Client.SendAsync(Factory.GetContent("1.1", "POST", null, "Give me a context, please", null, headerOnly: false));
             HttpListenerContext context = await Factory.GetListener().GetContextAsync();
             HttpListenerResponse response = context.Response;
             Stream outputStream = response.OutputStream;
@@ -265,7 +265,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_AllContentLengthAlreadySent_DoesNotSendEntity(bool willBlock)
@@ -359,7 +359,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_SendMoreThanContentLength_ThrowsInvalidOperationException(bool willBlock)
@@ -415,7 +415,7 @@ namespace System.Net.Tests
             using (Socket client = factory.GetConnectedSocket())
             {
                 // Send a header to the HttpListener to give it a context.
-                client.Send(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
+                await client.SendAsync(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
                 HttpListener listener = factory.GetListener();
                 HttpListenerContext context = await listener.GetContextAsync();
 
