@@ -1371,7 +1371,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         case NI_Sve2_Scatter16BitNarrowingNonTemporal:
         case NI_Sve2_Scatter32BitNarrowingNonTemporal:
         case NI_Sve2_ScatterNonTemporal:
-            buildInternalFloatRegisterDefForNode(intrinsicTree, internalFloatRegCandidates());
+            if (!varTypeIsSIMD(intrin.op2->gtType))
+            {
+                buildInternalFloatRegisterDefForNode(intrinsicTree, internalFloatRegCandidates());
+            }
             break;
 
         default:
