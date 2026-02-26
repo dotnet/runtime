@@ -430,7 +430,7 @@ public class ExecutionManagerTests
 
         // Head fragment: inserted into the map with an empty range (Contains always returns false)
         // and Next = tailFragmentAddress | 1 (collectible tag bit set).
-        TargetPointer headFragmentAddress = emBuilder.AddRangeSectionFragmentWithCollectibleNext(jittedCode, rangeSectionAddress, tailFragmentAddress);
+        _ = emBuilder.AddRangeSectionFragmentWithCollectibleNext(jittedCode, rangeSectionAddress, tailFragmentAddress);
 
         var target = CreateTarget(emBuilder);
 
