@@ -3187,7 +3187,7 @@ namespace System.Runtime.Intrinsics
                     AsinSingleCoreDouble<TVectorDouble>(daxHi));
             }
 
-            result |= sign;
+            result ^= sign;
             result = TVectorSingle.ConditionalSelect(outOfRange, TVectorSingle.Create(float.NaN), result);
 
             return result;
@@ -3271,7 +3271,7 @@ namespace System.Runtime.Intrinsics
             result = TVectorDouble.ConditionalSelect(tinyMask, ax, result);
 
             // Restore sign
-            result |= sign;
+            result ^= sign;
 
             return result;
         }
@@ -3311,7 +3311,7 @@ namespace System.Runtime.Intrinsics
                     AsinhSingleCoreDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(daxHi));
             }
 
-            result |= sign;
+            result ^= sign;
             result = TVectorSingle.ConditionalSelect(tinyMask, x, result);
 
             return result;
@@ -3571,7 +3571,7 @@ namespace System.Runtime.Intrinsics
             // Select based on magnitude
             TVectorDouble result = TVectorDouble.ConditionalSelect(smallMask, smallResult, largeResult);
             result = TVectorDouble.ConditionalSelect(tinyMask, x, result);
-            result = TVectorDouble.ConditionalSelect(infMask, TVectorDouble.Create(double.PositiveInfinity) | sign, result);
+            result = TVectorDouble.ConditionalSelect(infMask, TVectorDouble.Create(double.PositiveInfinity) ^ sign, result);
             result = TVectorDouble.ConditionalSelect(nanMask, TVectorDouble.Create(double.NaN), result);
 
             return result;
@@ -3614,9 +3614,9 @@ namespace System.Runtime.Intrinsics
                     AtanhSingleCoreDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(daxHi));
             }
 
-            result |= sign;
+            result ^= sign;
             result = TVectorSingle.ConditionalSelect(tinyMask, x, result);
-            result = TVectorSingle.ConditionalSelect(infMask, TVectorSingle.Create(float.PositiveInfinity) | sign, result);
+            result = TVectorSingle.ConditionalSelect(infMask, TVectorSingle.Create(float.PositiveInfinity) ^ sign, result);
             result = TVectorSingle.ConditionalSelect(nanMask, TVectorSingle.Create(float.NaN), result);
 
             return result;
@@ -3967,7 +3967,7 @@ namespace System.Runtime.Intrinsics
             TVectorDouble result = chi - ((q - clo) - reduced);
 
             // Restore sign
-            result |= sign;
+            result ^= sign;
 
             return result;
         }
@@ -4006,9 +4006,9 @@ namespace System.Runtime.Intrinsics
                     AtanSingleCoreDouble<TVectorDouble>(daxHi));
             }
 
-            result |= sign;
+            result ^= sign;
             result = TVectorSingle.ConditionalSelect(tinyMask, x, result);
-            result = TVectorSingle.ConditionalSelect(overflowMask & ~nanMask, TVectorSingle.Create(1.5707964f) | sign, result);
+            result = TVectorSingle.ConditionalSelect(overflowMask & ~nanMask, TVectorSingle.Create(1.5707964f) ^ sign, result);
             result = TVectorSingle.ConditionalSelect(nanMask, TVectorSingle.Create(float.NaN), result);
 
             return result;
