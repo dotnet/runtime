@@ -2519,7 +2519,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         {
             // Load the sp onto the stack for the helper call.
             // TODO-WASM: Implement a special calling convention for this helper that doesn't accept sp/pep.
-            emit->emitIns_I(INS_local_get, EA_4BYTE, WasmRegToIndex(GetStackPointerReg()));
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
             // Compute the actual dest/src of the slot being copied to pass to the helper.
             emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
             emit->emitIns_I(INS_I_const, attrDstAddr, dstOffset);
