@@ -119,10 +119,13 @@ namespace System
                     FirstChanceExceptionEventArgs args = new(*pException);
                     foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
                     {
-                        // If any handler throws, we want to stop invoking the rest of the handlers and
-                        // propagate the exception back to the caller. This follows the .NET Framework behavior
-                        // but is being done without any reason other than the noted compatibility.
-                        handler(appDomain, args);
+                        try
+                        {
+                            handler(appDomain, args);
+                        }
+                        catch
+                        {
+                        }
                     }
                 }
             }
