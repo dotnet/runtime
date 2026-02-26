@@ -188,8 +188,8 @@ extends:
                 $queue = switch ("$(osGroup)_$(archType)") {
                     "windows_x64"  { "$(helix_windows_x64)" }
                     "windows_arm64" { "$(helix_windows_arm64)" }
-                    "linux_x64"    { "$(helix_linux_x64_oldest)" }
-                    "linux_arm64"  { "$(helix_linux_arm64_oldest)" }
+                    "linux_x64"    { "$(helix_linux_x64_latest)" }
+                    "linux_arm64"  { "$(helix_linux_arm64_latest)" }
                     "osx_x64"     { "$(helix_macos_x64)" }
                     "osx_arm64"   { "$(helix_macos_arm64)" }
                 }
