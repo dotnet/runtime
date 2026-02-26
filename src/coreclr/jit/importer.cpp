@@ -9521,11 +9521,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                              : gtNewStoreIndNode(lclTyp, op1, op2, indirFlags);
                 impAnnotateFieldIndir(op1->AsIndir());
 
-                if ((op1->AsIndir()->Addr()->gtFlags & GTF_SIDE_EFFECT) != 0)
-                {
-                    op1->SetReverseOp();
-                }
-
                 if (varTypeIsStruct(op1))
                 {
                     op1 = impStoreStruct(op1, CHECK_SPILL_ALL);
