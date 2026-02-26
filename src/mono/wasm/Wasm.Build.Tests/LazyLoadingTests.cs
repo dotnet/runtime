@@ -14,6 +14,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
 
+[TestCategory("mono")]
 public class LazyLoadingTests : WasmTemplateTestsBase
 {
     public LazyLoadingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
