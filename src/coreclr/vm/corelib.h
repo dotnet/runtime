@@ -720,11 +720,6 @@ DEFINE_METHOD(ASYNC_HELPERS,      ASYNC_CALL_CONTINUATION,   AsyncCallContinuati
 DEFINE_METHOD(ASYNC_HELPERS,      RESUME_INTERPRETER_CONTINUATION, ResumeInterpreterContinuation, NoSig)
 #endif
 
-#ifdef TARGET_BROWSER
-DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT, HandleAsyncEntryPoint, SM_TaskOfInt_RetInt)
-DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT_VOID, HandleAsyncEntryPoint, SM_Task_RetVoid)
-#endif // TARGET_BROWSER
-
 DEFINE_CLASS_U(CompilerServices, Continuation,          ContinuationObject)
 DEFINE_FIELD_U(Next,             ContinuationObject,    Next)
 DEFINE_FIELD_U(ResumeInfo,       ContinuationObject,    ResumeInfo)
