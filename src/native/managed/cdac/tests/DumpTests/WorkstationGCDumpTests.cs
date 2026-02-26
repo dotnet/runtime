@@ -93,7 +93,8 @@ public class WorkstationGCDumpTests : DumpTestBase
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void WorkstationGC_CanEnumerateExpectedHandles(TestConfiguration config)
     {
-
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
         var pinnedHandles = gcContract.GetHandles([HandleType.Pinned]);
         Assert.True(
             pinnedHandles.Count >= 5,
