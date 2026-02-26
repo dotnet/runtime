@@ -480,6 +480,13 @@ namespace System.Net.Security
             where TIOAdapter : IReadWriteAdapter
         {
             int fd = (int)socket.Handle;
+
+            // Ensure the socket is non-blocking so SSL_do_handshake won't block the
+            // thread pool thread. SocketAsyncContext normally does this on first async
+            // op, but SSL_do_handshake bypasses SocketAsyncContext and calls recv/send
+            // directly on the fd.
+            socket.Blocking = false;
+
             SafeSslHandle sslHandle = Interop.OpenSsl.AllocateSslHandle(_sslAuthenticationOptions, fd);
             _securityContext = sslHandle;
 
