@@ -12375,9 +12375,7 @@ void Compiler::initBBEntryState(BasicBlock* block, EntryState* srcState)
 
     block->SetEntryState(getAllocator(CMK_Unknown).allocate<EntryState>(1));
 
-    // block->GetEntryState()->esRefcount = 1;
-
-    block->GetEntryState()->esStackDepth = srcState->esStackDepth;
+    block->GetEntryState()->esStackDepth= srcState->esStackDepth;
 
     if (srcState->esStackDepth > 0)
     {
