@@ -29,6 +29,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.IO.Pipes aren't supported on browser")]
         public void GetFileType_AnonymousPipe()
         {
             using AnonymousPipeServerStream server = new(PipeDirection.Out);
@@ -41,6 +42,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets aren't supported on browser")]
         public void GetFileType_Socket()
         {
             using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -62,7 +64,7 @@ namespace System.IO.Tests
         [Fact]
         public void GetFileType_ClosedHandle_ThrowsObjectDisposedException()
         {
-            SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create);
+            SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write);
             handle.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => handle.GetFileType());
