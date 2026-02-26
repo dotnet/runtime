@@ -481,11 +481,16 @@ namespace System.Net.Security
         {
             int fd = (int)socket.Handle;
 
-            // Ensure the socket is non-blocking so SSL_do_handshake won't block the
-            // thread pool thread. SocketAsyncContext normally does this on first async
-            // op, but SSL_do_handshake bypasses SocketAsyncContext and calls recv/send
-            // directly on the fd.
-            socket.Blocking = false;
+            // When called from the async path, set the socket to non-blocking so
+            // SSL_do_handshake returns WANT_READ/WANT_WRITE instead of blocking the
+            // thread pool thread. SSL_do_handshake bypasses SocketAsyncContext and
+            // calls recv/send directly on the fd, so we cannot rely on
+            // SocketAsyncContext's lazy non-blocking initialization.
+            // For the sync path, blocking is fine — the caller expects it.
+            if (typeof(TIOAdapter) == typeof(AsyncReadWriteAdapter))
+            {
+                socket.Blocking = false;
+            }
 
             SafeSslHandle sslHandle = Interop.OpenSsl.AllocateSslHandle(_sslAuthenticationOptions, fd);
             _securityContext = sslHandle;
