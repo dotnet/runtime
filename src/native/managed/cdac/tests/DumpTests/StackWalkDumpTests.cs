@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -98,5 +99,22 @@ public class StackWalkDumpTests : DumpTestBase
         byte[] context = stackWalk.GetRawContext(firstFrame);
         Assert.NotNull(context);
         Assert.True(context.Length > 0, "Expected non-empty raw context for stack frame");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void StackWalk_ContainsExpectedFrames(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        DumpTestStackWalker.Walk(Target, crashingThread)
+            .ExpectFrame("MethodC")
+            .ExpectAdjacentFrame("MethodB")
+            .ExpectAdjacentFrame("MethodA")
+            .ExpectAdjacentFrame("Main")
+            .Verify();
     }
 }
