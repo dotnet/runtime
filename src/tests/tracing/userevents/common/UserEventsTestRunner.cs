@@ -38,7 +38,7 @@ namespace Tracing.UserEvents.Tests.Common
             string[] args,
             string scenarioName,
             Action traceeAction,
-            Func<EventPipeEventSource, bool> traceValidator,
+            Func<int, EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout = DefaultTraceeExitTimeoutMs,
             int recordTraceExitTimeout = DefaultRecordTraceExitTimeoutMs)
         {
@@ -59,7 +59,7 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static int RunOrchestrator(
             string scenarioName,
-            Func<EventPipeEventSource, bool> traceValidator,
+            Func<int, EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout,
             int recordTraceExitTimeout)
         {
@@ -227,7 +227,7 @@ namespace Tracing.UserEvents.Tests.Common
             }
 
             using EventPipeEventSource source = new EventPipeEventSource(traceFilePath);
-            if (!traceValidator(source))
+            if (!traceValidator(traceePid, source))
             {
                 Console.Error.WriteLine($"Trace file `{traceFilePath}` does not contain expected events.");
                 UploadTraceFileFromHelix(traceFilePath, scenarioName);

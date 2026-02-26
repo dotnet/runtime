@@ -16,12 +16,19 @@ namespace Tracing.UserEvents.Tests.CustomMetadata
             CustomMetadataEventSource.Log.WorkItem(1, "Item1");
         }
 
-        private static readonly Func<EventPipeEventSource, bool> s_traceValidator = source =>
+        private static readonly Func<int, EventPipeEventSource, bool> s_traceValidator = (traceePid, source) =>
         {
             bool anyMatching = false;
+            int eventsFromOtherProcesses = 0;
 
             source.Dynamic.All += (TraceEvent e) =>
             {
+                if (e.ProcessID != traceePid)
+                {
+                    eventsFromOtherProcesses++;
+                    return;
+                }
+
                 if (!string.Equals(e.ProviderName, "DemoCustomMetadata", StringComparison.Ordinal))
                 {
                     return;
@@ -57,9 +64,14 @@ namespace Tracing.UserEvents.Tests.CustomMetadata
 
             source.Process();
 
+            if (eventsFromOtherProcesses > 0)
+            {
+                Console.WriteLine($"Ignored {eventsFromOtherProcesses} events from processes other than tracee (PID {traceePid}).");
+            }
+
             if (!anyMatching)
             {
-                Console.Error.WriteLine("The trace did not contain the expected CustomMetadata event.");
+                Console.Error.WriteLine($"The trace did not contain the expected CustomMetadata event from tracee PID {traceePid}.");
             }
 
             return anyMatching;

@@ -24,12 +24,19 @@ namespace Tracing.UserEvents.Tests.ManagedEvent
             }
         }
 
-        private static readonly Func<EventPipeEventSource, bool> s_traceValidator = source =>
+        private static readonly Func<int, EventPipeEventSource, bool> s_traceValidator = (traceePid, source) =>
         {
             bool sampleEventFound = false;
+            int eventsFromOtherProcesses = 0;
 
             source.Dynamic.All += (TraceEvent e) =>
             {
+                if (e.ProcessID != traceePid)
+                {
+                    eventsFromOtherProcesses++;
+                    return;
+                }
+
                 if (!string.Equals(e.ProviderName, "ManagedUserEvent", StringComparison.OrdinalIgnoreCase))
                 {
                     return;
@@ -45,9 +52,14 @@ namespace Tracing.UserEvents.Tests.ManagedEvent
 
             source.Process();
 
+            if (eventsFromOtherProcesses > 0)
+            {
+                Console.WriteLine($"Ignored {eventsFromOtherProcesses} events from processes other than tracee (PID {traceePid}).");
+            }
+
             if (!sampleEventFound)
             {
-                Console.Error.WriteLine("The trace did not contain the expected managed event.");
+                Console.Error.WriteLine($"The trace did not contain the expected managed event from tracee PID {traceePid}.");
             }
 
             return sampleEventFound;
