@@ -129,15 +129,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetKtlsRecv")]
         internal static partial int SslGetKtlsRecv(SafeSslHandle ssl);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshakeBlocking", SetLastError = true)]
-        internal static partial int SslDoHandshakeBlocking(SafeSslHandle ssl, out SslErrorCode error);
-
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslReadBlocking", SetLastError = true)]
-        internal static partial int SslReadBlocking(SafeSslHandle ssl, ref byte buf, int num, out SslErrorCode error);
-
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWriteBlocking", SetLastError = true)]
-        internal static partial int SslWriteBlocking(SafeSslHandle ssl, ref byte buf, int num, out SslErrorCode error);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
         internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
 

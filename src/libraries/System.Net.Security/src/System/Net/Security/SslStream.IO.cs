@@ -23,10 +23,6 @@ namespace System.Net.Security
             Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SECURITY_KTLS") == "1";
 
         private bool _useKtls;
-
-        static SslStream()
-        {
-        }
 #endif
 
         internal readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
@@ -965,7 +961,6 @@ namespace System.Net.Security
                 if (_useKtls)
                 {
                     SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
-                    NetworkStream ns = (NetworkStream)InnerStream;
 
                     while (true)
                     {

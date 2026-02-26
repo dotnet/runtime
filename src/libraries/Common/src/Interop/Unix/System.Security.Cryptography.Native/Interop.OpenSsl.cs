@@ -615,48 +615,6 @@ internal static partial class Interop
             return sslHandle;
         }
 
-        internal static SecurityStatusPalErrorCode DoSslHandshakeKtls(SafeSslHandle context)
-        {
-            int retVal = Ssl.SslDoHandshakeBlocking(context, out Ssl.SslErrorCode errorCode);
-
-            if (retVal != 1)
-            {
-                throw new SslException(SR.Format(SR.net_ssl_handshake_failed_error, errorCode), GetSslError(retVal, errorCode));
-            }
-
-            context.MarkHandshakeCompleted();
-            return SecurityStatusPalErrorCode.OK;
-        }
-
-        internal static int KtlsRead(SafeSslHandle context, Span<byte> buffer)
-        {
-            int retVal = Ssl.SslReadBlocking(context, ref MemoryMarshal.GetReference(buffer), buffer.Length, out Ssl.SslErrorCode errorCode);
-
-            if (retVal > 0)
-            {
-                return retVal;
-            }
-
-            if (errorCode == Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN)
-            {
-                return 0;
-            }
-
-            throw new SslException(SR.Format(SR.net_ssl_decrypt_failed, errorCode), GetSslError(retVal, errorCode));
-        }
-
-        internal static int KtlsWrite(SafeSslHandle context, ReadOnlySpan<byte> input)
-        {
-            int retVal = Ssl.SslWriteBlocking(context, ref MemoryMarshal.GetReference(input), input.Length, out Ssl.SslErrorCode errorCode);
-
-            if (retVal > 0)
-            {
-                return retVal;
-            }
-
-            throw new SslException(SR.Format(SR.net_ssl_encrypt_failed, errorCode), GetSslError(retVal, errorCode));
-        }
-
         internal static string[] GetDefaultSignatureAlgorithms()
         {
             ushort[] rawAlgs = Interop.Ssl.GetDefaultSignatureAlgorithms();
