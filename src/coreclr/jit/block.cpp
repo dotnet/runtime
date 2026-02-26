@@ -799,7 +799,6 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
     to->bbCatchTyp    = from->bbCatchTyp;
     to->bbStkTempsIn  = from->bbStkTempsIn;
     to->bbStkTempsOut = from->bbStkTempsOut;
-    to->bbStkDepth    = from->bbStkDepth;
     to->bbCodeOffs    = from->bbCodeOffs;
     to->bbCodeOffsEnd = from->bbCodeOffsEnd;
 #ifdef DEBUG

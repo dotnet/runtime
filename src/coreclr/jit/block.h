@@ -1558,9 +1558,6 @@ public:
 #define BBCT_FILTER_HANDLER         0xFFFFFFFF
 #define handlerGetsXcptnObj(hndTyp) ((hndTyp) != BBCT_NONE && (hndTyp) != BBCT_FAULT && (hndTyp) != BBCT_FINALLY)
 
-    // TODO-Cleanup: Get rid of bbStkDepth and use bbStackDepthOnEntry() instead
-    unsigned short bbStkDepth; // stack depth on entry
-
     // Basic block predecessor lists. Predecessor lists are created by fgLinkBasicBlocks(), stored
     // in 'bbPreds', and then maintained throughout compilation. 'fgPredsComputed' will be 'true' after the
     // predecessor lists are created.
