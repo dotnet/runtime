@@ -108,6 +108,32 @@ namespace System
             }
         }
 
+        [UnmanagedCallersOnly]
+        internal static unsafe void OnFirstChanceException(object* pException, Exception* pOutException)
+        {
+            try
+            {
+                if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
+                {
+                    FirstChanceExceptionEventArgs args = new((Exception)(*pException));
+                    foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                    {
+                        try
+                        {
+                            handler(AppDomain.CurrentDomain, args);
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                *pOutException = ex;
+            }
+        }
+
         internal static void OnProcessExit()
         {
             AssemblyLoadContext.OnProcessExit();

@@ -514,57 +514,55 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         PRECONDITION(IsProtectedByGCFrame(pInnerException));
         PRECONDITION(IsProtectedByGCFrame(pInitException));
         PRECONDITION(IsProtectedByGCFrame(pThrowable));
-        PRECONDITION(CheckPointer(GetThreadNULLOk()));
     } CONTRACTL_END;
 
-    Thread *pThread  = GetThreadNULLOk();
     *pThrowable = NULL;
+    Thread *pThread = GetThread();
 
     // This will make sure to put the thread back to its original state if something
     // throws out of this function (like an OOM exception or something)
-    Holder< BOOL, DoNothing< BOOL >, ResetTypeInitializationExceptionState, FALSE, NoNull< BOOL > >
+    Holder<BOOL, DoNothing<BOOL>, ResetTypeInitializationExceptionState, FALSE, NoNull<BOOL>>
         isAlreadyCreating(pThread->IsCreatingTypeInitException());
 
-    EX_TRY {
+    // If we are already in the midst of creating a TypeInitializationException object,
+    // and we get here, it means there was an exception thrown while initializing the
+    // TypeInitializationException type itself, or one of the types used by its class
+    // constructor. In this case, we fall back to using the inner exception directly.
+    if (isAlreadyCreating.GetValue())
+    {
+        // If we ever hit one of these asserts, then it is bad
+        // because we do not know what exception to return then.
+        _ASSERTE(pInnerException != NULL);
+        _ASSERTE(*pInnerException != NULL);
+        *pThrowable = *pInnerException;
+        *pInitException = *pInnerException;
+        return;
+    }
 
-        // If we are already in the midst of creating a TypeInitializationException object,
-        // and we get here, it means there was an exception thrown while initializing the
-        // TypeInitializationException type itself, or one of the types used by its class
-        // constructor. In this case, we fall back to using the inner exception directly.
-        if (!isAlreadyCreating.GetValue()) {
-            pThread->SetIsCreatingTypeInitException();
-        }
-        else {
-            // If we ever hit one of these asserts, then it is bad
-            // because we do not know what exception to return then.
-            _ASSERTE(pInnerException != NULL);
-            _ASSERTE(*pInnerException != NULL);
-            *pThrowable = *pInnerException;
-            *pInitException = *pInnerException;
-            goto ErrExit;
-        }
+    EX_TRY
+    {
+        pThread->SetIsCreatingTypeInitException();
 
         // Since the inner exception object in the .ctor is of type Exception, make sure
         // that the object we're passed in derives from Exception. If not, pass NULL.
-        {
-            BOOL isException = FALSE;
-            if (pInnerException != NULL)
-                isException = IsException((*pInnerException)->GetMethodTable());
+        BOOL isException = FALSE;
+        if (pInnerException != NULL)
+            isException = IsException((*pInnerException)->GetMethodTable());
 
-            OBJECTREF innerEx = isException ? *pInnerException : NULL;
+        OBJECTREF innerEx = isException ? *pInnerException : NULL;
 
-            GCPROTECT_BEGIN(innerEx);
+        GCPROTECT_BEGIN(innerEx);
 
-            UnmanagedCallersOnlyCaller createTypeInitEx(METHOD__EXCEPTION__CREATE_TYPE_INIT_EXCEPTION);
-            createTypeInitEx.InvokeThrowing(pTypeThatFailed, &innerEx, pThrowable);
+        UnmanagedCallersOnlyCaller createTypeInitEx(METHOD__EXCEPTION__CREATE_TYPE_INIT_EXCEPTION);
+        createTypeInitEx.InvokeThrowing(pTypeThatFailed, &innerEx, pThrowable);
 
-            GCPROTECT_END();
-        }
+        GCPROTECT_END();
 
         // On success, set the init exception.
         *pInitException = *pThrowable;
     }
-    EX_CATCH {
+    EX_CATCH
+    {
         // If calling the constructor fails, then we'll call ourselves again, and this time
         // through we will try and create an EEException object. If that fails, then the
         // else block of this will be executed.
@@ -584,9 +582,6 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
     } EX_END_CATCH
 
     CONSISTENCY_CHECK(*pInitException != NULL || !pInnerException);
-
- ErrExit:
-    ;
 }
 
 // ==========================================================================
@@ -9483,9 +9478,6 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
 
 #ifndef DACCESS_COMPILE
 
-// To include definition of COMDelegate::GetMethodDesc
-#include "comdelegate.h"
-
 // This SEH filter will be invoked when an exception escapes out of the exception notification
 // callback and enters the runtime. In such a case, we ill simply failfast.
 static LONG ExceptionNotificationFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVOID pParam)
@@ -9572,54 +9564,23 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
     }
     CONTRACTL_END;
 
-    struct
+    _ASSERTE(IsException((*pThrowable)->GetMethodTable()));
+    _ASSERTE(notificationType == FirstChanceExceptionHandler);
+
+    // Prevent any async exceptions from this moment on this thread
+    ThreadPreventAsyncHolder prevAsync;
+
+    EX_TRY
     {
-        OBJECTREF oNotificationDelegate;
-        OBJECTREF oCurrentThrowable;
-    } gc;
-    gc.oNotificationDelegate = NULL;
-    gc.oCurrentThrowable = NULL;
-
-    GCPROTECT_BEGIN(gc);
-
-    // Protect the throwable to be passed to the delegate callback
-    gc.oCurrentThrowable = *pThrowable;
-
-    // We expect a valid exception object
-    _ASSERTE(IsException(gc.oCurrentThrowable->GetMethodTable()));
-
-    // Get the reference to the delegate based upon the type of notification
-    if (notificationType == FirstChanceExceptionHandler)
-    {
-        gc.oNotificationDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF();
+        UnmanagedCallersOnlyCaller deliverNotification(METHOD__APPCONTEXT__ON_FIRST_CHANCE_EXCEPTION);
+        deliverNotification.InvokeThrowing(pThrowable);
     }
-    else
+    EX_CATCH
     {
-        gc.oNotificationDelegate = NULL;
-        _ASSERTE(!"Invalid Exception Notification Handler specified!");
+        LOG((LF_EH, LL_INFO100, "ExceptionNotifications::DeliverNotificationInternal: Exception during notification delivery.\n"));
+        RethrowTerminalExceptions();
     }
-
-    if (gc.oNotificationDelegate != NULL)
-    {
-        // Prevent any async exceptions from this moment on this thread
-        ThreadPreventAsyncHolder prevAsync;
-
-        // Construct event args and invoke the delegate in managed code.
-        // Multicast delegate invocation is handled by managed Delegate.Invoke.
-        EX_TRY
-        {
-            UnmanagedCallersOnlyCaller deliverNotification(METHOD__EXCEPTION__DELIVER_FIRSTCHANCE_NOTIFICATION);
-            deliverNotification.InvokeThrowing(&gc.oNotificationDelegate, &gc.oCurrentThrowable);
-        }
-        EX_CATCH
-        {
-            LOG((LF_EH, LL_INFO100, "ExceptionNotifications::DeliverNotificationInternal: Exception during notification delivery.\n"));
-            RethrowTerminalExceptions();
-        }
-        EX_END_CATCH
-    }
-
-    GCPROTECT_END();
+    EX_END_CATCH
 }
 
 void ExceptionNotifications::DeliverFirstChanceNotification()

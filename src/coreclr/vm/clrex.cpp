@@ -1301,8 +1301,8 @@ OBJECTREF EEArgumentException::CreateThrowable()
     gc.pThrowable = NULL;
     gc.s1 = NULL;
     gc.pTmpThrowable = NULL;
-    ResMgrGetString(m_resourceName, &gc.s1);
     GCPROTECT_BEGIN(gc);
+    ResMgrGetString(m_resourceName, &gc.s1);
 
     MethodTable *pMT = CoreLibBinder::GetException(m_kind);
     gc.pThrowable = AllocateObject(pMT);

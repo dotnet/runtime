@@ -312,22 +312,6 @@ namespace System
             }
         }
 
-        [UnmanagedCallersOnly]
-        internal static unsafe void DeliverFirstChanceNotification(Delegate* pDelegate, Exception* pThrowable, Exception* pException)
-        {
-            try
-            {
-                var eventArgs = new FirstChanceExceptionEventArgs(*pThrowable);
-                Debug.Assert(*pDelegate is EventHandler<FirstChanceExceptionEventArgs>);
-                var handler = Unsafe.As<EventHandler<FirstChanceExceptionEventArgs>>(*pDelegate);
-                handler(AppDomain.CurrentDomain, eventArgs);
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
 #if FEATURE_COMINTEROP
         // used by vm
         [UnmanagedCallersOnly]
