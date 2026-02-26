@@ -2455,7 +2455,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         shift = 3;
                     }
 
-                    // SVE2 instruction only directly support byte offsets. Convert indices to bytes.
+                    // The SVE2 instructions only support byte offsets. Convert indices to bytes.
                     GetEmitter()->emitIns_R_R_I(INS_sve_lsl, emitSize, tempReg, op3Reg, shift, opt);
 
                     GetEmitter()->emitIns_R_R_R_R(ins, emitSize, op4Reg, op1Reg, tempReg, op2Reg, opt);
