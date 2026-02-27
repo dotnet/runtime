@@ -1244,7 +1244,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     if (updateFloats)
     {
         UpdateFloatingPointRegisters(pRD, GetSP());
-        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE
 
@@ -1275,6 +1274,29 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
+#ifdef FEATURE_INTERPRETER
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // The interpreter frame saves the floating point callee-saved registers (d8-d15) in the TransitionBlock,
+    // so we need to update them in the REGDISPLAY when we update the REGDISPLAY for an interpreter frame.
+    //
+    // Stack layout when pushCalleeSavedFloatRegs is used:
+    //   [d8-d15 (64 bytes)] [padding (4 bytes)] [d0-d7 (64 bytes)] [padding (4 bytes)] [TransitionBlock]
+    // FP callee-saved are at TransitionBlock - 136 (64 + 4 + 64 + 4)
+    TADDR pTransitionBlock = GetTransitionBlock();
+    UINT64 *pCalleeSavedFloats = (UINT64*)((BYTE*)pTransitionBlock - 136);
+
+    for (int i = 0; i < 8; i++)
+    {
+        pRD->pCurrentContext->D[8 + i] = pCalleeSavedFloats[i];
+    }
+}
+#endif // DACCESS_COMPILE
+#endif // FEATURE_INTERPRETER
+
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -1287,14 +1309,23 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     // Update the integer registers in KNONVOLATILE_CONTEXT_POINTERS from
     // the exception context we have.
-    pRD->pCurrentContextPointers->R4 = (PDWORD)&m_ctx.R4;
-    pRD->pCurrentContextPointers->R5 = (PDWORD)&m_ctx.R5;
-    pRD->pCurrentContextPointers->R6 = (PDWORD)&m_ctx.R6;
-    pRD->pCurrentContextPointers->R7 = (PDWORD)&m_ctx.R7;
-    pRD->pCurrentContextPointers->R8 = (PDWORD)&m_ctx.R8;
-    pRD->pCurrentContextPointers->R9 = (PDWORD)&m_ctx.R9;
-    pRD->pCurrentContextPointers->R10 = (PDWORD)&m_ctx.R10;
-    pRD->pCurrentContextPointers->R11 = (PDWORD)&m_ctx.R11;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    T_CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    T_CONTEXT *pContext = &m_ctx;
+#endif
+
+    pRD->pCurrentContextPointers->R4 = (PDWORD)&pContext->R4;
+    pRD->pCurrentContextPointers->R5 = (PDWORD)&pContext->R5;
+    pRD->pCurrentContextPointers->R6 = (PDWORD)&pContext->R6;
+    pRD->pCurrentContextPointers->R7 = (PDWORD)&pContext->R7;
+    pRD->pCurrentContextPointers->R8 = (PDWORD)&pContext->R8;
+    pRD->pCurrentContextPointers->R9 = (PDWORD)&pContext->R9;
+    pRD->pCurrentContextPointers->R10 = (PDWORD)&pContext->R10;
+    pRD->pCurrentContextPointers->R11 = (PDWORD)&pContext->R11;
     pRD->pCurrentContextPointers->Lr = NULL;
 
     pRD->IsCallerContextValid = FALSE;
@@ -1329,7 +1360,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
+        UpdateFloatingPointRegisters(pRD, dac_cast<TADDR>(GetCallSiteSP()));
     }
 #endif // DACCESS_COMPILE
 

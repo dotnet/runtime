@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace TestLibrary
 {
@@ -100,11 +101,40 @@ namespace TestLibrary
             OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsAndroid() || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi();
         public static bool IsAppleMobile => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst();
 
+        // wasm properties
         public static bool IsBrowser => OperatingSystem.IsBrowser();
         public static bool IsWasi => OperatingSystem.IsWasi();
-        public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
-        public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
-        public static bool IsThreadingNotSupported => !IsThreadingSupported;
+        public static bool IsWasm => IsBrowser || IsWasi;
+        public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
+
+        // TODO-WASM: https://github.com/dotnet/runtime/issues/124748
+        // this is compiled with 11.0.0-preview.1.26104.118\ref
+        // which doesn't have the RuntimeFeature.IsMultithreadingSupported API yet.
+        // after we update to a newer ref, we should use RuntimeFeature.IsMultithreadingSupported directly.
+        // public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
+        public static bool IsMultithreadingSupported { get; } = GetIsMultithreadingSupported();
+
+        private static bool GetIsMultithreadingSupported()
+        {
+            if (!IsWasm)
+                return true;
+
+            try
+            {
+                Type runtimeFeatureType = typeof(System.Runtime.CompilerServices.RuntimeFeature);
+
+                PropertyInfo isMultithreadingSupportedProperty = runtimeFeatureType.GetProperty("IsMultithreadingSupported", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (isMultithreadingSupportedProperty != null)
+                {
+                    return (bool)isMultithreadingSupportedProperty.GetValue(null);
+                }
+            }
+            catch
+            {
+                // if any of the reflection calls fail, assume multithreading is not supported.
+            }
+            return false;
+        }
 
         private static bool IsEnvironmentVariableTrue(string variableName)
         {

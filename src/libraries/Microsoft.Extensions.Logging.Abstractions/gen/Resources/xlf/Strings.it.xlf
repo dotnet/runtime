@@ -47,9 +47,9 @@
         <target state="translated">I metodi di registrazione non possono avere un corpo</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">I metodi di registrazione non possono essere generici</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
@@ -200,6 +200,26 @@
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
         <target state="translated">Il modello di registrazione non ha alcun argomento del metodo corrispondente</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
+        <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
+        <target state="translated">L'argomento "{0}" utilizza parametri non supportati o un modificatore di parametro con ambito</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
+        <source>Argument is using the unsupported params or scoped parameter modifier</source>
+        <target state="translated">L'argomento utilizza parametri non supportati o un modificatore di parametro con ambito</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
+        <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
+        <target state="translated">Il parametro "{0}" è un ref struct, non supportato dal generatore di origine di registrazione</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
+        <source>Logging method parameter is a ref struct</source>
+        <target state="translated">Il parametro del metodo di registrazione è un ref struct</target>
         <note />
       </trans-unit>
     </body>

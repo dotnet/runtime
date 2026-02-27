@@ -1339,7 +1339,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     // Generate the full lookup tree. May be null if we're abandoning an inline attempt.
     GenTreeFlags handleType = importParent ? GTF_ICON_CLASS_HDL : gtTokenToIconFlags(pResolvedToken->token);
-    GenTree*     result = impLookupToTree(pResolvedToken, &embedInfo.lookup, handleType, embedInfo.compileTimeHandle);
+    GenTree*     result     = impLookupToTree(&embedInfo.lookup, handleType, embedInfo.compileTimeHandle);
 
     // If we have a result and it requires runtime lookup, wrap it in a runtime lookup node.
     if ((result != nullptr) && embedInfo.lookup.lookupKind.needsRuntimeLookup)
@@ -1350,10 +1350,7 @@ GenTree* Compiler::impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     return result;
 }
 
-GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                   CORINFO_LOOKUP*         pLookup,
-                                   GenTreeFlags            handleFlags,
-                                   void*                   compileTimeHandle)
+GenTree* Compiler::impLookupToTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleFlags, void* compileTimeHandle)
 {
     if (!pLookup->lookupKind.needsRuntimeLookup)
     {
@@ -1408,41 +1405,10 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     // Need to use dictionary-based access which depends on the typeContext
     // which is only available at runtime, not at compile-time.
-    return impRuntimeLookupToTree(pResolvedToken, pLookup, compileTimeHandle);
+    return impRuntimeLookupToTree(pLookup, compileTimeHandle);
 }
 
 #ifdef FEATURE_READYTORUN
-GenTree* Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
-                                             GenTreeFlags          handleFlags,
-                                             void*                 compileTimeHandle)
-{
-    CORINFO_GENERIC_HANDLE handle       = nullptr;
-    void*                  pIndirection = nullptr;
-    assert(pLookup->accessType != IAT_PPVALUE && pLookup->accessType != IAT_RELPVALUE);
-
-    if (pLookup->accessType == IAT_VALUE)
-    {
-        handle = pLookup->handle;
-    }
-    else if (pLookup->accessType == IAT_PVALUE)
-    {
-        pIndirection = pLookup->addr;
-    }
-    GenTree* addr = gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
-#ifdef DEBUG
-    assert((handleFlags == GTF_ICON_CLASS_HDL) || (handleFlags == GTF_ICON_METHOD_HDL));
-    if (handle != nullptr)
-    {
-        addr->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
-    }
-    else
-    {
-        addr->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)compileTimeHandle;
-    }
-#endif //  DEBUG
-    return addr;
-}
-
 //------------------------------------------------------------------------
 // impIsCastHelperEligibleForClassProbe: Checks whether a tree is a cast helper eligible to
 //    to be profiled and then optimized with PGO data
@@ -1516,11 +1482,10 @@ bool Compiler::impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper)
 GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                                  CorInfoHelpFunc         helper,
                                                  var_types               type,
-                                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                                  GenTree*                arg1)
 {
     CORINFO_CONST_LOOKUP lookup;
-    if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, info.compMethodHnd, &lookup))
+    if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, helper, info.compMethodHnd, &lookup))
     {
         return nullptr;
     }
@@ -1540,7 +1505,7 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
 }
 #endif
 
-GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo)
+GenTree* Compiler::impMethodPointer(CORINFO_CALL_INFO* pCallInfo)
 {
     GenTree* op1 = nullptr;
 
@@ -1558,7 +1523,7 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             break;
 
         case CORINFO_CALL_CODE_POINTER:
-            op1 = impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
+            op1 = impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
             break;
 
         default:
@@ -1658,9 +1623,7 @@ GenTree* Compiler::getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind)
           to lookup the handle.
  */
 
-GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                          CORINFO_LOOKUP*         pLookup,
-                                          void*                   compileTimeHandle)
+GenTree* Compiler::impRuntimeLookupToTree(CORINFO_LOOKUP* pLookup, void* compileTimeHandle)
 {
     GenTree* ctxTree = getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind);
 
@@ -1668,13 +1631,6 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     // It's available only via the run-time helper function
     if (pRuntimeLookup->indirections == CORINFO_USEHELPER)
     {
-#ifdef FEATURE_READYTORUN
-        if (IsAot())
-        {
-            return impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
-                                             &pLookup->lookupKind, ctxTree);
-        }
-#endif
         return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup, ctxTree, compileTimeHandle);
     }
 
@@ -2787,7 +2743,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         GenTree* runtimeMethodHandle =
-            impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
+            impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
         call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr,
                                                         runtimeMethodHandle);
     }
@@ -2805,8 +2761,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
         {
             GenTree* ctxTree = getRuntimeContextTree(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind);
 
-            call = impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE, TYP_I_IMPL,
-                                             &pCallInfo->codePointerLookup.lookupKind, ctxTree);
+            assert(pCallInfo->codePointerLookup.runtimeLookup.indirections == CORINFO_USEHELPER);
+            call = gtNewRuntimeLookupHelperCallNode(&pCallInfo->codePointerLookup.runtimeLookup, ctxTree, nullptr);
         }
     }
 #endif
@@ -8612,7 +8568,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impHandleAccessAllowed(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
             DO_LDFTN:
-                op1 = impMethodPointer(&resolvedToken, &callInfo);
+                op1 = impMethodPointer(&callInfo);
 
                 if (compDonotInline())
                 {
@@ -9843,7 +9799,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (IsAot() && !isFrozenAllocator)
                 {
                     helper                = CORINFO_HELP_READYTORUN_NEWARR_1;
-                    op1                   = impReadyToRunHelperToTree(&resolvedToken, helper, TYP_REF, nullptr, op2);
+                    op1                   = impReadyToRunHelperToTree(&resolvedToken, helper, TYP_REF, op2);
                     usingReadyToRunHelper = (op1 != nullptr);
 
                     if (!usingReadyToRunHelper)
@@ -10076,7 +10032,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         GenTreeCall* opLookup =
                             impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_ISINSTANCEOF, TYP_REF,
-                                                      nullptr, op1);
+                                                      op1);
                         usingReadyToRunHelper = (opLookup != nullptr);
                         op1                   = (usingReadyToRunHelper ? opLookup : op1);
 
@@ -10572,8 +10528,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (IsAot())
                     {
                         GenTreeCall* opLookup =
-                            impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST, TYP_REF, nullptr,
-                                                      op1);
+                            impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST, TYP_REF, op1);
                         usingReadyToRunHelper = (opLookup != nullptr);
                         op1                   = (usingReadyToRunHelper ? opLookup : op1);
 

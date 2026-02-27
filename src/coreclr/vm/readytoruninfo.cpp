@@ -386,18 +386,12 @@ void ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, M
 {
     CONTRACTL
     {
+        STANDARD_VM_CHECK;
         PRECONDITION(!m_isComponentAssembly);
     }
     CONTRACTL_END;
 
-    // We are entering coop mode here so that we don't do it later inside LookupMap while we are already holding the Crst.
-    // Doing it in the other order can block the debugger from running func-evals. For example thread A would acquire the Crst,
-    // then block at the coop transition inside LookupMap waiting for the debugger to resume from a break state. The debugger then
-    // requests thread B to run a funceval, the funceval tries to load some R2R method calling in here, then it blocks because
-    // thread A is holding the Crst.
-    GCX_COOP();
     CrstHolder ch(&m_Crst);
-
     if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
     {
         m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(entryPoint), methodDesc);
@@ -774,7 +768,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     m_pHeader(pHeader),
     m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself
     m_readyToRunCodeDisabled(FALSE),
-    m_Crst(CrstReadyToRunEntryPointToMethodDescMap, CRST_UNSAFE_COOPGC),
+    m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
     m_pPersistentInlineTrackingMap(NULL),
     m_pNextR2RForUnrelatedCode(NULL)
 {
@@ -930,7 +924,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
 #endif
 
-    if (IsImageVersionAtLeast(18, 1))
+    if (IsImageVersionAtLeast(18, 3))
     {
         IMAGE_DATA_DIRECTORY* pExternalTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ExternalTypeMaps);
         if (pExternalTypeMapsDir != NULL)

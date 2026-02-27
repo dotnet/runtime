@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0003
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
@@ -52,7 +52,7 @@
 //     R2R 17 is not backward compatible with 16.x or earlier.
 // R2R Version 17.1 adds the READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE flag to specify that the R2R image pointed to by OwnerCompositeExecutable is in the platform native format.
 // R2R Version 18 updates fields layout algorithm
-// R2R Version 18.1 adds the ExternalTypeMaps, ProxyTypeMaps, TypeMapAssemblyTargets sections
+// R2R Version 18.3 adds the ExternalTypeMaps, ProxyTypeMaps, TypeMapAssemblyTargets sections
 
 struct READYTORUN_CORE_HEADER
 {
@@ -118,9 +118,9 @@ enum class ReadyToRunSectionType : uint32_t
     MethodIsGenericMap          = 121, // Added in V9.0
     EnclosingTypeMap            = 122, // Added in V9.0
     TypeGenericInfoMap          = 123, // Added in V9.0
-    ExternalTypeMaps            = 124, // Added in V18.1
-    ProxyTypeMaps               = 125, // Added in V18.1
-    TypeMapAssemblyTargets      = 126, // Added in V18.1
+    ExternalTypeMaps            = 124, // Added in V18.3
+    ProxyTypeMaps               = 125, // Added in V18.3
+    TypeMapAssemblyTargets      = 126, // Added in V18.3
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -465,7 +465,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_CheckedWriteBarrier_EBP   = 0x10B,
 
     // JIT32 x86-specific exception handling
-    READYTORUN_HELPER_EndCatch                  = 0x110,
+    READYTORUN_HELPER_EndCatch                  = 0x110, // Unused since READYTORUN_MAJOR_VERSION 14.0
 
     // Stack probing helper
     READYTORUN_HELPER_StackProbe                = 0x111,
@@ -475,6 +475,9 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_AllocContinuation = 0x113,
     READYTORUN_HELPER_AllocContinuationClass = 0x114,
     READYTORUN_HELPER_AllocContinuationMethod = 0x115,
+
+    READYTORUN_HELPER_InitClass                 = 0x116,
+    READYTORUN_HELPER_InitInstClass             = 0x117,
 };
 
 #include "readytoruninstructionset.h"

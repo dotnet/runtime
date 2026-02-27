@@ -230,7 +230,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         IsLogger = paramSpec.IsLogger,
                         IsException = paramSpec.IsException,
                         IsLogLevel = paramSpec.IsLogLevel,
-                        IsEnumerable = paramSpec.IsEnumerable
+                        IsEnumerable = paramSpec.IsEnumerable,
                     });
                 }
 
@@ -245,7 +245,7 @@ namespace Microsoft.Extensions.Logging.Generators
                         IsLogger = paramSpec.IsLogger,
                         IsException = paramSpec.IsException,
                         IsLogLevel = paramSpec.IsLogLevel,
-                        IsEnumerable = paramSpec.IsEnumerable
+                        IsEnumerable = paramSpec.IsEnumerable,
                     });
                 }
 
@@ -257,6 +257,15 @@ namespace Microsoft.Extensions.Logging.Generators
                 foreach (var template in methodSpec.TemplateList)
                 {
                     lm.TemplateList.Add(template);
+                }
+
+                foreach (var typeParamSpec in methodSpec.TypeParameters)
+                {
+                    lm.TypeParameters.Add(new LoggerMethodTypeParameter
+                    {
+                        Name = typeParamSpec.Name,
+                        Constraints = typeParamSpec.Constraints
+                    });
                 }
 
                 lc.Methods.Add(lm);

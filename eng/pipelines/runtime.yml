@@ -103,6 +103,7 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      # Release build of browser wasm for WBT
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -111,13 +112,104 @@ extends:
           - browser_wasm
           - browser_wasm_win
           jobParameters:
-            nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr+libs+libs.tests+packs -c $(_BuildConfig) -lc Release /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
+            nameSuffix: CoreCLR
+            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
             timeoutInMinutes: 120
             postBuildSteps:
-              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+              - template: /eng/pipelines/common/wasm-post-build-steps.yml
                 parameters:
-                  testBuildArgs: test JIT/interpreter/Interpreter.csproj
+                  publishArtifactsForWorkload: true
+                  publishWBT: true
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
+            condition: >-
+              or(
+                eq(variables['wasmDarcDependenciesChanged'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - browser_wasm
+          jobParameters:
+            nameSuffix: CoreCLR_ReleaseLibraries
+            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
+            timeoutInMinutes: 120
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
+                parameters:
+                  extraBuildArgs: -os browser
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Build Assets
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/helix
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+              - template: /eng/pipelines/common/wasm-post-build-steps.yml
+                parameters:
+                  publishArtifactsForWorkload: true
+                  publishWBT: true
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
+              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
+                parameters:
+                  testGroup: innerloop
+            condition: >-
+              or(
+                eq(variables['wasmDarcDependenciesChanged'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms:
+          - browser_wasm_win
+          jobParameters:
+            nameSuffix: CoreCLR_ReleaseLibraries
+            buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:ArchiveTests=true /p:InstallWorkloadForTesting=false
+            timeoutInMinutes: 120
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Build Assets
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/helix
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
               - template: /eng/pipelines/common/wasm-post-build-steps.yml
                 parameters:
                   publishArtifactsForWorkload: true
@@ -873,6 +965,8 @@ extends:
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
+            - WasmTestOnFirefox
+            - WasmTestOnV8
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -1083,7 +1177,7 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # Build the whole product using CoreCLR and run functional tests
+      # Build the whole product using CoreCLR and run libraries tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1105,7 +1199,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_CoreCLR_Smoke
-            buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=false /p:UseMonoRuntime=false /p:MonoForceInterpreter=false /p:BuildTestsOnHelix=false /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true
+            buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=false
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -1119,6 +1213,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
@@ -1608,6 +1703,26 @@ extends:
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: checked
+          platforms:
+          - browser_wasm
+          helixQueueGroup: pr
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: innerloop
+            liveLibrariesBuildConfig: Release
+            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
+            extraBuildArgs: -os browser -p:HostConfiguration=Release
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),

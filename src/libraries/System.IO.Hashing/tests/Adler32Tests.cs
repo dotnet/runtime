@@ -168,5 +168,130 @@ namespace System.IO.Hashing.Tests
             alg.Append(data);
             Assert.Equal(expected, alg.GetCurrentHashAsUInt32());
         }
+
+        /// <summary>
+        /// Tests a wide variety of lengths to exercise scalar, Vector128, Vector256, and Vector512
+        /// code paths as well as their transitions and tail handling.
+        /// </summary>
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(7)]
+        [InlineData(15)]
+        [InlineData(16)]
+        [InlineData(17)]
+        [InlineData(31)]
+        [InlineData(32)]
+        [InlineData(33)]
+        [InlineData(47)]
+        [InlineData(48)]
+        [InlineData(63)]
+        [InlineData(64)]
+        [InlineData(65)]
+        [InlineData(95)]
+        [InlineData(96)]
+        [InlineData(127)]
+        [InlineData(128)]
+        [InlineData(129)]
+        [InlineData(255)]
+        [InlineData(256)]
+        [InlineData(512)]
+        [InlineData(1000)]
+        [InlineData(1023)]
+        [InlineData(1024)]
+        [InlineData(4096)]
+        [InlineData(5551)]
+        [InlineData(5552)]
+        [InlineData(5553)]
+        [InlineData(5600)]
+        [InlineData(8192)]
+        [InlineData(11104)]
+        [InlineData(16384)]
+        public void VariousLengths_MatchesReference(int length)
+        {
+            byte[] data = new byte[length];
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = (byte)(i % 251);
+            }
+
+            uint expected = ReferenceAdler32(data);
+            Assert.Equal(expected, Adler32.HashToUInt32(data));
+
+            var alg = new Adler32();
+            alg.Append(data);
+            Assert.Equal(expected, alg.GetCurrentHashAsUInt32());
+        }
+
+        /// <summary>
+        /// Tests with all-0xFF bytes, which maximizes accumulator values and stresses
+        /// overflow-safe behavior in the vectorized paths.
+        /// </summary>
+        [Theory]
+        [InlineData(32)]
+        [InlineData(64)]
+        [InlineData(128)]
+        [InlineData(256)]
+        [InlineData(5552)]
+        [InlineData(5553)]
+        public void AllMaxBytes_MatchesReference(int length)
+        {
+            byte[] data = new byte[length];
+            data.AsSpan().Fill(0xFF);
+
+            Assert.Equal(ReferenceAdler32(data), Adler32.HashToUInt32(data));
+        }
+
+        /// <summary>
+        /// Tests incremental appending with various chunk sizes to verify that the
+        /// vectorized paths produce the same result regardless of how data is fed in.
+        /// </summary>
+        [Theory]
+        [InlineData(1)]
+        [InlineData(7)]
+        [InlineData(16)]
+        [InlineData(32)]
+        [InlineData(64)]
+        [InlineData(100)]
+        public void IncrementalAppend_MatchesOneShot(int chunkSize)
+        {
+            byte[] data = new byte[1000];
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = (byte)(i * 7 + 13);
+            }
+
+            uint oneShot = Adler32.HashToUInt32(data);
+
+            var alg = new Adler32();
+            int offset = 0;
+            while (offset < data.Length)
+            {
+                int len = Math.Min(chunkSize, data.Length - offset);
+                alg.Append(data.AsSpan(offset, len));
+                offset += len;
+            }
+
+            Assert.Equal(oneShot, alg.GetCurrentHashAsUInt32());
+        }
+
+        /// <summary>
+        /// Computes a reference Adler32 result using the simplest possible scalar implementation.
+        /// </summary>
+        private static uint ReferenceAdler32(ReadOnlySpan<byte> data, uint adler = 1)
+        {
+            const uint Base = 65521;
+
+            uint s1 = adler & 0xFFFF;
+            uint s2 = (adler >> 16) & 0xFFFF;
+
+            foreach (byte b in data)
+            {
+                s1 = (s1 + b) % Base;
+                s2 = (s2 + s1) % Base;
+            }
+
+            return (s2 << 16) | s1;
+        }
     }
 }

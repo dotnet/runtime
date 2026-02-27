@@ -47,9 +47,9 @@
         <target state="translated">Metody protokolování nemůžou obsahovat tělo.</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">Metody protokolování nemůžou být obecné.</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
@@ -200,6 +200,26 @@
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
         <target state="translated">Šablona protokolování nemá žádný odpovídající argument metody</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
+        <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
+        <target state="translated">Argument {0} používá nepodporované parametry nebo modifikátor parametrů s vymezeným oborem</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
+        <source>Argument is using the unsupported params or scoped parameter modifier</source>
+        <target state="translated">Argument používá nepodporované parametry nebo modifikátor parametrů s vymezeným oborem</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
+        <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
+        <target state="translated">Parametr {0} je ref stuct, což není podporováno generátorem zdroje protokolování</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
+        <source>Logging method parameter is a ref struct</source>
+        <target state="translated">Parametr metody protokolování je ref struct</target>
         <note />
       </trans-unit>
     </body>

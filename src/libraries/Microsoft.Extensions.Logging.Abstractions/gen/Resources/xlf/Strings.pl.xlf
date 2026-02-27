@@ -47,9 +47,9 @@
         <target state="translated">Metody rejestrowania nie mogą mieć treści</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">Metody rejestrowania nie mogą być ogólne</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
@@ -200,6 +200,26 @@
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
         <target state="translated">Szablon rejestrowania nie ma odpowiadającego mu argumentu metody</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
+        <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
+        <target state="translated">Argument „{0}” używa nieobsługiwanych parametrów lub modyfikatora zakresu parametrów</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
+        <source>Argument is using the unsupported params or scoped parameter modifier</source>
+        <target state="translated">Argument używa nieobsługiwanych parametrów lub modyfikatora zakresu parametrów</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
+        <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
+        <target state="translated">Parametr „{0}” jest strukturą ref, której nie obsługuje generator źródła logowania</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
+        <source>Logging method parameter is a ref struct</source>
+        <target state="translated">Parametr metody logowania jest strukturą ref</target>
         <note />
       </trans-unit>
     </body>

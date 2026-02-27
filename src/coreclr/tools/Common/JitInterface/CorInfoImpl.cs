@@ -25,13 +25,12 @@ using Internal.Pgo;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.Wasm;
 
 #if READYTORUN
 using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
-
-using ILCompiler.ObjectWriter;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
@@ -1784,28 +1783,6 @@ namespace Internal.JitInterface
             return result;
         }
 
-        private bool IsCallEffectivelyDirect(MethodDesc method)
-        {
-            if (!method.IsVirtual)
-            {
-                return true;
-            }
-
-            // Final/sealed has no meaning for interfaces, but might let us devirtualize otherwise
-            if (method.OwningType.IsInterface)
-            {
-                return false;
-            }
-
-            // Check if we can devirt per metadata
-            if (method.IsFinal || method.OwningType.IsSealed())
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         private static object GetRuntimeDeterminedObjectForToken(MethodILScope methodIL, object typeOrMethodContext, mdToken token)
         {
             object result = ResolveTokenInScope(methodIL, typeOrMethodContext, token);
@@ -1903,7 +1880,7 @@ namespace Internal.JitInterface
 #if !READYTORUN
                     if (allowAsyncVariant)
                     {
-                        bool isDirect = pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await || IsCallEffectivelyDirect(method);
+                        bool isDirect = pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await || method.IsCallEffectivelyDirect();
                         if (isDirect && !method.IsAsync)
                         {
                             // Async variant would be a thunk. Do not resolve direct calls
