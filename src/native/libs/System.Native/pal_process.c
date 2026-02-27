@@ -46,6 +46,23 @@
 #include <sys/event.h>
 #endif
 
+#if HAVE_PIDFD_SEND_SIGNAL || HAVE_SYS_TGKILL || HAVE_CLONE3
+#include <sys/syscall.h>
+#endif
+
+#if HAVE_CLONE3
+#include <linux/sched.h>
+#endif
+
+#if HAVE_PDEATHSIG
+#include <sys/prctl.h>
+#endif
+
+// In the future, we could add support for pidfd on FreeBSD
+#if HAVE_CLONE3
+#define HAVE_PIDFD 1
+#endif
+
 #include <minipal/getexepath.h>
 
 // Validate that our SysLogPriority values are correct for the platform
@@ -1086,23 +1103,328 @@ int32_t SystemNative_SpawnProcess(
     }
     return 0;
 #else
-    // posix_spawn with required features not available
-    (void)path;
-    (void)argv;
-    (void)envp;
-    (void)stdin_fd;
-    (void)stdout_fd;
-    (void)stderr_fd;
-    (void)working_dir;
-    (void)out_pid;
-    (void)out_pidfd;
-    (void)kill_on_parent_death;
-    (void)create_suspended;
-    (void)create_new_process_group;
-    (void)inherited_handles;
-    (void)inherited_handles_count;
-    errno = ENOTSUP;
-    return -1;
+    // ========== FORK/EXEC PATH (Linux and other Unix systems) ==========
+
+    // On non-Linux Unix systems without SYS_tgkill, return ENOTSUP early
+#if !HAVE_SYS_TGKILL
+    if (create_suspended)
+    {
+        errno = ENOTSUP;
+        return -1;
+    }
+#endif
+
+    int wait_pipe[2];
+    int pidfd = -1;
+    sigset_t all_signals, old_signals;
+
+    // Create pipe for exec synchronization (CLOEXEC so child doesn't inherit it)
+#if HAVE_PIPE2
+    if (pipe2(wait_pipe, O_CLOEXEC) != 0)
+    {
+        return -1;
+    }
+#else
+    if (SystemNative_Pipe(wait_pipe, PAL_O_CLOEXEC) != 0)
+    {
+        return -1;
+    }
+#endif
+
+    // Block all signals before forking
+    sigfillset(&all_signals);
+    pthread_sigmask(SIG_SETMASK, &all_signals, &old_signals);
+
+    pid_t child_pid;
+
+#if HAVE_CLONE3
+    // On systems with clone3, use it to get pidfd atomically with fork
+    struct clone_args args = {0};  // Zero-initialize
+    // Note: We cannot use CLONE_VFORK when create_suspended is true, because
+    // the child will stop itself before exec, which would deadlock the parent
+    args.flags = (create_suspended ? 0 : CLONE_VFORK) | CLONE_PIDFD;
+    args.pidfd = (uint64_t)(uintptr_t)&pidfd;
+    args.exit_signal = SIGCHLD;
+
+    long clone_result = syscall(SYS_clone3, &args, sizeof(args));
+
+    if (clone_result == -1)
+    {
+        // Fork failed
+        int saved_errno = errno;
+        pthread_sigmask(SIG_SETMASK, &old_signals, NULL);
+        close(wait_pipe[0]);
+        close(wait_pipe[1]);
+        errno = saved_errno;
+        return -1;
+    }
+
+    child_pid = (pid_t)clone_result;
+
+    if (clone_result == 0)
+    {
+#else
+    // On systems without clone3, use fork or vfork depending on create_suspended
+    // Note: We cannot use vfork when create_suspended is true
+#if HAVE_VFORK && !defined(TARGET_ANDROID)
+    child_pid = create_suspended ? fork() : vfork();
+#else
+    child_pid = fork();
+#endif
+
+    if (child_pid == -1)
+    {
+        // Fork failed
+        int saved_errno = errno;
+        pthread_sigmask(SIG_SETMASK, &old_signals, NULL);
+        close(wait_pipe[0]);
+        close(wait_pipe[1]);
+        errno = saved_errno;
+        return -1;
+    }
+
+    if (child_pid == 0)
+    {
+#endif
+        // ========== CHILD PROCESS ==========
+
+        // Restore signal mask immediately
+        pthread_sigmask(SIG_SETMASK, &old_signals, NULL);
+
+        // If create_new_process_group is enabled, create a new process group
+        // setpgid(0, 0) sets the process group ID of the calling process to its own PID
+        // making it the leader of a new process group
+        if (create_new_process_group)
+        {
+            if (setpgid(0, 0) == -1)
+            {
+                ExitChild(wait_pipe[WRITE_END_OF_PIPE], errno);
+            }
+        }
+
+        // If kill_on_parent_death is enabled, set up parent death signal
+        if (kill_on_parent_death)
+        {
+#if HAVE_PDEATHSIG
+            // On systems with PR_SET_PDEATHSIG (Linux), use it to set up parent death signal
+            if (prctl(PR_SET_PDEATHSIG, SIGTERM) == -1)
+            {
+                ExitChild(wait_pipe[WRITE_END_OF_PIPE], errno);
+            }
+
+            // Close the race: parent may have already died before prctl() ran.
+            // Note: This checks if we've been reparented to init (PID 1).
+            // In containers or systems with different init systems, this may not
+            // work perfectly, but it's the standard approach for this functionality.
+            if (getppid() == 1)
+            {
+                // Parent already gone; we've been reparented to init.
+                // Exit immediately to honor the kill-on-parent-death contract.
+                _exit(0);
+            }
+#endif
+        }
+
+        // Reset all signal handlers to default
+        struct sigaction sa_default;
+        struct sigaction sa_old;
+        memset(&sa_default, 0, sizeof(sa_default));
+        sa_default.sa_handler = SIG_DFL;
+
+        for (int sig = 1; sig < NSIG; sig++)
+        {
+            if (sig == SIGKILL || sig == SIGSTOP)
+            {
+                continue;
+            }
+
+            if (!sigaction(sig, NULL, &sa_old))
+            {
+                void (*oldhandler)(int) = handler_from_sigaction(&sa_old);
+                if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
+                {
+                    // It has a custom handler, put the default handler back.
+                    // We check first to preserve flags on default handlers.
+                    sigaction(sig, &sa_default, NULL);
+                }
+            }
+        }
+
+        // Close read end of wait pipe (we only write)
+        close(wait_pipe[READ_END_OF_PIPE]);
+
+        // Redirect stdin/stdout/stderr
+        if (stdin_fd != STDIN_FILENO)
+        {
+            if (Dup2WithInterruptedRetry(stdin_fd, STDIN_FILENO) == -1)
+            {
+                ExitChild(wait_pipe[WRITE_END_OF_PIPE], errno);
+            }
+        }
+
+        if (stdout_fd != STDOUT_FILENO)
+        {
+            if (Dup2WithInterruptedRetry(stdout_fd, STDOUT_FILENO) == -1)
+            {
+                ExitChild(wait_pipe[WRITE_END_OF_PIPE], errno);
+            }
+        }
+
+        if (stderr_fd != STDERR_FILENO)
+        {
+            if (Dup2WithInterruptedRetry(stderr_fd, STDERR_FILENO) == -1)
+            {
+                ExitChild(wait_pipe[WRITE_END_OF_PIPE], errno);
+            }
+        }
+
+#if HAVE_CLOSE_RANGE
+        // On systems with close_range (Linux), use it to mark all FDs from 3 onwards as CLOEXEC
+        // This prevents the child from inheriting unwanted file descriptors
+        // FDs 0-2 are stdin/stdout/stderr
+        // We use CLOSE_RANGE_CLOEXEC to set the flag without closing the FDs
+        // This must be called AFTER the dup2 calls above, so that if stdin_fd/stdout_fd/stderr_fd
+        // are >= 3, they don't get CLOEXEC set before being duplicated to 0/1/2
+        syscall(__NR_close_range, 3, ~0U, CLOSE_RANGE_CLOEXEC);
+        // Ignore errors - if close_range is not supported, we continue anyway
+
+        // Remove CLOEXEC flag from user-provided inherited handles
+        // so they are inherited by execve
+        if (inherited_handles != NULL && inherited_handles_count > 0)
+        {
+            for (int i = 0; i < inherited_handles_count; i++)
+            {
+                int fd = inherited_handles[i];
+                // Skip stdio fds as they're already handled
+                // Also skip fds < 3 as they weren't affected by close_range
+                if (fd >= 3)
+                {
+                    int flags = fcntl(fd, F_GETFD);
+                    if (flags != -1)
+                    {
+                        fcntl(fd, F_SETFD, flags & ~FD_CLOEXEC);
+                    }
+                }
+            }
+        }
+#else
+        (void)inherited_handles;
+        (void)inherited_handles_count;
+#endif
+
+        // Change working directory if specified
+        if (working_dir != NULL)
+        {
+            if (chdir(working_dir) == -1)
+            {
+                ExitChild(wait_pipe[WRITE_END_OF_PIPE], errno);
+            }
+        }
+
+        // If create_suspended is requested, close wait_pipe and stop ourselves before exec
+        // This allows the parent to get our PID and set up monitoring before we start executing
+        if (create_suspended)
+        {
+            // Close wait_pipe to signal parent that we've successfully reached this point
+            close(wait_pipe[WRITE_END_OF_PIPE]);
+
+#if HAVE_SYS_TGKILL
+            // On Linux, use tgkill to send SIGSTOP to ourselves
+            // This is more reliable than kill(getpid(), SIGSTOP) or pthread_kill
+            syscall(SYS_tgkill, getpid(), syscall(SYS_gettid), SIGSTOP);
+#endif
+            // When the parent resumes us with SIGCONT, execution continues here
+        }
+
+        // Execute the program
+        // If envp is NULL, use the current environment (environ)
+        char* const* env = GetEnvVars(envp);
+        execve(path, argv, env);
+
+        // If we get here, execve failed
+        // Only write to wait_pipe if it's still open (not suspended case)
+        if (!create_suspended)
+        {
+            ExitChild(wait_pipe[WRITE_END_OF_PIPE], errno);
+        }
+        else
+        {
+            _exit(127);
+        }
+    }
+
+    // ========== PARENT PROCESS ==========
+
+    // Restore signal mask
+    pthread_sigmask(SIG_SETMASK, &old_signals, NULL);
+
+    // Close write end of wait pipe
+    close(wait_pipe[WRITE_END_OF_PIPE]);
+
+    // Wait for child to exec or fail
+    int child_errno = 0;
+    ssize_t bytes_read = read(wait_pipe[READ_END_OF_PIPE], &child_errno, sizeof(child_errno));
+    close(wait_pipe[READ_END_OF_PIPE]);
+
+    if (bytes_read == sizeof(child_errno))
+    {
+        // Child failed to exec - reap it
+#if HAVE_CLONE3
+        siginfo_t info;
+        waitid(P_PIDFD, (id_t)pidfd, &info, WEXITED);
+        close(pidfd);
+#else
+        int status;
+        waitpid(child_pid, &status, 0);
+#endif
+        errno = child_errno;
+        return -1;
+    }
+
+    // If create_suspended was requested, wait for the child to stop itself
+    if (create_suspended)
+    {
+        int status;
+        pid_t wait_result;
+
+        // Wait for the child to stop (WUNTRACED flag)
+        // The child will send itself SIGSTOP before execve
+        while ((wait_result = waitpid(child_pid, &status, WUNTRACED)) < 0 && errno == EINTR);
+
+        if (wait_result == -1)
+        {
+            int saved_errno = errno;
+            // Child failed to stop - clean up
+#if HAVE_CLONE3
+            close(pidfd);
+#endif
+            errno = saved_errno;
+            return -1;
+        }
+
+        // Verify the child is actually stopped
+        if (!WIFSTOPPED(status))
+        {
+            // Child didn't stop as expected - this is an error
+#if HAVE_CLONE3
+            close(pidfd);
+#endif
+            errno = ECHILD;  // Use ECHILD to indicate child state error
+            return -1;
+        }
+        // Child is now stopped and waiting for SIGCONT
+    }
+
+    // Success - return PID and pidfd if requested
+    if (out_pid != NULL)
+    {
+        *out_pid = child_pid;
+    }
+    if (out_pidfd != NULL)
+    {
+        *out_pidfd = pidfd;
+    }
+    return 0;
 #endif
 }
 
@@ -1115,9 +1437,44 @@ int32_t SystemNative_SendSignal(int32_t pidfd, int32_t pid, int32_t managed_sign
         return -1;
     }
 
+    // EINTR is not listed for both kill and __NR_pidfd_send_signal.
+#if HAVE_PIDFD_SEND_SIGNAL
+    // On systems with pidfd_send_signal, prefer it if we have a valid pidfd
+    if (pidfd >= 0)
+    {
+        long result = syscall(__NR_pidfd_send_signal, pidfd, native_signal, NULL, 0);
+        return result == 0 ? 0 : -1;
+    }
+#else
     (void)pidfd;
+#endif
+
     return kill(pid, native_signal);
 }
+
+#if HAVE_PIDFD
+static int map_wait_status_pidfd(const siginfo_t* info, int32_t* out_exitCode, int32_t* out_signal)
+{
+    switch (info->si_code)
+    {
+        case CLD_KILLED: // WIFSIGNALED
+        case CLD_DUMPED: // WIFSIGNALED
+        {
+            *out_exitCode = 128 + info->si_status;
+            PosixSignal posixSignal;
+            TryConvertSignalCodeToPosixSignal(info->si_status, &posixSignal);
+            *out_signal = (int32_t)posixSignal;
+            return 0;
+        }
+        case CLD_EXITED: // WIFEXITED
+            *out_exitCode = info->si_status;
+            *out_signal = 0;
+            return 0;
+        default:
+            return -1; // Unknown state
+    }
+}
+#endif
 
 static int map_wait_status(int status, int32_t* out_exitCode, int32_t* out_signal)
 {
@@ -1141,9 +1498,26 @@ static int map_wait_status(int status, int32_t* out_exitCode, int32_t* out_signa
 
 int32_t SystemNative_TryGetExitCode(int32_t pidfd, int32_t pid, int32_t* out_exitCode, int32_t* out_signal)
 {
-    (void)pidfd;
-    int status;
     int ret;
+#if HAVE_PIDFD
+    if (pidfd >= 0)
+    {
+        (void)pid;
+        siginfo_t info;
+        memset(&info, 0, sizeof(info));
+        while ((ret = waitid(P_PIDFD, (id_t)pidfd, &info, WEXITED | WNOHANG)) < 0 && errno == EINTR);
+
+        if (ret == 0 && info.si_pid != 0)
+        {
+            return map_wait_status_pidfd(&info, out_exitCode, out_signal);
+        }
+        // Process still running or error
+        return -1;
+    }
+#else
+    (void)pidfd;
+#endif
+    int status;
     while ((ret = waitpid(pid, &status, WNOHANG)) < 0 && errno == EINTR);
 
     if (ret > 0)
@@ -1155,9 +1529,25 @@ int32_t SystemNative_TryGetExitCode(int32_t pidfd, int32_t pid, int32_t* out_exi
 
 int32_t SystemNative_WaitForExitAndReap(int32_t pidfd, int32_t pid, int32_t* out_exitCode, int32_t* out_signal)
 {
-    (void)pidfd;
-    int status;
     int ret;
+#if HAVE_PIDFD
+    if (pidfd >= 0)
+    {
+        (void)pid;
+        siginfo_t info;
+        memset(&info, 0, sizeof(info));
+        while ((ret = waitid(P_PIDFD, (id_t)pidfd, &info, WEXITED)) < 0 && errno == EINTR);
+
+        if (ret != -1)
+        {
+            return map_wait_status_pidfd(&info, out_exitCode, out_signal);
+        }
+        return -1;
+    }
+#else
+    (void)pidfd;
+#endif
+    int status;
     while ((ret = waitpid(pid, &status, 0)) < 0 && errno == EINTR);
 
     if (ret != -1)
@@ -1236,6 +1626,39 @@ int32_t SystemNative_TryWaitForExitCancellable(int32_t pidfd, int32_t pid, int32
     }
 
     return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
+#elif HAVE_PIDFD
+    // Linux with pidfd support
+    struct pollfd pfds[2];
+    memset(pfds, 0, sizeof(pfds));
+
+    // Wait on the process descriptor with poll
+    pfds[0].fd = pidfd;
+    // To poll a process descriptor, Linux needs POLLIN and FreeBSD needs POLLHUP.
+    // There are no side-effects to use both
+    pfds[0].events = POLLHUP | POLLIN;
+
+    // Monitor cancelPipeFd for cancellation
+    pfds[1].fd = cancelPipeFd;
+    pfds[1].events = POLLIN;
+
+    // Blocking wait (timeout = -1 means wait indefinitely)
+    while ((ret = poll(pfds, 2, -1)) < 0 && errno == EINTR);
+
+    if (ret == -1)
+    {
+        // Error
+        return -1;
+    }
+
+    // Check which event triggered
+    if (pfds[1].revents & (POLLIN | POLLHUP | POLLERR))
+    {
+        // Cancellation requested (data available in cancelPipeFd)
+        return 1;
+    }
+
+    // Process exited - collect exit status
+    return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
 #else
     (void)ret;
     (void)pidfd;
@@ -1288,13 +1711,23 @@ int32_t SystemNative_TryWaitForExit(int32_t pidfd, int32_t pid, int32_t timeout_
     }
 
     close(queue);
+#elif HAVE_PIDFD
+    // Linux with pidfd support
+    struct pollfd pfd;
+    memset(&pfd, 0, sizeof(pfd));
+    // Wait on the process descriptor with poll
+    pfd.fd = pidfd;
+    // To poll a process descriptor, Linux needs POLLIN and FreeBSD needs POLLHUP.
+    // There are no side-effects to use both
+    pfd.events = POLLHUP | POLLIN;
 
-    if (ret == 0)
+    while ((ret = poll(&pfd, 1, timeout_ms)) < 0 && errno == EINTR);
+
+    if (ret == -1)
     {
-        return 1; // Timeout
+        // Error
+        return -1;
     }
-
-    return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
 #else
     (void)ret;
     (void)pidfd;
@@ -1304,6 +1737,16 @@ int32_t SystemNative_TryWaitForExit(int32_t pidfd, int32_t pid, int32_t timeout_
     (void)out_signal;
     errno = ENOTSUP;
     return -1;
+#endif
+
+#if HAVE_KQUEUE || HAVE_PIDFD
+    if (ret == 0)
+    {
+        return 1; // Timeout
+    }
+
+    // Process exited - collect exit status
+    return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
 #endif
 }
 
@@ -1338,5 +1781,24 @@ int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd)
 {
     *out_pidfd = -1;
 
-    return kill(pid, 0);
+    // This properly checks if we have permission to wait on (and eventually reap) the process.
+    siginfo_t info;
+    memset(&info, 0, sizeof(info));
+    int waitid_ret = waitid(P_PID, (id_t)pid, &info, WNOHANG | WNOWAIT | WEXITED | WSTOPPED | WCONTINUED);
+
+    if (waitid_ret != 0)
+    {
+        return -1;
+    }
+
+#if HAVE_PIDFD
+    long pidfd_result = syscall(SYS_pidfd_open, pid, 0);
+    if (pidfd_result < 0)
+    {
+        return -1;
+    }
+    *out_pidfd = (int)pidfd_result;
+#endif
+
+    return 0;
 }

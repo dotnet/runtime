@@ -145,6 +145,11 @@
 #cmakedefine01 HAVE_GETGRGID_R
 #cmakedefine01 HAVE_TERMIOS2
 #cmakedefine01 HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
+#cmakedefine01 HAVE_CLONE3
+#cmakedefine01 HAVE_PIDFD_SEND_SIGNAL
+#cmakedefine01 HAVE_CLOSE_RANGE
+#cmakedefine01 HAVE_PDEATHSIG
+#cmakedefine01 HAVE_SYS_TGKILL
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

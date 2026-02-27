@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.Windows)]
+    [PlatformSpecific(TestPlatforms.AnyUnix | TestPlatforms.Windows)]
     public partial class SafeProcessHandleTests
     {
         private static ProcessStartOptions CreateTenSecondSleep()
