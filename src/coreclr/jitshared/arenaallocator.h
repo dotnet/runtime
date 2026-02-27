@@ -6,7 +6,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <assert.h>
 #include <string.h>
 #include "minipal/utils.h"
 
