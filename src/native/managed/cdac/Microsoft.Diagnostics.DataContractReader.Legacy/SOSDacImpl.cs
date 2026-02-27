@@ -3800,22 +3800,20 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, void* pCallback, void* token)
+    int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token)
     {
-        if (pCallback is null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (pCallback is null)
+                throw new ArgumentException();
+
             Contracts.IBuiltInCOM contract = _target.Contracts.BuiltInCOM;
             TargetPointer listPtr = cleanupListPtr.ToTargetPointer(_target);
-            delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> callback =
-                (delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL>)pCallback;
 
             foreach (Contracts.RCWCleanupInfo info in contract.GetRCWCleanupList(listPtr))
             {
-                callback(
+                pCallback(
                     info.RCW.ToClrDataAddress(_target).Value,
                     info.Context.ToClrDataAddress(_target).Value,
                     info.STAThread.ToClrDataAddress(_target).Value,
