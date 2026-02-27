@@ -249,7 +249,7 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>9.0.14-servicing.26110.3</MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>9.0.14-servicing.26126.3</MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>
     <MicrosoftNETWorkloadEmscriptenCurrentManifest90100Version>9.0.14</MicrosoftNETWorkloadEmscriptenCurrentManifest90100Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest90100Version)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- SdkVersionForWorkloadTesting is used to compute the sdk band and version for workload testing.
