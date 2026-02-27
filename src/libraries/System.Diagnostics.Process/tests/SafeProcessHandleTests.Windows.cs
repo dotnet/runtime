@@ -11,7 +11,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class SafeProcessHandleTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void SendSignal_SIGINT_TerminatesProcessInNewProcessGroup()
         {
             ProcessStartOptions options = CreateTenSecondSleep();
@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, exitStatus.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Signal_SIGQUIT_TerminatesProcessInNewProcessGroup()
         {
             ProcessStartOptions options = CreateTenSecondSleep();
@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, exitStatus.ExitCode);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Signal_UnsupportedSignal_ThrowsArgumentException()
         {
             ProcessStartOptions options = CreateTenSecondSleep();
