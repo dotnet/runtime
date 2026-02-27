@@ -33,13 +33,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
-        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="translated">O argumento '{0}' está usando o modificador de parâmetro out sem suporte</target>
+        <source>Argument '{0}' is using the unsupported 'out' parameter modifier</source>
+        <target state="needs-review-translation">O argumento '{0}' está usando o modificador de parâmetro out sem suporte</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
-        <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="translated">O argumento está usando o modificador de parâmetro out sem suporte</target>
+        <source>Argument is using the unsupported 'out' parameter modifier</source>
+        <target state="needs-review-translation">O argumento está usando o modificador de parâmetro out sem suporte</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -53,18 +53,18 @@
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
-        <source>Logging methods must be partial</source>
-        <target state="translated">Os métodos de registro em log devem ser parciais</target>
+        <source>Logging methods must be 'partial'</source>
+        <target state="needs-review-translation">Os métodos de registro em log devem ser parciais</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
-        <source>Logging methods must return void</source>
-        <target state="translated">Os métodos de registro em log devem retornar nulos</target>
+        <source>Logging methods must return 'void'</source>
+        <target state="needs-review-translation">Os métodos de registro em log devem retornar nulos</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
-        <source>Logging methods must be static</source>
-        <target state="translated">Os métodos de registro em log devem ser estáticos</target>
+        <source>Logging methods must be 'static'</source>
+        <target state="needs-review-translation">Os métodos de registro em log devem ser estáticos</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
@@ -143,8 +143,8 @@
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
-        <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="translated">Remova o qualificador redundante (Info:, Aviso:, Erro:, etc) da mensagem de log, pois está implícito no nível de log especificado.</target>
+        <source>Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</source>
+        <target state="needs-review-translation">Remova o qualificador redundante (Info:, Aviso:, Erro:, etc) da mensagem de log, pois está implícito no nível de log especificado.</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
@@ -203,23 +203,23 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
-        <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
-        <target state="translated">O argumento "{0}" está usando os parâmetros sem suporte ou o modificador de parâmetro com escopo</target>
+        <source>Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
-        <source>Argument is using the unsupported params or scoped parameter modifier</source>
-        <target state="translated">O argumento está usando os parâmetros sem suporte ou o modificador de parâmetro com escopo</target>
+        <source>Argument is using the unsupported 'params' or 'scoped' parameter modifier</source>
+        <target state="new">Argument is using the unsupported 'params' or 'scoped' parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
-        <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
-        <target state="translated">O parâmetro "{0}" é um ref struct, que não é suportado pelo gerador de origem de log</target>
+        <source>Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</source>
+        <target state="new">Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
-        <source>Logging method parameter is a ref struct</source>
-        <target state="translated">O parâmetro do método de registro em log é um ref struct</target>
+        <source>Logging method parameter is a 'ref struct'</source>
+        <target state="new">Logging method parameter is a 'ref struct'</target>
         <note />
       </trans-unit>
     </body>
