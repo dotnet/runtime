@@ -4,8 +4,6 @@
 #include "jitpch.h"
 #include "jitmetadata.h"
 
-#ifdef DEBUG
-
 //------------------------------------------------------------------------
 // JitMetadata::report: Report metadata back to the EE.
 //
@@ -59,6 +57,8 @@ void JitMetrics::mergeToRoot(Compiler* inlineeComp)
 #define JITMETADATAMETRIC(name, type, flags) root->Metrics.name += inlineeComp->Metrics.name;
 #include "jitmetadatalist.h"
 }
+
+#ifdef DEBUG
 
 //------------------------------------------------------------------------
 // printMetric: Print a double metric value to jitstdout.

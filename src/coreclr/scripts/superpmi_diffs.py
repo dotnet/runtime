@@ -326,8 +326,8 @@ class Diff:
 
         # Figure out which JITs to use
         jit_name = determine_jit_name(self.host_os, self.target_os, self.host_arch_name, self.arch_name, use_cross_compile_jit=True)
-        base_checked_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "checked", jit_name)
-        diff_checked_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "checked", jit_name)
+        base_release_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "release", jit_name)
+        diff_release_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "release", jit_name)
 
         log_file = os.path.join(self.log_directory, "superpmi_memorydiff_{}.log".format(self.target))
 
@@ -348,8 +348,8 @@ class Diff:
             "-target_os", self.target_os,
             "-target_arch", self.arch_name,
             "-arch", self.host_arch_name,
-            "-base_jit_path", base_checked_jit_path,
-            "-diff_jit_path", diff_checked_jit_path,
+            "-base_jit_path", base_release_jit_path,
+            "-diff_jit_path", diff_release_jit_path,
             "-spmi_location", self.spmi_location,
             "-error_limit", "100",
             "--summary_as_json",

@@ -9,7 +9,7 @@ parameters:
   variables: {}
   helixQueues: ''
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-diffs-job.yml'
-  diffType: 'asmdiffs'            # required -- 'asmdiffs', 'tpdiff', or 'all'
+  diffType: 'asmdiffs'            # required -- 'asmdiffs', 'tpdiff', 'memorydiff', or 'all'
   baseJitOptions: ''              # e.g. JitStressModeNames=STRESS_PHYSICAL_PROMOTION;JitFullyInt=1
   diffJitOptions: ''
 
@@ -32,14 +32,14 @@ jobs:
     dependsOn:
       - ${{ if in(parameters.diffType, 'asmdiffs', 'all') }}:
         - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_checked_'
-      - ${{ if in(parameters.diffType, 'tpdiff', 'all') }}:
+      - ${{ if in(parameters.diffType, 'tpdiff', 'memorydiff', 'all') }}:
         - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_release_'
 
     variables:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
 
-    - ${{ if in(parameters.diffType, 'tpdiff', 'all') }}:
+    - ${{ if in(parameters.diffType, 'tpdiff', 'memorydiff', 'all') }}:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: releaseProductRootFolderPath
           value: '$(Build.SourcesDirectory)\artifacts\bin\coreclr\$(osGroup).$(archType).Release'
@@ -59,7 +59,7 @@ jobs:
           displayName: 'JIT checked build'
           cleanUnpackFolder: false
 
-    - ${{ if in(parameters.diffType, 'tpdiff', 'all') }}:
+    - ${{ if in(parameters.diffType, 'tpdiff', 'memorydiff', 'all') }}:
       # Download jit release builds
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:

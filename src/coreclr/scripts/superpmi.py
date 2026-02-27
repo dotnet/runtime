@@ -381,7 +381,8 @@ throughput_parser = subparsers.add_parser("tpdiff", description=throughput_descr
 add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help)
 
 # subparser for memorydiff
-memorydiff_parser = subparsers.add_parser("memorydiff", description=memorydiff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
+memorydiff_parser = subparsers.add_parser("memorydiff", description=memorydiff_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
+add_core_root_arguments(memorydiff_parser, "Release", throughput_build_type_help)
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])

@@ -16,7 +16,7 @@ parameters:
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   helixQueues: ''                 # required -- Helix queues
-  diffType: 'asmdiffs'            # required -- 'asmdiffs', 'tpdiff', or 'all'
+  diffType: 'asmdiffs'            # required -- 'asmdiffs', 'tpdiff', 'memorydiff', or 'all'
   baseJitOptions: ''              # e.g. JitStressModeNames=STRESS_PHYSICAL_PROMOTION;JitFullyInt=1
   diffJitOptions: ''
 
@@ -82,6 +82,9 @@ jobs:
       - name: SetupScriptDirs
         value: '-checked_directory $(buildProductRootFolderPath)'
     - ${{ if eq(parameters.diffType, 'tpdiff') }}:
+      - name: SetupScriptDirs
+        value: '-release_directory $(releaseProductRootFolderPath)'
+    - ${{ if eq(parameters.diffType, 'memorydiff') }}:
       - name: SetupScriptDirs
         value: '-release_directory $(releaseProductRootFolderPath)'
     - ${{ if eq(parameters.diffType, 'all') }}:

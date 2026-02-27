@@ -122,3 +122,19 @@ extends:
             diffType: tpdiff
             baseJitOptions: ${{ parameters.spmi_jitoptions_base }}
             diffJitOptions: ${{ parameters.spmi_jitoptions_diff }}
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-diffs-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          - windows_x86
+          - linux_x64
+          helixQueueGroup: superpmi-diffs
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
+            diffType: memorydiff
+            baseJitOptions: ${{ parameters.spmi_jitoptions_base }}
+            diffJitOptions: ${{ parameters.spmi_jitoptions_diff }}

@@ -104,7 +104,7 @@ def setup_args(args):
     if do_asmdiffs:
         use_checked = True
     if do_memorydiff:
-        use_checked = True
+        use_release = True
     if do_tpdiff:
         use_release = True
 
@@ -351,7 +351,7 @@ def main(main_args):
     if do_asmdiffs:
         use_checked = True
     if do_memorydiff:
-        use_checked = True
+        use_release = True
     if do_tpdiff:
         use_release = True
 
