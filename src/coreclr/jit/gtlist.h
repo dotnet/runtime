@@ -36,7 +36,6 @@ GTNODE(ASYNC_CONTINUATION, GenTree           ,0,0,GTK_LEAF)            // Access
 GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-target
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
-GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
 GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)
 GTNODE(ASYNC_RESUME_INFO, GenTreeVal         ,0,0,GTK_LEAF)             // Address of async resume info for a state
 

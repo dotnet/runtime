@@ -2628,18 +2628,18 @@ PhaseStatus Compiler::fgInstrumentMethod()
             return PhaseStatus::MODIFIED_NOTHING;
         }
 
-        GenTreeRetExpr* const retExpr = impInlineInfo->inlineCandidateInfo->retExpr;
+        const InlineIRResult& result = impInlineInfo->inlineCandidateInfo->result;
 
-        // If there's a retExpr but no gtSubstBB, we assume the retExpr is a temp
+        // If there's a retExpr but no substBB, we assume the retExpr is a temp
         // and so not interesting to instrumentation.
         //
-        if ((retExpr != nullptr) && (retExpr->gtSubstBB != nullptr))
+        if (result.substBB != nullptr)
         {
-            assert(retExpr->gtSubstExpr != nullptr);
-            retBB                 = retExpr->gtSubstBB;
-            tempInlineeReturnStmt = fgNewStmtAtEnd(retBB, retExpr->gtSubstExpr);
-            JITDUMP("Temporarily adding ret expr [%06u] to " FMT_BB "\n", dspTreeID(retExpr->gtSubstExpr),
-                    retBB->bbNum);
+            assert(result.substExpr != nullptr);
+            retBB = result.substBB;
+
+            tempInlineeReturnStmt = fgNewStmtAtEnd(retBB, result.substExpr);
+            JITDUMP("Temporarily adding ret expr [%06u] to " FMT_BB "\n", dspTreeID(result.substExpr), retBB->bbNum);
         }
     }
 

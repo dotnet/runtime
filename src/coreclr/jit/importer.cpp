@@ -385,23 +385,14 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         {
             dstVarDsc = lvaGetDesc(expr->AsLclVarCommon());
         }
-        else if (expr->OperIs(GT_CALL, GT_RET_EXPR)) // The special case of calls with return buffers.
+        else if (expr->OperIs(GT_CALL)) // The special case of calls with return buffers.
         {
-            GenTree* call = expr->OperIs(GT_RET_EXPR) ? expr->AsRetExpr()->gtInlineCandidate : expr;
+            GenTreeCall* call = expr->AsCall();
 
-            if (call->TypeIs(TYP_VOID) && call->AsCall()->ShouldHaveRetBufArg())
+            if (call->TypeIs(TYP_VOID) && call->ShouldHaveRetBufArg())
             {
-                GenTree* retBuf;
-                if (call->AsCall()->ShouldHaveRetBufArg())
-                {
-                    assert(call->AsCall()->gtArgs.HasRetBuffer());
-                    retBuf = call->AsCall()->gtArgs.GetRetBufferArg()->GetNode();
-                }
-                else
-                {
-                    assert(!call->AsCall()->gtArgs.HasThisPointer());
-                    retBuf = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-                }
+                assert(call->gtArgs.HasRetBuffer());
+                GenTree* retBuf = call->gtArgs.GetRetBufferArg()->GetNode();
 
                 assert(retBuf->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
@@ -443,40 +434,6 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         else
         {
             impSpillSpecialSideEff();
-        }
-
-        if ((lastStmt != impLastStmt) && expr->OperIs(GT_RET_EXPR))
-        {
-            GenTree* const call = expr->AsRetExpr()->gtInlineCandidate;
-            JITDUMP("\nimpAppendStmt: after sinking a local struct store into inline candidate [%06u], we need to "
-                    "reorder subsequent spills.\n",
-                    dspTreeID(call));
-
-            // Move all newly appended statements to just before the call's statement.
-            // First, find the statement containing the call.
-            //
-            Statement* insertBeforeStmt = lastStmt;
-
-            while (insertBeforeStmt->GetRootNode() != call)
-            {
-                assert(insertBeforeStmt != impStmtList);
-                insertBeforeStmt = insertBeforeStmt->GetPrevStmt();
-            }
-
-            Statement* movingStmt = lastStmt->GetNextStmt();
-
-            JITDUMP("Moving " FMT_STMT " through " FMT_STMT " before " FMT_STMT "\n", movingStmt->GetID(),
-                    impLastStmt->GetID(), insertBeforeStmt->GetID());
-
-            // We move these backwards, so must keep moving the insert
-            // point to keep them in order.
-            //
-            while (impLastStmt != lastStmt)
-            {
-                Statement* movingStmt = impExtractLastStmt();
-                impInsertStmtBefore(movingStmt, insertBeforeStmt);
-                insertBeforeStmt = movingStmt;
-            }
         }
     }
 
@@ -825,7 +782,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
 
             NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
 
-            if (destAddr->OperIs(GT_LCL_ADDR))
+            if (destAddr->OperIs(GT_LCL_ADDR) && !srcCall->IsInlineCandidate())
             {
                 lvaSetVarDoNotEnregister(destAddr->AsLclVarCommon()->GetLclNum()
                                              DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
@@ -921,49 +878,6 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             lvaGetDesc(store->AsLclVar())->lvIsMultiRegRet = true;
         }
 #endif // UNIX_AMD64_ABI
-    }
-    else if (src->OperIs(GT_RET_EXPR))
-    {
-        assert(src->AsRetExpr()->gtInlineCandidate->OperIs(GT_CALL));
-        GenTreeCall* call = src->AsRetExpr()->gtInlineCandidate;
-
-        if (call->ShouldHaveRetBufArg())
-        {
-            // insert the return value buffer into the argument list as first byref parameter after 'this'
-            GenTreeFlags indirFlags = GTF_EMPTY;
-            GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
-
-            // Return buffers cannot have volatile, unaligned, or initclass flags
-            if (((indirFlags & GTF_IND_MUST_PRESERVE_FLAGS) != GTF_EMPTY) || !impIsLegalRetBuf(destAddr, call))
-            {
-                unsigned tmp =
-                    lvaGrabTemp(false DEBUGARG(printfAlloc("stack copy for value returned via return buffer")));
-                lvaSetStruct(tmp, call->gtRetClsHnd, false);
-                destAddr = gtNewLclVarAddrNode(tmp, TYP_I_IMPL);
-
-                // Insert address of temp into existing call
-                NewCallArg retBufArg = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
-                call->gtArgs.InsertAfterThisOrFirst(this, retBufArg);
-
-                // Now the store needs to copy from the new temp instead.
-                call->gtType      = TYP_VOID;
-                src->gtType       = TYP_VOID;
-                var_types tmpType = lvaGetDesc(tmp)->TypeGet();
-                store->Data()     = gtNewOperNode(GT_COMMA, tmpType, src, gtNewLclvNode(tmp, tmpType));
-                return impStoreStruct(store, CHECK_SPILL_ALL, pAfterStmt, di, block);
-            }
-
-            call->gtArgs.InsertAfterThisOrFirst(this,
-                                                NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
-
-            // now returns void, not a struct
-            src->gtType  = TYP_VOID;
-            call->gtType = TYP_VOID;
-
-            // We already have appended the write to 'dest' GT_CALL's args
-            // So now we just return an empty node (pruning the GT_RET_EXPR)
-            return src;
-        }
     }
     else if (src->OperIs(GT_COMMA))
     {
@@ -1231,7 +1145,6 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, unsigned curLevel)
     switch (structVal->OperGet())
     {
         case GT_CALL:
-        case GT_RET_EXPR:
         {
             unsigned lclNum = lvaGrabTemp(true DEBUGARG("spilled call-like call argument"));
             impStoreToTemp(lclNum, structVal, curLevel);
@@ -1782,25 +1695,6 @@ bool Compiler::impSpillStackEntry(unsigned level,
             CORINFO_CLASS_HANDLE stkHnd = stackState.esStack[level].seTypeInfo.GetClassHandleForObjRef();
             lvaSetClass(tnum, tree, stkHnd);
         }
-
-        // If we're assigning a GT_RET_EXPR, note the temp over on the call,
-        // so the inliner can use it in case it needs a return spill temp.
-        if (tree->OperIs(GT_RET_EXPR))
-        {
-            JITDUMP("\n*** see V%02u = GT_RET_EXPR, noting temp\n", tnum);
-            GenTreeCall* call = tree->AsRetExpr()->gtInlineCandidate->AsCall();
-            if (call->IsGuardedDevirtualizationCandidate())
-            {
-                for (uint8_t i = 0; i < call->GetInlineCandidatesCount(); i++)
-                {
-                    call->GetGDVCandidateInfo(i)->preexistingSpillTemp = tnum;
-                }
-            }
-            else
-            {
-                call->AsCall()->GetSingleInlineCandidateInfo()->preexistingSpillTemp = tnum;
-            }
-        }
     }
 
     // The tree type may be modified by impStoreToTemp, so use the type of the lclVar.
@@ -2174,6 +2068,8 @@ void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
     {
         impCurStmtDI = impCreateDIWithCurrentStackInfo(offs, false);
     }
+
+    impCurStmtDI.Validate();
 }
 
 //------------------------------------------------------------------------
@@ -3590,90 +3486,6 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         GenTree*   allocBoxStore = gtNewTempStore(impBoxTemp, op1);
         Statement* allocBoxStmt  = impAppendTree(allocBoxStore, CHECK_SPILL_NONE, impCurStmtDI);
 
-        // If the exprToBox is a call that returns its value via a ret buf arg,
-        // move the store statement(s) before the call (which must be a top level tree).
-        //
-        // We do this because impStoreStructPtr (invoked below) will
-        // back-substitute into a call when it sees a GT_RET_EXPR and the call
-        // has a hidden buffer pointer, So we need to reorder things to avoid
-        // creating out-of-sequence IR.
-        //
-        if (varTypeIsStruct(exprToBox) && exprToBox->OperIs(GT_RET_EXPR))
-        {
-            GenTreeCall* const call = exprToBox->AsRetExpr()->gtInlineCandidate->AsCall();
-
-            // If the call was flagged for possible enumerator cloning, flag the allocation as well.
-            //
-            if (compIsForInlining() && hasImpEnumeratorGdvLocalMap())
-            {
-                NodeToUnsignedMap* const map           = getImpEnumeratorGdvLocalMap();
-                unsigned                 enumeratorLcl = BAD_VAR_NUM;
-                GenTreeCall* const       call          = impInlineInfo->iciCall;
-                if (map->Lookup(call, &enumeratorLcl))
-                {
-                    JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(op1), enumeratorLcl);
-                    map->Remove(call);
-                    map->Set(op1, enumeratorLcl);
-                }
-            }
-
-            if (call->ShouldHaveRetBufArg())
-            {
-                JITDUMP("Must insert newobj stmts for box before call [%06u]\n", dspTreeID(call));
-
-                // Walk back through the statements in this block, looking for the one
-                // that has this call as the root node.
-                //
-                // Because gtNewTempStore (above) may have added statements that
-                // feed into the actual store we need to move this set of added
-                // statements as a group.
-                //
-                // Note boxed allocations are side-effect free (no com or finalizer) so
-                // our only worries here are (correctness) not overlapping the box temp
-                // lifetime and (perf) stretching the temp lifetime across the inlinee
-                // body.
-                //
-                // Since this is an inline candidate, we must be optimizing, and so we have
-                // a unique box temp per call. So no worries about overlap.
-                //
-                assert(!opts.OptimizationDisabled());
-
-                // Lifetime stretching could addressed with some extra cleverness--sinking
-                // the allocation back down to just before the copy, once we figure out
-                // where the copy is. We defer for now.
-                //
-                Statement* insertBeforeStmt = cursor;
-                noway_assert(insertBeforeStmt != nullptr);
-
-                while (true)
-                {
-                    if (insertBeforeStmt->GetRootNode() == call)
-                    {
-                        break;
-                    }
-
-                    // If we've searched all the statements in the block and failed to
-                    // find the call, then something's wrong.
-                    //
-                    noway_assert(insertBeforeStmt != impStmtList);
-
-                    insertBeforeStmt = insertBeforeStmt->GetPrevStmt();
-                }
-
-                // Found the call. Move the statements comprising the store.
-                //
-                JITDUMP("Moving " FMT_STMT "..." FMT_STMT " before " FMT_STMT "\n", cursor->GetNextStmt()->GetID(),
-                        allocBoxStmt->GetID(), insertBeforeStmt->GetID());
-                assert(allocBoxStmt == impLastStmt);
-                do
-                {
-                    Statement* movingStmt = impExtractLastStmt();
-                    impInsertStmtBefore(movingStmt, insertBeforeStmt);
-                    insertBeforeStmt = movingStmt;
-                } while (impLastStmt != cursor);
-            }
-        }
-
         // Create a pointer to the box payload in op1.
         //
         op1 = gtNewLclvNode(impBoxTemp, TYP_REF);
@@ -4612,25 +4424,29 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
             return op;
         }
 
-        // In contrast, we can only use multi-reg calls directly if they have the exact same ABI.
-        // Calling convention equality is a conservative approximation for that check.
-        if (op->IsCall() &&
-            (op->AsCall()->GetUnmanagedCallConv() == info.compCallConv)
+        // We can sometimes use calls directly as multi-reg returns, but only
+        // if they're not inline candidates. Inline candidates can be replaced by
+        // arbitrary nodes that would not be legal to use as multi-reg returns.
+        // TODO-CQ: Delay this fixup to after we have resolved the inline candidate.
+        if (op->IsCall() && !op->AsCall()->IsInlineCandidate())
+        {
+            GenTreeCall* call = op->AsCall();
+            // In contrast, we can only use multi-reg calls directly if they have the exact same ABI.
+            // Calling convention equality is a conservative approximation for that check.
+            if (call->GetUnmanagedCallConv() == info.compCallConv
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // TODO-Review: this seems unnecessary. Return ABI doesn't change under varargs.
-            && !op->AsCall()->IsVarargs()
+                // TODO-Review: this seems unnecessary. Return ABI doesn't change under varargs.
+                && !call->IsVarargs()
 #endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        )
-        {
-            return op;
-        }
+            )
+            {
+                return op;
+            }
 
-        if (op->IsCall())
-        {
             // We cannot tail call because control needs to return to fixup the calling convention
             // for result return.
-            op->AsCall()->gtCallMoreFlags &= ~GTF_CALL_M_TAILCALL;
-            op->AsCall()->gtCallMoreFlags &= ~GTF_CALL_M_EXPLICIT_TAILCALL;
+            call->gtCallMoreFlags &= ~GTF_CALL_M_TAILCALL;
+            call->gtCallMoreFlags &= ~GTF_CALL_M_EXPLICIT_TAILCALL;
         }
 
         // The backend does not support other struct-producing nodes (e. g. OBJs) as sources of multi-reg returns.
@@ -6763,12 +6579,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // If we see a local being assigned the result of a GDV-inlineable
                     // GetEnumerator call, keep track of both the local and the call.
                     //
-                    if (op1->OperIs(GT_RET_EXPR))
+                    if (op1->IsCall())
                     {
                         JITDUMP(".... checking for GDV returning IEnumerator<T>...\n");
 
                         bool                 isEnumeratorT = false;
-                        GenTreeCall* const   call          = op1->AsRetExpr()->gtInlineCandidate;
+                        GenTreeCall* const   call          = op1->AsCall();
                         bool                 isExact       = false;
                         bool                 isNonNull     = false;
                         CORINFO_CLASS_HANDLE retCls        = gtGetClassHandle(call, &isExact, &isNonNull);
@@ -11132,7 +10948,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #endif
 
             InlineCandidateInfo* inlCandInfo = impInlineInfo->inlineCandidateInfo;
-            GenTreeRetExpr*      inlRetExpr  = inlCandInfo->retExpr;
             // Make sure the type matches the original call.
 
             var_types returnType       = genActualType(op2->gtType);
@@ -11185,12 +11000,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 {
                     // Do we have to normalize?
                     var_types fncRealRetType = JITtype2varType(info.compMethodInfo->args.retType);
-                    // For RET_EXPR get the type info from the call. Regardless
-                    // of whether it ends up inlined or not normalization will
-                    // happen as part of that function's codegen.
-                    GenTree* returnedTree = op2->OperIs(GT_RET_EXPR) ? op2->AsRetExpr()->gtInlineCandidate : op2;
-                    if ((varTypeIsSmall(returnedTree->TypeGet()) || varTypeIsSmall(fncRealRetType)) &&
-                        fgCastNeeded(returnedTree, fncRealRetType))
+                    if ((varTypeIsSmall(op2->TypeGet()) || varTypeIsSmall(fncRealRetType)) &&
+                        fgCastNeeded(op2, fncRealRetType))
                     {
                         // Small-typed return values are normalized by the callee
                         op2 = gtNewCastNode(TYP_INT, op2, false, fncRealRetType);
@@ -11212,11 +11023,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     if (map->Lookup(origCall, &enumeratorLcl))
                     {
                         GenTree* returnValue = op2;
-                        if (returnValue->OperIs(GT_RET_EXPR))
-                        {
-                            returnValue = returnValue->AsRetExpr()->gtInlineCandidate;
-                        }
-
                         if (returnValue->IsCall())
                         {
                             JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", dspTreeID(returnValue),
@@ -11240,7 +11046,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                         bool                 isNonNull    = false;
                         CORINFO_CLASS_HANDLE returnClsHnd = gtGetClassHandle(op2, &isExact, &isNonNull);
 
-                        if (inlRetExpr->gtSubstExpr == nullptr)
+                        if (inlCandInfo->result.substExpr == nullptr)
                         {
                             // This is the first return, so best known type is the type
                             // of this return value.
@@ -11272,12 +11078,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                     op2 = tmpOp2;
 #ifdef DEBUG
-                    if (inlRetExpr->gtSubstExpr != nullptr)
+                    if (inlCandInfo->result.substExpr != nullptr)
                     {
                         // Some other block(s) have seen the CEE_RET first.
                         // Better they spilled to the same temp.
-                        assert(inlRetExpr->gtSubstExpr->OperIs(GT_LCL_VAR));
-                        assert(inlRetExpr->gtSubstExpr->AsLclVarCommon()->GetLclNum() ==
+                        assert(inlCandInfo->result.substExpr->OperIs(GT_LCL_VAR));
+                        assert(inlCandInfo->result.substExpr->AsLclVarCommon()->GetLclNum() ==
                                op2->AsLclVarCommon()->GetLclNum());
                     }
 #endif
@@ -11292,7 +11098,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 #endif
 
                 // Report the return expression
-                inlRetExpr->gtSubstExpr = op2;
+                inlCandInfo->result.substExpr = op2;
             }
             else
             {
@@ -11318,43 +11124,45 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                     if (fgNeedReturnSpillTemp())
                     {
-                        if (inlRetExpr->gtSubstExpr == nullptr)
+                        if (inlCandInfo->result.substExpr == nullptr)
                         {
                             // The inlinee compiler has figured out the type of the temp already. Use it here.
-                            inlRetExpr->gtSubstExpr =
+                            inlCandInfo->result.substExpr =
                                 gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
                         }
                     }
                     else
                     {
-                        inlRetExpr->gtSubstExpr = op2;
+                        inlCandInfo->result.substExpr = op2;
                     }
                 }
                 else // The struct was to be returned via a return buffer.
                 {
-                    assert(iciCall->gtArgs.HasRetBuffer());
-                    GenTree* dest = gtCloneExpr(iciCall->gtArgs.GetRetBufferArg()->GetEarlyNode());
+                    assert(iciCall->gtArgs.HasRetBuffer() && (impInlineInfo->inlRetBufferArgInfo != nullptr));
+                    InlLclVarInfo lclInfo = {};
+                    lclInfo.lclTypeInfo   = TYP_BYREF;
+                    GenTree* dest         = impInlineFetchArg(*impInlineInfo->inlRetBufferArgInfo, lclInfo);
 
                     if (fgNeedReturnSpillTemp())
                     {
                         // If this is the first return we have seen set the retExpr.
-                        if (inlRetExpr->gtSubstExpr == nullptr)
+                        if (inlCandInfo->result.substExpr == nullptr)
                         {
-                            inlRetExpr->gtSubstExpr =
+                            inlCandInfo->result.substExpr =
                                 impStoreStructPtr(dest, gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType),
                                                   CHECK_SPILL_ALL);
                         }
                     }
                     else
                     {
-                        inlRetExpr->gtSubstExpr = impStoreStructPtr(dest, op2, CHECK_SPILL_ALL);
+                        inlCandInfo->result.substExpr = impStoreStructPtr(dest, op2, CHECK_SPILL_ALL);
                     }
                 }
             }
 
             // If gtSubstExpr is an arbitrary tree then we may need to
             // propagate mandatory "IR presence" flags to the BB it ends up in.
-            inlRetExpr->gtSubstBB = fgNeedReturnSpillTemp() ? nullptr : compCurBB;
+            inlCandInfo->result.substBB = fgNeedReturnSpillTemp() ? nullptr : compCurBB;
         }
     }
 
@@ -13141,9 +12949,8 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE fncHandle,
 // impInlineRecordArgInfo: record information about an inline candidate argument
 //
 // Arguments:
-//   pInlineInfo - inline info for the inline candidate
+//   argInfo - arg info
 //   arg - the caller argument
-//   argInfo - Structure to record information into
 //   inlineResult - result of ongoing inline evaluation
 //
 // Notes:
@@ -13154,14 +12961,12 @@ void Compiler::impCanInlineIL(CORINFO_METHOD_HANDLE fncHandle,
 //   pass the argument into the inlinee.
 
 void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
-                                      CallArg*      arg,
                                       InlArgInfo*   argInfo,
+                                      CallArg*      arg,
                                       InlineResult* inlineResult)
 {
     argInfo->arg       = arg;
     GenTree* curArgVal = arg->GetNode();
-
-    assert(!curArgVal->OperIs(GT_RET_EXPR));
 
     GenTree*   lclVarTree;
     const bool isAddressInLocal = impIsAddressInLocal(curArgVal, &lclVarTree);
@@ -13180,8 +12985,10 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 #endif // FEATURE_SIMD
         }
 
-        // Spilling code relies on correct aliasability annotations.
-        assert(varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed());
+        // Spilling code relies on correct aliasability annotations, except for
+        // retbufs that are not actually exposed in IL.
+        assert(varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed() ||
+               (arg->GetWellKnownArg() == WellKnownArg::RetBuffer));
     }
 
     if (curArgVal->gtFlags & GTF_ALL_EFFECT)
@@ -13240,7 +13047,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         }
         else
         {
-            printf("IL argument #%u:", pInlineInfo->iciCall->gtArgs.GetUserIndex(arg));
+            printf("IL Argument #%u:", pInlineInfo->iciCall->gtArgs.GetUserIndex(arg));
         }
         if (argInfo->argIsLclVar)
         {
@@ -13330,6 +13137,12 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         switch (arg.GetWellKnownArg())
         {
             case WellKnownArg::RetBuffer:
+            {
+                InlArgInfo* retBufferInfo = new (this, CMK_Inlining) InlArgInfo{};
+                impInlineRecordArgInfo(pInlineInfo, retBufferInfo, &arg, inlineResult);
+                pInlineInfo->inlRetBufferArgInfo = retBufferInfo;
+                continue;
+            }
             case WellKnownArg::AsyncContinuation:
             case WellKnownArg::AsyncExecutionContext:
             case WellKnownArg::AsyncSynchronizationContext:
@@ -13344,7 +13157,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         }
 
         arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
-        impInlineRecordArgInfo(pInlineInfo, &arg, argInfo, inlineResult);
+        impInlineRecordArgInfo(pInlineInfo, argInfo, &arg, inlineResult);
 
         if (inlineResult->IsFailure())
         {
@@ -13741,7 +13554,6 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
     GenTree*        op1              = nullptr;
 
     GenTree* argNode = argInfo.arg->GetNode();
-    assert(!argNode->OperIs(GT_RET_EXPR));
 
     // For TYP_REF args, if the argNode doesn't have any class information
     // we will lose some type info if we directly substitute it.

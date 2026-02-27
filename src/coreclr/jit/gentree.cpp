@@ -249,7 +249,6 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_INDEX_ADDR]    = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_BOUNDS_CHECK]  = TREE_NODE_SZ_SMALL;
     GenTree::s_gtNodeSizes[GT_ARR_ELEM]      = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_RET_EXPR]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_FIELD_ADDR]    = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_CMPXCHG]       = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_QMARK]         = TREE_NODE_SZ_LARGE;
@@ -315,7 +314,6 @@ void GenTree::InitNodeSize()
     static_assert(sizeof(GenTreeStoreInd)     <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeAddrMode)     <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeBlk)          <= TREE_NODE_SZ_SMALL);
-    static_assert(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
@@ -724,10 +722,6 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
 
         case GT_CALL:
             structHnd = AsCall()->gtRetClsHnd;
-            break;
-
-        case GT_RET_EXPR:
-            structHnd = AsRetExpr()->gtInlineCandidate->gtRetClsHnd;
             break;
 
         default:
@@ -3050,10 +3044,6 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
         if (tree->OperIsAnyLocal() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
         {
             return true;
-        }
-        if (tree->OperIs(GT_RET_EXPR))
-        {
-            return gtHasRef(tree->AsRetExpr()->gtInlineCandidate, lclNum);
         }
 
         return false;
@@ -6813,7 +6803,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
-        case GT_RET_EXPR:
         case GT_CNS_INT:
         case GT_CNS_LNG:
         case GT_CNS_DBL:
@@ -8744,25 +8733,6 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
     return node;
 }
 
-GenTreeRetExpr* Compiler::gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type)
-{
-    assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
-
-    GenTreeRetExpr* node = new (this, GT_RET_EXPR) GenTreeRetExpr(type);
-
-    node->gtInlineCandidate = inlineCandidate;
-
-    node->gtSubstExpr = nullptr;
-    node->gtSubstBB   = nullptr;
-
-    // GT_RET_EXPR node eventually might be turned back into GT_CALL (when inlining is aborted for example).
-    // Therefore it should carry the GTF_CALL flag so that all the rules about spilling can apply to it as well.
-    // For example, impImportLeave or CEE_POP need to spill GT_RET_EXPR before empty the evaluation stack.
-    node->gtFlags |= GTF_CALL;
-
-    return node;
-}
-
 //------------------------------------------------------------------------
 // gtNewFieldAddrNode: Create a new GT_FIELD_ADDR node.
 //
@@ -9693,13 +9663,6 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 copy->AsLclFld()->SetSsaNum(tree->AsLclFld()->GetSsaNum());
                 goto DONE;
 
-            case GT_RET_EXPR:
-                // GT_RET_EXPR is unique node, that contains a link to a gtInlineCandidate node,
-                // that is part of another statement. We cannot clone both here and cannot
-                // create another GT_RET_EXPR that points to the same gtInlineCandidate.
-                NO_WAY("Cloning of GT_RET_EXPR node not supported");
-                goto DONE;
-
             case GT_MEMORYBARRIER:
                 copy = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
                 goto DONE;
@@ -9965,7 +9928,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             // You must use gtCloneCandidateCall for these calls (and then do appropriate other fixup)
             if (tree->AsCall()->IsInlineCandidate() || tree->AsCall()->IsGuardedDevirtualizationCandidate())
             {
-                NO_WAY("Cloning of calls with associated GT_RET_EXPR nodes is not supported");
+                NO_WAY("Cloning of calls containing inline candidates is not supported");
             }
 
             copy = gtCloneExprCallHelper(tree->AsCall());
@@ -10468,7 +10431,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
-        case GT_RET_EXPR:
         case GT_CNS_INT:
         case GT_CNS_LNG:
         case GT_CNS_DBL:
@@ -12540,21 +12502,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
             break;
-
-        case GT_RET_EXPR:
-        {
-            GenTreeCall* inlineCand = tree->AsRetExpr()->gtInlineCandidate;
-            printf("(for ");
-            printTreeID(inlineCand);
-            printf(")");
-
-            if (tree->AsRetExpr()->gtSubstExpr != nullptr)
-            {
-                printf(" -> ");
-                printTreeID(tree->AsRetExpr()->gtSubstExpr);
-            }
-        }
-        break;
 
         case GT_PHYSREG:
             printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg));
@@ -15345,19 +15292,9 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     GenTree* copy = copyStmt->GetRootNode();
     if (!copy->OperIs(GT_STOREIND, GT_STORE_BLK))
     {
-        // GT_RET_EXPR is a tolerable temporary failure.
-        // The jit will revisit this optimization after
-        // inlining is done.
-        if (copy->OperIs(GT_RET_EXPR))
-        {
-            JITDUMP(" bailing; must wait for replacement of copy %s\n", GenTree::OpName(copy->gtOper));
-        }
-        else
-        {
-            // Anything else is a missed case we should figure out how to handle.
-            // One known case is GT_COMMAs enclosing the store we are looking for.
-            JITDUMP(" bailing; unexpected copy op %s\n", GenTree::OpName(copy->gtOper));
-        }
+        // Anything else is a missed case we should figure out how to handle.
+        // One known case is GT_COMMAs enclosing the store we are looking for.
+        JITDUMP(" bailing; unexpected copy op %s\n", GenTree::OpName(copy->gtOper));
         return nullptr;
     }
 
@@ -15422,13 +15359,6 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 
     // If the copy is a struct copy, make sure we know how to isolate any source side effects.
     GenTree* copySrc = copy->Data();
-
-    // If the copy source is from a pending inline, wait for it to resolve.
-    if (copySrc->OperIs(GT_RET_EXPR))
-    {
-        JITDUMP(" bailing; must wait for replacement of copy source %s\n", GenTree::OpName(copySrc->gtOper));
-        return nullptr;
-    }
 
     bool hasSrcSideEffect = false;
     bool isStructCopy     = false;
@@ -17124,19 +17054,9 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool igno
     // Are there only GTF_CALL side effects remaining? (and no other side effect kinds)
     if (flags & GTF_CALL)
     {
-        GenTree* potentialCall = tree;
-
-        while (potentialCall->OperIs(GT_RET_EXPR))
+        if (tree->OperIs(GT_CALL))
         {
-            // We need to preserve return expressions where the underlying call
-            // has side effects. Otherwise early folding can result in us dropping
-            // the call.
-            potentialCall = potentialCall->AsRetExpr()->gtInlineCandidate;
-        }
-
-        if (potentialCall->OperIs(GT_CALL))
-        {
-            GenTreeCall* const call             = potentialCall->AsCall();
+            GenTreeCall* const call             = tree->AsCall();
             const bool         ignoreExceptions = (flags & GTF_EXCEPT) == 0;
             return call->HasSideEffects(this, ignoreExceptions, ignoreCctors);
         }
@@ -17241,6 +17161,7 @@ bool Compiler::gtSplitTree(BasicBlock* block,
                            GenTree*    splitPoint,
                            Statement** firstNewStmt,
                            GenTree***  splitNodeUse,
+                           bool        includeOperands,
                            bool        early)
 {
     class Splitter final : public GenTreeVisitor<Splitter>
@@ -17248,6 +17169,7 @@ bool Compiler::gtSplitTree(BasicBlock* block,
         BasicBlock* m_bb;
         Statement*  m_splitStmt;
         GenTree*    m_splitNode;
+        bool        m_includeOperands;
         bool        m_early;
 
         struct UseInfo
@@ -17265,11 +17187,13 @@ bool Compiler::gtSplitTree(BasicBlock* block,
             UseExecutionOrder = true
         };
 
-        Splitter(Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode, bool early)
+        Splitter(
+            Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode, bool includeOperands, bool early)
             : GenTreeVisitor(compiler)
             , m_bb(bb)
             , m_splitStmt(stmt)
             , m_splitNode(splitNode)
+            , m_includeOperands(includeOperands)
             , m_early(early)
             , m_useStack(compiler->getAllocator(CMK_ArrayStack))
         {
@@ -17283,6 +17207,12 @@ bool Compiler::gtSplitTree(BasicBlock* block,
         {
             assert(!(*use)->OperIs(GT_QMARK));
             m_useStack.Push(UseInfo{use, user});
+            if ((*use == m_splitNode) && !m_includeOperands)
+            {
+                SplitStack(use);
+                return WALK_ABORT;
+            }
+
             return WALK_CONTINUE;
         }
 
@@ -17290,44 +17220,7 @@ bool Compiler::gtSplitTree(BasicBlock* block,
         {
             if (*use == m_splitNode)
             {
-                bool userIsReturned = false;
-                // Split all siblings and ancestor siblings.
-                int i;
-                for (i = 0; i < m_useStack.Height() - 1; i++)
-                {
-                    const UseInfo& useInf = m_useStack.BottomRef(i);
-                    if (useInf.Use == use)
-                    {
-                        break;
-                    }
-
-                    // If this has the same user as the next node then it is a
-                    // sibling of an ancestor -- and thus not on the "path"
-                    // that contains the split node.
-                    if (m_useStack.BottomRef(i + 1).User == useInf.User)
-                    {
-                        SplitOutUse(useInf, userIsReturned);
-                    }
-                    else
-                    {
-                        // This is an ancestor of the node we're splitting on.
-                        userIsReturned = IsReturned(useInf, userIsReturned);
-                    }
-                }
-
-                assert(m_useStack.Bottom(i).Use == use);
-                userIsReturned = IsReturned(m_useStack.BottomRef(i), userIsReturned);
-
-                // The remaining nodes should be operands of the split node.
-                for (i++; i < m_useStack.Height(); i++)
-                {
-                    const UseInfo& useInf = m_useStack.BottomRef(i);
-                    assert(useInf.User == *use);
-                    SplitOutUse(useInf, userIsReturned);
-                }
-
-                SplitNodeUse = use;
-
+                SplitStack(use);
                 return WALK_ABORT;
             }
 
@@ -17340,6 +17233,48 @@ bool Compiler::gtSplitTree(BasicBlock* block,
         }
 
     private:
+        void SplitStack(GenTree** use)
+        {
+            bool userIsReturned = false;
+            // Split all siblings and ancestor siblings.
+            int i;
+            for (i = 0; i < m_useStack.Height() - 1; i++)
+            {
+                const UseInfo& useInf = m_useStack.BottomRef(i);
+                if (useInf.Use == use)
+                {
+                    break;
+                }
+
+                // If this has the same user as the next node then it is a
+                // sibling of an ancestor -- and thus not on the "path"
+                // that contains the split node.
+                if (m_useStack.BottomRef(i + 1).User == useInf.User)
+                {
+                    SplitOutUse(useInf, userIsReturned);
+                }
+                else
+                {
+                    // This is an ancestor of the node we're splitting on.
+                    userIsReturned = IsReturned(useInf, userIsReturned);
+                }
+            }
+
+            assert(m_useStack.Bottom(i).Use == use);
+            userIsReturned = IsReturned(m_useStack.BottomRef(i), userIsReturned);
+
+            assert(m_includeOperands || (i == m_useStack.Height() - 1));
+            // The remaining nodes should be operands of the split node.
+            for (i++; i < m_useStack.Height(); i++)
+            {
+                const UseInfo& useInf = m_useStack.BottomRef(i);
+                assert(useInf.User == *use);
+                SplitOutUse(useInf, userIsReturned);
+            }
+
+            SplitNodeUse = use;
+        }
+
         bool IsReturned(const UseInfo& useInf, bool userIsReturned)
         {
             if (useInf.User != nullptr)
@@ -17412,26 +17347,29 @@ bool Compiler::gtSplitTree(BasicBlock* block,
                 return;
             }
 
-            if ((*use)->OperIs(GT_LCL_VAR) && !m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->IsAddressExposed() &&
-                !(m_early && m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->lvHasLdAddrOp))
+            if ((*use)->OperIs(GT_LCL_VAR))
             {
-                // The splitting we do here should always guarantee that we
-                // only introduce locals for the tree edges that overlap the
-                // split point, so it should be ok to avoid creating statements
-                // for locals that aren't address exposed. Note that this
-                // relies on it being illegal IR to have a tree edge for a
-                // register candidate that overlaps with an interfering node.
-                //
-                // For example, this optimization would be problematic if IR
-                // like the following could occur:
-                //
-                // CALL
-                //   LCL_VAR V00
-                //   CALL
-                //     STORE_LCL_VAR<V00>(...) (setup)
-                //     LCL_VAR V00
-                //
-                return;
+                LclVarDsc* dsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
+                if (!dsc->IsAddressExposed() && (!m_early || !dsc->lvHasLdAddrOp))
+                {
+                    // The splitting we do here should always guarantee that we
+                    // only introduce locals for the tree edges that overlap the
+                    // split point, so it should be ok to avoid creating statements
+                    // for locals that aren't address exposed. Note that this
+                    // relies on it being illegal IR to have a tree edge for a
+                    // register candidate that overlaps with an interfering node.
+                    //
+                    // For example, this optimization would be problematic if IR
+                    // like the following could occur:
+                    //
+                    // CALL
+                    //   LCL_VAR V00
+                    //   CALL
+                    //     STORE_LCL_VAR<V00>(...) (setup)
+                    //     LCL_VAR V00
+                    //
+                    return;
+                }
             }
 
 #ifndef TARGET_64BIT
@@ -17508,7 +17446,7 @@ bool Compiler::gtSplitTree(BasicBlock* block,
         }
     };
 
-    Splitter splitter(this, block, stmt, splitPoint, early);
+    Splitter splitter(this, block, stmt, splitPoint, includeOperands, early);
     splitter.WalkTree(stmt->GetRootNodePointer(), nullptr);
     *firstNewStmt = splitter.FirstStatement;
     *splitNodeUse = splitter.SplitNodeUse;
@@ -19171,15 +19109,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     *pIsExact   = true;
                 }
             }
-            break;
-        }
-
-        case GT_RET_EXPR:
-        {
-            // If we see a RET_EXPR, recurse through to examine the
-            // return value expression.
-            GenTree* retExpr = obj->AsRetExpr()->gtInlineCandidate;
-            objClass         = gtGetClassHandle(retExpr, pIsExact, pIsNonNull);
             break;
         }
 
@@ -32045,9 +31974,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #if defined(TARGET_XARCH)
         tryHandle = op->OperIsHWIntrinsic();
 #elif defined(TARGET_ARM64)
-        assert(op->OperIsHWIntrinsic(NI_Sve_ConversionTrueMask));
+        tryHandle = op->OperIsHWIntrinsic(NI_Sve_ConversionTrueMask) && op2->OperIsHWIntrinsic();
         op        = op2;
-        tryHandle = op->OperIsHWIntrinsic();
 #endif // TARGET_ARM64
 
         if (tryHandle)

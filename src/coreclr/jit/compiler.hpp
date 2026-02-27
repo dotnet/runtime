@@ -4330,7 +4330,6 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
-        case GT_RET_EXPR:
         case GT_CNS_INT:
         case GT_CNS_LNG:
         case GT_CNS_DBL:

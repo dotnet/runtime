@@ -1730,6 +1730,12 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
+    if (varDsc->GetLayout() == nullptr)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled because it has no layout\n", lclNum);
+        return false;
+    }
+
     if (varDsc->GetLayout()->IsCustomLayout())
     {
         JITDUMP("  struct promotion of V%02u is disabled because it has custom layout\n", lclNum);

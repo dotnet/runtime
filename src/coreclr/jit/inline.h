@@ -233,10 +233,12 @@ public:
     {
         (void)context;
     }
+#ifdef DEBUG
     virtual void NoteOffset(IL_OFFSET offset)
     {
         (void)offset;
     }
+#endif
 
     // Policy determinations
     virtual void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) = 0;
@@ -344,8 +346,11 @@ class InlineResult
 public:
     // Construct a new InlineResult to help evaluate a
     // particular call for inlining.
-    InlineResult(
-        Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport = false);
+    InlineResult(Compiler*      compiler,
+                 GenTreeCall*   call,
+                 InlineContext* context,
+                 const char*    description,
+                 bool           doNotReport = false);
 
     // Construct a new InlineResult to evaluate a particular
     // method to see if it is inlineable.
@@ -586,6 +591,13 @@ struct HandleHistogramProfileCandidateInfo
     unsigned  probeIndex;
 };
 
+// TODO: move to InlineInfo
+struct InlineIRResult
+{
+    GenTree*    substExpr;
+    BasicBlock* substBB;
+};
+
 // InlineCandidateInfo provides basic information about a particular
 // inline candidate.
 //
@@ -616,8 +628,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CORINFO_METHOD_HANDLE  originalMethodHandle;
     CORINFO_CONTEXT_HANDLE originalContextHandle;
 
-    // The GT_RET_EXPR node linking back to the inline candidate.
-    GenTreeRetExpr* retExpr;
+    InlineIRResult result;
 
     unsigned preexistingSpillTemp;
     unsigned clsAttr;
@@ -626,6 +637,8 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     CorInfoInitClassResult initClassResult;
     bool                   exactContextNeedsRuntimeLookup;
     InlineContext*         inlinersContext;
+
+    ILLocation containingStatementLocation;
 };
 
 // LateDevirtualizationInfo
@@ -636,7 +649,7 @@ struct LateDevirtualizationInfo
 {
     CORINFO_METHOD_HANDLE  methodHnd;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
-    InlineContext*         inlinersContext;
+    ILLocation             ilLocation;
 };
 
 // InlArgInfo describes inline candidate argument properties.
@@ -673,6 +686,23 @@ struct InlLclVarInfo
     unsigned char        lclIsPinned           : 1;
 };
 
+class StatementListBuilder
+{
+    Statement* m_head = nullptr;
+    Statement* m_tail = nullptr;
+
+public:
+    bool Empty()
+    {
+        return m_head == nullptr;
+    }
+
+    void Append(Statement* stmt);
+
+    void InsertIntoBlockAtBeginning(BasicBlock* block);
+    void InsertIntoBlockBefore(BasicBlock* block, Statement* before);
+};
+
 // InlineInfo provides detailed information about a particular inline candidate.
 
 struct InlineInfo
@@ -696,6 +726,7 @@ struct InlineInfo
     unsigned      argCnt;
     InlArgInfo    inlArgInfo[MAX_INL_ARGS + 1];
     InlArgInfo*   inlInstParamArgInfo;
+    InlArgInfo*   inlRetBufferArgInfo;
     int           lclTmpNum[MAX_INL_LCLS];                     // map local# -> temp# (-1 if unused)
     InlLclVarInfo lclVarInfo[MAX_INL_LCLS + MAX_INL_ARGS + 1]; // type information from local sig
 
@@ -713,8 +744,10 @@ struct InlineInfo
 #endif // FEATURE_SIMD
 
     GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
-    Statement*   iciStmt;  // The statement iciCall is in.
     BasicBlock*  iciBlock; // The basic block iciStmt is in.
+
+    StatementListBuilder setupStatements;
+    StatementListBuilder teardownStatements;
 };
 
 //------------------------------------------------------------------------
@@ -949,8 +982,8 @@ public:
     // Construct a new inline strategy.
     InlineStrategy(Compiler* compiler);
 
-    // Create context for the specified inline candidate contained in the specified statement.
-    InlineContext* NewContext(InlineContext* parentContext, Statement* stmt, GenTreeCall* call);
+    // Create context for the specified inline candidate.
+    InlineContext* NewContext(InlineContext* parentContext, GenTreeCall* call);
 
     // Compiler associated with this strategy
     Compiler* GetCompiler() const

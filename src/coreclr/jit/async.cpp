@@ -173,7 +173,8 @@ PhaseStatus Compiler::SaveAsyncContexts()
         CORINFO_CALL_INFO callInfo = {};
         callInfo.hMethod           = captureCall->gtCallMethHnd;
         callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-        impMarkInlineCandidate(captureCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+        impMarkInlineCandidate(captureCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext,
+                               DebugInfo());
 
         Statement* captureStmt = fgNewStmtFromTree(captureCall);
         fgInsertStmtAtBeg(fgFirstBB, captureStmt);
@@ -372,7 +373,8 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     CORINFO_CALL_INFO callInfo = {};
     callInfo.hMethod           = restoreCall->gtCallMethHnd;
     callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-    impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+    impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext,
+                           DebugInfo());
 
     Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
     fgInsertStmtAtEnd(newReturnBB, restoreStmt);

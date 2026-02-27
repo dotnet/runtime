@@ -794,7 +794,7 @@ GenTree* Compiler::impSIMDPopStack()
     assert(varTypeIsSIMDOrMask(tree));
 
     // Handle calls that may return the struct via a return buffer.
-    if (tree->OperIs(GT_CALL, GT_RET_EXPR))
+    if (tree->OperIs(GT_CALL))
     {
         tree = impNormStructVal(tree, CHECK_SPILL_ALL);
     }
