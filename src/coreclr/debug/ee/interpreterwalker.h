@@ -47,10 +47,6 @@ public:
     // Get the next IP - branch/call target address (for step-into)
     const int32_t* GetNextIP() const { return m_nextIP; }
 
-    // Get the MethodDesc for a direct call instruction (INTOP_CALL, etc.)
-    // Returns NULL for indirect calls or non-call instructions
-    MethodDesc* GetCallTarget() const;
-
     // Get switch case count (only valid for INTOP_SWITCH)
     int32_t GetSwitchCaseCount() const { return m_switchCaseCount; }
 
