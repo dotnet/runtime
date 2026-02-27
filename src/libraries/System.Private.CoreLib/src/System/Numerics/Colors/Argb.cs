@@ -17,7 +17,7 @@ namespace System.Numerics.Colors
         /// <param name="color">A big-endian <see langword="uint"/> representing an ARGB color.</param>
         /// <returns>A new instance of the <see cref="Argb{T}"/> color.</returns>
         /// <remarks>The value is expected in <c>0xAARRGGBB</c> byte order.</remarks>
-        [System.CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         public static Argb<byte> CreateBigEndian(uint color)
         {
             if (BitConverter.IsLittleEndian)
@@ -35,7 +35,7 @@ namespace System.Numerics.Colors
         /// <param name="color">A little-endian <see langword="uint"/> representing an ARGB color.</param>
         /// <returns>A new instance of the <see cref="Argb{T}"/> color.</returns>
         /// <remarks>The value is expected in <c>0xBBGGRRAA</c> byte order.</remarks>
-        [System.CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         public static Argb<byte> CreateLittleEndian(uint color)
         {
             if (!BitConverter.IsLittleEndian)
@@ -53,7 +53,7 @@ namespace System.Numerics.Colors
         /// <param name="color">The <see cref="Argb{T}"/> color to convert.</param>
         /// <returns>A big-endian <see langword="uint"/> representing an ARGB color.</returns>
         /// <remarks>The returned value is in <c>0xAARRGGBB</c> byte order.</remarks>
-        [System.CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         public static uint ToUInt32BigEndian(this Argb<byte> color)
         {
             uint bits = Unsafe.BitCast<Argb<byte>, uint>(color);
@@ -68,7 +68,7 @@ namespace System.Numerics.Colors
         /// <param name="color">The <see cref="Argb{T}"/> color to convert.</param>
         /// <returns>A little-endian <see langword="uint"/> representing an ARGB color.</returns>
         /// <remarks>The returned value is in <c>0xBBGGRRAA</c> byte order.</remarks>
-        [System.CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         public static uint ToUInt32LittleEndian(this Argb<byte> color)
         {
             uint bits = Unsafe.BitCast<Argb<byte>, uint>(color);

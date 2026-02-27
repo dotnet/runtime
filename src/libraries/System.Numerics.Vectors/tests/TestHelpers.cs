@@ -39,9 +39,9 @@ namespace System.Numerics.Colors.Tests
         {
             get
             {
-                var ColorsTwoTimes = ByteColorsList.SelectMany(color => ByteColorsList, (color1, color2) => (color1, color2));
+                var colorsTwoTimes = ByteColorsList.SelectMany(color => ByteColorsList, (color1, color2) => (color1, color2));
                 var data = new TheoryData<(byte, byte, byte, byte), (byte, byte, byte, byte)>();
-                foreach (var twoColors in ColorsTwoTimes)
+                foreach (var twoColors in colorsTwoTimes)
                     data.Add(twoColors.color1, twoColors.color2);
                 return data;
             }
