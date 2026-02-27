@@ -3,9 +3,11 @@
 
 using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Moq;
 using Xunit;
+using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
@@ -229,6 +231,114 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public unsafe void GetMethodTableDataReturnsEInvalidArgWhenEEClassPartiallyReadable(MockTarget.Architecture arch)
+    {
+        // Reproduces the HResult mismatch from dotnet/diagnostics CI where the cDAC returned
+        // CORDBG_E_READVIRTUAL_FAILURE (0x80131c49) instead of E_INVALIDARG (0x80070057)
+        // when GetMethodTableData was called with an address whose MethodTable validation
+        // passes but subsequent EEClass reads fail.
+        TargetPointer methodTablePtr = default;
+
+        RTSContractHelper(arch,
+        (rtsBuilder) =>
+        {
+            TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+
+            // Create a full MethodTable that will pass validation
+            methodTablePtr = rtsBuilder.AddMethodTable("PartialEEClass MT",
+                mtflags: default, mtflags2: default, baseSize: helpers.ObjectBaseSize,
+                module: TargetPointer.Null, parentMethodTable: TargetPointer.Null,
+                numInterfaces: 0, numVirtuals: 3);
+
+            // Create a tiny EEClass fragment — only the MethodTable pointer field.
+            // Previously, validation only read NonValidatedEEClass.MethodTable (at offset 0),
+            // so this minimal fragment was sufficient for validation to pass while later
+            // EEClass reads (for MethodDescChunk, NumMethods, etc.) at subsequent offsets
+            // would fail with VirtualReadException. After the TypeValidation fix, the full
+            // EEClass is eagerly read during validation, so this now correctly reports
+            // E_INVALIDARG instead of surfacing VirtualReadException from those later reads.
+            int pointerSize = helpers.PointerSize;
+            MockMemorySpace.HeapFragment tinyEEClass = rtsBuilder.TypeSystemAllocator.Allocate(
+                (ulong)pointerSize, "Tiny EEClass (MethodTable field only)");
+            helpers.WritePointer(tinyEEClass.Data, methodTablePtr);
+            rtsBuilder.Builder.AddHeapFragment(tinyEEClass);
+
+            // Point the MethodTable's EEClassOrCanonMT at the tiny EEClass
+            rtsBuilder.SetMethodTableEEClassOrCanonMTRaw(methodTablePtr, tinyEEClass.Address);
+        },
+        (target) =>
+        {
+            ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+
+            DacpMethodTableData mtData = default;
+            int hr = sosDac.GetMethodTableData(new ClrDataAddress(methodTablePtr), &mtData);
+
+            // Should return E_INVALIDARG to match legacy DAC behavior
+            AssertHResult(HResults.E_INVALIDARG, hr);
+        });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public unsafe void GetMethodTableDataReturnsEInvalidArgWhenMethodTablePartiallyReadable(MockTarget.Architecture arch)
+    {
+        // Analogous to the EEClass test above but for the MethodTable itself.
+        // If a MethodTable is only partially readable (enough for validation fields
+        // like MTFlags, BaseSize, MTFlags2, EEClassOrCanonMT) but not the full
+        // structure (Module, ParentMethodTable, etc.), validation currently passes
+        // because NonValidatedMethodTable reads fields lazily. The subsequent
+        // Data.MethodTable construction then fails with VirtualReadException,
+        // surfacing CORDBG_E_READVIRTUAL_FAILURE instead of E_INVALIDARG.
+        TargetPointer tinyMethodTableAddr = default;
+
+        RTSContractHelper(arch,
+        (rtsBuilder) =>
+        {
+            TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+            Target.TypeInfo mtTypeInfo = rtsBuilder.Types[DataType.MethodTable];
+
+            // Create a valid EEClass that will point back to our tiny MethodTable
+            TargetPointer eeClassPtr = rtsBuilder.AddEEClass("PartialMT EEClass",
+                attr: 0, numMethods: 0, numNonVirtualSlots: 0);
+
+            // Allocate a tiny MethodTable fragment — only enough for the fields that
+            // validation reads (MTFlags, BaseSize, MTFlags2, EEClassOrCanonMT) but
+            // not the full MethodTable. Fields like Module, ParentMethodTable, etc.
+            // at subsequent offsets will be unreadable.
+            int eeClassOrCanonMTOffset = mtTypeInfo.Fields[nameof(Data.MethodTable.EEClassOrCanonMT)].Offset;
+            ulong partialSize = (ulong)(eeClassOrCanonMTOffset + helpers.PointerSize);
+            MockMemorySpace.HeapFragment tinyMT = rtsBuilder.TypeSystemAllocator.Allocate(
+                partialSize, "Tiny MethodTable (validation fields only)");
+
+            Span<byte> dest = tinyMT.Data;
+            helpers.Write(dest.Slice(mtTypeInfo.Fields[nameof(Data.MethodTable.MTFlags)].Offset), (uint)0);
+            helpers.Write(dest.Slice(mtTypeInfo.Fields[nameof(Data.MethodTable.BaseSize)].Offset), (uint)helpers.ObjectBaseSize);
+            helpers.Write(dest.Slice(mtTypeInfo.Fields[nameof(Data.MethodTable.MTFlags2)].Offset), (uint)0);
+            helpers.WritePointer(dest.Slice(eeClassOrCanonMTOffset), eeClassPtr);
+
+            rtsBuilder.Builder.AddHeapFragment(tinyMT);
+            tinyMethodTableAddr = tinyMT.Address;
+
+            // Point the EEClass back at the tiny MethodTable to pass validation
+            Target.TypeInfo eeClassTypeInfo = rtsBuilder.Types[DataType.EEClass];
+            Span<byte> eeClassBytes = rtsBuilder.Builder.BorrowAddressRange(
+                eeClassPtr, (int)eeClassTypeInfo.Size.Value);
+            helpers.WritePointer(
+                eeClassBytes.Slice(eeClassTypeInfo.Fields[nameof(Data.EEClass.MethodTable)].Offset,
+                helpers.PointerSize), tinyMethodTableAddr);
+        },
+        (target) =>
+        {
+            ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+
+            DacpMethodTableData mtData = default;
+            int hr = sosDac.GetMethodTableData(new ClrDataAddress(tinyMethodTableAddr), &mtData);
+
+            // Should return E_INVALIDARG to match legacy DAC behavior
+            AssertHResult(HResults.E_INVALIDARG, hr);
+        });
+    }
+
     public void ValidateMultidimArrayRank(MockTarget.Architecture arch)
     {
         TargetPointer rank4MethodTablePtr = default;
