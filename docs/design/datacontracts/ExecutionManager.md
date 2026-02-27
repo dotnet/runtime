@@ -44,7 +44,7 @@ struct CodeBlockHandle
     // Gets the offset of the codeInfoHandle inside of the code block
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
     // Gets information about the EEJitManager: its address, code type, and head of the code heap list.
-    void GetEEJitManagerInfo(out TargetPointer managerAddress, out uint codeType, out TargetPointer heapListAddress);
+    JitManagerInfo GetEEJitManagerInfo();
 
     // Extension Methods (implemented in terms of other APIs)
     bool IsFunclet(CodeBlockHandle codeInfoHandle);

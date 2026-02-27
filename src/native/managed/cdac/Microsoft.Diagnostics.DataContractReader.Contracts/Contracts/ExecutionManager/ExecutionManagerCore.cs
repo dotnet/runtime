@@ -332,16 +332,19 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return info.RelativeOffset;
     }
 
-    void IExecutionManager.GetEEJitManagerInfo(out TargetPointer managerAddress, out uint codeType, out TargetPointer heapListAddress)
+    JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
     {
         TargetPointer eeJitManagerPtr = _target.ReadGlobalPointer(Constants.Globals.EEJitManagerAddress);
         TargetPointer eeJitManagerAddr = _target.ReadPointer(eeJitManagerPtr);
 
         Data.EEJitManager jitManager = _target.ProcessedData.GetOrAdd<Data.EEJitManager>(eeJitManagerAddr);
 
-        managerAddress = eeJitManagerAddr;
-        codeType = 0; // miManaged | miIL
-        heapListAddress = jitManager.AllCodeHeaps;
+        return new JitManagerInfo
+        {
+            ManagerAddress = eeJitManagerAddr,
+            CodeType = 0, // miManaged | miIL
+            HeapListAddress = jitManager.AllCodeHeaps,
+        };
     }
 
     private RangeSection RangeSectionFromCodeBlockHandle(CodeBlockHandle codeInfoHandle)

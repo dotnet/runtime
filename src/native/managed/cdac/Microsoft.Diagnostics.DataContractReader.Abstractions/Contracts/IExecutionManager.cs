@@ -12,6 +12,13 @@ public struct CodeBlockHandle
     public CodeBlockHandle(TargetPointer address) => Address = address;
 }
 
+public struct JitManagerInfo
+{
+    public TargetPointer ManagerAddress;
+    public uint CodeType;
+    public TargetPointer HeapListAddress;
+}
+
 public interface IExecutionManager : IContract
 {
     static string IContract.Name { get; } = nameof(ExecutionManager);
@@ -27,7 +34,7 @@ public interface IExecutionManager : IContract
     TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte) => throw new NotImplementedException();
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion) => throw new NotImplementedException();
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
-    void GetEEJitManagerInfo(out TargetPointer managerAddress, out uint codeType, out TargetPointer heapListAddress) => throw new NotImplementedException();
+    JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager

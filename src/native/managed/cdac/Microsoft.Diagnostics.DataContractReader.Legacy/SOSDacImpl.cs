@@ -1764,10 +1764,10 @@ public sealed unsafe partial class SOSDacImpl
                 if (count >= 1)
                 {
                     *managers = default;
-                    _target.Contracts.ExecutionManager.GetEEJitManagerInfo(out TargetPointer managerAddress, out uint codeType, out TargetPointer heapListAddress);
-                    managers->managerAddr = managerAddress.ToClrDataAddress(_target);
-                    managers->codeType = codeType;
-                    managers->ptrHeapList = heapListAddress.ToClrDataAddress(_target);
+                    Contracts.JitManagerInfo jitManagerInfo = _target.Contracts.ExecutionManager.GetEEJitManagerInfo();
+                    managers->managerAddr = jitManagerInfo.ManagerAddress.ToClrDataAddress(_target);
+                    managers->codeType = jitManagerInfo.CodeType;
+                    managers->ptrHeapList = jitManagerInfo.HeapListAddress.ToClrDataAddress(_target);
                 }
             }
             else if (pNeeded is not null)

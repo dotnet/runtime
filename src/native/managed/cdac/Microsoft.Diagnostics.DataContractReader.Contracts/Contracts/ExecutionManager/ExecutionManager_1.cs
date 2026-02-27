@@ -26,5 +26,5 @@ public sealed class ExecutionManager_1 : IExecutionManager
     public TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte) => _executionManagerCore.GetDebugInfo(codeInfoHandle, out hasFlagByte);
     public void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion) => _executionManagerCore.GetGCInfo(codeInfoHandle, out gcInfo, out gcVersion);
     public TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => _executionManagerCore.GetRelativeOffset(codeInfoHandle);
-    public void GetEEJitManagerInfo(out TargetPointer managerAddress, out uint codeType, out TargetPointer heapListAddress) => _executionManagerCore.GetEEJitManagerInfo(out managerAddress, out codeType, out heapListAddress);
+    public JitManagerInfo GetEEJitManagerInfo() => _executionManagerCore.GetEEJitManagerInfo();
 }

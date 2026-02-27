@@ -453,10 +453,10 @@ public class ExecutionManagerTests
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
 
-        em.GetEEJitManagerInfo(out TargetPointer managerAddress, out uint codeType, out TargetPointer heapListAddress);
-        Assert.Equal(emBuilder.EEJitManagerAddress, managerAddress);
-        Assert.Equal(0u, codeType);
-        Assert.Equal(TargetPointer.Null, heapListAddress);
+        JitManagerInfo info = em.GetEEJitManagerInfo();
+        Assert.Equal(emBuilder.EEJitManagerAddress, info.ManagerAddress);
+        Assert.Equal(0u, info.CodeType);
+        Assert.Equal(TargetPointer.Null, info.HeapListAddress);
     }
 
     [Theory]
@@ -471,10 +471,10 @@ public class ExecutionManagerTests
         var em = target.Contracts.ExecutionManager;
         Assert.NotNull(em);
 
-        em.GetEEJitManagerInfo(out TargetPointer managerAddress, out uint codeType, out TargetPointer heapListAddress);
-        Assert.Equal(emBuilder.EEJitManagerAddress, managerAddress);
-        Assert.Equal(0u, codeType);
-        Assert.Equal(expectedHeapList, heapListAddress);
+        JitManagerInfo info = em.GetEEJitManagerInfo();
+        Assert.Equal(emBuilder.EEJitManagerAddress, info.ManagerAddress);
+        Assert.Equal(0u, info.CodeType);
+        Assert.Equal(expectedHeapList, info.HeapListAddress);
     }
 
     public static IEnumerable<object[]> StdArchAllVersions()
