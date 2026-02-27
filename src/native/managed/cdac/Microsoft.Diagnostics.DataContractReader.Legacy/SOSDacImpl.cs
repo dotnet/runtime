@@ -621,23 +621,24 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            DacpCOMInterfacePointerData[]? interfacesLocalArr = interfaces != null && count > 0 ? new DacpCOMInterfacePointerData[(int)count] : null;
+            DacpCOMInterfacePointerData[]? interfacesLocal = interfaces != null && count > 0 ? new DacpCOMInterfacePointerData[(int)count] : null;
             uint neededLocal = 0;
-            fixed (DacpCOMInterfacePointerData* interfacesLocal = interfacesLocalArr)
+            int hrLocal;
+            fixed (DacpCOMInterfacePointerData* interfacesLocalPtr = interfacesLocal)
             {
-                int hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocal, &neededLocal);
-                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-                if (hr == HResults.S_OK)
+                hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocalPtr, &neededLocal);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(itemCount == neededLocal, $"cDAC count: {itemCount}, DAC count: {neededLocal}");
+                if (interfaces != null)
                 {
-                    Debug.Assert(itemCount == neededLocal, $"cDAC count: {itemCount}, DAC count: {neededLocal}");
-                    if (interfaces != null)
+                    for (uint i = 0; i < neededLocal; i++)
                     {
-                        for (uint i = 0; i < neededLocal; i++)
-                        {
-                            Debug.Assert(interfaces[i].methodTable == interfacesLocal[i].methodTable, $"cDAC methodTable[{i}]: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
-                            Debug.Assert(interfaces[i].interfacePtr == interfacesLocal[i].interfacePtr, $"cDAC interfacePtr[{i}]: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
-                            Debug.Assert(interfaces[i].comContext == interfacesLocal[i].comContext, $"cDAC comContext[{i}]: {interfaces[i].comContext:x}, DAC: {interfacesLocal[i].comContext:x}");
-                        }
+                        Debug.Assert(interfaces[i].methodTable == interfacesLocal![i].methodTable, $"cDAC methodTable[{i}]: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
+                        Debug.Assert(interfaces[i].interfacePtr == interfacesLocal![i].interfacePtr, $"cDAC interfacePtr[{i}]: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
+                        Debug.Assert(interfaces[i].comContext == interfacesLocal![i].comContext, $"cDAC comContext[{i}]: {interfaces[i].comContext:x}, DAC: {interfacesLocal[i].comContext:x}");
                     }
                 }
             }
