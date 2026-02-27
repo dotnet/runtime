@@ -269,10 +269,19 @@ void WebcilDecoder::FindCorHeader() const
     if (section == NULL)
         return;
 
-    COUNT_T offset = corHeaderRva - section->VirtualAddress + section->PointerToRawData;
-    if (offset + sizeof(IMAGE_COR20_HEADER) > m_size)
+    S_UINT32 offset32 = S_UINT32(corHeaderRva)
+                      - S_UINT32(section->VirtualAddress)
+                      + S_UINT32(section->PointerToRawData);
+    if (offset32.IsOverflow())
         return;
 
+    COUNT_T offset = static_cast<COUNT_T>(offset32.Value());
+
+    if (m_size < sizeof(IMAGE_COR20_HEADER))
+        return;
+
+    if (offset > m_size - sizeof(IMAGE_COR20_HEADER))
+        return;
     m_pCorHeader = (IMAGE_COR20_HEADER *)(m_base + offset);
 }
 
