@@ -1040,7 +1040,7 @@ NESTED_END InterpreterStubRet4Vector128, _TEXT
 #ifdef TARGET_APPLE
 // Swift lowered return handler for reverse PInvoke callbacks
 NESTED_ENTRY SwiftReverseReturnLoweredHandler, _TEXT, NoHandler
-    str x10, [sp, #0] // Save routines pointer
+    str x10, [sp, #8] // Save routines pointer
     PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
     // The +16 is for the fp, lr above
     add x0, sp, #__PWTB_TransitionBlock + 16
@@ -1048,7 +1048,7 @@ NESTED_ENTRY SwiftReverseReturnLoweredHandler, _TEXT, NoHandler
     mov x2, xzr
     bl C_FUNC(ExecuteInterpretedMethod)
     mov x9, x0 // x0 is pointer to result struct on interpreter stack
-    ldr x10, [sp, #16] // restore x10
+    ldr x10, [sp, #24] // restore x10
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 NESTED_END SwiftReverseReturnLoweredHandler, _TEXT
