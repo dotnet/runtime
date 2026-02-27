@@ -4,7 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-#if !BUILDING_CORELIB_REFERENCE
 namespace System.Numerics.Colors
 {
     public static partial class Argb
@@ -68,7 +67,6 @@ namespace System.Numerics.Colors
         public System.Numerics.Colors.Argb<T> ToArgb() { throw null; }
     }
 }
-#endif // !BUILDING_CORELIB_REFERENCE
 namespace System.Numerics
 {
     public partial struct Matrix3x2 : System.IEquatable<System.Numerics.Matrix3x2>

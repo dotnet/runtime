@@ -63,7 +63,7 @@ namespace System.Numerics.Colors
         /// </param>
         public Rgba(ReadOnlySpan<T> values)
         {
-            ThrowHelper.ThrowIfSpanDoesntHaveFourElementsForColor(values);
+            ThrowHelper.ThrowIfSpanTooShortForColor(values);
 
             R = values[0];
             G = values[1];
@@ -80,7 +80,7 @@ namespace System.Numerics.Colors
         /// </param>
         public void CopyTo(Span<T> destination)
         {
-            ThrowHelper.ThrowIfSpanDoesntHaveFourElementsForColor((ReadOnlySpan<T>)destination, paramName: nameof(destination));
+            ThrowHelper.ThrowIfSpanTooShortForColor((ReadOnlySpan<T>)destination, paramName: nameof(destination));
 
             destination[0] = R;
             destination[1] = G;
