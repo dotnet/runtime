@@ -12,6 +12,7 @@ public sealed class BuiltInCOMFactory : IContractFactory<IBuiltInCOM>
         return version switch
         {
             1 => new BuiltInCOM_1(target),
+            2 => new BuiltInCOM_2(target),
             _ => default(BuiltInCOM),
         };
     }

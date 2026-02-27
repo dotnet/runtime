@@ -542,6 +542,7 @@ private :
 
     // IUnkEntry needs to access m_UnkEntry field
     friend IUnkEntry;
+    friend struct ::cdac_data<RCW>;
 
 private :
     static RCW* CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT);
@@ -1390,6 +1391,12 @@ public:
         Wrapper<CtxEntry *, CtxEntryDoNothing, CtxEntryHolderRelease, 0>::operator=(p);
     }
 
+};
+
+template<>
+struct cdac_data<RCW>
+{
+    static constexpr size_t InterfaceEntries = offsetof(RCW, m_aInterfaceEntries);
 };
 
 #endif // _RUNTIMECALLABLEWRAPPER_H

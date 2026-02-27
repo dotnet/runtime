@@ -14,6 +14,7 @@
 #include "cdacplatformmetadata.hpp"
 #include "interoplibinterface_comwrappers.h"
 #include "comcallablewrapper.h"
+#include "runtimecallablewrapper.h"
 #include "methodtable.h"
 #include "threads.h"
 #include "vars.hpp"
