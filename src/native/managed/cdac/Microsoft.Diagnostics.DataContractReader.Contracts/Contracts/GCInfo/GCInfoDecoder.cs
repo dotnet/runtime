@@ -497,6 +497,12 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         return _codeLength;
     }
 
+    public IReadOnlyList<InterruptibleRange> GetInterruptibleRanges()
+    {
+        EnsureDecodedTo(DecodePoints.InterruptibleRanges);
+        return _interruptibleRanges;
+    }
+
     #endregion
     #region Helper Methods
 

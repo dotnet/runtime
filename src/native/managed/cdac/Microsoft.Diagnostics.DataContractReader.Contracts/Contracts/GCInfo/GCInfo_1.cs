@@ -6,6 +6,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
+
 internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
 {
     private readonly Target _target;

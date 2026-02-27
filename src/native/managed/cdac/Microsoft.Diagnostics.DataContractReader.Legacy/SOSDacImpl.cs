@@ -2408,38 +2408,39 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetMethodDescPtrFromFrame(ClrDataAddress frameAddr, ClrDataAddress* ppMD)
     {
-        int hr = HResults.S_OK;
-        try
-        {
-            if (frameAddr == 0 || ppMD == null)
-                throw new ArgumentException();
+        return HResults.E_FAIL;
+        //         int hr = HResults.S_OK;
+        //         try
+        //         {
+        //             if (frameAddr == 0 || ppMD == null)
+        //                 throw new ArgumentException();
 
-            IStackWalk stackWalkContract = _target.Contracts.StackWalk;
-            TargetPointer methodDescPtr = stackWalkContract.GetMethodDescPtr(frameAddr.ToTargetPointer(_target));
-            if (methodDescPtr == TargetPointer.Null)
-                throw new ArgumentException();
+        //             IStackWalk stackWalkContract = _target.Contracts.StackWalk;
+        //             TargetPointer methodDescPtr = stackWalkContract.GetMethodDescPtr(frameAddr.ToTargetPointer(_target));
+        //             if (methodDescPtr == TargetPointer.Null)
+        //                 throw new ArgumentException();
 
-            _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(methodDescPtr); // validation
-            *ppMD = methodDescPtr.ToClrDataAddress(_target);
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-#if DEBUG
-        if (_legacyImpl is not null)
-        {
-            ClrDataAddress ppMDLocal;
-            int hrLocal = _legacyImpl.GetMethodDescPtrFromFrame(frameAddr, &ppMDLocal);
+        //             _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(methodDescPtr); // validation
+        //             *ppMD = methodDescPtr.ToClrDataAddress(_target);
+        //         }
+        //         catch (System.Exception ex)
+        //         {
+        //             hr = ex.HResult;
+        //         }
+        // #if DEBUG
+        //         if (_legacyImpl is not null)
+        //         {
+        //             ClrDataAddress ppMDLocal;
+        //             int hrLocal = _legacyImpl.GetMethodDescPtrFromFrame(frameAddr, &ppMDLocal);
 
-            Debug.ValidateHResult(hr, hrLocal);
-            if (hr == HResults.S_OK)
-            {
-                Debug.Assert(*ppMD == ppMDLocal);
-            }
-        }
-#endif
-        return hr;
+        //             Debug.Assert(hrLocal == hr);
+        //             if (hr == HResults.S_OK)
+        //             {
+        //                 Debug.Assert(*ppMD == ppMDLocal);
+        //             }
+        //         }
+        // #endif
+        //         return hr;
     }
     int ISOSDacInterface.GetMethodDescPtrFromIP(ClrDataAddress ip, ClrDataAddress* ppMD)
     {
