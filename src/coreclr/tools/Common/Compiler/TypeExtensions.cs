@@ -430,6 +430,59 @@ namespace ILCompiler
             Instantiation methodInstantiation = interfaceMethod.Instantiation;
             interfaceMethod = interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
+            // Static virtual methods are resolved separately, matching the C++ early return path
+            // in MethodTable::TryResolveConstraintMethodApprox.
+            if (isStaticVirtualMethod)
+            {
+                // ResolveVirtualStaticMethod in the C++ only resolves when the interface and method
+                // are exact (not shared by generic instantiations). For canonical forms, return null.
+                // Note: interfaceMethod was canonicalized above so its instantiation may contain
+                // __Canon even when the original was exact. Check methodInstantiation (saved before
+                // canonicalization) to match the C++ IsSharedByGenericMethodInstantiations check.
+                // We additionally check the constrained type, because the ILC scanner cannot handle
+                // resolved static virtual methods in shared generic code.
+                bool methodHasCanonInstantiation = false;
+                foreach (TypeDesc arg in methodInstantiation)
+                {
+                    if (arg.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    {
+                        methodHasCanonInstantiation = true;
+                        break;
+                    }
+                }
+
+                if (methodHasCanonInstantiation ||
+                    interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any) ||
+                    constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    return null;
+                }
+
+                MethodDesc staticMethodDef = interfaceMethod.GetMethodDefinition();
+                MethodDesc exactInterfaceMethod = staticMethodDef;
+                if (staticMethodDef.OwningType != interfaceType)
+                    exactInterfaceMethod = constrainedType.Context.GetMethodForInstantiatedType(
+                        staticMethodDef.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
+
+                MethodDesc result = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(exactInterfaceMethod);
+                if (result is null)
+                {
+                    staticResolution = constrainedType.ResolveVariantInterfaceMethodToDefaultImplementationOnType(exactInterfaceMethod, out result);
+                    if (staticResolution != DefaultInterfaceMethodResolution.DefaultImplementation)
+                        result = null;
+                }
+
+                if (result is null)
+                {
+                    return null;
+                }
+
+                if (methodInstantiation.Length != 0)
+                    result = result.MakeInstantiatedMethod(methodInstantiation);
+
+                return result;
+            }
+
             // 1. Find the (possibly generic) method that would implement the
             // constraint if we were making a call on a boxed value type.
 
