@@ -1157,6 +1157,10 @@ PCODE CallStubGenerator::GetSwiftSelfByRefRoutine()
 #if LOG_COMPUTE_CALL_STUB
     LOG2((LF2_INTERPRETER, LL_INFO10000, "GetSwiftSelfByRefRoutine\n"));
 #endif
+    if (!m_interpreterToNative)
+    {
+        COMPlusThrow(kPlatformNotSupportedException, W("SwiftSelf<T> is not supported for reverse PInvoke"));
+    }
     _ASSERTE(m_interpreterToNative && "SwiftSelf<T> is not supported for reverse PInvoke");
     return (PCODE)Load_SwiftSelf_ByRef;
 }
