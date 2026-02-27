@@ -47,4 +47,11 @@ internal interface IGCInfoTraits
     static abstract int NUM_INTERRUPTIBLE_RANGES_ENCBASE { get; }
 
     static abstract bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA { get; }
+
+    // These are the same across all platforms
+    static virtual int POINTER_SIZE_ENCBASE { get; } = 3;
+    static virtual int LIVESTATE_RLE_RUN_ENCBASE { get; } = 2;
+    static virtual int LIVESTATE_RLE_SKIP_ENCBASE { get; } = 4;
+    static virtual uint NUM_NORM_CODE_OFFSETS_PER_CHUNK { get; } = 64;
+    static virtual int NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 { get; } = 6;
 }
