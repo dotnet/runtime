@@ -66,7 +66,6 @@ namespace System.IO.Tests
 
         [ConditionalFact(nameof(IsPrivilegedAndNtfs))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
         public void Delete_VolumeMountPoint()
         {
             string mountPoint = GetTestFilePath();
