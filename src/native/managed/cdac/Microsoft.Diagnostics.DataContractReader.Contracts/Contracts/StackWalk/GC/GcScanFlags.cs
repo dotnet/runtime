@@ -8,6 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 [Flags]
 internal enum GcScanFlags
 {
+    None = 0x0,
     GC_CALL_INTERIOR = 0x1,
     GC_CALL_PINNED = 0x2,
 }
