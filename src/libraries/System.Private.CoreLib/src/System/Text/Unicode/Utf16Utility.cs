@@ -14,7 +14,7 @@ namespace System.Text.Unicode
     internal static partial class Utf16Utility
     {
         /// <summary>
-        /// Returns the byte index in <paramref name="utf16Data"/> where the first invalid UTF-16 sequence begins,
+        /// Returns the char index in <paramref name="utf16Data"/> where the first invalid UTF-16 sequence begins,
         /// or -1 if the buffer contains no invalid sequences.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
