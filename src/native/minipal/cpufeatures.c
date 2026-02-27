@@ -407,7 +407,7 @@ int minipal_getcpufeatures(void)
 
             if (IsApxEnabled() && apxStateSupport())
             {
-                if (((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0))                                                  // Apx_F
+                if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                                                   // Apx_F
                 {
                     // APX availability check is split to 2 part, Apx_F here 
                     // checks the fundamental support, and APX_NCI_NDD_NF checks 
