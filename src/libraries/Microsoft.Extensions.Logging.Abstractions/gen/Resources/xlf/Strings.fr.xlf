@@ -47,9 +47,9 @@
         <target state="translated">Les méthodes de journalisation ne peuvent pas avoir de corps</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">Les méthodes de journalisation ne peuvent pas être génériques</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="needs-translation">Les méthodes de journalisation ne peuvent pas être génériques</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">

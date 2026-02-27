@@ -47,9 +47,9 @@
         <target state="translated">로깅 메서드에는 본문을 사용할 수 없음</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">로깅 메서드는 제네릭일 수 없음</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="needs-translation">로깅 메서드는 제네릭일 수 없음</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
