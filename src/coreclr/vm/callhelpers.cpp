@@ -8,8 +8,6 @@
 #include "common.h"
 #include "dbginterface.h"
 
-// To include declaration of "AppDomainTransitionExceptionFilter"
-#include "excep.h"
 #include "invokeutil.h"
 #include "argdestination.h"
 
