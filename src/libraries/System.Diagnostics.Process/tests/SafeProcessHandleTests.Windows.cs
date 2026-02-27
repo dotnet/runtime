@@ -11,8 +11,10 @@ namespace System.Diagnostics.Tests
 {
     public partial class SafeProcessHandleTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void SendSignal_SIGINT_TerminatesProcessInNewProcessGroup()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(PosixSignal.SIGINT)]
+        [InlineData(PosixSignal.SIGQUIT)]
+        public void Signal_TerminatesProcessInNewProcessGroup(PosixSignal signal)
         {
             ProcessStartOptions options = CreateTenSecondSleep();
             options.CreateNewProcessGroup = true;
@@ -22,25 +24,7 @@ namespace System.Diagnostics.Tests
             bool hasExited = processHandle.TryWaitForExit(TimeSpan.Zero, out _);
             Assert.False(hasExited, "Process should still be running before signal is sent");
 
-            processHandle.Signal(PosixSignal.SIGINT);
-
-            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(3000));
-
-            Assert.NotEqual(0, exitStatus.ExitCode);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void Signal_SIGQUIT_TerminatesProcessInNewProcessGroup()
-        {
-            ProcessStartOptions options = CreateTenSecondSleep();
-            options.CreateNewProcessGroup = true;
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
-
-            bool hasExited = processHandle.TryWaitForExit(TimeSpan.Zero, out _);
-            Assert.False(hasExited, "Process should still be running before signal is sent");
-
-            processHandle.Signal(PosixSignal.SIGQUIT);
+            processHandle.Signal(signal);
 
             ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(3000));
 

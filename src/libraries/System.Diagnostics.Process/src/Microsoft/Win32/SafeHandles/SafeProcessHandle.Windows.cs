@@ -235,10 +235,10 @@ namespace Microsoft.Win32.SafeHandles
                     ProcessUtils.BuildArgs(options.FileName, options.HasArgumentsBeenAccessed ? options.Arguments : null, ref applicationName, ref commandLine);
 
                     fixed (char* environmentBlockPtr = environmentBlock)
-                    fixed (char* applicationNamePtr = &applicationName.GetPinnableReference())
-                    fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
+                    fixed (char* applicationNamePtr = applicationName)
+                    fixed (char* commandLinePtr = commandLine)
                     {
-                        bool retVal = Interop.Kernel32.CreateProcess(
+                        if (!Interop.Kernel32.CreateProcess(
                             applicationNamePtr,
                             commandLinePtr,
                             ref unused_SecAttrs,
@@ -248,10 +248,10 @@ namespace Microsoft.Win32.SafeHandles
                             environmentBlockPtr,
                             workingDirectory,
                             ref startupInfoEx,
-                            ref processInfo
-                        );
-                        if (!retVal)
+                            ref processInfo))
+                        {
                             errorCode = Marshal.GetLastPInvokeError();
+                        }
                     }
                 }
                 finally
