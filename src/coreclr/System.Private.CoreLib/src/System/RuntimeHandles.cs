@@ -2265,10 +2265,7 @@ namespace System
         {
             try
             {
-                pResolver->ResolveToken(token, out IntPtr typeHandle, out IntPtr methodHandle, out IntPtr fieldHandle);
-                *pTypeHandle = typeHandle;
-                *pMethodHandle = methodHandle;
-                *pFieldHandle = fieldHandle;
+                pResolver->ResolveToken(token, out *pTypeHandle, out *pMethodHandle, out *pFieldHandle);
             }
             catch (Exception ex)
             {
