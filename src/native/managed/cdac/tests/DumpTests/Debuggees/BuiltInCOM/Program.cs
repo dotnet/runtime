@@ -58,6 +58,10 @@ internal static class Program
                 iface.DoNothing();
             }
 
+            // Pin the RCW object in a strong GC handle so the dump test can find it
+            // by walking the strong handle table (matching how GCRoots debuggee works).
+            GCHandle rcwHandle = GCHandle.Alloc(rcwObject, GCHandleType.Normal);
+            GC.KeepAlive(rcwHandle);
             GC.KeepAlive(rcwObject);
         }
         finally
