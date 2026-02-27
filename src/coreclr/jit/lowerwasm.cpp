@@ -525,7 +525,9 @@ void Lowering::AfterLowerBlock()
                     // being
                     //  implicitly pseudo-contained.
                     // TODO-WASM: Verify that it is actually safe to do this for all contained nodes.
-                    if (node->IsInvariant() || node->isContained() ||
+                    if (
+                        m_lower->IsInvariantInRange(node, prev->gtNext) ||
+                        node->isContained() ||
                         (node->OperIs(GT_LCL_VAR) &&
                          !m_lower->m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed()))
                     {
