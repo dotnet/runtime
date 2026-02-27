@@ -1460,8 +1460,7 @@ BOOL MethodTable::ArrayIsInstanceOf(MethodTable* pTargetMT, TypeHandlePairList* 
         PRECONDITION(pTargetMT->IsArray());
     } CONTRACTL_END;
 
-    // Avoid GetRank() for SZArrays - it uses a divide, and SZARRAYs always have rank 1.
-    if (pTargetMT->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
+    if (!pTargetMT->IsMultiDimArray())
     {
         if (this->IsMultiDimArray())
         {
