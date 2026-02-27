@@ -24,6 +24,18 @@ namespace System.Net.Security
 
         private bool _useKtls;
 
+        // When kTLS TX is active, writes bypass SSL_write and use Socket directly
+        // (kernel encrypts transparently on send).
+        private bool _ktlsTx;
+
+        // Read-ahead buffer to amortize SSL_read (kernel recvmsg) calls.
+        // The non-kTLS path has internal buffering via _buffer; without similar
+        // buffering, kTLS causes ~3x more epoll_wait calls per request.
+        private const int KtlsReadAheadBufferSize = 32 * 1024;
+        private byte[]? _ktlsReadBuffer;
+        private int _ktlsReadBufferOffset;
+        private int _ktlsReadBufferCount;
+
         // Buffer for peek-based socket readiness notification. A 1-byte MSG_PEEK recv
         // properly waits via epoll, unlike zero-byte reads which complete immediately.
         private static readonly byte[] s_peekBuffer = new byte[1];
@@ -504,7 +516,9 @@ namespace System.Net.Security
                 Interop.Error errno = Interop.Sys.GetLastErrorInfo().Error;
                 if (ret == 1)
                 {
-                    System.Console.WriteLine($"kTLS handshake completed: kTLS recv: {Interop.Ssl.SslGetKtlsRecv(sslHandle)}, kTLS send: {Interop.Ssl.SslGetKtlsSend(sslHandle)}");
+                    _ktlsTx = Interop.Ssl.SslGetKtlsSend(sslHandle) != 0;
+                    int ktlsRx = Interop.Ssl.SslGetKtlsRecv(sslHandle);
+                    System.Console.WriteLine($"kTLS handshake completed: kTLS recv: {ktlsRx}, kTLS send: {(_ktlsTx ? 1 : 0)}");
                     sslHandle.MarkHandshakeCompleted();
                     break;
                 }
@@ -985,48 +999,71 @@ namespace System.Net.Security
 #if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
                 if (_useKtls)
                 {
-                    SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
                     Socket socket = ((NetworkStream)InnerStream).Socket;
-                    int totalRead = 0;
+
+                    // Serve data from the kTLS read-ahead buffer first.
+                    if (_ktlsReadBufferCount > 0)
+                    {
+                        Debug.Assert(_ktlsReadBuffer is not null);
+                        int copyBytes = Math.Min(_ktlsReadBufferCount, buffer.Length);
+                        _ktlsReadBuffer.AsMemory(_ktlsReadBufferOffset, copyBytes).CopyTo(buffer);
+                        _ktlsReadBufferOffset += copyBytes;
+                        _ktlsReadBufferCount -= copyBytes;
+
+                        return copyBytes;
+                    }
+
+                    SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
+
+                    // Read into a larger buffer to reduce the number of SSL_read calls.
+                    // Each SSL_read is a kernel recvmsg call; without buffering, each
+                    // ReadAsync triggers a separate syscall. The non-kTLS path amortizes
+                    // this via its internal _buffer. Use a single SSL_read with a large
+                    // buffer to avoid the extra failing SSL_read that the fill-loop causes.
+                    Memory<byte> readTarget;
+                    bool useReadAhead = buffer.Length < KtlsReadAheadBufferSize;
+                    if (useReadAhead)
+                    {
+                        _ktlsReadBuffer ??= new byte[KtlsReadAheadBufferSize];
+                        readTarget = _ktlsReadBuffer;
+                    }
+                    else
+                    {
+                        readTarget = buffer;
+                    }
 
                     while (true)
                     {
-                        if (totalRead >= buffer.Length)
-                        {
-                            return totalRead;
-                        }
-
-                        Memory<byte> remaining = buffer.Slice(totalRead);
-                        int ret = TryKtlsRead(sslHandle, remaining, out Interop.Ssl.SslErrorCode error, out Interop.Error errno);
+                        int ret = TryKtlsRead(sslHandle, readTarget, out Interop.Ssl.SslErrorCode error, out Interop.Error errno);
 
                         if (ret > 0)
                         {
-                            totalRead += ret;
-                            // Try to fill the buffer with more data without waiting.
-                            // This avoids extra peek+SSL_read round trips when multiple
-                            // TLS records are already buffered in the kernel.
-                            continue;
+                            if (useReadAhead)
+                            {
+                                int copyBytes = Math.Min(ret, buffer.Length);
+                                _ktlsReadBuffer.AsMemory(0, copyBytes).CopyTo(buffer);
+                                _ktlsReadBufferOffset = copyBytes;
+                                _ktlsReadBufferCount = ret - copyBytes;
+
+                                return copyBytes;
+                            }
+
+                            return ret;
                         }
 
                         if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN)
                         {
-                            return totalRead;
+                            return 0;
                         }
 
                         // ret == 0 with SSL_ERROR_SYSCALL and errno == SUCCESS means unexpected EOF
                         if (ret == 0 && error == Interop.Ssl.SslErrorCode.SSL_ERROR_SYSCALL && errno == Interop.Error.SUCCESS)
                         {
-                            return totalRead;
+                            return 0;
                         }
 
-                        if (IsKtlsWantRead(error, errno, remaining.Length == 0))
+                        if (IsKtlsWantRead(error, errno, readTarget.Length == 0))
                         {
-                            // Return any data already read before waiting.
-                            if (totalRead > 0)
-                            {
-                                return totalRead;
-                            }
-
                             // Use 1-byte MSG_PEEK recv to properly wait for data via epoll.
                             // Zero-byte reads on Socket complete immediately without waiting.
                             try
@@ -1040,18 +1077,12 @@ namespace System.Net.Security
                                 // clean EOF. Continue to SSL_read to get the TLS-level status.
                             }
 
-                            if (remaining.Length == 0)
+                            if (readTarget.Length == 0)
                             {
                                 return 0;
                             }
 
                             continue;
-                        }
-
-                        // If we already read some data, return it rather than throwing.
-                        if (totalRead > 0)
-                        {
-                            return totalRead;
                         }
 
                         throw new IOException(SR.net_io_decrypt, Interop.OpenSsl.GetSslError(ret, error));
@@ -1212,6 +1243,16 @@ namespace System.Net.Security
 #if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
                 if (_useKtls)
                 {
+                    if (_ktlsTx)
+                    {
+                        // kTLS TX is active: the kernel encrypts data transparently on send().
+                        // Bypass SSL_write and use Socket.SendAsync directly for maximum
+                        // performance — this uses .NET's optimized async socket path.
+                        Socket socket = ((NetworkStream)InnerStream).Socket;
+                        await socket.SendAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                        return;
+                    }
+
                     SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
                     int totalWritten = 0;
                     while (totalWritten < buffer.Length)
