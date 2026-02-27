@@ -457,6 +457,51 @@ public unsafe partial interface ISOSHandleEnum : ISOSEnum
     int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSHandleData[] handles, uint* pNeeded);
 }
 
+public enum SOSStackSourceType
+{
+    SOS_StackSourceIP = 0,
+    SOS_StackSourceFrame = 1,
+}
+
+public struct SOSStackRefData
+{
+    public int HasRegisterInformation; // BOOL
+    public int Register;
+    public int Offset;
+    public ClrDataAddress Address;
+    public ClrDataAddress Object;
+    public uint Flags;
+    public SOSStackSourceType SourceType;
+    public ClrDataAddress Source;
+    public ClrDataAddress StackPointer;
+}
+
+public struct SOSStackRefError
+{
+    public SOSStackSourceType SourceType;
+    public ClrDataAddress Source;
+    public ClrDataAddress StackPointer;
+}
+
+[GeneratedComInterface]
+[Guid("774F4E1B-FB7B-491B-976D-A8130FE355E9")]
+public unsafe partial interface ISOSStackRefErrorEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSStackRefError[] refs, uint* pFetched);
+}
+
+[GeneratedComInterface]
+[Guid("8FA642BD-9F10-4799-9AA3-512AE78C77EE")]
+public unsafe partial interface ISOSStackRefEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSStackRefData[] refs, uint* pFetched);
+
+    [PreserveSig]
+    int EnumerateErrors(/*ISOSStackRefErrorEnum*/ void** ppEnum);
+}
+
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 public unsafe partial interface ISOSDacInterface

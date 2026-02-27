@@ -78,7 +78,7 @@ internal partial class StackWalk_1 : IStackWalk
         }
     }
 
-    void IStackWalk.WalkStackReferences(ThreadData threadData)
+    IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData)
     {
         // TODO(stackref): This isn't quite right. We need to check if the FilterContext or ProfilerFilterContext
         // is set and prefer that if either is not null.
@@ -90,8 +90,6 @@ internal partial class StackWalk_1 : IStackWalk
 
         foreach (GCFrameData gcFrame in gcFrames)
         {
-            Console.WriteLine(gcFrame);
-
             TargetPointer pMethodDesc = ((IStackWalk)this).GetMethodDescPtr(gcFrame.Frame);
 
             bool reportGcReferences = gcFrame.ShouldCrawlFrameReportGCReferences;
@@ -125,6 +123,19 @@ internal partial class StackWalk_1 : IStackWalk
                 // TODO(stackref): Handle exceptions properly
             }
         }
+
+        return scanContext.StackRefs.Select(r => new StackReferenceData
+        {
+            HasRegisterInformation = r.HasRegisterInformation,
+            Register = r.Register,
+            Offset = r.Offset,
+            Address = r.Address,
+            Object = r.Object,
+            Flags = (uint)r.Flags,
+            IsStackSourceFrame = r.SourceType == StackRefData.SourceTypes.StackSourceFrame,
+            Source = r.Source,
+            StackPointer = r.StackPointer,
+        }).ToList();
     }
 
     private record GCFrameData

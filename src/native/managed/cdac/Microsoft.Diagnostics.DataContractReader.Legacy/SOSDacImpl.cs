@@ -3393,8 +3393,130 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSStackRefEnum : ISOSStackRefEnum
+    {
+        private readonly SOSStackRefData[] _refs;
+        private uint _index;
+
+        public SOSStackRefEnum(SOSStackRefData[] refs)
+        {
+            _refs = refs;
+        }
+
+        int ISOSStackRefEnum.Next(uint count, SOSStackRefData[] refs, uint* pFetched)
+        {
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pFetched is null || refs is null)
+                    throw new NullReferenceException();
+
+                uint written = 0;
+                while (written < count && _index < _refs.Length)
+                    refs[written++] = _refs[(int)_index++];
+
+                *pFetched = written;
+                hr = _index < _refs.Length ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+
+            return hr;
+        }
+
+        int ISOSStackRefEnum.EnumerateErrors(void** ppEnum)
+        {
+            if (ppEnum is not null)
+                *ppEnum = null;
+
+            return HResults.E_NOTIMPL;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _index += count;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            _index = 0;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            if (pCount is null) return HResults.E_POINTER;
+            *pCount = (uint)_refs.Length;
+            return HResults.S_OK;
+        }
+    }
+
     int ISOSDacInterface.GetStackReferences(int osThreadID, void** ppEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ppEnum is null)
+                throw new ArgumentNullException(nameof(ppEnum));
+
+            Contracts.IThread threadContract = _target.Contracts.Thread;
+            Contracts.ThreadStoreData threadStoreData = threadContract.GetThreadStoreData();
+
+            TargetPointer threadPtr = threadStoreData.FirstThread;
+            Contracts.ThreadData? matchingThread = null;
+            while (threadPtr != TargetPointer.Null)
+            {
+                Contracts.ThreadData td = threadContract.GetThreadData(threadPtr);
+                if ((int)td.OSId.Value == osThreadID)
+                {
+                    matchingThread = td;
+                    break;
+                }
+                threadPtr = td.NextThread;
+            }
+
+            if (matchingThread is null)
+                throw new ArgumentException($"Thread with OS ID {osThreadID} not found");
+
+            Contracts.IStackWalk stackWalk = _target.Contracts.StackWalk;
+            IReadOnlyList<Contracts.StackReferenceData> refs = stackWalk.WalkStackReferences(matchingThread.Value);
+
+            SOSStackRefData[] sosRefs = new SOSStackRefData[refs.Count];
+            for (int i = 0; i < refs.Count; i++)
+            {
+                Contracts.StackReferenceData r = refs[i];
+                sosRefs[i] = new SOSStackRefData
+                {
+                    HasRegisterInformation = r.HasRegisterInformation ? 1 : 0,
+                    Register = r.Register,
+                    Offset = r.Offset,
+                    Address = r.Address.ToClrDataAddress(_target),
+                    Object = r.Object.ToClrDataAddress(_target),
+                    Flags = r.Flags,
+                    SourceType = r.IsStackSourceFrame ? SOSStackSourceType.SOS_StackSourceFrame : SOSStackSourceType.SOS_StackSourceIP,
+                    Source = r.Source.ToClrDataAddress(_target),
+                    StackPointer = r.StackPointer.ToClrDataAddress(_target),
+                };
+            }
+
+            SOSStackRefEnum refEnum = new(sosRefs);
+            StrategyBasedComWrappers cw = new();
+            nint comPtr = cw.GetOrCreateComInterfaceForObject(refEnum, CreateComInterfaceFlags.None);
+            Marshal.QueryInterface(comPtr, typeof(ISOSStackRefEnum).GUID, out nint ptrToEnum);
+            Marshal.Release(comPtr);
+            *ppEnum = (void*)ptrToEnum;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
     {
