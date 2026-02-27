@@ -237,6 +237,7 @@ int minipal_getcpufeatures(void)
 
     bool hasAvx2Dependencies = false;
     bool hasAvx10v1Dependencies = false;
+    bool hasApxDependencies = false;
 
     if (((cpuidInfo[CPUID_EDX] & (1 << 25)) == 0) ||                                                            // SSE
         ((cpuidInfo[CPUID_EDX] & (1 << 26)) == 0) ||                                                            // SSE2
@@ -406,22 +407,16 @@ int minipal_getcpufeatures(void)
 
             if (IsApxEnabled() && apxStateSupport())
             {
-                if (((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0) && maxCpuId >= 0x29)                              // Apx_F
+                if (((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0))                                                  // Apx_F
                 {
-                    __cpuidex(cpuidInfo, 0x00000029, 0x00000000);
-                    if ((cpuidInfo[CPUID_EBX] & (1 << 0)) != 0)                                                 // Apx_NCI_NDD_NF
-                    {
-                        // As documented in the "Intel® Advanced Performance Extensions (Intel® APX) Software Developer’s Manual" revision 7.0
-                        // APX_F (CPUID.(EAX=07H,ECX=1H):EDX[bit 21]) indicates the basic support for APX, and
-                        // APX_NCI_NDD_NF (CPUID.(EAX=29H,ECX=0H):EBX[bit 0]) indicates support for the NCI/NDD/NF features.
-                        // As of now, both bits are required to turn on APX in JIT.
-                        result |= XArchIntrinsicConstants_Apx;
-                    }
+                    // APX availability check is split to 2 part, Apx_F here 
+                    // checks the fundamental support, and APX_NCI_NDD_NF checks 
+                    // feature support.
+                    // Full APX requires 2 parts both present to be enabled.
+                    hasApxDependencies = true;
                 }
             }
         }
-
-        __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
 
         if (maxCpuId >= 0x24)
         {
@@ -454,6 +449,15 @@ int minipal_getcpufeatures(void)
                 {
                     hasAvx10v1Dependencies = false;
                 }
+            }
+        }
+
+        if (maxCpuId >= 0x29)
+        {
+            __cpuidex(cpuidInfo, 0x00000029, 0x00000000);
+            if (((cpuidInfo[CPUID_EBX] & (1 << 0)) != 0) && hasApxDependencies)                                                             // AMX-TILE
+            {
+                result |= XArchIntrinsicConstants_Apx;
             }
         }
     }
