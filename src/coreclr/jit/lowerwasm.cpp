@@ -530,9 +530,7 @@ void Lowering::AfterLowerBlock()
                     {
                         JITDUMP("Stackifier moving node [%06u] after [%06u]\n", Compiler::dspTreeID(node),
                                 Compiler::dspTreeID(prev));
-#if DEBUG
                         assert(m_lower->IsInvariantInRange(node, prev->gtNext));
-#endif
                         m_lower->BlockRange().Remove(node);
                         m_lower->BlockRange().InsertAfter(prev, node);
                         break;
