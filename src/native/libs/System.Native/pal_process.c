@@ -942,7 +942,7 @@ int32_t SystemNative_SpawnProcess(
     int32_t* out_pidfd
 )
 {
-#ifdef __APPLE__
+#if defined(__APPLE__) && !defined(TARGET_MACCATALYST) && !defined(TARGET_TVOS)
     // ========== POSIX_SPAWN PATH (macOS) ==========
 
     pid_t child_pid;
