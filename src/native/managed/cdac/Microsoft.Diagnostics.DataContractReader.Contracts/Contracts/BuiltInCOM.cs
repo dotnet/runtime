@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -42,8 +39,12 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 
     public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr)
     {
-        TargetPointer listAddress = cleanupListPtr;
-        if (listAddress == TargetPointer.Null)
+        TargetPointer listAddress;
+        if (cleanupListPtr != TargetPointer.Null)
+        {
+            listAddress = cleanupListPtr;
+        }
+        else
         {
             TargetPointer globalPtr = _target.ReadGlobalPointer(Constants.Globals.RCWCleanupList);
             listAddress = _target.ReadPointer(globalPtr);
@@ -62,11 +63,13 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             TargetPointer staThread = GetSTAThread(bucket);
 
             TargetPointer rcwPtr = bucketPtr;
+            Data.RCW rcw = bucket;
             while (rcwPtr != TargetPointer.Null)
             {
                 yield return new RCWCleanupInfo(rcwPtr, ctxCookie, staThread, isFreeThreaded);
-                Data.RCW rcw = _target.ProcessedData.GetOrAdd<Data.RCW>(rcwPtr);
                 rcwPtr = rcw.NextRCW;
+                if (rcwPtr != TargetPointer.Null)
+                    rcw = _target.ProcessedData.GetOrAdd<Data.RCW>(rcwPtr);
             }
 
             bucketPtr = bucket.NextCleanupBucket;

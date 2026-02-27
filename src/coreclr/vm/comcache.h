@@ -51,7 +51,6 @@ class CtxEntry
 
     friend struct ::cdac_data<CtxEntry>;
 
-
 private:
     // Disallow creation and deletion of the CtxEntries.
     CtxEntry(LPVOID pCtxCookie, Thread* pSTAThread);
