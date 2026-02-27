@@ -266,4 +266,12 @@ public class TypeMap
         AssertExtensions.ThrowsAny<COMException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<InvalidTypeNameKey>());
         AssertExtensions.ThrowsAny<COMException, BadImageFormatException>(() => TypeMapping.GetOrCreateProxyTypeMapping<InvalidTypeNameKey>());
     }
+
+    [ConditionalFact(typeof(ValidateNoTypeMapEntries), nameof(ValidateNoTypeMapEntries.HasR2RDumpFile))]
+    public static void NoTypeMapEntriesInR2RImageWhenNoTypeMapsDefined()
+    {
+        Console.WriteLine(nameof(NoTypeMapEntriesInR2RImageWhenNoTypeMapsDefined));
+
+        ValidateNoTypeMapEntries.VerifyNoTypeMapSections();
+    }
 }
