@@ -623,23 +623,25 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
+            DacpCOMInterfacePointerData* legacyInterfaces = null;
+            if (interfaces != null && count > 0)
+            {
+                DacpCOMInterfacePointerData* local = stackalloc DacpCOMInterfacePointerData[(int)count];
+                legacyInterfaces = local;
+            }
             uint neededLocal = 0;
-            int hrLocal = _legacyImpl.GetCCWInterfaces(ccw, 0, null, &neededLocal);
+            int hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, legacyInterfaces, &neededLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(itemCount == neededLocal, $"cDAC count: {itemCount}, DAC count: {neededLocal}");
-                if (interfaces != null && neededLocal > 0)
+                if (interfaces != null)
                 {
-                    DacpCOMInterfacePointerData* legacyInterfaces = stackalloc DacpCOMInterfacePointerData[(int)neededLocal];
-                    uint neededLocal2 = 0;
-                    hrLocal = _legacyImpl.GetCCWInterfaces(ccw, neededLocal, legacyInterfaces, &neededLocal2);
-                    Debug.Assert(hrLocal == HResults.S_OK);
                     for (uint i = 0; i < neededLocal; i++)
                     {
-                        Debug.Assert(interfaces[i].methodTable == legacyInterfaces[i].methodTable, $"cDAC methodTable[{i}]: {interfaces[i].methodTable:x}, DAC: {legacyInterfaces[i].methodTable:x}");
-                        Debug.Assert(interfaces[i].interfacePtr == legacyInterfaces[i].interfacePtr, $"cDAC interfacePtr[{i}]: {interfaces[i].interfacePtr:x}, DAC: {legacyInterfaces[i].interfacePtr:x}");
-                        Debug.Assert(interfaces[i].comContext == legacyInterfaces[i].comContext, $"cDAC comContext[{i}]: {interfaces[i].comContext:x}, DAC: {legacyInterfaces[i].comContext:x}");
+                        Debug.Assert(interfaces[i].methodTable == legacyInterfaces![i].methodTable, $"cDAC methodTable[{i}]: {interfaces[i].methodTable:x}, DAC: {legacyInterfaces[i].methodTable:x}");
+                        Debug.Assert(interfaces[i].interfacePtr == legacyInterfaces![i].interfacePtr, $"cDAC interfacePtr[{i}]: {interfaces[i].interfacePtr:x}, DAC: {legacyInterfaces[i].interfacePtr:x}");
+                        Debug.Assert(interfaces[i].comContext == legacyInterfaces![i].comContext, $"cDAC comContext[{i}]: {interfaces[i].comContext:x}, DAC: {legacyInterfaces[i].comContext:x}");
                     }
                 }
             }
