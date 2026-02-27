@@ -339,6 +339,8 @@ public class MethodTableTests
         });
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void ValidateMultidimArrayRank(MockTarget.Architecture arch)
     {
         TargetPointer rank4MethodTablePtr = default;
