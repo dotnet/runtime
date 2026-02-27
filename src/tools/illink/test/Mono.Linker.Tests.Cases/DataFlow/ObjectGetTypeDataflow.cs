@@ -26,6 +26,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             NullValue.Test();
             NoValue.Test();
             UnknownValue.Test();
+            NeverInstantiatedType.Test();
         }
 
         class SealedConstructorAsSource
@@ -52,19 +53,18 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             class Generic<T>
             {
-                [ExpectedWarning("IL2112", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/110563")]
+                // Since Generic<int> is never instantiated, these methods should NOT be kept
                 [RequiresUnreferencedCode(nameof(KeptForMethodParameter))]
                 public void KeptForMethodParameter() { }
 
-                [ExpectedWarning("IL2112", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/110563")]
                 [RequiresUnreferencedCode(nameof(KeptForField))]
                 public void KeptForField() { }
 
-                [ExpectedWarning("IL2112", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/110563")]
                 [RequiresUnreferencedCode(nameof(KeptJustBecause))]
                 public void KeptJustBecause() { }
             }
 
+            [ExpectedWarning("IL2075", nameof(TestMethodParameter), nameof(Type.GetMethod))]
             static void TestMethodParameter(Generic<int> instance)
             {
                 instance.GetType().GetMethod("KeptForMethodParameter");
@@ -72,6 +72,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static Generic<int> field = null;
 
+            [ExpectedWarning("IL2075", nameof(TestField), nameof(Type.GetMethod))]
             static void TestField()
             {
                 field.GetType().GetMethod("KeptForField");
@@ -484,6 +485,29 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 TestType unknownValue = GetInstance();
                 // Should warn about the return value of GetType
                 unknownValue.GetType().RequiresAll();
+            }
+        }
+
+        class NeverInstantiatedType
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)]
+            class AnnotatedType
+            {
+                // This method should NOT be kept because AnnotatedType is never instantiated
+                void PrivateMethod() { }
+            }
+
+            static void UseParameter(AnnotatedType instance)
+            {
+                // Even though the static type has DAM annotations, since AnnotatedType is never
+                // instantiated, GetType() will never return it at runtime (it will throw NRE).
+                // Therefore, we shouldn't apply the DAM annotations.
+                instance?.GetType();
+            }
+
+            public static void Test()
+            {
+                UseParameter(null);
             }
         }
     }
