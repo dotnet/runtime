@@ -49,7 +49,7 @@
       </trans-unit>
       <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
         <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
-        <target state="needs-translation">記錄方法不可為泛型</target>
+        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
@@ -204,22 +204,22 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
         <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported params or scoped parameter modifier</target>
+        <target state="translated">引數 '{0}' 使用不受支援的參數或有限範圍的參數修飾元</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
         <source>Argument is using the unsupported params or scoped parameter modifier</source>
-        <target state="new">Argument is using the unsupported params or scoped parameter modifier</target>
+        <target state="translated">引數使用不受支援的參數或有限範圍的參數修飾元</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
         <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
-        <target state="new">Parameter '{0}' is a ref struct, which is not supported by the logging source generator</target>
+        <target state="translated">參數 '{0}' 是 ref struct，其不受記錄來源產生器支援</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
         <source>Logging method parameter is a ref struct</source>
-        <target state="new">Logging method parameter is a ref struct</target>
+        <target state="translated">記錄方法參數是 ref struct</target>
         <note />
       </trans-unit>
     </body>
