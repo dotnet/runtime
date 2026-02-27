@@ -752,8 +752,8 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
     }
 
     // Return exceptions to managed side for throwing
-    if (cXcept > 0) {
-
+    if (cXcept > 0)
+    {
         gc.xceptRet = (PTRARRAYREF) AllocateObjectArray(cXcept,g_pExceptionClass);
         for (DWORD i=0;i<cXcept;i++) {
             gc.xceptRet->SetAt(i, gc.xcept->GetAt(i));
