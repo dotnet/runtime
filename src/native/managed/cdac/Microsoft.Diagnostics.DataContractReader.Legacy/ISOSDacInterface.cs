@@ -446,7 +446,7 @@ public struct DacpSyncBlockData
         HasCCF = 0x4
     }
     public ClrDataAddress Object;
-    public int bFree; // BOOL
+    public Interop.BOOL bFree;
     public ClrDataAddress SyncBlockPointer;
     public uint COMFlags;
     public uint MonitorHeld;
