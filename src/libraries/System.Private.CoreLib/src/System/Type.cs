@@ -666,33 +666,33 @@ namespace System
             foreach (Type paramType in parameterTypes)
                 ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
 
-            foreach (Type callConv in callingConventions)
+            bool builtInCallConv = false;
+            for (int i = 0; i < callingConventions.Length; i++)
             {
+                Type callConv = callingConventions[i];
                 ArgumentNullException.ThrowIfNull(callConv, nameof(callingConventions));
                 string? fullName = callConv.FullName;
 
                 if (callConv.HasElementType ||
                     callConv.ContainsGenericParameters ||
-                    callConv.IsSignatureType ||
                     fullName == null ||
                     !fullName.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
                 {
                     throw new ArgumentException(SR.Format(SR.FunctionPointer_InvalidCallingConvention, fullName), nameof(callingConventions));
                 }
+
+                if (i == 0 && callingConventions.Length == 1)
+                {
+                    builtInCallConv = fullName is
+                        "System.Runtime.CompilerServices.CallConvCdecl" or
+                        "System.Runtime.CompilerServices.CallConvFastcall" or
+                        "System.Runtime.CompilerServices.CallConvStdcall" or
+                        "System.Runtime.CompilerServices.CallConvThiscall";
+                }
             }
 
             if (!isUnmanaged && callingConventions.Length >= 1)
                 throw new ArgumentException(SR.ManagedFunctionPointer_CallingConventionsNotAllowed, nameof(callingConventions));
-
-            bool builtInCallConv = false;
-            if (callingConventions.Length == 1)
-            {
-                builtInCallConv = callingConventions[0].FullName is
-                    "System.Runtime.CompilerServices.CallConvCdecl" or
-                    "System.Runtime.CompilerServices.CallConvFastcall" or
-                    "System.Runtime.CompilerServices.CallConvStdcall" or
-                    "System.Runtime.CompilerServices.CallConvThiscall";
-            }
 
             int callConvIndex = 0;
             if (returnType.GetOptionalCustomModifiers() is Type[] retTypeModOpts)
