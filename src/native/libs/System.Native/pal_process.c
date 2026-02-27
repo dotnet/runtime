@@ -928,7 +928,6 @@ static int map_managed_signal_to_native(int managed_signal)
         case -9: return SIGTTOU;
         case -10: return SIGTSTP;
         case -11: return SIGKILL;
-        case -12: return SIGSTOP;
         default: return 0;
     }
 }
@@ -948,7 +947,6 @@ static int map_native_signal_to_managed(int native_signal)
         case SIGTTOU: return -9;
         case SIGTSTP: return -10;
         case SIGKILL: return -11;
-        case SIGSTOP: return -12;
         default: return 0;
     }
 }
@@ -1382,14 +1380,5 @@ int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd)
 {
     *out_pidfd = -1;
 
-    siginfo_t info;
-    memset(&info, 0, sizeof(info));
-    int waitid_ret = waitid(P_PID, (id_t)pid, &info, WNOHANG | WNOWAIT | WEXITED | WSTOPPED | WCONTINUED);
-
-    if (waitid_ret != 0)
-    {
-        return -1;
-    }
-
-    return 0;
+    return kill(pid, 0);
 }

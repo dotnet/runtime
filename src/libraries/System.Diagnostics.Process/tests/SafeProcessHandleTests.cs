@@ -29,7 +29,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void Start_WithNoArguments_Succeeds()
         {
-            ProcessStartOptions options = new("pwd");
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("hostname")
+                : new("pwd");
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
