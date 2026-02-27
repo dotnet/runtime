@@ -133,6 +133,13 @@ namespace System.Text.Json.SourceGeneration
         public required bool HasJsonInclude { get; init; }
 
         /// <summary>
+        /// Whether the property can use UnsafeAccessor for its getter/setter.
+        /// This is false when the declaring type is generic or when UnsafeAccessorAttribute
+        /// is not available in the target compilation.
+        /// </summary>
+        public required bool CanUseUnsafeAccessors { get; init; }
+
+        /// <summary>
         /// Whether the property has the JsonExtensionDataAttribute.
         /// </summary>
         public required bool IsExtensionData { get; init; }
@@ -163,8 +170,9 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
-            // Discard properties without getters
-            if (!CanUseGetter)
+            // Discard properties without getters, unless they have [JsonInclude]
+            // in which case we use UnsafeAccessor or reflection to read the value.
+            if (!CanUseGetter && !HasJsonInclude)
             {
                 return false;
             }

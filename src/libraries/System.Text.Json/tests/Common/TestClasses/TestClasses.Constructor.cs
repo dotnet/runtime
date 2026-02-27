@@ -35,6 +35,15 @@ namespace System.Text.Json.Serialization.Tests
         private PrivateParameterizedCtor_WithAttribute(int x) => X = x;
     }
 
+    public class PrivateParameterizedCtor_WithAttribute_And_RequiredProperty
+    {
+        public int X { get; }
+        public required string Name { get; set; }
+
+        [JsonConstructor]
+        private PrivateParameterizedCtor_WithAttribute_And_RequiredProperty(int x) => X = x;
+    }
+
     public class InternalParameterlessCtor
     {
         internal InternalParameterlessCtor() { }

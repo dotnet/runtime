@@ -243,6 +243,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? SetsRequiredMembersAttributeType => GetOrResolveType("System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute", ref _SetsRequiredMembersAttributeType);
         private Option<INamedTypeSymbol?> _SetsRequiredMembersAttributeType;
 
+        public INamedTypeSymbol? UnsafeAccessorAttributeType => GetOrResolveType("System.Runtime.CompilerServices.UnsafeAccessorAttribute", ref _UnsafeAccessorAttributeType);
+        private Option<INamedTypeSymbol?> _UnsafeAccessorAttributeType;
+
         public INamedTypeSymbol? JsonStringEnumConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter", ref _JsonStringEnumConverterType);
         private Option<INamedTypeSymbol?> _JsonStringEnumConverterType;
 

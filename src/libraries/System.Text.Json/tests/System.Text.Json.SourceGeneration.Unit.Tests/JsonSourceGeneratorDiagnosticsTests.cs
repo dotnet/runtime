@@ -263,33 +263,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 #endif
 
         [Fact]
-        public void WarnOnClassesWithInaccessibleJsonIncludeProperties()
+        public void DoesNotWarnOnClassesWithInaccessibleJsonIncludeProperties()
         {
+            // Inaccessible [JsonInclude] members are now supported via UnsafeAccessor or reflection fallback.
+            // No diagnostics should be emitted.
             Compilation compilation = CompilationHelper.CreateCompilationWithInaccessibleJsonIncludeProperties();
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
-
-            Location idLocation = compilation.GetSymbolsWithName("Id").First().Locations[0];
-            Location address2Location = compilation.GetSymbolsWithName("Address2").First().Locations[0];
-            Location countryLocation = compilation.GetSymbolsWithName("Country").First().Locations[0];
-            Location privateFieldLocation = compilation.GetSymbolsWithName("privateField").First().Locations[0];
-            Location protectedFieldLocation = compilation.GetSymbolsWithName("protectedField").First().Locations[0];
-            Location protectedPropertyLocation = compilation.GetSymbolsWithName("ProtectedProperty").First().Locations[0];
-            Location internalPropertyWithPrivateGetterLocation = compilation.GetSymbolsWithName("InternalPropertyWithPrivateGetter").First().Locations[0];
-            Location internalPropertyWithPrivateSetterLocation = compilation.GetSymbolsWithName("InternalPropertyWithPrivateSetter").First().Locations[0];
-
-            var expectedDiagnostics = new DiagnosticData[]
-            {
-                new(DiagnosticSeverity.Warning, idLocation, "The member 'Location.Id' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-                new(DiagnosticSeverity.Warning, address2Location, "The member 'Location.Address2' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-                new(DiagnosticSeverity.Warning, countryLocation, "The member 'Location.Country' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-                new(DiagnosticSeverity.Warning, privateFieldLocation, "The member 'Location.privateField' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-                new(DiagnosticSeverity.Warning, protectedFieldLocation, "The member 'Location.protectedField' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-                new(DiagnosticSeverity.Warning, protectedPropertyLocation, "The member 'Location.ProtectedProperty' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-                new(DiagnosticSeverity.Warning, internalPropertyWithPrivateGetterLocation, "The member 'Location.InternalPropertyWithPrivateGetter' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-                new(DiagnosticSeverity.Warning, internalPropertyWithPrivateSetterLocation, "The member 'Location.InternalPropertyWithPrivateSetter' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."),
-            };
-
-            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+            CompilationHelper.AssertEqualDiagnosticMessages([], result.Diagnostics);
         }
 
         [Fact]
@@ -542,20 +522,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void TypesWithJsonConstructorAnnotations_WarnAsExpected()
         {
+            // Inaccessible [JsonConstructor] constructors are now supported via UnsafeAccessor or reflection fallback.
+            // No diagnostics should be emitted.
             Compilation compilation = CompilationHelper.CreateCompilationWithJsonConstructorAttributeAnnotations();
-
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
-
-            Location protectedCtorLocation = compilation.GetSymbolsWithName("ClassWithProtectedCtor").First().Locations[0];
-            Location privateCtorLocation = compilation.GetSymbolsWithName("ClassWithPrivateCtor").First().Locations[0];
-
-            var expectedDiagnostics = new DiagnosticData[]
-            {
-                new(DiagnosticSeverity.Warning, protectedCtorLocation, "The constructor on type 'HelloWorld.ClassWithProtectedCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
-                new(DiagnosticSeverity.Warning, privateCtorLocation, "The constructor on type 'HelloWorld.ClassWithPrivateCtor' has been annotated with JsonConstructorAttribute but is not accessible by the source generator."),
-            };
-
-            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+            CompilationHelper.AssertEqualDiagnosticMessages([], result.Diagnostics);
         }
 
         [Fact]

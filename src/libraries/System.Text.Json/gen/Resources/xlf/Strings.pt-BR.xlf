@@ -52,36 +52,6 @@
         <target state="translated">'JsonDerivedTypeAttribute' não tem suporte em 'JsonSourceGenerationMode.Serialization'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
-        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
-        <target state="translated">O membro '{0}.{1}' foi anotado com o JsonIncludeAttribute, mas não é visível para o gerador de origem.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
-        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
-        <target state="translated">Propriedades inacessíveis anotadas com JsonIncludeAttribute não são suportadas no modo de geração de origem.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
-        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
-        <target state="translated">O tipo '{0}' define propriedades apenas de inicialização, a desserialização das quais atualmente não é suportada no modo de geração de origem.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
-        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
-        <target state="translated">A desserialização de propriedades apenas de inicialização não é atualmente suportada no modo de geração de origem.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConstructorInaccessibleMessageFormat">
-        <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
-        <target state="translated">O construtor do tipo '{0}' foi anotado com JsonConstructorAttribute, mas não pode ser acessado pelo gerador de origem.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConstructorInaccessibleTitle">
-        <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
-        <target state="translated">O construtor anotado com JsonConstructorAttribute está inacessível.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
         <target state="translated">O tipo "JsonConverterAttribute" "{0}" especificado no membro "{1}" não é um tipo de conversor ou não contém um construtor sem parâmetros acessível.</target>
