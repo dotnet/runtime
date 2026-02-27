@@ -66,6 +66,7 @@
 #include "comcache.h"
 #include "threads.h"
 #include "comcache.h"
+#include "cdacdata.h"
 
 class Object;
 class ComCallWrapper;
@@ -542,6 +543,8 @@ private :
 
     // IUnkEntry needs to access m_UnkEntry field
     friend IUnkEntry;
+    // cdac_data<RCW> needs access to m_UnkEntry
+    friend struct ::cdac_data<RCW>;
 
 private :
     static RCW* CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT);
@@ -579,6 +582,16 @@ private :
         CtxEntry *pCtxEntry = m_UnkEntry.GetCtxEntry();
         RETURN pCtxEntry;
     }
+};
+
+template<>
+struct cdac_data<RCW>
+{
+    static constexpr size_t NextCleanupBucket = offsetof(RCW, m_pNextCleanupBucket);
+    static constexpr size_t NextRCW = offsetof(RCW, m_pNextRCW);
+    static constexpr size_t Flags = offsetof(RCW, m_Flags);
+    static constexpr size_t CtxCookie = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxCookie);
+    static constexpr size_t CtxEntry = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxEntry);
 };
 
 inline RCW::CreationFlags operator|(RCW::CreationFlags lhs, RCW::CreationFlags rhs)
@@ -1271,6 +1284,7 @@ class RCWCleanupList
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif // DACCESS_COMPILE
+    friend struct ::cdac_data<RCWCleanupList>;
 
 public:
     RCWCleanupList()
@@ -1356,6 +1370,12 @@ private:
 
     // Fast check for whether threads should help cleanup wrappers in their contexts
     BOOL                m_doCleanupInContexts;
+};
+
+template<>
+struct cdac_data<RCWCleanupList>
+{
+    static constexpr size_t FirstBucket = offsetof(RCWCleanupList, m_pFirstBucket);
 };
 
 FORCEINLINE void CtxEntryHolderRelease(CtxEntry *p)

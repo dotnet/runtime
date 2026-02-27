@@ -77,6 +77,7 @@ public static class Constants
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
         public const string ComRefcountMask = nameof(ComRefcountMask);
+        public const string RCWCleanupList = nameof(RCWCleanupList);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);
