@@ -15,7 +15,12 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         IsHandleWeak = 0x4,
     }
 
-    private const ulong IsLayoutComplete = 0x10;
+    // Mirrors enum Masks in src/coreclr/vm/comcallablewrapper.h
+    // [cDAC] [BuiltInCOM]: Contract depends on this value
+    private enum ComMethodTableFlags : ulong
+    {
+        LayoutComplete = 0x10,
+    }
 
     internal BuiltInCOM_1(Target target)
     {
@@ -41,7 +46,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         ulong comMethodTableSize = _target.GetTypeInfo(DataType.ComMethodTable).Size!.Value;
         int pointerSize = _target.PointerSize;
         // LinkedWrapperTerminator = (PTR_ComCallWrapper)-1: all pointer-sized bits set
-        ulong linkedWrapperTerminator = pointerSize == 8 ? ulong.MaxValue : uint.MaxValue;
+        TargetPointer linkedWrapperTerminator = pointerSize == 8 ? TargetPointer.Max64Bit : TargetPointer.Max32Bit;
 
         bool isFirst = true;
         TargetPointer current = ccw;
@@ -61,7 +66,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
                 Data.ComMethodTable comMethodTable = _target.ProcessedData.GetOrAdd<Data.ComMethodTable>(comMethodTableAddr);
 
                 // Skip interfaces whose vtable layout is not yet complete
-                if ((comMethodTable.Flags.Value & IsLayoutComplete) == 0)
+                if ((comMethodTable.Flags.Value & (ulong)ComMethodTableFlags.LayoutComplete) == 0)
                     continue;
 
                 // slotAddr is the address of m_rgpIPtr[i] in the CCW struct (= InterfacePointer)
@@ -83,7 +88,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 
             // Advance to the next wrapper in the chain
             // LinkedWrapperTerminator = all-bits-set sentinel means end of list
-            current = wrapper.Next.Value == linkedWrapperTerminator ? TargetPointer.Null : wrapper.Next;
+            current = wrapper.Next == linkedWrapperTerminator ? TargetPointer.Null : wrapper.Next;
         }
     }
 }
