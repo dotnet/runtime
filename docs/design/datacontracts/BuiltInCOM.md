@@ -39,6 +39,7 @@ Global variables used:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `MarshalingTypeShift` | `int` | Bit position of `m_MarshalingType` within `RCW::RCWFlags::m_dwFlags` | `7` |
+| `MarshalingTypeFreeThreaded` | `int` | Enum value for marshaling type within `RCW::RCWFlags::m_dwFlags` | `2` |
 
 Contracts used:
 | Contract Name |
@@ -55,7 +56,7 @@ private enum Flags
 // MarshalingTypeShift = 7 matches the bit position of m_MarshalingType in RCW::RCWFlags::m_dwFlags
 private const int MarshalingTypeShift = 7;
 private const uint MarshalingTypeMask = 0x3u << MarshalingTypeShift;
-private const uint MarshalingTypeFreeThreaded = 2u << MarshalingTypeShift; // matches RCW::MarshalingType_FreeThreaded
+private const uint MarshalingTypeFreeThreaded = 2u; // matches RCW::MarshalingType_FreeThreaded
 
 public ulong GetRefCount(TargetPointer address)
 {
@@ -87,7 +88,7 @@ public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPt
     while (bucketPtr != TargetPointer.Null)
     {
         uint flags = _target.Read<uint>(bucketPtr + /* RCW::Flags offset */);
-        bool isFreeThreaded = (flags & MarshalingTypeMask) == MarshalingTypeFreeThreaded;
+        bool isFreeThreaded = (flags & MarshalingTypeMask) == MarshalingTypeFreeThreaded << MarshalingTypeShift;
         TargetPointer ctxCookie = _target.ReadPointer(bucketPtr + /* RCW::CtxCookie offset */);
 
         // m_pCtxEntry uses bit 0 for synchronization; strip it before dereferencing.

@@ -170,7 +170,7 @@ struct RCW
      {
          MarshalingType_Unknown = 0,      /* The MarshalingType has not been set*/
          MarshalingType_Inhibit = 1,      /* Type implements INoMarshal */
-         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller. [cDAC][BuiltInCOM]: Contract depends on this value. */
+         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller. [cDAC] [BuiltInCOM]: Contract depends on this value. */
      };
 
     //-------------------------------------------------
@@ -519,7 +519,7 @@ public:
             DWORD       m_fAllowEagerSTACleanup:1; // this RCW can be cleaned up eagerly (as opposed to via CleanupUnusedObjectsInCurrentContext)
 
             // Reserve 2 bits for marshaling type
-            DWORD       m_MarshalingType:2;        // Marshaling type of the COM object. [cDAC][BuiltInCOM]: Contract depends on the bit position of this field within m_dwFlags.
+            DWORD       m_MarshalingType:2;        // Marshaling type of the COM object. [cDAC] [BuiltInCOM]: Contract depends on the bit position of this field within m_dwFlags.
 
             DWORD       m_Detached:1;              // set if the RCW was found dead during GC
         };

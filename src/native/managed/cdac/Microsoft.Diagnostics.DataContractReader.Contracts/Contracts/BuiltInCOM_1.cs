@@ -15,10 +15,9 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     }
 
     // Matches the bit position of m_MarshalingType within RCW::RCWFlags::m_dwFlags.
-    // [cDAC] Contract constant: value must match the field layout of RCW::RCWFlags in runtimecallablewrapper.h.
     private const int MarshalingTypeShift = 7;
     private const uint MarshalingTypeMask = 0x3u << MarshalingTypeShift;
-    private const uint MarshalingTypeFreeThreaded = 2u << MarshalingTypeShift;
+    private const uint MarshalingTypeFreeThreaded = 2u;
 
     internal BuiltInCOM_1(Target target)
     {
@@ -60,18 +59,16 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         while (bucketPtr != TargetPointer.Null)
         {
             Data.RCW bucket = _target.ProcessedData.GetOrAdd<Data.RCW>(bucketPtr);
-            bool isFreeThreaded = (bucket.Flags & MarshalingTypeMask) == MarshalingTypeFreeThreaded;
+            bool isFreeThreaded = (bucket.Flags & MarshalingTypeMask) == MarshalingTypeFreeThreaded << MarshalingTypeShift;
             TargetPointer ctxCookie = bucket.CtxCookie;
             TargetPointer staThread = GetSTAThread(bucket);
 
             TargetPointer rcwPtr = bucketPtr;
-            Data.RCW rcw = bucket;
             while (rcwPtr != TargetPointer.Null)
             {
+                Data.RCW rcw = _target.ProcessedData.GetOrAdd<Data.RCW>(rcwPtr);
                 yield return new RCWCleanupInfo(rcwPtr, ctxCookie, staThread, isFreeThreaded);
                 rcwPtr = rcw.NextRCW;
-                if (rcwPtr != TargetPointer.Null)
-                    rcw = _target.ProcessedData.GetOrAdd<Data.RCW>(rcwPtr);
             }
 
             bucketPtr = bucket.NextCleanupBucket;
@@ -80,7 +77,6 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 
     private TargetPointer GetSTAThread(Data.RCW rcw)
     {
-        // m_pCtxEntry uses bit 0 for synchronization; strip it before dereferencing
         TargetPointer ctxEntryPtr = rcw.CtxEntry & ~(ulong)1;
         if (ctxEntryPtr == TargetPointer.Null)
             return TargetPointer.Null;
