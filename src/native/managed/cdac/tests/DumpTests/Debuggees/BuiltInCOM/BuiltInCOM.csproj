@@ -1,2 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- This debuggee is intentionally Windows-only (COM interop). -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
 </Project>
