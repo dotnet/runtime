@@ -1136,6 +1136,82 @@ check_c_source_compiles(
     "
     HAVE_TERMIOS2)
 
+# Check for clone3 syscall (Linux-specific, used for pidfd support)
+check_c_source_compiles(
+    "
+    #include <sys/syscall.h>
+    #include <linux/sched.h>
+    int main(void)
+    {
+        #ifdef SYS_clone3
+        return 0;
+        #else
+        #error SYS_clone3 not defined
+        #endif
+    }
+    "
+    HAVE_CLONE3)
+
+# Check for pidfd_send_signal syscall (Linux-specific)
+check_c_source_compiles(
+    "
+    #include <sys/syscall.h>
+    int main(void)
+    {
+        #ifdef __NR_pidfd_send_signal
+        return 0;
+        #else
+        #error __NR_pidfd_send_signal not defined
+        #endif
+    }
+    "
+    HAVE_PIDFD_SEND_SIGNAL)
+
+# Check for close_range syscall (Linux-specific)
+check_c_source_compiles(
+    "
+    #include <sys/syscall.h>
+    int main(void)
+    {
+        #ifdef __NR_close_range
+        return 0;
+        #else
+        #error __NR_close_range not defined
+        #endif
+    }
+    "
+    HAVE_CLOSE_RANGE)
+
+# Check for PR_SET_PDEATHSIG (Linux-specific, used for kill-on-parent-death)
+check_c_source_compiles(
+    "
+    #include <sys/prctl.h>
+    int main(void)
+    {
+        #ifdef PR_SET_PDEATHSIG
+        return 0;
+        #else
+        #error PR_SET_PDEATHSIG not defined
+        #endif
+    }
+    "
+    HAVE_PDEATHSIG)
+
+# Check for SYS_tgkill syscall (Linux-specific, used for create_suspended)
+check_c_source_compiles(
+    "
+    #include <sys/syscall.h>
+    int main(void)
+    {
+        #ifdef SYS_tgkill
+        return 0;
+        #else
+        #error SYS_tgkill not defined
+        #endif
+    }
+    "
+    HAVE_SYS_TGKILL)
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/Common/pal_config.h)

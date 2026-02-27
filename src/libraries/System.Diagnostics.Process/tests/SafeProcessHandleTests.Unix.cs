@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tests
     public partial class SafeProcessHandleTests
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void SendSignal_SIGTERM_TerminatesProcess()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void SendSignal_SIGINT_TerminatesProcess()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
@@ -43,7 +43,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void Signal_InvalidSignal_ThrowsArgumentOutOfRangeException()
         {
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
@@ -57,7 +57,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void SendSignal_ToExitedProcess_ThrowsWin32Exception()
         {
             ProcessStartOptions options = new("echo") { Arguments = { "test" } };
