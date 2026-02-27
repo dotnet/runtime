@@ -137,6 +137,7 @@ namespace ILCompiler.ObjectWriter
         {
             ulong virtualAddress = 0;
             byte sectionIndex = 1;
+            uint initialFileOffset = uint.MaxValue;
 
             segmentFileSize = 0;
             segmentSize = 0;
@@ -149,9 +150,10 @@ namespace ILCompiler.ObjectWriter
 
                 if (section.IsInFile)
                 {
+                    initialFileOffset = Math.Min(initialFileOffset, fileOffset);
                     section.FileOffset = fileOffset;
                     fileOffset += (uint)section.Size;
-                    segmentFileSize = Math.Max(segmentFileSize, fileOffset);
+                    segmentFileSize = Math.Max(segmentFileSize, fileOffset - initialFileOffset);
                 }
                 else
                 {
@@ -165,7 +167,7 @@ namespace ILCompiler.ObjectWriter
                 section.SectionIndex = sectionIndex;
                 sectionIndex++;
 
-                segmentSize = Math.Max(Math.Max(segmentSize, virtualAddress), segmentFileSize);
+                segmentSize = Math.Max(segmentSize, virtualAddress);
 
                 if (recordFinalLayout)
                 {
