@@ -269,7 +269,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     if (updateFloats)
     {
         UpdateFloatingPointRegisters(pRD, GetSP());
-        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE
 
@@ -358,7 +357,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
+        UpdateFloatingPointRegisters(pRD, dac_cast<TADDR>(GetCallSiteSP()));
     }
 #endif // DACCESS_COMPILE
 

@@ -5339,12 +5339,9 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded)
 #endif //TARGET_ARM || TARGET_ARM64
 
     //
-    // SyncClean holds a list of things to be cleaned up when it's possible.
-    // SyncClean uses the GC mode to synchronize access to this list.  Threads must be
-    // in COOP mode to add things to the list, and the list can only be cleaned up
-    // while no threads are adding things.
-    // Since we know that no threads are in COOP mode at this point (because the EE is
-    // suspended), we clean up the list here.
+    // SyncClean::CleanUp reclaims resources that are safe to free only
+    // when no threads are running managed code. Since the EE is
+    // suspended at this point, we know it's safe to clean up here.
     //
     SyncClean::CleanUp();
 
