@@ -2464,8 +2464,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         srcReg = GetFramePointerReg();
     }
 
-    noway_assert(source->IsLocal());
-
     // If the destination is on the stack we don't need the write barrier.
     bool dstOnStack = cpObjNode->IsAddressNotOnHeap(m_compiler);
     // We should have generated a memory.copy for this scenario in lowering.
