@@ -49,7 +49,7 @@
       </trans-unit>
       <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
         <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
-        <target state="needs-translation">Metody protokolování nemůžou být obecné.</target>
+        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
@@ -204,22 +204,22 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
         <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported params or scoped parameter modifier</target>
+        <target state="translated">Argument {0} používá nepodporované parametry nebo modifikátor parametrů s vymezeným oborem</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
         <source>Argument is using the unsupported params or scoped parameter modifier</source>
-        <target state="new">Argument is using the unsupported params or scoped parameter modifier</target>
+        <target state="translated">Argument používá nepodporované parametry nebo modifikátor parametrů s vymezeným oborem</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
         <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
-        <target state="new">Parameter '{0}' is a ref struct, which is not supported by the logging source generator</target>
+        <target state="translated">Parametr {0} je ref stuct, což není podporováno generátorem zdroje protokolování</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
         <source>Logging method parameter is a ref struct</source>
-        <target state="new">Logging method parameter is a ref struct</target>
+        <target state="translated">Parametr metody protokolování je ref struct</target>
         <note />
       </trans-unit>
     </body>
