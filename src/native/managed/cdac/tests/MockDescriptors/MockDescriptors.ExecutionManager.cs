@@ -399,11 +399,29 @@ internal partial class MockDescriptors
 
         public TargetPointer AddRangeSectionFragment(JittedCodeRange jittedCodeRange, TargetPointer rangeSectionAddress)
         {
+            return AddRangeSectionFragment(jittedCodeRange, rangeSectionAddress, insertIntoMap: true);
+        }
+
+        /// <summary>
+        /// Creates a range section fragment in memory without inserting it into the range section map.
+        /// Use this for fragments that should only be reachable via another fragment's <c>Next</c> pointer
+        /// (e.g., the tail of a collectible fragment chain).
+        /// </summary>
+        public TargetPointer AddUnmappedRangeSectionFragment(JittedCodeRange jittedCodeRange, TargetPointer rangeSectionAddress)
+        {
+            return AddRangeSectionFragment(jittedCodeRange, rangeSectionAddress, insertIntoMap: false);
+        }
+
+        private TargetPointer AddRangeSectionFragment(JittedCodeRange jittedCodeRange, TargetPointer rangeSectionAddress, bool insertIntoMap)
+        {
             var tyInfo = Types[DataType.RangeSectionFragment];
             uint rangeSectionFragmentSize = tyInfo.Size.Value;
             MockMemorySpace.HeapFragment rangeSectionFragment = _rangeSectionMapAllocator.Allocate(rangeSectionFragmentSize, "RangeSectionFragment");
-            // FIXME: this shouldn't really be called InsertAddressRange, but maybe InsertRangeSectionFragment?
-            _rsmBuilder.InsertAddressRange(jittedCodeRange.RangeStart, (uint)jittedCodeRange.RangeSize, rangeSectionFragment.Address);
+            if (insertIntoMap)
+            {
+                // FIXME: this shouldn't really be called InsertAddressRange, but maybe InsertRangeSectionFragment?
+                _rsmBuilder.InsertAddressRange(jittedCodeRange.RangeStart, (uint)jittedCodeRange.RangeSize, rangeSectionFragment.Address);
+            }
             Builder.AddHeapFragment(rangeSectionFragment);
             int pointerSize = Builder.TargetTestHelpers.PointerSize;
             Span<byte> rsf = Builder.BorrowAddressRange(rangeSectionFragment.Address, (int)rangeSectionFragmentSize);
@@ -411,7 +429,35 @@ internal partial class MockDescriptors
             Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeEndOpen)].Offset, pointerSize), jittedCodeRange.RangeEnd);
             Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeSection)].Offset, pointerSize), rangeSectionAddress);
             /* Next = nullptr */
-            // nothing
+            return rangeSectionFragment.Address;
+        }
+
+        /// <summary>
+        /// Adds a range section fragment whose <c>Next</c> pointer has bit 0 set (the collectible tag).
+        /// In the native runtime, <c>RangeSectionFragmentPointer</c> (see codeman.h) uses bit 0 to mark
+        /// fragments belonging to collectible assembly load contexts. The cDAC must strip this bit before
+        /// dereferencing <c>Next</c>; failing to do so causes reads at a misaligned address, producing
+        /// garbage field values. This helper enables testing that the tag bit is correctly stripped.
+        /// </summary>
+        /// <param name="mapCodeRange">The code range whose map entries should point to this fragment.</param>
+        /// <param name="rangeSectionAddress">The <c>RangeSection</c> this fragment belongs to.</param>
+        /// <param name="nextFragmentAddress">The actual address of the next fragment in the linked list
+        /// (the collectible tag bit will be OR'd onto this value).</param>
+        /// <returns>The address of the newly created head fragment.</returns>
+        public TargetPointer AddRangeSectionFragmentWithCollectibleNext(JittedCodeRange mapCodeRange, TargetPointer rangeSectionAddress, TargetPointer nextFragmentAddress)
+        {
+            var tyInfo = Types[DataType.RangeSectionFragment];
+            uint rangeSectionFragmentSize = tyInfo.Size.Value;
+            MockMemorySpace.HeapFragment rangeSectionFragment = _rangeSectionMapAllocator.Allocate(rangeSectionFragmentSize, "RangeSectionFragment (collectible head)");
+            // Insert this fragment into the map, overriding any existing entry for the range
+            _rsmBuilder.InsertAddressRange(mapCodeRange.RangeStart, (uint)mapCodeRange.RangeSize, rangeSectionFragment.Address);
+            Builder.AddHeapFragment(rangeSectionFragment);
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+            Span<byte> rsf = Builder.BorrowAddressRange(rangeSectionFragment.Address, (int)rangeSectionFragmentSize);
+            // RangeBegin and RangeEndOpen are zero-initialized (empty range, Contains always returns false)
+            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.RangeSection)].Offset, pointerSize), rangeSectionAddress);
+            // Write Next with the collectible tag bit (bit 0) set
+            Builder.TargetTestHelpers.WritePointer(rsf.Slice(tyInfo.Fields[nameof(Data.RangeSectionFragment.Next)].Offset, pointerSize), nextFragmentAddress.Value | 1);
             return rangeSectionFragment.Address;
         }
 
