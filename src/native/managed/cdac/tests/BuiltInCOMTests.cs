@@ -57,7 +57,7 @@ public class BuiltInCOMTests
 
         var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, types, globals);
         target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.BuiltInCOM == ((IContractFactory<IBuiltInCOM>)new BuiltInCOMFactory()).CreateContract(target, 2)));
+            c => c.BuiltInCOM == ((IContractFactory<IBuiltInCOM>)new BuiltInCOMFactory()).CreateContract(target, 1)));
 
         testCase(target);
     }
