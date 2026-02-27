@@ -6340,14 +6340,10 @@ void Compiler::compCompileFinish()
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
-#if defined(DEBUG)
-    Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
-#else
     if (JitConfig.JitReportMetrics())
     {
         Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
     }
-#endif
 
 #if LOOP_HOIST_STATS
     AddLoopHoistStats();
@@ -6552,7 +6548,10 @@ void Compiler::compCompileFinish()
     }
 
     JITDUMP("Final metrics:\n");
-    Metrics.report(this);
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.report(this);
+    }
     DBEXEC(verbose, Metrics.dump());
 
     if (verbose)
@@ -6591,13 +6590,7 @@ void Compiler::compCompileFinish()
 #endif
         }
     }
-#else // DEBUG
-
-    if (JitConfig.JitReportMetrics())
-    {
-        Metrics.report(this);
-    }
-#endif // !DEBUG
+#endif // DEBUG
 }
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
