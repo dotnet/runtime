@@ -49,7 +49,7 @@
       </trans-unit>
       <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
         <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
-        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
+        <target state="translated">Metody protokolování nemůžou mít parametry typu s omezeními „allows ref struct“</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
