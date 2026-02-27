@@ -760,6 +760,9 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
         }
         retExceptions.Set(gc.xceptRet);
     }
+    else
+    {
+    ...
 
     // We should have filled the array exactly.
     _ASSERTE(curPos == dwNumTypeDefs);
