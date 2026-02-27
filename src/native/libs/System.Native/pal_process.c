@@ -46,21 +46,16 @@
 #include <sys/event.h>
 #endif
 
-#if HAVE_CLONE3
+#if HAVE_PIDFD_SEND_SIGNAL || HAVE_SYS_TGKILL || HAVE_CLONE3
 #include <sys/syscall.h>
-#include <linux/sched.h>
 #endif
 
-#if HAVE_PIDFD_SEND_SIGNAL
-#include <sys/syscall.h>
+#if HAVE_CLONE3
+#include <linux/sched.h>
 #endif
 
 #if HAVE_PDEATHSIG
 #include <sys/prctl.h>
-#endif
-
-#if HAVE_SYS_TGKILL
-#include <sys/syscall.h>
 #endif
 
 // In the future, we could add support for pidfd on FreeBSD
