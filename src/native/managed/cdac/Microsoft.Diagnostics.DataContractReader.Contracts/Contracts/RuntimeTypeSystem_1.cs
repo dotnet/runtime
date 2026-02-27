@@ -733,6 +733,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_Array:
                     // Multidim array: BaseSize = ArrayBaseBaseSize + Rank * sizeof(uint) * 2
                     uint arrayBaseBaseSize = _target.ReadGlobal<uint>(Constants.Globals.ArrayBaseBaseSize);
+                    if (methodTable.Flags.BaseSize < arrayBaseBaseSize)
+                        throw new ArgumentException($"MethodTable BaseSize {methodTable.Flags.BaseSize} is less than ArrayBaseBaseSize {arrayBaseBaseSize}");
                     uint boundsSize = methodTable.Flags.BaseSize - arrayBaseBaseSize;
                     rank = boundsSize / (sizeof(uint) * 2);
                     return true;

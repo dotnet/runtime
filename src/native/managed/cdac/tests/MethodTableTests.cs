@@ -226,4 +226,50 @@ public class MethodTableTests
         });
 
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateMultidimArrayRank(MockTarget.Architecture arch)
+    {
+        TargetPointer rank4MethodTablePtr = default;
+        TargetPointer rank1MultiDimMethodTablePtr = default;
+
+        RTSContractHelper(arch,
+        (rtsBuilder) =>
+        {
+            TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+            const uint multidimArrayCorTypeAttr = (uint)(System.Reflection.TypeAttributes.Public | System.Reflection.TypeAttributes.Sealed);
+            // Category_Array (without Category_IfArrayThenSzArray) marks a multidim ELEMENT_TYPE_ARRAY
+            const uint multidimFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | MethodTableFlags_1.WFLAGS_HIGH.Category_Array);
+
+            // rank-4: BaseSize = ArrayBaseBaseSize + 4 * sizeof(int) * 2
+            uint baseSize4 = targetTestHelpers.ArrayBaseBaseSize + 4 * sizeof(uint) * 2;
+            TargetPointer eeClass4 = rtsBuilder.AddEEClass("EEClass int[,,,]", attr: multidimArrayCorTypeAttr, numMethods: 0, numNonVirtualSlots: 0);
+            rank4MethodTablePtr = rtsBuilder.AddMethodTable("MethodTable int[,,,]",
+                mtflags: multidimFlags, mtflags2: default, baseSize: baseSize4,
+                module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: 0);
+            rtsBuilder.SetEEClassAndCanonMTRefs(eeClass4, rank4MethodTablePtr);
+
+            // rank-1 multidim (ELEMENT_TYPE_ARRAY, not SZARRAY): BaseSize = ArrayBaseBaseSize + 1 * sizeof(int) * 2
+            uint baseSize1 = targetTestHelpers.ArrayBaseBaseSize + 1 * sizeof(uint) * 2;
+            TargetPointer eeClass1 = rtsBuilder.AddEEClass("EEClass int[*]", attr: multidimArrayCorTypeAttr, numMethods: 0, numNonVirtualSlots: 0);
+            rank1MultiDimMethodTablePtr = rtsBuilder.AddMethodTable("MethodTable int[*]",
+                mtflags: multidimFlags, mtflags2: default, baseSize: baseSize1,
+                module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: 0);
+            rtsBuilder.SetEEClassAndCanonMTRefs(eeClass1, rank1MultiDimMethodTablePtr);
+        },
+        (target) =>
+        {
+            Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
+            Assert.NotNull(metadataContract);
+
+            Contracts.TypeHandle rank4Handle = metadataContract.GetTypeHandle(rank4MethodTablePtr);
+            Assert.True(metadataContract.IsArray(rank4Handle, out uint rank4));
+            Assert.Equal(4u, rank4);
+
+            Contracts.TypeHandle rank1Handle = metadataContract.GetTypeHandle(rank1MultiDimMethodTablePtr);
+            Assert.True(metadataContract.IsArray(rank1Handle, out uint rank1));
+            Assert.Equal(1u, rank1);
+        });
+    }
 }
