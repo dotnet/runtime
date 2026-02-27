@@ -1510,6 +1510,7 @@ public sealed unsafe partial class SOSDacImpl
             }
 #endif
             ppHandleEnum = new SOSHandleEnum(_target, supportedHandleTypes, legacyHandleEnum);
+            _ = Marshal.GetIUnknownForObject(ppHandleEnum);
         }
         catch (System.Exception ex)
         {
@@ -1536,6 +1537,7 @@ public sealed unsafe partial class SOSDacImpl
             IGC gc = _target.Contracts.GC;
             HandleType[] handleTypes = gc.GetHandleTypes(types);
             ppHandleEnum = new SOSHandleEnum(_target, handleTypes, legacyHandleEnum);
+            _ = Marshal.GetIUnknownForObject(ppHandleEnum);
         }
         catch (System.Exception ex)
         {
