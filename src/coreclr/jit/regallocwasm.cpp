@@ -492,8 +492,8 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     CurrentRange().Remove(lclNode);
     CurrentRange().InsertBefore(insertionPoint, lclNode);
 
-    auto tempRange = LIR::ReadOnlyRange(store, store);
-    m_compiler->m_pLowering->LowerRange(m_currentBlock, tempRange);
+    LIR::ReadOnlyRange storeRange(store, store);
+    m_compiler->m_pLowering->LowerRange(m_currentBlock, storeRange);
 }
 
 //------------------------------------------------------------------------
@@ -557,8 +557,7 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
     // Note how due to the fact we're processing nodes in stack order,
     // we don't need to maintain free/busy sets, only a simple stack.
     regNumber reg = AllocateTemporaryRegister(genActualType(node));
-    // If the node already has a regnum, trying to assign it a second one is no good.
-    assert(node->GetRegNum() == REG_NA);
+    assert((node->GetRegNum() == REG_NA) && "Trying to double-assign a temporary register");
     node->SetRegNum(reg);
 }
 
@@ -581,8 +580,7 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
     }
 
     regNumber reg = ReleaseTemporaryRegister(genActualType(operand));
-    // If this assert fails you likely called ConsumeTemporaryRegForOperand on your operands in the wrong order.
-    assert(reg == operand->GetRegNum());
+assert((reg == operand->GetRegNum()) && "Temporary reg being consumed out of order");
     CollectReference(operand);
 
     operand->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
@@ -626,9 +624,7 @@ void WasmRegAlloc::ResolveReferences()
     {
         TemporaryRegStack& temporaryRegs          = m_temporaryRegs[static_cast<unsigned>(type)];
         TemporaryRegBank&  allocatedTemporaryRegs = temporaryRegMap[static_cast<unsigned>(type)];
-        // If temporaryRegs.Count != 0 that means CollectReferences failed to CollectReference one or more multiply-used
-        // nodes.
-        assert(temporaryRegs.Count == 0);
+assert((temporaryRegs.Count == 0) && "Some temporary regs were not consumed/released");
 
         allocatedTemporaryRegs.Count = temporaryRegs.MaxCount;
         if (allocatedTemporaryRegs.Count == 0)

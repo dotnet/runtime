@@ -432,8 +432,8 @@ void CodeGen::WasmProduceReg(GenTree* node)
 // If the operand is a candidate, we use that candidate's current register.
 // Otherwise it must have been allocated into a temporary register initialized
 // in 'WasmProduceReg'. To do this, call treeNode->SetMultiplyUsed() during
-// lowering or other pre-regalloc phases, and ensure that regalloc is updated to
-// call CollectReferences on the node(s) that need to be used multiple times.
+// lowering and ensure that regalloc is updated to call 'ConsumeTemporaryRegForOperand'
+// on the node(s) that need to be used multiple times.
 //
 // Arguments:
 //    operand - The operand node
@@ -2456,11 +2456,11 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     }
     else
     {
-        noway_assert(source->OperIs(GT_LCL_FLD, GT_LCL_VAR));
+        assert(source->OperIs(GT_LCL_FLD, GT_LCL_VAR));
         GenTreeLclVarCommon* lclVar = source->AsLclVarCommon();
         bool                 fpBased;
         srcOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
-        noway_assert(fpBased);
+        assert(fpBased);
         srcReg = GetFramePointerReg();
     }
 
@@ -2527,9 +2527,9 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
             emit->emitIns_I(INS_I_const, attrSrcAddr, srcOffset);
             emit->emitIns(INS_I_add);
-            // TODO-WASM: Load the PEP value for the helper onto the stack here? Right now genEmitHelperCall does it.
-            // Call the byref assign helper. On other targets this updates the dst/src regs but here it won't,
-            //  so we have to do the local.get+i32.const+i32.add dance every time.
+            // TODO-WASM: don't load PEP in genEmitHelperCall for write barriers.
+            // TODO-WASM-CQ: add a version of CORINFO_HELP_ASSIGN_BYREF that returns the updated dest/src
+            // pointers as a multi-value tuple and use it here.
             genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
             gcPtrCount--;
         }
