@@ -765,6 +765,8 @@
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
       <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+      <_WasmPInvokeModules Include="libSystem.Native.Browser" Condition="'$(IsBrowserWasmProject)' == 'true'" />
+      <_WasmPInvokeModules Include="libSystem.Runtime.InteropServices.JavaScript.Native" Condition="'$(IsBrowserWasmProject)' == 'true'" />
     </ItemGroup>
 
     <PropertyGroup>

@@ -816,6 +816,54 @@ EventPipeEtwCallbackDotNETRuntimeStress (
 	RUNTIME_STRESS_PROVIDER_CONTEXT.IsEnabled = (is_enabled == 1 ? true : false);
 }
 
+#ifdef HOST_BROWSER
+
+extern void SystemJS_ScheduleDiagnosticServerJob (void);
+
+typedef struct {
+	ds_job_cb cb;
+	void* data;
+} DsJobRegistration;
+
+GSList *jobs_ds;
+
+void
+mono_schedule_ds_job (ds_job_cb cb, void* data)
+{
+	g_assert (cb);
+	DsJobRegistration* reg = g_new0 (DsJobRegistration, 1);
+	reg->cb = cb;
+	reg->data = data;
+	if (jobs_ds == NULL) {
+		SystemJS_ScheduleDiagnosticServerJob ();
+	}
+	jobs_ds = g_slist_prepend (jobs_ds, (gpointer)reg);
+}
+
+G_EXTERN_C
+void
+SystemJS_ExecuteDiagnosticServerCallback (void)
+{
+	MONO_ENTER_GC_UNSAFE;
+	GSList *j1 = jobs_ds, *cur1;
+	jobs_ds = NULL;
+
+	for (cur1 = j1; cur1; cur1 = cur1->next) {
+		DsJobRegistration* reg = (DsJobRegistration*)cur1->data;
+		g_assert (reg->cb);
+		gsize done = reg->cb (reg->data);
+		if (done){
+			g_free (reg);
+		} else {
+			jobs_ds = g_slist_prepend (jobs_ds, (gpointer)reg);
+		}
+	}
+	g_slist_free (j1);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+#endif /* HOST_BROWSER */
+
 #endif /* ENABLE_PERFTRACING */
 
 MONO_EMPTY_SOURCE_FILE(eventpipe_rt_mono);

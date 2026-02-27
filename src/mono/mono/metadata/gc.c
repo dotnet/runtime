@@ -668,7 +668,8 @@ mono_gc_finalize_notify (void)
 #if defined(HOST_WASI) && defined(DISABLE_THREADS)
 	mono_runtime_do_background_work ();
 #elif defined(HOST_WASM) && defined(DISABLE_THREADS)
-	SystemJS_ScheduleBackgroundJob (mono_runtime_do_background_work);
+	extern void SystemJS_ScheduleFinalization (void);
+	SystemJS_ScheduleFinalization ();
 #else
 	mono_coop_sem_post (&finalizer_sem);
 #endif

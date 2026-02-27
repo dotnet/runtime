@@ -35,9 +35,7 @@ export function SystemJS_ScheduleBackgroundJob(): void {
         return;
     }
     if (_ems_.DOTNET.lastScheduledThreadPoolId) {
-        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledThreadPoolId);
-        _ems_.runtimeKeepalivePop();
-        _ems_.DOTNET.lastScheduledThreadPoolId = undefined;
+        return;
     }
     _ems_.DOTNET.lastScheduledThreadPoolId = _ems_.safeSetTimeout(SystemJS_ScheduleBackgroundJobTick, 0);
 
@@ -61,9 +59,7 @@ export function SystemJS_ScheduleFinalization(): void {
         return;
     }
     if (_ems_.DOTNET.lastScheduledFinalizationId) {
-        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledFinalizationId);
-        _ems_.runtimeKeepalivePop();
-        _ems_.DOTNET.lastScheduledFinalizationId = undefined;
+        return;
     }
     _ems_.DOTNET.lastScheduledFinalizationId = _ems_.safeSetTimeout(SystemJS_ScheduleFinalizationTick, 0);
 

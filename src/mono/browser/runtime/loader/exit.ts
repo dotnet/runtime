@@ -39,8 +39,8 @@ export function uninstallUnhandledErrorHandler () {
     }
 }
 
-let originalOnAbort: ((reason: any, extraJson?:string)=>void)|undefined;
-let originalOnExit: ((code: number)=>void)|undefined;
+let originalOnAbort: ((reason: any, extraJson?: string) => void) | undefined;
+let originalOnExit: ((code: number) => void) | undefined;
 
 export function registerEmscriptenExitHandlers () {
     originalOnAbort = emscriptenModule.onAbort;
@@ -204,6 +204,9 @@ function set_exit_code_and_quit_now (exit_code: number, reason?: any): void {
 }
 
 async function flush_node_streams () {
+    if (!ENVIRONMENT_IS_NODE) {
+        return;
+    }
     try {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
@@ -317,7 +320,7 @@ function fatal_handler (event: any, reason: any, type: string) {
     }
 }
 
-function createExitStatus (status:number, message:string) {
+function createExitStatus (status: number, message: string) {
     const ex = new runtimeHelpers.ExitStatus(status);
     ex.message = message;
     ex.toString = () => message;

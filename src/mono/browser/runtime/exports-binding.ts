@@ -10,7 +10,7 @@ import { mono_interp_tier_prepare_jiterpreter, mono_wasm_free_method_data } from
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
 import { SystemInteropJS_ResolveOrRejectPromise } from "./marshal-to-js";
-import { SystemJS_ScheduleTimerImpl, SystemJS_ScheduleBackgroundJobImpl } from "./scheduling";
+import { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob, SystemJS_ScheduleFinalization, SystemJS_ScheduleDiagnosticServerJob } from "./scheduling";
 import { mono_wasm_asm_loaded, SystemJS_GetCurrentProcessId } from "./startup";
 import { mono_log_warn, SystemJS_ConsoleClear, mono_wasm_trace_logger } from "./logging";
 import { SystemJS_RandomBytes } from "./crypto";
@@ -27,6 +27,7 @@ import { SystemJS_GetLocaleInfo } from "./globalization-locale";
 
 import { mono_wasm_profiler_record, mono_wasm_profiler_now } from "./profiler";
 import { ds_rt_websocket_create, ds_rt_websocket_send, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_close } from "./diagnostics";
+import { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise } from "./run";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -51,17 +52,20 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
 ];
 
 export const mono_wasm_imports = [
-    // mini-wasm.c
-    SystemJS_ScheduleTimerImpl,
-
     // mini-wasm-debugger.c
     mono_wasm_asm_loaded,
     mono_wasm_debugger_log,
     mono_wasm_add_dbg_command_received,
     mono_wasm_fire_debugger_agent_message_with_data,
     mono_wasm_fire_debugger_agent_message_with_data_to_pause,
-    // mono-threads-wasm.c
-    SystemJS_ScheduleBackgroundJobImpl,
+
+    SystemJS_ScheduleBackgroundJob,
+    SystemJS_ScheduleDiagnosticServerJob,
+    SystemJS_ScheduleFinalization,
+    SystemJS_ScheduleTimer,
+
+    SystemJS_RejectMainPromise,
+    SystemJS_ResolveMainPromise,
 
     // interp.c and jiterpreter.c
     mono_interp_tier_prepare_jiterpreter,

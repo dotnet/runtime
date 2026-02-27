@@ -15,8 +15,8 @@ export function diagnosticServerEventLoop () {
     lastScheduledTimeoutId = undefined;
     if (loaderHelpers.is_runtime_running()) {
         try {
-            runtimeHelpers.mono_background_exec();// give GC chance to run
-            runtimeHelpers.mono_wasm_ds_exec();
+            // give GC chance to run
+            runtimeHelpers.runBackgroundTimers();
             scheduleDiagnosticServerEventLoop(100);
         } catch (ex) {
             loaderHelpers.mono_exit(1, ex);

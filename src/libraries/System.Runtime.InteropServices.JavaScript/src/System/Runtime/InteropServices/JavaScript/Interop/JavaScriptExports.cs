@@ -45,8 +45,27 @@ namespace System.Runtime.InteropServices.JavaScript
             // arg_2 set by JS caller when there are arguments
             // arg_3 set by JS caller when there are arguments
             // arg_4 set by JS caller when there are arguments
+#if !FEATURE_WASM_MANAGED_THREADS
             try
             {
+#else
+            // when we arrive here, we are on the thread which owns the proxies
+            var ctx = arg_exc.AssertCurrentThreadContext();
+
+            try
+            {
+                if (ctx.IsMainThread)
+                {
+                    if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.ThrowWhenBlockingWait)
+                    {
+                        Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+                    }
+                    else if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.WarnWhenBlockingWait)
+                    {
+                        Thread.WarnOnBlockingWaitOnJSInteropThread = true;
+                    }
+                }
+#endif
                 GCHandle callback_gc_handle = (GCHandle)arg1.slot.GCHandle;
                 if (callback_gc_handle.Target is JSHostImplementation.ToManagedCallback callback)
                 {
@@ -62,6 +81,22 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 argException.ToJS(ex);
             }
+#if FEATURE_WASM_MANAGED_THREADS
+            finally
+            {
+                if (ctx.IsMainThread)
+                {
+                    if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.ThrowWhenBlockingWait)
+                    {
+                        Thread.ThrowOnBlockingWaitOnJSInteropThread = false;
+                    }
+                    else if (JSProxyContext.ThreadBlockingMode == JSHostImplementation.JSThreadBlockingMode.WarnWhenBlockingWait)
+                    {
+                        Thread.WarnOnBlockingWaitOnJSInteropThread = false;
+                    }
+                }
+            }
+#endif
         }
 
         [UnmanagedCallersOnly(EntryPoint = "SystemInteropJS_CompleteTask")]
@@ -81,8 +116,31 @@ namespace System.Runtime.InteropServices.JavaScript
                 var holder = ctx.GetPromiseHolder(arg1.slot.GCHandle);
                 JSHostImplementation.ToManagedCallback callback;
 
+#if FEATURE_WASM_MANAGED_THREADS
+                lock (ctx)
+                {
+                    // this means that CompleteTask is called before the ToManaged(out Task? value)
+                    if (holder.Callback == null)
+                    {
+                        holder.CallbackReady = new ManualResetEventSlim(false);
+                    }
+                }
+
+                // it's also OK to block here, because we know we will only block shortly, as this is just race with the other thread.
+                if (holder.CallbackReady != null)
+                {
+                    Thread.ForceBlockingWait(static (b) => ((ManualResetEventSlim)b!).Wait(), holder.CallbackReady);
+                }
+
+                lock (ctx)
+                {
+                    callback = holder.Callback!;
+                    ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
+                }
+#else
                 callback = holder.Callback!;
                 ctx.ReleasePromiseHolder(arg1.slot.GCHandle);
+#endif
 
                 // arg_2, arg_3 are processed by the callback
                 // JSProxyContext.PopOperation() is called by the callback

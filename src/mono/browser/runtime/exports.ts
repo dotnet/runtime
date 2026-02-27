@@ -26,6 +26,7 @@ import { mono_wasm_dump_threads } from "./pthreads";
 
 import { threads_c_functions as tcwraps } from "./cwraps";
 import { utf8ToString } from "./strings";
+import { runBackgroundTimers } from "./scheduling";
 
 export let runtimeList: RuntimeList;
 
@@ -43,8 +44,7 @@ function initializeExports (globalObjects: GlobalObjects): RuntimeAPI {
         forceDisposeProxies,
         utf8ToString,
         SystemJS_GetCurrentProcessId,
-        mono_background_exec: () => tcwraps.mono_background_exec(),
-        mono_wasm_ds_exec: () => tcwraps.mono_wasm_ds_exec(),
+        runBackgroundTimers,
     };
     if (WasmEnableThreads) {
         rh.dumpThreads = mono_wasm_dump_threads;

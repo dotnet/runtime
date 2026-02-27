@@ -3,20 +3,16 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { GCHandle, GCHandleNull, JSMarshalerArguments, JSThreadBlockingMode, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod, PThreadPtr } from "./types/internal";
-import cwraps, { threads_c_functions as twraps } from "./cwraps";
+import { GCHandle, GCHandleNull, JSExportHandle, JSMarshalerArguments, JSThreadBlockingMode, MarshalerToCs, MarshalerToJs, MarshalerType } from "./types/internal";
+import cwraps from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
-import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_i32, set_arg_intptr, set_arg_type, set_gc_handle, set_receiver_should_free } from "./marshal";
-import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_bool_to_cs, marshal_exception_to_cs, marshal_intptr_to_cs, marshal_string_to_cs } from "./marshal-to-cs";
+import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_i32, set_arg_intptr, set_arg_type, set_gc_handle } from "./marshal";
+import { marshal_array_to_cs, marshal_exception_to_cs, marshal_string_to_cs } from "./marshal-to-cs";
 import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js, marshal_exception_to_js } from "./marshal-to-js";
-import { do_not_force_dispose, is_gcv_handle } from "./gc-handles";
 import { assert_c_interop, assert_js_interop } from "./invoke-js";
 import { monoThreadInfo, mono_wasm_main_thread_ptr } from "./pthreads";
-import { _zero_region, copyBytes, malloc } from "./memory";
-import { stringToUTF8Ptr } from "./strings";
+import { _zero_region } from "./memory";
 import { mono_log_error } from "./logging";
-
-const managedExports: ManagedExports = {} as any;
 
 export function init_managed_exports (): void {
     const exports_fqn_asm = "System.Runtime.InteropServices.JavaScript";
@@ -31,52 +27,6 @@ export function init_managed_exports (): void {
     runtimeHelpers.runtime_interop_exports_class = cwraps.mono_wasm_assembly_find_class(runtimeHelpers.runtime_interop_module, runtimeHelpers.runtime_interop_namespace, runtimeHelpers.runtime_interop_exports_classname);
     if (!runtimeHelpers.runtime_interop_exports_class)
         throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
-
-    managedExports.InstallMainSynchronizationContext = WasmEnableThreads ? get_method("InstallMainSynchronizationContext") : undefined;
-    managedExports.CallEntrypoint = get_method("CallEntrypoint");
-    managedExports.BindAssemblyExports = get_method("BindAssemblyExports");
-    managedExports.ReleaseJSOwnedObjectByGCHandle = get_method("ReleaseJSOwnedObjectByGCHandle");
-    managedExports.CompleteTask = get_method("CompleteTask");
-    managedExports.CallDelegate = get_method("CallDelegate");
-    managedExports.GetManagedStackTrace = get_method("GetManagedStackTrace");
-    managedExports.LoadSatelliteAssembly = get_method("LoadSatelliteAssembly");
-    managedExports.LoadLazyAssembly = get_method("LoadLazyAssembly");
-}
-
-// the marshaled signature is: Task<int>? CallEntrypoint(char* mainAssemblyName, string[] args)
-export function call_entry_point (main_assembly_name: string, program_args: string[] | undefined, waitForDebugger: boolean): Promise<number> {
-    loaderHelpers.assert_runtime_running();
-    const sp = Module.stackSave();
-    try {
-        const size = 5;
-        const args = alloc_stack_frame(size);
-        const res = get_arg(args, 1);
-        const arg1 = get_arg(args, 2);
-        const arg2 = get_arg(args, 3);
-        const arg3 = get_arg(args, 4);
-        const main_assembly_name_ptr = stringToUTF8Ptr(main_assembly_name);
-        marshal_intptr_to_cs(arg1, main_assembly_name_ptr);
-        marshal_array_to_cs_impl(arg2, program_args && !program_args.length ? undefined : program_args, MarshalerType.String);
-        marshal_bool_to_cs(arg3, waitForDebugger);
-
-        // because this is async, we could pre-allocate the promise
-        let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
-
-        invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.CallEntrypoint, args, size);
-
-        // in case the C# side returned synchronously
-        promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
-
-        if (promise === null || promise === undefined) {
-            promise = Promise.resolve(0);
-        }
-        (promise as any)[do_not_force_dispose] = true; // prevent disposing the task in forceDisposeProxies()
-
-        return promise;
-    } finally {
-        // synchronously
-        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
-    }
 }
 
 // the marshaled signature is: void LoadSatelliteAssembly(byte[] dll)
@@ -89,7 +39,7 @@ export function load_satellite_assembly (dll: Uint8Array): void {
         const arg1 = get_arg(args, 2);
         set_arg_type(arg1, MarshalerType.Array);
         marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
-        invoke_sync_jsexport(managedExports.LoadSatelliteAssembly, args);
+        invoke_jsexport_UCO(cwraps.SystemInteropJS_LoadSatelliteAssembly, args);
     } finally {
         if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
 
@@ -109,7 +59,7 @@ export function load_lazy_assembly (dll: Uint8Array, pdb: Uint8Array | null): vo
         set_arg_type(arg2, MarshalerType.Array);
         marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
         marshal_array_to_cs(arg2, pdb, MarshalerType.Byte);
-        invoke_sync_jsexport(managedExports.LoadLazyAssembly, args);
+        invoke_jsexport_UCO(cwraps.SystemInteropJS_LoadLazyAssembly, args);
     } finally {
         if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
 
@@ -127,13 +77,7 @@ export function release_js_owned_object_by_gc_handle (gc_handle: GCHandle) {
         const arg1 = get_arg(args, 2);
         set_arg_type(arg1, MarshalerType.Object);
         set_gc_handle(arg1, gc_handle);
-        if (!WasmEnableThreads || is_gcv_handle(gc_handle) || !monoThreadInfo.isUI) {
-            // this must stay synchronous for free_gcv_handle sake, to not use-after-free
-            // also on JSWebWorker, because the message could arrive after the worker is terminated and the GCHandle of JSProxyContext is already freed
-            invoke_sync_jsexport(managedExports.ReleaseJSOwnedObjectByGCHandle, args);
-        } else {
-            invoke_async_jsexport(runtimeHelpers.ioThreadTID, managedExports.ReleaseJSOwnedObjectByGCHandle, args, size);
-        }
+        invoke_jsexport_UCO(cwraps.SystemInteropJS_ReleaseJSOwnedObjectByGCHandle, args);
     } finally {
         if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
 
@@ -164,7 +108,7 @@ export function complete_task (holder_gc_handle: GCHandle, error?: any, data?: a
         if (error) {
             marshal_exception_to_cs(arg2, error);
         }
-        invoke_async_jsexport(runtimeHelpers.ioThreadTID, managedExports.CompleteTask, args, size);
+        invoke_jsexport_UCO(cwraps.SystemInteropJS_CompleteTask, args);
     } finally {
         if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
 
@@ -206,7 +150,7 @@ export function call_delegate (callback_gc_handle: GCHandle, arg1_js: any, arg2_
             arg3_converter(arg4, arg3_js);
         }
 
-        invoke_sync_jsexport(managedExports.CallDelegate, args);
+        invoke_jsexport_UCO(cwraps.SystemInteropJS_CallDelegate, args);
 
         if (res_converter) {
             const res = get_arg(args, 1);
@@ -230,7 +174,7 @@ export function get_managed_stack_trace (exception_gc_handle: GCHandle) {
         set_arg_type(arg1, MarshalerType.Exception);
         set_gc_handle(arg1, exception_gc_handle);
 
-        invoke_sync_jsexport(managedExports.GetManagedStackTrace, args);
+        invoke_jsexport_UCO(cwraps.SystemInteropJS_GetManagedStackTrace, args);
         const res = get_arg(args, 1);
         return marshal_string_to_js(res);
     } finally {
@@ -274,7 +218,7 @@ export function install_main_synchronization_context (jsThreadBlockingMode: JSTh
         }
 
         // this block is like invoke_sync_jsexport() but without assert_js_interop()
-        cwraps.mono_wasm_invoke_jsexport(managedExports.InstallMainSynchronizationContext!, args);
+        invoke_jsexport_UCO(cwraps.SystemInteropJS_InstallMainSynchronizationContext, args);
         if (is_args_exception(args)) {
             const exc = get_arg(args, 0);
             throw marshal_exception_to_js(exc);
@@ -286,42 +230,21 @@ export function install_main_synchronization_context (jsThreadBlockingMode: JSTh
     }
 }
 
-export function invoke_async_jsexport (managedTID: PThreadPtr, method: MonoMethod, args: JSMarshalerArguments, size: number): void {
+export function invoke_jsexport_UCO (method: (args: JSMarshalerArguments) => void, args: JSMarshalerArguments): void {
+    if (WasmEnableThreads) throw new Error("TODO-WASM: unification");
     assert_js_interop();
-    if (!WasmEnableThreads || runtimeHelpers.isManagedRunningOnCurrentThread) {
-        cwraps.mono_wasm_invoke_jsexport(method, args as any);
-        if (is_args_exception(args)) {
-            const exc = get_arg(args, 0);
-            throw marshal_exception_to_js(exc);
-        }
-    } else {
-        set_receiver_should_free(args);
-        const bytes = JavaScriptMarshalerArgSize * size;
-        const cpy = malloc(bytes) as any;
-        copyBytes(args as any, cpy, bytes);
-        twraps.mono_wasm_invoke_jsexport_async_post(managedTID, method, cpy);
+    method(args);
+    if (is_args_exception(args)) {
+        const exc = get_arg(args, 0);
+        throw marshal_exception_to_js(exc);
     }
 }
 
-export function invoke_sync_jsexport (method: MonoMethod, args: JSMarshalerArguments): void {
+export function invoke_jsexport_handle (method: JSExportHandle, args: JSMarshalerArguments): void {
+    if (WasmEnableThreads) throw new Error("TODO-WASM: unification");
     assert_js_interop();
-    if (!WasmEnableThreads) {
-        cwraps.mono_wasm_invoke_jsexport(method, args as any);
-    } else {
-        if (monoThreadInfo.isUI) {
-            if (runtimeHelpers.config.jsThreadBlockingMode == JSThreadBlockingMode.PreventSynchronousJSExport) {
-                throw new Error("Cannot call synchronous C# methods.");
-            } else if (runtimeHelpers.isPendingSynchronousCall) {
-                throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
-            }
-        }
-        if (runtimeHelpers.isManagedRunningOnCurrentThread) {
-            twraps.mono_wasm_invoke_jsexport_sync(method, args as any);
-        } else {
-            // this is blocking too
-            twraps.mono_wasm_invoke_jsexport_sync_send(runtimeHelpers.managedThreadTID, method, args as any);
-        }
-    }
+
+    cwraps.SystemInteropJS_CallJSExport(method, args);
 
     if (is_args_exception(args)) {
         const exc = get_arg(args, 0);
@@ -343,7 +266,7 @@ export function bind_assembly_exports (assemblyName: string): Promise<void> {
         // because this is async, we could pre-allocate the promise
         let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated);
 
-        invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.BindAssemblyExports, args, size);
+        invoke_jsexport_UCO(cwraps.SystemInteropJS_BindAssemblyExports, args);
 
         // in case the C# side returned synchronously
         promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
@@ -356,26 +279,4 @@ export function bind_assembly_exports (assemblyName: string): Promise<void> {
         // synchronously
         if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
     }
-}
-
-
-function get_method (method_name: string): MonoMethod {
-    // TODO https://github.com/dotnet/runtime/issues/98366
-    const res = cwraps.mono_wasm_assembly_find_method(runtimeHelpers.runtime_interop_exports_class, method_name, -1);
-    if (!res)
-        throw "Can't find method " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + "." + method_name;
-    return res;
-}
-
-type ManagedExports = {
-    InstallMainSynchronizationContext: MonoMethod | undefined,
-    entry_point: MonoMethod,
-    CallEntrypoint: MonoMethod,
-    BindAssemblyExports: MonoMethod,
-    ReleaseJSOwnedObjectByGCHandle: MonoMethod,
-    CompleteTask: MonoMethod,
-    CallDelegate: MonoMethod,
-    GetManagedStackTrace: MonoMethod,
-    LoadSatelliteAssembly: MonoMethod,
-    LoadLazyAssembly: MonoMethod,
 }

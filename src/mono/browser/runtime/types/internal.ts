@@ -31,6 +31,9 @@ export interface MonoType extends ManagedPointer {
 export interface MonoMethod extends ManagedPointer {
     __brand: "MonoMethod"
 }
+export interface JSExportHandle extends ManagedPointer {
+    __brand: "JSExportHandle"
+}
 export interface MonoArray extends MonoObject {
     __brand: "MonoArray"
 }
@@ -238,18 +241,17 @@ export type RuntimeHelpers = {
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
     mono_wasm_print_thread_dump: () => void,
+    runBackgroundTimers: () => void,
     utf8ToString: (ptr: CharPtr) => string,
-    mono_background_exec: () => void,
-    mono_wasm_ds_exec: () => void,
     SystemJS_GetCurrentProcessId: () => number,
 }
 
 export type DiagnosticHelpers = {
-    ds_rt_websocket_create:(urlPtr :CharPtr) => number,
-    ds_rt_websocket_send:(client_socket :number, buffer:VoidPtr, bytes_to_write:number) => number,
-    ds_rt_websocket_poll:(client_socket :number) => number,
-    ds_rt_websocket_recv:(client_socket :number, buffer:VoidPtr, bytes_to_read:number) => number,
-    ds_rt_websocket_close:(client_socket :number) => number,
+    ds_rt_websocket_create: (urlPtr: CharPtr) => number,
+    ds_rt_websocket_send: (client_socket: number, buffer: VoidPtr, bytes_to_write: number) => number,
+    ds_rt_websocket_poll: (client_socket: number) => number,
+    ds_rt_websocket_recv: (client_socket: number, buffer: VoidPtr, bytes_to_read: number) => number,
+    ds_rt_websocket_close: (client_socket: number) => number,
 }
 
 export type AOTProfilerOptions = {
