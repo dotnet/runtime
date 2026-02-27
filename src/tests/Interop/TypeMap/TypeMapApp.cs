@@ -16,6 +16,8 @@ using DupType_MapString = Lib.AliasedName;
 [assembly: TypeMapAssemblyTarget<MultipleTypeMapAssemblies>("TypeMapLib3")]
 [assembly: TypeMapAssemblyTarget<MultipleTypeMapAssemblies>("TypeMapLib4")]
 
+[assembly: TypeMapAssemblyTarget<DuplicateTypeMapEntriesAcrossAssemblies>("TypeMapLib3")]
+
 [assembly: TypeMapAssemblyTarget<UnknownAssemblyReference>("DoesNotExist")]
 
 [assembly: TypeMap<TypicalUseCase>("1", typeof(C1))]
@@ -63,6 +65,9 @@ using DupType_MapString = Lib.AliasedName;
 
 [assembly: TypeMap<DuplicateTypeNameKey>("1", typeof(object))]
 [assembly: TypeMap<DuplicateTypeNameKey>("1", typeof(object))]
+
+[assembly: TypeMap<DuplicateTypeMapEntriesAcrossAssemblies>("1", typeof(object))]
+
 
 [assembly: TypeMapAssociation<DuplicateTypeNameKey>(typeof(DupType_MapObject), typeof(object))]
 [assembly: TypeMapAssociation<DuplicateTypeNameKey>(typeof(DupType_MapString), typeof(string))]
@@ -184,6 +189,8 @@ public class TypeMap
         Console.WriteLine(nameof(Validate_ExternalTypeMapping_DuplicateTypeKey));
 
         AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeNameKey>());
+
+        AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeMapEntriesAcrossAssemblies>());
     }
 
     [Fact]
