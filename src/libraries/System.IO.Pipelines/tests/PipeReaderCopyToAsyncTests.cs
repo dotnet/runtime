@@ -355,6 +355,7 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(buffer.Length, pipeResult.Buffer.Length);
             Assert.Equal("Hello World", Encoding.ASCII.GetString(pipeResult.Buffer.ToArray()));
             pipe.Reader.AdvanceTo(pipeResult.Buffer.End);
+            pipe.Reader.Complete();
 
             // Verify the reader state is clean - no buffered data should remain
             readResult = await PipeReader.ReadAsync();
