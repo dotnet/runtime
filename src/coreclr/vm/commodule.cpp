@@ -768,6 +768,7 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
         // Assign the return value to the CLR array
         retTypes.Set(gc.refArrClasses);
     }
+
     GCPROTECT_END();
 
     END_QCALL;
