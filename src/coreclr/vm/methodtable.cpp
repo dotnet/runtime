@@ -7792,12 +7792,8 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         {
             if (IsArray())
             {
-                // This is kind of a workaround, in that ArrayClass is derived from EEClass, but
-                // it's not virtual, we only cast if the IsArray() predicate holds above.
-                // For minidumps, DAC will choke if we don't have the full size given
-                // by ArrayClass available. If ArrayClass becomes more complex, it
-                // should get it's own EnumMemoryRegions().
-                DacEnumMemoryRegion(dac_cast<TADDR>(pClass), sizeof(ArrayClass));
+                // Array MethodTables use EEClass directly (no extra fields).
+                DacEnumMemoryRegion(dac_cast<TADDR>(pClass), sizeof(EEClass));
             }
             pClass->EnumMemoryRegions(flags, this);
         }

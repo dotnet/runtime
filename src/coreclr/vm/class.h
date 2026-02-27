@@ -61,7 +61,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
  *  Forward declarations
  */
 class   AppDomain;
-class   ArrayClass;
 class   ArrayMethodDesc;
 class   Assembly;
 class   ClassLoader;
@@ -726,6 +725,7 @@ class EEClass // DO NOT CREATE A NEW EEClass USING NEW!
     friend class FieldDesc;
     friend class CheckAsmOffsets;
     friend class ClrDataAccess;
+    friend MethodTable* Module::CreateArrayMethodTable(TypeHandle, CorElementType, unsigned, AllocMemTracker*);
 
     /************************************
      *  PUBLIC INSTANCE METHODS
@@ -1913,64 +1913,9 @@ public:
 };
 
 
-typedef DPTR(ArrayClass) PTR_ArrayClass;
 
-
-// Dynamically generated array class structure
-class ArrayClass : public EEClass
-{
-    friend MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementType arrayKind, unsigned Rank, AllocMemTracker *pamTracker);
-
-#ifndef DACCESS_COMPILE
-    ArrayClass() { LIMITED_METHOD_CONTRACT; }
-#else
-    friend class NativeImageDumper;
-#endif
-
-private:
-
-    DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
-    unsigned char   m_rank;
-
-public:
-    DWORD GetRank() {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return m_rank;
-    }
-    void SetRank (unsigned Rank) {
-        LIMITED_METHOD_CONTRACT;
-        // The only code path calling this function is code:ClassLoader::CreateTypeHandleForTypeKey, which has
-        // checked the rank already.  Assert that the rank is less than MAX_RANK and that it fits in one byte.
-        _ASSERTE((Rank <= MAX_RANK) && (Rank <= (unsigned char)(-1)));
-        m_rank = (unsigned char)Rank;
-    }
-
-    // Allocate a new MethodDesc for the methods we add to this class
-    void InitArrayMethodDesc(
-        ArrayMethodDesc* pNewMD,
-        PCCOR_SIGNATURE pShortSig,
-        DWORD   cShortSig,
-        DWORD   dwVtableSlot,
-        AllocMemTracker *pamTracker);
-
-    // Generate a short sig for an array accessor
-    VOID GenerateArrayAccessorCallSig(DWORD   dwRank,
-                                      DWORD   dwFuncType, // Load, store, or <init>
-                                      PCCOR_SIGNATURE *ppSig, // Generated signature
-                                      DWORD * pcSig,      // Generated signature size
-                                      LoaderAllocator *pLoaderAllocator,
-                                      AllocMemTracker *pamTracker,
-                                      BOOL fForStubAsIL
-    );
-
-    friend struct ::cdac_data<ArrayClass>;
-};
-
-template<> struct cdac_data<ArrayClass>
-{
-    static constexpr size_t Rank = offsetof(ArrayClass, m_rank);
-};
+// Dynamically generated array class structure - no additional fields beyond EEClass
+typedef DPTR(EEClass) PTR_ArrayClass;
 
 inline EEClassLayoutInfo *EEClass::GetLayoutInfo()
 {

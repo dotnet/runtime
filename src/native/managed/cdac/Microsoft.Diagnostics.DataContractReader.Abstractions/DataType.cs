@@ -51,7 +51,6 @@ public enum DataType
     DynamicStaticsInfo,
     EEClass,
     CoreLibBinder,
-    ArrayClass,
     MethodTableAuxiliaryData,
     GenericsDictInfo,
     TypeDesc,

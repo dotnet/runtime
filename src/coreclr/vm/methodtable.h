@@ -32,7 +32,6 @@
  * Forward Declarations
  */
 class    AppDomain;
-class    ArrayClass;
 class    ArrayMethodDesc;
 class ClassLoader;
 class FCallMethodDesc;
