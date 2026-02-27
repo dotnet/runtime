@@ -19,11 +19,18 @@ When starting call counting for a method (see CallCountingManager::SetCodeEntryP
 - A CallCountingStub is created. It contains a small amount of code that decrements the remaining call count and checks for
   zero. When nonzero, it jumps to the code version's native code entry point. When zero, it forwards to a helper function that
   handles tier promotion.
-- For tiered methods that don't have a precode (virtual and interface methods when slot backpatching is enabled), a forwarder
-  stub (a precode) is created and it forwards to the call counting stub. This is so that the call counting stub can be safely
-  and easily deleted. The forwarder stubs are only used when counting calls, there is one per method (not per code version), and
-  they are not deleted.
-- The method's code entry point is set to the forwarder stub or the call counting stub to count calls to the code version
+- For tiered methods that do not normally use a MethodDesc precode as the stable entry point (virtual and interface methods
+  when slot backpatching is enabled), the method's own temporary-entrypoint precode is redirected to the call counting stub,
+  and vtable slots are reset to point to the temporary entry point. This ensures calls flow through temporary-entrypoint
+  precode -> call counting stub -> native code, and the call counting stub can be safely deleted since vtable slots don't
+  point to it directly. GetMethodEntryPoint() is kept at the native code entry point (not the temporary entry point) so that
+  DoBackpatch() can still record new vtable slots after the precode reverts to prestub. During call counting, there is a
+  bounded window where new vtable slots may not be recorded because the precode target is the call counting stub rather than
+  the prestub. These slots are corrected once call counting stubs are deleted and the precode reverts to prestub.
+  When call counting ends, the precode is always reset to prestub (never to native code), preserving the invariant
+  that new vtable slots can be discovered and recorded by DoBackpatch().
+- For methods with a precode (or when slot backpatching is disabled), the method's code entry point is set to the call
+  counting stub directly.
 
 When the call count threshold is reached (see CallCountingManager::OnCallCountThresholdReached):
 - The helper call enqueues completion of call counting for background processing
@@ -36,8 +43,6 @@ After all work queued for promotion is completed and methods transitioned to opt
 - All call counting stubs are deleted. For code versions that have not completed counting, the method's code entry point is
   reset such that call counting would be reestablished on the next call.
 - Completed call counting infos are deleted
-- For methods that no longer have any code versions that need to be counted, the forwarder stubs are no longer tracked. If a
-  new IL code version is added thereafter (perhaps by a profiler), a new forwarder stub may be created.
 
 Miscellaneous
 -------------
@@ -287,27 +292,6 @@ private:
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // CallCountingManager::MethodDescForwarderStub
-
-private:
-    class MethodDescForwarderStubHashTraits : public DefaultSHashTraits<Precode *>
-    {
-    private:
-        typedef DefaultSHashTraits<Precode *> Base;
-    public:
-        typedef Base::element_t element_t;
-        typedef Base::count_t count_t;
-        typedef MethodDesc *key_t;
-
-    public:
-        static key_t GetKey(const element_t &e);
-        static BOOL Equals(const key_t &k1, const key_t &k2);
-        static count_t Hash(const key_t &k);
-    };
-
-    typedef SHash<MethodDescForwarderStubHashTraits> MethodDescForwarderStubHash;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // CallCountingManager::CallCountingManagerHashTraits
 
 private:
@@ -341,7 +325,6 @@ private:
 private:
     CallCountingInfoByCodeVersionHash m_callCountingInfoByCodeVersionHash;
     CallCountingStubAllocator m_callCountingStubAllocator;
-    MethodDescForwarderStubHash m_methodDescForwarderStubHash;
     SArray<CallCountingInfo *> m_callCountingInfosPendingCompletion;
 
 public:

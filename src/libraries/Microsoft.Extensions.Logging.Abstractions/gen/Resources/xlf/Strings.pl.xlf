@@ -47,9 +47,9 @@
         <target state="translated">Metody rejestrowania nie mogą mieć treści</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">Metody rejestrowania nie mogą być ogólne</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="needs-translation">Metody rejestrowania nie mogą być ogólne</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
@@ -200,6 +200,26 @@
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
         <target state="translated">Szablon rejestrowania nie ma odpowiadającego mu argumentu metody</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
+        <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported params or scoped parameter modifier</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
+        <source>Argument is using the unsupported params or scoped parameter modifier</source>
+        <target state="new">Argument is using the unsupported params or scoped parameter modifier</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
+        <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
+        <target state="new">Parameter '{0}' is a ref struct, which is not supported by the logging source generator</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
+        <source>Logging method parameter is a ref struct</source>
+        <target state="new">Logging method parameter is a ref struct</target>
         <note />
       </trans-unit>
     </body>

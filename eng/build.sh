@@ -278,6 +278,8 @@ while [[ $# -gt 0 ]]; do
           os="linux" ;;
         freebsd)
           os="freebsd" ;;
+        openbsd)
+          os="openbsd" ;;
         osx)
           os="osx" ;;
         maccatalyst)

@@ -153,7 +153,7 @@ PTR_Bucket HashMap::Buckets()
     LIMITED_METHOD_DAC_CONTRACT;
 
 #if !defined(DACCESS_COMPILE)
-    _ASSERTE (!m_fAsyncMode || g_HashMapEbr.InCriticalRegion());
+    _ASSERTE (!m_fAsyncMode || g_EbrCollector.InCriticalRegion());
 #endif
     return GetBucketPointer(m_rgBuckets);
 }
@@ -503,7 +503,7 @@ void HashMap::InsertValue (UPTR key, UPTR value)
 
     // Enter EBR critical region to protect against concurrent bucket array
     // deletion during async mode.
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
 
@@ -567,7 +567,7 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
 #ifndef DACCESS_COMPILE
     _ASSERTE (m_fAsyncMode || OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
     // This is necessary in case some other thread
@@ -639,7 +639,7 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
 
     _ASSERTE(OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     ASSERT(m_rgBuckets != NULL);
     // This is necessary in case some other thread
@@ -712,7 +712,7 @@ UPTR HashMap::DeleteValue (UPTR key, UPTR value)
 
     _ASSERTE (OwnLock());
 
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     // check proper use in synchronous mode
     SyncAccessHolder holoder(this);  //no-op in non DEBUG code
@@ -883,9 +883,9 @@ void HashMap::Rehash()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FAULT;
 
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
-    _ASSERTE (!m_fAsyncMode || g_HashMapEbr.InCriticalRegion());
+    _ASSERTE (!m_fAsyncMode || g_EbrCollector.InCriticalRegion());
     _ASSERTE (OwnLock());
 
     UPTR newPrimeIndex = NewSize();
@@ -943,7 +943,7 @@ LDone:
         // all threads have exited their critical regions or later.
         // If we fail to queue for deletion, throw an OOM.
         size_t obsoleteSize = currentBucketsSize;
-        if (!g_HashMapEbr.QueueForDeletion(
+        if (!g_EbrCollector.QueueForDeletion(
             pObsoleteBucketsAlloc,
             DeleteObsoleteBuckets,
             (obsoleteSize + 1) * sizeof(Bucket))) // See AllocateBuckets for +1
@@ -1036,7 +1036,7 @@ void HashMap::Compact()
     _ASSERTE (OwnLock());
 
     //
-    EbrCriticalRegionHolder ebrHolder(&g_HashMapEbr, m_fAsyncMode);
+    EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
     ASSERT(m_rgBuckets != NULL);
 
     // Try to resize if that makes sense (reduce the size of the table), but

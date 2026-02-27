@@ -44,8 +44,10 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IDebugInfo)] = new DebugInfoFactory(),
             [typeof(ISHash)] = new SHashFactory(),
             [typeof(IGC)] = new GCFactory(),
+            [typeof(IGCInfo)] = new GCInfoFactory(),
             [typeof(INotifications)] = new NotificationsFactory(),
             [typeof(ISignatureDecoder)] = new SignatureDecoderFactory(),
+            [typeof(IBuiltInCOM)] = new BuiltInCOMFactory(),
         };
 
         foreach (IContractFactory<IContract> factory in additionalFactories)
