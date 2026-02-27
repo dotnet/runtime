@@ -581,7 +581,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 // reference for s.
 
                 // This can also happen for a deconstruction assignments, where the write is not to a byref.
-                // Once the analyzer implements support for deconstruction assignments (https://github.com/dotnet/linker/issues/3158),
+                // Once the analyzer implements support for deconstruction assignments (https://github.com/dotnet/runtime/issues/123767),
                 // we can try enabling this assert to ensure that this case is only hit for byrefs.
                 // Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference),
                 //     $"{operation.Syntax.GetLocation().GetLineSpan()}");
@@ -704,7 +704,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             {
                 // Property references may be passed as ref/out parameters.
                 // Enable this assert once we have support for deconstruction assignments.
-                // https://github.com/dotnet/linker/issues/3158
+                // https://github.com/dotnet/runtime/issues/123767
                 // Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference),
                 //   $"{operation.Syntax.GetLocation().GetLineSpan()}");
                 return TopValue;
@@ -747,7 +747,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             if (operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Write))
             {
                 // Implicit indexer references may be passed as ref/out parameters.
-                Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference));
+                // Enable this assert once we have support for deconstruction assignments.
+                // https://github.com/dotnet/runtime/issues/123767
+                // Debug.Assert(operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Reference));
                 return TopValue;
             }
 
