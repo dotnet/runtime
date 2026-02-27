@@ -525,14 +525,15 @@ void Lowering::AfterLowerBlock()
                     // being
                     //  implicitly pseudo-contained.
                     // TODO-WASM: Verify that it is actually safe to do this for all contained nodes.
-                    if (
-                        m_lower->IsInvariantInRange(node, prev->gtNext) ||
-                        node->isContained() ||
+                    if (node->IsInvariant() || node->isContained() ||
                         (node->OperIs(GT_LCL_VAR) &&
                          !m_lower->m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed()))
                     {
                         JITDUMP("Stackifier moving node [%06u] after [%06u]\n", Compiler::dspTreeID(node),
                                 Compiler::dspTreeID(prev));
+#if DEBUG
+                        assert(m_lower->IsInvariantInRange(node, prev->gtNext));
+#endif
                         m_lower->BlockRange().Remove(node);
                         m_lower->BlockRange().InsertAfter(prev, node);
                         break;
