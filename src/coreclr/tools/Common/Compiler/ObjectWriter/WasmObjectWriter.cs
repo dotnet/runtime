@@ -55,6 +55,20 @@ namespace ILCompiler.ObjectWriter
         private int _signatureCount = 0;
         private int _methodCount = 0;
 
+        private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
+        private protected override void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
+        {
+            if (classCode is SortableDependencyNode.ObjectNodeOrder.Win32ResourcesNode
+                or SortableDependencyNode.ObjectNodeOrder.CorHeaderNode
+                or SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode
+                or SortableDependencyNode.ObjectNodeOrder.RuntimeFunctionsTableNode)
+            {
+                // These nodes represent directories in the PE header.
+                // We need to know what symbol name they have so we know where they are located during emit.
+                _wellKnownSymbols.Add(classCode, currentSymbolName);
+            }
+        }
+
         private protected override void RecordMethodSignature(ISymbolDefinitionNode symbol, MethodDesc desc)
         {
             // Ensure the signature is recorded with a unique index if we haven't seen an equivalent one yet.
@@ -199,6 +213,7 @@ namespace ILCompiler.ObjectWriter
             List<WasmDataSegment> segments = new();
             foreach (WasmSection wasmSection in dataSections)
             {
+                Console.WriteLine($"Emitting: {wasmSection.Name}");
                 Debug.Assert(wasmSection.Type == WasmSectionType.Data);
                 WasmDataSegment segment = new WasmDataSegment(wasmSection.Stream, wasmSection.Name, WasmDataSectionType.Active,
                     GetR2RStartOffset(offset));
@@ -207,6 +222,58 @@ namespace ILCompiler.ObjectWriter
             }
 
             return new WasmDataSection(segments, new Utf8String(WasmObjectNodeSection.CombinedDataSection.Name));
+        }
+
+        private class WebcilSegment
+        {
+            public WebcilHeader header;
+            public WebcilSection[] Sections;
+            public WebcilSegment(WebcilHeader header, WebcilSection[] sections)
+            {
+                this.header = header;
+                this.Sections = sections;
+            }
+        }
+
+        const int WebcilSectionAlignment = 4;
+        private WebcilSegment BuildWebcilDataSegment()
+        {
+            IEnumerable<WasmSection> dataSections = _sections.Where(s => s is not WasmDataSection && s.Type == WasmSectionType.Data);
+            uint sizeOfHeaders = (uint)WebcilHeader.EncodeSize();
+
+            uint pointerToRawData = sizeOfHeaders;
+            // For now this is a no-op since sizeOfHeaders is already aligned to WebcilSectionAlignment,
+            // but we ensure alignment for correctness.
+            uint virtualAddress = (uint)AlignmentHelper.AlignUp((int)sizeOfHeaders, (int)WebcilSectionAlignment);
+
+            List<WebcilSection> webcilSections = new();
+            foreach (WasmSection wasmSection in dataSections)
+            {
+                uint rawSectionSize = (uint)wasmSection.Stream.Length;
+                WebcilSectionHeader sectionHeader = new WebcilSectionHeader
+                {
+                    VirtualAddress = virtualAddress,
+                    SizeOfRawData = rawSectionSize,
+                    PointerToRawData = pointerToRawData
+                };
+
+                pointerToRawData += rawSectionSize;
+                virtualAddress += (uint)AlignmentHelper.AlignUp((int)rawSectionSize, (int)WebcilSectionAlignment);
+                webcilSections.Add(new WebcilSection(wasmSection.Name, sectionHeader, wasmSection.Stream));
+            }
+
+            WebcilHeader header = new WebcilHeader
+            {
+                Id = 0x4c496257, // 'WbCIL' (Binary Intermediate Language)
+                VersionMajor = 1,
+                VersionMinor = 0,
+                CoffSections = (ushort)webcilSections.Count,
+                PeCliHeaderRva = 0,
+                PeCliHeaderSize = 0,
+                PeDebugRva = 0,
+                PeDebugSize = 0
+            };
+            return new WebcilSegment(header, webcilSections.ToArray());
         }
 
         private protected override ObjectNodeSection GetEmitSection(ObjectNodeSection section)
@@ -268,6 +335,15 @@ namespace ILCompiler.ObjectWriter
         private protected override void EmitSectionsAndLayout()
         {
             GetOrCreateSection(WasmObjectNodeSection.CombinedDataSection);
+            WebcilSegment segment = BuildWebcilDataSegment();
+            foreach (var section in segment.Sections)
+            {
+                Console.WriteLine("Section: " + section.Name);
+                Console.WriteLine($"Raw Data Size: {section.Header.SizeOfRawData}");
+                Console.WriteLine($"Virtual Address: {section.Header.VirtualAddress}");
+                Console.WriteLine($"Raw address: {section.Header.PointerToRawData}");
+            }
+
             WriteTableSection();
         }
 
@@ -371,6 +447,12 @@ namespace ILCompiler.ObjectWriter
         {
             WriteImports();
             WriteExports();
+
+            Console.WriteLine("Defined symbols:");
+            foreach (var key in definedSymbols)
+            {
+                Console.WriteLine($"{key.Key}: {key.Value}");
+            }
 
             int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
             PrependCount(_sections[funcIdx], _methodCount);

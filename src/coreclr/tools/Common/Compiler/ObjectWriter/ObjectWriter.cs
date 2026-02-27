@@ -178,12 +178,6 @@ namespace ILCompiler.ObjectWriter
             Utf8String symbolName,
             long addend)
         {
-            if (_nodeFactory.Target.IsWasm)
-            {
-                // TODO-WASM: Implement or resolve relocations
-                return;
-            }
-
             if (!UsesSubsectionsViaSymbols &&
                 relocType is IMAGE_REL_BASED_REL32 or IMAGE_REL_BASED_RELPTR32 or IMAGE_REL_BASED_ARM64_BRANCH26
                 or IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL &&
@@ -228,6 +222,7 @@ namespace ILCompiler.ObjectWriter
                     }
                     else
                     {
+                        Console.WriteLine($"Resolving reloc: {addend} + {definedSymbol.Value} (symbol {symbolName}) at offset {offset} in section {sectionIndex}");
                         Relocation.WriteValue(relocType, (void*)pData, adjustedAddend);
                     }
                 }
@@ -237,11 +232,14 @@ namespace ILCompiler.ObjectWriter
             {
                 fixed (byte* pData = data)
                 {
+
+                    Console.WriteLine($"Resolving reloc: {addend} + {definedSymbol.Value} (symbol {symbolName}) at offset {offset} in section {sectionIndex}"); 
                     Relocation.WriteValue(relocType, (void*)pData, definedSymbol.Size);
                 }
             }
             else
             {
+                Console.WriteLine($"Emitting relocation for future resolution: {symbolName}, {relocType} at offset {offset} in section {sectionIndex}");
                 EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
             }
         }
