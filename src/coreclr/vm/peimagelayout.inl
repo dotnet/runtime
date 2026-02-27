@@ -662,7 +662,7 @@ inline PTR_VOID PEImageLayout::GetExport(LPCSTR exportName) const
 inline DWORD PEImageLayout::GetCorHeaderFlags() const
 {
     WRAPPER_NO_CONTRACT;
-    return GetCorHeader()->Flags;
+    return VAL32(GetCorHeader()->Flags);
 }
 
 #undef DECODER_DISPATCH
