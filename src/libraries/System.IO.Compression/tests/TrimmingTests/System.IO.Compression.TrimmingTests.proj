@@ -6,7 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TestConsoleAppSourceFiles Include="ZstandardStreamTrimmedTest.cs" />
+    <TestConsoleAppSourceFiles Include="ZstandardStreamDisabledTrimmedTest.cs">
+      <DisabledFeatureSwitches>System.IO.Compression.ZipArchive.AllowZstandard</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

@@ -918,7 +918,7 @@ namespace System.IO.Compression.Tests
             await DisposeZipArchive(async, readArchive);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(Get_Booleans_Data))]
         public static async Task ZStandard_ReadEntryData_Succeeds(bool async)
         {
@@ -931,7 +931,42 @@ namespace System.IO.Compression.Tests
             await stream.CopyToAsync(result);
             await DisposeStream(async, stream);
 
-            Assert.Equal("Hello, ZStandard World!", System.Text.Encoding.UTF8.GetString(result.ToArray()));
+            Assert.Equal("Hello, ZStandard World!", Encoding.UTF8.GetString(result.ToArray()));
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ZStandard_UpdateEntry_PreservesCompressionMethod(bool async)
+        {
+            string updatedContent = "Updated ZStandard content!";
+
+            using var archiveStream = new MemoryStream();
+            archiveStream.Write(s_zstandardZipBytes);
+            archiveStream.Position = 0;
+
+            ZipArchive updateArchive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entry = updateArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.ZStandard, entry.CompressionMethod);
+
+            Stream writeStream = await OpenEntryStream(async, entry);
+            writeStream.SetLength(0);
+            byte[] contentBytes = Encoding.UTF8.GetBytes(updatedContent);
+            await writeStream.WriteAsync(contentBytes);
+            await DisposeStream(async, writeStream);
+            await DisposeZipArchive(async, updateArchive);
+
+            archiveStream.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.ZStandard, readEntry.CompressionMethod);
+
+            Stream readStream = await OpenEntryStream(async, readEntry);
+            using var result = new MemoryStream();
+            await readStream.CopyToAsync(result);
+            await DisposeStream(async, readStream);
+
+            Assert.Equal(updatedContent, Encoding.UTF8.GetString(result.ToArray()));
             await DisposeZipArchive(async, readArchive);
         }
 
