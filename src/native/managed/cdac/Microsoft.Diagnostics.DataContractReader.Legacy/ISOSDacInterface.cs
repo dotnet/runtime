@@ -108,6 +108,12 @@ public struct DacpThreadData
     public ClrDataAddress nextThread;
 }
 
+public struct DacpAllocData
+{
+    public ClrDataAddress allocBytes;
+    public ClrDataAddress allocBytesLoh;
+}
+
 public struct DacpModuleData
 {
     public enum TransientFlags : uint
@@ -395,6 +401,26 @@ public unsafe partial interface ISOSEnum
     int GetCount(uint* pCount);
 }
 
+public enum JitTypes
+{
+    TYPE_UNKNOWN = 0,
+    TYPE_JIT,
+    TYPE_PJIT,
+    TYPE_INTERPRETER
+}
+
+public struct DacpCodeHeaderData
+{
+    public ClrDataAddress GCInfo;
+    public JitTypes JITType;
+    public ClrDataAddress MethodDescPtr;
+    public ClrDataAddress MethodStart;
+    public uint MethodSize;
+    public ClrDataAddress ColdRegionStart;
+    public uint ColdRegionSize;
+    public uint HotRegionSize;
+}
+
 public struct DacpFieldDescData
 {
     public CorElementType Type;
@@ -410,6 +436,26 @@ public struct DacpFieldDescData
     public int bIsStatic;
     public ClrDataAddress NextField;
 };
+
+public struct SOSHandleData
+{
+    public ClrDataAddress AppDomain;
+    public ClrDataAddress Handle;
+    public ClrDataAddress Secondary;
+    public uint Type;
+    public int StrongReference; // BOOL
+    public uint RefCount;
+    public uint JupiterRefCount;
+    public int IsPegged; // BOOL
+}
+
+[GeneratedComInterface]
+[Guid("3E269830-4A2B-4301-8EE2-D6805B29B2FA")]
+public unsafe partial interface ISOSHandleEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSHandleData[] handles, uint* pNeeded);
+}
 
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
@@ -478,7 +524,7 @@ public unsafe partial interface ISOSDacInterface
 
     // JIT Data
     [PreserveSig]
-    int GetCodeHeaderData(ClrDataAddress ip, /*struct DacpCodeHeaderData*/ void* data);
+    int GetCodeHeaderData(ClrDataAddress ip, DacpCodeHeaderData* data);
     [PreserveSig]
     int GetJitManagerList(uint count, /*struct DacpJitManagerInfo*/ void* managers, uint* pNeeded);
     [PreserveSig]
@@ -572,9 +618,9 @@ public unsafe partial interface ISOSDacInterface
 
     // Handles
     [PreserveSig]
-    int GetHandleEnum(/*ISOSHandleEnum*/ void** ppHandleEnum);
+    int GetHandleEnum(out ISOSHandleEnum? ppHandleEnum);
     [PreserveSig]
-    int GetHandleEnumForTypes([In, MarshalUsing(CountElementName = nameof(count))] uint[] types, uint count, /*ISOSHandleEnum*/ void** ppHandleEnum);
+    int GetHandleEnumForTypes([In, MarshalUsing(CountElementName = nameof(count))] uint[] types, uint count, out ISOSHandleEnum? ppHandleEnum);
     [PreserveSig]
     int GetHandleEnumForGC(uint gen, /*ISOSHandleEnum*/ void** ppHandleEnum);
 
@@ -629,7 +675,7 @@ public unsafe partial interface ISOSDacInterface
     int GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded);
 
     [PreserveSig]
-    int GetThreadAllocData(ClrDataAddress thread, /*struct DacpAllocData */ void* data);
+    int GetThreadAllocData(ClrDataAddress thread, DacpAllocData* data);
     [PreserveSig]
     int GetHeapAllocData(uint count, /*struct DacpGenerationAllocData */ void* data, uint* pNeeded);
 

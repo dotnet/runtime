@@ -141,7 +141,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             ValidateZeroLengthContent(encodedMessage);
         }
 
-        [ConditionalFact(nameof(SupportsRc4))]
+        [ConditionalFact(typeof(EdgeCasesTests), nameof(SupportsRc4))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Rc4AndCngWrappersDontMixTest()
         {

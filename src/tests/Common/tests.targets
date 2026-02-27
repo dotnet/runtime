@@ -47,11 +47,10 @@
 
   <Target Name="RunSingleMergedTest">
     <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(OS)' != 'Windows_NT'" />
-    <Exec Command="$(TestWrapperScript) &gt;$(RedirectOutputToFile) 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" IgnoreExitCode="true">
+    <Exec Command="$(TestWrapperScript) &gt; $(RedirectOutputToFile) 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" ContinueOnError="ErrorAndContinue">
       <Output TaskParameter="ExitCode" PropertyName="MergedTestExitCode" />
     </Exec>
     <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" Condition="'$(MergedTestExitCode)' == '0'" />
-    <Message Importance="High" Text="Error running test group '$(TestWrapperScript)' - exit code $(MergedTestExitCode)" Condition="'$(MergedTestExitCode)' != '0'" />
   </Target>
 
   <Target Name="RunMergedTests" DependsOnTargets="PrepareTestsToRun">
@@ -72,7 +71,7 @@
 
     <Exec Command="chmod +x $(StandaloneRunnerScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(OS)' != 'Windows_NT'" />
 
-    <Exec Command="$(StandaloneRunnerScript) -usewatcher &gt;$(StandaloneRunnerScript).log 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" IgnoreExitCode="true">
+    <Exec Command="$(StandaloneRunnerScript) -usewatcher &gt; $(StandaloneRunnerScript).log 2&gt;&amp;1" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" ContinueOnError="ErrorAndContinue">
       <Output TaskParameter="ExitCode" PropertyName="StandaloneRunnerExitCode" />
     </Exec>
 

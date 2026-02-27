@@ -849,6 +849,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
                 yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.None, 0, input.Length, false, "");
             }
+            // Alternation prefix extraction with IgnoreCase: correctness after single-node branch handling
+            yield return (@"(?:http|https)://foo", "HTTP://FOO", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 10, true, "HTTP://FOO");
+            yield return (@"(?:http|https)://foo", "HTTPS://FOO", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 11, true, "HTTPS://FOO");
+            yield return (@"(?:http|https)://foo", "ftp://foo", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, false, "");
+
             yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
             yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
 
@@ -2328,7 +2333,7 @@ namespace System.Text.RegularExpressions.Tests
 
         private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
 
-        [ConditionalTheory(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
+        [ConditionalTheory(typeof(RegexMatchTests), nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", ~RuntimeConfiguration.Release)]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeTestModes.JitMinOpts)]

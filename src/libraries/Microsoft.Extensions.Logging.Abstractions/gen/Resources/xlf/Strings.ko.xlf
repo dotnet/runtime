@@ -47,9 +47,9 @@
         <target state="translated">로깅 메서드에는 본문을 사용할 수 없음</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">로깅 메서드는 제네릭일 수 없음</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
@@ -200,6 +200,26 @@
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
         <target state="translated">로깅 템플릿에 해당 하는 메서드 인수가 없음</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
+        <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
+        <target state="translated">인수 '{0}'이(가) 지원되지 않는 매개 변수 또는 범위 지정 한정자를 사용하고 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
+        <source>Argument is using the unsupported params or scoped parameter modifier</source>
+        <target state="translated">인수가 지원되지 않는 매개 변수 또는 범위 지정 매개 변수 한정자를 사용하고 있습니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
+        <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
+        <target state="translated">'{0}' 매개 변수는 로깅 소스 생성기에서 지원하지 않는 ref 구조체입니다.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
+        <source>Logging method parameter is a ref struct</source>
+        <target state="translated">로깅 메서드의 매개 변수가 ref 구조체입니다.</target>
         <note />
       </trans-unit>
     </body>

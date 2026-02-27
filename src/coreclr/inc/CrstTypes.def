@@ -86,6 +86,10 @@ Crst AssemblyLoader
     AcquiredBefore DeadlockDetection UniqueStack DebuggerMutex
 End
 
+Crst AsyncContinuations
+    AcquiredBefore LeafLock
+End
+
 Crst AvailableClass
     AcquiredBefore LoaderHeap
 End

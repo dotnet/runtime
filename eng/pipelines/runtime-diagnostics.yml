@@ -107,6 +107,20 @@ extends:
                 buildConfiguration: $(_BuildConfig)
               continueOnError: true
               condition: always()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
+                artifactName: 'Dumps_cDAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Crash Dumps'
+              continueOnError: true
+              condition: failed()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
+                artifactName: 'TestResults_cDAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Test Results and SOS Logs'
+              continueOnError: true
+              condition: failed()
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
@@ -141,6 +155,20 @@ extends:
                 buildConfiguration: $(_BuildConfig)
               continueOnError: true
               condition: always()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
+                artifactName: 'Dumps_DAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Crash Dumps'
+              continueOnError: true
+              condition: failed()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
+                artifactName: 'TestResults_DAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Test Results and SOS Logs'
+              continueOnError: true
+              condition: failed()
 
     #
     # cDAC Dump Creation — Build runtime, create crash dumps, publish dump artifacts
