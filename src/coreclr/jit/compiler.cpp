@@ -6545,6 +6545,7 @@ void Compiler::compCompileFinish()
     }
 
     JITDUMP("Final metrics:\n");
+    Metrics.report(this);
     DBEXEC(verbose, Metrics.dump());
 
     if (verbose)
@@ -6583,12 +6584,13 @@ void Compiler::compCompileFinish()
 #endif
         }
     }
-#endif // DEBUG
+#else
 
     if (JitConfig.JitReportMetrics())
     {
         Metrics.report(this);
     }
+#endif // !DEBUG
 }
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
