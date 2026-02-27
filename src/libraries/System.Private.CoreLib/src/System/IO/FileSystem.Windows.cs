@@ -379,18 +379,15 @@ namespace System.IO
                             }
 
                             // Note that RemoveDirectory on a symbolic link will remove the link itself.
-                            if (!Interop.Kernel32.RemoveDirectory(Path.Combine(fullPath, fileName)))
+                            if (!Interop.Kernel32.RemoveDirectory(Path.Combine(fullPath, fileName)) && exception == null)
                             {
-                                if (exception == null)
+                                errorCode = Marshal.GetLastPInvokeError();
+                                if (errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND)
                                 {
-                                    errorCode = Marshal.GetLastPInvokeError();
-                                    if (errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND)
-                                    {
-                                        // For a true volume mount point, use its error (it indicates why the
-                                        // unmount step failed). If this is a directory junction, RemoveDirectory
-                                        // succeeds and this code path is not reached.
-                                        exception = mountPointException ?? Win32Marshal.GetExceptionForWin32Error(errorCode, fileName);
-                                    }
+                                    // For a true volume mount point, use its error (it indicates why the
+                                    // unmount step failed). If this is a directory junction, RemoveDirectory
+                                    // succeeds and this code path is not reached.
+                                    exception = mountPointException ?? Win32Marshal.GetExceptionForWin32Error(errorCode, fileName);
                                 }
                             }
                             // If RemoveDirectory succeeded, mountPointException is discarded. This correctly
