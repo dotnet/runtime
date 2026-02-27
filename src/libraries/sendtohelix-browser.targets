@@ -132,7 +132,7 @@
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
     <BuildWasmAppsJobsList Condition="'$(RuntimeFlavor)' == 'Mono'">$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
-    <BuildWasmAppsJobsList Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsListCLR.txt</BuildWasmAppsJobsList>
+    <BuildWasmAppsJobsList Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsListCoreCLR.txt</BuildWasmAppsJobsList>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
