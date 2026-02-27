@@ -15,6 +15,9 @@ public static class Constants
         public const string GCThread = nameof(GCThread);
 
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
+        public const string FeatureComWrappers = nameof(FeatureComWrappers);
+        public const string FeatureObjCMarshal = nameof(FeatureObjCMarshal);
+        public const string FeatureJavaMarshal = nameof(FeatureJavaMarshal);
         public const string FeatureOnStackReplacement = nameof(FeatureOnStackReplacement);
         public const string FeaturePortableEntrypoints = nameof(FeaturePortableEntrypoints);
 
@@ -77,6 +80,8 @@ public static class Constants
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
+        public const string ComRefcountMask = nameof(ComRefcountMask);
+
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);
 
@@ -125,6 +130,14 @@ public static class Constants
         public const string GCHeapCompactReasons = nameof(GCHeapCompactReasons);
         public const string GCHeapExpandMechanisms = nameof(GCHeapExpandMechanisms);
         public const string GCHeapInterestingMechanismBits = nameof(GCHeapInterestingMechanismBits);
+        public const string HandleTableMap = nameof(HandleTableMap);
+        public const string InitialHandleTableArraySize = nameof(InitialHandleTableArraySize);
+        public const string DebugDestroyedHandleValue = nameof(DebugDestroyedHandleValue);
+        public const string HandleBlocksPerSegment = nameof(HandleBlocksPerSegment);
+        public const string HandleMaxInternalTypes = nameof(HandleMaxInternalTypes);
+        public const string HandlesPerBlock = nameof(HandlesPerBlock);
+        public const string BlockInvalid = nameof(BlockInvalid);
+        public const string TotalCpuCount = nameof(TotalCpuCount);
     }
     public static class FieldNames
     {

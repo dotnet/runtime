@@ -98,6 +98,10 @@ public abstract class ContractRegistry
     /// Gets an instance of the SyncBlock contract for the target.
     /// </summary>
     public virtual ISyncBlock SyncBlock => GetContract<ISyncBlock>();
+    /// <summary>
+    /// Gets an instance of the BuiltInCOM contract for the target.
+    /// </summary>
+    public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
 }
