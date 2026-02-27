@@ -1405,6 +1405,10 @@ void LCGMethodResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken
     gc.Resolver = ObjectFromHandle(m_managedResolver);
     VALIDATEOBJECTREF(gc.Resolver); // gc root must be up the stack
 
+    TypeHandle handle;
+    MethodDesc* pMD;
+    FieldDesc* pFD;
+
     GCPROTECT_BEGIN(gc);
 
     UnmanagedCallersOnlyCaller resolveToken(METHOD__RESOLVER__RESOLVE_TOKEN);
@@ -1413,9 +1417,9 @@ void LCGMethodResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken
     TADDR fieldHandleValue = 0;
     resolveToken.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), &typeHandleValue, &methodHandleValue, &fieldHandleValue);
 
-    TypeHandle handle = TypeHandle::FromTAddr(typeHandleValue);
-    MethodDesc* pMD = reinterpret_cast<MethodDesc*>(methodHandleValue);
-    FieldDesc* pFD = reinterpret_cast<FieldDesc*>(fieldHandleValue);
+    handle = TypeHandle::FromTAddr(typeHandleValue);
+    pMD = reinterpret_cast<MethodDesc*>(methodHandleValue);
+    pFD = reinterpret_cast<FieldDesc*>(fieldHandleValue);
 
     GCPROTECT_END();
 
@@ -1559,7 +1563,6 @@ void LCGMethodResolver::GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause)
             clause->HandlerLength = ehInfo->GetHandlerLength();
             clause->ClassToken = ehInfo->GetClassToken();
             clause->FilterOffset = ehInfo->GetFilterOffset();
-            GCPROTECT_END();
             return;
         }
 
