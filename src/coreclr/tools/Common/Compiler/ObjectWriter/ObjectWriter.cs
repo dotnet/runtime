@@ -16,6 +16,7 @@ using static ILCompiler.DependencyAnalysis.ObjectNode;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
+using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -178,12 +179,6 @@ namespace ILCompiler.ObjectWriter
             Utf8String symbolName,
             long addend)
         {
-            if (_nodeFactory.Target.IsWasm)
-            {
-                // TODO-WASM: Implement or resolve relocations
-                return;
-            }
-
             if (!UsesSubsectionsViaSymbols &&
                 relocType is IMAGE_REL_BASED_REL32 or IMAGE_REL_BASED_RELPTR32 or IMAGE_REL_BASED_ARM64_BRANCH26
                 or IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL &&
@@ -441,12 +436,17 @@ namespace ILCompiler.ObjectWriter
                 long thumbBit = 0;
 #endif
 
+                if (node is WasmTypeNode signature)
+                {
+                    RecordMethodSignature(signature);
+                }
+
                 if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayout.Separate)
                 {
                     // Record only information we can get from the MethodDesc here. The actual
                     // body will be emitted by the call to EmitData() at the end
                     // of this loop iteration.
-                    RecordMethodSignature((ISymbolDefinitionNode)node, methodNode.Method);
+                    RecordMethodDeclaration((ISymbolDefinitionNode)node, methodNode.Method);
                 }
                 else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
                 {
@@ -491,17 +491,21 @@ namespace ILCompiler.ObjectWriter
 
                 if (nodeContents.Relocs is not null)
                 {
+                    // For platforms such as Wasm where we must prepend the length before writing blocks,
+                    // we need to adjust the offset of the relocation by the length prefix
+                    uint additionalOffset = sectionWriter.HasLengthPrefix ? sectionWriter.LengthPrefixSize(nodeContents.Data.Length) : 0;
+
                     blocksToRelocate.Add(new BlockToRelocate(
                         sectionWriter.SectionIndex,
-                        sectionWriter.Position,
+                        sectionWriter.Position + additionalOffset,
                         nodeContents.Data,
                         nodeContents.Relocs));
 
 #if DEBUG
                     // Pointer relocs should be aligned at pointer boundaries within the image.
                     // Processing misaligned relocs (especially relocs that straddle page boundaries) can be
-                    // expensive on Windows. But: we can't guarantee this on x86.
-                    if (_nodeFactory.Target.Architecture != TargetArchitecture.X86)
+                    // expensive on Windows. But: we can't guarantee this on x86, and Wasm doesn't have reloc pointer alignment requirements.
+                    if (_nodeFactory.Target.Architecture is not TargetArchitecture.X86 and not TargetArchitecture.Wasm32)
                     {
                         bool hasPointerRelocs = false;
                         foreach (Relocation reloc in nodeContents.Relocs)
@@ -650,12 +654,14 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethodSignature(ISymbolDefinitionNode node, MethodDesc desc)
+        private protected virtual void RecordMethodDeclaration(ISymbolDefinitionNode node, MethodDesc desc)
         {
-            if (LayoutMode != CodeDataLayout.Separate)
-            {
-                throw new InvalidOperationException($"RecordMethod() must only be called on platforms with separated code and data, arch = {_nodeFactory.Target.Architecture}");
-            }
+            Debug.Assert(LayoutMode == CodeDataLayout.Separate);
+        }
+
+        private protected virtual void RecordMethodSignature(WasmTypeNode signature)
+        {
+            Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
 
         private protected virtual void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)

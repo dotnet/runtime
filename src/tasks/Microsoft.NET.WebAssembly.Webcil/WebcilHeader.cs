@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace Microsoft.NET.WebAssembly.Webcil;
 
 /// <summary>
-/// The header of a WebCIL file.
+/// The header of a Webcil file.
 /// </summary>
 ///
 /// <remarks>
@@ -15,19 +15,19 @@ namespace Microsoft.NET.WebAssembly.Webcil;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct WebcilHeader
 {
-    public fixed byte id[4]; // 'W' 'b' 'I' 'L'
+    public fixed byte Id[4];
     // 4 bytes
-    public ushort version_major; // 0
-    public ushort version_minor; // 0
+    public ushort VersionMajor;
+    public ushort VersionMinor;
     // 8 bytes
 
-    public ushort coff_sections;
-    public ushort reserved0; // 0
+    public ushort CoffSections;
+    public ushort Reserved0;
     // 12 bytes
-    public uint pe_cli_header_rva;
-    public uint pe_cli_header_size;
+    public uint PeCliHeaderRva;
+    public uint PeCliHeaderSize;
     // 20 bytes
-    public uint pe_debug_rva;
-    public uint pe_debug_size;
+    public uint PeDebugRva;
+    public uint PeDebugSize;
     // 28 bytes
 }

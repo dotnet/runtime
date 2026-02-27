@@ -35,6 +35,30 @@ public class ReJITTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void IsEnabled_RejitOnAttachEnabled_ReturnsTrue(MockTarget.Architecture arch)
+    {
+        MockReJIT mockRejit = new MockReJIT(arch, rejitOnAttachEnabled: true);
+        var target = CreateTarget(arch, mockRejit);
+
+        var rejit = target.Contracts.ReJIT;
+        Assert.NotNull(rejit);
+        Assert.True(rejit.IsEnabled());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsEnabled_RejitOnAttachDisabled_NoProfiler_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        MockReJIT mockRejit = new MockReJIT(arch, rejitOnAttachEnabled: false);
+        var target = CreateTarget(arch, mockRejit);
+
+        var rejit = target.Contracts.ReJIT;
+        Assert.NotNull(rejit);
+        Assert.False(rejit.IsEnabled());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetRejitId_SyntheticAndExplicit_Success(MockTarget.Architecture arch)
     {
         MockReJIT mockRejit = new MockReJIT(arch);
