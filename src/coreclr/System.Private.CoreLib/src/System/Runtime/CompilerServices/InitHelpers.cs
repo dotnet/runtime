@@ -62,8 +62,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    // TODO: Move to RuntimeHelpers.SetNextCallGenericContext for the instantiatingArg
-                    // if the JIT adds support for this intrinsic in this context in the future.
+                    // Explicitly pass the instantiating argument as a regular argument to match the ABI of a non-instantiating stub.
                     ((delegate* unmanaged<void*, void>)cctor)(instantiatingArg);
                 }
             }

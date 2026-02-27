@@ -3577,18 +3577,10 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
 
         // Call the code method without touching MethodDesc if possible
         PCODE pCctorCode = pCanonMT->GetRestoredSlot(pCanonMT->GetClassConstructorSlot());
-
-        if (pCanonMT->IsSharedByGenericInstantiations())
-        {
-            UnmanagedCallersOnlyCaller caller(METHOD__INITHELPERS__CALLCLASSCONSTRUCTOR);
-            caller.InvokeThrowing(pCctorCode, this);
-        }
-        else
-        {
-            UnmanagedCallersOnlyCaller caller(METHOD__INITHELPERS__CALLCLASSCONSTRUCTOR);
-            caller.InvokeThrowing(pCctorCode, (void*)nullptr);
-        }
-
+        MethodTable* instantiatingArg = pCanonMT->IsSharedByGenericInstantiations() ? this : nullptr;
+        UnmanagedCallersOnlyCaller caller(METHOD__INITHELPERS__CALLCLASSCONSTRUCTOR);
+        caller.InvokeThrowing(pCctorCode, instantiatingArg);
+ 
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100000, "RunClassInit: Returned Successfully from class constructor for type %pT\n", this);
 
         fRet = TRUE;
