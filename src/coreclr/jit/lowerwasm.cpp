@@ -522,8 +522,7 @@ void Lowering::AfterLowerBlock()
                     //  i.e. cpobj where the src and dest get stashed at the start and then used as add operands
                     //  repeatedly.
                     // Locals can also be safely moved as long as they aren't address-exposed due to local var nodes
-                    // being
-                    //  implicitly pseudo-contained.
+                    //  being implicitly pseudo-contained.
                     // TODO-WASM: Verify that it is actually safe to do this for all contained nodes.
                     if (node->IsInvariant() || node->isContained() ||
                         (node->OperIs(GT_LCL_VAR) &&

@@ -2566,10 +2566,6 @@ class Compiler
     friend class ReplaceVisitor;
     friend class FlowGraphNaturalLoop;
 
-#ifdef TARGET_WASM
-    friend class WasmRegAlloc; // For m_pLowering
-#endif
-
 #ifdef FEATURE_HW_INTRINSICS
     friend struct GenTreeHWIntrinsic;
     friend struct HWIntrinsicInfo;
@@ -8683,6 +8679,11 @@ public:
 
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
+
+    Lowering* GetLowering() const
+    {
+        return m_pLowering;
+    }
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

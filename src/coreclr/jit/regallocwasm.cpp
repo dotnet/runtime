@@ -493,7 +493,7 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     CurrentRange().InsertBefore(insertionPoint, lclNode);
 
     LIR::ReadOnlyRange storeRange(store, store);
-    m_compiler->m_pLowering->LowerRange(m_currentBlock, storeRange);
+    m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
 }
 
 //------------------------------------------------------------------------
