@@ -4335,6 +4335,19 @@ do                                                                      \
                     goto EXIT_FRAME;
                 }
 
+                case INTOP_RET_EXISTING_CONTINUATION:
+                {
+                    if (pInterpreterFrame->GetContinuation() == NULL)
+                    {
+                        // No continuation returned
+                        ip++;
+                        break;
+                    }
+
+                    // Otherwise exit without modifying current continuation
+                    goto EXIT_FRAME;
+                }
+
                 case INTOP_HANDLE_CONTINUATION_RESUME:
                 {
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[1]];
