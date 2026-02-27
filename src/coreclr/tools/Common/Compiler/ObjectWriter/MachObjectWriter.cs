@@ -165,7 +165,7 @@ namespace ILCompiler.ObjectWriter
                 section.SectionIndex = sectionIndex;
                 sectionIndex++;
 
-                segmentSize = Math.Max(segmentSize, virtualAddress);
+                segmentSize = Math.Max(Math.Max(segmentSize, virtualAddress), segmentFileSize);
 
                 if (recordFinalLayout)
                 {
