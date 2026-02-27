@@ -17,6 +17,8 @@
 #define GC_NAMESPACE WKS
 #endif // SERVER_GC
 
+extern uint32_t g_totalCpuCount;
+
 // These files are designed to be used inside of the GC namespace.
 // Without the namespace (WKS/SVR) there are naming conflicts.
 namespace GC_NAMESPACE {
