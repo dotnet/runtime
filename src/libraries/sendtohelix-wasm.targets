@@ -56,14 +56,14 @@
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmFingerprintAssets)' == 'true' and '$(WasmBundlerFriendlyBootConfig)' == 'false'">
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <PreCommands>$(EnvVarCommand) &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true' or '$(WasmFingerprintAssets)' != 'true' or '$(WasmBundlerFriendlyBootConfig)' != 'false'">
+      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(RuntimeFlavor)' != 'CoreCLR' and ('$(TestUsingWorkloads)' != 'true' or '$(WasmFingerprintAssets)' != 'true' or '$(WasmBundlerFriendlyBootConfig)' != 'false')">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
