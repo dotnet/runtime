@@ -761,32 +761,32 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.MonitorExit;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION:
-                    id = ReadyToRunHelper.AllocContinuation;
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_HELPERS_ALLOC_CONTINUATION:
+                    id = ReadyToRunHelper.AsyncHelpersAllocContinuation;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_CONTEXTS:
-                    id = ReadyToRunHelper.AsyncCaptureContexts;
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_HELPERS_CAPTURE_CONTEXTS:
+                    id = ReadyToRunHelper.AsyncHelpersCaptureContexts;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_CONTEXTS:
-                    id = ReadyToRunHelper.AsyncRestoreContexts;
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_HELPERS_RESTORE_CONTEXTS:
+                    id = ReadyToRunHelper.AsyncHelpersRestoreContexts;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_EXECUTION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncCaptureExecCtx;
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_HELPERS_CAPTURE_EXECUTION_CONTEXT:
+                    id = ReadyToRunHelper.AsyncHelpersCaptureExecutionContext;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncRestoreExecCtx;
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_HELPERS_RESTORE_EXECUTION_CONTEXT:
+                    id = ReadyToRunHelper.AsyncHelpersRestoreExecutionContext;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION:
-                    id = ReadyToRunHelper.AsyncRestoreCtxOnSusp;
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_HELPERS_RESTORE_CONTEXTS_ON_SUSPENSION:
+                    id = ReadyToRunHelper.AsyncHelpersRestoreContextsOnSuspension;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncCaptureContinCtx;
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_HELPERS_CAPTURE_CONTINUATION_CONTEXT:
+                    id = ReadyToRunHelper.AsyncHelpersCaptureContinuationContext;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:

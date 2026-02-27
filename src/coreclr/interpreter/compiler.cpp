@@ -5709,7 +5709,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     CORINFO_ASYNC_INFO asyncInfo;
     m_compHnd->getAsyncInfo(&asyncInfo);
     
-    GetDataForHelperFtn(CORINFO_HELP_ALLOC_CONTINUATION);
+    GetDataForHelperFtn(CORINFO_HELP_ASYNC_HELPERS_ALLOC_CONTINUATION);
     suspendData->continuationTypeHnd = continuationTypeHnd;
     AllocateIntervalMapData_ForVars(&suspendData->liveLocalsIntervals, liveVars);
     AllocateIntervalMapData_ForVars(&suspendData->zeroedLocalsIntervals, varsToZero);
@@ -5816,7 +5816,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
     // Step 7: Emit the INTOP_HANDLE_CONTINUATION instruction
 
-    CorInfoHelpFunc helperFuncForAllocatingContinuation = CORINFO_HELP_ALLOC_CONTINUATION;
+    CorInfoHelpFunc helperFuncForAllocatingContinuation = CORINFO_HELP_ASYNC_HELPERS_ALLOC_CONTINUATION;
     int handleContinuationOpcode = INTOP_HANDLE_CONTINUATION;
     int32_t varGenericContext = -1;
 
@@ -5826,12 +5826,12 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         switch (kindForAllocationContinuation.runtimeLookupKind)
         {
         case CORINFO_LOOKUP_CLASSPARAM:
-            helperFuncForAllocatingContinuation = CORINFO_HELP_ALLOC_CONTINUATION_CLASS;
+            helperFuncForAllocatingContinuation = CORINFO_HELP_ASYNC_HELPERS_ALLOC_CONTINUATION_CLASS;
             varGenericContext = getParamArgIndex();
             break;
         case CORINFO_LOOKUP_METHODPARAM:
         {
-            helperFuncForAllocatingContinuation = CORINFO_HELP_ALLOC_CONTINUATION_METHOD;
+            helperFuncForAllocatingContinuation = CORINFO_HELP_ASYNC_HELPERS_ALLOC_CONTINUATION_METHOD;
             varGenericContext = getParamArgIndex();
             break;
         }

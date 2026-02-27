@@ -338,31 +338,31 @@ namespace ILCompiler
                     methodDesc = context.SystemModule.GetKnownType("System"u8, "Environment"u8).GetKnownMethod("get_CurrentManagedThreadId"u8, null);
                     break;
 
-                case ReadyToRunHelper.AllocContinuation:
+                case ReadyToRunHelper.AsyncHelpersAllocContinuation:
                     methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null);
                     break;
 
-                case ReadyToRunHelper.AsyncCaptureContexts:
+                case ReadyToRunHelper.AsyncHelpersCaptureContexts:
                     methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "CaptureContexts"u8, null);
                     break;
 
-                case ReadyToRunHelper.AsyncRestoreContexts:
+                case ReadyToRunHelper.AsyncHelpersRestoreContexts:
                     methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "RestoreContexts"u8, null);
                     break;
 
-                case ReadyToRunHelper.AsyncCaptureExecCtx:
+                case ReadyToRunHelper.AsyncHelpersCaptureExecutionContext:
                     methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "CaptureExecutionContext"u8, null);
                     break;
 
-                case ReadyToRunHelper.AsyncRestoreExecCtx:
+                case ReadyToRunHelper.AsyncHelpersRestoreExecutionContext:
                     methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "RestoreExecutionContext"u8, null);
                     break;
 
-                case ReadyToRunHelper.AsyncRestoreCtxOnSusp:
+                case ReadyToRunHelper.AsyncHelpersRestoreContextsOnSuspension:
                     methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "RestoreContextsOnSuspension"u8, null);
                     break;
 
-                case ReadyToRunHelper.AsyncCaptureContinCtx:
+                case ReadyToRunHelper.AsyncHelpersCaptureContinuationContext:
                     methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "CaptureContinuationContext"u8, null);
                     break;
 

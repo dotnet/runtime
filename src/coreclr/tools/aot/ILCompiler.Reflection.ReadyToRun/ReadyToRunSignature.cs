@@ -2033,33 +2033,33 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("STACK_PROBE");
                     break;
 
-                case ReadyToRunHelper.AllocContinuation:
-                    builder.Append("ALLOC_CONTINUATION");
+                case ReadyToRunHelper.AsyncHelpersAllocContinuation:
+                    builder.Append("ASYNC_HELPERS_ALLOC_CONTINUATION");
                     break;
-                case ReadyToRunHelper.AllocContinuationMethod:
-                    builder.Append("ALLOC_CONTINUATION_METHOD");
+                case ReadyToRunHelper.AsyncHelpersAllocContinuationMethod:
+                    builder.Append("ASYNC_HELPERS_ALLOC_CONTINUATION_METHOD");
                     break;
-                case ReadyToRunHelper.AllocContinuationClass:
-                    builder.Append("ALLOC_CONTINUATION_CLASS");
+                case ReadyToRunHelper.AsyncHelpersAllocContinuationClass:
+                    builder.Append("ASYNC_HELPERS_ALLOC_CONTINUATION_CLASS");
                     break;
 
-                case ReadyToRunHelper.AsyncCaptureContexts:
-                    builder.Append("ASYNC_CAPTURE_CONTEXTS");
+                case ReadyToRunHelper.AsyncHelpersCaptureContexts:
+                    builder.Append("ASYNC_HELPERS_CAPTURE_CONTEXTS");
                     break;
-                case ReadyToRunHelper.AsyncRestoreContexts:
-                    builder.Append("ASYNC_RESTORE_CONTEXTS");
+                case ReadyToRunHelper.AsyncHelpersRestoreContexts:
+                    builder.Append("ASYNC_HELPERS_RESTORE_CONTEXTS");
                     break;
-                case ReadyToRunHelper.AsyncCaptureExecCtx:
-                    builder.Append("ASYNC_CAPTURE_EXEC_CTX");
+                case ReadyToRunHelper.AsyncHelpersCaptureExecutionContext:
+                    builder.Append("ASYNC_HELPERS_CAPTURE_EXECUTION_CONTEXT");
                     break;
-                case ReadyToRunHelper.AsyncRestoreExecCtx:
-                    builder.Append("ASYNC_RESTORE_EXEC_CTX");
+                case ReadyToRunHelper.AsyncHelpersRestoreExecutionContext:
+                    builder.Append("ASYNC_HELPERS_RESTORE_EXECUTION_CONTEXT");
                     break;
-                case ReadyToRunHelper.AsyncRestoreCtxOnSusp:
-                    builder.Append("ASYNC_RESTORE_CTX_ON_SUSP");
+                case ReadyToRunHelper.AsyncHelpersRestoreContextsOnSuspension:
+                    builder.Append("ASYNC_HELPERS_RESTORE_CONTEXTS_ON_SUSPENSION");
                     break;
-                case ReadyToRunHelper.AsyncCaptureContinCtx:
-                    builder.Append("ASYNC_CAPTURE_CONTIN_CTX");
+                case ReadyToRunHelper.AsyncHelpersCaptureContinuationContext:
+                    builder.Append("ASYNC_HELPERS_CAPTURE_CONTINUATION_CONTEXT");
                     break;
 
                 case ReadyToRunHelper.InitClass:
