@@ -66,7 +66,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         class AllPropagatedWithDerivedClass
         {
-            [ExpectedWarning("IL2072", nameof(DataFlowTypeExtensions.RequiresAll) + "(Type)", nameof(TestSystemTypeBase.BaseType) + ".get", Tool.Analyzer, "https://github.com/dotnet/linker/issues/2673")]
             static void TestAllPropagated([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TestSystemTypeBase derivedType)
             {
                 derivedType.BaseType.RequiresAll();

@@ -19,6 +19,26 @@ namespace ILLink.Shared.TypeSystemProxy
 
         internal partial bool IsDeclaredOnType(string fullTypeName) => IsTypeOf(Method.ContainingType, fullTypeName);
 
+        internal partial bool IsDeclaredOnTypeOrOverride(string fullTypeName)
+        {
+            // Check if the method is declared on the specified type
+            if (IsTypeOf(Method.ContainingType, fullTypeName))
+                return true;
+
+            // For virtual/override methods, check if any overridden method is declared on the specified type
+            // This handles cases where intrinsics are defined on base virtual methods (e.g., Type.BaseType)
+            // and we want the intrinsic to work for overrides (e.g., RuntimeTypeInfo.BaseType)
+            IMethodSymbol? currentMethod = Method;
+            while (currentMethod?.OverriddenMethod is IMethodSymbol overriddenMethod)
+            {
+                if (IsTypeOf(overriddenMethod.ContainingType, fullTypeName))
+                    return true;
+                currentMethod = overriddenMethod;
+            }
+
+            return false;
+        }
+
         internal partial bool HasMetadataParameters() => Method.Parameters.Length > 0;
 
         internal partial int GetMetadataParametersCount() => Method.GetMetadataParametersCount();

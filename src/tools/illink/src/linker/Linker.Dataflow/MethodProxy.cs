@@ -41,6 +41,8 @@ namespace ILLink.Shared.TypeSystemProxy
 
         internal partial bool IsDeclaredOnType(string fullTypeName) => Method.IsDeclaredOnType(fullTypeName);
 
+        internal partial bool IsDeclaredOnTypeOrOverride(string fullTypeName) => Method.IsDeclaredOnType(fullTypeName);
+
         internal partial bool HasMetadataParameters() => Definition.HasMetadataParameters();
 
         /// <summary>
