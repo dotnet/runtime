@@ -61,9 +61,9 @@ public unsafe partial interface ICLRDataTarget
 public unsafe partial interface ICLRDataTarget2 : ICLRDataTarget
 {
     [PreserveSig]
-    int AllocVirtual(ulong addr, uint size, uint typeFlags, uint protectFlags, ulong* virt);
+    int AllocVirtual(ClrDataAddress addr, uint size, uint typeFlags, uint protectFlags, ClrDataAddress* virt);
     [PreserveSig]
-    int FreeVirtual(ulong addr, uint size, uint typeFlags);
+    int FreeVirtual(ClrDataAddress addr, uint size, uint typeFlags);
 }
 
 // Note: ICLRDataTarget3 from clrdata.idl (guid a5664f95...) extends ICLRDataTarget2.
