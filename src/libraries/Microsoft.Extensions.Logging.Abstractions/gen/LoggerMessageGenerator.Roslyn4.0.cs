@@ -9,7 +9,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Text;
-using SourceGenerators;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
 
@@ -25,7 +24,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValuesProvider<(LoggerClassSpec? LoggerClassSpec, ImmutableEquatableArray<DiagnosticInfo> Diagnostics, bool HasStringCreate)> loggerClasses = context.SyntaxProvider
+            IncrementalValuesProvider<(LoggerClassSpec? LoggerClassSpec, ImmutableArray<Diagnostic> Diagnostics, bool HasStringCreate)> loggerClasses = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
                     context,
@@ -66,7 +65,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                         if (exceptionSymbol == null)
                         {
-                            var diagnostics = new[] { DiagnosticInfo.Create(DiagnosticDescriptors.MissingRequiredType, null, new object?[] { "System.Exception" }) }.ToImmutableEquatableArray();
+                            var diagnostics = ImmutableArray.Create(Diagnostic.Create(DiagnosticDescriptors.MissingRequiredType, null, new object?[] { "System.Exception" }));
                             return (null, diagnostics, false);
                         }
 
@@ -92,17 +91,46 @@ namespace Microsoft.Extensions.Logging.Generators
                         // Convert to immutable spec for incremental caching
                         LoggerClassSpec? loggerClassSpec = logClasses.Count > 0 ? logClasses[0].ToSpec() : null;
 
-                        return (loggerClassSpec, parser.Diagnostics.ToImmutableEquatableArray(), hasStringCreate);
+                        return (loggerClassSpec, parser.Diagnostics.ToImmutableArray(), hasStringCreate);
                     })
 #if ROSLYN4_4_OR_GREATER
                 .WithTrackingName(StepNames.LoggerMessageTransform)
 #endif
                 ;
 
-            context.RegisterSourceOutput(loggerClasses.Collect(), static (spc, items) => Execute(items, spc));
+            // Pipeline 1: Source generation only.
+            // Uses Select to extract just the model; the Select operator deduplicates by
+            // comparing model equality, so source generation only re-fires on structural changes.
+            context.RegisterSourceOutput(
+                loggerClasses.Select(static (t, _) => (t.LoggerClassSpec, t.HasStringCreate)).Collect(),
+                static (spc, items) => EmitSource(items, spc));
+
+            // Pipeline 2: Diagnostics only.
+            // Diagnostics use raw SourceLocation instances that are pragma-suppressible.
+            // This pipeline re-fires whenever diagnostics change (e.g. positional shifts)
+            // without triggering expensive source regeneration.
+            // See https://github.com/dotnet/runtime/issues/92509 for context.
+            context.RegisterSourceOutput(
+                loggerClasses.Collect(),
+                static (context, items) =>
+                {
+                    // Use HashSet to deduplicate — each attributed method triggers parsing of entire class,
+                    // producing duplicate diagnostics.
+                    var reportedDiagnostics = new HashSet<(string Id, TextSpan? Span, string? FilePath)>();
+                    foreach (var item in items)
+                    {
+                        foreach (Diagnostic diagnostic in item.Diagnostics)
+                        {
+                            if (reportedDiagnostics.Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath)))
+                            {
+                                context.ReportDiagnostic(diagnostic);
+                            }
+                        }
+                    }
+                });
         }
 
-        private static void Execute(ImmutableArray<(LoggerClassSpec? LoggerClassSpec, ImmutableEquatableArray<DiagnosticInfo> Diagnostics, bool HasStringCreate)> items, SourceProductionContext context)
+        private static void EmitSource(ImmutableArray<(LoggerClassSpec? LoggerClassSpec, bool HasStringCreate)> items, SourceProductionContext context)
         {
             if (items.IsDefaultOrEmpty)
             {
@@ -110,24 +138,10 @@ namespace Microsoft.Extensions.Logging.Generators
             }
 
             bool hasStringCreate = false;
-            var allLogClasses = new Dictionary<string, LoggerClass>(); // Use dictionary to deduplicate by class key
-            var reportedDiagnostics = new HashSet<DiagnosticInfo>(); // Track reported diagnostics to avoid duplicates
+            var allLogClasses = new Dictionary<string, LoggerClass>(); // Deduplicate by class key
 
             foreach (var item in items)
             {
-                // Report diagnostics (note: pragma suppression doesn't work with trimmed locations - known Roslyn limitation)
-                // Use HashSet to deduplicate - each attributed method triggers parsing of entire class, producing duplicate diagnostics
-                if (item.Diagnostics is not null)
-                {
-                    foreach (var diagnostic in item.Diagnostics)
-                    {
-                        if (reportedDiagnostics.Add(diagnostic))
-                        {
-                            context.ReportDiagnostic(diagnostic.CreateDiagnostic());
-                        }
-                    }
-                }
-
                 if (item.LoggerClassSpec != null)
                 {
                     hasStringCreate |= item.HasStringCreate;
@@ -136,18 +150,15 @@ namespace Microsoft.Extensions.Logging.Generators
                     string classKey = BuildClassKey(item.LoggerClassSpec);
 
                     // Each attributed method in a partial class file produces the same LoggerClassSpec with all methods in that file.
-                    // However, different partial class files (e.g., LevelTestExtensions.cs and LevelTestExtensions.WithDiagnostics.cs)
-                    // produce different LoggerClassSpecs with different methods. Merge them.
+                    // However, different partial class files produce different LoggerClassSpecs with different methods. Merge them.
                     if (!allLogClasses.TryGetValue(classKey, out LoggerClass? existingClass))
                     {
                         allLogClasses[classKey] = FromSpec(item.LoggerClassSpec);
                     }
                     else
                     {
-                        // Merge methods from different partial class files
                         var newClass = FromSpec(item.LoggerClassSpec);
 
-                        // Use HashSet for O(1) lookup to avoid O(N×M) complexity
                         var existingMethodKeys = new HashSet<(string Name, int EventId)>();
                         foreach (var method in existingClass.Methods)
                         {
@@ -156,7 +167,6 @@ namespace Microsoft.Extensions.Logging.Generators
 
                         foreach (var method in newClass.Methods)
                         {
-                            // Only add methods that don't already exist (avoid duplicates from same file)
                             if (existingMethodKeys.Add((method.Name, method.EventId)))
                             {
                                 existingClass.Methods.Add(method);
