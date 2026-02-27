@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Threading;
 using Tracing.UserEvents.Tests.Common;
 using Microsoft.Diagnostics.Tracing;
@@ -62,13 +63,27 @@ namespace Tracing.UserEvents.Tests.Basic
             return allocationSampledEventFound;
         };
 
+        private static EventSource FindNativeRuntimeEventSource()
+        {
+            foreach (EventSource source in EventSource.GetSources())
+            {
+                if (string.Equals(source.Name, "Microsoft-Windows-DotNETRuntime", StringComparison.Ordinal))
+                {
+                    return source;
+                }
+            }
+
+            throw new InvalidOperationException("NativeRuntimeEventSource should always be registered and found in EventSource.GetSources().");
+        }
+
         public static int Main(string[] args)
         {
             return UserEventsTestRunner.Run(
                 args,
                 "basic",
                 BasicTracee,
-                s_traceValidator);
+                s_traceValidator,
+                FindNativeRuntimeEventSource());
         }
     }
 }

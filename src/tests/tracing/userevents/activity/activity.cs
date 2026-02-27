@@ -165,7 +165,8 @@ namespace Tracing.UserEvents.Tests.Activity
                 args,
                 "activity",
                 ActivityTracee,
-                s_traceValidator);
+                s_traceValidator,
+                ActivityEventSource.Log);
         }
     }
 

@@ -71,7 +71,8 @@ namespace Tracing.UserEvents.Tests.ManagedEvent
                 args,
                 "managedevent",
                 ManagedEventTracee,
-                s_traceValidator);
+                s_traceValidator,
+                ManagedUserEventSource.Log);
         }
     }
 

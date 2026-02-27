@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -19,17 +20,16 @@ namespace Tracing.UserEvents.Tests.Common
         private const int DefaultTraceeExitTimeoutMs = 5000;
         private const int DefaultRecordTraceExitTimeoutMs = 20000;
 
-        // Delay before the tracee performs its event-generating action. record-trace
-        // must discover the process, send an EventPipe IPC command that the runtime
-        // processes to register user_events tracepoints, and enable its PerfSession
-        // (ring buffer collection). The tracee has no callback to know when these steps
-        // are complete, so this delay provides a sufficient window. Without it, events
-        // can be lost if the tracee writes before PerfSession is enabled — a race
-        // observed when the tracee is discovered during record-trace's /proc scan.
-        // Empirically measured on a 2-core system, both tracepoint registration and
-        // PerfSession enable completed within 229ms (p99). 700ms provides a ~3x safety
-        // margin.
-        private const int EventGenerationDelayMs = 700;
+        // Delay before starting the tracee to let record-trace finish setup. The
+        // tracee's ManualResetEventSlim gates on tracepoint registration via IPC, but
+        // that alone is not sufficient as record-trace's ring buffers must also be active
+        // (PerfSession::enable) to capture events. Without this delay, the tracee may be
+        // discovered during record-trace's /proc scan and receive IPC before enable,
+        // causing events to be lost. With the delay, the tracee is instead discovered
+        // via MMAP2 records after PerfSession is enabled.
+        // record-trace startup -> PerfSession::enable scales with system process count:
+        // averaged 113ms at 126 processes and 253ms at 534 processes on a 2-core system.
+        private const int RecordTraceSetupDelayMs = 300;
 
         [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
         private static extern int Kill(int pid, int sig);
@@ -39,12 +39,28 @@ namespace Tracing.UserEvents.Tests.Common
             string scenarioName,
             Action traceeAction,
             Func<int, EventPipeEventSource, bool> traceValidator,
+            EventSource traceeEventSource,
             int traceeExitTimeout = DefaultTraceeExitTimeoutMs,
             int recordTraceExitTimeout = DefaultRecordTraceExitTimeoutMs)
         {
             if (args.Length > 0 && args[0].Equals("tracee", StringComparison.OrdinalIgnoreCase))
             {
-                Thread.Sleep(EventGenerationDelayMs);
+                using var enabledEvent = new ManualResetEventSlim(false);
+
+                traceeEventSource.EventCommandExecuted += (sender, e) =>
+                {
+                    if (e.Command == EventCommand.Enable)
+                    {
+                        enabledEvent.Set();
+                    }
+                };
+
+                if (traceeEventSource.IsEnabled())
+                {
+                    enabledEvent.Set();
+                }
+
+                enabledEvent.Wait();
 
                 traceeAction();
                 return 0;
@@ -171,6 +187,10 @@ namespace Tracing.UserEvents.Tests.Common
             // behind after catastrophic exits. Clean them before launching the tracee to avoid deleting sockets from a reused PID.
             // When https://github.com/microsoft/one-collect/issues/183 is fixed, this and the above TMPDIR should be removed.
             EnsureCleanDiagnosticPorts(diagnosticPortDir);
+
+            // Allow record-trace to finish setup before starting the tracee.
+            Console.WriteLine($"Delaying tracee startup {RecordTraceSetupDelayMs}ms for record-trace setup...");
+            Thread.Sleep(RecordTraceSetupDelayMs);
 
             Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {string.Join(" ", traceeStartInfo.ArgumentList)}");
             using Process traceeProcess = Process.Start(traceeStartInfo);

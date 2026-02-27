@@ -110,7 +110,8 @@ namespace Tracing.UserEvents.Tests.MultiThread
                 args,
                 "multithread",
                 MultiThreadTracee,
-                s_traceValidator);
+                s_traceValidator,
+                MultiThreadEventSource.Log);
         }
     }
 }

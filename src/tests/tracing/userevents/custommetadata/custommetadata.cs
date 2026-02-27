@@ -83,7 +83,8 @@ namespace Tracing.UserEvents.Tests.CustomMetadata
                 args,
                 "custommetadata",
                 CustomMetadataTracee,
-                s_traceValidator);
+                s_traceValidator,
+                CustomMetadataEventSource.Log);
         }
     }
 
