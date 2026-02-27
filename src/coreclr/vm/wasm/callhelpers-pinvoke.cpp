@@ -84,20 +84,15 @@ extern "C" {
     int32_t SystemNative_FileSystemSupportsLocking (void *, int32_t, int32_t);
     void SystemNative_Free (void *);
     void SystemNative_FreeLibrary (void *);
-    int32_t SystemNative_GetAddressFamily (void *, int32_t, void *);
     double SystemNative_GetCpuUtilization (void *);
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
-    int32_t SystemNative_GetIPv4Address (void *, int32_t, void *);
-    int32_t SystemNative_GetIPv6Address (void *, int32_t, void *, int32_t, void *);
     void * SystemNative_GetLoadLibraryError ();
     int64_t SystemNative_GetLowResolutionTimestamp ();
     void SystemNative_GetNonCryptographicallySecureRandomBytes (void *, int32_t);
-    int32_t SystemNative_GetPort (void *, int32_t, void *);
     void * SystemNative_GetProcAddress (void *, void *);
-    int32_t SystemNative_GetSocketAddressSizes (void *, void *, void *, void *);
     int64_t SystemNative_GetSystemTimeAsTicks ();
     void * SystemNative_GetTimeZoneData (void *, void *);
     int64_t SystemNative_GetTimestamp ();
@@ -141,11 +136,7 @@ extern "C" {
     int32_t SystemNative_Rename (void *, void *);
     int32_t SystemNative_RmDir (void *);
     int32_t SystemNative_SchedGetCpu ();
-    int32_t SystemNative_SetAddressFamily (void *, int32_t, int32_t);
     void SystemNative_SetErrNo (int32_t);
-    int32_t SystemNative_SetIPv4Address (void *, int32_t, uint32_t);
-    int32_t SystemNative_SetIPv6Address (void *, int32_t, void *, int32_t, uint32_t);
-    int32_t SystemNative_SetPort (void *, int32_t, uint32_t);
     void * SystemNative_ShmOpen (void *, int32_t, int32_t);
     int32_t SystemNative_ShmUnlink (void *);
     int32_t SystemNative_Stat (void *, void *);
@@ -231,20 +222,15 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FileSystemSupportsLocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_Free) // System.Private.CoreLib
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetAddressFamily) // System.Net.Primitives
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.Private.CoreLib, System.Security.Cryptography
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives
-    DllImportEntry(SystemNative_GetIPv6Address) // System.Net.Primitives
     DllImportEntry(SystemNative_GetLoadLibraryError) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetLowResolutionTimestamp) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetPort) // System.Net.Primitives
     DllImportEntry(SystemNative_GetProcAddress) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetSocketAddressSizes) // System.Net.Primitives
     DllImportEntry(SystemNative_GetSystemTimeAsTicks) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimeZoneData) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimestamp) // System.Private.CoreLib
@@ -288,11 +274,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
     DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
     DllImportEntry(SystemNative_SchedGetCpu) // System.Private.CoreLib
-    DllImportEntry(SystemNative_SetAddressFamily) // System.Net.Primitives
     DllImportEntry(SystemNative_SetErrNo) // System.Private.CoreLib
-    DllImportEntry(SystemNative_SetIPv4Address) // System.Net.Primitives
-    DllImportEntry(SystemNative_SetIPv6Address) // System.Net.Primitives
-    DllImportEntry(SystemNative_SetPort) // System.Net.Primitives
     DllImportEntry(SystemNative_ShmOpen) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_ShmUnlink) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_Stat) // System.IO.Compression.ZipFile, System.Private.CoreLib
@@ -327,7 +309,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 33},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 8},
-    {"libSystem.Native", s_libSystem_Native, 97},
+    {"libSystem.Native", s_libSystem_Native, 88},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };

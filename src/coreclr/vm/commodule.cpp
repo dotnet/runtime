@@ -762,17 +762,9 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
     }
     else
     {
-<<<<<<< Updated upstream
-    ...
-
-    // We should have filled the array exactly.
-    _ASSERTE(curPos == dwNumTypeDefs);
-
-=======
         // We should have filled the array exactly.
         _ASSERTE(curPos == dwNumTypeDefs);
     }
->>>>>>> Stashed changes
     // Assign the return value to the CLR array
     retTypes.Set(gc.refArrClasses);
 
