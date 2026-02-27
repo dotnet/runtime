@@ -107,6 +107,7 @@ internal partial class MockDescriptors
         Fields =
         [
             new(nameof(Data.SyncTableEntry.SyncBlock), DataType.pointer),
+            new(nameof(Data.SyncTableEntry.Object), DataType.pointer),
         ]
     };
 
@@ -116,6 +117,9 @@ internal partial class MockDescriptors
         Fields =
         [
             new(nameof(Data.SyncBlock.InteropInfo), DataType.pointer),
+            new(nameof(Data.SyncBlock.Lock), DataType.pointer),
+            new(nameof(Data.SyncBlock.ThinLock), DataType.uint32),
+            new(nameof(Data.SyncBlock.LinkNext), DataType.pointer),
         ]
     };
 

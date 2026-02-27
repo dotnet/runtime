@@ -17,7 +17,7 @@ internal sealed class SyncTableEntry : IData<SyncTableEntry>
             SyncBlock = target.ProcessedData.GetOrAdd<SyncBlock>(syncBlockPointer);
 
         TargetPointer objectPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(Object)].Offset);
-        if (objectPointer != TargetPointer.Null)
+        if (objectPointer != TargetPointer.Null && (objectPointer & 1) == 0) // Defensive check: if the lowest bit is set, this is a free sync block entry and the pointer is not valid.
             Object = target.ProcessedData.GetOrAdd<Object>(objectPointer);
     }
 
