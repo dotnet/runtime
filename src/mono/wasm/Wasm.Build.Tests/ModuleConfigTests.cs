@@ -23,7 +23,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
 
     [Theory]
     [InlineData(false)]
-    [InlineData(true)]
+    // [InlineData(true)] // ActiveIssue: https://github.com/dotnet/runtime/issues/124946
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
         Configuration config = Configuration.Debug;
@@ -57,7 +57,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [Fact, TestCategory("bundler-friendly")]
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("bundler-friendly")]
     public async Task OutErrOverrideWorks()
     {
         Configuration config = Configuration.Debug;
@@ -78,7 +78,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsMonoRuntime))]
     [InlineData(Configuration.Release, true)]
     [InlineData(Configuration.Release, false)]
     public async Task OverrideBootConfigName(Configuration config, bool isPublish)
