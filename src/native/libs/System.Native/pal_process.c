@@ -970,14 +970,6 @@ int32_t SystemNative_SpawnProcess(
 #ifdef __APPLE__
     // ========== POSIX_SPAWN PATH (macOS) ==========
 
-#ifndef POSIX_SPAWN_START_SUSPENDED
-    if (create_suspended)
-    {
-        errno = ENOTSUP;
-        return -1;
-    }
-#endif
-
     pid_t child_pid;
     posix_spawn_file_actions_t file_actions;
     posix_spawnattr_t attr;
@@ -990,12 +982,10 @@ int32_t SystemNative_SpawnProcess(
     }
 
     short flags = POSIX_SPAWN_CLOEXEC_DEFAULT | POSIX_SPAWN_SETSIGDEF;
-#ifdef POSIX_SPAWN_START_SUSPENDED
     if (create_suspended)
     {
         flags |= POSIX_SPAWN_START_SUSPENDED;
     }
-#endif
     if (create_new_process_group)
     {
         flags |= POSIX_SPAWN_SETPGROUP;
