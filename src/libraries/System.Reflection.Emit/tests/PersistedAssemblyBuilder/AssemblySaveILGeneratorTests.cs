@@ -3066,5 +3066,47 @@ public class MyType
                 tlc.Unload();
             }
         }
+
+        [Fact]
+        public void ReferenceNestedGenericTypeWithConstraintAcrossGeneratedAssemblies()
+        {
+            using (TempFile file = TempFile.Create())
+            using (TempFile file2 = TempFile.Create())
+            {
+                PersistedAssemblyBuilder producerAssembly = new PersistedAssemblyBuilder(new AssemblyName("ProducerAssembly"), typeof(object).Assembly);
+                ModuleBuilder producerModule = producerAssembly.DefineDynamicModule("ProducerModule");
+                TypeBuilder hostType = producerModule.DefineType("HostType", TypeAttributes.Public | TypeAttributes.Class);
+                GenericTypeParameterBuilder hostGenericParameter = hostType.DefineGenericParameters("T")[0];
+                hostGenericParameter.SetGenericParameterAttributes(GenericParameterAttributes.ReferenceTypeConstraint);
+                hostType.DefineDefaultConstructor(MethodAttributes.Public);
+                hostType.CreateType();
+                producerAssembly.Save(file.Path);
+
+                PersistedAssemblyBuilder consumerAssembly = new PersistedAssemblyBuilder(new AssemblyName("ConsumerAssembly"), typeof(object).Assembly);
+                ModuleBuilder consumerModule = consumerAssembly.DefineDynamicModule("ConsumerModule");
+                TypeBuilder consumerType = consumerModule.DefineType("ConsumerType", TypeAttributes.Public | TypeAttributes.Class);
+
+                Type constructedHostType = hostType.MakeGenericType(typeof(string));
+                Type nestedGenericReturnType = typeof(List<>).MakeGenericType(constructedHostType);
+                MethodBuilder factoryMethod = consumerType.DefineMethod("CreateList", MethodAttributes.Public | MethodAttributes.Static, nestedGenericReturnType, Type.EmptyTypes);
+                ILGenerator il = factoryMethod.GetILGenerator();
+                il.Emit(OpCodes.Ldnull);
+                il.Emit(OpCodes.Ret);
+                consumerType.CreateType();
+                consumerAssembly.Save(file2.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                tlc.LoadFromAssemblyPath(file.Path);
+                Type consumerTypeFromDisk = tlc.LoadFromAssemblyPath(file2.Path).GetType("ConsumerType");
+                MethodInfo createListMethod = consumerTypeFromDisk.GetMethod("CreateList");
+                Type listElementType = createListMethod.ReturnType.GetGenericArguments()[0];
+
+                Assert.True(listElementType.IsGenericType);
+                Assert.Equal("HostType", listElementType.GetGenericTypeDefinition().Name);
+                Assert.Equal(typeof(string).FullName, listElementType.GetGenericArguments()[0].FullName);
+                Assert.Equal("ProducerAssembly", listElementType.Assembly.GetName().Name);
+                tlc.Unload();
+            }
+        }
     }
 }

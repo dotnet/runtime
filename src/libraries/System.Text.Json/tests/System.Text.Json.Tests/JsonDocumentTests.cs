@@ -3696,7 +3696,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop] // thread-safety / stress test
         public static async Task GetString_ConcurrentUse_ThreadSafe()
         {
