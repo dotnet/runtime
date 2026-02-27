@@ -143,6 +143,7 @@ public enum DataType
     StubDispatchFrame,
     ComCallWrapper,
     SimpleComCallWrapper,
+    ComMethodTable,
 
 
     /* GC Data Types */

@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -15,6 +14,8 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     {
         IsHandleWeak = 0x4,
     }
+
+    private const ulong IsLayoutComplete = 0x10;
 
     internal BuiltInCOM_1(Target target)
     {
@@ -35,4 +36,54 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         return (simpleWrapper.Flags & (uint)Flags.IsHandleWeak) != 0;
     }
 
+    public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
+    {
+        uint numInterfaces = _target.ReadGlobal<uint>(Constants.Globals.CCWNumInterfaces);
+        ulong comMethodTableSize = _target.GetTypeInfo(DataType.ComMethodTable).Size!.Value;
+        int pointerSize = _target.PointerSize;
+        // LinkedWrapperTerminator = (PTR_ComCallWrapper)-1: all pointer-sized bits set
+        ulong linkedWrapperTerminator = pointerSize == 8 ? ulong.MaxValue : uint.MaxValue;
+
+        bool isFirst = true;
+        TargetPointer current = ccw;
+        while (current != TargetPointer.Null)
+        {
+            Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(current);
+
+            for (uint i = 0; i < numInterfaces; i++)
+            {
+                // slotAddr is the address of m_rgpIPtr[i] in the CCW struct
+                TargetPointer slotAddr = wrapper.IPtr + i * (ulong)pointerSize;
+                // slotValue is the vtable pointer stored in m_rgpIPtr[i]
+                TargetPointer slotValue = _target.ReadPointer(slotAddr);
+                if (slotValue == TargetPointer.Null)
+                    continue;
+
+                // ComMethodTable is located immediately before the vtable in memory
+                TargetPointer comMethodTableAddr = new TargetPointer(slotValue.Value - comMethodTableSize);
+                Data.ComMethodTable comMethodTable = _target.ProcessedData.GetOrAdd<Data.ComMethodTable>(comMethodTableAddr);
+
+                // Skip interfaces whose vtable layout is not yet complete
+                if ((comMethodTable.Flags.Value & IsLayoutComplete) == 0)
+                    continue;
+
+                // Slot_Basic (index 0) of the first wrapper = IUnknown/IDispatch, no associated MethodTable
+                TargetPointer methodTable = (isFirst && i == 0)
+                    ? TargetPointer.Null
+                    : comMethodTable.MethodTable;
+
+                yield return new COMInterfacePointerData
+                {
+                    InterfacePointer = slotAddr,
+                    MethodTable = methodTable,
+                };
+            }
+
+            isFirst = false;
+
+            // Advance to the next wrapper in the chain
+            // LinkedWrapperTerminator = all-bits-set sentinel means end of list
+            current = wrapper.Next.Value == linkedWrapperTerminator ? TargetPointer.Null : wrapper.Next;
+        }
+    }
 }

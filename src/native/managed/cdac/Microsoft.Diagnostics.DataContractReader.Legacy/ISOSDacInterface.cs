@@ -698,6 +698,13 @@ public unsafe partial interface ISOSDacInterface
     int GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded);
 };
 
+public struct DacpCOMInterfacePointerData
+{
+    public ClrDataAddress methodTable;
+    public ClrDataAddress interfacePtr;
+    public ClrDataAddress comContext;
+}
+
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 public struct DacpExceptionObjectData
 {

@@ -703,6 +703,14 @@ private:
     ITypeInfo*       m_pITypeInfo; // cached pointer to ITypeInfo
     DispatchInfo*    m_pDispatchInfo; // The dispatch info used to expose IDispatch to COM.
     IID              m_IID; // The IID of the interface.
+    friend struct ::cdac_data<ComMethodTable>;
+};
+
+template<>
+struct cdac_data<ComMethodTable>
+{
+    static constexpr size_t Flags = offsetof(ComMethodTable, m_Flags);
+    static constexpr size_t MethodTable = offsetof(ComMethodTable, m_pMT);
 };
 
 #pragma pack(pop)
@@ -1039,6 +1047,9 @@ template<>
 struct cdac_data<ComCallWrapper>
 {
     static constexpr size_t SimpleWrapper = offsetof(ComCallWrapper, m_pSimpleWrapper);
+    static constexpr size_t IPtr = offsetof(ComCallWrapper, m_rgpIPtr);
+    static constexpr size_t Next = offsetof(ComCallWrapper, m_pNext);
+    static constexpr uint32_t NumInterfaces = ComCallWrapper::NumVtablePtrs;
 };
 
 FORCEINLINE void CCWRelease(ComCallWrapper* p)
