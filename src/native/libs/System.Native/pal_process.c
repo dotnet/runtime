@@ -1045,7 +1045,12 @@ int32_t SystemNative_SpawnProcess(
     {
         // posix_spawn_file_actions_addchdir_np is not available on tvOS
 #if HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
-        if ((result = posix_spawn_file_actions_addchdir_np(&file_actions, working_dir)) != 0)
+        result = posix_spawn_file_actions_addchdir_np(&file_actions, working_dir);
+#else
+        result = ENOTSUP;
+#endif
+
+        if (result != 0)
         {
             int saved_errno = result;
             posix_spawn_file_actions_destroy(&file_actions);
@@ -1053,12 +1058,6 @@ int32_t SystemNative_SpawnProcess(
             errno = saved_errno;
             return -1;
         }
-#else
-        posix_spawn_file_actions_destroy(&file_actions);
-        posix_spawnattr_destroy(&attr);
-        errno = ENOTSUP;
-        return -1;
-#endif
     }
 
     // Spawn the process
