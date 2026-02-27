@@ -263,7 +263,6 @@ PALEXPORT int32_t SystemNative_SpawnProcess(
     int32_t kill_on_parent_death,
     int32_t create_suspended,
     int32_t create_new_process_group,
-    int32_t detached,
     const int32_t* inherited_handles,
     int32_t inherited_handles_count);
 

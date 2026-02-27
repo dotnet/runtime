@@ -966,7 +966,6 @@ int32_t SystemNative_SpawnProcess(
     int32_t kill_on_parent_death,
     int32_t create_suspended,
     int32_t create_new_process_group,
-    int32_t detached,
     const int32_t* inherited_handles,
     int32_t inherited_handles_count)
 {
@@ -975,14 +974,6 @@ int32_t SystemNative_SpawnProcess(
 
 #if !HAVE_POSIX_SPAWN_START_SUSPENDED
     if (create_suspended)
-    {
-        errno = ENOTSUP;
-        return -1;
-    }
-#endif
-
-#ifndef POSIX_SPAWN_SETSID
-    if (detached)
     {
         errno = ENOTSUP;
         return -1;
@@ -1007,12 +998,6 @@ int32_t SystemNative_SpawnProcess(
         flags |= POSIX_SPAWN_START_SUSPENDED;
     }
 #endif
-    if (detached)
-    {
-#ifdef POSIX_SPAWN_SETSID
-        flags |= POSIX_SPAWN_SETSID;
-#endif
-    }
     if (create_new_process_group)
     {
         flags |= POSIX_SPAWN_SETPGROUP;
@@ -1160,7 +1145,6 @@ int32_t SystemNative_SpawnProcess(
     (void)kill_on_parent_death;
     (void)create_suspended;
     (void)create_new_process_group;
-    (void)detached;
     (void)inherited_handles;
     (void)inherited_handles_count;
     errno = ENOTSUP;

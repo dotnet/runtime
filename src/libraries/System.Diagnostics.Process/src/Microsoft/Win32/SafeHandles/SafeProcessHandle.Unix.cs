@@ -63,8 +63,7 @@ namespace Microsoft.Win32.SafeHandles
 
             if (result == -1)
             {
-                int errno = Marshal.GetLastPInvokeError();
-                throw new Win32Exception(errno);
+                throw new Win32Exception();
             }
 
             return new SafeProcessHandle(pidfd, processId);
@@ -131,14 +130,12 @@ namespace Microsoft.Win32.SafeHandles
                     options.KillOnParentExit ? 1 : 0,
                     createSuspended ? 1 : 0,
                     options.CreateNewProcessGroup ? 1 : 0,
-                    0, // detached
                     inheritedHandlesPtr,
                     inheritedHandlesCount);
 
                 if (result == -1)
                 {
-                    int errorCode = Marshal.GetLastPInvokeError();
-                    throw new Win32Exception(errorCode);
+                    throw new Win32Exception();
                 }
 
                 return new SafeProcessHandle(pidfd == -1 ? NoPidFd : pidfd, pid);
@@ -156,8 +153,7 @@ namespace Microsoft.Win32.SafeHandles
             switch (Interop.Sys.WaitForExitAndReap(this, ProcessId, out int exitCode, out int rawSignal))
             {
                 case -1:
-                    int errno = Marshal.GetLastPInvokeError();
-                    throw new Win32Exception(errno);
+                    throw new Win32Exception();
                 default:
                     return new(exitCode, false, rawSignal != 0 ? (PosixSignal)rawSignal : null);
             }
@@ -168,8 +164,7 @@ namespace Microsoft.Win32.SafeHandles
             switch (Interop.Sys.TryWaitForExit(this, ProcessId, milliseconds, out int exitCode, out int rawSignal))
             {
                 case -1:
-                    int errno = Marshal.GetLastPInvokeError();
-                    throw new Win32Exception(errno);
+                    throw new Win32Exception();
                 case 1: // timeout
                     exitStatus = null;
                     return false;
@@ -184,8 +179,7 @@ namespace Microsoft.Win32.SafeHandles
             switch (Interop.Sys.WaitForExitOrKillOnTimeout(this, ProcessId, milliseconds, out int exitCode, out int rawSignal, out int hasTimedout))
             {
                 case -1:
-                    int errno = Marshal.GetLastPInvokeError();
-                    throw new Win32Exception(errno);
+                    throw new Win32Exception();
                 default:
                     return new(exitCode, hasTimedout == 1, rawSignal != 0 ? (PosixSignal)rawSignal : null);
             }
@@ -213,8 +207,7 @@ namespace Microsoft.Win32.SafeHandles
                     switch (Interop.Sys.TryWaitForExitCancellable(this, ProcessId, (int)readHandle.DangerousGetHandle(), out int exitCode, out int rawSignal))
                     {
                         case -1:
-                            int errno = Marshal.GetLastPInvokeError();
-                            throw new Win32Exception(errno);
+                            throw new Win32Exception();
                         case 1: // canceled
                             throw new OperationCanceledException(cancellationToken);
                         default:
@@ -246,8 +239,7 @@ namespace Microsoft.Win32.SafeHandles
                     switch (Interop.Sys.TryWaitForExitCancellable(this, ProcessId, (int)readHandle.DangerousGetHandle(), out int exitCode, out int rawSignal))
                     {
                         case -1:
-                            int errno = Marshal.GetLastPInvokeError();
-                            throw new Win32Exception(errno);
+                            throw new Win32Exception();
                         case 1: // canceled
                             bool wasKilled = KillCore(throwOnError: false);
                             ProcessExitStatus status = WaitForExitCore();
@@ -264,7 +256,7 @@ namespace Microsoft.Win32.SafeHandles
             int* fds = stackalloc int[2];
             if (Interop.Sys.Pipe(fds, Interop.Sys.PipeFlags.O_CLOEXEC) != 0)
             {
-                throw new Win32Exception(Marshal.GetLastPInvokeError());
+                throw new Win32Exception();
             }
 
             readHandle = new SafeFileHandle((IntPtr)fds[Interop.Sys.ReadEndOfPipe], ownsHandle: true);
@@ -306,8 +298,7 @@ namespace Microsoft.Win32.SafeHandles
                 return;
             }
 
-            int errno = Marshal.GetLastPInvokeError();
-            throw new Win32Exception(errno);
+            throw new Win32Exception();
         }
 
         private void SendSignalCore(PosixSignal signal, bool entireProcessGroup)
@@ -322,8 +313,7 @@ namespace Microsoft.Win32.SafeHandles
                 return;
             }
 
-            int errno = Marshal.GetLastPInvokeError();
-            throw new Win32Exception(errno);
+            throw new Win32Exception();
         }
     }
 }

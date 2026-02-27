@@ -18,9 +18,7 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.OSX)]
         public static void SendSignal_SIGTERM_TerminatesProcess()
         {
-            ProcessStartOptions options = new("sleep") { Arguments = { "60" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             processHandle.Signal(PosixSignal.SIGTERM);
 
@@ -34,9 +32,7 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.OSX)]
         public static void SendSignal_SIGINT_TerminatesProcess()
         {
-            ProcessStartOptions options = new("sleep") { Arguments = { "60" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             processHandle.Signal(PosixSignal.SIGINT);
 
@@ -50,14 +46,13 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.OSX)]
         public static void Signal_InvalidSignal_ThrowsArgumentOutOfRangeException()
         {
-            ProcessStartOptions options = new("sleep") { Arguments = { "1" } };
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
 
             PosixSignal invalidSignal = (PosixSignal)100;
 
             Assert.Throws<ArgumentOutOfRangeException>(() => processHandle.Signal(invalidSignal));
 
+            processHandle.Kill();
             processHandle.WaitForExit();
         }
 

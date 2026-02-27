@@ -23,15 +23,13 @@ namespace System.Diagnostics.Tests
                     : new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
             }
 
-            return new("sleep") { Arguments = { "60" } };
+            return new("sleep") { Arguments = { "10" } };
         }
 
         [Fact]
         public static void Start_WithNoArguments_Succeeds()
         {
-            ProcessStartOptions options = OperatingSystem.IsWindows()
-                ? new("hostname")
-                : new("echo") { Arguments = { "test" } };
+            ProcessStartOptions options = new("pwd");
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -57,7 +55,9 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                Assert.NotEqual(0, exitStatus.ExitCode);
+                Assert.Equal(PosixSignal.SIGKILL, exitStatus.Signal);
+                // Exit code for signal termination is 128 + signal_number (native signal number, not enum value)
+                Assert.True(exitStatus.ExitCode > 128, $"Exit code {exitStatus.ExitCode} should indicate signal termination (>128)");
             }
         }
 
@@ -208,6 +208,13 @@ namespace System.Diagnostics.Tests
             {
                 Assert.Equal(-1, exitStatus.ExitCode);
             }
+            else
+            {
+                // On Unix, the process should have been killed with SIGKILL
+                Assert.Equal(PosixSignal.SIGKILL, exitStatus.Signal);
+                // Exit code for signal termination is 128 + signal_number (native signal number, not enum value)
+                Assert.True(exitStatus.ExitCode > 128, $"Exit code {exitStatus.ExitCode} should indicate signal termination (>128)");
+            }
         }
 
         [Fact]
@@ -305,8 +312,10 @@ namespace System.Diagnostics.Tests
         public static void KillOnParentExit_CanBeSetToTrue()
         {
             ProcessStartOptions options = OperatingSystem.IsWindows()
-                ? new("cmd.exe") { Arguments = { "/c", "echo test" }, KillOnParentExit = true }
-                : new("echo") { Arguments = { "test" }, KillOnParentExit = true };
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
+
+            options.KillOnParentExit = true;
 
             Assert.True(options.KillOnParentExit);
 

@@ -23,7 +23,6 @@ internal static partial class Interop
             int killOnParentDeath,
             int createSuspended,
             int createNewProcessGroup,
-            int detached,
             int* inheritedHandles,
             int inheritedHandlesCount);
 

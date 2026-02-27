@@ -384,7 +384,7 @@ namespace System.Diagnostics
             }
 
             int stdinFd = -1, stdoutFd = -1, stderrFd = -1;
-            string[] envp = CreateEnvp(startInfo);
+            string[] envp = ProcessUtils.CreateEnvp(startInfo.Environment);
             string? cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
@@ -603,11 +603,6 @@ namespace System.Diagnostics
             }
             return argvList.ToArray();
         }
-
-        /// <summary>Converts the environment variables information from a ProcessStartInfo into an envp array.</summary>
-        /// <param name="psi">The ProcessStartInfo.</param>
-        /// <returns>The envp array.</returns>
-        private static string[] CreateEnvp(ProcessStartInfo psi) => ProcessUtils.CreateEnvp(psi.Environment);
 
         private static string? ResolveExecutableForShellExecute(string filename, string? workingDirectory)
         {
