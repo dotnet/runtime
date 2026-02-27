@@ -47,9 +47,9 @@
         <target state="translated">ログ メソッドは本文を含めることができません</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">ログ メソッドを汎用にすることはできません</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
@@ -200,6 +200,26 @@
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
         <target state="translated">ログ テンプレートに対応するメソッド引数がありません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
+        <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
+        <target state="translated">引数 '{0}' でサポートされていないパラメーターまたはスコープ付きパラメーター修飾子が使用されています</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
+        <source>Argument is using the unsupported params or scoped parameter modifier</source>
+        <target state="translated">引数がサポートされていないパラメーターまたはスコープ付きパラメーター修飾子を使用しています</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
+        <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
+        <target state="translated">パラメーター '{0}' は ref 構造体であり、ログ ソース ジェネレーターではサポートされていません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
+        <source>Logging method parameter is a ref struct</source>
+        <target state="translated">ログ メソッドのパラメーターは ref 構造体です</target>
         <note />
       </trans-unit>
     </body>

@@ -58,6 +58,7 @@ export interface AssetEntryInternal extends AssetEntry {
     integrity?: string
     cache?: RequestCache
     useCredentials?: boolean
+    culture?: string
 }
 
 export type LoaderConfigInternal = LoaderConfig & {

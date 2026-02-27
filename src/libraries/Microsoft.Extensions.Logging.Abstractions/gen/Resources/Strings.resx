@@ -152,8 +152,8 @@
   <data name="LoggingMethodMustBePartialMessage" xml:space="preserve">
     <value>Logging methods must be partial</value>
   </data>
-  <data name="LoggingMethodIsGenericMessage" xml:space="preserve">
-    <value>Logging methods cannot be generic</value>
+  <data name="LoggingMethodHasAllowsRefStructConstraintMessage" xml:space="preserve">
+    <value>Logging methods cannot have type parameters with 'allows ref struct' constraints</value>
   </data>
   <data name="ShouldntMentionInTemplateMessage" xml:space="preserve">
     <value>Don't include a template for {0} in the logging message since it is implicitly taken care of</value>
@@ -244,5 +244,17 @@
   <data name="PrimaryConstructorParameterLoggerHiddenTitle" xml:space="preserve">
     <value>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</value>
     <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
+  </data>
+  <data name="InvalidLoggingMethodParameterParamsMessage" xml:space="preserve">
+    <value>Argument '{0}' is using the unsupported params or scoped parameter modifier</value>
+  </data>
+  <data name="InvalidLoggingMethodParameterParamsTitle" xml:space="preserve">
+    <value>Argument is using the unsupported params or scoped parameter modifier</value>
+  </data>
+  <data name="InvalidLoggingMethodParameterRefStructMessage" xml:space="preserve">
+    <value>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</value>
+  </data>
+  <data name="InvalidLoggingMethodParameterRefStructTitle" xml:space="preserve">
+    <value>Logging method parameter is a ref struct</value>
   </data>
 </root>

@@ -462,7 +462,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_CheckedWriteBarrier_EBP   = 0x10B,
 
     // JIT32 x86-specific exception handling
-    READYTORUN_HELPER_EndCatch                  = 0x110,
+    READYTORUN_HELPER_EndCatch                  = 0x110, // Unused since READYTORUN_MAJOR_VERSION 14.0
 
     // Stack probing helper
     READYTORUN_HELPER_StackProbe                = 0x111,

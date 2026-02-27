@@ -721,9 +721,17 @@ Structs are generally returned via hidden buffers, whose address is supplied by 
 
 ### Prolog
 
-The prolog will increment the stack pointer, home any arguments that are stored on the linear stack, and zero initialize slots on the linear stack as appropriate. It will establish a frame pointer if one is needed.
+The prolog will decrement the stack pointer by the fixed frame size, home any arguments that are stored on the linear stack, and zero initialize slots on the linear stack as appropriate. It will establish a frame pointer if one is needed.
 
-It will also save a frame descriptor onto the stack, for use during GC and EH. For methods with EH or with GC safe points, a slot on the linear stack will be reserved for a "virtual IP" that will index into the EH and GC info to provide within-method information and allow external code to walk the managed stack frames.
+So on exit from the prolog the stack pointer (`$sp`) will point to the bottom of the fixed part of the stack frame. The frame pointer (`$fp`) if used, will also point to the bottom of fixed part of the stack frame. `$sp` and `$fp` will only differ in methods that can allocate extra storage on the stack at runtime (typically from `localloc`). The stack is kept 16 byte aligned.
+
+For methods that can be interrupted by GC or EH (generally speaking: methods with gc safe calls) the prolog also saves a frame descriptor onto the stack, for use during GC and EH. By convention this value is stored at `fp[0]`. Since only `sp` will be available for unwinding (by virtue of being saved to `$__stack_pointer`) we adopt the convention that when `$sp` moves in the middle of the method, `$sp[0]` is set to `$fp`.
+
+Thus to access information for EH/GC/unwinding, the frame descriptor `fd` can be found from the managed frame `$sp` as follows:
+* `fd = $sp[0]`
+* if `fd` is a stack address, it is the saved `$fp`. So then `fd = fd[0]`.
+
+We will save the "virtual IP" in a similar fashion (TBD: exact details on this).
 
 ### Epilog
 
