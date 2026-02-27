@@ -463,5 +463,4 @@ const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
 const noThrottleNoRetry: { [key: string]: number | undefined } = {
     "dotnetwasm": 1,
     "symbols": 1,
-    "webcil10": 1,
 };
