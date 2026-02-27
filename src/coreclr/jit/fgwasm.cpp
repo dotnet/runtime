@@ -1111,7 +1111,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     //
     BasicBlock* bb0 = new (this, CMK_WasmCfgLowering) BasicBlock();
     INDEBUG(bb0->bbNum = 0;);
-    bb0->bbFlags             = 0;
+    bb0->SetFlagsRaw(BBF_EMPTY);
     bb0->bbPreorderNum       = numBlocks;
     bb0->bbPostorderNum      = dfsTree->GetPostOrderCount();
     initialLayout[numBlocks] = bb0;
