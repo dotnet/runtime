@@ -372,7 +372,7 @@ The contract depends on the following globals
 | --- | --- |
 | `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
-| `ArrayBaseSize` | The base size of an array object (i.e., `ARRAYBASE_BASESIZE`); used to compute multidimensional array rank from `MethodTable::BaseSize`
+| `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
 
 The contract additionally depends on these data descriptors
 
