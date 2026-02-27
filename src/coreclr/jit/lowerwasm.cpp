@@ -486,6 +486,23 @@ void Lowering::AfterLowerBlock()
             }
         }
 
+        bool CanMoveNodePast (GenTree* node, GenTree* past)
+        {
+            bool result = node->IsInvariant() ||
+                node->isContained() ||
+                (
+                    node->OperIs(GT_LCL_VAR) &&
+                    !m_lower->m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed()
+                );
+
+            if (result)
+            {
+                assert(m_lower->IsInvariantInRange(node, past));
+            }
+
+            return result;
+        }
+
         GenTree* StackifyTree(GenTree* root)
         {
             ArrayStack<GenTree*>* stack        = &m_lower->m_stackificationStack;
@@ -524,13 +541,10 @@ void Lowering::AfterLowerBlock()
                     // Locals can also be safely moved as long as they aren't address-exposed due to local var nodes
                     //  being implicitly pseudo-contained.
                     // TODO-WASM: Verify that it is actually safe to do this for all contained nodes.
-                    if (node->IsInvariant() || node->isContained() ||
-                        (node->OperIs(GT_LCL_VAR) &&
-                         !m_lower->m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed()))
+                    if (CanMoveNodePast(node, prev->gtNext))
                     {
                         JITDUMP("Stackifier moving node [%06u] after [%06u]\n", Compiler::dspTreeID(node),
                                 Compiler::dspTreeID(prev));
-                        assert(m_lower->IsInvariantInRange(node, prev->gtNext));
                         m_lower->BlockRange().Remove(node);
                         m_lower->BlockRange().InsertAfter(prev, node);
                         break;
