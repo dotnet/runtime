@@ -46,6 +46,8 @@
 #include "vxsort/do_vxsort.h"
 #endif
 
+extern uint32_t g_totalCpuCount;
+
 #ifdef SERVER_GC
 namespace SVR {
 #else // SERVER_GC
@@ -53535,6 +53537,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 {
     bool v2 = gcDacVars->minor_version_number >= 2;
     bool v4 = gcDacVars->minor_version_number >= 4;
+    bool v8 = gcDacVars->minor_version_number >= 8;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -53566,7 +53569,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     // work differently than .Net SOS.  When making breaking changes here you may need to
     // find NativeAOT's equivalent of SOS_BREAKING_CHANGE_VERSION and increment it.
     gcDacVars->major_version_number = 2;
-    gcDacVars->minor_version_number = 4;
+    gcDacVars->minor_version_number = 8;
     if (v2)
     {
         gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
@@ -53671,6 +53674,12 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #else
         gcDacVars->dynamic_adaptation_mode = nullptr;
 #endif //DYNAMIC_HEAP_COUNT
+    }
+    if (v8)
+    {
+#ifdef MULTIPLE_HEAPS
+        gcDacVars->g_totalCpuCount = &::g_totalCpuCount;
+#endif // MULTIPLE_HEAPS
     }
 }
 

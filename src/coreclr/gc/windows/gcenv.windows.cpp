@@ -19,6 +19,9 @@ GCSystemInfo g_SystemInfo;
 
 static bool g_SeLockMemoryPrivilegeAcquired = false;
 
+// The cached total number of CPUs that can be used in the OS.
+uint32_t g_totalCpuCount = 0;
+
 static AffinitySet g_processAffinitySet;
 
 namespace {
@@ -1106,14 +1109,17 @@ uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 //  Number of processors on the machine
 uint32_t GCToOSInterface::GetTotalProcessorCount()
 {
+    if (g_totalCpuCount != 0)
+        return g_totalCpuCount;
     if (CanEnableGCCPUGroups())
     {
-        return g_nProcessors;
+        g_totalCpuCount = g_nProcessors;
     }
     else
     {
-        return g_SystemInfo.dwNumberOfProcessors;
+        g_totalCpuCount = g_SystemInfo.dwNumberOfProcessors;
     }
+    return g_totalCpuCount;
 }
 
 bool GCToOSInterface::CanEnableGCNumaAware()

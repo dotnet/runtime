@@ -138,7 +138,7 @@ typedef cpuset_t cpu_set_t;
 #endif
 
 // The cached total number of CPUs that can be used in the OS.
-static uint32_t g_totalCpuCount = 0;
+uint32_t g_totalCpuCount = 0;
 
 bool CanFlushUsingMembarrier()
 {
