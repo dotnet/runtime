@@ -71,8 +71,7 @@ namespace
         existing->insert(path);
     }
 
-    // Return the filename from deps path; a deps path always uses a '/' for the separator.
-    // A uniqifying append helperthat doesn't let two entries with the same
+    // A uniqifying append helper that doesn't let two entries with the same
     // "asset_name" be part of the "items" paths.
     void add_tpa_asset(
         const pal::string_t& name,
