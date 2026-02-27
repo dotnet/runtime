@@ -14,9 +14,11 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         IsHandleWeak = 0x4,
     }
 
-    // Matches RCW::MarshalingType_FreeThreaded in runtimecallablewrapper.h
-    private const uint MarshalingTypeMask = 0x3 << 7;
-    private const uint MarshalingTypeFreeThreaded = 2 << 7;
+    // Matches the bit position of m_MarshalingType within RCW::RCWFlags::m_dwFlags.
+    // [cDAC] Contract constant: value must match the field layout of RCW::RCWFlags in runtimecallablewrapper.h.
+    private const int MarshalingTypeShift = 7;
+    private const uint MarshalingTypeMask = 0x3u << MarshalingTypeShift;
+    private const uint MarshalingTypeFreeThreaded = 2u << MarshalingTypeShift;
 
     internal BuiltInCOM_1(Target target)
     {
