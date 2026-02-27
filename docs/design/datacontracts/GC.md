@@ -210,6 +210,7 @@ Global variables used:
 | `GCIdentifiers` | string | GC | CSV string containing identifiers of the GC. Current values are "server", "workstation", "regions", and "segments" |
 | `NumHeaps` | TargetPointer | GC | Pointer to the number of heaps for server GC (int) |
 | `Heaps` | TargetPointer | GC | Pointer to an array of pointers to heaps |
+| `TotalCpuCount` | TargetPointer | GC | Pointer to the total CPU/processor count used by the GC for handle table slot allocation (in server builds) |
 | `StructureInvalidCount` | TargetPointer | GC | Pointer to the count of invalid GC structures (int) |
 | `MaxGeneration` | TargetPointer | GC | Pointer to the maximum generation number (uint) |
 | `TotalGenerationCount` | uint | GC | The total number of generations in the GC |
@@ -629,7 +630,7 @@ IEnumerable<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
 
     int maxSlots = 1;
     if (IsServerGC())
-        maxSlots = (int)GetGCHeapCount();
+        maxSlots = (int)target.Read<uint>(target.ReadGlobalPointer("TotalCpuCount"));
 
     uint handleSegmentSize = target.ReadGlobal<uint>("HandleSegmentSize");
     uint initialHandleTableArraySize = target.ReadGlobal<uint>("InitialHandleTableArraySize");

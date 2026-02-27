@@ -298,7 +298,7 @@ internal readonly struct GC_1 : IGC
 
         int maxSlots = 1;
         if (GetGCType() == GCType.Server)
-            maxSlots = (int)((IGC)this).GetGCHeapCount();
+            maxSlots = (int)_target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.TotalCpuCount));
 
         uint handleSegmentSize = _target.ReadGlobal<uint>(Constants.Globals.HandleSegmentSize);
         uint initialHandleTableArraySize = _target.ReadGlobal<uint>(Constants.Globals.InitialHandleTableArraySize);

@@ -125,6 +125,7 @@ public static class Constants
         public const string HandleTableMap = nameof(HandleTableMap);
         public const string HandleSegmentSize = nameof(HandleSegmentSize);
         public const string InitialHandleTableArraySize = nameof(InitialHandleTableArraySize);
+        public const string TotalCpuCount = nameof(TotalCpuCount);
         public const string CardTableInfoSize = nameof(CardTableInfoSize);
         public const string CountFreeRegionKinds = nameof(CountFreeRegionKinds);
         public const string GCHeapBookkeepingStart = nameof(GCHeapBookkeepingStart);
