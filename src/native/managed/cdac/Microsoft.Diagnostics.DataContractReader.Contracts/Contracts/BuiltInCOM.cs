@@ -38,7 +38,6 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 
     public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
     {
-        uint numInterfaces = _target.ReadGlobal<uint>(Constants.Globals.CCWNumInterfaces);
         ulong comMethodTableSize = _target.GetTypeInfo(DataType.ComMethodTable).Size!.Value;
         int pointerSize = _target.PointerSize;
         // LinkedWrapperTerminator = (PTR_ComCallWrapper)-1: all pointer-sized bits set
@@ -50,12 +49,10 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         {
             Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(current);
 
-            for (uint i = 0; i < numInterfaces; i++)
+            for (int i = 0; i < wrapper.IPtrs.Length; i++)
             {
-                // slotAddr is the address of m_rgpIPtr[i] in the CCW struct
-                TargetPointer slotAddr = wrapper.IPtr + i * (ulong)pointerSize;
                 // slotValue is the vtable pointer stored in m_rgpIPtr[i]
-                TargetPointer slotValue = _target.ReadPointer(slotAddr);
+                TargetPointer slotValue = wrapper.IPtrs[i];
                 if (slotValue == TargetPointer.Null)
                     continue;
 
@@ -66,6 +63,9 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
                 // Skip interfaces whose vtable layout is not yet complete
                 if ((comMethodTable.Flags.Value & IsLayoutComplete) == 0)
                     continue;
+
+                // slotAddr is the address of m_rgpIPtr[i] in the CCW struct (= InterfacePointer)
+                TargetPointer slotAddr = wrapper.IPtr + (ulong)(i * pointerSize);
 
                 // Slot_Basic (index 0) of the first wrapper = IUnknown/IDispatch, no associated MethodTable
                 TargetPointer methodTable = (isFirst && i == 0)
