@@ -749,6 +749,42 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Directly encode constant to instructions.
             }
+            if (tree->TypeIs(TYP_SIMD))
+            {
+                // If the constant doesn't fit into the instructions, then temps will be required
+                switch (vecCon->gtSimdScalableVal.gtSimdScalableKind)
+                {
+                    case SimdScalableRepeated:
+                        if (!emitter::isValidSimm<8>(vecCon->gtSimdScalableVal.gtSimdScalableIndex) &&
+                            !emitter::isValidSimm_MultipleOf<8, 256>(vecCon->gtSimdScalableVal.gtSimdScalableIndex))
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                        }
+                        break;
+
+                    case SimdScalableSequence:
+                        if (!emitter::isValidSimm<5>(vecCon->gtSimdScalableVal.gtSimdScalableIndex))
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                        }
+                        if (!emitter::isValidSimm<5>(vecCon->gtSimdScalableVal.gtSimdScalableStep))
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                        }
+                        break;
+
+                    case SimdScalableScalar:
+                        if (!emitter::isValidSimm<8>(vecCon->gtSimdScalableVal.gtSimdScalableIndex))
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                        }
+                        break;
+
+                    default:
+                        unreached();
+                        break;
+                }
+            }
             else
             {
                 // Reserve int to load constant from memory (IF_LARGELDC)
@@ -770,7 +806,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             GenTreeMskCon* mskCon = tree->AsMskCon();
 
-            if (mskCon->IsAllBitsSet() || mskCon->IsZero())
+            if (mskCon->IsAllBitsSet(TYP_BYTE) || mskCon->IsZero())
             {
                 // Directly encode constant to instructions.
             }

@@ -472,7 +472,11 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
 
     if (simdBaseType != TYP_UNDEF)
     {
-        assert(size == info.compCompHnd->getClassSize(typeHnd));
+#if defined(TARGET_ARM64)
+        assert((size == info.compCompHnd->getClassSize(typeHnd)) || (size == SIZE_UNKNOWN));
+#else
+        assert((size == info.compCompHnd->getClassSize(typeHnd)));
+#endif // TARGET_ARM64
         setUsesSIMDTypes(true);
     }
 
@@ -839,4 +843,69 @@ void Compiler::impMarkContiguousSIMDFieldStores(Statement* stmt)
         fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
     }
 }
+
+#if defined(TARGET_ARM64)
+
+bool simdscalable_t::IsAllBitsSet() const
+{
+    return (gtSimdScalableKind == SimdScalableRepeated) &&
+           (gtSimdScalableIndex == (uint64_t)((1 << genTypeSize(gtSimdScalableBaseType)) - 1));
+}
+
+bool simdmaskscalable_t::IsAllBitsSet(var_types simdBaseType) const
+{
+    return (gtSimdMaskScalableIndex == 1) && (genTypeSize(simdBaseType) == genTypeSize(gtSimdMaskScalableBaseType));
+}
+
+bool EvaluateSimdCvtScalableVectorToMask(var_types baseType, simdmaskscalable_t* maskCon, simdscalable_t vecCon)
+{
+    // All zero can always be converted to a mask, regardless of types
+    if (vecCon.IsZero())
+    {
+        maskCon->gtSimdMaskScalableBaseType = baseType;
+        maskCon->gtSimdMaskScalableIndex    = 0;
+        return true;
+    }
+
+    if (vecCon.gtSimdScalableKind != SimdScalableRepeated)
+    {
+        return false;
+    }
+
+    // size of the basetype must match
+    if (genTypeSize(baseType) != genTypeSize(vecCon.gtSimdScalableBaseType))
+    {
+        return false;
+    }
+
+    maskCon->gtSimdMaskScalableBaseType = baseType;
+    maskCon->gtSimdMaskScalableIndex    = (vecCon.gtSimdScalableIndex == 1);
+    return true;
+}
+
+bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vecCon, simdmaskscalable_t maskCon)
+{
+    // All zero can always be converted to a mask, regardless of types
+    if (maskCon.IsZero())
+    {
+        vecCon->gtSimdScalableBaseType = baseType;
+        vecCon->gtSimdScalableKind     = SimdScalableRepeated;
+        vecCon->gtSimdScalableIndex    = 0;
+        return true;
+    }
+
+    // size of the basetype must match
+    // TODO: We could work around this for masks?
+    if (genTypeSize(baseType) != genTypeSize(vecCon->gtSimdScalableBaseType))
+    {
+        return false;
+    }
+
+    vecCon->gtSimdScalableBaseType = baseType;
+    vecCon->gtSimdScalableKind     = SimdScalableRepeated;
+    vecCon->gtSimdScalableIndex    = 1;
+    return true;
+}
+#endif // TARGET_ARM64
+
 #endif // FEATURE_SIMD

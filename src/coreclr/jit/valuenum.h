@@ -394,6 +394,8 @@ public:
 #if defined(TARGET_XARCH)
     simd32_t GetConstantSimd32(ValueNum argVN);
     simd64_t GetConstantSimd64(ValueNum argVN);
+#elif defined(TARGET_ARM64)
+    simdscalable_t GetConstantSimdScalable(ValueNum argVN);
 #endif // TARGET_XARCH
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     simdmask_t GetConstantSimdMask(ValueNum argVN);
@@ -480,6 +482,9 @@ public:
 #if defined(TARGET_XARCH)
     ValueNum VNForSimd32Con(const simd32_t& cnsVal);
     ValueNum VNForSimd64Con(const simd64_t& cnsVal);
+#elif defined(TARGET_ARM64)
+    ValueNum VNForSimdScalableCon(const simdscalable_t& cnsVal);
+    ValueNum VNForSimdMaskScalableCon(const simdmaskscalable_t& cnsVal);
 #endif // TARGET_XARCH
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     ValueNum VNForSimdMaskCon(const simdmask_t& cnsVal);
@@ -1920,6 +1925,67 @@ private:
         }
         return m_simd64CnsMap;
     }
+#elif defined(TARGET_ARM64)
+    struct SimdScalablePrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdscalable_t>
+    {
+        static bool Equals(const simdscalable_t& x, const simdscalable_t& y)
+        {
+            return x == y;
+        }
+
+        static unsigned GetHashCode(const simdscalable_t& val)
+        {
+            unsigned hash = 0;
+
+            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableBaseType);
+            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableKind);
+            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableIndex);
+            hash = static_cast<unsigned>(hash ^ val.gtSimdScalableStep);
+
+            return hash;
+        }
+    };
+
+    typedef VNMap<simdscalable_t, SimdScalablePrimitiveKeyFuncs> SimdScalableToValueNumMap;
+    SimdScalableToValueNumMap*                                   m_simdScalableCnsMap;
+    SimdScalableToValueNumMap*                                   GetSimdScalableCnsMap()
+    {
+        if (m_simdScalableCnsMap == nullptr)
+        {
+            m_simdScalableCnsMap = new (m_alloc) SimdScalableToValueNumMap(m_alloc);
+        }
+        return m_simdScalableCnsMap;
+    }
+
+    struct SimdMaskScalablePrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmaskscalable_t>
+    {
+        static bool Equals(const simdmaskscalable_t& x, const simdmaskscalable_t& y)
+        {
+            return x == y;
+        }
+
+        static unsigned GetHashCode(const simdmaskscalable_t& val)
+        {
+            unsigned hash = 0;
+
+            hash = static_cast<unsigned>(hash ^ val.gtSimdMaskScalableBaseType);
+            hash = static_cast<unsigned>(hash ^ val.gtSimdMaskScalableIndex);
+
+            return hash;
+        }
+    };
+
+    typedef VNMap<simdmaskscalable_t, SimdMaskScalablePrimitiveKeyFuncs> SimdMaskScalableToValueNumMap;
+    SimdMaskScalableToValueNumMap*                                       m_simdMaskScalableCnsMap;
+    SimdMaskScalableToValueNumMap*                                       GetSimdMaskScalableCnsMap()
+    {
+        if (m_simdMaskScalableCnsMap == nullptr)
+        {
+            m_simdMaskScalableCnsMap = new (m_alloc) SimdMaskScalableToValueNumMap(m_alloc);
+        }
+        return m_simdMaskScalableCnsMap;
+    }
+
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -2134,6 +2200,13 @@ struct ValueNumStore::VarTypConv<TYP_SIMD64>
     typedef simd64_t Type;
     typedef simd64_t Lang;
 };
+#elif defined(TARGET_ARM64)
+template <>
+struct ValueNumStore::VarTypConv<TYP_SIMD>
+{
+    typedef simdscalable_t Type;
+    typedef simdscalable_t Lang;
+};
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -2219,6 +2292,13 @@ FORCEINLINE simd64_t ValueNumStore::SafeGetConstantValue<simd64_t>(Chunk* c, uns
     assert(c->m_typ == TYP_SIMD64);
     return reinterpret_cast<VarTypConv<TYP_SIMD64>::Lang*>(c->m_defs)[offset];
 }
+#elif defined(TARGET_ARM64)
+template <>
+FORCEINLINE simdscalable_t ValueNumStore::SafeGetConstantValue<simdscalable_t>(Chunk* c, unsigned offset)
+{
+    assert(c->m_typ == TYP_SIMD);
+    return reinterpret_cast<VarTypConv<TYP_SIMD>::Lang*>(c->m_defs)[offset];
+}
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -2299,6 +2379,20 @@ FORCEINLINE simd64_t ValueNumStore::ConstantValueInternal<simd64_t>(ValueNum vn 
     assert(!coerce);
 
     return SafeGetConstantValue<simd64_t>(c, offset);
+}
+#elif defined(TARGET_ARM64)
+template <>
+FORCEINLINE simdscalable_t ValueNumStore::ConstantValueInternal<simdscalable_t>(ValueNum vn DEBUGARG(bool coerce))
+{
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(c->m_attribs == CEA_Const);
+
+    unsigned offset = ChunkOffset(vn);
+
+    assert(c->m_typ == TYP_SIMD);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simdscalable_t>(c, offset);
 }
 #endif // TARGET_XARCH
 

@@ -930,6 +930,7 @@ struct HWIntrinsicInfo
         switch (id)
         {
 #if defined(TARGET_ARM64)
+            case NI_VectorT_Create:
             case NI_Vector64_Create:
 #endif // TARGET_ARM64
             case NI_Vector128_Create:
@@ -948,6 +949,7 @@ struct HWIntrinsicInfo
         switch (id)
         {
 #if defined(TARGET_ARM64)
+            case NI_VectorT_CreateScalar:
             case NI_Vector64_CreateScalar:
 #endif // TARGET_ARM64
             case NI_Vector128_CreateScalar:
@@ -966,6 +968,7 @@ struct HWIntrinsicInfo
         switch (id)
         {
 #if defined(TARGET_ARM64)
+            case NI_VectorT_CreateScalarUnsafe:
             case NI_Vector64_CreateScalarUnsafe:
 #endif // TARGET_ARM64
             case NI_Vector128_CreateScalarUnsafe:

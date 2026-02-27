@@ -447,6 +447,9 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
 #if defined(TARGET_XARCH)
     , m_simd32CnsMap(nullptr)
     , m_simd64CnsMap(nullptr)
+#elif defined(TARGET_ARM64)
+    , m_simdScalableCnsMap(nullptr)
+    , m_simdMaskScalableCnsMap(nullptr)
 #endif // TARGET_XARCH
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     , m_simdMaskCnsMap(nullptr)
@@ -1719,6 +1722,14 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                     m_defs = new (alloc) Alloc<TYP_SIMD64>::Type[ChunkSize];
                     break;
                 }
+
+#elif defined(TARGET_ARM64)
+                case TYP_SIMD:
+                {
+                    m_defs = new (alloc) Alloc<TYP_SIMD>::Type[ChunkSize];
+                    break;
+                }
+
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -1899,6 +1910,18 @@ ValueNum ValueNumStore::VNForSimd64Con(const simd64_t& cnsVal)
 {
     return VnForConst(cnsVal, GetSimd64CnsMap(), TYP_SIMD64);
 }
+
+#elif defined(TARGET_ARM64)
+ValueNum ValueNumStore::VNForSimdScalableCon(const simdscalable_t& cnsVal)
+{
+    return VnForConst(cnsVal, GetSimdScalableCnsMap(), TYP_SIMD);
+}
+
+ValueNum ValueNumStore::VNForSimdMaskScalableCon(const simdmaskscalable_t& cnsVal)
+{
+    return VnForConst(cnsVal, GetSimdMaskScalableCnsMap(), TYP_MASK);
+}
+
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -2263,11 +2286,23 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ, unsigned elementCount)
         {
             return VNForSimd64Con(simd64_t::AllBitsSet());
         }
+
+#elif defined(TARGET_ARM64)
+        case TYP_SIMD:
+        {
+            return VNForSimdScalableCon(simdscalable_t::AllBitsSet());
+        }
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
+#if defined(TARGET_ARM64) && defined(DEBUG)
+            if (JitConfig.JitUseScalableVectorT())
+            {
+                return VNForSimdMaskScalableCon(simdmaskscalable_t::AllBitsSet());
+            }
+#endif // TARGET_ARM64 && DEBUG
             return VNForSimdMaskCon(simdmask_t::AllBitsSet(elementCount));
         }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -2346,6 +2381,72 @@ TSimd BroadcastConstantToSimd(ValueNumStore* vns, var_types baseType, ValueNum a
     return result;
 }
 
+#if defined(TARGET_ARM64)
+simdscalable_t BroadcastConstantToSimdScalable(ValueNumStore* vns, var_types baseType, ValueNum argVN)
+{
+    assert(vns->IsVNConstant(argVN));
+    assert(!varTypeIsSIMD(vns->TypeOfVN(argVN)));
+
+    simdscalable_t result = {};
+
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        {
+            float arg = vns->GetConstantSingle(argVN);
+            BroadcastConstantToSimdScalable<float>(&result, baseType, arg);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        {
+            double arg = vns->GetConstantDouble(argVN);
+            BroadcastConstantToSimdScalable<double>(&result, baseType, arg);
+            break;
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            uint8_t arg = static_cast<uint8_t>(vns->GetConstantInt32(argVN));
+            BroadcastConstantToSimdScalable<uint8_t>(&result, baseType, arg);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            uint16_t arg = static_cast<uint16_t>(vns->GetConstantInt32(argVN));
+            BroadcastConstantToSimdScalable<uint16_t>(&result, baseType, arg);
+            break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            uint32_t arg = static_cast<uint32_t>(vns->GetConstantInt32(argVN));
+            BroadcastConstantToSimdScalable<uint32_t>(&result, baseType, arg);
+            break;
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            uint64_t arg = static_cast<uint64_t>(vns->GetConstantInt64(argVN));
+            BroadcastConstantToSimdScalable<uint64_t>(&result, baseType, arg);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    return result;
+}
+#endif // defined TARGET_ARM64
+
 ValueNum ValueNumStore::VNBroadcastForSimdType(var_types simdType, var_types simdBaseType, ValueNum valVN)
 {
     assert(varTypeIsSIMD(simdType));
@@ -2381,6 +2482,13 @@ ValueNum ValueNumStore::VNBroadcastForSimdType(var_types simdType, var_types sim
         {
             simd64_t result = BroadcastConstantToSimd<simd64_t>(this, simdBaseType, valVN);
             return VNForSimd64Con(result);
+        }
+
+#elif defined(TARGET_ARM64)
+        case TYP_SIMD:
+        {
+            simdscalable_t result = BroadcastConstantToSimdScalable(this, simdBaseType, valVN);
+            return VNForSimdScalableCon(result);
         }
 
 #endif // TARGET_XARCH
@@ -4053,6 +4161,18 @@ simd64_t ValueNumStore::GetConstantSimd64(ValueNum argVN)
 
     return ConstantValue<simd64_t>(argVN);
 }
+
+#elif defined(TARGET_ARM64)
+// Given a simdscalable constant value number return its value as a simdscalable.
+//
+simdscalable_t ValueNumStore::GetConstantSimdScalable(ValueNum argVN)
+{
+    assert(IsVNConstant(argVN));
+    assert(TypeOfVN(argVN) == TYP_SIMD);
+
+    return ConstantValue<simdscalable_t>(argVN);
+}
+
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -7760,6 +7880,20 @@ simd64_t GetConstantSimd64(ValueNumStore* vns, var_types baseType, ValueNum argV
 
     return BroadcastConstantToSimd<simd64_t>(vns, baseType, argVN);
 }
+
+#elif defined(TARGET_ARM64)
+simdscalable_t GetConstantSimdScalable(ValueNumStore* vns, var_types baseType, ValueNum argVN)
+{
+    assert(vns->IsVNConstant(argVN));
+
+    if (vns->TypeOfVN(argVN) == TYP_SIMD)
+    {
+        return vns->GetConstantSimdScalable(argVN);
+    }
+
+    return BroadcastConstantToSimdScalable(vns, baseType, argVN);
+}
+
 #endif // TARGET_XARCH
 
 ValueNum EvaluateUnarySimd(
@@ -10710,6 +10844,41 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                     cnsVal.u64[6], cnsVal.u64[7]);
                 break;
             }
+
+#elif defined(TARGET_ARM64)
+            case TYP_SIMD:
+            {
+                simdscalable_t cnsVal = GetConstantSimdScalable(vn);
+                printf("SimdScalableCns[%-6s ", varTypeName(cnsVal.gtSimdScalableBaseType));
+
+                switch (cnsVal.gtSimdScalableKind)
+                {
+                    case SimdScalableRepeated:
+                        printf("0x%016llx, 0x%016llx, 0x%016llx...]", cnsVal.gtSimdScalableIndex,
+                               cnsVal.gtSimdScalableIndex, cnsVal.gtSimdScalableIndex);
+                        break;
+
+                    case SimdScalableSequence:
+                    {
+                        uint64_t index = cnsVal.gtSimdScalableIndex;
+                        printf("0x%016llx, ", index);
+                        index += cnsVal.gtSimdScalableStep;
+                        printf("0x%016llx, ", index);
+                        index += cnsVal.gtSimdScalableStep;
+                        printf("0x%016llx...]", index);
+                        break;
+                    }
+
+                    case SimdScalableScalar:
+                        printf("0x%016llx, 0x0, 0x0...]", cnsVal.gtSimdScalableIndex);
+                        break;
+
+                    default:
+                        unreached();
+                }
+                break;
+            }
+
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -12299,6 +12468,17 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             tree->gtVNPair.SetBoth(vnStore->VNForSimd64Con(simd64Val));
             break;
         }
+
+#elif defined(TARGET_ARM64)
+        case TYP_SIMD:
+        {
+            simdscalable_t simdVal;
+            memcpy(&simdVal, &tree->AsVecCon()->gtSimdScalableVal, sizeof(simdscalable_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimdScalableCon(simdVal));
+            break;
+        }
+
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)

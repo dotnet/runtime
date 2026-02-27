@@ -192,7 +192,6 @@ struct simd16_t
 };
 static_assert(sizeof(simd16_t) == 16);
 
-#if defined(TARGET_XARCH)
 struct simd32_t
 {
     union
@@ -248,6 +247,7 @@ struct simd32_t
 };
 static_assert(sizeof(simd32_t) == 32);
 
+#if defined(TARGET_XARCH)
 struct simd64_t
 {
     union
@@ -378,8 +378,11 @@ struct simdmask_t
 static_assert(sizeof(simdmask_t) == 8);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
+// Ensure simd_t is big enough to contain any simd type
 #if defined(TARGET_XARCH)
 typedef simd64_t simd_t;
+#elif defined(TARGET_ARM64)
+typedef simd32_t simd_t;
 #else
 typedef simd16_t simd_t;
 #endif
@@ -1789,6 +1792,8 @@ void EvaluateSimdCvtVectorToMask(var_types baseType, simdmask_t* result, TSimd a
 
 #if defined(TARGET_ARM64)
 
+// TODO-SVE: Once JitUseScalableVectorT is removed, the pattern evaluation functions can be removed too.
+
 enum SveMaskPattern
 {
     SveMaskPatternLargestPowerOf2    = 0,  // The largest power of 2.
@@ -2113,6 +2118,128 @@ SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
             unreached();
         }
     }
+}
+
+// Functionality for handling constant vectors of unknown size
+
+enum SimdScalableKind : uint8_t
+{
+    SimdScalableRepeated, // Each lane of the vector contains the same value.
+    SimdScalableSequence, // Each lane of the vector increments by a step value.
+    SimdScalableScalar,   // First lane is set. The rest of the vector is zero
+};
+
+struct simdscalable_t
+{
+    var_types        gtSimdScalableBaseType;
+    SimdScalableKind gtSimdScalableKind;
+    union
+    {
+        uint8_t  gtSimdScalableIndexU8[8];
+        float    gtSimdScalableIndexF32[2];
+        double   gtSimdScalableIndexF64[1];
+        uint64_t gtSimdScalableIndex;
+    };
+    union
+    {
+        uint8_t  gtSimdScalableStepU8[8];
+        float    gtSimdScalableStepF32[2];
+        double   gtSimdScalableStepF64[1];
+        uint64_t gtSimdScalableStep;
+    };
+
+    bool operator==(const simdscalable_t& other) const
+    {
+        if (IsZero() && other.IsZero())
+        {
+            return true;
+        }
+
+        return (gtSimdScalableBaseType == other.gtSimdScalableBaseType) &&
+               (gtSimdScalableKind == other.gtSimdScalableKind) && (gtSimdScalableIndex == other.gtSimdScalableIndex) &&
+               (gtSimdScalableStep == other.gtSimdScalableStep);
+    }
+
+    bool operator!=(const simdscalable_t& other) const
+    {
+        return !(*this == other);
+    }
+
+    static simdscalable_t AllBitsSet()
+    {
+        simdscalable_t result;
+
+        result.gtSimdScalableBaseType = TYP_BYTE;
+        result.gtSimdScalableKind     = SimdScalableRepeated;
+        result.gtSimdScalableIndex    = 0xff;
+
+        return result;
+    }
+
+    bool IsZero() const
+    {
+        return (gtSimdScalableIndex == 0) && (gtSimdScalableKind != SimdScalableSequence || gtSimdScalableStep == 0);
+    }
+
+    bool IsAllBitsSet() const;
+};
+
+static_assert(sizeof(simd_t) >= sizeof(simdscalable_t));
+
+struct simdmaskscalable_t
+{
+    var_types gtSimdMaskScalableBaseType;
+    uint8_t   gtSimdMaskScalableIndex;
+
+    bool operator==(const simdmaskscalable_t& other) const
+    {
+        if (IsZero() && other.IsZero())
+        {
+            return true;
+        }
+
+        return (gtSimdMaskScalableBaseType == other.gtSimdMaskScalableBaseType) &&
+               (gtSimdMaskScalableIndex == other.gtSimdMaskScalableIndex);
+    }
+
+    bool operator!=(const simdmaskscalable_t& other) const
+    {
+        return !(*this == other);
+    }
+
+    static simdmaskscalable_t AllBitsSet()
+    {
+        simdmaskscalable_t result;
+
+        result.gtSimdMaskScalableBaseType = TYP_BYTE;
+        result.gtSimdMaskScalableIndex    = 0xff;
+
+        return result;
+    }
+
+    bool IsZero() const
+    {
+        return gtSimdMaskScalableIndex == 0;
+    }
+
+    // A type is required when checking for all bits set, as a all bits set mask
+    // for TYP_LONG would not be all true when used for TYP_BYTE, and instead would
+    // be 000100010001...
+    bool IsAllBitsSet(var_types simdBaseType) const;
+};
+
+static_assert(sizeof(simdmask_t) >= sizeof(simdmaskscalable_t));
+
+bool EvaluateSimdCvtScalableVectorToMask(var_types baseType, simdmaskscalable_t* maskCon, simdscalable_t vecCon);
+
+bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vecCon, simdmaskscalable_t maskCon);
+
+template <typename TBase>
+void BroadcastConstantToSimdScalable(simdscalable_t* result, var_types baseType, TBase arg0)
+{
+    result->gtSimdScalableBaseType = baseType;
+    result->gtSimdScalableKind     = SimdScalableRepeated;
+    memcpy(&result->gtSimdScalableIndex, &arg0, sizeof(TBase));
 }
 
 //------------------------------------------------------------------------

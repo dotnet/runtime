@@ -3068,6 +3068,23 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_VectorT_Create:
+            case NI_VectorT_CreateScalarUnsafe:
+            {
+                emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+                GetEmitter()->emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                break;
+            }
+
+            case NI_VectorT_CreateSequence:
+            {
+                emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+
+                // Predicated merge broadcast of the constant
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
             default:
                 unreached();
         }
