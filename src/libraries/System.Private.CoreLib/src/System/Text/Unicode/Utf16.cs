@@ -16,22 +16,14 @@ namespace System.Text.Unicode
         /// <param name="value">The <see cref="ReadOnlySpan{T}"/> containing the UTF-16 input text to validate.</param>
         /// <returns><c>true</c> if <paramref name="value"/> is well-formed UTF-16, <c>false</c> otherwise.</returns>
         public static bool IsValid(ReadOnlySpan<char> value) =>
-            IndexOfInvalidSubsequence(value) < 0;
+            Utf16Utility.GetIndexOfFirstInvalidUtf16Sequence(value) < 0;
 
         /// <summary>
         /// Finds the index of the first invalid UTF-16 subsequence.
         /// </summary>
         /// <param name="value">The <see cref="ReadOnlySpan{T}"/> containing the UTF-16 input text to examine.</param>
         /// <returns>The index of the first invalid UTF-16 subsequence, or <c>-1</c> if the entire input is valid.</returns>
-        public static unsafe int IndexOfInvalidSubsequence(ReadOnlySpan<char> value)
-        {
-            fixed (char* pValue = &MemoryMarshal.GetReference(value))
-            {
-                char* pFirstInvalidChar = Utf16Utility.GetPointerToFirstInvalidChar(pValue, value.Length, out _, out _);
-                int index = (int)(pFirstInvalidChar - pValue);
-
-                return (index < value.Length) ? index : -1;
-            }
-        }
+        public static int IndexOfInvalidSubsequence(ReadOnlySpan<char> value) =>
+            Utf16Utility.GetIndexOfFirstInvalidUtf16Sequence(value);
     }
 }

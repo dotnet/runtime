@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 #if NET
 using System.Runtime.Intrinsics;
 #endif
@@ -11,6 +13,22 @@ namespace System.Text.Unicode
 {
     internal static partial class Utf16Utility
     {
+        /// <summary>
+        /// Returns the byte index in <paramref name="utf16Data"/> where the first invalid UTF-16 sequence begins,
+        /// or -1 if the buffer contains no invalid sequences.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe int GetIndexOfFirstInvalidUtf16Sequence(ReadOnlySpan<char> utf16Data)
+        {
+            fixed (char* pValue = &MemoryMarshal.GetReference(utf16Data))
+            {
+                char* pFirstInvalidChar = GetPointerToFirstInvalidChar(pValue, utf16Data.Length, out _, out _);
+                int index = (int)(pFirstInvalidChar - pValue);
+
+                return (index < utf16Data.Length) ? index : -1;
+            }
+        }
+
         /// <summary>
         /// Returns true iff the UInt32 represents two ASCII UTF-16 characters in machine endianness.
         /// </summary>
