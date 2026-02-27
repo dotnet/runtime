@@ -292,6 +292,32 @@ namespace System.IO
             return n;
         }
 
+        // PERF: Reads up to count bytes from the current position and returns them as a span, advancing the position.
+        // Unlike InternalReadSpan, does not throw if fewer bytes are available.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<byte> InternalRead(int count)
+        {
+            if (_memoryMemoryStream is not null)
+            {
+                int n = Math.Min(_memoryMemoryStream.RemainingBytes, count);
+                if (n <= 0)
+                    return default;
+                return _memoryMemoryStream.InternalReadSpan(n);
+            }
+
+            EnsureNotClosed();
+
+            int available = _length - _position;
+            if (available > count)
+                available = count;
+            if (available <= 0)
+                return default;
+
+            var span = new ReadOnlySpan<byte>(_buffer, _position, available);
+            _position += available;
+            return span;
+        }
+
         // Gets & sets the capacity (number of bytes allocated) for this stream.
         // The capacity cannot be set to a value less than the current length
         // of the stream.
@@ -946,6 +972,16 @@ namespace System.IO
             {
                 if (!_isOpen)
                     ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
+            }
+
+            public int RemainingBytes
+            {
+                get
+                {
+                    EnsureNotClosed();
+                    int n = _length - _position;
+                    return n > 0 ? n : 0;
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
