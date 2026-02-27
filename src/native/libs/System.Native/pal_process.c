@@ -1447,7 +1447,8 @@ int32_t SystemNative_SendSignal(int32_t pidfd, int32_t pid, int32_t managed_sign
     // On systems with pidfd_send_signal, prefer it if we have a valid pidfd
     if (pidfd >= 0)
     {
-        return (int32_t)syscall(__NR_pidfd_send_signal, pidfd, native_signal, NULL, 0);
+        long result = syscall(__NR_pidfd_send_signal, pidfd, native_signal, NULL, 0);
+        return result == 0 ? 0 : -1;
     }
 #else
     (void)pidfd;
@@ -1796,12 +1797,12 @@ int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd)
     }
 
 #if HAVE_PIDFD
-    int pidfd = (int)syscall(SYS_pidfd_open, pid, 0);
-    if (pidfd < 0)
+    long pidfd_result = syscall(SYS_pidfd_open, pid, 0);
+    if (pidfd_result < 0)
     {
         return -1;
     }
-    *out_pidfd = pidfd;
+    *out_pidfd = (int)pidfd_result;
 #endif
 
     return 0;
