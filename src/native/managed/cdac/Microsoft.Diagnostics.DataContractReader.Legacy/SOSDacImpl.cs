@@ -591,9 +591,7 @@ public sealed unsafe partial class SOSDacImpl
 
             if (interfaces == null)
             {
-                uint c = 0;
-                foreach (Contracts.COMInterfacePointerData _ in result)
-                    c++;
+                uint c = (uint)result.Count();
                 *pNeeded = c;
                 itemCount = c;
             }
