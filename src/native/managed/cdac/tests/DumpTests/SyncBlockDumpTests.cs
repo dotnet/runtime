@@ -49,5 +49,6 @@ public class SyncBlockDumpTests : DumpTestBase
         Assert.True(found, "Expected to find a sync block with a held monitor.");
         Assert.True(ownerThreadId != 0, "Expected non-zero lock owner thread id.");
         Assert.True(recursion >= 1, "Expected recursion count >= 1.");
+        Assert.True(syncBlock != TargetPointer.Null, "Expected non-null sync block");
     }
 }
