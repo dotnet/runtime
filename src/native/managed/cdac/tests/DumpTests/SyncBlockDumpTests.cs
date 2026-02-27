@@ -8,8 +8,8 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Dump-based integration tests for the SyncBlock contract.
-/// Uses the SyncBlock debuggee dump, which creates lock contention
-/// and COM interop state before crashing.
+/// Uses the SyncBlock debuggee dump, which creates held locks
+/// before crashing.
 /// </summary>
 public class SyncBlockDumpTests : DumpTestBase
 {
