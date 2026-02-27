@@ -33,8 +33,14 @@ set_target_properties(dnmd_pdb PROPERTIES EXPORT_NAME pdb)
 add_library(dnmd::dnmd ALIAS dnmd)
 add_library(dnmd::pdb ALIAS dnmd_pdb)
 
-target_include_directories(dnmd PUBLIC $<INSTALL_INTERFACE:include>)
-target_include_directories(dnmd_pdb PUBLIC $<INSTALL_INTERFACE:include>)
+target_include_directories(dnmd PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../inc>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../inc/external>
+  $<INSTALL_INTERFACE:include>)
+target_include_directories(dnmd_pdb PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../inc>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../inc/external>
+  $<INSTALL_INTERFACE:include>)
 
 set_target_properties(dnmd PROPERTIES
   PUBLIC_HEADER "../inc/dnmd.h;../inc/dnmd.hpp"
