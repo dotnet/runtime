@@ -6340,7 +6340,14 @@ void Compiler::compCompileFinish()
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
+#if defined(DEBUG)
     Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
+#else
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
+    }
+#endif
 
 #if LOOP_HOIST_STATS
     AddLoopHoistStats();
