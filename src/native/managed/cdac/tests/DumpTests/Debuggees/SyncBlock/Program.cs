@@ -10,7 +10,7 @@ internal static class Program
     private static readonly ManualResetEventSlim ReleaseOwner = new(initialState: false);
     private static readonly CountdownEvent WaitersStarted = new(initialCount: 2);
 
-    public static void Main(string[] args)
+    public static void Main()
     {
         object gate = new object();
 
