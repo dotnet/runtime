@@ -144,7 +144,7 @@ void* DispatchCallSimple(
     SIZE_T *pSrc,
     DWORD numStackSlotsToCopy,
     PCODE pTargetAddress,
-    DWORD dwDispatchCallSimpleFlags)
+    BOOL fCriticalCall)
 {
     CONTRACTL
     {
@@ -196,7 +196,7 @@ void* DispatchCallSimple(
     }
 #endif // TARGET_WASM
 
-    CallDescrWorkerWithHandler(&callDescrData, dwDispatchCallSimpleFlags & DispatchCallSimple_CriticalCall);
+    CallDescrWorkerWithHandler(&callDescrData, fCriticalCall);
 
     return *(void **)(&callDescrData.returnValue);
 }

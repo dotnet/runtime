@@ -74,7 +74,7 @@ void* DispatchCallSimple(
     SIZE_T *pSrc,
     DWORD numStackSlotsToCopy,
     PCODE pTargetAddress,
-    DWORD dwDispatchCallSimpleFlags);
+    BOOL fCriticalCall);
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 // Copy structs returned according to floating-point calling convention from 'returnRegs' containing struct fields
@@ -499,11 +499,6 @@ enum EEToManagedCallFlags
 /* Macros that provide abstraction to the usage of DispatchCallSimple    */
 /***********************************************************************/
 
-enum DispatchCallSimpleFlags
-{
-    DispatchCallSimple_CriticalCall                  = 0x0001,
-};
-
 #define ARGHOLDER_TYPE LPVOID
 #define OBJECTREF_TO_ARGHOLDER(x) (LPVOID)OBJECTREFToObject(x)
 #define STRINGREF_TO_ARGHOLDER(x) (LPVOID)STRINGREFToObject(x)
@@ -513,7 +508,7 @@ enum DispatchCallSimpleFlags
 
 #define INIT_VARIABLES(count)                               \
         DWORD   __numArgs = count;                          \
-        DWORD   __dwDispatchCallSimpleFlags = 0;            \
+        BOOL    __criticalDispatchCall = FALSE;             \
 
 #define PREPARE_NONVIRTUAL_CALLSITE(id) \
         static PCODE s_pAddr##id = 0;                       \
@@ -569,14 +564,14 @@ enum DispatchCallSimpleFlags
         PCODE __pSlot = pCode;
 
 #define CRITICAL_CALLSITE                                   \
-        __dwDispatchCallSimpleFlags |= DispatchCallSimple_CriticalCall;
+        __criticalDispatchCall = TRUE;
 
 #define PERFORM_CALL    \
         void * __retval = NULL;                         \
         __retval = DispatchCallSimple(__pArgs,          \
                            __numStackSlotsToCopy,       \
                            __pSlot,                     \
-                           __dwDispatchCallSimpleFlags);\
+                           __criticalDispatchCall);     \ 
 
 #ifdef CALLDESCR_ARGREGS
 
