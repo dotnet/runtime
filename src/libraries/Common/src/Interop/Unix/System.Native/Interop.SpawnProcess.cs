@@ -14,17 +14,17 @@ internal static partial class Interop
             string path,
             byte** argv,
             byte** envp,
+            string? workingDir,
+            int* inheritedHandles,
+            int inheritedHandlesCount,
             int stdinFd,
             int stdoutFd,
             int stderrFd,
-            string? workingDir,
-            out int pid,
-            out int pidfd,
             int killOnParentDeath,
             int createSuspended,
             int createNewProcessGroup,
-            int* inheritedHandles,
-            int inheritedHandlesCount);
+            out int pid,
+            out int pidfd);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SendSignal", SetLastError = true)]
         internal static partial int SendSignal(int pidfd, int pid, PosixSignal managedSignal);

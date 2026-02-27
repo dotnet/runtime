@@ -4,6 +4,7 @@
 #include "pal_config.h"
 #include "pal_process.h"
 #include "pal_io.h"
+#include "pal_signal.h"
 #include "pal_utilities.h"
 
 #include <assert.h>
@@ -32,6 +33,7 @@
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
+#include <spawn.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -40,12 +42,8 @@
 #include <sys/sysctl.h>
 #endif
 
-#if HAVE_SYS_EVENT_H
+#if HAVE_KQUEUE
 #include <sys/event.h>
-#endif
-
-#ifdef __APPLE__
-#include <spawn.h>
 #endif
 
 #include <minipal/getexepath.h>
@@ -912,60 +910,37 @@ char* SystemNative_GetProcessPath(void)
     return minipal_getexepath();
 }
 
-// Map managed PosixSignal enum values to native signal numbers
-static int map_managed_signal_to_native(int managed_signal)
+static char* const* GetEnvVars(char* const envp[])
 {
-    switch (managed_signal)
+    if (envp != NULL)
     {
-        case -1: return SIGHUP;
-        case -2: return SIGINT;
-        case -3: return SIGQUIT;
-        case -4: return SIGTERM;
-        case -5: return SIGCHLD;
-        case -6: return SIGCONT;
-        case -7: return SIGWINCH;
-        case -8: return SIGTTIN;
-        case -9: return SIGTTOU;
-        case -10: return SIGTSTP;
-        case -11: return SIGKILL;
-        default: return 0;
+        return envp;
     }
-}
 
-static int map_native_signal_to_managed(int native_signal)
-{
-    switch (native_signal)
-    {
-        case SIGHUP: return -1;
-        case SIGINT: return -2;
-        case SIGQUIT: return -3;
-        case SIGTERM: return -4;
-        case SIGCHLD: return -5;
-        case SIGCONT: return -6;
-        case SIGWINCH: return -7;
-        case SIGTTIN: return -8;
-        case SIGTTOU: return -9;
-        case SIGTSTP: return -10;
-        case SIGKILL: return -11;
-        default: return 0;
-    }
+#if HAVE_CRT_EXTERNS_H
+    return *_NSGetEnviron();
+#else
+    extern char **environ;
+    return environ;
+#endif
 }
 
 int32_t SystemNative_SpawnProcess(
     const char* path,
     char* const argv[],
     char* const envp[],
+    const char* working_dir,
+    const int32_t* inherited_handles,
+    int32_t inherited_handles_count,
     int32_t stdin_fd,
     int32_t stdout_fd,
     int32_t stderr_fd,
-    const char* working_dir,
-    int32_t* out_pid,
-    int32_t* out_pidfd,
     int32_t kill_on_parent_death,
     int32_t create_suspended,
     int32_t create_new_process_group,
-    const int32_t* inherited_handles,
-    int32_t inherited_handles_count)
+    int32_t* out_pid,
+    int32_t* out_pidfd
+)
 {
 #ifdef __APPLE__
     // ========== POSIX_SPAWN PATH (macOS) ==========
@@ -981,6 +956,8 @@ int32_t SystemNative_SpawnProcess(
         return -1;
     }
 
+    // POSIX_SPAWN_CLOEXEC_DEFAULT to close all FDs except stdin/stdout/stderr
+    // POSIX_SPAWN_SETSIGDEF to reset signal handlers
     short flags = POSIX_SPAWN_CLOEXEC_DEFAULT | POSIX_SPAWN_SETSIGDEF;
     if (create_suspended)
     {
@@ -998,8 +975,11 @@ int32_t SystemNative_SpawnProcess(
         return -1;
     }
 
+    // If create_new_process_group is set, configure the process group ID to 0
+    // which means the child will become the leader of a new process group
     if (create_new_process_group)
     {
+        // posix_spawnattr_setpgroup with pgid=0 makes the child the leader of a new process group
         if ((result = posix_spawnattr_setpgroup(&attr, 0)) != 0)
         {
             int saved_errno = result;
@@ -1063,6 +1043,8 @@ int32_t SystemNative_SpawnProcess(
     // Change working directory if specified
     if (working_dir != NULL)
     {
+        // posix_spawn_file_actions_addchdir_np is not available on tvOS
+#if HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
         if ((result = posix_spawn_file_actions_addchdir_np(&file_actions, working_dir)) != 0)
         {
             int saved_errno = result;
@@ -1071,24 +1053,16 @@ int32_t SystemNative_SpawnProcess(
             errno = saved_errno;
             return -1;
         }
+#else
+        posix_spawn_file_actions_destroy(&file_actions);
+        posix_spawnattr_destroy(&attr);
+        errno = ENOTSUP;
+        return -1;
+#endif
     }
 
     // Spawn the process
-    // If envp is NULL, use the current environment
-    char* const* env;
-    if (envp != NULL)
-    {
-        env = envp;
-    }
-    else
-    {
-#if HAVE_CRT_EXTERNS_H
-        env = *_NSGetEnviron();
-#else
-        extern char **environ;
-        env = environ;
-#endif
-    }
+    char* const* env = GetEnvVars(envp);
     result = posix_spawn(&child_pid, path, &file_actions, &attr, argv, env);
 
     posix_spawn_file_actions_destroy(&file_actions);
@@ -1135,7 +1109,7 @@ int32_t SystemNative_SpawnProcess(
 
 int32_t SystemNative_SendSignal(int32_t pidfd, int32_t pid, int32_t managed_signal)
 {
-    int native_signal = map_managed_signal_to_native(managed_signal);
+    int native_signal = SystemNative_GetPlatformSignalNumber((PosixSignal)managed_signal);
     if (native_signal == 0)
     {
         errno = EINVAL;
@@ -1158,7 +1132,9 @@ static int map_wait_status(int status, int32_t* out_exitCode, int32_t* out_signa
     {
         int sig = WTERMSIG(status);
         *out_exitCode = 128 + sig;
-        *out_signal = map_native_signal_to_managed(sig);
+        PosixSignal posixSignal;
+        TryConvertSignalCodeToPosixSignal(sig, &posixSignal);
+        *out_signal = (int32_t)posixSignal;
         return 0;
     }
     return -1;
@@ -1342,7 +1318,7 @@ int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int3
     }
 
     *out_timeout = 1;
-    ret = SystemNative_SendSignal(pidfd, pid, map_native_signal_to_managed(SIGKILL));
+    ret = SystemNative_SendSignal(pidfd, pid, (int32_t)PosixSignalSIGKILL);
 
     if (ret == -1)
     {

@@ -254,17 +254,17 @@ PALEXPORT int32_t SystemNative_SpawnProcess(
     const char* path,
     char* const argv[],
     char* const envp[],
+    const char* working_dir,
+    const int32_t* inherited_handles,
+    int32_t inherited_handles_count,
     int32_t stdin_fd,
     int32_t stdout_fd,
     int32_t stderr_fd,
-    const char* working_dir,
-    int32_t* out_pid,
-    int32_t* out_pidfd,
     int32_t kill_on_parent_death,
     int32_t create_suspended,
     int32_t create_new_process_group,
-    const int32_t* inherited_handles,
-    int32_t inherited_handles_count);
+    int32_t* out_pid,
+    int32_t* out_pidfd);
 
 /**
  * Sends a signal to a process.

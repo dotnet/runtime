@@ -121,17 +121,17 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedPath,
                     argvPtr,
                     envpPtr,
+                    options.WorkingDirectory,
+                    inheritedHandlesPtr,
+                    inheritedHandlesCount,
                     stdinFd,
                     stdoutFd,
                     stderrFd,
-                    options.WorkingDirectory,
-                    out int pid,
-                    out int pidfd,
                     options.KillOnParentExit ? 1 : 0,
                     createSuspended ? 1 : 0,
                     options.CreateNewProcessGroup ? 1 : 0,
-                    inheritedHandlesPtr,
-                    inheritedHandlesCount);
+                    out int pid,
+                    out int pidfd);
 
                 if (result == -1)
                 {

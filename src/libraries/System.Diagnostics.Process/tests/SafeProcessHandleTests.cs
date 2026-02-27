@@ -344,6 +344,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void Open_CurrentProcess_Succeeds()
         {
             int currentPid = Environment.ProcessId;
