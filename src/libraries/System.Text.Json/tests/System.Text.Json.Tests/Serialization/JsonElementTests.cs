@@ -53,20 +53,22 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Streams need to read ahead when they hit objects or arrays that are assigned to JsonElement or object.
 
-            byte[] data = Encoding.UTF8.GetBytes(@"{""Data"":[1,true,{""City"":""MyCity""},null,""foo""]}");
+            byte[] data = Encoding.UTF8.GetBytes("""{"Data":[1,true,{"City":"MyCity"},null,"foo"]}""");
             MemoryStream stream = new MemoryStream(data);
             JsonElement obj = JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result;
 
-            data = Encoding.UTF8.GetBytes(@"[1,true,{""City"":""MyCity""},null,""foo""]");
+            data = Encoding.UTF8.GetBytes("""[1,true,{"City":"MyCity"},null,"foo"]""");
             stream = new MemoryStream(data);
             obj = JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result;
 
             // Ensure we fail with incomplete data
-            data = Encoding.UTF8.GetBytes(@"{""Data"":[1,true,{""City"":""MyCity""},null,""foo""]");
+            data = Encoding.UTF8.GetBytes("""{"Data":[1,true,{"City":"MyCity"},null,"foo"]""");
             stream = new MemoryStream(data);
             Assert.Throws<JsonException>(() => JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result);
 
-            data = Encoding.UTF8.GetBytes(@"[1,true,{""City"":""MyCity""},null,""foo""");
+            data = Encoding.UTF8.GetBytes("""
+                [1,true,{"City":"MyCity"},null,"foo"
+                """);
             stream = new MemoryStream(data);
             Assert.Throws<JsonException>(() => JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result);
         }
@@ -116,8 +118,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "x" : 1, "x" : 2 }""", """{ "x" : 1, "x" : 2 }""")]
         [InlineData("""{ "x" : 1, "y" : null, "x" : 2 }""", """{ "y" : null, "x" : 1, "x" : 2 }""")]
         [InlineData("""{ "x" : 1, "y" : null, "x" : 2 }""", """{ "x" : 1, "x" : 2, "y" : null }""")]
-        [InlineData("""[]""", """ [ ]""")]
-        [InlineData("""[1, 2, 3]""", """ [1,  2,  3  ]""")]
+        [InlineData("[]", " [ ]")]
+        [InlineData("[1, 2, 3]", " [1,  2,  3  ]")]
         [InlineData("""[null, false, 3.14, "ABC", { "x" : 1, "y" : 2 }, []]""",
                     """[null, false, 314e-2, "\u0041\u0042\u0043", { "y" : 2, "x" : 1 }, [ ] ]""")]
         public static void DeepEquals_EqualValuesReturnTrue(string value1, string value2)
