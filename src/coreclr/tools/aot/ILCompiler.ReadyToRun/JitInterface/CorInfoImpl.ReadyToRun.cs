@@ -2484,6 +2484,10 @@ namespace Internal.JitInterface
                 {
                     // alllowed, non-virtual method's on Object will never become virtual, and will also always trigger a BOX_THIS pattern
                 }
+                else if (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(constrainedType))
+                {
+                    // The constrained value type is within the version bubble, so target method will always require boxing
+                }
                 else
                 {
                     throw new RequiresRuntimeJitException(pResult->thisTransform.ToString());
@@ -3488,6 +3492,7 @@ namespace Internal.JitInterface
         private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
         {
             CorInfoWasmType[] typeArray = new ReadOnlySpan<CorInfoWasmType>(types, (int)typesSize).ToArray();
+
             WasmTypeNode typeNode = _compilation.NodeFactory.WasmTypeNode(typeArray);
             return (CORINFO_WASM_TYPE_SYMBOL_STRUCT_*)ObjectToHandle(typeNode);
         }

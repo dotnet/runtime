@@ -226,7 +226,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsNotWinHttpHandler))]
+        [ConditionalTheory(typeof(HttpClientHandlerTest), nameof(IsNotWinHttpHandler))]
         [InlineData("[::1234]", "[::1234]")]
         [InlineData("[::1234]:8080", "[::1234]:8080")]
         [InlineData("[fe80::9c3a:b64d:6249:1de8%2]", "[fe80::9c3a:b64d:6249:1de8]")]
@@ -2120,7 +2120,7 @@ namespace System.Net.Http.Functional.Tests
         // HttpRequestMessage ctor guards against such Uris before .NET 6. We allow passing relative/unknown Uris to BrowserHttpHandler.
         public static bool InvalidRequestUriTest_IsSupported => PlatformDetection.IsNotNetFramework && PlatformDetection.IsNotBrowser;
 
-        [ConditionalFact(nameof(InvalidRequestUriTest_IsSupported))]
+        [ConditionalFact(typeof(HttpClientHandlerTest), nameof(InvalidRequestUriTest_IsSupported))]
         public async Task SendAsync_InvalidRequestUri_Throws()
         {
             using var invoker = new HttpMessageInvoker(CreateHttpClientHandler());

@@ -216,5 +216,21 @@ namespace Microsoft.Extensions.Logging.Generators
             category: "LoggingGenerator",
             DiagnosticSeverity.Info,
             isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor InvalidLoggingMethodParameterParams { get; } = DiagnosticDescriptorHelper.Create(
+            id: "SYSLIB1028",
+            title: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterParamsTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterParamsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static DiagnosticDescriptor InvalidLoggingMethodParameterRefStruct { get; } = DiagnosticDescriptorHelper.Create(
+            id: "SYSLIB1029",
+            title: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterRefStructTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.InvalidLoggingMethodParameterRefStructMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            category: "LoggingGenerator",
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }

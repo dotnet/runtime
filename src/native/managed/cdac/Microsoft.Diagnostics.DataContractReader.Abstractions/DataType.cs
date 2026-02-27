@@ -110,6 +110,7 @@ public enum DataType
     HashMap,
     Bucket,
     UnwindInfo,
+    UnwindCode,
     NonVtableSlot,
     MethodImpl,
     NativeCodeSlot,
@@ -122,6 +123,7 @@ public enum DataType
     DynamicILBlobTable,
     EEJitManager,
     PatchpointInfo,
+    PortableEntryPoint,
 
     TransitionBlock,
     DebuggerEval,

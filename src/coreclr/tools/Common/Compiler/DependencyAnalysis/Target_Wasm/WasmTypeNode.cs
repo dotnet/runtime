@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using ILCompiler.DependencyAnalysis;
-using Internal.JitInterface;
+using ILCompiler.ObjectWriter;
 
 namespace ILCompiler.DependencyAnalysis.Wasm
 {
@@ -12,59 +11,63 @@ namespace ILCompiler.DependencyAnalysis.Wasm
     // Represents a WASM type signature, e.g. "(i32, i32) -> (i64)". Used as a relocation target for things like 'call_indirect'.
     // Does not currently support multiple return values; the return type is always the first type in the array and may be Void.
     //
-    public class WasmTypeNode : ObjectNode, ISymbolNode
+    public class WasmTypeNode : ObjectNode, ISymbolNode, ISymbolDefinitionNode
     {
-        private readonly CorInfoWasmType[] _types;
+        private readonly WasmFuncType _type;
+        public WasmFuncType Type => _type;
 
-        public WasmTypeNode(CorInfoWasmType[] types)
+        public WasmTypeNode(WasmFuncType type)
         {
-            _types = types;
+            _type = type;
         }
 
         public override bool IsShareable => true;
 
-        public override int ClassCode => -45678931;
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.WasmTypeNode;
 
         public override bool StaticDependenciesAreComputed => true;
 
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.WasmTypeSection;
 
         protected override string GetName(NodeFactory factory)
-            => $"Wasm Type ({string.Join(",", _types.Skip(1))}) -> {_types.FirstOrDefault()}";
+            => $"Wasm Type Signature: {Type.ToString()}";
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
-            => new ObjectData(
-                Array.Empty<byte>(),
-                Array.Empty<Relocation>(),
-                1,
-                Array.Empty<ISymbolDefinitionNode>());
+        {
+            if (relocsOnly)
+            {
+                return new ObjectData(
+                       data: Array.Empty<byte>(),
+                       relocs: Array.Empty<Relocation>(),
+                       alignment: 1,
+                       definedSymbols: new ISymbolDefinitionNode[] { this });
+            }
+
+            byte[] data = new byte[_type.EncodeSize()];
+            _type.Encode(data);
+
+            return new ObjectData(
+                   data: data,
+                   relocs: Array.Empty<Relocation>(),
+                   alignment: 1,
+                   definedSymbols: new ISymbolDefinitionNode[] { this });
+        }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            var wtm = (WasmTypeNode)other;
-            ReadOnlySpan<CorInfoWasmType> lhs = _types, rhs = wtm._types;
+            var wtn = (WasmTypeNode)other;
             // Put shorter signatures earlier in the sort order, on the assumption that they are more likely to be used.
-            int result = lhs.Length.CompareTo(rhs.Length);
+            int result = _type.SignatureLength.CompareTo(wtn.Type.SignatureLength);
             if (result == 0)
-                result = MemoryExtensions.SequenceCompareTo(lhs, rhs);
+                return _type.CompareTo(wtn.Type);
             return result;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Internal.Text.Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__wasmtype_"u8);
-
-            foreach (var type in _types)
-                sb.Append(type switch {
-                    CorInfoWasmType.CORINFO_WASM_TYPE_VOID => 'v',
-                    CorInfoWasmType.CORINFO_WASM_TYPE_V128 => 'V',
-                    CorInfoWasmType.CORINFO_WASM_TYPE_F64  => 'd',
-                    CorInfoWasmType.CORINFO_WASM_TYPE_F32  => 'f',
-                    CorInfoWasmType.CORINFO_WASM_TYPE_I64  => 'j',
-                    CorInfoWasmType.CORINFO_WASM_TYPE_I32  => 'i',
-                    _ => throw new NotImplementedException($"Unknown CorInfoWasmType: {type}"),
-                });
+            _type.AppendMangledName(nameMangler, sb);
         }
 
         public int Offset => 0;

@@ -25,6 +25,10 @@ public readonly struct OffsetMapping
 ```
 
 ```csharp
+// Returns true if the method at pCode has debug info associated with it.
+// Methods such as ILStubs may be JIT-compiled but have no debug metadata.
+bool HasDebugInfo(TargetCodePointer pCode);
+
 // Given a code pointer, return the associated native/IL offset mapping and codeOffset.
 // If preferUninstrumented, will always read the uninstrumented bounds.
 // Otherwise will read the instrumented bounds and fallback to the uninstrumented bounds.
@@ -95,6 +99,14 @@ The bit-packed data is read byte by byte, collecting bits until enough are avail
 ### Implementation
 
 ``` csharp
+bool IDebugInfo.HasDebugInfo(TargetCodePointer pCode)
+{
+    if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
+        return false;
+
+    return _eman.GetDebugInfo(cbh, out _) != TargetPointer.Null;
+}
+
 IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset)
 {
     // Get the method's DebugInfo
@@ -104,6 +116,11 @@ IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode
 
     TargetCodePointer nativeCodeStart = _eman.GetStartAddress(cbh);
     codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
+
+    // No debug info exists (e.g. ILStubs). Return empty sequence.
+    // Callers that need to distinguish this case should use HasDebugInfo first.
+    if (debugInfo == TargetPointer.Null)
+        return [];
 
     return RestoreBoundaries(debugInfo, hasFlagByte, preferUninstrumented);
 }
