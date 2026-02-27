@@ -500,46 +500,6 @@ set(CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 check_include_files("sys/event.h" HAVE_SYS_EVENT_H)
 
-# Check for posix_spawn features (macOS)
-if(CLR_CMAKE_TARGET_APPLE)
-    check_symbol_exists(posix_spawn "spawn.h" HAVE_POSIX_SPAWN)
-
-    check_c_source_compiles("
-        #include <spawn.h>
-        int main(void) {
-            #ifdef POSIX_SPAWN_CLOEXEC_DEFAULT
-            return 0;
-            #else
-            #error POSIX_SPAWN_CLOEXEC_DEFAULT not defined
-            #endif
-        }
-    " HAVE_POSIX_SPAWN_CLOEXEC_DEFAULT)
-
-    check_symbol_exists(posix_spawn_file_actions_addchdir_np "spawn.h" HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP)
-
-    check_c_source_compiles("
-        #include <spawn.h>
-        int main(void) {
-            posix_spawn_file_actions_t actions;
-            posix_spawn_file_actions_init(&actions);
-            posix_spawn_file_actions_addinherit_np(&actions, 3);
-            posix_spawn_file_actions_destroy(&actions);
-            return 0;
-        }
-    " HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDINHERIT_NP)
-
-    check_c_source_compiles("
-        #include <spawn.h>
-        int main(void) {
-            #ifdef POSIX_SPAWN_START_SUSPENDED
-            return 0;
-            #else
-            #error POSIX_SPAWN_START_SUSPENDED not defined
-            #endif
-        }
-    " HAVE_POSIX_SPAWN_START_SUSPENDED)
-endif()
-
 check_symbol_exists(
     disconnectx
     "sys/socket.h"

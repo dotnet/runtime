@@ -44,7 +44,7 @@
 #include <sys/event.h>
 #endif
 
-#if HAVE_POSIX_SPAWN
+#ifdef __APPLE__
 #include <spawn.h>
 #endif
 
@@ -967,10 +967,10 @@ int32_t SystemNative_SpawnProcess(
     const int32_t* inherited_handles,
     int32_t inherited_handles_count)
 {
-#if HAVE_POSIX_SPAWN && HAVE_POSIX_SPAWN_CLOEXEC_DEFAULT && HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDINHERIT_NP
+#ifdef __APPLE__
     // ========== POSIX_SPAWN PATH (macOS) ==========
 
-#if !HAVE_POSIX_SPAWN_START_SUSPENDED
+#ifndef POSIX_SPAWN_START_SUSPENDED
     if (create_suspended)
     {
         errno = ENOTSUP;
@@ -990,7 +990,7 @@ int32_t SystemNative_SpawnProcess(
     }
 
     short flags = POSIX_SPAWN_CLOEXEC_DEFAULT | POSIX_SPAWN_SETSIGDEF;
-#if HAVE_POSIX_SPAWN_START_SUSPENDED
+#ifdef POSIX_SPAWN_START_SUSPENDED
     if (create_suspended)
     {
         flags |= POSIX_SPAWN_START_SUSPENDED;
@@ -1073,7 +1073,6 @@ int32_t SystemNative_SpawnProcess(
     // Change working directory if specified
     if (working_dir != NULL)
     {
-#if HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP
         if ((result = posix_spawn_file_actions_addchdir_np(&file_actions, working_dir)) != 0)
         {
             int saved_errno = result;
@@ -1082,12 +1081,6 @@ int32_t SystemNative_SpawnProcess(
             errno = saved_errno;
             return -1;
         }
-#else
-        posix_spawn_file_actions_destroy(&file_actions);
-        posix_spawnattr_destroy(&attr);
-        errno = ENOTSUP;
-        return -1;
-#endif
     }
 
     // Spawn the process
