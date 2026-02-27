@@ -1142,7 +1142,7 @@ def find_test_from_name(host_os, test_location, test_name):
 
     # For some reason, out-of-process tests on Linux are named with ".cmd" wrapper script names,
     # not .sh extension names. Fix that before trying to find the test filename.
-    if sys.platform != "win32":
+    if host_os != "windows":
         test_name_wo_extension, test_name_extension = os.path.splitext(test_name)
         if test_name_extension == ".cmd":
             test_name = test_name_wo_extension + ".sh"
