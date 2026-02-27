@@ -49,7 +49,7 @@
       </trans-unit>
       <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
         <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
-        <target state="needs-translation">Protokollierungsmethoden können nicht generisch sein.</target>
+        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
