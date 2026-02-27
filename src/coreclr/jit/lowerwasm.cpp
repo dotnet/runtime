@@ -536,37 +536,6 @@ void Lowering::AfterLowerBlock()
                         break;
                     }
 
-                    /*
-                    else
-                    {
-                        // To resolve this scenario we have two options:
-                        // 1. We try moving the whole tree rooted at `node`.
-                        //    To avoid quadratic behavior, we first stackify it and collect all the side effects
-                        //    from it. Then we check for interference of those side effects with nodes between
-                        //    'node' and 'prev'.
-                        // 2. Failing that, we insert a temporary ('ReplaceWithLclVar') for 'node'.
-                        //    To avoid explosion of temporaries, we maintain a busy/free set of them.
-                        // For now, for simplicity we are implementing #2 only.
-
-                        LIR::Use nodeUse;
-                        // FIXME-WASM: TryGetUse is inefficient here, replace it with something more optimal
-                        if (!m_lower->BlockRange().TryGetUse(node, &nodeUse))
-                        {
-                            JITDUMP("node==[%06u] prev==[%06u]\n", Compiler::dspTreeID(node),
-                    Compiler::dspTreeID(prev)); NYI_WASM("Could not get a LIR::Use for the node to be moved by the
-                    stackifier");
-                        }
-
-                        unsigned lclNum = nodeUse.ReplaceWithLclVar(m_lower->m_compiler);
-                        GenTree* newNode = nodeUse.Def();
-                        JITDUMP("Stackifier replaced node [%06u] with lcl var %u\n", Compiler::dspTreeID(node), lclNum);
-                        m_lower->BlockRange().Remove(newNode);
-                        m_lower->BlockRange().InsertAfter(prev, newNode);
-                        JITDUMP("Stackifier moved new node [%06u] after [%06u]\n", Compiler::dspTreeID(newNode),
-                    Compiler::dspTreeID(prev)); break;
-                    }
-                    */
-
                     JITDUMP("node==[%06u] prev==[%06u]\n", Compiler::dspTreeID(node), Compiler::dspTreeID(prev));
                     NYI_WASM("IR not in a stackified form");
                 }
