@@ -185,7 +185,7 @@ public class WebcilWasmWrapper
         writer.Write((byte)1); // passive segment
         writer.Write(ulebWebcilPayloadSize, 0, ulebWebcilPayloadSize.Length); // segment size:  _webcilPayloadSize
         if (writer.BaseStream.Position % WebcilPayloadInternalAlignment != 0) {
-            throw new Exception ($"predited offset {payloadOffset}, actual position {writer.BaseStream.Position}");
+            throw new Exception ($"Expected offset {payloadOffset}, actual position {writer.BaseStream.Position}");
         }
         _webcilPayloadStream.CopyTo(writer.BaseStream); // payload is the entire webcil content
     }

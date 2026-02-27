@@ -10,7 +10,7 @@ using WasmAppBuilder;
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
-public class ConvertDllsToWebCil : Task
+public class ConvertDllsToWebcil : Task
 {
     [Required]
     public ITaskItem[] Candidates { get; set; }
@@ -25,7 +25,7 @@ public class ConvertDllsToWebCil : Task
     public bool IsEnabled { get; set; }
 
     [Output]
-    public ITaskItem[] WebCilCandidates { get; set; }
+    public ITaskItem[] WebcilCandidates { get; set; }
 
     protected readonly List<string> _fileWrites = new();
 
@@ -34,11 +34,11 @@ public class ConvertDllsToWebCil : Task
 
     public override bool Execute()
     {
-        var webCilCandidates = new List<ITaskItem>();
+        var webcilCandidates = new List<ITaskItem>();
 
         if (!IsEnabled)
         {
-            WebCilCandidates = Candidates;
+            WebcilCandidates = Candidates;
             return true;
         }
 
@@ -56,14 +56,14 @@ public class ConvertDllsToWebCil : Task
 
             if (extension != ".dll")
             {
-                webCilCandidates.Add(candidate);
+                webcilCandidates.Add(candidate);
                 continue;
             }
 
             try
             {
                 TaskItem webcilItem = ConvertDll(tmpDir, candidate);
-                webCilCandidates.Add(webcilItem);
+                webcilCandidates.Add(webcilItem);
             }
             catch (Exception ex)
             {
@@ -74,7 +74,7 @@ public class ConvertDllsToWebCil : Task
 
         Directory.Delete(tmpDir, true);
 
-        WebCilCandidates = webCilCandidates.ToArray();
+        WebcilCandidates = webcilCandidates.ToArray();
         return true;
     }
 
