@@ -113,13 +113,6 @@ PALAPI
 RemoveDirectoryW(
                  IN LPCWSTR lpPathName);
 
-PALIMPORT
-LONG
-PALAPI
-CompareFileTime(
-        IN CONST FILETIME *lpFileTime1,
-        IN CONST FILETIME *lpFileTime2);
-
 #ifdef  __cplusplus
 }
 #endif

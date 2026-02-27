@@ -114,7 +114,7 @@ namespace System.Diagnostics.Tracing
 #pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
                 ObjectIDForEvents(lockObj),
 #pragma warning restore CS9216
-                lockObj.OwningThreadId);
+                (ulong)lockObj.OwningThreadId);
 
         [Event(91, Level = EventLevel.Informational, Message = Messages.ContentionStop, Task = Tasks.Contention, Opcode = EventOpcode.Stop, Version = 1, Keywords = Keywords.ContentionKeyword)]
         private void ContentionStop(ContentionFlagsMap ContentionFlags, ushort ClrInstanceID, double DurationNs)

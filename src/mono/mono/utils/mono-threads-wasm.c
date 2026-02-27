@@ -225,8 +225,6 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 		g_error ("%s: pthread_attr_init failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 
 #if 0
-	gsize set_stack_size;
-
 	if (stack_size)
 		set_stack_size = *stack_size;
 	else
@@ -238,10 +236,10 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 		if (RUNNING_ON_VALGRIND)
 			set_stack_size = 1 << 20;
 		else
-			set_stack_size = (SIZEOF_VOID_P / 4) * 1024 * 1024;
-#else
-		set_stack_size = (SIZEOF_VOID_P / 4) * 1024 * 1024;
 #endif
+		{
+			set_stack_size = MONO_DEFAULT_STACKSIZE;
+		}
 	}
 
 #ifdef PTHREAD_STACK_MIN
@@ -316,7 +314,7 @@ mono_memory_barrier_process_wide (void)
 #ifdef HOST_BROWSER
 
 G_EXTERN_C
-extern void schedule_background_exec (void);
+extern void SystemJS_ScheduleBackgroundJobImpl (void);
 
 // when this is called from ThreadPool, the cb would be System.Threading.ThreadPool.BackgroundJobHandler
 // when this is called from sgen it would be wrapper of sgen_perform_collection_inner
@@ -326,13 +324,13 @@ GSList *jobs;
 GSList *jobs_ds;
 
 void
-mono_main_thread_schedule_background_job (background_job_cb cb)
+SystemJS_ScheduleBackgroundJob (background_job_cb cb)
 {
 	g_assert (cb);
-	THREADS_DEBUG ("mono_main_thread_schedule_background_job: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
+	THREADS_DEBUG ("SystemJS_ScheduleBackgroundJob: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
 
 	if (!jobs)
-		schedule_background_exec ();
+		SystemJS_ScheduleBackgroundJobImpl ();
 
 	if (!g_slist_find (jobs, (gconstpointer)cb))
 		jobs = g_slist_prepend (jobs, (gpointer)cb);
@@ -401,7 +399,7 @@ mono_wasm_ds_exec (void)
 
 extern void mono_wasm_schedule_synchronization_context ();
 
-void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread)
+void SystemJS_ScheduleSynchronizationContext(MonoNativeThreadId target_thread)
 {
 	emscripten_dispatch_to_thread_async ((pthread_t) target_thread, EM_FUNC_SIG_V, mono_wasm_schedule_synchronization_context, NULL);
 }

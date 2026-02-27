@@ -34,4 +34,24 @@ public class HttpTests : WasmTemplateTestsBase
         Assert.Contains(result.TestOutput, m => m.Contains("AppContext FeatureEnableStreamingResponse=False"));
         Assert.Contains(result.TestOutput, m => m.Contains("response.Content is System.Net.Http.BrowserHttpContent"));
     }
+
+    [Fact]
+    public async Task DevServer_UploadPattern()
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "HttpTest");
+
+        BuildProject(info, config, new BuildOptions(AssertAppBundle: false), isNativeBuild: false);
+
+        var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "DevServer_UploadPattern",
+            ServerEnvironment: new Dictionary<string, string>
+            {
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath,
+                ["DEVSERVER_UPLOAD_PATTERN"] = "^[a-zA-Z0-9_]+\\.log$"
+            }
+        ));
+
+        Assert.Contains(result.TestOutput, m => m.Contains("GoodUpload to returned status code OK"));
+        Assert.Contains(result.TestOutput, m => m.Contains("BadUpload to returned status code Forbidden"));
+    }
 }

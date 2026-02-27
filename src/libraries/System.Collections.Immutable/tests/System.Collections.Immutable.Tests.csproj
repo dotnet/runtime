@@ -8,6 +8,7 @@
     <!-- This test library intentionally references an inbox P2P as it needs the implementation, instead of the contract.
          Suppress the NU1511 warning in the whole project as putting it on a P2P doesn't work: https://github.com/NuGet/Home/issues/14121 -->
     <NoWarn>$(NoWarn);NU1511</NoWarn>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
 
   <ItemGroup>

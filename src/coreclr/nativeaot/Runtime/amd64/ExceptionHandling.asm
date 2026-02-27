@@ -107,6 +107,24 @@ NESTED_END RhpThrowHwEx, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; RhpThrowExact
+;;
+;; SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
+;;
+;; INPUT:  RCX:  exception object
+;;
+;; OUTPUT:
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+LEAF_ENTRY RhpThrowExact, _TEXT
+
+        mov     r9d, 4                  ;; r9d = ExKind.RethrowFlag
+        jmp     RhpThrowImpl
+
+LEAF_END RhpThrowExact, _TEXT
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; RhpThrowEx
 ;;
 ;; INPUT:  RCX:  exception object
@@ -114,7 +132,14 @@ NESTED_END RhpThrowHwEx, _TEXT
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NESTED_ENTRY RhpThrowEx, _TEXT
+LEAF_ENTRY RhpThrowEx, _TEXT
+
+        mov     r9d, 1                  ;; r9d = ExKind.Throw
+        jmp     RhpThrowImpl
+LEAF_END RhpThrowEx, _TEXT
+
+
+NESTED_ENTRY RhpThrowImpl, _TEXT
 
         SIZEOF_XmmSaves equ SIZEOF__PAL_LIMITED_CONTEXT - OFFSETOF__PAL_LIMITED_CONTEXT__Xmm6
         STACKSIZEOF_ExInfo equ ((SIZEOF__ExInfo + 15) AND (NOT 15))
@@ -172,7 +197,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT
         ;; address could have been hijacked when we were in that C# code and we must remove the hijack and
         ;; reflect the correct return address in our exception context record.  The other throw helpers don't
         ;; need this because they cannot be tail-called from C#.
-        INLINE_THREAD_UNHIJACK  rax, r9, rdx        ;; trashes R9, RDX
+        INLINE_THREAD_UNHIJACK  rax, r10, rdx       ;; trashes R10, RDX
         mov                     rdx, [rbx]          ;; rdx <- return address
         mov                     [rsp + rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__IP], rdx   ;; set 'faulting' IP after unhijack
 
@@ -181,7 +206,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT
         mov     [rdx + OFFSETOF__ExInfo__m_exception], r8           ;; init the exception object to null
         mov     byte ptr [rdx + OFFSETOF__ExInfo__m_passNumber], 1  ;; init to the first pass
         mov     dword ptr [rdx + OFFSETOF__ExInfo__m_idxCurClause], 0FFFFFFFFh
-        mov     byte ptr [rdx + OFFSETOF__ExInfo__m_kind], 1        ;; ExKind.Throw
+        mov     byte ptr [rdx + OFFSETOF__ExInfo__m_kind], r9b      ;; ExKind (from r9b)
 
         ;; link the ExInfo into the thread's ExInfo chain
         mov     r8, [rax + OFFSETOF__Thread__m_pExInfoStackHead]
@@ -196,12 +221,12 @@ NESTED_ENTRY RhpThrowEx, _TEXT
         ;; rdx contains the address of the ExInfo
         call    RhThrowEx
 
-ALTERNATE_ENTRY RhpThrowEx2
+ALTERNATE_ENTRY RhpThrowImpl2
 
         ;; no return
         int 3
 
-NESTED_END RhpThrowEx, _TEXT
+NESTED_END RhpThrowImpl, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

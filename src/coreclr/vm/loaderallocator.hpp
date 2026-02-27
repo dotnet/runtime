@@ -19,6 +19,7 @@ class FuncPtrStubs;
 #include "qcall.h"
 #include "ilstubcache.h"
 
+#include "asynccontinuations.h"
 #include "callcounting.h"
 #include "methoddescbackpatchinfo.h"
 #include "crossloaderallocatorhash.h"
@@ -364,9 +365,11 @@ protected:
     BYTE *              m_pVSDHeapInitialAlloc;
     BYTE *              m_pCodeHeapInitialAlloc;
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     // U->M thunks that are not associated with a delegate.
     // The cache is keyed by MethodDesc pointers.
     UMEntryThunkCache * m_pUMEntryThunkCache;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // IL stub cache with fabricated MethodTable parented by a random module in this LoaderAllocator.
     ILStubCache         m_ILStubCache;
@@ -483,6 +486,8 @@ private:
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     PTR_OnStackReplacementManager m_onStackReplacementManager;
 #endif
+
+    PTR_AsyncContinuationsManager m_asyncContinuationsManager;
 
 #ifndef DACCESS_COMPILE
 
@@ -894,6 +899,8 @@ public:
     PTR_OnStackReplacementManager GetOnStackReplacementManager();
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
+    PTR_AsyncContinuationsManager GetAsyncContinuationsManager();
+
 #ifndef DACCESS_COMPILE
 public:
     virtual void RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle) {};
@@ -911,6 +918,7 @@ struct cdac_data<LoaderAllocator>
     static constexpr size_t HighFrequencyHeap = offsetof(LoaderAllocator, m_pHighFrequencyHeap);
     static constexpr size_t LowFrequencyHeap = offsetof(LoaderAllocator, m_pLowFrequencyHeap);
     static constexpr size_t StubHeap = offsetof(LoaderAllocator, m_pStubHeap);
+    static constexpr size_t ObjectHandle = offsetof(LoaderAllocator, m_hLoaderAllocatorObjectHandle);
 };
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;

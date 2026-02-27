@@ -55,10 +55,10 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup>
     <!-- Paths to tools, tasks, and extensions are calculated relative to the WebAssemblySdkDirectoryRoot. This can be modified to test a local build. -->
-    <WebAssemblySdkDirectoryRoot Condition="'$(WebAssemblySdkDirectoryRoot)'==''">$(MSBuildThisFileDirectory)..\</WebAssemblySdkDirectoryRoot>
-    <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net10.0</_WebAssemblySdkTasksTFM>
+    <_WebAssemblySdkToolsDirectory Condition="'$(_WebAssemblySdkToolsDirectory)'==''">$(MSBuildThisFileDirectory)..\tools\</_WebAssemblySdkToolsDirectory>
+    <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net11.0</_WebAssemblySdkTasksTFM>
     <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' != 'Core'">net472</_WebAssemblySdkTasksTFM>
-    <_WebAssemblySdkTasksAssembly>$(WebAssemblySdkDirectoryRoot)tools\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
+    <_WebAssemblySdkTasksAssembly Condition="'$(_WebAssemblySdkTasksAssembly)' == ''">$(_WebAssemblySdkToolsDirectory)\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
 
     <!-- Compression -->
     <CompressionIncludePatterns>$(CompressionIncludePatterns);_framework\**</CompressionIncludePatterns>
@@ -68,7 +68,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.GenerateWasmBootJson" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
-  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebCil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebcil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -141,8 +141,14 @@ Copyright (c) .NET Foundation. All rights reserved.
     <GenerateBuildWasmBootJsonDependsOn>
       $(GenerateBuildWasmBootJsonDependsOn);
       GenerateBuildRuntimeConfigurationFiles;
+      ComputeWasmVfs;
       ResolveWasmOutputs;
+      _AddWasmDiagnosticPortsEnvironmentVariable;
     </GenerateBuildWasmBootJsonDependsOn>
+    <GeneratePublishWasmBootJsonDependsOn>
+      $(GeneratePublishWasmBootJsonDependsOn);
+      _AddWasmDiagnosticPortsEnvironmentVariable;
+    </GeneratePublishWasmBootJsonDependsOn>
   </PropertyGroup>
 
   <Target Name="_WasmNativeForBuild" DependsOnTargets="_GatherWasmFilesToBuild;WasmBuildApp" Condition="'$(UsingBrowserRuntimeWorkload)' == 'true'" />
@@ -191,6 +197,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmCopyOutputSymbolsToOutputDirectory Condition="'$(_WasmCopyOutputSymbolsToOutputDirectory)'==''">true</_WasmCopyOutputSymbolsToOutputDirectory>
       <_WasmEnableThreads>$(WasmEnableThreads)</_WasmEnableThreads>
       <_WasmEnableThreads Condition="'$(_WasmEnableThreads)' == ''">false</_WasmEnableThreads>
+      <_WasmEmitTypeScriptDefinitions>$(WasmEmitTypeScriptDefinitions)</_WasmEmitTypeScriptDefinitions>
+      <_WasmEmitTypeScriptDefinitions Condition="'$(WasmEmitTypeScriptDefinitions)' == ''">false</_WasmEmitTypeScriptDefinitions>
 
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
@@ -224,43 +232,100 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmBundlerFriendlyBootConfig>$(WasmBundlerFriendlyBootConfig)</_WasmBundlerFriendlyBootConfig>
       <_WasmBundlerFriendlyBootConfig Condition="'$(_WasmBundlerFriendlyBootConfig)' == ''">false</_WasmBundlerFriendlyBootConfig>
 
-      <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
+      <!-- Workaround for https://github.com/dotnet/sdk/issues/12114 -->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
     </PropertyGroup>
+
+    <!-- Trim support for line number in stack traces by default -->
+    <PropertyGroup>
+      <StackTraceLineNumberSupport Condition="'$(StackTraceLineNumberSupport)' == '' and ('$(StackTraceSupport)' == 'false' or '$(DebugSymbols)' != 'true')">false</StackTraceLineNumberSupport>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(StackTraceLineNumberSupport)' == 'false'">
+      <RuntimeHostConfigurationOption Include="System.Diagnostics.StackTrace.IsLineNumberSupported" Value="false" Trim="true" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmEnableThreads)' != 'true'">
+      <RuntimeHostConfigurationOption Include="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" Value="false" Trim="true" />
+    </ItemGroup>
     <Warning Text="Custom Blazor cache has been removed and setting 'BlazorCacheBootResources' has no effect." Condition="'$(_BlazorCacheBootResources)' != 'false' and '$(_TargetingNET100OrLater)' == 'true'" />
   </Target>
 
-  <Target Name="ResolveWasmOutputs" DependsOnTargets="_ResolveWasmOutputs" />
+  <Target Name="ResolveWasmOutputs" DependsOnTargets="$(ResolveWasmOutputsDependsOn);_ResolveWasmOutputs" />
 
-  <Target Name="_GetWasmRuntimePackVersion">
-    <PropertyGroup>
-      <_WasmRuntimePackVersion>%(ResolvedRuntimePack.NuGetPackageVersion)</_WasmRuntimePackVersion>
-    </PropertyGroup>
+  <Target Name="ComputeWasmVfs">
+    <ItemGroup>
+      <WasmFilesToIncludeInFileSystem Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' == ''">
+        <TargetPath>%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
+      </WasmFilesToIncludeInFileSystem>
+    </ItemGroup>
+    
+    <DefineStaticWebAssets
+      CandidateAssets="@(StaticWebAsset)"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="vfs:%(WasmFilesToIncludeInFileSystem.TargetPath)"
+      RelativePathFilter="@(WasmFilesToIncludeInFileSystem)"
+      Condition="'@(WasmFilesToIncludeInFileSystem)' != ''"
+    >
+      <Output TaskParameter="Assets" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAsset" />
+    </DefineStaticWebAssets>
 
-    <Error Code="WASM0005" Text="Unable to resolve WebAssembly runtime pack version" Condition="'$(_WasmRuntimePackVersion)' == ''" />
+    <Error
+      Text="Some of the 'WasmFilesToIncludeInFileSystem' where not found in StaticWebAssets. WasmFilesToIncludeInFileSystem: @(WasmFilesToIncludeInFileSystem), matched StaticWebAssets: @(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
+      Condition="'@(WasmFilesToIncludeInFileSystem->Count())' != '@(_WasmFilesToIncludeInFileSystemStaticWebAsset->Count())'" />
+
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+
+    <ItemGroup>
+      <!-- Update the boot config static web asset since we've given it a trait -->
+      <_WasmFilesToIncludeInFileSystemOriginalAssetsWithChangedIdentity Include="%(_WasmFilesToIncludeInFileSystemStaticWebAsset.OriginalItemSpec)" Condition="'%(_WasmFilesToIncludeInFileSystemStaticWebAsset.OriginalItemSpec)' != '%(_WasmFilesToIncludeInFileSystemStaticWebAsset.Identity)'" /> 
+
+      <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
+      <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemOriginalAssetsWithChangedIdentity)" />
+      <StaticWebAsset Include="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
+      <StaticWebAssetEndpoint Include="@(_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint)" />
+    </ItemGroup>
   </Target>
 
-  <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild;_GetWasmRuntimePackVersion">
+  <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
     <PropertyGroup>
-      <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
+      <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');@(WasmAssembliesFinal->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
+      <_WasmIntermediateAssemblyFileNames Condition="@(WasmAssembliesFinal->Count()) != 0">;@(IntermediateAssembly->'%(FileName)%(Extension)');</_WasmIntermediateAssemblyFileNames>
     </PropertyGroup>
 
     <ItemGroup>
-      <_WasmConfigFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
+      <_WasmDiscoveredFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
 
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$(_WasmNativeAssetFileNames.Contains(';%(FileName)%(Extension);'))" />
+
+      <!-- If we have @(WasmAssembliesFinal), prefer them over @(ReferenceCopyLocalPaths). They come from AOT during build. In that case @(ReferenceCopyLocalPaths) is already empty  -->
+      <_WasmProjectAssemblyBuild Include="@(WasmAssembliesFinal)" Condition="$(_WasmIntermediateAssemblyFileNames.Contains(';%(FileName)%(Extension);'))" />
+      <_WasmProjectAssemblyBuild Include="@(IntermediateAssembly)" Condition="@(_WasmProjectAssemblyBuild->Count()) == 0" />
+      <_WasmBuildAssetCandidates Include="@(ReferenceCopyLocalPaths)" />
+      <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" />
+      <_WasmBuildAssetCandidates Include="@(WasmAssembliesFinal)" />
+      <_WasmBuildAssetCandidates Remove="@(_WasmProjectAssemblyBuild)" />
+
+      <!-- Add WasmAssembliesFinal back to ReferenceCopyLocalPaths for debugging and postprocessing tools -->
+      <ReferenceCopyLocalPaths Include="@(WasmAssembliesFinal)" />
     </ItemGroup>
 
     <PropertyGroup>
       <_WasmEmitSourceMapBuild>$(WasmEmitSourceMap)</_WasmEmitSourceMapBuild>
       <_WasmEmitSourceMapBuild Condition="'$(_WasmEmitSourceMapBuild)' == ''">true</_WasmEmitSourceMapBuild>
+      <_WasmEmitDiagnosticModuleBuild Condition="'$(EnableDiagnostics)' == 'true' or '$(WasmEmitSymbolMap)' == 'true' or '$(WasmTestSupport)' == 'true'">true</_WasmEmitDiagnosticModuleBuild>
+      <_WasmEmitDiagnosticModuleBuild Condition="'$(_WasmEmitDiagnosticModuleBuild)' == ''">false</_WasmEmitDiagnosticModuleBuild>
     </PropertyGroup>
 
     <ComputeWasmBuildAssets
-      Candidates="@(ReferenceCopyLocalPaths->Distinct());@(WasmNativeAsset)"
+      Candidates="@(_WasmBuildAssetCandidates->Distinct())"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
-      ProjectAssembly="@(IntermediateAssembly)"
+      ProjectAssembly="@(_WasmProjectAssemblyBuild)"
       ProjectDebugSymbols="@(_DebugSymbolsIntermediatePath)"
       SatelliteAssemblies="@(ReferenceSatellitePaths)"
       ProjectSatelliteAssemblies="@(IntermediateSatelliteAssembliesWithTargetPath)"
@@ -270,8 +335,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
       EnableThreads="$(_WasmEnableThreads)"
-      EnableDiagnostics="$(EnableDiagnostics)"
+      EnableDiagnostics="$(_WasmEmitDiagnosticModuleBuild)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
+      EmitSymbolMap="$(WasmEmitSymbolMap)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       FingerprintDotnetJs="$(_WasmFingerprintDotnetJs)"
     >
@@ -280,30 +346,31 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ComputeWasmBuildAssets>
 
     <ItemGroup Condition="'$(_WasmInlineBootConfig)' == 'true'">
-      <_WasmDotnetJsForBuild Include="@(ReferenceCopyLocalPaths)" Condition="'%(FileName)%(Extension)' == 'dotnet.js'" />
+      <_WasmDotnetJsForBuild Include="@(_WasmBuildAssetCandidates)" Condition="'%(FileName)%(Extension)' == 'dotnet.js'" />
       <_BuildAssetsCandidates Remove="@(_WasmDotnetJsForBuild)" />
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasmBuildWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebCilPath>
-      <_WasmBuildTmpWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebCilPath>
+      <_WasmBuildWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebcilPath>
+      <_WasmBuildTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebcilPath>
       <_WasmBuildOuputPath>$([MSBuild]::NormalizeDirectory('$(OutputPath)', 'wwwroot'))</_WasmBuildOuputPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebCil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebCilPath)" OutputPath="$(_WasmBuildWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
-      <Output TaskParameter="WebCilCandidates" ItemName="_WebCilAssetsCandidates" />
+    <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
+      <Output TaskParameter="WebcilCandidates" ItemName="_WebcilAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </ConvertDllsToWebCil>
+    </ConvertDllsToWebcil>
 
     <ItemGroup>
       <_WasmFingerprintPatterns Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DllFiles" Pattern="*.dll" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DatFiles" Pattern="*.dat" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="Pdb" Pattern="*.pdb" Expression="#[.{fingerprint}]!" />
+      <_WasmFingerprintPatterns Include="Symbols" Pattern="*.js.symbols" Expression="#[.{fingerprint}]!" />
     </ItemGroup>
 
     <DefineStaticWebAssets
-      CandidateAssets="@(_WebCilAssetsCandidates)"
+      CandidateAssets="@(_WebcilAssetsCandidates)"
       SourceId="$(PackageId)"
       SourceType="Computed"
       AssetKind="Build"
@@ -319,14 +386,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     </DefineStaticWebAssets>
 
     <DefineStaticWebAssets
-      CandidateAssets="@(_WasmConfigFileCandidates)"
+      CandidateAssets="@(_WasmDiscoveredFileCandidates)"
       AssetTraitName="WasmResource"
       AssetTraitValue="settings"
       RelativePathFilter="appsettings*.json"
     >
       <Output TaskParameter="Assets" ItemName="_WasmJsConfigStaticWebAsset" />
     </DefineStaticWebAssets>
-
     <DefineStaticWebAssetEndpoints
       CandidateAssets="@(_WasmJsConfigStaticWebAsset)"
       ExistingEndpoints="@(StaticWebAssetEndpoint)"
@@ -334,13 +400,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="Endpoints" ItemName="_WasmJsConfigStaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
-
+    
     <ItemGroup>
-      <!-- Update the boot config static web asset since we've given it a trait -->
       <StaticWebAsset Remove="@(_WasmJsConfigStaticWebAsset)" />
       <StaticWebAsset Include="@(_WasmJsConfigStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(_WasmJsConfigStaticWebAssetEndpoint)" />
-
       <ReferenceCopyLocalPaths Remove="@(_WasmBuildFilesToRemove)" />
     </ItemGroup>
 
@@ -352,6 +416,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       <StaticWebAsset Include="@(_WasmBuildBootConfigStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(WasmStaticWebAssetEndpoint)" />
       <StaticWebAssetEndpoint Include="@(_WasmBuildBootConfigStaticWebAssetEndpoint)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_AddWasmDiagnosticPortsEnvironmentVariable">
+    <ItemGroup>
+      <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
     </ItemGroup>
   </Target>
 
@@ -385,8 +455,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     </DefineStaticWebAssetEndpoints>
 
     <ResolveFingerprintedStaticWebAssetEndpointsForAssets
-      CandidateEndpoints="@(WasmStaticWebAssetEndpoint);@(_WasmJsModuleCandidatesForBuildEndpoint)"
-      CandidateAssets="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild)"
+      CandidateEndpoints="@(WasmStaticWebAssetEndpoint);@(_WasmJsModuleCandidatesForBuildEndpoint);@(StaticWebAssetEndpoint)"
+      CandidateAssets="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
       IsStandalone="$(StaticWebAssetStandaloneHosting)"
     >
       <Output TaskParameter="ResolvedEndpoints" ItemName="_WasmResolvedEndpoints" />
@@ -395,11 +465,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
       ApplicationEnvironment="$(_WasmBuildApplicationEnvironmentName)"
-      Resources="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild)"
+      Resources="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
       Endpoints="@(_WasmResolvedEndpoints)"
       DebugBuild="true"
       DebugLevel="$(WasmDebugLevel)"
-      LinkerEnabled="false"
       CacheBootResources="$(_BlazorCacheBootResources)"
       MergeWith="@(_WasmDotnetJsForBuild)"
       OutputPath="$(_WasmBuildBootJsonPath)"
@@ -421,7 +490,13 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
-      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
+      AppendElementOnExit="$(WasmTestAppendElementOnExit)"
+      LogExitCode="$(WasmTestLogExitCode)"
+      AsyncFlushOnExit="$(WasmTestAsyncFlushOnExit)"
+      ForwardConsole="$(WasmTestForwardConsole)"
+      />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -514,8 +589,13 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_AddWasmPreloadBuildProperties" DependsOnTargets="_WasmConfigurePreload;_AddWasmStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
+    <PropertyGroup>
+      <_WasmBootConfigFileNameWithoutExtension>$([System.IO.Path]::GetFileNameWithoutExtension('$(_WasmBootConfigFileName)'))</_WasmBootConfigFileNameWithoutExtension>
+      <_WasmBootConfigFileExtension>$([System.IO.Path]::GetExtension('$(_WasmBootConfigFileName)'))</_WasmBootConfigFileExtension>
+    </PropertyGroup>
     <ItemGroup>
-      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileName)'" />
+      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'$(_WasmFingerprintAssets)' == 'true' and '$(_WasmFingerprintBootConfig)' == 'true' and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileNameWithoutExtension).%(Fingerprint)$(_WasmBootConfigFileExtension)'" />
+      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="('$(_WasmFingerprintAssets)' != 'true' or '$(_WasmFingerprintBootConfig)' != 'true') and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileName)'" />
     </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
@@ -578,7 +658,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     BeforeTargets="PrepareForPublish" />
 
   <!-- Wasm's Nested publish is run just to build the native bits. We don't need to run blazor targets for that -->
-  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GetWasmRuntimePackVersion;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <!-- The list of static web assets already contains all the assets from the build. We want to correct certain assets that might
          have changed as part of the publish process. We are going to do so as follows:
          * We will update Blazor runtime asset dlls if we are running PublishTrimmed
@@ -595,6 +675,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmEmitSourceMapPublish>$(WasmEmitSourceMap)</_WasmEmitSourceMapPublish>
       <_WasmEmitSourceMapPublish Condition="'$(_WasmEmitSourceMapPublish)' == ''">false</_WasmEmitSourceMapPublish>
+      <_WasmEmitDiagnosticModulePublish Condition="'$(EnableDiagnostics)' == 'true' or '$(WasmEmitSymbolMap)' == 'true' or '$(WasmTestSupport)' == 'true'">true</_WasmEmitDiagnosticModulePublish>
+      <_WasmEmitDiagnosticModulePublish Condition="'$(_WasmEmitDiagnosticModulePublish)' == ''">false</_WasmEmitDiagnosticModulePublish>
     </PropertyGroup>
 
     <ItemGroup Condition="@(WasmAssembliesFinal->Count()) == 0 or '$(TargetFrameworkVersion)' == 'v6.0'">
@@ -621,9 +703,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(CopyOutputSymbolsToPublishDirectory)"
       ExistingAssets="@(_WasmPublishPrefilteredAssets)"
       EnableThreads="$(_WasmEnableThreads)"
-      EnableDiagnostics="$(EnableDiagnostics)"
+      EnableDiagnostics="$(_WasmEmitDiagnosticModulePublish)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
-      IsWebCilEnabled="$(_WasmEnableWebcil)"
+      EmitSymbolMap="$(WasmEmitSymbolMap)"
+      IsWebcilEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
     >
       <Output TaskParameter="NewCandidates" ItemName="_NewWasmPublishStaticWebAssets" />
@@ -636,40 +719,40 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasmPublishWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil', 'publish'))</_WasmPublishWebCilPath>
-      <_WasmPublishTmpWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebCilPath>
+      <_WasmPublishWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil', 'publish'))</_WasmPublishWebcilPath>
+      <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebCil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebCilPath)" OutputPath="$(_WasmPublishWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
-      <Output TaskParameter="WebCilCandidates" ItemName="_NewWebCilPublishStaticWebAssetsCandidates" />
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
+      <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </ConvertDllsToWebCil>
+    </ConvertDllsToWebcil>
 
-    <!-- _NewWebCilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
+    <!-- _NewWebcilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
          Remove them and call DefineStaticWebAssets so that they can get re-computed appropriately.
     -->
     <ItemGroup>
-      <_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata
-        Include="@(_NewWebCilPublishStaticWebAssetsCandidates)"
+      <_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata
+        Include="@(_NewWebcilPublishStaticWebAssetsCandidates)"
         RemoveMetadata="Integrity;Fingerprint" />
     </ItemGroup>
 
-    <DefineStaticWebAssets CandidateAssets="@(_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata);@(_PromotedWasmPublishStaticWebAssets)">
-      <Output TaskParameter="Assets" ItemName="_NewWebCilPublishStaticWebAssets" />
+    <DefineStaticWebAssets CandidateAssets="@(_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata);@(_PromotedWasmPublishStaticWebAssets)">
+      <Output TaskParameter="Assets" ItemName="_NewWebcilPublishStaticWebAssets" />
     </DefineStaticWebAssets>
 
     <DefineStaticWebAssetEndpoints
-      CandidateAssets="@(_NewWebCilPublishStaticWebAssets)"
+      CandidateAssets="@(_NewWebcilPublishStaticWebAssets)"
       ExistingEndpoints="@(StaticWebAssetEndpoint)"
       ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
     >
-      <Output TaskParameter="Endpoints" ItemName="_NewWebCilPublishStaticWebAssetsEndpoint" />
+      <Output TaskParameter="Endpoints" ItemName="_NewWebcilPublishStaticWebAssetsEndpoint" />
     </DefineStaticWebAssetEndpoints>
 
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_PublishResolvedFilesToRemove)" />
-      <StaticWebAsset Include="@(_NewWebCilPublishStaticWebAssets)" />
-      <StaticWebAssetEndpoint Include="@(_NewWebCilPublishStaticWebAssetsEndpoint)" />
+      <StaticWebAsset Include="@(_NewWebcilPublishStaticWebAssets)" />
+      <StaticWebAssetEndpoint Include="@(_NewWebcilPublishStaticWebAssetsEndpoint)" />
 
       <!-- TODO: Probably doesn't do anything as of now, original https://github.com/dotnet/aspnetcore/pull/34798 -->
       <PublishBlazorBootStaticWebAsset
@@ -808,7 +891,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       Endpoints="@(_WasmResolvedEndpointsForPublish)"
       DebugBuild="false"
       DebugLevel="$(WasmDebugLevel)"
-      LinkerEnabled="$(PublishTrimmed)"
       CacheBootResources="$(_BlazorCacheBootResources)"
       MergeWith="@(_WasmDotnetJsForPublish)"
       OutputPath="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)"
@@ -830,7 +912,13 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
-      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)" />
+      BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
+      ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
+      AppendElementOnExit="$(WasmTestAppendElementOnExit)"
+      LogExitCode="$(WasmTestLogExitCode)"
+      AsyncFlushOnExit="$(WasmTestAsyncFlushOnExit)"
+      ForwardConsole="$(WasmTestForwardConsole)"
+      />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
@@ -855,5 +943,24 @@ Copyright (c) .NET Foundation. All rights reserved.
       <WasmAssembliesToBundle Remove="@(WasmAssembliesToBundle)" />
       <WasmAssembliesToBundle Include="@(ResolvedFileToPublish)" Exclude="@(_Exclude)" Condition="%(Extension) == '.dll'" />
     </ItemGroup>
+  </Target>
+
+  <!-- Ensure dotnet.d.ts is available in wwwroot for TypeScript development experience when enabled -->
+  <Target Name="_EnsureDotnetTypeScriptDefinitions" 
+          AfterTargets="_ResolveWasmConfiguration" 
+          Condition="'$(_WasmEmitTypeScriptDefinitions)' == 'true'">
+    <PropertyGroup>
+      <_RuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_RuntimePackDir>
+      <_RuntimePackDir Condition="'$(_RuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_RuntimePackDir>
+      <_RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(_RuntimePackDir), 'runtimes', 'browser-wasm', 'native'))</_RuntimePackNativeDir>
+      <_DotnetTypesSourcePath>$([MSBuild]::NormalizePath($(_RuntimePackNativeDir), 'dotnet.d.ts'))</_DotnetTypesSourcePath>
+      <_DotnetTypesDestPath>$(MSBuildProjectDirectory)\wwwroot\dotnet.d.ts</_DotnetTypesDestPath>
+    </PropertyGroup>
+    
+    <!-- Copy dotnet.d.ts if source exists. MSBuild will skip if files are identical. -->
+    <Copy SourceFiles="$(_DotnetTypesSourcePath)"
+          DestinationFiles="$(_DotnetTypesDestPath)"
+          Condition="Exists('$(_DotnetTypesSourcePath)')"
+          SkipUnchangedFiles="true" />
   </Target>
 </Project>

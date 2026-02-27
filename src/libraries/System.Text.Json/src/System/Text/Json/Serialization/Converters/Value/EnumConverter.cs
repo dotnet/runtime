@@ -247,7 +247,7 @@ namespace System.Text.Json.Serialization.Converters
 
             int charsWritten = reader.CopyString(charBuffer);
             charBuffer = charBuffer.Slice(0, charsWritten);
-#if NET9_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> source = charBuffer.Trim();
             ConcurrentDictionary<string, ulong>.AlternateLookup<ReadOnlySpan<char>> lookup = _nameCacheForReading.GetAlternateLookup<ReadOnlySpan<char>>();
 #else
@@ -295,14 +295,14 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         private bool TryParseNamedEnum(
-#if NET9_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> source,
 #else
             string source,
 #endif
             out T result)
         {
-#if NET9_0_OR_GREATER
+#if NET
             Dictionary<string, EnumFieldInfo>.AlternateLookup<ReadOnlySpan<char>> lookup = _enumFieldInfoIndex.GetAlternateLookup<ReadOnlySpan<char>>();
             ReadOnlySpan<char> rest = source;
 #else
@@ -327,7 +327,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 if (lookup.TryGetValue(
-#if NET9_0_OR_GREATER
+#if NET
                         next,
 #else
                         next.ToString(),
@@ -573,7 +573,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             if (string.IsNullOrEmpty(name) || char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]) ||
-                (s_isFlagsEnum && name.AsSpan().IndexOf(',') >= 0))
+                (s_isFlagsEnum && name.Contains(',')))
             {
                 // Reject null or empty strings or strings with leading or trailing whitespace.
                 // In the case of flags additionally reject strings containing commas.

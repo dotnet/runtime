@@ -13,6 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+#if !NETFRAMEWORK
+using System.IO.Enumeration;
+#endif
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -31,6 +34,25 @@ public static partial class MountHelper
 
     // Helper for ConditionalClass attributes
     internal static bool IsSubstAvailable => PlatformDetection.IsSubstAvailable;
+
+    /// <summary>
+    /// Verifies that hard link creation is supported on the file system.
+    /// </summary>
+    internal static bool CanCreateHardLinks => s_canCreateHardLinks.Value;
+
+    private static readonly Lazy<bool> s_canCreateHardLinks = new Lazy<bool>(() =>
+    {
+        bool success = true;
+
+        // Verify file hard link creation
+        string path = Path.GetTempFileName();
+        string linkPath = path + ".link";
+        success = CreateHardLink(linkPath: linkPath, targetPath: path);
+        try { File.Delete(path); } catch { }
+        try { File.Delete(linkPath); } catch { }
+
+        return success;
+    });
 
     /// <summary>
     /// In some cases (such as when running without elevated privileges),
@@ -65,6 +87,46 @@ public static partial class MountHelper
         return success;
     });
 
+    /// <summary>Creates a hard link using command line tools.</summary>
+    public static bool CreateHardLink(string linkPath, string targetPath)
+    {
+        // It's easy to get the parameters backwards.
+        Assert.EndsWith(".link", linkPath);
+        if (linkPath != targetPath) // testing loop
+            Assert.False(targetPath.EndsWith(".link"), $"{targetPath} should not end with .link");
+
+#if NETFRAMEWORK
+        bool isWindows = true;
+#else
+        if (!IsProcessStartSupported())
+        {
+            return false;
+        }
+
+        bool isWindows = OperatingSystem.IsWindows();
+#endif
+
+        using Process hardLinkProcess = new Process();
+        if (isWindows)
+        {
+            hardLinkProcess.StartInfo.FileName = "cmd";
+            hardLinkProcess.StartInfo.Arguments = string.Format("/c mklink /H \"{0}\" \"{1}\"", linkPath, targetPath);
+        }
+        else
+        {
+            hardLinkProcess.StartInfo.FileName = "/bin/ln";
+            hardLinkProcess.StartInfo.Arguments = string.Format("\"{0}\" \"{1}\"", targetPath, linkPath);
+        }
+        hardLinkProcess.StartInfo.UseShellExecute = false;
+        hardLinkProcess.StartInfo.RedirectStandardOutput = true;
+
+        hardLinkProcess.Start();
+
+        hardLinkProcess.WaitForExit();
+
+        return hardLinkProcess.ExitCode == 0;
+    }
+
     /// <summary>Creates a symbolic link using command line tools.</summary>
     public static bool CreateSymbolicLink(string linkPath, string targetPath, bool isDirectory)
     {
@@ -76,13 +138,14 @@ public static partial class MountHelper
 #if NETFRAMEWORK
         bool isWindows = true;
 #else
-        if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) // OSes that don't support Process.Start()
+        if (!IsProcessStartSupported())
         {
             return false;
         }
 
         bool isWindows = OperatingSystem.IsWindows();
 #endif
+
         using Process symLinkProcess = new Process();
         if (isWindows)
         {
@@ -101,7 +164,16 @@ public static partial class MountHelper
 
         symLinkProcess.WaitForExit();
 
-        return (symLinkProcess.ExitCode == 0);
+        return symLinkProcess.ExitCode == 0;
+    }
+
+    private static bool IsProcessStartSupported()
+    {
+#if NETFRAMEWORK
+        return true;
+#else
+        return !(OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()); // OSes that don't support Process.Start()
+#endif
     }
 
     /// <summary>On Windows, creates a junction using command line tools.</summary>
@@ -114,6 +186,40 @@ public static partial class MountHelper
 
         return RunProcess(CreateProcessStartInfo("cmd", "/c", "mklink", "/J", junctionPath, targetPath));
     }
+
+#if !NETFRAMEWORK
+    /// <summary>
+    /// Retrieves the first appexeclink in this machine, if any.
+    /// </summary>
+    /// <returns>A string that represents a path to an appexeclink, if found, or null if not.</returns>
+    public static string? GetAppExecLinkPath()
+    {
+        string localAppDataPath = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+        if (localAppDataPath is null)
+        {
+            return null;
+        }
+
+        string windowsAppsDir = Path.Join(localAppDataPath, "Microsoft", "WindowsApps");
+
+        if (!Directory.Exists(windowsAppsDir))
+        {
+            return null;
+        }
+
+        var opts = new EnumerationOptions { RecurseSubdirectories = true };
+
+        return new FileSystemEnumerable<string?>(
+            windowsAppsDir,
+            (ref FileSystemEntry entry) => entry.ToFullPath(),
+            opts)
+        {
+            ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+                FileSystemName.MatchesWin32Expression("*.exe", entry.FileName) &&
+                (entry.Attributes & FileAttributes.ReparsePoint) != 0
+        }.FirstOrDefault();
+    }
+#endif
 
     public static void Mount(string volumeName, string mountPoint)
     {

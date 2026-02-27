@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -152,6 +153,8 @@ namespace System.Threading
         private void WaitAndAcquire()
         {
             VerifyIsNotLocked();
+
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             // Spin a bit to see if the lock becomes available, before forcing the thread into a wait state
             if (_spinWaiter.SpinWaitForCondition(s_spinWaitTryAcquireCallback, this, SpinCount, SpinSleep0Threshold))

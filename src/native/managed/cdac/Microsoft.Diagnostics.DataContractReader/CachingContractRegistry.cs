@@ -20,7 +20,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
     private readonly Target _target;
     private readonly TryGetContractVersionDelegate _tryGetContractVersion;
 
-    public CachingContractRegistry(Target target, TryGetContractVersionDelegate tryGetContractVersion, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
+    public CachingContractRegistry(Target target, TryGetContractVersionDelegate tryGetContractVersion, IEnumerable<IContractFactory<IContract>> additionalFactories, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
     {
         _target = target;
         _tryGetContractVersion = tryGetContractVersion;
@@ -40,30 +40,24 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IReJIT)] = new ReJITFactory(),
             [typeof(IStackWalk)] = new StackWalkFactory(),
             [typeof(IRuntimeInfo)] = new RuntimeInfoFactory(),
+            [typeof(IComWrappers)] = new ComWrappersFactory(),
             [typeof(IDebugInfo)] = new DebugInfoFactory(),
+            [typeof(ISHash)] = new SHashFactory(),
             [typeof(IGC)] = new GCFactory(),
+            [typeof(IGCInfo)] = new GCInfoFactory(),
+            [typeof(INotifications)] = new NotificationsFactory(),
+            [typeof(ISignatureDecoder)] = new SignatureDecoderFactory(),
+            [typeof(IBuiltInCOM)] = new BuiltInCOMFactory(),
         };
+
+        foreach (IContractFactory<IContract> factory in additionalFactories)
+        {
+            _factories[factory.ContractType] = factory;
+        }
         configureFactories?.Invoke(_factories);
     }
 
-    public override IException Exception => GetContract<IException>();
-    public override ILoader Loader => GetContract<ILoader>();
-    public override IEcmaMetadata EcmaMetadata => GetContract<IEcmaMetadata>();
-    public override IObject Object => GetContract<IObject>();
-    public override IThread Thread => GetContract<IThread>();
-    public override IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
-    public override IDacStreams DacStreams => GetContract<IDacStreams>();
-    public override IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
-    public override ICodeVersions CodeVersions => GetContract<ICodeVersions>();
-    public override IPlatformMetadata PlatformMetadata => GetContract<IPlatformMetadata>();
-    public override IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
-    public override IReJIT ReJIT => GetContract<IReJIT>();
-    public override IStackWalk StackWalk => GetContract<IStackWalk>();
-    public override IRuntimeInfo RuntimeInfo => GetContract<IRuntimeInfo>();
-    public override IDebugInfo DebugInfo => GetContract<IDebugInfo>();
-    public override IGC GC => GetContract<IGC>();
-
-    private TContract GetContract<TContract>() where TContract : IContract
+    public override TContract GetContract<TContract>()
     {
         if (_contracts.TryGetValue(typeof(TContract), out IContract? contractMaybe))
             return (TContract)contractMaybe;

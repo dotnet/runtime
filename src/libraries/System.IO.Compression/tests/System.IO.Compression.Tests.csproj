@@ -29,7 +29,6 @@
     <Compile Include="ZipArchive\zip_ReadTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.Comments.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
     <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\CRC.cs" Link="Common\System\IO\Compression\CRC.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\CompressionStreamTestBase.cs" Link="Common\System\IO\Compression\CompressionStreamTestBase.cs" />
@@ -58,5 +57,15 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataVersion)" />
+  </ItemGroup>
+
+  <!-- Zstandard tests (not supported on browser/wasi) -->
+  <ItemGroup Condition="'$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'">
+    <Compile Include="Zstandard\CompressionStreamUnitTests.Zstandard.cs" />
+    <Compile Include="Zstandard\ZstandardCompressionOptionsTests.cs" />
+    <Compile Include="Zstandard\ZstandardDictionaryTests.cs" />
+    <Compile Include="Zstandard\ZstandardTestUtils.cs" />
+    <Compile Include="Zstandard\ZstandardEncoderDecoderTests.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\EncoderDecoderTestBase.cs" Link="Common\System\IO\Compression\EncoderDecoderTestBase.cs" />
   </ItemGroup>
 </Project>

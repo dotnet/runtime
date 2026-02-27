@@ -131,7 +131,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             // ./shared/Microsoft.NETCore.App/<version> - create a mock of the root framework
             string netCoreAppPath = AddFramework(Constants.MicrosoftNETCoreApp, version);
 
-            string currentRid = TestContext.BuildRID;
+            string currentRid = HostTestContext.BuildRID;
 
             NetCoreAppBuilder.ForNETCoreApp(Constants.MicrosoftNETCoreApp, currentRid)
                 .WithStandardRuntimeFallbacks()
@@ -140,9 +140,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                         // ./shared/Microsoft.NETCore.App/<version>/coreclr.dll - this is a mock, will not actually run CoreClr
                         .WithAsset((new NetCoreAppBuilder.RuntimeFileBuilder($"runtimes/{currentRid}/native/{Binaries.CoreClr.FileName}"))
                             .CopyFromFile(Binaries.CoreClr.MockPath)
-                            .WithLocalPath(Binaries.CoreClr.FileName))))
-                .WithPackage($"runtime.{currentRid}.Microsoft.NETCore.DotNetHostPolicy", version, p => p
-                    .WithNativeLibraryGroup(null, g => g
+                            .WithLocalPath(Binaries.CoreClr.FileName))
                         // ./shared/Microsoft.NETCore.App/<version>/hostpolicy.dll - this is the real component and will load CoreClr library
                         .WithAsset((new NetCoreAppBuilder.RuntimeFileBuilder($"runtimes/{currentRid}/native/{Binaries.HostPolicy.FileName}"))
                             .CopyFromFile(Binaries.HostPolicy.FilePath)

@@ -31,7 +31,8 @@ namespace Profiler.Tests
                               Dictionary<string, string> envVars = null,
                               string reverseServerName = null,
                               bool loadAsNotification = false,
-                              int notificationCopies = 1)
+                              int notificationCopies = 1,
+                              string envVarProfilerPrefix = "DOTNET")
         {
             string arguments;
             string program;
@@ -47,7 +48,7 @@ namespace Profiler.Tests
             string profilerPath = GetProfilerPath();
             if (!profileeOptions.HasFlag(ProfileeOptions.NoStartupAttach))
             {
-                envVars.Add("CORECLR_ENABLE_PROFILING", "1");
+                envVars.Add(envVarProfilerPrefix + "_ENABLE_PROFILING", "1");
 
                 if (loadAsNotification)
                 {
@@ -62,14 +63,14 @@ namespace Profiler.Tests
                         builder.Append(";");
                     }
 
-                    envVars.Add("CORECLR_ENABLE_NOTIFICATION_PROFILERS", "1");
-                    envVars.Add("CORECLR_NOTIFICATION_PROFILERS", builder.ToString());
+                    envVars.Add(envVarProfilerPrefix + "_ENABLE_NOTIFICATION_PROFILERS", "1");
+                    envVars.Add(envVarProfilerPrefix + "_NOTIFICATION_PROFILERS", builder.ToString());
 
                 }
                 else
                 {
-                    envVars.Add("CORECLR_PROFILER", "{" + profilerClsid + "}");
-                    envVars.Add("CORECLR_PROFILER_PATH", profilerPath);
+                    envVars.Add(envVarProfilerPrefix + "_PROFILER", "{" + profilerClsid + "}");
+                    envVars.Add(envVarProfilerPrefix + "_PROFILER_PATH", profilerPath);
                 }
             }
 

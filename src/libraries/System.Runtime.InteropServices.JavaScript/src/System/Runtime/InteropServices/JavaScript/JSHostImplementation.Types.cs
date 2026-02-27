@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 GCHandle = (IntPtr)InteropServices.GCHandle.Alloc(this, GCHandleType.Normal);
                 ProxyContext = targetContext;
 #if FEATURE_WASM_MANAGED_THREADS
-                State = (PromiseHolderState*)Marshal.AllocHGlobal(sizeof(PromiseHolderState));
+                State = (PromiseHolderState*)NativeMemory.Alloc((nuint)sizeof(PromiseHolderState));
                 Interlocked.Exchange(ref (*State).IsResolving, 0);
 #endif
             }
@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 GCHandle = gcvHandle;
                 ProxyContext = targetContext;
 #if FEATURE_WASM_MANAGED_THREADS
-                State = (PromiseHolderState*)Marshal.AllocHGlobal(sizeof(PromiseHolderState));
+                State = (PromiseHolderState*)NativeMemory.Alloc((nuint)sizeof(PromiseHolderState));
                 Interlocked.Exchange(ref (*State).IsResolving, 0);
 #endif
             }

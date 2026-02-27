@@ -1,4 +1,7 @@
-<Project Sdk="Microsoft.Build.Traversal">
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
+
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
@@ -11,32 +14,23 @@
     <_BuildNativeArgs Condition="'$(EnableNativeSanitizers)' != ''">$(_BuildNativeArgs) -fsanitize=$(EnableNativeSanitizers)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
 
-    <_RuntimeVariant />
-    <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
-    <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
-    <_IcuDirArg Condition="'$(_IcuDir)' != ''"> icudir "$(_IcuDir)"</_IcuDirArg>
-    <_TzdDir Condition="'$(PkgSystem_Runtime_TimeZoneData)' != ''">$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_TzdDir>
-
     <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
     <_CMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_CMakeArgs) -cmakeargs "-DCMAKE_USE_PTHREADS=1"</_CMakeArgs>
-    <_CMakeArgs Condition="'$(_TzdDir)' != ''">$(_CMakeArgs) -cmakeargs "-DCMAKE_TZD_DIR=$(_TzdDir)"</_CMakeArgs>
 
-    <_BuildNativeArgs>$(_BuildNativeArgs)$(_IcuDirArg)$(_CMakeArgs)</_BuildNativeArgs>
+    <_BuildNativeArgs>$(_BuildNativeArgs)$(_CMakeArgs) @(NativeCMakeArg, ' ')</_BuildNativeArgs>
+    <BuildNativeCommonDependsOnTargets>GenerateNativeVersionFile</BuildNativeCommonDependsOnTargets>
+    <BuildNativeCommonDependsOnTargets Condition="'$(TargetsWasi)' == 'true'">AcquireWasiSdk;$(BuildNativeCommonDependsOnTargets)</BuildNativeCommonDependsOnTargets>
+    <BuildNativeCommonDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">AcquireEmscriptenSdk;$(BuildNativeCommonDependsOnTargets);GenerateEmccExports</BuildNativeCommonDependsOnTargets>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)native-binplace.proj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
-    <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
+    <ProjectReference Include="$(RepoTasksDir)AndroidAppBuilder\AndroidAppBuilder.csproj" Condition="'$(TargetOS)' == 'android'" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
 
   <Target Name="BuildNativeCommon"
-          DependsOnTargets="AcquireWasiSdk;GenerateNativeVersionFile">
+          DependsOnTargets="$(BuildNativeCommonDependsOnTargets)">
     <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
       <_BuildNativeEnvironmentVariables>WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)</_BuildNativeEnvironmentVariables>
     </PropertyGroup>
@@ -48,6 +42,7 @@
           Condition="!$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
       <_BuildNativeArgs Condition="'$(Ninja)' == 'true'">$(_BuildNativeArgs) ninja</_BuildNativeArgs>
+      <_BuildNativeArgs Condition="'$(Ninja)' != 'true'">$(_BuildNativeArgs) ninja false</_BuildNativeArgs>
       <!--
         MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
         then we should consider calling Environment.ProcessorCount
@@ -65,16 +60,6 @@
       <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg) $(Compiler)</_BuildNativeUnixArgs>
       <_BuildNativeBuildCommand>&quot;$(MSBuildThisFileDirectory)build-native.sh&quot; $(_BuildNativeUnixArgs)</_BuildNativeBuildCommand>
     </PropertyGroup>
-
-    <ItemGroup>
-      <_IcuArtifacts Condition="'$(_IcuDir)' != ''"
-                     Include="$(_IcuDir)/lib/libicuuc.a;
-                              $(_IcuDir)/lib/libicui18n.a;
-                              $(_IcuDir)/lib/libicudata.a;
-                              $(_IcuDir)/lib/*.dat" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_IcuArtifacts)" DestinationFolder="$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(_BuildNativeOutConfig)'))" SkipUnchangedFiles="true" />
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to error in release branches -->
     <Message Text="$(_BuildNativeBuildCommand)" Importance="High"/>
@@ -111,10 +96,10 @@
     <Exec Command="$(_BuildNativeBuildCommand)" EnvironmentVariables="$(_BuildNativeEnvironmentVariables)" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
-  <UsingTask TaskName="AndroidLibBuilderTask"
-             AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="AndroidLibBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" TaskFactory="TaskHostFactory" Condition="'$(TargetOS)' == 'android'" />
   <Target Name="BuildNativeAndroid"
           BeforeTargets="BuildNativeUnix"
+          DependsOnTargets="ResolveProjectReferences"
           Condition="'$(TargetOS)' == 'android'">
     <AndroidLibBuilderTask
       JavaSourceDirectory="$(MSBuildThisFileDirectory)System.Security.Cryptography.Native.Android"
@@ -123,4 +108,43 @@
       OutputDir="$(ArtifactsBinDir)native/$(_BuildNativeOutConfig)">
     </AndroidLibBuilderTask>
   </Target>
+
+  <Target Name="CopyNativeFiles" DependsOnTargets="BuildNativeUnix;BuildNativeWindows" AfterTargets="Build">
+    <ItemGroup>
+      <ExcludeNativeLibrariesRuntimeFiles Include="
+          $(NativeBinDir)System.Globalization.Native.dll;
+          $(NativeBinDir)System.Globalization.Native.pdb;
+          $(NativeBinDir)System.Globalization.Native.so;
+          $(NativeBinDir)System.Globalization.Native.dylib"
+        Condition="'$(RuntimeFlavor)' != 'Mono'" />
+
+      <NativeAsset Include="$(NativeBinDir)*.dll" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <NativeAsset Include="$(NativeBinDir)*.pdb" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <NativeAsset Include="$(NativeBinDir)*.lib" />
+      <NativeAsset Include="$(NativeBinDir)*.a" />
+      <NativeAsset Include="$(NativeBinDir)*.bc" />
+      <NativeAsset Include="$(NativeBinDir)*.so" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <NativeAsset Include="$(NativeBinDir)*.dbg" />
+      <NativeAsset Include="$(NativeBinDir)*.dylib" Exclude="@(ExcludeNativeLibrariesRuntimeFiles)" />
+      <NativeAsset Include="$(NativeBinDir)*.dwarf" />
+      <NativeAsset Include="$(NativeBinDir)*.dex" />
+      <NativeAsset Include="$(NativeBinDir)*.jar" />
+      <NativeAsset Include="$(NativeBinDir)*.dat" />
+      <FileWrites Include="@(NativeAsset)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeAssetDestinationDir Include="$(LibrariesAllBinArtifactsPath)" />
+      <NativeAssetDestinationDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" />
+      <NativeAssetDestinationDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(NativeAsset)"
+          DestinationFolder="%(NativeAssetDestinationDir.Identity)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlinksIfPossible)">
+      <Output TaskParameter="CopiedFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
+
 </Project>

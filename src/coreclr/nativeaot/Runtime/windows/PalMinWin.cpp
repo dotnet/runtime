@@ -195,7 +195,7 @@ uint64_t PalGetCurrentOSThreadId()
     return GetCurrentThreadId();
 }
 
-#if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
+#if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 UInt32_BOOL PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
 {
 #ifdef XBOX_ONE
@@ -235,7 +235,7 @@ UInt32_BOOL PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSi
     return UnmapViewOfFile(pBaseAddress);
 #endif
 }
-#endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
+#endif // !FEATURE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
 UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
@@ -673,9 +673,9 @@ static void* g_returnAddressHijackTarget = NULL;
 static void NTAPI ActivationHandler(ULONG_PTR parameter)
 {
     CLONE_APC_CALLBACK_DATA* data = (CLONE_APC_CALLBACK_DATA*)parameter;
-    Thread::HijackCallback((NATIVE_CONTEXT*)data->ContextRecord, NULL);
-
     Thread* pThread = (Thread*)data->Parameter;
+    Thread::HijackCallback((NATIVE_CONTEXT*)data->ContextRecord, pThread, true /* doInlineSuspend */);
+
     pThread->SetActivationPending(false);
 }
 
@@ -774,9 +774,6 @@ void PalHijack(Thread* pThreadToHijack)
         DWORD lastError = GetLastError();
         if (lastError != ERROR_INVALID_PARAMETER && lastError != ERROR_NOT_SUPPORTED)
         {
-            // An unexpected failure has happened. It is a concern.
-            ASSERT_UNCONDITIONALLY("Failed to queue an APC for unusual reason.");
-
             // maybe it will work next time.
             return;
         }
@@ -833,7 +830,7 @@ void PalHijack(Thread* pThreadToHijack)
 
         if (isSafeToRedirect)
         {
-            Thread::HijackCallback((NATIVE_CONTEXT*)&win32ctx, pThreadToHijack);
+            Thread::HijackCallback((NATIVE_CONTEXT*)&win32ctx, pThreadToHijack, false /* doInlineSuspend */);
         }
     }
 
@@ -1062,9 +1059,4 @@ UInt32_BOOL PalSetEvent(HANDLE arg1)
 uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3)
 {
     return ::WaitForSingleObjectEx(arg1, arg2, arg3);
-}
-
-void PalGetSystemTimeAsFileTime(FILETIME * arg1)
-{
-    ::GetSystemTimeAsFileTime(arg1);
 }

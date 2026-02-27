@@ -104,7 +104,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
-        private static partial int GetProcessorCount();
+        internal static partial int GetProcessorCount();
 
         // Used by VM
         internal static string? GetResourceStringLocal(string key) => SR.GetResourceString(key);

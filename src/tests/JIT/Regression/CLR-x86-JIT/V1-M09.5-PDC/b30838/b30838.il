@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
-// MVID: {5E222DAB-74B5-4FA9-A101-AE45EE636213}
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -29,9 +29,10 @@
 .class public auto ansi Test_b30838 extends [mscorlib] System.Object {
 .method public static int32 main() il managed
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
+  .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+      type([TestLibrary]TestLibrary.PlatformDetection)
+      string[1] ('IsVarArgSupported')
+  }
   .entrypoint
   // Code size       19 (0x13)
   .maxstack  8

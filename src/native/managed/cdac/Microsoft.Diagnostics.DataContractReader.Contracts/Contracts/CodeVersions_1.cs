@@ -387,4 +387,30 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         ILCodeVersionNode ilCodeVersionNode = AsNode(ilCodeVersionHandle);
         return ilCodeVersionNode.VersionId;
     }
+
+    TargetPointer ICodeVersions.GetIL(ILCodeVersionHandle ilCodeVersionHandle)
+    {
+
+        TargetPointer ilAddress = default;
+        if (ilCodeVersionHandle.IsExplicit)
+        {
+            ILCodeVersionNode ilCodeVersionNode = AsNode(ilCodeVersionHandle);
+            ilAddress = ilCodeVersionNode.ILAddress;
+        }
+
+        if (ilAddress == TargetPointer.Null)
+        {
+            // Synthetic ILCodeVersion, get the IL from the module and method def
+            ILoader loader = _target.Contracts.Loader;
+            ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(ilCodeVersionHandle.Module);
+            ilAddress = loader.GetILHeader(moduleHandle, ilCodeVersionHandle.MethodDefinition);
+        }
+
+        return ilAddress;
+    }
+
+    bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle iLCodeVersionHandle)
+    {
+        return iLCodeVersionHandle.IsExplicit ? AsNode(iLCodeVersionHandle).ILAddress == TargetPointer.Null : true;
+    }
 }

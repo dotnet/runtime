@@ -694,14 +694,15 @@ namespace Mono.Linker.Dataflow
 
                     case Code.Ret:
                     {
-
-                        bool hasReturnValue = !methodBody.Method.ReturnsVoid();
-
-                        if (currentStack.Count != (hasReturnValue ? 1 : 0))
+                        if (!methodBody.Method.IsRuntimeAsync())
                         {
-                            WarnAboutInvalidILInMethod(methodIL, operation.Offset);
+                            bool ilHasReturnValue = !methodBody.Method.ReturnsVoid();
+                            if (currentStack.Count != (ilHasReturnValue ? 1 : 0))
+                            {
+                                WarnAboutInvalidILInMethod(methodIL, operation.Offset);
+                            }
                         }
-                        if (hasReturnValue)
+                        if (currentStack.Count == 1)
                         {
                             StackSlot retStackSlot = PopUnknown(currentStack, 1, methodIL, operation.Offset);
                             // If the return value is a reference, treat it as the value itself for now

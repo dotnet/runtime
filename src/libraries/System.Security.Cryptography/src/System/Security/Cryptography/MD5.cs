@@ -19,6 +19,16 @@ namespace System.Security.Cryptography
 
     public abstract class MD5 : HashAlgorithm
     {
+        private sealed class HashTrait : IHashStatic
+        {
+            static int IHashStatic.HashSizeInBytes => HashSizeInBytes;
+            static string IHashStatic.HashAlgorithmName => HashAlgorithmNames.MD5;
+
+            // Even though MD5 is not supported on browser, we return true and let it act as an unknown algorithm
+            // instead of an unsupported algorithm.
+            static bool IHashStatic.IsSupported => true;
+        }
+
         /// <summary>
         /// The hash size produced by the MD5 algorithm, in bits.
         /// </summary>
@@ -50,12 +60,7 @@ namespace System.Security.Cryptography
         /// <paramref name="source" /> is <see langword="null" />.
         /// </exception>
         [UnsupportedOSPlatform("browser")]
-        public static byte[] HashData(byte[] source)
-        {
-            ArgumentNullException.ThrowIfNull(source);
-
-            return HashData(new ReadOnlySpan<byte>(source));
-        }
+        public static byte[] HashData(byte[] source) => HashStatic<HashTrait>.HashData(source);
 
         /// <summary>
         /// Computes the hash of data using the MD5 algorithm.
@@ -63,15 +68,7 @@ namespace System.Security.Cryptography
         /// <param name="source">The data to hash.</param>
         /// <returns>The hash of the data.</returns>
         [UnsupportedOSPlatform("browser")]
-        public static byte[] HashData(ReadOnlySpan<byte> source)
-        {
-            byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeInBytes);
-
-            int written = HashData(source, buffer.AsSpan());
-            Debug.Assert(written == buffer.Length);
-
-            return buffer;
-        }
+        public static byte[] HashData(ReadOnlySpan<byte> source) => HashStatic<HashTrait>.HashData(source);
 
         /// <summary>
         /// Computes the hash of data using the MD5 algorithm.
@@ -86,10 +83,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            if (!TryHashData(source, destination, out int bytesWritten))
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            return bytesWritten;
+            return HashStatic<HashTrait>.HashData(source, destination);
         }
 
         /// <summary>
@@ -107,16 +101,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length < HashSizeInBytes)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
-            bytesWritten = HashProviderDispenser.OneShotHashProvider.HashData(HashAlgorithmNames.MD5, source, destination);
-            Debug.Assert(bytesWritten == HashSizeInBytes);
-
-            return true;
+            return HashStatic<HashTrait>.TryHashData(source, destination, out bytesWritten);
         }
 
         /// <summary>
@@ -141,15 +126,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static int HashData(Stream source, Span<byte> destination)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HashStream(HashAlgorithmNames.MD5, source, destination);
+            return HashStatic<HashTrait>.HashData(source, destination);
         }
 
         /// <summary>
@@ -164,15 +141,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> does not support reading.
         /// </exception>
         [UnsupportedOSPlatform("browser")]
-        public static byte[] HashData(Stream source)
-        {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HashStream(HashAlgorithmNames.MD5, HashSizeInBytes, source);
-        }
+        public static byte[] HashData(Stream source) => HashStatic<HashTrait>.HashData(source);
 
         /// <summary>
         /// Asynchronously computes the hash of a stream using the MD5 algorithm.
@@ -192,12 +161,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.MD5, source, cancellationToken);
+            return HashStatic<HashTrait>.HashDataAsync(source, cancellationToken);
         }
 
         /// <summary>
@@ -229,19 +193,7 @@ namespace System.Security.Cryptography
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            return LiteHashProvider.HashStreamAsync(
-                HashAlgorithmNames.MD5,
-                source,
-                destination,
-                cancellationToken);
+            return HashStatic<HashTrait>.HashDataAsync(source, destination, cancellationToken);
         }
 
         private sealed class Implementation : MD5

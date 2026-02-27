@@ -32,20 +32,25 @@ namespace BasicEventSourceTests
         public EtwListener(string dataFileName = "EventSourceTestData.etl", string sessionName = "EventSourceTestSession")
         {
             _dataFileName = dataFileName;
+            _sessionName = sessionName;
+            _pendingCommands = new List<(string eventSourceName, EventCommand command, FilteringOptions options)>();
 
             // Today you have to be Admin to turn on ETW events (anyone can write ETW events).
             if (TraceEventSession.IsElevated() != true)
             {
                 throw new SkipTestException("Need to be elevated to run. ");
             }
+        }
 
-            if (dataFileName == null)
+        public override void Start()
+        {
+            if (_dataFileName == null)
             {
-                Debug.WriteLine("Creating a real time session " + sessionName);
+                Debug.WriteLine("Creating a real time session " + _sessionName);
 
                 Task.Factory.StartNew(delegate ()
                 {
-                    var session = new TraceEventSession(sessionName, dataFileName);
+                    var session = new TraceEventSession(_sessionName, _dataFileName);
                     session.Source.AllEvents += OnEventHelper;
                     Debug.WriteLine("Listening for real time events");
                     _session = session;    // Indicate that we are alive.
@@ -58,13 +63,31 @@ namespace BasicEventSourceTests
             else
             {
                 // Normalize to a full path name.
-                dataFileName = Path.GetFullPath(dataFileName);
-                Debug.WriteLine("Creating ETW data file " + Path.GetFullPath(dataFileName));
-                _session = new TraceEventSession(sessionName, dataFileName);
+                _dataFileName = Path.GetFullPath(_dataFileName);
+                Debug.WriteLine("Creating ETW data file " + Path.GetFullPath(_dataFileName));
+                _session = new TraceEventSession(_sessionName, _dataFileName);
+            }
+            foreach(var cmd in _pendingCommands)
+            {
+                ApplyEventSourceCommand(cmd.eventSourceName, cmd.command, cmd.options);
             }
         }
 
+        public override bool IsDynamicConfigChangeSupported => true;
+
         public override void EventSourceCommand(string eventSourceName, EventCommand command, FilteringOptions options = null)
+        {
+            if (_session == null)
+            {
+                _pendingCommands.Add((eventSourceName, command, options));
+            }
+            else
+            {
+                ApplyEventSourceCommand(eventSourceName, command, options);
+            }
+        }
+
+        private void ApplyEventSourceCommand(string eventSourceName, EventCommand command, FilteringOptions options = null)
         {
             if (command == EventCommand.Enable)
             {
@@ -111,6 +134,8 @@ namespace BasicEventSourceTests
             }
         }
 
+        public override string ToString() => "EtwListener";
+
     #region private
         private void OnEventHelper(TraceEvent data)
         {
@@ -136,7 +161,8 @@ namespace BasicEventSourceTests
         /// </summary>
         internal class EtwEvent : Event
         {
-            public override bool IsEtw { get { return true; } }
+            public override bool IsEnumValueStronglyTyped(bool selfDescribing, bool isWriteEvent) => !selfDescribing;
+            public override bool IsSizeAndPointerCoallescedIntoSingleArg => true;
             public override string ProviderName { get { return _data.ProviderName; } }
             public override string EventName { get { return _data.EventName; } }
             public override object PayloadValue(int propertyIndex, string propertyName)
@@ -162,7 +188,9 @@ namespace BasicEventSourceTests
 
         private bool _disposed;
         private string _dataFileName;
+        private string _sessionName;
         private volatile TraceEventSession _session;
+        private List<(string eventSourceName, EventCommand command, FilteringOptions options)> _pendingCommands;
     #endregion
 
     }

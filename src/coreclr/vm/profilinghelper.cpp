@@ -250,7 +250,6 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
 
     StackSString supplementaryInformation;
     if (!supplementaryInformation.LoadResource(
-        CCompRC::Debugging,
         IDS_PROF_SUPPLEMENTARY_INFO
         ))
     {
@@ -302,7 +301,6 @@ void ProfilingAPIUtility::LogProfEventVA(
 
     StackSString messageFromResource;
     if (!messageFromResource.LoadResource(
-        CCompRC::Debugging,
         iStringResourceID
         ))
     {
@@ -463,7 +461,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     DWORD dwEnableSlowELTHooks = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TestOnlyEnableSlowELTHooks);
     if (dwEnableSlowELTHooks != 0)
     {
-        (&g_profControlBlock)->fTestOnlyForceEnterLeave = TRUE;
+        (&g_profControlBlock)->fTestOnlyForceEnterLeave = true;
         SetJitHelperFunction(CORINFO_HELP_PROF_FCN_ENTER, (void *) ProfileEnterNaked);
         SetJitHelperFunction(CORINFO_HELP_PROF_FCN_LEAVE, (void *) ProfileLeaveNaked);
         SetJitHelperFunction(CORINFO_HELP_PROF_FCN_TAILCALL, (void *) ProfileTailcallNaked);
@@ -477,7 +475,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     DWORD dwEnableObjectAllocated = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TestOnlyEnableObjectAllocatedHook);
     if (dwEnableObjectAllocated != 0)
     {
-        (&g_profControlBlock)->fTestOnlyForceObjectAllocated = TRUE;
+        (&g_profControlBlock)->fTestOnlyForceObjectAllocated = true;
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Enabled test-only object ObjectAllocated hooks.\n"));
     }
 #endif //PROF_TEST_ONLY_FORCE_ELT
@@ -489,7 +487,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     DWORD dwTestOnlyEnableICorProfilerInfo = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TestOnlyEnableICorProfilerInfo);
     if (dwTestOnlyEnableICorProfilerInfo != 0)
     {
-        (&g_profControlBlock)->fTestOnlyEnableICorProfilerInfo = TRUE;
+        (&g_profControlBlock)->fTestOnlyEnableICorProfilerInfo = true;
     }
 #endif // _DEBUG
 
@@ -1605,7 +1603,7 @@ void ProfilingAPIUtility::TerminateProfiling(ProfilerInfo *pProfilerInfo)
         // If we disabled concurrent GC and somehow failed later during the initialization
         if (g_profControlBlock.fConcurrentGCDisabledForAttach.Load() && g_profControlBlock.IsMainProfiler(pProfilerInfo->pProfInterface))
         {
-            g_profControlBlock.fConcurrentGCDisabledForAttach = FALSE;
+            g_profControlBlock.fConcurrentGCDisabledForAttach = false;
 
             // We know for sure GC has been fully initialized as we've turned off concurrent GC before
             _ASSERTE(IsGarbageCollectorFullyInitialized());

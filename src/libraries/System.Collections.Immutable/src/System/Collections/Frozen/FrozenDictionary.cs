@@ -516,7 +516,7 @@ namespace System.Collections.Frozen
         /// </remarks>
         private protected virtual AlternateLookupDelegate<TAlternateKey> GetAlternateLookupDelegate<TAlternateKey>()
             where TAlternateKey : notnull
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             // This method will only ever be used on .NET 9+. However, because of how everything is structured,
             // and to avoid a proliferation of conditional files for many of the derived types (in particular
@@ -533,7 +533,7 @@ namespace System.Collections.Frozen
         /// </summary>
         internal delegate ref readonly TValue AlternateLookupDelegate<TAlternateKey>(FrozenDictionary<TKey, TValue> dictionary, TAlternateKey key)
             where TAlternateKey : notnull
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             , allows ref struct
 #pragma warning restore SA1001
@@ -545,7 +545,7 @@ namespace System.Collections.Frozen
         /// </summary>
         private static class AlternateLookupDelegateHolder<TAlternateKey>
             where TAlternateKey : notnull
-#if NET9_0_OR_GREATER
+#if NET
 #pragma warning disable SA1001 // Commas should be spaced correctly
             , allows ref struct
 #pragma warning restore SA1001

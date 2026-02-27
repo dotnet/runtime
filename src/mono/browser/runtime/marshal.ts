@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8, _zero_region, forceThreadMemoryViewRefresh, setB8, getB8 } from "./memory";
+import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF32, localHeapViewF64, localHeapViewI32, localHeapViewU8, _zero_region, forceThreadMemoryViewRefresh, fixupPointer, setB8, getB8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType, PThreadPtr, PThreadPtrNull, VoidPtrNull } from "./types/internal";
 import { TypedArray, VoidPtr } from "./types/emscripten";
@@ -22,6 +22,7 @@ export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
 export const JavaScriptMarshalerArgSize = 32;
 // keep in sync with JSMarshalerArgumentImpl offsets
 const enum JSMarshalerArgumentOffsets {
+    /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
     BooleanValue = 0,
     ByteValue = 0,
     CharValue = 0,
@@ -93,7 +94,7 @@ export function is_receiver_should_free (args: JSMarshalerArguments): boolean {
 export function get_sync_done_semaphore_ptr (args: JSMarshalerArguments): VoidPtr {
     if (!WasmEnableThreads) return VoidPtrNull;
     mono_assert(args, "Null args");
-    return getI32(<any>args + JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr) as any;
+    return getU32(<any>args + JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr) as any;
 }
 
 export function get_caller_native_tid (args: JSMarshalerArguments): PThreadPtr {
@@ -306,10 +307,13 @@ export function set_arg_i64_big (arg: JSMarshalerArgument, value: bigint): void 
     setI64Big(<any>arg, value);
 }
 
+const minDateUnixTime = -0x3883122CD800;
+const maxDateUnixTime = 0xE677D21FDBFF;
 export function set_arg_date (arg: JSMarshalerArgument, value: Date): void {
     mono_assert(arg, "Null arg");
     // getTime() is always UTC
     const unixTime = value.getTime();
+    mono_check(unixTime >= minDateUnixTime && unixTime <= maxDateUnixTime, () => `Overflow: value ${value.toISOString()} is out of ${new Date(minDateUnixTime).toISOString()} ${new Date(maxDateUnixTime).toISOString()} range`);
     setF64(<any>arg, unixTime);
 }
 
@@ -447,40 +451,45 @@ export function get_signature_marshaler (signature: JSFunctionSignature, index: 
     return <any>getU32(<any>sig + JSBindingHeaderOffsets.ImportHandle);
 }
 
-
-export function array_element_size (element_type: MarshalerType): number {
-    return element_type == MarshalerType.Byte ? 1
-        : element_type == MarshalerType.Int32 ? 4
-            : element_type == MarshalerType.Int52 ? 8
-                : element_type == MarshalerType.Double ? 8
-                    : element_type == MarshalerType.String ? JavaScriptMarshalerArgSize
-                        : element_type == MarshalerType.Object ? JavaScriptMarshalerArgSize
-                            : element_type == MarshalerType.JSObject ? JavaScriptMarshalerArgSize
-                                : -1;
+export function array_element_size (t: MarshalerType): number {
+    if (t == MarshalerType.Byte) return 1;
+    if (t == MarshalerType.Int32) return 4;
+    if (t == MarshalerType.Int52) return 8;
+    if (t == MarshalerType.Single) return 4;
+    if (t == MarshalerType.Double) return 8;
+    if (t == MarshalerType.String) return JavaScriptMarshalerArgSize;
+    if (t == MarshalerType.Object) return JavaScriptMarshalerArgSize;
+    if (t == MarshalerType.JSObject) return JavaScriptMarshalerArgSize;
+    return -1;
 }
 
 export const enum MemoryViewType {
     Byte = 0,
     Int32 = 1,
     Double = 2,
+    Single = 3,
 }
 
 abstract class MemoryView implements IMemoryView {
     protected constructor (public _pointer: VoidPtr, public _length: number, public _viewType: MemoryViewType) {
+        this._pointer = fixupPointer(_pointer, 0);
     }
 
     abstract dispose(): void;
     abstract get isDisposed(): boolean;
 
     _unsafe_create_view (): TypedArray {
-        // this view must be short lived so that it doesn't fail after wasm memory growth
-        // for that reason we also don't give the view out to end user and provide set/slice/copyTo API instead
-        const view = this._viewType == MemoryViewType.Byte ? new Uint8Array(localHeapViewU8().buffer, <any>this._pointer, this._length)
-            : this._viewType == MemoryViewType.Int32 ? new Int32Array(localHeapViewI32().buffer, <any>this._pointer, this._length)
-                : this._viewType == MemoryViewType.Double ? new Float64Array(localHeapViewF64().buffer, <any>this._pointer, this._length)
-                    : null;
-        if (!view) throw new Error("NotImplementedException");
-        return view;
+        if (this._viewType == MemoryViewType.Byte) {
+            return new Uint8Array(localHeapViewU8().buffer, this._pointer as any, this._length);
+        } else if (this._viewType == MemoryViewType.Int32) {
+            return new Int32Array(localHeapViewI32().buffer, this._pointer as any, this._length);
+        } else if (this._viewType == MemoryViewType.Double) {
+            return new Float64Array(localHeapViewF64().buffer, this._pointer as any, this._length);
+        } else if (this._viewType == MemoryViewType.Single) {
+            return new Float32Array(localHeapViewF32().buffer, this._pointer as any, this._length);
+        } else {
+            throw new Error("NotImplementedException");
+        }
     }
 
     set (source: TypedArray, targetOffset?: number): void {

@@ -9,6 +9,7 @@ namespace System.Diagnostics
     /// <summary>
     /// A text annotation associated with a collection of tags.
     /// </summary>
+    [DebuggerDisplay("Name = {Name}, Timestamp = {Timestamp}")]
     public readonly struct ActivityEvent
     {
         private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTags = Array.Empty<KeyValuePair<string, object?>>();

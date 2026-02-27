@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [Fact]
         public void MissingName()
         {
-            var framework = new RuntimeConfig.Framework(null, TestContext.MicrosoftNETCoreAppVersion);
+            var framework = new RuntimeConfig.Framework(null, HostTestContext.MicrosoftNETCoreAppVersion);
             RunSelfContainedTest(
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig

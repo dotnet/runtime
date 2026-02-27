@@ -13,14 +13,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
     class TypeRefTypeSystemMethod : MethodDesc
     {
         TypeRefTypeSystemType _type;
-        string _name;
+        byte[] _name;
         MethodSignature _signature;
         Instantiation _instantiation;
 
-        public TypeRefTypeSystemMethod(TypeRefTypeSystemType type, string name, MethodSignature signature)
+        public TypeRefTypeSystemMethod(TypeRefTypeSystemType type, ReadOnlySpan<byte> name, MethodSignature signature)
         {
             _type = type;
-            _name = name;
+            _name = name.ToArray();
             _signature = signature;
             if (signature.GenericParameterCount == 0)
             {
@@ -37,7 +37,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             }
         }
 
-        public override string Name => _name;
+        public override ReadOnlySpan<byte> Name => _name;
 
         public override Instantiation Instantiation => _instantiation;
 
@@ -45,7 +45,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
         public override MethodSignature Signature => _signature;
 
-        public override string DiagnosticName => _name;
+        public override string DiagnosticName => GetName();
 
         public override TypeSystemContext Context => OwningType.Context;
 

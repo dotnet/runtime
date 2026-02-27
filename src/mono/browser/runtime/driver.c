@@ -77,17 +77,17 @@ MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor
 void  mono_gc_deregister_root (char* addr);
 
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_register_root (char *start, size_t size, const char *name)
+SystemInteropJS_RegisterGCRoot (char *start, size_t size, const char *name)
 {
 	int result;
 	MONO_ENTER_GC_UNSAFE;
-	result = mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
+	result = mono_gc_register_root (start, size, (MonoGCDescriptor)NULL, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "SystemInteropJS_RegisterGCRoot");
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_deregister_root (char *addr)
+SystemInteropJS_UnregisterGCRoot (char *addr)
 {
 	MONO_ENTER_GC_UNSAFE;
 	mono_gc_deregister_root (addr);
@@ -204,8 +204,9 @@ int initialize_runtime()
 	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
 	appctx_keys [1] = "RUNTIME_IDENTIFIER";
 
+	const char *browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
 	const char *appctx_values[2];
-	appctx_values [0] = "/";
+	appctx_values [0] = browserVirtualAppBase;
 	appctx_values [1] = "browser-wasm";
 
 	// this does not support loading runtimeConfig.json part of boot.config.json

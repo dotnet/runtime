@@ -52,7 +52,7 @@ namespace System.Globalization
                 string result = new string(buffer, 0, resultLength);
                 string[] subresults = result.Split("##");
                 if (subresults.Length == 0)
-                    throw new Exception("LocaleInfo recieved from the Browser is in incorrect format.");
+                    throw new Exception("LocaleInfo received from the Browser is in incorrect format.");
                 if (subresults.Length == 1)
                     return (subresults[0], ""); // Neutral culture
                 return (subresults[0], subresults[1]);

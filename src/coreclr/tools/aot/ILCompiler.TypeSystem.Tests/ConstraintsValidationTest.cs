@@ -47,33 +47,33 @@ namespace TypeSystemTests
 
             _testModule = systemModule;
 
-            _iNonGenType = _testModule.GetType("GenericConstraints", "INonGen");
-            _iGenType = _testModule.GetType("GenericConstraints", "IGen`1");
-            _arg1Type = _testModule.GetType("GenericConstraints", "Arg1");
-            _arg2Type = _testModule.GetType("GenericConstraints", "Arg2`1");
-            _arg3Type = _testModule.GetType("GenericConstraints", "Arg3`1");
-            _structArgWithDefaultCtorType = _testModule.GetType("GenericConstraints", "StructArgWithDefaultCtor");
-            _structArgWithoutDefaultCtorType = _testModule.GetType("GenericConstraints", "StructArgWithoutDefaultCtor");
-            _classArgWithDefaultCtorType = _testModule.GetType("GenericConstraints", "ClassArgWithDefaultCtor");
-            _classArgWithPrivateDefaultCtorType = _testModule.GetType("GenericConstraints", "ClassArgWithPrivateDefaultCtor");
-            _abstractClassArgWithDefaultCtorType = _testModule.GetType("GenericConstraints", "AbstractClassArgWithDefaultCtor");
-            _classArgWithoutDefaultCtorType = _testModule.GetType("GenericConstraints", "ClassArgWithoutDefaultCtor");
+            _iNonGenType = _testModule.GetType("GenericConstraints"u8, "INonGen"u8);
+            _iGenType = _testModule.GetType("GenericConstraints"u8, "IGen`1"u8);
+            _arg1Type = _testModule.GetType("GenericConstraints"u8, "Arg1"u8);
+            _arg2Type = _testModule.GetType("GenericConstraints"u8, "Arg2`1"u8);
+            _arg3Type = _testModule.GetType("GenericConstraints"u8, "Arg3`1"u8);
+            _structArgWithDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "StructArgWithDefaultCtor"u8);
+            _structArgWithoutDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "StructArgWithoutDefaultCtor"u8);
+            _classArgWithDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "ClassArgWithDefaultCtor"u8);
+            _classArgWithPrivateDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "ClassArgWithPrivateDefaultCtor"u8);
+            _abstractClassArgWithDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "AbstractClassArgWithDefaultCtor"u8);
+            _classArgWithoutDefaultCtorType = _testModule.GetType("GenericConstraints"u8, "ClassArgWithoutDefaultCtor"u8);
 
-            _referenceTypeConstraintType = _testModule.GetType("GenericConstraints", "ReferenceTypeConstraint`1");
-            _defaultConstructorConstraintType = _testModule.GetType("GenericConstraints", "DefaultConstructorConstraint`1");
-            _notNullableValueTypeConstraintType = _testModule.GetType("GenericConstraints", "NotNullableValueTypeConstraint`1");
-            _simpleTypeConstraintType = _testModule.GetType("GenericConstraints", "SimpleTypeConstraint`1");
-            _doubleSimpleTypeConstraintType = _testModule.GetType("GenericConstraints", "DoubleSimpleTypeConstraint`1");
-            _simpleGenericConstraintType = _testModule.GetType("GenericConstraints", "SimpleGenericConstraint`2");
-            _complexGenericConstraint1Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint1`2");
-            _complexGenericConstraint2Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint2`2");
-            _complexGenericConstraint3Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint3`2");
-            _complexGenericConstraint4Type = _testModule.GetType("GenericConstraints", "ComplexGenericConstraint4`2");
-            _multipleConstraintsType = _testModule.GetType("GenericConstraints", "MultipleConstraints`2");
+            _referenceTypeConstraintType = _testModule.GetType("GenericConstraints"u8, "ReferenceTypeConstraint`1"u8);
+            _defaultConstructorConstraintType = _testModule.GetType("GenericConstraints"u8, "DefaultConstructorConstraint`1"u8);
+            _notNullableValueTypeConstraintType = _testModule.GetType("GenericConstraints"u8, "NotNullableValueTypeConstraint`1"u8);
+            _simpleTypeConstraintType = _testModule.GetType("GenericConstraints"u8, "SimpleTypeConstraint`1"u8);
+            _doubleSimpleTypeConstraintType = _testModule.GetType("GenericConstraints"u8, "DoubleSimpleTypeConstraint`1"u8);
+            _simpleGenericConstraintType = _testModule.GetType("GenericConstraints"u8, "SimpleGenericConstraint`2"u8);
+            _complexGenericConstraint1Type = _testModule.GetType("GenericConstraints"u8, "ComplexGenericConstraint1`2"u8);
+            _complexGenericConstraint2Type = _testModule.GetType("GenericConstraints"u8, "ComplexGenericConstraint2`2"u8);
+            _complexGenericConstraint3Type = _testModule.GetType("GenericConstraints"u8, "ComplexGenericConstraint3`2"u8);
+            _complexGenericConstraint4Type = _testModule.GetType("GenericConstraints"u8, "ComplexGenericConstraint4`2"u8);
+            _multipleConstraintsType = _testModule.GetType("GenericConstraints"u8, "MultipleConstraints`2"u8);
 
-            _genericMethodsType = _testModule.GetType("GenericConstraints", "GenericMethods");
-            _simpleGenericConstraintMethod = _genericMethodsType.GetMethod("SimpleGenericConstraintMethod", null);
-            _complexGenericConstraintMethod = _genericMethodsType.GetMethod("ComplexGenericConstraintMethod", null);
+            _genericMethodsType = _testModule.GetType("GenericConstraints"u8, "GenericMethods"u8);
+            _simpleGenericConstraintMethod = _genericMethodsType.GetMethod("SimpleGenericConstraintMethod"u8, null);
+            _complexGenericConstraintMethod = _genericMethodsType.GetMethod("ComplexGenericConstraintMethod"u8, null);
         }
 
         [Fact]

@@ -1,5 +1,7 @@
 # Build WebAssembly
 
+This document covers building .NET for WebAssembly in the browser. For WebAssembly documentation including testing, debugging, and deployment, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
+
 If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](../../../docs/workflow/building/libraries/webassembly-instructions.md). Emscripten that is needed to build the project will be provisioned automatically, unless `EMSDK_PATH` variable is set or emscripten is already present in `src\mono\browser\emsdk` directory.
 
 ### Windows

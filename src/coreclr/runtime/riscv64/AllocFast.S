@@ -86,7 +86,7 @@ LOCAL_LABEL(RhpNewFast_RarePath):
         li  a2, 0 // numElements
 
         // Call the rest of the allocation helper.
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         call  C_FUNC(RhpGcAlloc)
 
         // Set the new object's MethodTable pointer on success.
@@ -262,7 +262,7 @@ LOCAL_LABEL(ArraySizeOverflow):
         mv   a2, a1              // numElements
         li   a1, 0                // uFlags
 
-        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
+        // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame)
         call  C_FUNC(RhpGcAlloc)
 
         // Set the new object's MethodTable pointer and length on success.

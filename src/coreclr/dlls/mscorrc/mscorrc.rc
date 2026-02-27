@@ -12,13 +12,6 @@
 
 #include <winresrc.h>
 
-#ifndef FX_VER_FILEDESCRIPTION_STR
-#define FX_VER_FILEDESCRIPTION_STR ".NET Runtime resources"
-#endif
-
-#include <fxver.h>
-#include <fxver.rc>
-
 /////////////////////////////////////////////////////////////////////////////
 // English (U.S.) resources
 
@@ -164,8 +157,6 @@ BEGIN
     IDS_EE_NDIRECT_LOADLIB_MAC              "Unable to load shared library '%1' or one of its dependencies. In order to help diagnose loading problems, consider setting the DYLD_PRINT_LIBRARIES environment variable: %2"
     IDS_EE_NDIRECT_GETPROCADDRESS_WIN       "Unable to find an entry point named '%2' in DLL '%1'."
     IDS_EE_NDIRECT_GETPROCADDRESS_UNIX      "Unable to find an entry point named '%2' in shared library '%1'."
-    IDS_EE_NDIRECT_GETPROCADDR_WIN_DLL      "Unable to find an entry point named '%1' in DLL."
-    IDS_EE_NDIRECT_GETPROCADDR_UNIX_SO      "Unable to find an entry point named '%1' in shared library."
     IDS_EE_NDIRECT_GETPROCADDRESS_NONAME    "A library name must be specified in a DllImport attribute applied to non-IJW methods."
     IDS_EE_NDIRECT_DISABLEDMARSHAL_SETLASTERROR "Setting SetLastError to 'true' is not supported when runtime marshalling is disabled."
     IDS_EE_NDIRECT_DISABLEDMARSHAL_LCID     "The LCIDConversionAttribute is not supported when runtime marshalling is disabled."
@@ -410,7 +401,6 @@ BEGIN
     IDS_EE_BAD_COMEXTENDS_CLASS             "Types extending from COM objects should override all methods of an interface implemented by the base COM class."
     IDS_EE_MARSHAL_UNMAPPABLE_CHAR          "Cannot marshal: Encountered unmappable character."
 
-    IDS_EE_NOCUSTOMMARSHALER                "A call to GetInstance() for custom marshaler '%1' returned null, which is not allowed."
     IDS_EE_SIZECONTROLOUTOFRANGE            "Array size control parameter index is out of range."
     IDS_EE_SIZECONTROLBADTYPE               "Array size control parameter type not supported."
     IDS_EE_SAFEARRAYSZARRAYMISMATCH         "SafeArray cannot be marshaled to this array type because it has either nonzero lower bounds or more than one dimension."
@@ -471,7 +461,6 @@ BEGIN
     IDS_EE_BAD_COMEVENTITF_CLASS            "Methods on COM event interfaces must take a single delegate derived class as a parameter and have a void return type."
 
     IDS_EE_ICUSTOMMARSHALERNOTIMPL          "Custom marshaler '%1' does not implement the ICustomMarshaler interface."
-    IDS_EE_GETINSTANCENOTIMPL               "Custom marshaler '%1' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler."
 
     IDS_CLASSLOAD_COMIMPCANNOTHAVELAYOUT    "COM import type '%1' from assembly '%2' cannot have layout information."
     IDS_EE_INVALIDCOMDEFITF                 "Type '%1' has an invalid default COM interface: '%2'."
@@ -602,6 +591,7 @@ BEGIN
         BFA_MISSING_DELEGATE_METHOD             "Missing definition for required runtime implemented delegate method."
         BFA_MULT_TYPE_SAME_NAME                 "Duplicate type with name '%1' in assembly '%2'."
         BFA_INVALID_METHOD_TOKEN                "Bad method token."
+        BFA_BAD_ASYNC_METHOD                    "Bad use of RuntimeAsync flag."
         BFA_ECALLS_MUST_BE_IN_SYS_MOD           "ECall methods must be packaged into a system module."
         BFA_CANT_GET_CLASSLAYOUT                "Could not get classlayout."
         BFA_CALLCONV_NOT_LOCAL_SIG              "Signature is not IMAGE_CEE_CS_CALLCONV_LOCAL_SIG."

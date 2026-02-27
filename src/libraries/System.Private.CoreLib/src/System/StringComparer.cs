@@ -205,9 +205,7 @@ namespace System
 
         public abstract int Compare(string? x, string? y);
         public abstract bool Equals(string? x, string? y);
-#pragma warning disable CS8614 // Remove warning disable when nullable attributes are respected
         public abstract int GetHashCode(string obj);
-#pragma warning restore CS8614
     }
 
     [Serializable]

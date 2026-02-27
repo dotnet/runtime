@@ -1,17 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+using TestLibrary;
 using Xunit;
+using Server.Contract;
 namespace NetClient
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-
-    using TestLibrary;
-    using Xunit;
-    using Server.Contract;
 
     using CoClass = Server.Contract.Servers;
 
@@ -105,7 +104,7 @@ namespace NetClient
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static int ConsumeNETServerTests()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)
@@ -141,5 +140,44 @@ namespace NetClient
 
             return 100;
         }
+
+        [Fact]
+        public static void Validate_IDispatch_Custom_DefaultInterface()
+        {
+            using (ComActivationHelpers.RegisterTypeForActivation<MyObject>())
+            {
+                var myObjectType = Type.GetTypeFromCLSID(typeof(MyObject).GUID, throwOnError: true)!;
+                object obj = Activator.CreateInstance(myObjectType)!;
+                var iSecond = (ISecond)obj;
+                iSecond.Invoke2(); // Verify that we can invoke a method on a non-default IDispatch non-dual interface.
+            }
+        }
     }
+}
+
+[ComVisible(true)]
+[ProgId("MyCompany.MyObject")]
+[Guid("CF824E95-642E-4F8D-8CD1-F67BC588B107")]
+[ClassInterface(ClassInterfaceType.None)]
+[ComDefaultInterface(typeof(IFirst))]
+public sealed class MyObject : IFirst, ISecond
+{
+    public void Invoke1() { }
+    public void Invoke2() { }
+}
+
+[ComVisible(true)]
+[Guid("59DAED5B-726B-4DDD-8F07-9236382038F7")]
+[InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+public interface IFirst
+{
+    void Invoke1();
+}
+
+[ComVisible(true)]
+[Guid("88C3FF65-0155-48A9-917D-E96DFAC8409B")]
+[InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+public interface ISecond
+{
+    void Invoke2();
 }

@@ -66,10 +66,7 @@ namespace System.Net.WebSockets
             get => _innerWebSocket?.HttpResponseHeaders;
             set
             {
-                if (_innerWebSocket != null)
-                {
-                    _innerWebSocket.HttpResponseHeaders = value;
-                }
+                _innerWebSocket?.HttpResponseHeaders = value;
             }
         }
 

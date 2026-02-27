@@ -465,13 +465,13 @@ void MyICJI::LongLifetimeFree(void* obj)
     DebugBreakorAV(33);
 }
 
-size_t MyICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* MyICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getClassThreadStaticDynamicInfo");
     return jitInstance->mc->repGetClassThreadStaticDynamicInfo(cls);
 }
 
-size_t MyICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* MyICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getClassStaticDynamicInfo");
     return jitInstance->mc->repGetClassStaticDynamicInfo(cls);
@@ -665,13 +665,12 @@ CORINFO_CLASS_HANDLE MyICJI::getObjectType(CORINFO_OBJECT_HANDLE objPtr)
 }
 
 bool MyICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                  CorInfoHelpFunc         id,
                                  CORINFO_METHOD_HANDLE   callerHandle,
                                  CORINFO_CONST_LOOKUP*   pLookup)
 {
     jitInstance->mc->cr->AddCall("getReadyToRunHelper");
-    return jitInstance->mc->repGetReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
+    return jitInstance->mc->repGetReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup);
 }
 
 void MyICJI::getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
@@ -1052,9 +1051,21 @@ void MyICJI::reportRichMappings(
     uint32_t                          numMappings)
 {
     jitInstance->mc->cr->AddCall("reportRichMappings");
-    // TODO: record these mappings
+    // Compile output that we do not currently save
     freeArray(inlineTreeNodes);
     freeArray(mappings);
+}
+
+void MyICJI::reportAsyncDebugInfo(
+    ICorDebugInfo::AsyncInfo*             asyncInfo,
+    ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+    ICorDebugInfo::AsyncContinuationVarInfo* vars,
+    uint32_t                              numVars)
+{
+    jitInstance->mc->cr->AddCall("reportAsyncDebugInfo");
+    // Compile output that we do not currently save
+    freeArray(suspensionPoints);
+    freeArray(vars);
 }
 
 void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
@@ -1256,6 +1267,12 @@ void MyICJI::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUC
     jitInstance->mc->repGetFpStructLowering(structHnd, pLowering);
 }
 
+CorInfoWasmType MyICJI::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    jitInstance->mc->cr->AddCall("getWasmLowering");
+    return jitInstance->mc->repGetWasmLowering(structHnd);
+}
+
 // Stuff on ICorDynamicInfo
 uint32_t MyICJI::getThreadTLSIndex(void** ppIndirection)
 {
@@ -1302,14 +1319,6 @@ void MyICJI::getFunctionFixedEntryPoint(
 // These entry points must be called if a handle is being embedded in
 // the code to be passed to a JIT helper function. (as opposed to just
 // being passed back into the ICorInfo interface.)
-
-// get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
-// Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
-CorInfoHelpFunc MyICJI::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
-{
-    jitInstance->mc->cr->AddCall("getLazyStringLiteralHelper");
-    return jitInstance->mc->repGetLazyStringLiteralHelper(handle);
-}
 
 CORINFO_MODULE_HANDLE MyICJI::embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection)
 {
@@ -1502,10 +1511,17 @@ bool MyICJI::getTailCallHelpers(
     return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
 }
 
-CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub(void** entryPoint)
 {
     jitInstance->mc->cr->AddCall("getAsyncResumptionStub");
-    return jitInstance->mc->repGetAsyncResumptionStub();;
+    return jitInstance->mc->repGetAsyncResumptionStub(entryPoint);
+}
+
+CORINFO_CLASS_HANDLE MyICJI::getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize)
+{
+    jitInstance->mc->cr->AddCall("getContinuationType");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetContinuationType(dataSize, objRefs, objRefsSize);
+    return result;
 }
 
 bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)
@@ -1568,69 +1584,69 @@ void MyICJI::allocMem(AllocMemArgs* pArgs)
 {
     jitInstance->mc->cr->AddCall("allocMem");
 
-    // TODO-Cleanup: Could hot block size be ever 0?
-    size_t codeAlignment      = sizeof(void*);
-    size_t hotCodeAlignedSize = static_cast<size_t>(pArgs->hotCodeSize);
+    uint8_t* hotCodeBlock = nullptr;
+    size_t hotCodeSize = 0;
+    uint8_t* coldCodeBlock = nullptr;
+    size_t coldCodeSize = 0;
+    uint8_t* roDataBlock = nullptr;
+    size_t roDataSize = 0;
+    unsigned roDataAlignment = 0;
 
-    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+    for (unsigned i = 0; i < pArgs->chunksCount; i++)
     {
-         codeAlignment = 32;
+        AllocMemChunk& chunk = pArgs->chunks[i];
+        if ((chunk.flags & CORJIT_ALLOCMEM_HOT_CODE) != 0)
+        {
+            hotCodeSize = chunk.size;
+            unsigned codeAlignment = std::max((uint32_t)sizeof(void*), chunk.alignment);
+            size_t hotCodeSizePadded = chunk.size + codeAlignment - 1;
+            hotCodeBlock = (uint8_t*)jitInstance->mc->cr->allocateMemory(hotCodeSizePadded);
+            hotCodeBlock = (uint8_t*)ALIGN_UP_SPMI(hotCodeBlock, codeAlignment);
+            chunk.block = hotCodeBlock;
+            chunk.blockRW = chunk.block;
+        }
+        else if ((pArgs->chunks[i].flags & CORJIT_ALLOCMEM_COLD_CODE) != 0)
+        {
+            coldCodeSize = chunk.size;
+            coldCodeBlock = (uint8_t*)jitInstance->mc->cr->allocateMemory(coldCodeSize);
+            chunk.block = coldCodeBlock;
+            chunk.blockRW = chunk.block;
+        }
+        else
+        {
+            roDataAlignment = std::max(roDataAlignment, chunk.alignment);
+            roDataSize = ALIGN_UP_SPMI(roDataSize, chunk.alignment);
+            roDataSize += chunk.size;
+        }
     }
-    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+
+    if (roDataSize > 0)
     {
-         codeAlignment = 16;
+        size_t roDataSizePadded = roDataSize + roDataAlignment - 1;
+        roDataBlock = (uint8_t*)jitInstance->mc->cr->allocateMemory(roDataSizePadded);
+        roDataBlock = (uint8_t*)ALIGN_UP_SPMI(roDataBlock, roDataAlignment);
+        size_t offset = 0;
+        // Zero the block to ensure all the padding we allocated is zeroed for the later comparisons
+        memset(roDataBlock, 0, roDataSize);
+
+        for (unsigned i = 0; i < pArgs->chunksCount; i++)
+        {
+            AllocMemChunk& chunk = pArgs->chunks[i];
+            if ((chunk.flags & (CORJIT_ALLOCMEM_HOT_CODE | CORJIT_ALLOCMEM_COLD_CODE)) != 0)
+            {
+                continue;
+            }
+
+            offset = ALIGN_UP_SPMI(offset, chunk.alignment);
+            chunk.block = (uint8_t*)roDataBlock + offset;
+            chunk.blockRW = chunk.block;
+
+            offset += chunk.size;
+        }
     }
-    hotCodeAlignedSize = ALIGN_UP_SPMI(hotCodeAlignedSize, codeAlignment);
-    hotCodeAlignedSize = hotCodeAlignedSize + (codeAlignment - sizeof(void*));
-    pArgs->hotCodeBlock      = jitInstance->mc->cr->allocateMemory(hotCodeAlignedSize);
-    pArgs->hotCodeBlock      = ALIGN_UP_SPMI(pArgs->hotCodeBlock, codeAlignment);
 
-    if (pArgs->coldCodeSize > 0)
-        pArgs->coldCodeBlock = jitInstance->mc->cr->allocateMemory(pArgs->coldCodeSize);
-    else
-        pArgs->coldCodeBlock = nullptr;
-
-    if (pArgs->roDataSize > 0)
-    {
-        size_t roDataAlignment   = sizeof(void*);
-        size_t roDataAlignedSize = static_cast<size_t>(pArgs->roDataSize);
-
-        if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
-        {
-            roDataAlignment = 64;
-        }
-        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
-        {
-            roDataAlignment = 32;
-        }
-        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
-        {
-            roDataAlignment = 16;
-        }
-        else if (pArgs->roDataSize >= 8)
-        {
-            roDataAlignment = 8;
-        }
-
-        // We need to round the roDataSize up to the alignment size and then
-        // overallocate by at most alignment - sizeof(void*) to ensure that
-        // we can offset roDataBlock to be an aligned address and that the
-        // allocation contains at least the originally requested size after
-
-        roDataAlignedSize = ALIGN_UP_SPMI(roDataAlignedSize, roDataAlignment);
-        roDataAlignedSize = roDataAlignedSize + (roDataAlignment - sizeof(void*));
-        pArgs->roDataBlock = jitInstance->mc->cr->allocateMemory(roDataAlignedSize);
-        pArgs->roDataBlock = ALIGN_UP_SPMI(pArgs->roDataBlock, roDataAlignment);
-    }
-    else
-        pArgs->roDataBlock = nullptr;
-
-    pArgs->hotCodeBlockRW = pArgs->hotCodeBlock;
-    pArgs->coldCodeBlockRW = pArgs->coldCodeBlock;
-    pArgs->roDataBlockRW = pArgs->roDataBlock;
-
-    jitInstance->mc->cr->recAllocMem(pArgs->hotCodeSize, pArgs->coldCodeSize, pArgs->roDataSize, pArgs->xcptnsCount, pArgs->flag, &pArgs->hotCodeBlock,
-                                     &pArgs->coldCodeBlock, &pArgs->roDataBlock);
+    jitInstance->mc->cr->recAllocMem((ULONG)hotCodeSize, (ULONG)coldCodeSize, (ULONG)roDataSize, pArgs->xcptnsCount, hotCodeBlock,
+                                     coldCodeBlock, roDataBlock);
 }
 
 // Reserve memory for the method/funclet's unwind information.
@@ -1806,21 +1822,21 @@ void MyICJI::recordCallSite(uint32_t              instrOffset, /* IN */
 
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
-void MyICJI::recordRelocation(void*    location,   /* IN  */
-                              void*    locationRW, /* IN  */
-                              void*    target,     /* IN  */
-                              uint16_t fRelocType, /* IN  */
-                              int32_t  addlDelta   /* IN  */
+void MyICJI::recordRelocation(void*        location,   /* IN  */
+                              void*        locationRW, /* IN  */
+                              void*        target,     /* IN  */
+                              CorInfoReloc fRelocType, /* IN  */
+                              int32_t      addlDelta   /* IN  */
                               )
 {
     jitInstance->mc->cr->AddCall("recordRelocation");
     jitInstance->mc->cr->repRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
-uint16_t MyICJI::getRelocTypeHint(void* target)
+CorInfoReloc MyICJI::getRelocTypeHint(void* target)
 {
     jitInstance->mc->cr->AddCall("getRelocTypeHint");
-    uint16_t result = jitInstance->mc->repGetRelocTypeHint(target);
+    CorInfoReloc result = jitInstance->mc->repGetRelocTypeHint(target);
     return result;
 }
 
@@ -1833,6 +1849,13 @@ uint32_t MyICJI::getExpectedTargetArchitecture()
 {
     jitInstance->mc->cr->AddCall("getExpectedTargetArchitecture");
     DWORD result = jitInstance->mc->repGetExpectedTargetArchitecture();
+    return result;
+}
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE MyICJI::getWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
+{
+    jitInstance->mc->cr->AddCall("getWasmTypeSymbol");
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE result = jitInstance->mc->repGetWasmTypeSymbol(types, typesSize);
     return result;
 }
 

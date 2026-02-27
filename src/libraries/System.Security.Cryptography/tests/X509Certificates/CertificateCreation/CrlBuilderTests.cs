@@ -297,6 +297,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         [Theory]
         [MemberData(nameof(NoHashAlgorithmCertKinds))]
+        [SkipOnPlatform(TestPlatforms.Android, "No algorithms are supported")]
         public static void BuildPqcWithHashAlgorithm(CertKind certKind)
         {
             BuildCertificateAndRun(
@@ -1378,6 +1379,25 @@ AQAB
                     out currentCrlNumber));
 
             Assert.Equal(BigInteger.MinusOne, currentCrlNumber);
+        }
+
+        [Fact]
+        public static void LoadPem_TrailingData()
+        {
+            const string PemWithTrailingData =
+                """
+                -----BEGIN X509 CRL-----
+                MIHuMIGUAgEBMAoGCCqGSM49BAMCMBExDzANBgNVBAMTBnBvdGF0bxcNMjYwMTAy
+                MTgxMzU1WhcNMjYwMTA5MTgxMzU1WjAWMBQCAwECAxcNMjYwMTAyMTgxMzU1WqA6
+                MDgwKgYDVR0jBCMwIaEVpBMwETEPMA0GA1UEAxMGcG90YXRvggh+lrHO9ZeCDTAK
+                BgNVHRQEAwIBKjAKBggqhkjOPQQDAgNJADBGAiEAzBoKpxI66VhR+03ghssYjR76
+                Ojzcy+n5ypehHJrDYo0CIQCLsqqF1RmlZjQcfhAC820H4I4yNnwYyqfoBDp2hHYm
+                hnRyYWlsaW5nIGRhdGEgaGVyZQ==
+                -----END X509 CRL-----
+                """;
+
+            Assert.Throws<CryptographicException>(() => CertificateRevocationListBuilder.LoadPem(PemWithTrailingData, out _));
+            Assert.Throws<CryptographicException>(() => CertificateRevocationListBuilder.LoadPem(PemWithTrailingData.AsSpan(), out _));
         }
 
         [Fact]

@@ -7,10 +7,9 @@
 #ifndef __EXCEPTION_HANDLING_h__
 #define __EXCEPTION_HANDLING_h__
 
-#ifdef FEATURE_EH_FUNCLETS
-
 #include "eexcp.h"
 #include "exstatecommon.h"
+#include "exkind.h"
 
 // This address lies in the NULL pointer partition of the process memory.
 // Accessing it will result in AV.
@@ -28,11 +27,17 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD     pExceptionRe
                                        IN OUT PT_CONTEXT            pContextRecord,
                                        IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL);
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable);
+void NormalizeThrownObject(OBJECTREF *ppThrowable);
+
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL, ExKind exKind = ExKind::None);
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExKind exKind = ExKind::None);
 VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException();
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext);
+
+void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo);
+
+bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
 
@@ -58,12 +63,10 @@ enum class InlinedCallFrameMarker
 {
 #ifdef HOST_64BIT
     ExceptionHandlingHelper = 2,
-    SecondPassFuncletCaller = 4,
 #else // HOST_64BIT
     ExceptionHandlingHelper = 1,
-    SecondPassFuncletCaller = 2,
 #endif // HOST_64BIT
-    Mask = ExceptionHandlingHelper | SecondPassFuncletCaller
+    Mask = ExceptionHandlingHelper
 };
 
 #ifdef FEATURE_INTERPRETER
@@ -86,8 +89,6 @@ public:
 #endif // FEATURE_INTERPRETER
 
 void DECLSPEC_NORETURN ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t targetSSP, size_t arg1 = 0, size_t arg2 = 0);
-
-#endif // FEATURE_EH_FUNCLETS
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER

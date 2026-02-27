@@ -22,6 +22,8 @@ internal sealed class Thread : IData<Thread>
             RuntimeThreadLocals = target.ProcessedData.GetOrAdd<RuntimeThreadLocals>(runtimeThreadLocalsPointer);
 
         Frame = target.ReadPointer(address + (ulong)type.Fields[nameof(Frame)].Offset);
+        CachedStackBase = target.ReadPointer(address + (ulong)type.Fields[nameof(CachedStackBase)].Offset);
+        CachedStackLimit = target.ReadPointer(address + (ulong)type.Fields[nameof(CachedStackLimit)].Offset);
 
         // TEB does not exist on certain platforms
         TEB = type.Fields.TryGetValue(nameof(TEB), out Target.FieldInfo fieldInfo)
@@ -33,6 +35,10 @@ internal sealed class Thread : IData<Thread>
 
         // Address of the exception tracker
         ExceptionTracker = address + (ulong)type.Fields[nameof(ExceptionTracker)].Offset;
+        // UEWatsonBucketTrackerBuckets does not exist on certain platforms
+        UEWatsonBucketTrackerBuckets = type.Fields.TryGetValue(nameof(UEWatsonBucketTrackerBuckets), out Target.FieldInfo watsonFieldInfo)
+            ? target.ReadPointer(address + (ulong)watsonFieldInfo.Offset)
+            : TargetPointer.Null;
         ThreadLocalDataPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(ThreadLocalDataPtr)].Offset);
     }
 
@@ -42,9 +48,12 @@ internal sealed class Thread : IData<Thread>
     public uint PreemptiveGCDisabled { get; init; }
     public RuntimeThreadLocals? RuntimeThreadLocals { get; init; }
     public TargetPointer Frame { get; init; }
+    public TargetPointer CachedStackBase { get; init; }
+    public TargetPointer CachedStackLimit { get; init; }
     public TargetPointer TEB { get; init; }
     public ObjectHandle LastThrownObject { get; init; }
     public TargetPointer LinkNext { get; init; }
     public TargetPointer ExceptionTracker { get; init; }
+    public TargetPointer UEWatsonBucketTrackerBuckets { get; init; }
     public TargetPointer ThreadLocalDataPtr { get; init; }
 }

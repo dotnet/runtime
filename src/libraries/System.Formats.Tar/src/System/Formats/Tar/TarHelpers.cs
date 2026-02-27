@@ -194,6 +194,9 @@ namespace System.Formats.Tar
             return false;
         }
 
+        // Chooses the compatible regular file entry type for the specified format.
+        internal static TarEntryType GetRegularFileEntryTypeForFormat(TarEntryFormat format) => format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+
         // When writing an entry that came from an archive of a different format, if its entry type happens to
         // be an incompatible regular file entry type, convert it to the compatible one.
         // No change for all other entry types.
@@ -268,7 +271,7 @@ namespace System.Formats.Tar
 
         [DoesNotReturn]
         private static void ThrowInvalidNumber() =>
-            throw new InvalidDataException(SR.Format(SR.TarInvalidNumber));
+            throw new InvalidDataException(SR.TarInvalidNumber);
 
         // Returns the null-terminated UTF8 string contained in the specified buffer.
         internal static string ParseUtf8String(ReadOnlySpan<byte> buffer)

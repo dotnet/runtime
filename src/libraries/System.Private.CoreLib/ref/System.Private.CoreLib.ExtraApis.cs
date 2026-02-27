@@ -34,6 +34,7 @@ namespace System.Diagnostics
     }
     public static partial class Debug
     {
+        public static System.Diagnostics.DebugProvider GetProvider() { throw null; }
         public static System.Diagnostics.DebugProvider SetProvider(System.Diagnostics.DebugProvider provider) { throw null; }
     }
 }

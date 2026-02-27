@@ -259,7 +259,7 @@ namespace System.Text
                 {
                     firstVector = Sse2.LoadAlignedVector128((ushort*)pBuffer);
                     secondVector = Sse2.LoadAlignedVector128((ushort*)pBuffer + SizeOfVector128InChars);
-                    Vector128<ushort> combinedVector = Sse2.Or(firstVector, secondVector);
+                    Vector128<ushort> combinedVector = firstVector | secondVector;
 
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
                     if (Sse41.IsSupported)
@@ -871,7 +871,7 @@ namespace System.Text
 
                 utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
                 Vector128<short> utf16VectorSecond = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements + SizeOfVector128 / sizeof(short)); // unaligned load
-                Vector128<short> combinedVector = Sse2.Or(utf16VectorFirst, utf16VectorSecond);
+                Vector128<short> combinedVector = utf16VectorFirst | utf16VectorSecond;
 
                 // See comments in GetIndexOfFirstNonLatin1Char_Sse2 for information about how this works.
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported

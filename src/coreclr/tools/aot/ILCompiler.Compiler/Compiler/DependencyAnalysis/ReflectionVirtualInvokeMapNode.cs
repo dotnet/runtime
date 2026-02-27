@@ -17,9 +17,8 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a map containing the necessary information needed to resolve
     /// a virtual method target called through reflection.
     /// </summary>
-    internal sealed class ReflectionVirtualInvokeMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ReflectionVirtualInvokeMapNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public ReflectionVirtualInvokeMapNode(ExternalReferencesTableNode externalReferences)
@@ -32,7 +31,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__VirtualInvokeMap"u8);
         }
 
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -88,9 +86,16 @@ namespace ILCompiler.DependencyAnalysis
                     factory.NecessaryTypeSymbol(method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)),
                     "Reflection virtual invoke owning type");
 
-                if (!method.HasInstantiation)
+                MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                if (method.HasInstantiation)
                 {
-                    MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                    // FindSlotDefiningMethod might uninstantiate. We might want to fix the method not to do that.
+                    if (slotDefiningMethod.IsMethodDefinition)
+                        slotDefiningMethod = factory.TypeSystemContext.GetInstantiatedMethod(slotDefiningMethod, method.Instantiation);
+                    dependencies.Add(factory.GVMDependencies(slotDefiningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM callable reflectable method");
+                }
+                else
+                {
                     if (!factory.VTable(slotDefiningMethod.OwningType).HasKnownVirtualMethodUse)
                     {
                         dependencies.Add(factory.VirtualMethodUse(slotDefiningMethod), "Reflection virtual invoke method");
@@ -119,6 +124,8 @@ namespace ILCompiler.DependencyAnalysis
             // Get a list of all methods that have a method body and metadata from the metadata manager.
             foreach (var mappingEntry in factory.MetadataManager.GetMethodMapping(factory))
             {
+                Debug.Assert(!mappingEntry.Entity.IsAsyncVariant());
+
                 MethodDesc method = mappingEntry.Entity;
 
                 // The current format requires us to have an MethodTable for the owning type. We might want to lift this.
@@ -196,8 +203,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] hashTableBytes = writer.Save();
-
-            _size = hashTableBytes.Length;
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

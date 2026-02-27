@@ -29,7 +29,7 @@ typedef DPTR(class ILCodeVersioningState) PTR_ILCodeVersioningState;
 class CodeVersionManager;
 typedef DPTR(class CodeVersionManager) PTR_CodeVersionManager;
 
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 #ifdef HAVE_GCCOVER
 class GCCoverageInfo;
@@ -46,14 +46,14 @@ class NativeCodeVersion
 #ifdef FEATURE_CODE_VERSIONING
     friend class MethodDescVersioningState;
     friend class ILCodeVersion;
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 public:
     NativeCodeVersion();
     NativeCodeVersion(const NativeCodeVersion & rhs);
 #ifdef FEATURE_CODE_VERSIONING
     NativeCodeVersion(PTR_NativeCodeVersionNode pVersionNode);
-#endif
+#endif // FEATURE_CODE_VERSIONING
     explicit NativeCodeVersion(PTR_MethodDesc pMethod);
 
     BOOL IsNull() const;
@@ -61,11 +61,11 @@ public:
     NativeCodeVersionId GetVersionId() const;
     BOOL IsDefaultVersion() const;
     PCODE GetNativeCode() const;
+    ReJITID GetILCodeVersionId() const;
 
 #ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion GetILCodeVersion() const;
-    ReJITID GetILCodeVersionId() const;
-#endif
+#endif // FEATURE_CODE_VERSIONING
 
 #ifndef DACCESS_COMPILE
     BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected = 0);
@@ -153,6 +153,7 @@ enum class RejitFlags : uint32_t
     // called back to the profiler to get any info or indicate that the ReJit has
     // started. (This Info can be 'reused' for a new ReJit if the
     // profiler calls RequestRejit again before we transition to the next state.)
+    // [cDAC] [ReJIT]: Contract depends on this value.
     kStateRequested = 0x00000000,
 
     // The CLR has initiated the call to the profiler's GetReJITParameters() callback
@@ -164,8 +165,10 @@ enum class RejitFlags : uint32_t
 
     // We have asked the profiler about this method via ICorProfilerFunctionControl,
     // and have thus stored the IL and codegen flags the profiler specified.
+    // [cDAC] [ReJIT]: Contract depends on this value.
     kStateActive = 0x00000002,
 
+    // [cDAC] [ReJIT]: Contract depends on this value.
     kStateMask = 0x0000000F,
 
     // Indicates that the method being ReJITted is an inliner of the actual
@@ -315,6 +318,7 @@ private:
     DAC_IGNORE(const) unsigned m_ilOffset;
 #endif
 
+    // [cDAC] [CodeVersions]: Contract depends on the value of IsActiveChildFlag.
     enum NativeCodeVersionNodeFlags
     {
         IsActiveChildFlag = 1
@@ -426,6 +430,7 @@ struct cdac_data<ILCodeVersionNode>
     static constexpr size_t VersionId = offsetof(ILCodeVersionNode, m_rejitId);
     static constexpr size_t Next = offsetof(ILCodeVersionNode, m_pNextILVersionNode);
     static constexpr size_t RejitState = offsetof(ILCodeVersionNode, m_rejitState);
+    static constexpr size_t ILAddress = offsetof(ILCodeVersionNode, m_pIL);
 };
 
 class ILCodeVersionCollection
@@ -495,6 +500,7 @@ public:
 private:
     PTR_MethodDesc m_pMethodDesc;
 
+    // [cDAC] [CodeVersions]: Contract depends on the value of IsDefaultVersionActiveChildFlag.
     enum MethodDescVersioningStateFlags
     {
         IsDefaultVersionActiveChildFlag = 0x4

@@ -16,24 +16,28 @@ namespace System.IO.Compression
         // Delegate that will be invoked on stream disposing
         private readonly Action<ZipArchiveEntry?>? _onClosed;
 
+        // When true, notifies the entry on first write operation
+        private bool _notifyEntryOnWrite;
+
         // Instance that will be passed to _onClose delegate
         private readonly ZipArchiveEntry? _zipArchiveEntry;
         private bool _isDisposed;
 
         internal WrappedStream(Stream baseStream, bool closeBaseStream)
-            : this(baseStream, closeBaseStream, null, null) { }
+            : this(baseStream, closeBaseStream, entry: null, onClosed: null, notifyEntryOnWrite: false) { }
 
-        private WrappedStream(Stream baseStream, bool closeBaseStream, ZipArchiveEntry? entry, Action<ZipArchiveEntry?>? onClosed)
+        private WrappedStream(Stream baseStream, bool closeBaseStream, ZipArchiveEntry? entry, Action<ZipArchiveEntry?>? onClosed, bool notifyEntryOnWrite)
         {
             _baseStream = baseStream;
             _closeBaseStream = closeBaseStream;
             _onClosed = onClosed;
+            _notifyEntryOnWrite = notifyEntryOnWrite;
             _zipArchiveEntry = entry;
             _isDisposed = false;
         }
 
-        internal WrappedStream(Stream baseStream, ZipArchiveEntry entry, Action<ZipArchiveEntry?>? onClosed)
-            : this(baseStream, false, entry, onClosed) { }
+        internal WrappedStream(Stream baseStream, ZipArchiveEntry entry, Action<ZipArchiveEntry?>? onClosed, bool notifyEntryOnWrite = false)
+            : this(baseStream, false, entry, onClosed, notifyEntryOnWrite) { }
 
         public override long Length
         {
@@ -144,6 +148,7 @@ namespace System.IO.Compression
             ThrowIfCantSeek();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.SetLength(value);
         }
 
@@ -152,6 +157,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.Write(buffer, offset, count);
         }
 
@@ -160,6 +166,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.Write(source);
         }
 
@@ -168,6 +175,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             _baseStream.WriteByte(value);
         }
 
@@ -176,6 +184,7 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             return _baseStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
@@ -184,7 +193,17 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantWrite();
 
+            NotifyWrite();
             return _baseStream.WriteAsync(buffer, cancellationToken);
+        }
+
+        private void NotifyWrite()
+        {
+            if (_notifyEntryOnWrite)
+            {
+                _zipArchiveEntry?.MarkAsModified();
+                _notifyEntryOnWrite = false; // Only notify once
+            }
         }
 
         public override void Flush()
@@ -215,6 +234,20 @@ namespace System.IO.Compression
                 _isDisposed = true;
             }
             base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (!_isDisposed)
+            {
+                _onClosed?.Invoke(_zipArchiveEntry);
+
+                if (_closeBaseStream)
+                    await _baseStream.DisposeAsync().ConfigureAwait(false);
+
+                _isDisposed = true;
+            }
+            await base.DisposeAsync().ConfigureAwait(false);
         }
     }
 
@@ -259,13 +292,22 @@ namespace System.IO.Compression
             {
                 ThrowIfDisposed();
 
-                throw new NotSupportedException(SR.SeekingNotSupported);
+                if (!CanSeek)
+                {
+                    throw new NotSupportedException(SR.SeekingNotSupported);
+                }
+
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+
+                long newPositionInSuperStream = _startInSuperStream + value;
+                _superStream.Position = newPositionInSuperStream;
+                _positionInSuperStream = newPositionInSuperStream;
             }
         }
 
         public override bool CanRead => _superStream.CanRead && _canRead;
 
-        public override bool CanSeek => false;
+        public override bool CanSeek => _superStream.CanSeek && !_isDisposed;
 
         public override bool CanWrite => false;
 
@@ -292,7 +334,7 @@ namespace System.IO.Compression
             if (_superStream.Position != _positionInSuperStream)
                 _superStream.Seek(_positionInSuperStream, SeekOrigin.Begin);
             if (_positionInSuperStream + count > _endInSuperStream)
-                count = (int)(_endInSuperStream - _positionInSuperStream);
+                count = (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream);
 
             Debug.Assert(count >= 0);
             Debug.Assert(count <= origCount);
@@ -315,7 +357,7 @@ namespace System.IO.Compression
             if (_superStream.Position != _positionInSuperStream)
                 _superStream.Seek(_positionInSuperStream, SeekOrigin.Begin);
             if (_positionInSuperStream + count > _endInSuperStream)
-                count = (int)(_endInSuperStream - _positionInSuperStream);
+                count = (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream);
 
             Debug.Assert(count >= 0);
             Debug.Assert(count <= origCount);
@@ -353,7 +395,7 @@ namespace System.IO.Compression
 
                 if (_positionInSuperStream > _endInSuperStream - buffer.Length)
                 {
-                    buffer = buffer.Slice(0, (int)(_endInSuperStream - _positionInSuperStream));
+                    buffer = buffer.Slice(0, (int)Math.Max(0L, _endInSuperStream - _positionInSuperStream));
                 }
 
                 int ret = await _superStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
@@ -366,7 +408,29 @@ namespace System.IO.Compression
         public override long Seek(long offset, SeekOrigin origin)
         {
             ThrowIfDisposed();
-            throw new NotSupportedException(SR.SeekingNotSupported);
+
+            if (!CanSeek)
+            {
+                throw new NotSupportedException(SR.SeekingNotSupported);
+            }
+
+            long newPositionInSuperStream = origin switch
+            {
+                SeekOrigin.Begin => _startInSuperStream + offset,
+                SeekOrigin.Current => _positionInSuperStream + offset,
+                SeekOrigin.End => _endInSuperStream + offset,
+                _ => throw new ArgumentOutOfRangeException(nameof(origin)),
+            };
+
+            if (newPositionInSuperStream < _startInSuperStream)
+            {
+                throw new IOException(SR.IO_SeekBeforeBegin);
+            }
+
+            long actualPositionInSuperStream = _superStream.Seek(newPositionInSuperStream, SeekOrigin.Begin);
+            _positionInSuperStream = actualPositionInSuperStream;
+
+            return _positionInSuperStream - _startInSuperStream;
         }
 
         public override void SetLength(long value)
@@ -402,7 +466,8 @@ namespace System.IO.Compression
 
     internal sealed class CheckSumAndSizeWriteStream : Stream
     {
-        private readonly Stream _baseStream;
+        private readonly Func<Stream> _baseStreamFactory;
+        private Stream? _baseStream;
         private readonly Stream _baseBaseStream;
         private long _position;
         private uint _checksum;
@@ -428,11 +493,11 @@ namespace System.IO.Compression
         // baseBaseStream it's a backingStream, passed here so as to avoid closure allocation,
         // zipArchiveEntry passed here so as to avoid closure allocation,
         // onClose handler passed here so as to avoid closure allocation
-        public CheckSumAndSizeWriteStream(Stream baseStream, Stream baseBaseStream, bool leaveOpenOnClose,
+        public CheckSumAndSizeWriteStream(Func<Stream> baseStreamFactory, Stream baseBaseStream, bool leaveOpenOnClose,
             ZipArchiveEntry entry, EventHandler? onClose,
             Action<long, long, uint, Stream, ZipArchiveEntry, EventHandler?> saveCrcAndSizes)
         {
-            _baseStream = baseStream;
+            _baseStreamFactory = baseStreamFactory;
             _baseBaseStream = baseBaseStream;
             _position = 0;
             _checksum = 0;
@@ -524,9 +589,14 @@ namespace System.IO.Compression
 
             if (!_everWritten)
             {
+                Debug.Assert(_baseStream == null);
+                _baseStream = _baseStreamFactory();
+
                 _initialPosition = _baseBaseStream.Position;
                 _everWritten = true;
             }
+
+            Debug.Assert(_baseStream != null);
 
             _checksum = Crc32Helper.UpdateCrc32(_checksum, buffer, offset, count);
             _baseStream.Write(buffer, offset, count);
@@ -544,9 +614,14 @@ namespace System.IO.Compression
 
             if (!_everWritten)
             {
+                Debug.Assert(_baseStream == null);
+                _baseStream = _baseStreamFactory();
+
                 _initialPosition = _baseBaseStream.Position;
                 _everWritten = true;
             }
+
+            Debug.Assert(_baseStream != null);
 
             _checksum = Crc32Helper.UpdateCrc32(_checksum, source);
             _baseStream.Write(source);
@@ -575,9 +650,14 @@ namespace System.IO.Compression
             {
                 if (!_everWritten)
                 {
+                    Debug.Assert(_baseStream == null);
+                    _baseStream = _baseStreamFactory();
+
                     _initialPosition = _baseBaseStream.Position;
                     _everWritten = true;
                 }
+
+                Debug.Assert(_baseStream != null);
 
                 _checksum = Crc32Helper.UpdateCrc32(_checksum, buffer.Span);
 
@@ -593,13 +673,13 @@ namespace System.IO.Compression
             // assume writable if not disposed
             Debug.Assert(CanWrite);
 
-            _baseStream.Flush();
+            _baseStream?.Flush();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            return _baseStream.FlushAsync(cancellationToken);
+            return _baseStream?.FlushAsync(cancellationToken) ?? Task.CompletedTask;
         }
 
         protected override void Dispose(bool disposing)
@@ -610,7 +690,7 @@ namespace System.IO.Compression
                 if (!_everWritten)
                     _initialPosition = _baseBaseStream.Position;
                 if (!_leaveOpenOnClose)
-                    _baseStream.Dispose(); // Close my super-stream (flushes the last data)
+                    _baseStream?.Dispose(); // Close my super-stream (flushes the last data if we ever wrote any)
                 _saveCrcAndSizes?.Invoke(_initialPosition, Position, _checksum, _baseBaseStream, _zipArchiveEntry, _onClose);
                 _isDisposed = true;
             }
@@ -624,8 +704,8 @@ namespace System.IO.Compression
                 // if we never wrote through here, save the position
                 if (!_everWritten)
                     _initialPosition = _baseBaseStream.Position;
-                if (!_leaveOpenOnClose)
-                    await _baseStream.DisposeAsync().ConfigureAwait(false); // Close my super-stream (flushes the last data)
+                if (!_leaveOpenOnClose && _baseStream != null)
+                    await _baseStream.DisposeAsync().ConfigureAwait(false); // Close my super-stream (flushes the last data if we ever wrote any)
                 _saveCrcAndSizes?.Invoke(_initialPosition, Position, _checksum, _baseBaseStream, _zipArchiveEntry, _onClose);
                 _isDisposed = true;
             }

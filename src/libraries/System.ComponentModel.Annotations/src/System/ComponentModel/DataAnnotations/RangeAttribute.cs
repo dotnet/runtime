@@ -157,6 +157,10 @@ namespace System.ComponentModel.DataAnnotations
             {
                 return false;
             }
+            catch (OverflowException)
+            {
+                return false;
+            }
 
             var min = (IComparable)Minimum;
             var max = (IComparable)Maximum;

@@ -1,6 +1,8 @@
-# Threaded runtime #
+# Threaded runtime
 
-## Building the runtime ##
+For WebAssembly documentation including building, testing, and debugging, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
+
+## Building the runtime
 
 Build the runtime with `/p:WasmEnableThreads=true` to enable support for multi-threading.
 
@@ -30,8 +32,8 @@ assemblies.
 ### Implementation assemblies ###
 
 The implementation (in `System.Private.CoreLib`) we check
-`System.Threading.Thread.IsThreadStartSupported` or call
-`System.Threading.Thread.ThrowIfNoThreadStart()` to guard code paths that depends on
+`System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported` or call
+`System.Runtime.CompilerServices.RuntimeFeature.ThrowIfMultithreadingIsNotSupported()` to guard code paths that depends on
 multi-threading.  The property is a boolean constant that will allow the IL trimmer or the
 JIT/interpreter/AOT to drop the multi-threaded implementation in the single-threaded CoreLib.
 
@@ -62,10 +64,10 @@ Mono exposes these functions as `mono_threads_wasm_async_run_in_main_thread`, et
 
 ## Background tasks ##
 
-The runtime has a number of tasks that are scheduled with `mono_main_thread_schedule_background_job`
+The runtime has a number of tasks that are scheduled with `SystemJS_ScheduleBackgroundJob`
 (pumping the threadpool task queue, running GC finalizers, etc).
 
-The background tasks will run on the main thread.  Calling `mono_main_thread_schedule_background_job` on
+The background tasks will run on the main thread.  Calling `SystemJS_ScheduleBackgroundJob` on
 a worker thread will use `async_run_in_main_thread` to queue up work for the main thread.
 
 ## JS interop on dedicated threads ##

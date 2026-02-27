@@ -4,12 +4,14 @@
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// When placed on a property or field of type <see cref="System.Text.Json.Nodes.JsonObject"/> or
-    /// <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/>, any properties that do not have a
+    /// When placed on a property or field of type <see cref="System.Text.Json.Nodes.JsonObject"/>,
+    /// <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/>, or
+    /// <see cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}"/>, any properties that do not have a
     /// matching property or field are added during deserialization and written during serialization.
     /// </summary>
     /// <remarks>
-    /// When using <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/>, the TKey value must be <see cref="string"/>
+    /// When using <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/> or
+    /// <see cref="System.Collections.Generic.IReadOnlyDictionary{TKey, TValue}"/>, the TKey value must be <see cref="string"/>
     /// and TValue must be <see cref="JsonElement"/> or <see cref="object"/>.
     ///
     /// During deserializing with a <see cref="System.Collections.Generic.IDictionary{TKey, TValue}"/> extension property with TValue as

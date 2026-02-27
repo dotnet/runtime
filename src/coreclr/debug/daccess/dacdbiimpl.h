@@ -151,18 +151,29 @@ public:
     void GetGCHeapInformation(COR_HEAPINFO * pHeapInfo);
     HRESULT GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW);
     HRESULT GetReJitInfo(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ReJitInfo* pReJitInfo);
+#ifdef FEATURE_CODE_VERSIONING
     HRESULT GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
+    HRESULT GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode);
+    HRESULT GetILCodeVersionNode(VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode, VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
+    HRESULT GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vmILCodeVersionNode, DacSharedReJitInfo* pData);
+#endif // FEATURE_CODE_VERSIONING
     HRESULT GetReJitInfo(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_ReJitInfo* pReJitInfo);
     HRESULT AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled);
-    HRESULT GetNativeCodeVersionNode(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeStartAddress, OUT VMPTR_NativeCodeVersionNode* pVmNativeCodeVersionNode);
     HRESULT GetSharedReJitInfo(VMPTR_ReJitInfo vmReJitInfo, VMPTR_SharedReJitInfo* pSharedReJitInfo);
-    HRESULT GetILCodeVersionNode(VMPTR_NativeCodeVersionNode vmNativeCodeVersionNode, VMPTR_ILCodeVersionNode* pVmILCodeVersionNode);
     HRESULT GetSharedReJitInfoData(VMPTR_SharedReJitInfo sharedReJitInfo, DacSharedReJitInfo* pData);
-    HRESULT GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode vmILCodeVersionNode, DacSharedReJitInfo* pData);
     HRESULT GetDefinesBitField(ULONG32 *pDefines);
     HRESULT GetMDStructuresVersion(ULONG32* pMDStructuresVersion);
     HRESULT EnableGCNotificationEvents(BOOL fEnable);
     HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly);
+    HRESULT ParseContinuation(CORDB_ADDRESS continuationAddress,
+                                              OUT PCODE *pDiagnosticIP,
+                                              OUT CORDB_ADDRESS *pNextContinuation,
+                                              OUT UINT32 *pState);
+    void GetAsyncLocals(VMPTR_MethodDesc vmMethod,
+                        CORDB_ADDRESS codeAddr,
+                        UINT32 state,
+                        DacDbiArrayList<AsyncLocalData> * pAsyncLocals);
+    HRESULT GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
 
 private:
     void TypeHandleToExpandedTypeInfoImpl(AreValueTypesBoxed              boxed,
@@ -232,10 +243,13 @@ public:
     //    its method desc
     //    whether it's an instantiated generic
     //    its EnC version number
-    //    hot and cold region information.
-    void GetNativeCodeInfoForAddr(VMPTR_MethodDesc         vmMethodDesc,
-                                  CORDB_ADDRESS            hotCodeStartAddr,
-                                  NativeCodeFunctionData * pCodeInfo);
+    //    hot and cold region information
+    //    its module
+    //    its metadata token.
+    void GetNativeCodeInfoForAddr(CORDB_ADDRESS            codeAddress,
+                                  NativeCodeFunctionData * pCodeInfo,
+                                  VMPTR_Module *           pVmModule,
+                                  mdToken *                pFunctionToken);
 
 private:
     // Get start addresses and sizes for hot and cold regions for a native code blob
@@ -901,8 +915,8 @@ public:
                                             DebuggerREGDISPLAY * pOutDRD,
                                             BOOL fActive);
 
-    // Check if the given method is an IL stub or an LCD method.
-    DynamicMethodType IsILStubOrLCGMethod(VMPTR_MethodDesc vmMethodDesc);
+    // Check if the given method is a DiagnosticHidden or an LCG method.
+    DynamicMethodType IsDiagnosticsHiddenOrLCGMethod(VMPTR_MethodDesc vmMethodDesc);
 
     // Return a TargetBuffer for the raw vararg signature.
     TargetBuffer GetVarArgSig(CORDB_ADDRESS   VASigCookieAddr,
@@ -915,11 +929,6 @@ public:
     // given index.
     GENERICS_TYPE_TOKEN ResolveExactGenericArgsToken(DWORD               dwExactGenericArgsTokenIndex,
                                                      GENERICS_TYPE_TOKEN rawToken);
-
-    // Enumerate all monitors blocking a thread
-    void EnumerateBlockingObjects(VMPTR_Thread                           vmThread,
-                                  FP_BLOCKINGOBJECT_ENUMERATION_CALLBACK fpCallback,
-                                  CALLBACK_DATA                          pUserData);
 
     // Returns a bitfield reflecting the managed debugging state at the time of
     // the jit attach.

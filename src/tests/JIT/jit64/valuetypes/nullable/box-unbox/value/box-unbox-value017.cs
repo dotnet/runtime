@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using System;
 using Xunit;
 
+namespace box_unbox_value017;
 public class NullableTest
 {
     private static bool BoxUnboxToNQ(ValueType o)
@@ -28,6 +29,7 @@ public class NullableTest
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         GCHandle? s = Helper.Create(default(GCHandle));

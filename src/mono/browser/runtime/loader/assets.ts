@@ -198,6 +198,7 @@ export async function mono_download_assets (): Promise<void> {
                     // wait till after onRuntimeInitialized
 
                     await runtimeHelpers.beforeOnRuntimeInitialized.promise;
+                    await runtimeHelpers.afterInstantiateWasm.promise;
                     runtimeHelpers.instantiate_asset(asset, url, data);
                 }
             } else {
@@ -399,7 +400,7 @@ export function prepareAssets () {
                     name: configUrl,
                     behavior: "vfs",
                     // TODO what should be the virtualPath ?
-                    noCache: true,
+                    cache: "no-cache",
                     useCredentials: true
                 });
             }
@@ -672,12 +673,16 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
     }
 
     const fetchOptions: RequestInit = {};
-    if (!loaderHelpers.config.disableNoCacheFetch) {
-        // FIXME: "no-cache" is how blazor works in Net7, but this prevents caching on HTTP level
-        // if we would like to get rid of our own cache and only use HTTP cache, we need to remove this
+
+    if (asset.cache) {
+        // If the asset definition specifies a cache mode, use it.
+        fetchOptions.cache = asset.cache;
+    } else if (!loaderHelpers.config.disableNoCacheFetch) {
+        // Otherwise, for backwards compatibility use "no-cache" setting unless disabled by the user.
         // https://github.com/dotnet/runtime/issues/74815
         fetchOptions.cache = "no-cache";
     }
+
     if (asset.useCredentials) {
         // Include credentials so the server can allow download / provide user specific file
         fetchOptions.credentials = "include";

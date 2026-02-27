@@ -181,10 +181,7 @@ namespace System.Data
                 }
                 catch (ConstraintException)
                 {
-                    if (_dataTable.DataSet != null)
-                    {
-                        _dataTable.DataSet.EnforceConstraints = false;
-                    }
+                    _dataTable.DataSet?.EnforceConstraints = false;
                     throw;
                 }
             }

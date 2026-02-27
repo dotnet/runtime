@@ -32,6 +32,7 @@ set LogsDirArg=
 set RunInUnloadableContext=
 set TieringTest=
 set RunInterpreter=
+set RunWithNodeJS=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -65,7 +66,6 @@ if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=1&shif
 REM This test feature is currently intentionally undocumented
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=1&set CrossgenLargeVersionBubble=1&shift&goto Arg_Loop)
 if /i "%1" == "synthesizepgo"                           (set CrossGen2SynthesizePgo=1&shift&goto Arg_Loop)
-if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                                  (set DOTNET_GCName=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcstresslevel"                           (set DOTNET_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
 if /i "%1" == "gcsimulator"                             (set __GCSimulatorTests=1&shift&goto Arg_Loop)
@@ -76,6 +76,7 @@ if /i "%1" == "runincontext"                            (set RunInUnloadableCont
 if /i "%1" == "tieringtest"                             (set TieringTest=1&shift&goto Arg_Loop)
 if /i "%1" == "runnativeaottests"                       (set RunNativeAot=1&shift&goto Arg_Loop)
 if /i "%1" == "interpreter"                             (set RunInterpreter=1&shift&goto Arg_Loop)
+if /i "%1" == "node"                                    (set RunWithNodeJS=1&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -113,10 +114,6 @@ set __RuntestPyArgs=-arch %__BuildArch% -build_type %__BuildType%
 
 if defined LogsDirArg (
     set __RuntestPyArgs=%__RuntestPyArgs% -logs_dir %LogsDirArg%
-)
-
-if defined DoLink (
-    set __RuntestPyArgs=%__RuntestPyArgs% --il_link
 )
 
 if defined __LongGCTests (
@@ -173,6 +170,10 @@ if defined RunNativeAot (
 
 if defined RunInterpreter (
     set __RuntestPyArgs=%__RuntestPyArgs% --interpreter
+)
+
+if defined RunWithNodeJS (
+    set __RuntestPyArgs=%__RuntestPyArgs% --node
 )
 
 REM Find python and set it to the variable PYTHON
@@ -240,6 +241,7 @@ echo logsdir ^<dir^>             - Specify the logs directory ^(default: artifac
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
 echo interpreter               - Runs the tests with the interpreter enabled.
+echo node                       - Runs the tests with NodeJS ^(wasm only^).
 echo.
 echo Note that arguments are not case-sensitive.
 echo.

@@ -5,28 +5,12 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace System.Formats.Cbor
 {
     internal static partial class CborHelpers
     {
         public static readonly DateTimeOffset UnixEpoch = DateTimeOffset.UnixEpoch;
-
-        public static int GetBytes(Encoding encoding, ReadOnlySpan<char> source, Span<byte> destination)
-            => encoding.GetBytes(source, destination);
-
-        public static int GetByteCount(Encoding encoding, ReadOnlySpan<char> chars)
-            => encoding.GetByteCount(chars);
-
-        public static int GetChars(Encoding encoding, ReadOnlySpan<byte> source, Span<char> destination)
-            => encoding.GetChars(source, destination);
-
-        public static int GetCharCount(Encoding encoding, ReadOnlySpan<byte> source)
-            => encoding.GetCharCount(source);
-
-        public static string GetString(Encoding encoding, ReadOnlySpan<byte> bytes)
-            => encoding.GetString(bytes);
 
         public static BigInteger CreateBigIntegerFromUnsignedBigEndianBytes(byte[] bytes)
             => new BigInteger(bytes, isUnsigned: true, isBigEndian: true);

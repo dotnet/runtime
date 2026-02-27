@@ -40,7 +40,7 @@ public sealed class GeneratedRegexAttribute : Attribute
     /// <summary>Initializes a new instance of the <see cref="GeneratedRegexAttribute"/> with the specified pattern and options.</summary>
     /// <param name="pattern">The regular expression pattern to match.</param>
     /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
-    /// <param name="cultureName">The name of a culture to be used for case sensitive comparisons. <paramref name="cultureName"/> is not case-sensitive.</param>
+    /// <param name="cultureName">The name of a culture to be used for case-insensitive comparisons. <paramref name="cultureName"/> is not case-sensitive.</param>
     /// <remarks>
     /// For a list of predefined culture names on Windows systems, see the Language tag column in the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c">list of
     /// language/region names supported by Windows</see>. Culture names follow the standard defined by <see href="https://tools.ietf.org/html/bcp47">BCP 47</see>. In addition,
@@ -64,7 +64,7 @@ public sealed class GeneratedRegexAttribute : Attribute
     /// <param name="pattern">The regular expression pattern to match.</param>
     /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
     /// <param name="matchTimeoutMilliseconds">A time-out interval (milliseconds), or <see cref="Timeout.Infinite"/> to indicate that the method should not time out.</param>
-    /// <param name="cultureName">The name of a culture to be used for case sensitive comparisons. <paramref name="cultureName"/> is not case-sensitive.</param>
+    /// <param name="cultureName">The name of a culture to be used for case-insensitive comparisons. <paramref name="cultureName"/> is not case-sensitive.</param>
     /// <remarks>
     /// For a list of predefined culture names on Windows systems, see the Language tag column in the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c">list of
     /// language/region names supported by Windows</see>. Culture names follow the standard defined by <see href="https://tools.ietf.org/html/bcp47">BCP 47</see>. In addition,
@@ -89,6 +89,6 @@ public sealed class GeneratedRegexAttribute : Attribute
     /// <summary>Gets a time-out interval (milliseconds), or <see cref="Timeout.Infinite"/> to indicate that the method should not time out.</summary>
     public int MatchTimeoutMilliseconds { get; }
 
-    /// <summary>Gets the name of the culture to be used for case sensitive comparisons.</summary>
+    /// <summary>Gets the name of the culture to be used for case-insensitive comparisons.</summary>
     public string CultureName { get; }
 }

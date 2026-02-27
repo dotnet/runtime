@@ -7,15 +7,15 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
+using Internal.Runtime;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a hashtable of all compiled generic method instantiations
     /// </summary>
-    public sealed class GenericMethodsHashtableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class GenericMethodsHashtableNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public GenericMethodsHashtableNode(ExternalReferencesTableNode externalReferences)
@@ -28,7 +28,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__generic_methods_hashtable"u8);
         }
 
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -67,9 +66,15 @@ namespace ILCompiler.DependencyAnalysis
                         arguments.Append(nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(argNode)));
                     }
 
-                    int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, method.GetTypicalMethodDefinition());
+                    int flags = 0;
+                    MethodDesc methodForMetadata = GetMethodForMetadata(method, out bool isAsyncVariant);
+                    if (isAsyncVariant)
+                        flags |= GenericMethodsHashtableConstants.IsAsyncVariant;
 
-                    fullMethodSignature = nativeWriter.GetTuple(containingType, nativeWriter.GetUnsignedConstant((uint)token), arguments);
+                    int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, methodForMetadata);
+
+                    int flagsAndToken = (token & MetadataManager.MetadataOffsetMask) | flags;
+                    fullMethodSignature = nativeWriter.GetTuple(containingType, nativeWriter.GetUnsignedConstant((uint)flagsAndToken), arguments);
                 }
 
                 // Method's dictionary pointer
@@ -82,8 +87,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] streamBytes = nativeWriter.Save();
-
-            _size = streamBytes.Length;
 
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
@@ -105,7 +108,19 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(argNode, "GenericMethodsHashtable entry instantiation argument"));
             }
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, method.GetTypicalMethodDefinition());
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, GetMethodForMetadata(method, out _));
+        }
+
+        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant)
+        {
+            MethodDesc result = method.GetTypicalMethodDefinition();
+            if (result is AsyncMethodVariant asyncVariant)
+            {
+                isAsyncVariant = true;
+                return asyncVariant.Target;
+            }
+            isAsyncVariant = false;
+            return result;
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

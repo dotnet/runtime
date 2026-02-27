@@ -386,6 +386,7 @@ namespace System.Runtime.InteropServices
         /// value that sizeof(T) returns! Since the primary use case is to parse memory mapped files, we cannot change this algorithm as this defines a de-facto serialization format.
         /// Throws if T contains GC references.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static uint AlignedSizeOf<T>() where T : struct
         {
             uint size = SizeOf<T>();
@@ -400,10 +401,11 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Returns same value as sizeof(T) but throws if T contains GC references.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static uint SizeOf<T>() where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                throw new ArgumentException(SR.Argument_NeedStructWithNoRefs);
+                ThrowHelper.ThrowArgument_TypeContainsReferences(typeof(T));
 
             return (uint)sizeof(T);
         }

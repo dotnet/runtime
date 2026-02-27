@@ -8,6 +8,7 @@ path_classifiers:
     # be excluded from analysis. If there is a problem at the API layer, the analysis
     # engine will detect the problem in the src/ implementations anyway.
     - src/libraries/**/ref/*
+  cmake_internal:
     # exclude artifacts/obj/**/CMakeFiles/**/CheckFunctionExists.c since CMake 
     # generates random directory names causing creation of duplicate issues 
     # related to obsolete encryption algorithm used. Note that CheckFuntionExists 

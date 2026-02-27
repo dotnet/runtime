@@ -44,6 +44,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         private FeatureChecksVisitor _featureChecksVisitor;
 
         readonly TypeNameResolver _typeNameResolver;
+        readonly DataFlowAnalyzerContext _dataFlowAnalyzerContext;
 
         public TrimAnalysisVisitor(
             Compilation compilation,
@@ -60,6 +61,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             TrimAnalysisPatterns = trimAnalysisPatterns;
             _featureChecksVisitor = new FeatureChecksVisitor(dataFlowAnalyzerContext);
             _typeNameResolver = new TypeNameResolver(compilation);
+            _dataFlowAnalyzerContext = dataFlowAnalyzerContext;
         }
 
         public override FeatureChecksValue GetConditionValue(IOperation branchValueOperation, StateValue state)
@@ -256,7 +258,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
         {
-            return new MethodParameterValue(new ParameterProxy(parameter, parameter.ContainingSymbol as IMethodSymbol ?? (IMethodSymbol)OwningSymbol));
+            var parameterMethod = parameter.ContainingSymbol as IMethodSymbol ?? OwningSymbol as IMethodSymbol;
+            if (parameterMethod is null)
+            {
+                // If the parameter is not associated with a method, ignore it as it's not interesting for trim analysis.
+                // This can happen in the parameter initializer of an indexer property, for example.
+                // When visiting the assignment for the parameter initializer, the owning symbol will be the property
+                // symbol, not the get/set method. The get/set methods get analyzed in a separate context where the owning
+                // symbol of the same parameter (this time on the method) is the get/set method.
+                return TopValue;
+            }
+
+            return new MethodParameterValue(new ParameterProxy(parameter, parameterMethod));
         }
 
         public override void HandleAssignment(MultiValue source, MultiValue target, IOperation operation, in FeatureContext featureContext)
@@ -336,7 +349,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             //   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
             //   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
-            HandleCall(_typeNameResolver, operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, out MultiValue methodReturnValue);
+            HandleCall(_dataFlowAnalyzerContext, FeatureContext.None, _typeNameResolver, operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, out MultiValue methodReturnValue);
 
             // This will copy the values if necessary
             TrimAnalysisPatterns.Add(new TrimAnalysisMethodCallPattern(
@@ -364,6 +377,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         }
 
         internal static void HandleCall(
+            DataFlowAnalyzerContext dataFlowAnalyzerContext,
+            FeatureContext featureContext,
             TypeNameResolver typeNameResolver,
             IOperation operation,
             ISymbol owningSymbol,
@@ -375,7 +390,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             ValueSetLattice<SingleValue> multiValueLattice,
             out MultiValue methodReturnValue)
         {
-            var handleCallAction = new HandleCallAction(typeNameResolver, location, owningSymbol, operation, multiValueLattice, reportDiagnostic);
+            var handleCallAction = new HandleCallAction(dataFlowAnalyzerContext, featureContext, typeNameResolver, location, owningSymbol, operation, multiValueLattice, reportDiagnostic);
             MethodProxy method = new(calledMethod);
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(method);
             if (!handleCallAction.Invoke(method, instance, arguments, intrinsicId, out methodReturnValue))

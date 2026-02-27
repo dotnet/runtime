@@ -71,7 +71,7 @@ namespace Microsoft.Win32.SafeHandles
             }
             set
             {
-                Debug.Assert(value == false); // We should only use the setter to disable random access.
+                Debug.Assert(!value); // We should only use the setter to disable random access.
                 _supportsRandomAccess = value ? NullableBool.True : NullableBool.False;
             }
         }
@@ -333,7 +333,10 @@ namespace Microsoft.Win32.SafeHandles
                     // and for regular files (most common case)
                     // avoid one extra sys call for determining whether file can be seeked
                     _canSeek = NullableBool.True;
-                    Debug.Assert(Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
+
+                    // we exclude 0-length files from the assert because those may may be pseudofiles
+                    // (e.g. /proc/net/route) and these are not seekable on all systems
+                    Debug.Assert(status.Size == 0 || Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
                 }
 
                 fileLength = status.Size;
@@ -459,30 +462,8 @@ namespace Microsoft.Win32.SafeHandles
             {
                 return false;
             }
-            else if (lockOperation == Interop.Sys.LockOperations.LOCK_EX)
-            {
-                return true; // LOCK_EX is always OK
-            }
-            else if ((access & FileAccess.Write) == 0)
-            {
-                return true; // LOCK_SH is always OK when reading
-            }
 
-            if (!Interop.Sys.TryGetFileSystemType(this, out Interop.Sys.UnixFileSystemTypes unixFileSystemType))
-            {
-                return false; // assume we should not acquire the lock if we don't know the File System
-            }
-
-            switch (unixFileSystemType)
-            {
-                case Interop.Sys.UnixFileSystemTypes.nfs: // #44546
-                case Interop.Sys.UnixFileSystemTypes.smb:
-                case Interop.Sys.UnixFileSystemTypes.smb2: // #53182
-                case Interop.Sys.UnixFileSystemTypes.cifs:
-                    return false; // LOCK_SH is not OK when writing to NFS, CIFS or SMB
-                default:
-                    return true; // in all other situations it should be OK
-            }
+            return Interop.Sys.FileSystemSupportsLocking(this, lockOperation, accessWrite: (access & FileAccess.Write) != 0);
         }
 
         private void FStatCheckIO(string path, ref Interop.Sys.FileStatus status, ref bool statusHasValue)

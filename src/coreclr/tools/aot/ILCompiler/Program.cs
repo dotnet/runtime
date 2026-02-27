@@ -108,7 +108,7 @@ namespace ILCompiler
             TargetOS targetOS = Get(_command.TargetOS);
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
-                optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize,
+                allowOptimistic: _command.OptimizationMode != OptimizationMode.PreferSize,
                 isReadyToRun: false);
 
             string systemModuleName = Get(_command.SystemModuleName);
@@ -202,7 +202,7 @@ namespace ILCompiler
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                 if (singleMethod.OwningType is MetadataType { Module.Assembly: EcmaAssembly assembly })
                 {
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(assembly, typeSystemContext));
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(assembly, typeSystemContext.GeneratedAssembly, TypeMapAssemblyTargetsMode.Traverse));
                 }
             }
             else
@@ -314,9 +314,17 @@ namespace ILCompiler
                     compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
                 }
 
-                if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                // Get TypeMappingEntryAssembly from command-line option if specified
+                string typeMappingEntryAssembly = Get(_command.TypeMapEntryAssembly);
+                if (typeMappingEntryAssembly is not null)
                 {
-                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
+                    var typeMapEntryAssembly = (EcmaAssembly)typeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(typeMappingEntryAssembly), throwIfNotFound: true);
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(typeMapEntryAssembly, typeSystemContext.GeneratedAssembly, TypeMapAssemblyTargetsMode.Traverse));
+                }
+                else if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                {
+                    // Fall back to entryassembly if not specified
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext.GeneratedAssembly, TypeMapAssemblyTargetsMode.Traverse));
                 }
             }
 
@@ -349,7 +357,7 @@ namespace ILCompiler
                 // assume invalid code is present. Scanner may not detect all invalid code that RyuJIT detect.
                 // If they disagree, we won't know how the vtable of InvalidProgramException should look like
                 // and that would be a compiler crash.
-                MethodDesc throwInvalidProgramMethod = typeSystemContext.GetHelperEntryPoint("ThrowHelpers", "ThrowInvalidProgramException");
+                MethodDesc throwInvalidProgramMethod = typeSystemContext.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowInvalidProgramException"u8);
                 compilationRoots.Add(
                     new GenericRootProvider<MethodDesc>(throwInvalidProgramMethod,
                     (MethodDesc method, IRootingServiceProvider rooter) => rooter.AddCompilationRoot(method, "Invalid IL insurance")));
@@ -412,8 +420,16 @@ namespace ILCompiler
             ILProvider unsubstitutedILProvider = ilProvider;
             ilProvider = new SubstitutedILProvider(ilProvider, substitutionProvider, new DevirtualizationManager());
 
-            var stackTracePolicy = Get(_command.EmitStackTraceData) ?
-                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
+            (bool emitStackTraceData, bool stackTraceLineNumbers) = Get(_command.StackTraceData) switch
+            {
+                null or "none" => (false, false),
+                "frames" => (true, false),
+                "lines" => (true, true),
+                _ => throw new CommandLineException($"Unknown stack trace data: {Get(_command.StackTraceData)}"),
+            };
+
+            var stackTracePolicy = emitStackTraceData ?
+                (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy(stackTraceLineNumbers) : new NoStackTraceEmissionPolicy();
 
             MetadataBlockingPolicy mdBlockingPolicy;
             ManifestResourceBlockingPolicy resBlockingPolicy;
@@ -638,7 +654,9 @@ namespace ILCompiler
             if (sourceLinkFileName != null)
                 dumpers.Add(new SourceLinkWriter(sourceLinkFileName));
 
-            CompilationResults compilationResults = compilation.Compile(outputFilePath, ObjectDumper.Compose(dumpers));
+            // Write to a temporary file and rename on success to avoid leaving partial files on failure
+            string tempOutputFilePath = outputFilePath + ".tmp";
+            CompilationResults compilationResults = compilation.Compile(tempOutputFilePath, ObjectDumper.Compose(dumpers));
             string exportsFile = Get(_command.ExportsFile);
             if (exportsFile != null)
             {
@@ -683,7 +701,7 @@ namespace ILCompiler
                     // but not scanned, it's usually fine. If it wasn't fine, we would probably crash before getting here.
                     return method.OwningType is MetadataType mdType
                         && mdType.Module == method.Context.SystemModule
-                        && (mdType.Name.EndsWith("Exception") || mdType.Namespace.StartsWith("Internal.Runtime"));
+                        && (mdType.Name.EndsWith("Exception"u8) || mdType.Namespace.StartsWith("Internal.Runtime"u8));
                 }
 
                 // If optimizations are enabled, the results will for sure not match in the other direction due to inlining, etc.
@@ -712,6 +730,26 @@ namespace ILCompiler
                 ((IDisposable)debugInfoProvider).Dispose();
 
             preinitManager.LogStatistics(logger);
+
+            // If errors were produced (including warnings treated as errors), delete the temporary file
+            // and return error code to avoid misleading build systems into thinking the compilation succeeded.
+            if (logger.HasLoggedErrors)
+            {
+                try
+                {
+                    File.Delete(tempOutputFilePath);
+                }
+                catch
+                {
+                    // If we can't delete the temp file, there's not much we can do.
+                    // The compilation will still fail due to logged errors.
+                }
+
+                return 1;
+            }
+
+            // Rename the temporary file to the final output file
+            File.Move(tempOutputFilePath, outputFilePath, overwrite: true);
 
             return 0;
         }
@@ -767,7 +805,7 @@ namespace ILCompiler
             TypeDesc owningType = FindType(context, singleMethodTypeName);
 
             // TODO: allow specifying signature to distinguish overloads
-            MethodDesc method = owningType.GetMethod(singleMethodName, null);
+            MethodDesc method = owningType.GetMethod(Encoding.UTF8.GetBytes(singleMethodName), null);
             if (method == null)
                 throw new CommandLineException($"Method '{singleMethodName}' not found in '{singleMethodTypeName}'");
 

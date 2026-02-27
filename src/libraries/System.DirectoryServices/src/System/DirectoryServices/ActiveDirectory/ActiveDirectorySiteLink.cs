@@ -508,7 +508,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     //NTDSSITELINK_OPT_DISABLE_COMPRESSION ( 1 << 2 )
                     //  0 - Compression of replication data across this site link enabled
                     //  1 - Compression of replication data across this site link disabled
-                    if (value == false)
+                    if (!value)
                     {
                         options |= 0x4;
                     }

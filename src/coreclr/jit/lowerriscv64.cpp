@@ -38,8 +38,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    // TODO-RISCV64: using B/BL for optimization.
-    return false;
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -56,7 +55,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         // Make sure we have an actual immediate
         if (!childNode->IsCnsIntOrI())
             return false;
-        if (childNode->AsIntCon()->ImmedValNeedsReloc(comp))
+        if (childNode->AsIntCon()->ImmedValNeedsReloc(m_compiler))
             return false;
 
         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
@@ -64,14 +63,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
         switch (parentNode->OperGet())
         {
-            case GT_EQ:
-            case GT_NE:
-                return emitter::isValidSimm12(-immVal) || (immVal == -2048);
-
-            case GT_LE: // a <= N  ->  a < N+1
-            case GT_GT: // a > N  ->  !(a <= N)  ->  !(a < N+1)
-                immVal += 1;
-                FALLTHROUGH;
             case GT_LT:
             case GT_GE:
             case GT_ADD:
@@ -79,9 +70,12 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_OR:
             case GT_XOR:
                 return emitter::isValidSimm12(immVal);
-            case GT_JCMP:
-                return true;
 
+            case GT_EQ:
+            case GT_NE:
+            case GT_GT:
+            case GT_LE:
+            case GT_JCMP:
             case GT_CMPXCHG:
             case GT_XORR:
             case GT_XAND:
@@ -133,57 +127,159 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-    GenTree*     op = jtrue->gtGetOp1();
-    GenCondition cond;
-    GenTree*     cmpOp1;
-    GenTree*     cmpOp2;
+    GenTree* cmp = jtrue->gtGetOp1();
+    assert(!cmp->OperIsCompare() || cmp->OperIsCmpCompare()); // We do not expect any other relops on RISCV64
 
-    assert(!op->OperIsCompare() || op->OperIsCmpCompare()); // We do not expect any other relops on RISCV64
-
-    if (op->OperIsCompare() && !varTypeIsFloating(op->gtGetOp1()))
+    // for RISCV64's compare and condition-branch instructions, it's very similar to the IL instructions.
+    jtrue->ChangeOper(GT_JCMP);
+    GenTreeOpCC* jcmp = jtrue->AsOpCC();
+    if (cmp->OperIsCompare() && !varTypeIsFloating(cmp->gtGetOp1()))
     {
-        cond = GenCondition::FromRelop(op);
-
-        cmpOp1 = op->gtGetOp1();
-        cmpOp2 = op->gtGetOp2();
-
-        // We will fall through and turn this into a JCMP(op1, op2, kind), but need to remove the relop here.
-        BlockRange().Remove(op);
+        jcmp->gtCondition = GenCondition::FromIntegralRelop(cmp);
+        jcmp->gtOp1       = cmp->gtGetOp1();
+        jcmp->gtOp2       = cmp->gtGetOp2();
+        BlockRange().Remove(cmp);
     }
     else
     {
+        // branch if (cond)  --->  branch if (cond != 0)
         GenCondition::Code code = GenCondition::NE;
-        if (op->OperIsCompare() && varTypeIsFloating(op->gtGetOp1()) && (op->gtFlags & GTF_RELOP_NAN_UN) != 0)
+        if (cmp->OperIsCompare() && varTypeIsFloating(cmp->gtGetOp1()) && (cmp->gtFlags & GTF_RELOP_NAN_UN) != 0)
         {
             // Unordered floating-point comparisons are achieved by neg'ing the ordered counterparts. Avoid that by
             // reversing both the FP comparison and the zero-comparison fused with the branch.
-            op->ChangeOper(GenTree::ReverseRelop(op->OperGet()));
-            op->gtFlags &= ~GTF_RELOP_NAN_UN;
+            cmp->ChangeOper(GenTree::ReverseRelop(cmp->OperGet()));
+            cmp->gtFlags &= ~GTF_RELOP_NAN_UN;
             code = GenCondition::EQ;
         }
-        cond = GenCondition(code);
-
-        cmpOp1 = op;
-        cmpOp2 = comp->gtNewZeroConNode(cmpOp1->TypeGet());
-
-        BlockRange().InsertBefore(jtrue, cmpOp2);
-
-        // Fall through and turn this into a JCMP(op1, 0, NE).
+        jcmp->gtCondition = GenCondition(code);
+        jcmp->gtOp1       = cmp;
+        jcmp->gtOp2       = m_compiler->gtNewZeroConNode(cmp->TypeGet());
+        BlockRange().InsertBefore(jcmp, jcmp->gtOp2);
     }
 
-    // for RISCV64's compare and condition-branch instructions,
-    // it's very similar to the IL instructions.
-    jtrue->ChangeOper(GT_JCMP);
-    jtrue->gtOp1                 = cmpOp1;
-    jtrue->gtOp2                 = cmpOp2;
-    jtrue->AsOpCC()->gtCondition = cond;
+    // Comparisons fused with branches don't have immediates, re-evaluate containment for 'zero' register
+    if (!CheckImmedAndMakeContained(jcmp, jcmp->gtOp2))
+        jcmp->gtOp2->ClearContained();
 
-    if (cmpOp2->IsCnsIntOrI())
+    return jcmp->gtNext;
+}
+
+//------------------------------------------------------------------------
+// LowerSavedIntegerCompare: lowers a integer comparison saved to a register so that it matches the available
+// instructions better
+//
+// Arguments:
+//    cmp - the integer comparison to lower
+//
+// Return Value:
+//    The original compare node if lowering should proceed as usual or the next node to lower if the compare node was
+//    changed in such a way that lowering is no longer needed.
+//
+GenTree* Lowering::LowerSavedIntegerCompare(GenTree* cmp)
+{
+    // Branches have a full range of comparisons, these transformations would be counter-productive
+    LIR::Use cmpUse;
+    if (!BlockRange().TryGetUse(cmp, &cmpUse) || cmpUse.User()->OperIs(GT_JTRUE))
+        return cmp;
+
+    GenTree*& left  = cmp->AsOp()->gtOp1;
+    GenTree*& right = cmp->AsOp()->gtOp2;
+    assert(cmp->OperIsCmpCompare() && varTypeUsesIntReg(left));
+
+    if (cmp->OperIs(GT_EQ, GT_NE) && !right->IsIntegralConst(0))
     {
-        cmpOp2->SetContained();
+        // Only equality with zero is supported
+        // a == b  --->  (a - b) == 0
+        var_types  type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
+        genTreeOps oper = GT_SUB;
+        if (right->IsIntegralConst() && !right->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        {
+            INT64 value  = right->AsIntConCommon()->IntegralValue();
+            INT64 minVal = (type == TYP_INT) ? INT_MIN : SSIZE_T_MIN;
+
+            const INT64 min12BitImm = -2048;
+            if (value == min12BitImm)
+            {
+                // (a - C) == 0 ---> (a ^ C) == 0
+                oper = GT_XOR;
+            }
+            else if (!right->TypeIs(TYP_BYREF) && value != minVal)
+            {
+                // a - C  --->  a + (-C)
+                oper = GT_ADD;
+                right->AsIntConCommon()->SetIntegralValue(-value);
+            }
+        }
+        left  = m_compiler->gtNewOperNode(oper, type, left, right);
+        right = m_compiler->gtNewZeroConNode(type);
+        BlockRange().InsertBefore(cmp, left, right);
+        ContainCheckBinary(left->AsOp());
     }
 
-    return jtrue->gtNext;
+    if (!right->TypeIs(TYP_BYREF) && right->IsIntegralConst() &&
+        !right->AsIntConCommon()->ImmedValNeedsReloc(m_compiler))
+    {
+        if (cmp->OperIs(GT_LE, GT_GE))
+        {
+            // a <= C  --->  a < C+1
+            // a >= C  --->  a > C-1
+            INT64 value = right->AsIntConCommon()->IntegralValue();
+
+            bool isOverflow;
+            if (cmp->OperIs(GT_LE))
+            {
+                isOverflow = genActualTypeIsInt(left)
+                                 ? CheckedOps::AddOverflows((INT32)value, (INT32)1, cmp->IsUnsigned())
+                                 : CheckedOps::AddOverflows((INT64)value, (INT64)1, cmp->IsUnsigned());
+            }
+            else
+            {
+                isOverflow = genActualTypeIsInt(left)
+                                 ? CheckedOps::SubOverflows((INT32)value, (INT32)1, cmp->IsUnsigned())
+                                 : CheckedOps::SubOverflows((INT64)value, (INT64)1, cmp->IsUnsigned());
+            }
+            if (!isOverflow)
+            {
+                right->AsIntConCommon()->SetIntegralValue(cmp->OperIs(GT_LE) ? value + 1 : value - 1);
+                cmp->SetOperRaw(cmp->OperIs(GT_LE) ? GT_LT : GT_GT);
+            }
+        }
+
+        if (cmp->OperIs(GT_LT) && right->IsIntegralConst(0) && !cmp->IsUnsigned())
+        {
+            // a < 0 (signed)  --->  shift the sign bit into the lowest bit
+            cmp->SetOperRaw(GT_RSZ);
+            cmp->ChangeType(genActualType(left));
+            right->AsIntConCommon()->SetIntegralValue(genTypeSize(cmp) * BITS_PER_BYTE - 1);
+            right->SetContained();
+            return cmp->gtNext;
+        }
+    }
+    return cmp;
+}
+
+//------------------------------------------------------------------------
+// SignExtendIfNecessary: inserts a 32-bit sign extension unless the argument is full-register or is known to be
+// implemented with a sign-extending instruction.
+//
+// Arguments:
+//    arg - the argument to sign-extend
+//
+void Lowering::SignExtendIfNecessary(GenTree** arg)
+{
+    assert(varTypeUsesIntReg(*arg));
+    if (!genActualTypeIsInt(*arg))
+        return;
+
+    if ((*arg)->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_MOD, GT_UMOD, GT_DIV, GT_UDIV, GT_CNS_INT))
+        return;
+
+    if ((*arg)->OperIsShiftOrRotate() || (*arg)->OperIsCmpCompare() || (*arg)->OperIsAtomicOp())
+        return;
+
+    *arg = m_compiler->gtNewCastNode(TYP_I_IMPL, *arg, false, TYP_I_IMPL);
+    BlockRange().InsertAfter((*arg)->gtGetOp1(), *arg);
 }
 
 //------------------------------------------------------------------------
@@ -197,74 +293,149 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    if (comp->opts.OptimizationEnabled())
+    GenTree*& op1 = binOp->gtOp1;
+    GenTree*& op2 = binOp->gtOp2;
+
+    bool isOp1Negated = op1->OperIs(GT_NOT);
+    bool isOp2Negated = op2->OperIs(GT_NOT);
+
+    ContainCheckBinary(binOp);
+
+    if (!m_compiler->opts.OptimizationEnabled())
+        return binOp->gtNext;
+
+    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zbs) && binOp->OperIs(GT_OR, GT_XOR, GT_AND))
     {
-        GenTree*& op1 = binOp->gtOp1;
-        GenTree*& op2 = binOp->gtOp2;
-
-        bool isOp1Negated = op1->OperIs(GT_NOT);
-        bool isOp2Negated = op2->OperIs(GT_NOT);
-        if (binOp->OperIs(GT_AND, GT_OR, GT_XOR) && (isOp1Negated || isOp2Negated))
+        if (op2->IsIntegralConst())
         {
-            if ((isOp1Negated && isOp2Negated) || comp->compOpportunisticallyDependsOn(InstructionSet_Zbb))
+            GenTreeIntConCommon* constant = op2->AsIntConCommon();
+            UINT64               bit      = (UINT64)constant->IntegralValue();
+            if (binOp->OperIs(GT_AND))
+                bit = ~bit;
+
+            if (!op2->isContained() && isPow2(bit) &&
+                (!op1->TypeIs(TYP_INT) || BitOperations::Log2(bit) != 31)) // don't change the sign bit alone
             {
-                if (isOp1Negated)
+                assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
+                static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
+                constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
+                binOp->ChangeOper(singleBitOpers[binOp->OperGet() - GT_OR]);
+
+                bit = BitOperations::Log2(bit);
+                assert(bit >= 11); // smaller single-bit masks fit into ori/xori/andi
+                constant->SetIntegralValue(bit);
+                constant->SetContained();
+            }
+        }
+        else // op2 is not constant
+        {
+            GenTree* opp1 = isOp1Negated ? op1->gtGetOp1() : op1;
+            GenTree* opp2 = isOp2Negated ? op2->gtGetOp1() : op2;
+
+            bool isOp1SingleBit =
+                (isOp1Negated == binOp->OperIs(GT_AND)) && opp1->OperIs(GT_LSH) && opp1->gtGetOp1()->IsIntegralConst(1);
+            bool isOp2SingleBit =
+                (isOp2Negated == binOp->OperIs(GT_AND)) && opp2->OperIs(GT_LSH) && opp2->gtGetOp1()->IsIntegralConst(1);
+
+            if (isOp1SingleBit || isOp2SingleBit)
+            {
+                // a | (1 << b),  a ^ (1 << b),  a & ~(1 << b)   =>   BIT_{SET,INVERT,CLEAR}(a, b)
+
+                if (isOp1SingleBit)
+                    std::swap(op1, op2);
+
+                if (binOp->OperIs(GT_AND))
                 {
-                    BlockRange().Remove(op1);
-                    op1 = op1->AsUnOp()->gtGetOp1();
-                }
-                if (isOp2Negated)
-                {
+                    assert(op2->OperIs(GT_NOT));
                     BlockRange().Remove(op2);
-                    op2 = op2->AsUnOp()->gtGetOp1();
+                    op2 = op2->gtGetOp1();
                 }
 
-                if (isOp1Negated != isOp2Negated)
-                {
-                    assert(comp->compOpportunisticallyDependsOn(InstructionSet_Zbb));
-                    if (isOp1Negated)
-                        std::swap(op1, op2);
+                assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
+                static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
+                constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
+                binOp->ChangeOper(singleBitOpers[binOp->OperGet() - GT_OR]);
 
-                    genTreeOps operNot = GT_NONE;
-                    switch (binOp->OperGet())
-                    {
-                        case GT_AND:
-                            operNot = GT_AND_NOT;
-                            break;
-                        case GT_OR:
-                            operNot = GT_OR_NOT;
-                            break;
-                        default:
-                            assert(binOp->OperIs(GT_XOR));
-                            operNot = GT_XOR_NOT;
-                            break;
-                    }
-                    binOp->ChangeOper(operNot);
-                }
-                else if (binOp->OperIs(GT_AND, GT_OR)) // XOR is good after negation removal, (~a ^ ~b) == (a ^ b)
-                {
-                    assert(isOp1Negated && isOp2Negated);
-                    LIR::Use use;
-                    if (BlockRange().TryGetUse(binOp, &use))
-                    {
-                        // (~a | ~b) == ~(a & b),  (~a & ~b) == ~(a | b)
-                        genTreeOps reverseOper = binOp->OperIs(GT_AND) ? GT_OR : GT_AND;
-                        binOp->ChangeOper(reverseOper);
+                assert(op2->OperIs(GT_LSH));
+                assert(op2->gtGetOp1()->IsIntegralConst(1));
+                assert(!op2->gtGetOp2()->IsIntegralConst());
+                BlockRange().Remove(op2->gtGetOp1());
+                BlockRange().Remove(op2);
+                op2 = op2->gtGetOp2(); // shift amount becomes bit index
 
-                        GenTreeUnOp* negation = comp->gtNewOperNode(GT_NOT, binOp->gtType, binOp);
-                        BlockRange().InsertAfter(binOp, negation);
-                        use.ReplaceWith(negation);
-                    }
-                    else
-                    {
-                        binOp->SetUnusedValue();
-                    }
+                assert(op1->TypeIs(TYP_INT, TYP_LONG));
+                if (!op2->IsIntegralConst() && op1->TypeIs(TYP_INT))
+                {
+                    // Zbs instructions don't have *w variants so wrap the bit index / shift amount to 0-31 manually
+                    GenTreeIntCon* mask = m_compiler->gtNewIconNode(0x1F);
+                    mask->SetContained();
+                    BlockRange().InsertAfter(op2, mask);
+                    op2 = m_compiler->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
+                    BlockRange().InsertAfter(mask, op2);
                 }
             }
         }
     }
 
-    ContainCheckBinary(binOp);
+    if (binOp->OperIs(GT_AND, GT_OR, GT_XOR) && (isOp1Negated || isOp2Negated))
+    {
+        if ((isOp1Negated && isOp2Negated) || m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
+        {
+            if (isOp1Negated)
+            {
+                BlockRange().Remove(op1);
+                op1 = op1->AsUnOp()->gtGetOp1();
+            }
+            if (isOp2Negated)
+            {
+                BlockRange().Remove(op2);
+                op2 = op2->AsUnOp()->gtGetOp1();
+            }
+
+            if (isOp1Negated != isOp2Negated)
+            {
+                assert(m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                op2->ClearContained(); // negated binary instructions don't have immediate variants
+                if (isOp1Negated)
+                    std::swap(op1, op2);
+
+                genTreeOps operNot = GT_NONE;
+                switch (binOp->OperGet())
+                {
+                    case GT_AND:
+                        operNot = GT_AND_NOT;
+                        break;
+                    case GT_OR:
+                        operNot = GT_OR_NOT;
+                        break;
+                    default:
+                        assert(binOp->OperIs(GT_XOR));
+                        operNot = GT_XOR_NOT;
+                        break;
+                }
+                binOp->ChangeOper(operNot);
+            }
+            else if (binOp->OperIs(GT_AND, GT_OR)) // XOR is good after negation removal, (~a ^ ~b) == (a ^ b)
+            {
+                assert(isOp1Negated && isOp2Negated);
+                LIR::Use use;
+                if (BlockRange().TryGetUse(binOp, &use))
+                {
+                    // (~a | ~b) == ~(a & b),  (~a & ~b) == ~(a | b)
+                    genTreeOps reverseOper = binOp->OperIs(GT_AND) ? GT_OR : GT_AND;
+                    binOp->ChangeOper(reverseOper);
+
+                    GenTreeUnOp* negation = m_compiler->gtNewOperNode(GT_NOT, binOp->gtType, binOp);
+                    BlockRange().InsertAfter(binOp, negation);
+                    use.ReplaceWith(negation);
+                }
+                else
+                {
+                    binOp->SetUnusedValue();
+                }
+            }
+        }
+    }
 
     return binOp->gtNext;
 }
@@ -331,7 +502,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src = src->AsUnOp()->gtGetOp1();
         }
 
-        if ((size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) && src->OperIs(GT_CNS_INT))
+        if ((size <= m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memset)) && src->OperIs(GT_CNS_INT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -381,18 +552,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
+            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
         ClassLayout* layout               = blkNode->GetLayout();
         bool         doCpObj              = layout->HasGCPtr();
-        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
+        unsigned     copyBlockUnrollLimit = m_compiler->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
 
         if (doCpObj && (size <= copyBlockUnrollLimit))
         {
             // No write barriers are needed on the stack.
             // If the layout contains a byref, then we know it must live on the stack.
-            if (blkNode->IsAddressNotOnHeap(comp))
+            if (blkNode->IsAddressNotOnHeap(m_compiler))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
@@ -500,7 +671,8 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
         {
             // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
             // the non-split case.
-            comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+            m_compiler->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum()
+                                                     DEBUGARG(DoNotEnregisterReason::IsStructArg));
         }
     }
 }
@@ -614,12 +786,12 @@ genTreeOps GetShxaddOp(unsigned int shamt, bool isUnsigned)
 //
 bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
 {
-    if (comp->opts.OptimizationDisabled())
+    if (m_compiler->opts.OptimizationDisabled())
     {
         return false;
     }
 
-    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_ADD) ||
+    if (tree->isContained() || !tree->OperIs(GT_ADD) || tree->gtOverflow() ||
         ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
     {
         return false;
@@ -731,12 +903,12 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
 //
 bool Lowering::TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next)
 {
-    if (comp->opts.OptimizationDisabled())
+    if (m_compiler->opts.OptimizationDisabled())
     {
         return false;
     }
 
-    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_ADD) ||
+    if (tree->isContained() || !tree->OperIs(GT_ADD) || tree->gtOverflow() ||
         ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
     {
         return false;
@@ -812,13 +984,13 @@ bool Lowering::TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next)
 //
 bool Lowering::TryLowerZextLeftShiftToSlliUw(GenTreeOp* tree, GenTree** next)
 {
-    if (comp->opts.OptimizationDisabled())
+    if (m_compiler->opts.OptimizationDisabled())
     {
         return false;
     }
 
-    if (tree->isContained() || ((tree->gtFlags & GTF_ALL_EFFECT) != 0) || !tree->OperIs(GT_LSH) ||
-        !tree->gtOp1->OperIs(GT_CAST) || !tree->gtOp2->IsCnsIntOrI() ||
+    if (tree->isContained() || !tree->OperIs(GT_LSH) || !tree->gtOp1->OperIs(GT_CAST) || tree->gtOp1->gtOverflow() ||
+        !tree->gtOp2->IsCnsIntOrI() ||
         ((emitActualTypeSize(tree) != EA_8BYTE) && (emitActualTypeSize(tree) != EA_BYREF)))
     {
         return false;
@@ -1010,7 +1182,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         // - GT_LCL_ADDR is a stack addr mode.
         MakeSrcContained(indirNode, addr);
     }
-    else if (addr->IsCnsIntOrI() && !addr->AsIntCon()->ImmedValNeedsReloc(comp))
+    else if (addr->IsCnsIntOrI() && !addr->AsIntCon()->ImmedValNeedsReloc(m_compiler))
     {
         MakeSrcContained(indirNode, addr);
     }
@@ -1091,7 +1263,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
         }
     }
 
-    const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
+    const LclVarDsc* varDsc = m_compiler->lvaGetDesc(storeLoc);
 
 #ifdef FEATURE_SIMD
     if (storeLoc->TypeIs(TYP_SIMD8, TYP_SIMD12))
@@ -1119,6 +1291,13 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     {
         MakeSrcContained(storeLoc, op1);
     }
+
+    // Support emitting PC-relative addresses for handles hoisted by constant CSE
+    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && op1->IsIconHandle() && op1->AsIntCon()->FitsInAddrBase(m_compiler) &&
+        op1->AsIntCon()->AddrNeedsReloc(m_compiler))
+    {
+        MakeSrcContained(storeLoc, op1);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1140,6 +1319,9 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
+    if (cmp->gtOp1->IsIntegralConst(0) && !cmp->gtOp1->AsIntCon()->ImmedValNeedsReloc(m_compiler))
+        MakeSrcContained(cmp, cmp->gtOp1); // use 'zero' register
+
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);
 }
 

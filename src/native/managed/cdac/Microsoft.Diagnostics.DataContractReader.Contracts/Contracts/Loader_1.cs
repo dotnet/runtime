@@ -5,41 +5,25 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Loader_1 : ILoader
 {
-    private const uint ASSEMBLY_LEVEL_LOADED = 4; // Assembly Level required to be considered Loaded
     private const uint ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED = 0x1; // Assembly Notify Flag for profiler notification
 
     private enum ModuleFlags_1 : uint
     {
         Tenured = 0x1,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
-        ClassFreed = 0x4,
         EditAndContinue = 0x8, // Edit and Continue is enabled for this module
-
-        ProfilerNotified = 0x10,
-        EtwNotified = 0x20,
-
         ReflectionEmit = 0x40,    // Reflection.Emit was used to create this module
-        ProfilerDisableOptimizations = 0x80,
-        ProfilerDisableInlining = 0x100,
-
-        DebuggerUserOverridePriv = 0x400,
-        DebuggerAllowJitOptsPriv = 0x800,
-        DebuggerTrackJitInfoPriv = 0x1000,
-        DebuggerEnCEnabledPriv = 0x2000,
-        DebuggerPDBsCopied = 0x4000,
-        DebuggerIgnorePDbs = 0x8000,
-
-        IJWFixedUp = 0x80000,
-        BeingUnloaded = 0x100000,
     }
 
     private enum PEImageFlags : uint
     {
-        FLAG_MAPPED             = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
+        FLAG_MAPPED = 0x01, // the file is mapped/hydrated (vs. the raw disk layout)
     };
     private readonly Target _target;
 
@@ -102,7 +86,7 @@ internal readonly struct Loader_1 : ILoader
                 // IncludeAvailableToProfilers contains some loaded AND loading
                 // assemblies.
             }
-            else if (assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */)
+            else if (assembly.IsLoaded)
             {
                 if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeLoaded))
                     continue; // skip loaded assemblies
@@ -243,6 +227,8 @@ internal readonly struct Loader_1 : ILoader
 
     TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
     {
+        if (rva == 0)
+            return TargetPointer.Null;
         Data.PEAssembly assembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
         if (assembly.PEImage == TargetPointer.Null)
             throw new InvalidOperationException("PEAssembly does not have a PEImage associated with it.");
@@ -324,36 +310,10 @@ internal readonly struct Loader_1 : ILoader
         ModuleFlags flags = default;
         if (runtimeFlags.HasFlag(ModuleFlags_1.Tenured))
             flags |= ModuleFlags.Tenured;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.ClassFreed))
-            flags |= ModuleFlags.ClassFreed;
         if (runtimeFlags.HasFlag(ModuleFlags_1.EditAndContinue))
             flags |= ModuleFlags.EditAndContinue;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerNotified))
-            flags |= ModuleFlags.ProfilerNotified;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.EtwNotified))
-            flags |= ModuleFlags.EtwNotified;
         if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
             flags |= ModuleFlags.ReflectionEmit;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerDisableOptimizations))
-            flags |= ModuleFlags.ProfilerDisableOptimizations;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerDisableInlining))
-            flags |= ModuleFlags.ProfilerDisableInlining;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerUserOverridePriv))
-            flags |= ModuleFlags.DebuggerUserOverridePriv;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerAllowJitOptsPriv))
-            flags |= ModuleFlags.DebuggerAllowJitOptsPriv;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerTrackJitInfoPriv))
-            flags |= ModuleFlags.DebuggerTrackJitInfoPriv;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerEnCEnabledPriv))
-            flags |= ModuleFlags.DebuggerEnCEnabledPriv;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerPDBsCopied))
-            flags |= ModuleFlags.DebuggerPDBsCopied;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerIgnorePDbs))
-            flags |= ModuleFlags.DebuggerIgnorePDbs;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.IJWFixedUp))
-            flags |= ModuleFlags.IJWFixedUp;
-        if (runtimeFlags.HasFlag(ModuleFlags_1.BeingUnloaded))
-            flags |= ModuleFlags.BeingUnloaded;
 
         return flags;
     }
@@ -492,7 +452,7 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         Data.Assembly assembly = _target.ProcessedData.GetOrAdd<Data.Assembly>(module.Assembly);
-        return assembly.Level >= ASSEMBLY_LEVEL_LOADED /* IsLoaded */;
+        return assembly.IsLoaded;
     }
 
     TargetPointer ILoader.GetGlobalLoaderAllocator()
@@ -500,6 +460,13 @@ internal readonly struct Loader_1 : ILoader
         TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
         Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
         return systemDomain.GlobalLoaderAllocator;
+    }
+
+    TargetPointer ILoader.GetSystemAssembly()
+    {
+        TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
+        Data.SystemDomain systemDomain = _target.ProcessedData.GetOrAdd<Data.SystemDomain>(_target.ReadPointer(systemDomainPointer));
+        return systemDomain.SystemAssembly;
     }
 
     TargetPointer ILoader.GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
@@ -518,5 +485,71 @@ internal readonly struct Loader_1 : ILoader
     {
         Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
         return loaderAllocator.StubHeap;
+    }
+
+    TargetPointer ILoader.GetObjectHandle(TargetPointer loaderAllocatorPointer)
+    {
+        Data.LoaderAllocator loaderAllocator = _target.ProcessedData.GetOrAdd<Data.LoaderAllocator>(loaderAllocatorPointer);
+        return loaderAllocator.ObjectHandle.Handle;
+    }
+
+    private int GetRVAFromMetadata(ModuleHandle handle, int token)
+    {
+        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+        MetadataReader? mdReader = ecmaMetadataContract.GetMetadata(handle);
+        if (mdReader == null)
+            throw new NotImplementedException();
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
+        return methodDef.RelativeVirtualAddress;
+    }
+
+    TargetPointer ILoader.GetILHeader(ModuleHandle handle, uint token)
+    {
+        // we need module
+        ILoader loader = this;
+        TargetPointer headerPtr = loader.GetDynamicIL(handle, token);
+        if (headerPtr == TargetPointer.Null)
+        {
+            TargetPointer peAssembly = loader.GetPEAssembly(handle);
+            int rva = GetRVAFromMetadata(handle, (int)token);
+            headerPtr = loader.GetILAddr(peAssembly, rva);
+        }
+        return headerPtr;
+    }
+
+    private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
+    {
+        public uint GetKey(DynamicILBlobEntry entry) => entry.EntryMethodToken;
+        public bool Equals(uint left, uint right) => left == right;
+        public uint Hash(uint key) => key;
+        public bool IsNull(DynamicILBlobEntry entry) => entry.EntryMethodToken == 0;
+        public DynamicILBlobEntry Null() => new DynamicILBlobEntry(0, TargetPointer.Null);
+        public bool IsDeleted(DynamicILBlobEntry entry) => false;
+    }
+
+    private sealed class DynamicILBlobTable : IData<DynamicILBlobTable>
+    {
+        static DynamicILBlobTable IData<DynamicILBlobTable>.Create(Target target, TargetPointer address)
+            => new DynamicILBlobTable(target, address);
+
+        public DynamicILBlobTable(Target target, TargetPointer address)
+        {
+            ISHash sHashContract = target.Contracts.SHash;
+            Target.TypeInfo type = target.GetTypeInfo(DataType.DynamicILBlobTable);
+            HashTable = sHashContract.CreateSHash(target, address, type, new DynamicILBlobTraits());
+        }
+        public ISHash<uint, DynamicILBlobEntry> HashTable { get; init; }
+    }
+
+    TargetPointer ILoader.GetDynamicIL(ModuleHandle handle, uint token)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (module.DynamicILBlobTable == TargetPointer.Null)
+        {
+            return TargetPointer.Null;
+        }
+        DynamicILBlobTable dynamicILBlobTable = _target.ProcessedData.GetOrAdd<DynamicILBlobTable>(module.DynamicILBlobTable);
+        ISHash shashContract = _target.Contracts.SHash;
+        return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
 }

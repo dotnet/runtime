@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.IO.Tests.Enumeration
 {
-    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public class Enumeration_SymbolicLinksTests : BaseSymbolicLinks
     {
         [Fact]

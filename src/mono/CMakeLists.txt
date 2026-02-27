@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 project(mono)
 
@@ -274,13 +274,13 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GF>) # enable string pooling
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GL>) # whole program optimization
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT ProgramDatabase) # enable debugging information
     add_link_options(/LTCG)    # link-time code generation
     add_link_options(/DEBUG)   # enable debugging information
     add_link_options(/DEBUGTYPE:CV,FIXUP)   # enable fixup debug information
     add_link_options(/OPT:REF) # optimize: remove unreferenced functions & data
     add_link_options(/OPT:ICF) # optimize: enable COMDAT folding
-    # the combination of /Zi compiler flag and /DEBUG /OPT:REF /OPT:ICF
+    # the combination of ProgramDatabase debug info format and /DEBUG /OPT:REF /OPT:ICF
     # linker flags is needed to create .pdb output on release builds
   endif()
 elseif(CLR_CMAKE_HOST_OS STREQUAL "sunos")
@@ -496,6 +496,19 @@ else()
   message(FATAL_ERROR "TARGET_ARCH='${TARGET_ARCH}' not supported.")
 endif()
 
+# Default stack size: 2MB for 64-bit, 1MB for 32-bit.
+# Use large (8MB) stack size for s390x/ppc64le due to limited tail call optimization support.
+# On Windows, use 0 to defer to the OS/PE header default.
+if(TARGET_WIN32)
+  set(MONO_DEFAULT_STACKSIZE 0)
+elseif(TARGET_S390X OR TARGET_POWERPC64)
+  set(MONO_DEFAULT_STACKSIZE 8388608)
+elseif(TARGET_SIZEOF_VOID_P EQUAL 4)
+  set(MONO_DEFAULT_STACKSIZE 1048576)
+else()
+  set(MONO_DEFAULT_STACKSIZE 2097152)
+endif()
+
 # arm64 MacCatalyst runtime host or AOT target is more like Apple mobile targets than x64
 if ((HOST_MACCAT AND HOST_ARM64) OR (TARGET_MACCAT AND TARGET_ARM64))
   set(TARGET_APPLE_MOBILE 1)
@@ -532,8 +545,12 @@ if(GCC)
 
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
-  # We rely on signed overflow to behave
-  append("-fwrapv" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+
+  # Make signed overflow well-defined. Implies the following flags in clang-20 and above.
+  # -fwrapv - Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
+  # using twos-complement representation (this is normally undefined according to the C++ spec).
+  # -fwrapv-pointer - The same as -fwrapv but for pointers.
+  append("-fno-strict-overflow" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 
   set(WARNINGS "-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes -Wno-format-zero-length -Wno-unused-function")
   set(WARNINGS_C "-Wmissing-prototypes -Wstrict-prototypes -Wnested-externs")

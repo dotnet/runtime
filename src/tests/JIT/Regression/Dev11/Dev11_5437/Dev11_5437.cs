@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace Dev11_5437;
+
 using System;
 using Xunit;
 
@@ -16,6 +19,7 @@ public class Program
             throw new Exception("FAILED");
         }
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

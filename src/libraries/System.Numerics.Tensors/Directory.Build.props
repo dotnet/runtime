@@ -1,0 +1,8 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <!-- Workaround https://github.com/dotnet/runtime/issues/122933,
+         this can be removed when ILASM is fixed and SBRP uses that fix -->
+    <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppMinimum)'">$(NoWarn);CS8631</NoWarn>
+  </PropertyGroup>
+</Project>

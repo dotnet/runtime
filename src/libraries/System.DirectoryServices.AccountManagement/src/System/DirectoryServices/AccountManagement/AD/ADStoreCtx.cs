@@ -378,7 +378,7 @@ namespace System.DirectoryServices.AccountManagement
                 //((DirectoryEntry)p.UnderlyingObject).RefreshCache();
                 LoadDirectoryEntryAttributes((DirectoryEntry)p.UnderlyingObject);
 
-                // If they set p.Enabled == true, enable the principal
+                // If they set p.Enabled, enable the principal
                 EnablePrincipalIfNecessary(p);
 
                 // If they set CannotChangePassword then we need to set it here after the object is already created.
@@ -603,7 +603,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             try
             {
-                Debug.Assert(ap.fakePrincipal == false);
+                Debug.Assert(!ap.fakePrincipal);
 
                 int uacValue;
 
@@ -660,8 +660,8 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "Update");
 
-                Debug.Assert(p.fakePrincipal == false);
-                Debug.Assert(p.unpersisted == false);
+                Debug.Assert(!p.fakePrincipal);
+                Debug.Assert(!p.unpersisted);
                 Debug.Assert(p.UnderlyingObject != null);
                 Debug.Assert(p.UnderlyingObject is DirectoryEntry);
 
@@ -693,10 +693,10 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "Delete");
 
-                Debug.Assert(p.fakePrincipal == false);
+                Debug.Assert(!p.fakePrincipal);
 
                 // Principal.Delete() shouldn't be calling us on an unpersisted Principal.
-                Debug.Assert(p.unpersisted == false);
+                Debug.Assert(!p.unpersisted);
                 Debug.Assert(p.UnderlyingObject != null);
 
                 Debug.Assert(p.UnderlyingObject is DirectoryEntry);
@@ -822,9 +822,9 @@ namespace System.DirectoryServices.AccountManagement
         {
             try
             {
-                Debug.Assert(p.fakePrincipal == false);
+                Debug.Assert(!p.fakePrincipal);
 
-                Debug.Assert(p.unpersisted == false);
+                Debug.Assert(!p.unpersisted);
 
                 DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
                 Debug.Assert(de != null);
@@ -884,7 +884,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "UnlockAccount");
 
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             WriteAttribute(p, "lockoutTime", 0);
         }
@@ -897,7 +897,7 @@ namespace System.DirectoryServices.AccountManagement
         /// <param name="newPassword">New password</param>
         internal override void SetPassword(AuthenticablePrincipal p, string newPassword)
         {
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             Debug.Assert(p != null);
             Debug.Assert(newPassword != null);  // but it could be an empty string
@@ -916,10 +916,10 @@ namespace System.DirectoryServices.AccountManagement
         /// <param name="newPassword">New password</param>
         internal override void ChangePassword(AuthenticablePrincipal p, string oldPassword, string newPassword)
         {
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             // Shouldn't be being called if this is the case
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
 
             Debug.Assert(p != null);
             Debug.Assert(newPassword != null);  // but it could be an empty string
@@ -944,7 +944,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExpirePassword");
 
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             WriteAttribute(p, "pwdLastSet", 0);
         }
@@ -957,7 +957,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "UnexpirePassword");
 
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             WriteAttribute(p, "pwdLastSet", -1);
         }
@@ -1143,7 +1143,7 @@ namespace System.DirectoryServices.AccountManagement
         internal override ResultSet GetGroupsMemberOf(Principal p)
         {
             // Enforced by the methods that call us
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
 
             DirectoryEntry gcPrincipalDe = null;
             DirectorySearcher memberOfSearcher = null;
@@ -1253,7 +1253,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-                if (false == useASQ)
+                if (!useASQ)
                 {
                     // If this is ADAM then we only need to use the original object.
                     // IF AD then we will use whatever enumerators we discovered above.
@@ -1577,7 +1577,7 @@ namespace System.DirectoryServices.AccountManagement
         internal override ResultSet GetGroupsMemberOfAZ(Principal p)
         {
             // Enforced by the methods that call us
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
             Debug.Assert(p is UserPrincipal);
 
             // Get the user SID that AuthZ will use.
@@ -1625,7 +1625,7 @@ namespace System.DirectoryServices.AccountManagement
         internal override BookmarkableResultSet GetGroupMembership(GroupPrincipal g, bool recursive)
         {
             // Enforced by the methods that call us
-            Debug.Assert(g.unpersisted == false);
+            Debug.Assert(!g.unpersisted);
 
             // Fake groups are a member of other groups, but they themselves have no members
             // (they don't even exist in the store)
@@ -1724,8 +1724,8 @@ namespace System.DirectoryServices.AccountManagement
         /// With the p's SID and then call IsMember with the ADS Path returned from the search.
         internal override bool IsMemberOfInStore(GroupPrincipal g, Principal p)
         {
-            Debug.Assert(g.unpersisted == false);
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!g.unpersisted);
+            Debug.Assert(!p.unpersisted);
 
             // Consistent with GetGroupMembership, a group that is a fake principal has no members
             if (g.fakePrincipal)

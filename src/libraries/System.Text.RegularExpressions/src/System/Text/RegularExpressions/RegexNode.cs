@@ -1103,7 +1103,7 @@ namespace System.Text.RegularExpressions
                             }
                             j--;
                         }
-                        else if (at.Kind is RegexNodeKind.Set or RegexNodeKind.One or RegexNodeKind.Notone)
+                        else if (at.Kind is RegexNodeKind.Set or RegexNodeKind.One)
                         {
                             // Cannot merge sets if L or I options differ, or if either are negated.
                             optionsAt = at.Options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase);
@@ -1126,7 +1126,7 @@ namespace System.Text.RegularExpressions
                                 break;
                             }
 
-                            // The last node was a Set/One/Notone, we're a Set/One/Notone, and our options are the same.
+                            // The last node was a Set or a One, we're a Set or One and our options are the same.
                             // Merge the two nodes.
                             j--;
                             prev = children[j];
@@ -1137,11 +1137,6 @@ namespace System.Text.RegularExpressions
                                 prevCharClass = new RegexCharClass();
                                 prevCharClass.AddChar(prev.Ch);
                             }
-                            else if (prev.Kind == RegexNodeKind.Notone)
-                            {
-                                prevCharClass = new RegexCharClass();
-                                prevCharClass.AddNotChar(prev.Ch);
-                            }
                             else
                             {
                                 prevCharClass = RegexCharClass.Parse(prev.Str!);
@@ -1150,10 +1145,6 @@ namespace System.Text.RegularExpressions
                             if (at.Kind == RegexNodeKind.One)
                             {
                                 prevCharClass.AddChar(at.Ch);
-                            }
-                            else if (at.Kind == RegexNodeKind.Notone)
-                            {
-                                prevCharClass.AddNotChar(at.Ch);
                             }
                             else
                             {
@@ -1202,24 +1193,16 @@ namespace System.Text.RegularExpressions
                     return alternation;
                 }
 
-                // Only handle the case where each branch is a concatenation
-                foreach (RegexNode child in children)
-                {
-                    if (child.Kind != RegexNodeKind.Concatenate || child.ChildCount() < 2)
-                    {
-                        return alternation;
-                    }
-                }
-
                 for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
                 {
-                    Debug.Assert(children[startingIndex].Children is List<RegexNode> { Count: >= 2 });
-
                     // Only handle the case where each branch begins with the same One, Notone, Set (individual or loop), or Anchor.
                     // Note that while we can do this for individual characters, fixed length loops, and atomic loops, doing
                     // it for non-atomic variable length loops could change behavior as each branch could otherwise have a
                     // different number of characters consumed by the loop based on what's after it.
-                    RegexNode required = children[startingIndex].Child(0);
+                    // A branch may be either a Concatenation (get its first child) or a single node (e.g., a Set
+                    // that was reduced from a single-child Concatenation after prior prefix extraction).
+                    RegexNode startingNode = children[startingIndex];
+                    RegexNode required = startingNode.Kind == RegexNodeKind.Concatenate ? startingNode.Child(0) : startingNode;
                     switch (required.Kind)
                     {
                         case RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set:
@@ -1239,7 +1222,8 @@ namespace System.Text.RegularExpressions
                     int endingIndex = startingIndex + 1;
                     for (; endingIndex < children.Count; endingIndex++)
                     {
-                        RegexNode other = children[endingIndex].Child(0);
+                        RegexNode endingNode = children[endingIndex];
+                        RegexNode other = endingNode.Kind == RegexNodeKind.Concatenate ? endingNode.Child(0) : endingNode;
                         if (required.Kind != other.Kind ||
                             required.Options != other.Options ||
                             required.M != other.M ||
@@ -1261,8 +1245,16 @@ namespace System.Text.RegularExpressions
                     var newAlternate = new RegexNode(RegexNodeKind.Alternate, alternation.Options);
                     for (int i = startingIndex; i < endingIndex; i++)
                     {
-                        ((List<RegexNode>)children[i].Children!).RemoveAt(0);
-                        newAlternate.AddChild(children[i]);
+                        if (children[i].Kind == RegexNodeKind.Concatenate)
+                        {
+                            ((List<RegexNode>)children[i].Children!).RemoveAt(0);
+                            newAlternate.AddChild(children[i]);
+                        }
+                        else
+                        {
+                            // The entire branch was the extracted prefix; what remains is Empty.
+                            newAlternate.AddChild(new RegexNode(RegexNodeKind.Empty, children[i].Options));
+                        }
                     }
 
                     // If this alternation is wrapped as atomic, we need to do the same for the new alternation.
@@ -1507,6 +1499,76 @@ namespace System.Text.RegularExpressions
             Debug.Assert(Kind is RegexNodeKind.One or RegexNodeKind.Multi || (IsOneFamily && M > 0));
             Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
             return IsOneFamily ? Ch : Str![0];
+        }
+
+        /// <summary>
+        /// Determines whether every branch of this alternation node begins with one or more unique starting characters.
+        /// </summary>
+        /// <param name="seenChars">The set of unique starting characters across all branches.</param>
+        /// <returns>true if all branches have unique starting characters; otherwise, false.</returns>
+        /// <remarks>
+        /// This method is used to determine if an alternation can be optimized using a switch on the first character.
+        /// </remarks>
+        public bool TryGetAlternationStartingChars([NotNullWhen(true)] out HashSet<char>? seenChars)
+        {
+            Debug.Assert(Kind is RegexNodeKind.Alternate);
+            Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
+
+            const int SetCharsSize = 64; // arbitrary limit; we want it to be large enough to handle ignore-case of common sets, like hex, the latin alphabet, etc.
+            Span<char> setChars = stackalloc char[SetCharsSize];
+            seenChars = new HashSet<char>();
+
+            // Iterate through every branch, seeing if we can easily find a starting One, Multi, or small Set.
+            // If we can, extract its starting char (or multiple in the case of a set), validate that all such
+            // starting characters are unique relative to all the branches.
+            int childCount = ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                // Look for the guaranteed starting node that's a one, multi, set,
+                // or loop of one of those with at least one minimum iteration. We need to exclude notones.
+                if (Child(i).FindStartingLiteralNode(allowZeroWidth: false) is not RegexNode startingLiteralNode ||
+                    startingLiteralNode.IsNotoneFamily)
+                {
+                    seenChars = null;
+                    return false;
+                }
+
+                // If it's a One or a Multi, get the first character and add it to the set.
+                // If it was already in the set, we can't apply this optimization.
+                if (startingLiteralNode.IsOneFamily || startingLiteralNode.Kind is RegexNodeKind.Multi)
+                {
+                    if (!seenChars.Add(startingLiteralNode.FirstCharOfOneOrMulti()))
+                    {
+                        seenChars = null;
+                        return false;
+                    }
+                }
+                else
+                {
+                    // The branch begins with a set.  Make sure it's a set of only a few characters
+                    // and get them.  If we can't, we can't apply this optimization.
+                    Debug.Assert(startingLiteralNode.IsSetFamily);
+                    int numChars;
+                    if (RegexCharClass.IsNegated(startingLiteralNode.Str!) ||
+                        (numChars = RegexCharClass.GetSetChars(startingLiteralNode.Str!, setChars)) == 0)
+                    {
+                        seenChars = null;
+                        return false;
+                    }
+
+                    // Check to make sure each of the chars is unique relative to all other branches examined.
+                    foreach (char c in setChars.Slice(0, numChars))
+                    {
+                        if (!seenChars.Add(c))
+                        {
+                            seenChars = null;
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
         }
 
         /// <summary>Finds the guaranteed beginning literal(s) of the node, or null if none exists.</summary>
@@ -2027,12 +2089,18 @@ namespace System.Text.RegularExpressions
                                 loopChild = loopChild.Child(loopChild.ChildCount() - 1);
                             }
 
+                            // MakeLoopAtomic wraps the loop in an Atomic group, which discards all backtracking
+                            // state from within the body. CanBeMadeAtomic only proves that giving back iterations
+                            // is unnecessary, but the Atomic wrapper also prevents within-body backtracking from
+                            // being triggered by subsequent failures. That's only safe when the body has no
+                            // backtracking of its own and the last descendant is a type that won't be adversely
+                            // affected by seeing an Atomic ancestor.
                             if (loopChild.Kind is
-                                RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
-                                RegexNodeKind.Multi or
-                                RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set)
+                                    RegexNodeKind.Boundary or RegexNodeKind.ECMABoundary or
+                                    RegexNodeKind.Multi or
+                                    RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set &&
+                                !MayContainBacktracking(node.Child(0)))
                             {
-                                // For types on the allow list, we can make the loop itself atomic.
                                 node.MakeLoopAtomic();
                             }
                             else if (node.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop)
@@ -2096,8 +2164,10 @@ namespace System.Text.RegularExpressions
             Debug.Assert(ChildCount() == 1);
 
             // Captures inside of negative lookarounds are undone after the lookaround. Thus, if there's nothing
-            // inside of the negative lookaround that needs that capture group (namely a backreference), we can
-            // remove the capture.
+            // inside of the negative lookaround that relies on or impacts persisted state, we can remove the capture.
+            // This includes backreferences (because backreferences within the lookaround still need to refer to that
+            // capture group) and balancing groups (because they can impact and are impacted by capture stacks from
+            // captures outside of the lookaround).
             if (Kind is RegexNodeKind.NegativeLookaround && ContainsKind(Child(0), [RegexNodeKind.Backreference, RegexNodeKind.BackreferenceConditional]) is false)
             {
                 if (RemoveCaptures(this, 0))
@@ -2111,7 +2181,9 @@ namespace System.Text.RegularExpressions
                 {
                     RegexNode node = parent.Child(nodeIndex);
 
-                    if (node.Kind is RegexNodeKind.Capture)
+                    // Only remove captures that don't rely on or impact persisted state.
+                    // Balancing groups (N != -1) impact capture stacks and must be preserved.
+                    if (node is { Kind: RegexNodeKind.Capture, N: -1 })
                     {
                         parent.ReplaceChild(nodeIndex, node.Child(0));
                         RemoveCaptures(parent, nodeIndex);
@@ -2521,6 +2593,52 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Gets whether this node is itself a backtracking construct.</summary>
+        /// <remarks>
+        /// This checks the node in isolation (not its children). A node is a backtracking construct
+        /// if it's a variable-width loop or an alternation.
+        /// </remarks>
+        public bool IsBacktrackingConstruct => Kind switch
+        {
+            RegexNodeKind.Alternate => true,
+            RegexNodeKind.Loop or RegexNodeKind.Lazyloop when M != N => true,
+            RegexNodeKind.Oneloop or RegexNodeKind.Onelazy or
+            RegexNodeKind.Notoneloop or RegexNodeKind.Notonelazy or
+            RegexNodeKind.Setloop or RegexNodeKind.Setlazy when M != N => true,
+            _ => false,
+        };
+
+        /// <summary>
+        /// Checks whether a node tree may contain backtracking constructs (variable-width loops or alternations).
+        /// </summary>
+        private static bool MayContainBacktracking(RegexNode node)
+        {
+            // If we can't recur, just assume the worst and say that it may contain backtracking constructs.
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return true;
+            }
+
+            // If this node is a backtracking construct, then obviously it may contain backtracking constructs.
+            if (node.IsBacktrackingConstruct)
+            {
+                return true;
+            }
+
+            // Otherwise, we need to check the children to see if any of them may contain backtracking constructs.
+            int childCount = node.ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                if (MayContainBacktracking(node.Child(i)))
+                {
+                    return true;
+                }
+            }
+
+            // No backtracking is possible.
+            return false;
+        }
+
         /// <summary>Gets whether this node is known to be immediately preceded by a word character.</summary>
         public bool IsKnownPrecededByWordChar() =>  IsKnownPrecededOrSucceededByWordChar(false);
 
@@ -2869,7 +2987,7 @@ namespace System.Text.RegularExpressions
                 {
                     // As with RegexNodeKind.One, the string needs to be composed solely of ASCII characters that
                     // don't participate in case conversion.
-                    if (!RegexCharClass.IsAscii(child.Str.AsSpan()) ||
+                    if (!Ascii.IsValid(child.Str) ||
                         RegexCharClass.ParticipatesInCaseConversion(child.Str.AsSpan()))
                     {
                         break;
@@ -3165,7 +3283,7 @@ namespace System.Text.RegularExpressions
                     curNode = curNode.Child(curChild);
                     curChild = 0;
 
-                    sb.Append(new string(' ', stack.Count * 2)).Append(curNode.Describe()).AppendLine();
+                    sb.Append(' ', stack.Count * 2).Append(curNode.Describe()).AppendLine();
                 }
                 else
                 {

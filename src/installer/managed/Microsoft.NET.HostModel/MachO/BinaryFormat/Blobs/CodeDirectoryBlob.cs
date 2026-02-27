@@ -119,17 +119,11 @@ internal sealed class CodeDirectoryBlob : IBlob
         long signatureStart,
         string identifier,
         RequirementsBlob requirementsBlob,
-        EntitlementsBlob? entitlementsBlob = null,
-        DerEntitlementsBlob? derEntitlementsBlob = null,
         HashType hashType = HashType.SHA256,
         uint pageSize = MachObjectFile.DefaultPageSize)
     {
         uint codeSlotCount = GetCodeSlotCount((uint)signatureStart, pageSize);
-        uint specialCodeSlotCount = (uint)(derEntitlementsBlob != null
-            ? CodeDirectorySpecialSlot.DerEntitlements
-            : entitlementsBlob != null
-                ? CodeDirectorySpecialSlot.Entitlements
-                : CodeDirectorySpecialSlot.Requirements);
+        uint specialCodeSlotCount = (uint)CodeDirectorySpecialSlot.Requirements;
 
         var specialSlotHashes = new byte[specialCodeSlotCount][];
         var codeHashes = new byte[codeSlotCount][];
@@ -144,29 +138,12 @@ internal sealed class CodeDirectoryBlob : IBlob
         // Fill in the CodeDirectory hashes
 
         // Special slot hashes
-        // -7 is the der entitlements blob hash
-        if (derEntitlementsBlob != null)
-        {
-            using var derStream = new MemoryStreamWriter((int)derEntitlementsBlob.Size);
-            derEntitlementsBlob.Write(derStream, 0);
-            specialSlotHashes[(int)CodeDirectorySpecialSlot.DerEntitlements - 1] = hasher.ComputeHash(derStream.GetBuffer());
-        }
-
-        // -5 is the entitlements blob hash
-        if (entitlementsBlob != null)
-        {
-            using var entStream = new MemoryStreamWriter((int)entitlementsBlob.Size);
-            entitlementsBlob.Write(entStream, 0);
-            specialSlotHashes[(int)CodeDirectorySpecialSlot.Entitlements - 1] = hasher.ComputeHash(entStream.GetBuffer());
-        }
-
         // -2 is the requirements blob hash
         using (var reqStream = new MemoryStreamWriter((int)requirementsBlob.Size))
         {
             requirementsBlob.Write(reqStream, 0);
             specialSlotHashes[(int)CodeDirectorySpecialSlot.Requirements - 1] = hasher.ComputeHash(reqStream.GetBuffer());
         }
-
         // -1 is the CMS blob hash (which is empty -- nothing to hash)
 
         // Reverse special slot hashes

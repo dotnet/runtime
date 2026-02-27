@@ -100,10 +100,7 @@ namespace System.ComponentModel
         public void RemoveHandler(object key, Delegate? value)
         {
             ListEntry? e = Find(key);
-            if (e != null)
-            {
-                e._handler = Delegate.Remove(e._handler, value);
-            }
+            e?._handler = Delegate.Remove(e._handler, value);
         }
 
         private sealed class ListEntry

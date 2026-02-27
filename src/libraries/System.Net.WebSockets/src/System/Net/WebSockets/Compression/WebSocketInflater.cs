@@ -255,30 +255,14 @@ namespace System.Net.WebSockets.Compression
 
         private ZLibStreamHandle CreateInflater()
         {
-            ZLibStreamHandle? stream = null;
-            ErrorCode errorCode;
-
             try
             {
-                errorCode = CreateZLibStreamForInflate(out stream, _windowBits);
+                return ZLibStreamHandle.CreateForInflate(_windowBits);
             }
-            catch (Exception exception)
+            catch (Exception ex)
             {
-                stream?.Dispose();
-                throw new WebSocketException(SR.ZLibErrorDLLLoadError, exception);
+                throw new WebSocketException(ex.Message, ex.InnerException);
             }
-
-            if (errorCode == ErrorCode.Ok)
-            {
-                return stream;
-            }
-
-            stream.Dispose();
-
-            string message = errorCode == ErrorCode.MemError
-                ? SR.ZLibErrorNotEnoughMemory
-                : SR.Format(SR.ZLibErrorUnexpected, (int)errorCode);
-            throw new WebSocketException(message);
         }
     }
 }

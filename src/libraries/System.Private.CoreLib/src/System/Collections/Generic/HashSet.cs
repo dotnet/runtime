@@ -444,7 +444,7 @@ namespace System.Collections.Generic
             internal static IAlternateEqualityComparer<TAlternate, T> GetAlternateComparer(HashSet<T> set)
             {
                 Debug.Assert(IsCompatibleItem(set));
-                return Unsafe.As<IAlternateEqualityComparer<TAlternate, T>>(set._comparer);
+                return Unsafe.As<IAlternateEqualityComparer<TAlternate, T>>(set._comparer)!;
             }
 
             /// <summary>Adds the specified element to a set.</summary>
@@ -804,6 +804,14 @@ namespace System.Collections.Generic
             if (other == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+            }
+
+            // If this set is empty and other is a HashSet with the same effective comparer,
+            // we can copy the data directly instead of adding each element individually.
+            if (Count == 0 && other is HashSet<T> otherAsSet && EffectiveEqualityComparersAreEqual(this, otherAsSet))
+            {
+                ConstructFrom(otherAsSet);
+                return;
             }
 
             foreach (T item in other)

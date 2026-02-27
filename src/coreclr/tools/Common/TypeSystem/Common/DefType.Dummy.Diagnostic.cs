@@ -9,11 +9,11 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the Name of a type. This must not throw
         /// </summary>
-        public string DiagnosticName => Name;
+        public string DiagnosticName => GetName();
 
         /// <summary>
         /// Gets the Namespace of a type. This must not throw
         /// </summary>
-        public string DiagnosticNamespace => Namespace;
+        public string DiagnosticNamespace => GetNamespace();
     }
 }

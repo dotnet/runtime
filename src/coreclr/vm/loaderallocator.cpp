@@ -13,6 +13,10 @@
 #endif
 #include "comcallablewrapper.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif
+
 //#define ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP 1
 
 #define STUBMANAGER_RANGELIST(stubManager) (stubManager::g_pManager->GetRangeList())
@@ -63,6 +67,8 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_onStackReplacementManager = NULL;
 #endif
 
+    m_asyncContinuationsManager = NULL;
+
     m_fGCPressure = false;
     m_fTerminated = false;
     m_fUnloaded = false;
@@ -83,15 +89,17 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 
 #ifdef FEATURE_COMINTEROP
     m_pComCallWrapperCache = NULL;
-#endif
+#endif // FEATURE_COMINTEROP
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     m_pUMEntryThunkCache = NULL;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     m_nLoaderAllocator = InterlockedIncrement64((LONGLONG *)&LoaderAllocator::cLoaderAllocatorsCreated);
 
 #ifdef FEATURE_PGO
     m_pgoManager = NULL;
-#endif
+#endif // FEATURE_PGO
 }
 
 LoaderAllocator::~LoaderAllocator()
@@ -635,6 +643,10 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         ExecutionManager::Unload(pDomainLoaderAllocatorDestroyIterator);
         pDomainLoaderAllocatorDestroyIterator->UninitVirtualCallStubManager();
 
+#ifdef FEATURE_INTERPRETER
+        InterpDispatchCache_ClearForLoaderAllocator(pDomainLoaderAllocatorDestroyIterator);
+#endif
+
         // TODO: Do we really want to perform this on each LoaderAllocator?
         MethodTable::ClearMethodDataCache();
 
@@ -1040,17 +1052,8 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
     // Initialize managed loader allocator reference holder
     //
 
-    MethodTable *pMT = CoreLibBinder::GetClass(CLASS__LOADERALLOCATOR);
-
-    *pKeepLoaderAllocatorAlive = (LOADERALLOCATORREF)AllocateObject(pMT);
-
-    MethodDescCallSite initLoaderAllocator(METHOD__LOADERALLOCATOR__CTOR, (OBJECTREF *)pKeepLoaderAllocatorAlive);
-
-    ARG_SLOT args[] = {
-        ObjToArgSlot(*pKeepLoaderAllocatorAlive)
-    };
-
-    initLoaderAllocator.Call(args);
+    UnmanagedCallersOnlyCaller initLoaderAllocator(METHOD__LOADERALLOCATOR__CREATE);
+    initLoaderAllocator.InvokeThrowing(pKeepLoaderAllocatorAlive);
 
     m_hLoaderAllocatorObjectHandle = AppDomain::GetCurrentDomain()->CreateLongWeakHandle(*pKeepLoaderAllocatorAlive);
 
@@ -1384,14 +1387,16 @@ void LoaderAllocator::Terminate()
         m_fGCPressure = false;
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     delete m_pUMEntryThunkCache;
     m_pUMEntryThunkCache = NULL;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     m_crstLoaderAllocator.Destroy();
 #ifdef FEATURE_COMINTEROP
     m_ComCallWrapperCrst.Destroy();
     m_InteropDataCrst.Destroy();
-#endif
+#endif // FEATURE_COMINTEROP
     m_LoaderAllocatorReferences.RemoveAll();
 
 #ifdef FEATURE_TIERED_COMPILATION
@@ -1400,7 +1405,7 @@ void LoaderAllocator::Terminate()
         delete m_callCountingManager;
         m_callCountingManager = NULL;
     }
-#endif
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     if (m_onStackReplacementManager != NULL)
@@ -1408,7 +1413,15 @@ void LoaderAllocator::Terminate()
         delete m_onStackReplacementManager;
         m_onStackReplacementManager = NULL;
     }
-#endif
+#endif // FEATURE_ON_STACK_REPLACEMENT
+
+    if (m_asyncContinuationsManager != NULL)
+    {
+        m_asyncContinuationsManager->NotifyUnloadingClasses();
+
+        delete m_asyncContinuationsManager;
+        m_asyncContinuationsManager = NULL;
+    }
 
     // In collectible types we merge the low frequency and high frequency heaps
     // So don't destroy them twice.
@@ -1767,6 +1780,7 @@ void AssemblyLoaderAllocator::Init()
     m_dependentHandleToNativeObjectSetCrst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
 
     LoaderAllocator::Init(NULL /*pExecutableHeapMemory*/);
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (IsCollectible())
     {
         // TODO: the ShuffleThunkCache should really be using the m_pStubHeap, however the unloadability support
@@ -1775,6 +1789,7 @@ void AssemblyLoaderAllocator::Init()
         // https://github.com/dotnet/runtime/issues/55697 tracks this issue.
         m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 
@@ -1786,8 +1801,10 @@ AssemblyLoaderAllocator::~AssemblyLoaderAllocator()
         m_binderToRelease = NULL;
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     delete m_pShuffleThunkCache;
     m_pShuffleThunkCache = NULL;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 void AssemblyLoaderAllocator::RegisterBinder(CustomAssemblyBinder* binderToRelease)
@@ -2149,6 +2166,7 @@ ComCallWrapperCache * LoaderAllocator::GetComCallWrapperCache()
 }
 #endif // FEATURE_COMINTEROP
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 // U->M thunks created in this LoaderAllocator and not associated with a delegate.
 UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
 {
@@ -2174,6 +2192,7 @@ UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
     _ASSERTE(m_pUMEntryThunkCache);
     return m_pUMEntryThunkCache;
 }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 /* static */
 void LoaderAllocator::RemoveMemoryToLoaderAllocatorAssociation(LoaderAllocator* pLoaderAllocator)
@@ -2290,6 +2309,31 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
 #ifndef DACCESS_COMPILE
+PTR_AsyncContinuationsManager LoaderAllocator::GetAsyncContinuationsManager()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    if (m_asyncContinuationsManager == NULL)
+    {
+        AsyncContinuationsManager* newManager = new AsyncContinuationsManager(this);
+
+        if (InterlockedCompareExchangeT(&m_asyncContinuationsManager, newManager, NULL) != NULL)
+        {
+            // some thread swooped in and set the field
+            delete newManager;
+        }
+    }
+    _ASSERTE(m_asyncContinuationsManager != NULL);
+    return m_asyncContinuationsManager;
+}
+
 void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStaticsInfo, uint32_t cbMem, bool isClassInitedByUpdatingStaticPointer)
 {
     CONTRACTL

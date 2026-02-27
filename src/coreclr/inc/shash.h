@@ -9,6 +9,7 @@
 #include "clrtypes.h"
 #include "check.h"
 #include "iterator.h"
+#include "../vm/cdacdata.h"
 
 // SHash is a templated closed chaining hash table of pointers.  It provides
 // for multiple entries under the same key, and also for deleting elements.
@@ -593,6 +594,7 @@ class EMPTY_BASES_DECL SHash : public TRAITS
     count_t       m_tableCount;           // number of elements in table
     count_t       m_tableOccupied;        // number, includes deleted slots
     count_t       m_tableMax;             // maximum occupied count before reallocating
+    friend struct ::cdac_data<SHash<TRAITS>>;
 };  // class SHash
 
 // disables support for DAC marshaling. Useful for defining right-side only SHashes

@@ -6,10 +6,12 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 
 public unsafe class StackallocTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/84398", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

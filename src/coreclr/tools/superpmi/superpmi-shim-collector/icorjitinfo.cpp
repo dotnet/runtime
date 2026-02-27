@@ -798,14 +798,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(CORINFO_OBJECT_HANDLE typeO
 }
 
 bool interceptor_ICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
                                            CORINFO_METHOD_HANDLE   callerHandle,
                                            CORINFO_CONST_LOOKUP*   pLookup)
 {
     mc->cr->AddCall("getReadyToRunHelper");
-    bool result = original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
-    mc->recGetReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup, result);
+    bool result = original_ICorJitInfo->getReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup);
+    mc->recGetReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup, result);
     return result;
 }
 
@@ -1229,8 +1228,18 @@ void interceptor_ICJI::reportRichMappings(ICorDebugInfo::InlineTreeNode*    inli
                                           uint32_t                          numMappings)
 {
     mc->cr->AddCall("reportRichMappings");
-    // TODO: record these mappings
+    // Compile output that we do not currently save
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+}
+
+void interceptor_ICJI::reportAsyncDebugInfo(ICorDebugInfo::AsyncInfo*             asyncInfo,
+                                            ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+                                            ICorDebugInfo::AsyncContinuationVarInfo* vars,
+                                            uint32_t                              numVars)
+{
+    mc->cr->AddCall("reportAsyncDebugInfo");
+    // Compile output that we do not currently save
+    original_ICorJitInfo->reportAsyncDebugInfo(asyncInfo, suspensionPoints, vars, numVars);
 }
 
 void interceptor_ICJI::reportMetadata(const char* key, const void* value, size_t length)
@@ -1444,6 +1453,14 @@ void interceptor_ICJI::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORIN
     mc->recGetFpStructLowering(structHnd, pLowering);
 }
 
+CorInfoWasmType interceptor_ICJI::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    mc->cr->AddCall("getWasmLowering");
+    CorInfoWasmType result = original_ICorJitInfo->getWasmLowering(structHnd);
+    mc->recGetWasmLowering(structHnd, result);
+    return result;
+}
+
 // Stuff on ICorDynamicInfo
 uint32_t interceptor_ICJI::getThreadTLSIndex(void** ppIndirection)
 {
@@ -1507,16 +1524,6 @@ void interceptor_ICJI::getFunctionFixedEntryPoint(
 // These entry points must be called if a handle is being embedded in
 // the code to be passed to a JIT helper function. (as opposed to just
 // being passed back into the ICorInfo interface.)
-
-// get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*).
-// Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
-CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
-{
-    mc->cr->AddCall("getLazyStringLiteralHelper");
-    CorInfoHelpFunc temp = original_ICorJitInfo->getLazyStringLiteralHelper(handle);
-    mc->recGetLazyStringLiteralHelper(handle, temp);
-    return temp;
-}
 
 CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection)
 {
@@ -1656,18 +1663,18 @@ void interceptor_ICJI::getCallInfo(
     });
 }
 
-size_t interceptor_ICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* interceptor_ICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("getClassStaticDynamicInfo");
-    size_t temp = original_ICorJitInfo->getClassStaticDynamicInfo(cls);
+    void* temp = original_ICorJitInfo->getClassStaticDynamicInfo(cls);
     mc->recGetClassStaticDynamicInfo(cls, temp);
     return temp;
 }
 
-size_t interceptor_ICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* interceptor_ICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("getClassThreadStaticDynamicInfo");
-    size_t temp = original_ICorJitInfo->getClassThreadStaticDynamicInfo(cls);
+    void* temp = original_ICorJitInfo->getClassThreadStaticDynamicInfo(cls);
     mc->recGetClassThreadStaticDynamicInfo(cls, temp);
     return temp;
 }
@@ -1774,12 +1781,20 @@ bool interceptor_ICJI::getTailCallHelpers(
     return result;
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub(void** entryPoint)
 {
     mc->cr->AddCall("getAsyncResumptionStub");
-    CORINFO_METHOD_HANDLE stub = original_ICorJitInfo->getAsyncResumptionStub();
-    mc->recGetAsyncResumptionStub(stub);
+    CORINFO_METHOD_HANDLE stub = original_ICorJitInfo->getAsyncResumptionStub(entryPoint);
+    mc->recGetAsyncResumptionStub(stub, *entryPoint);
     return stub;
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize)
+{
+    mc->cr->AddCall("getContinuationType");
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getContinuationType(dataSize, objRefs, objRefsSize);
+    mc->recGetContinuationType(dataSize, objRefs, objRefsSize, result);
+    return result;
 }
 
 void interceptor_ICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
@@ -1827,8 +1842,6 @@ void interceptor_ICJI::allocMem(AllocMemArgs *pArgs)
 {
     mc->cr->AddCall("allocMem");
     original_ICorJitInfo->allocMem(pArgs);
-    mc->cr->recAllocMem(pArgs->hotCodeSize, pArgs->coldCodeSize, pArgs->roDataSize, pArgs->xcptnsCount, pArgs->flag, &pArgs->hotCodeBlock, &pArgs->coldCodeBlock,
-                        &pArgs->roDataBlock);
 }
 
 // Reserve memory for the method/funclet's unwind information.
@@ -1996,7 +2009,7 @@ void interceptor_ICJI::recordCallSite(uint32_t              instrOffset, /* IN *
 void interceptor_ICJI::recordRelocation(void*    location,   /* IN  */
                                         void*    locationRW, /* IN  */
                                         void*    target,     /* IN  */
-                                        uint16_t fRelocType, /* IN  */
+                                        CorInfoReloc fRelocType, /* IN  */
                                         int32_t  addlDelta   /* IN  */
                                         )
 {
@@ -2005,10 +2018,10 @@ void interceptor_ICJI::recordRelocation(void*    location,   /* IN  */
     mc->cr->recRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
-uint16_t interceptor_ICJI::getRelocTypeHint(void* target)
+CorInfoReloc interceptor_ICJI::getRelocTypeHint(void* target)
 {
     mc->cr->AddCall("getRelocTypeHint");
-    WORD result = original_ICorJitInfo->getRelocTypeHint(target);
+    CorInfoReloc result = original_ICorJitInfo->getRelocTypeHint(target);
     mc->recGetRelocTypeHint(target, result);
     return result;
 }
@@ -2024,6 +2037,14 @@ uint32_t interceptor_ICJI::getExpectedTargetArchitecture()
     DWORD result = original_ICorJitInfo->getExpectedTargetArchitecture();
     mc->recGetExpectedTargetArchitecture(result);
     return result;
+}
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE interceptor_ICJI::getWasmTypeSymbol(CorInfoWasmType* types, size_t typesSize)
+{
+    mc->cr->AddCall("getWasmTypeSymbol");
+    CORINFO_WASM_TYPE_SYMBOL_HANDLE temp = original_ICorJitInfo->getWasmTypeSymbol(types, typesSize);
+    mc->recGetWasmTypeSymbol(types, typesSize, temp);
+    return temp;
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)

@@ -340,7 +340,7 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Move($"{TestDirectory}/foo", $"{TestDirectory}/bar/foo"));
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long path succeeds
         public void Path_With_Longer_Than_MaxDirectory_Succeeds()
         {

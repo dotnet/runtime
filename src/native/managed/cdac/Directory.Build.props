@@ -1,5 +1,12 @@
 <Project>
     <Import Project="..\Directory.Build.props" />
+
+    <PropertyGroup>
+      <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+      <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+      <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+    </PropertyGroup>
+
     <ItemGroup>
       <AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExperimentalAttribute">
         <_Parameter1>NETCDAC0001</_Parameter1>

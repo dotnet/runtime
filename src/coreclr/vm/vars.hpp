@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // vars.hpp
 //
 // Global variables
 //
-
 
 #ifndef _VARS_HPP
 #define _VARS_HPP
@@ -40,6 +40,19 @@ class SyncBlockCache;
 class SyncTableEntry;
 class ThreadStore;
 namespace ETW { class CEtwTracer; };
+#ifdef FEATURE_COMWRAPPERS
+inline constexpr size_t g_numKnownQueryInterfaceImplementations = 2;
+namespace InteropLib { namespace ABI {
+    struct ComInterfaceDispatch;
+    using QueryInterfaceMethod = HRESULT (STDMETHODCALLTYPE *)(InteropLib::ABI::ComInterfaceDispatch*, REFIID, void**);
+#ifndef DACCESS_COMPILE
+    extern QueryInterfaceMethod g_knownQueryInterfaceImplementations[g_numKnownQueryInterfaceImplementations];
+#endif // !DACCESS_COMPILE
+} }
+
+GARY_DECL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
+
+#endif // FEATURE_COMWRAPPERS
 class DebugInterface;
 class DebugInfoManager;
 class EEDbgInterfaceImpl;
@@ -345,6 +358,12 @@ GPTR_DECL(MethodTable,      g_TypedReferenceMT);
 GPTR_DECL(MethodTable,      g_pWeakReferenceClass);
 GPTR_DECL(MethodTable,      g_pWeakReferenceOfTClass);
 
+#ifdef DACCESS_COMPILE
+GPTR_DECL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+#else
+GVAL_DECL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+#endif
+
 #ifdef FEATURE_COMINTEROP
 GPTR_DECL(MethodTable,      g_pBaseCOMObject);
 #endif
@@ -357,12 +376,11 @@ GVAL_DECL(DWORD,            g_debuggerWordTLSIndex);
 #endif
 GVAL_DECL(DWORD,            g_TlsIndex);
 GVAL_DECL(DWORD,            g_offsetOfCurrentThreadInfo);
+GVAL_DECL(DWORD,            g_gcNotificationFlags);
 
-#ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);
 GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
-#endif
 
 // Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
 GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);
@@ -553,7 +571,7 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #endif
 
 #ifndef MAXULONGLONG
-#define MAXULONGLONG                     UI64(0xffffffffffffffff)
+#define MAXULONGLONG                     0xffffffffffffffffULL
 #endif
 
 //-----------------------------------------------------------------------------

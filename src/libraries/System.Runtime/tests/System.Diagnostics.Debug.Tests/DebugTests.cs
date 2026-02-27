@@ -2,23 +2,41 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #define DEBUG
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
     public abstract class DebugTests
     {
+        private const string DebugTypeName = "System.Diagnostics.Debug, System.Private.CoreLib";
+        private const string DebugProviderTypeName = "System.Diagnostics.DebugProvider, System.Private.CoreLib";
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+        [return: UnsafeAccessorType(DebugProviderTypeName)]
+        private static extern object GetProvider([UnsafeAccessorType(DebugTypeName)] object? _);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+        [return: UnsafeAccessorType(DebugProviderTypeName)]
+        private static extern object SetProvider([UnsafeAccessorType(DebugTypeName)] object? _, [UnsafeAccessorType(DebugProviderTypeName)] object provider);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_WriteCore")]
+        private static extern ref Action<string>? GetWriteCore([UnsafeAccessorType(DebugProviderTypeName)] object _);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_FailCore")]
+        private static extern ref Action<string, string?, string?, string>? GetFailCore([UnsafeAccessorType(DebugProviderTypeName)] object _);
+
         protected abstract bool DebugUsesTraceListeners { get; }
-        protected static readonly DebugProvider _debugOnlyProvider;
-        protected static readonly DebugProvider _debugTraceProvider;
+        protected static readonly object _debugOnlyProvider;
+        protected static readonly object _debugTraceProvider;
 
         static DebugTests()
         {
             FieldInfo fieldInfo = typeof(Debug).GetField("s_provider", BindingFlags.Static | BindingFlags.NonPublic);
-            _debugOnlyProvider = (DebugProvider)fieldInfo.GetValue(null);
+            _debugOnlyProvider = GetProvider(null);
             // Triggers code to wire up TraceListeners with Debug
             Assert.Equal(1, Trace.Listeners.Count);
-            _debugTraceProvider = (DebugProvider)fieldInfo.GetValue(null);
+            _debugTraceProvider = GetProvider(null);
             Assert.NotEqual(_debugOnlyProvider.GetType(), _debugTraceProvider.GetType());
         }
 
@@ -26,21 +44,21 @@ namespace System.Diagnostics.Tests
         {
             if (DebugUsesTraceListeners)
             {
-                Debug.SetProvider(_debugTraceProvider);
+                SetProvider(null, _debugTraceProvider);
             }
             else
             {
-                Debug.SetProvider(_debugOnlyProvider);
+                SetProvider(null, _debugOnlyProvider);
             }
         }
 
         protected void VerifyLogged(Action test, string expectedOutput)
         {
-            FieldInfo writeCoreHook = typeof(DebugProvider).GetField("s_WriteCore", BindingFlags.Static | BindingFlags.NonPublic);
+            ref Action<string>? writeCoreHook = ref GetWriteCore(null);
 
             // First use our test logger to verify the output
-            var originalWriteCoreHook = writeCoreHook.GetValue(null);
-            writeCoreHook.SetValue(null, new Action<string>(WriteLogger.s_instance.WriteCore));
+            var originalWriteCoreHook = writeCoreHook;
+            writeCoreHook = WriteLogger.s_instance.WriteCore;
 
             try
             {
@@ -50,7 +68,7 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                writeCoreHook.SetValue(null, originalWriteCoreHook);
+                writeCoreHook = originalWriteCoreHook;
             }
 
             // Then also use the actual logger for this platform, just to verify
@@ -60,13 +78,13 @@ namespace System.Diagnostics.Tests
 
         protected void VerifyAssert(Action test, params string[] expectedOutputStrings)
         {
-            FieldInfo writeCoreHook = typeof(DebugProvider).GetField("s_WriteCore", BindingFlags.Static | BindingFlags.NonPublic);
-            var originalWriteCoreHook = writeCoreHook.GetValue(null);
-            writeCoreHook.SetValue(null, new Action<string>(WriteLogger.s_instance.WriteCore));
+            ref Action<string>? writeCoreHook = ref GetWriteCore(null);
+            var originalWriteCoreHook = writeCoreHook;
+            writeCoreHook = WriteLogger.s_instance.WriteCore;
 
-            FieldInfo failCoreHook = typeof(DebugProvider).GetField("s_FailCore", BindingFlags.Static | BindingFlags.NonPublic);
-            var originalFailCoreHook = failCoreHook.GetValue(null);
-            failCoreHook.SetValue(null, new Action<string, string, string, string>(WriteLogger.s_instance.FailCore));
+            ref Action<string, string?, string?, string>? failCoreHook = ref GetFailCore(null);
+            var originalFailCoreHook = failCoreHook;
+            failCoreHook = WriteLogger.s_instance.FailCore;
 
             try
             {
@@ -81,8 +99,8 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                writeCoreHook.SetValue(null, originalWriteCoreHook);
-                failCoreHook.SetValue(null, originalFailCoreHook);
+                writeCoreHook = originalWriteCoreHook;
+                failCoreHook = originalFailCoreHook;
             }
         }
 

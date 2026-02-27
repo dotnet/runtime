@@ -1337,6 +1337,9 @@ public:
     HRESULT EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemCLRMainModuleInfo();
+    HRESULT EnumMemDataDescriptors(CLRDataEnumMemoryFlags flags);
+
+    void EnumDataDescriptorHelper(TADDR dataDescriptorAddr);
 
     bool ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);
     bool DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer);
@@ -1356,7 +1359,6 @@ public:
 
     void ClearDumpStats();
     JITNotification* GetHostJitNotificationTable();
-    GcNotification*  GetHostGcNotificationTable();
 
     void* GetMetaDataFromHost(PEAssembly* pPEAssembly);
 
@@ -1471,7 +1473,6 @@ private:
     ICLRDataLoggingCallback* m_logMessageCb;
     CLRDataEnumMemoryFlags m_enumMemFlags;
     JITNotification* m_jitNotificationTable;
-    GcNotification*  m_gcNotificationTable;
     TSIZE_T m_cbMemoryReported;
     DumpMemoryReportStatics m_dumpStats;
 

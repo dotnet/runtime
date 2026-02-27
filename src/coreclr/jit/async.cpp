@@ -47,192 +47,242 @@
 
 //------------------------------------------------------------------------
 // Compiler::SaveAsyncContexts:
-//   Insert code to save and restore contexts around async call sites.
+//   Insert code in async methods that saves and restores contexts.
 //
 // Returns:
 //   Suitable phase status.
 //
 // Remarks:
-//   Runs early, after import but before inlining. Thus RET_EXPRs may be
-//   present, and async calls may later be inlined.
+//   This inserts code to save the current ExecutionContext and
+//   SynchronizationContext at the beginning of async functions, and code that
+//   restores these contexts at the end. Additionally inserts uses of each of
+//   these context at async calls to model the fact that on suspension, these
+//   locals will be used there.
 //
 PhaseStatus Compiler::SaveAsyncContexts()
 {
-    if (!compMustSaveAsyncContexts)
+    if ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0)
     {
-        JITDUMP("No async calls where execution context capture/restore is necessary\n");
-        ValidateNoAsyncSavesNecessary();
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
+    // Create locals for ExecutionContext and SynchronizationContext
+    lvaAsyncExecutionContextVar                     = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
+    lvaGetDesc(lvaAsyncExecutionContextVar)->lvType = TYP_REF;
 
-    BasicBlock* curBB = fgFirstBB;
-    while (curBB != nullptr)
+    lvaAsyncSynchronizationContextVar                     = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
+    lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
+
+    if (opts.IsOSR())
     {
-        BasicBlock* nextBB = curBB->Next();
-
-        for (Statement* stmt : curBB->Statements())
-        {
-            GenTree* tree = stmt->GetRootNode();
-            if (tree->OperIs(GT_STORE_LCL_VAR))
-            {
-                tree = tree->AsLclVarCommon()->Data();
-            }
-
-            if (!tree->IsCall())
-            {
-                ValidateNoAsyncSavesNecessaryInStatement(stmt);
-                continue;
-            }
-
-            GenTreeCall* call = tree->AsCall();
-            if (!call->IsAsync())
-            {
-                ValidateNoAsyncSavesNecessaryInStatement(stmt);
-                continue;
-            }
-
-            const AsyncCallInfo& asyncCallInfo = call->GetAsyncInfo();
-
-            // Currently we always expect that ExecutionContext and
-            // SynchronizationContext correlate about their save/restore
-            // behavior.
-            assert((asyncCallInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore) ==
-                   asyncCallInfo.SaveAndRestoreSynchronizationContextField);
-
-            if (asyncCallInfo.ExecutionContextHandling != ExecutionContextHandling::SaveAndRestore)
-            {
-                continue;
-            }
-
-            unsigned suspendedLclNum =
-                lvaGrabTemp(false DEBUGARG(printfAlloc("Suspended indicator for [%06u]", dspTreeID(call))));
-            unsigned execCtxLclNum =
-                lvaGrabTemp(false DEBUGARG(printfAlloc("ExecutionContext for [%06u]", dspTreeID(call))));
-            unsigned syncCtxLclNum =
-                lvaGrabTemp(false DEBUGARG(printfAlloc("SynchronizationContext for [%06u]", dspTreeID(call))));
-
-            LclVarDsc* suspendedLclDsc     = lvaGetDesc(suspendedLclNum);
-            suspendedLclDsc->lvType        = TYP_UBYTE;
-            suspendedLclDsc->lvHasLdAddrOp = true;
-
-            LclVarDsc* execCtxLclDsc     = lvaGetDesc(execCtxLclNum);
-            execCtxLclDsc->lvType        = TYP_REF;
-            execCtxLclDsc->lvHasLdAddrOp = true;
-
-            LclVarDsc* syncCtxLclDsc     = lvaGetDesc(syncCtxLclNum);
-            syncCtxLclDsc->lvType        = TYP_REF;
-            syncCtxLclDsc->lvHasLdAddrOp = true;
-
-            call->asyncInfo->SynchronizationContextLclNum = syncCtxLclNum;
-
-            call->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewLclAddrNode(suspendedLclNum, 0))
-                                            .WellKnown(WellKnownArg::AsyncSuspendedIndicator));
-
-            JITDUMP("Saving contexts around [%06u], ExecutionContext = V%02u, SynchronizationContext = V%02u\n",
-                    call->gtTreeID, execCtxLclNum, syncCtxLclNum);
-
-            CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
-
-            GenTreeCall* capture = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
-            capture->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(syncCtxLclNum, 0)));
-            capture->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(execCtxLclNum, 0)));
-
-            CORINFO_CALL_INFO callInfo = {};
-            callInfo.hMethod           = capture->gtCallMethHnd;
-            callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-            impMarkInlineCandidate(capture, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
-
-            Statement* captureStmt = fgNewStmtFromTree(capture);
-            fgInsertStmtBefore(curBB, stmt, captureStmt);
-
-            JITDUMP("Inserted capture:\n");
-            DISPSTMT(captureStmt);
-
-            BasicBlock* restoreBB        = curBB;
-            Statement*  restoreAfterStmt = stmt;
-
-            if (call->IsInlineCandidate() && (call->gtReturnType != TYP_VOID))
-            {
-                restoreAfterStmt = stmt->GetNextStmt();
-                assert(restoreAfterStmt->GetRootNode()->OperIs(GT_RET_EXPR) ||
-                       (restoreAfterStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR) &&
-                        restoreAfterStmt->GetRootNode()->AsLclVarCommon()->Data()->OperIs(GT_RET_EXPR)));
-            }
-
-            if (curBB->hasTryIndex())
-            {
-#ifdef FEATURE_EH_WINDOWS_X86
-                IMPL_LIMITATION("Cannot handle insertion of try-finally without funclets");
-#else
-                // Await is inside a try, need to insert try-finally around it.
-                restoreBB        = InsertTryFinallyForContextRestore(curBB, stmt, restoreAfterStmt);
-                restoreAfterStmt = nullptr;
-#endif
-            }
-
-            GenTreeCall* restore = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
-            restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(syncCtxLclNum)));
-            restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(execCtxLclNum)));
-            restore->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(suspendedLclNum)));
-
-            callInfo             = {};
-            callInfo.hMethod     = restore->gtCallMethHnd;
-            callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-            impMarkInlineCandidate(restore, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
-
-            Statement* restoreStmt = fgNewStmtFromTree(restore);
-            if (restoreAfterStmt == nullptr)
-            {
-                fgInsertStmtNearEnd(restoreBB, restoreStmt);
-            }
-            else
-            {
-                fgInsertStmtAfter(restoreBB, restoreAfterStmt, restoreStmt);
-            }
-
-            JITDUMP("Inserted restore:\n");
-            DISPSTMT(restoreStmt);
-
-            result = PhaseStatus::MODIFIED_EVERYTHING;
-        }
-
-        curBB = nextBB;
+        lvaGetDesc(lvaAsyncExecutionContextVar)->lvIsOSRLocal       = true;
+        lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvIsOSRLocal = true;
     }
 
-    return result;
-}
+    // Create try-fault structure. This is actually a try-finally, but we
+    // manually insert the restore code in a (merged) return block, so EH wise
+    // we only need to restore on fault.
+    BasicBlock* const tryBegBB  = fgSplitBlockAtBeginning(fgFirstBB);
+    BasicBlock* const tryLastBB = fgLastBB;
 
-//------------------------------------------------------------------------
-// Compiler::ValidateNoAsyncSavesNecessary:
-//   Check that there are no async calls requiring saving of ExecutionContext
-//   in the method.
-//
-void Compiler::ValidateNoAsyncSavesNecessary()
-{
-#ifdef DEBUG
+    // Create fault handler block
+    BasicBlock* faultBB = fgNewBBafter(BBJ_EHFAULTRET, tryLastBB, false);
+    faultBB->bbRefs     = 1; // Artificial ref count
+    faultBB->inheritWeightPercentage(tryBegBB, 0);
+
+    // Add a new EH table entry. It encloses all others, so placing it at the
+    // end is the right thing to do.
+    unsigned  XTnew    = compHndBBtabCount;
+    EHblkDsc* newEntry = fgTryAddEHTableEntries(XTnew);
+
+    if (newEntry == nullptr)
+    {
+        IMPL_LIMITATION("too many exception clauses");
+    }
+
+    // Initialize the new entry
+    asyncContextRestoreEHID  = impInlineRoot()->compEHID++;
+    newEntry->ebdID          = asyncContextRestoreEHID;
+    newEntry->ebdHandlerType = EH_HANDLER_FAULT;
+
+    newEntry->ebdTryBeg  = tryBegBB;
+    newEntry->ebdTryLast = tryLastBB;
+
+    newEntry->ebdHndBeg  = faultBB;
+    newEntry->ebdHndLast = faultBB;
+
+    newEntry->ebdTyp = 0; // unused for fault
+
+    newEntry->ebdEnclosingTryIndex = EHblkDsc::NO_ENCLOSING_INDEX;
+    newEntry->ebdEnclosingHndIndex = EHblkDsc::NO_ENCLOSING_INDEX;
+
+    newEntry->ebdTryBegOffset    = tryBegBB->bbCodeOffs;
+    newEntry->ebdTryEndOffset    = tryLastBB->bbCodeOffsEnd;
+    newEntry->ebdFilterBegOffset = 0;
+    newEntry->ebdHndBegOffset    = 0;
+    newEntry->ebdHndEndOffset    = 0;
+
+    // Set flags on new region
+    tryBegBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
+    faultBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
+    faultBB->bbCatchTyp = BBCT_FAULT;
+
+    tryBegBB->setTryIndex(XTnew);
+    tryBegBB->clearHndIndex();
+
+    faultBB->clearTryIndex();
+    faultBB->setHndIndex(XTnew);
+
+    // Walk user code blocks and set try index
+    for (BasicBlock* tmpBB = tryBegBB->Next(); tmpBB != faultBB; tmpBB = tmpBB->Next())
+    {
+        if (!tmpBB->hasTryIndex())
+        {
+            tmpBB->setTryIndex(XTnew);
+        }
+    }
+
+    // Walk EH table and update enclosing try indices
+    for (unsigned XTnum = 0; XTnum < XTnew; XTnum++)
+    {
+        EHblkDsc* HBtab = &compHndBBtab[XTnum];
+        if (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            HBtab->ebdEnclosingTryIndex = (unsigned short)XTnew;
+        }
+    }
+
+    JITDUMP("Created EH descriptor EH#%u for try/fault wrapping body to save/restore async contexts\n", XTnew);
+    INDEBUG(fgVerifyHandlerTab());
+
+    // Get async helper methods
+    CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
+
+    // Insert CaptureContexts call before the try (keep it before so the
+    // try/finally can be removed if there is no exception side effects).
+    // For OSR, we did this in the tier0 method.
+    if (!opts.IsOSR())
+    {
+        GenTreeCall* captureCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
+        captureCall->gtArgs.PushFront(this,
+                                      NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
+        captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
+        lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvHasLdAddrOp = true;
+        lvaGetDesc(lvaAsyncExecutionContextVar)->lvHasLdAddrOp       = true;
+
+        CORINFO_CALL_INFO callInfo = {};
+        callInfo.hMethod           = captureCall->gtCallMethHnd;
+        callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+        impMarkInlineCandidate(captureCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+
+        Statement* captureStmt = fgNewStmtFromTree(captureCall);
+        fgInsertStmtAtBeg(fgFirstBB, captureStmt);
+
+        JITDUMP("Inserted capture\n");
+        DISPSTMT(captureStmt);
+    }
+
+    // Insert RestoreContexts call in fault (exceptional case)
+    // First argument: resumed = (continuation != null)
+    GenTree* resumed;
+    if (compIsForInlining())
+    {
+        resumed = gtNewFalse();
+    }
+    else
+    {
+        GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
+        GenTree* null         = gtNewNull();
+        resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    }
+
+    GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    restoreCall->gtArgs.PushFront(this,
+                                  NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
+
+    Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
+    fgInsertStmtAtEnd(faultBB, restoreStmt);
+
+    // Now insert uses of the new contexts to all async calls (modelling the
+    // fact that on suspension, we restore the context from those values). Also
+    // convert BBJ_RETURNs into an exit to a block outside the region.
+    BasicBlock* newReturnBB     = nullptr;
+    unsigned    mergedReturnLcl = BAD_VAR_NUM;
+
     for (BasicBlock* block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        if (!compIsForInlining())
         {
-            ValidateNoAsyncSavesNecessaryInStatement(stmt);
+            AddContextArgsToAsyncCalls(block);
         }
+
+        if (!block->KindIs(BBJ_RETURN) || (block == newReturnBB))
+        {
+            continue;
+        }
+
+        JITDUMP("Merging BBJ_RETURN block " FMT_BB "\n", block->bbNum);
+
+        if (newReturnBB == nullptr)
+        {
+            newReturnBB = CreateReturnBB(&mergedReturnLcl);
+            newReturnBB->inheritWeightPercentage(block, 0);
+        }
+
+        // When inlining we do merging during import, so we do not need to do
+        // any storing there.
+        if (!compIsForInlining())
+        {
+            // Store return value to common local
+            Statement* retStmt = block->lastStmt();
+            assert((retStmt != nullptr) && retStmt->GetRootNode()->OperIs(GT_RETURN));
+
+            if (mergedReturnLcl != BAD_VAR_NUM)
+            {
+                GenTree*   retVal      = retStmt->GetRootNode()->AsOp()->GetReturnValue();
+                Statement* insertAfter = retStmt;
+                GenTree*   storeRetVal = gtNewTempStore(mergedReturnLcl, retVal, CHECK_SPILL_NONE, &insertAfter,
+                                                        retStmt->GetDebugInfo(), block);
+                Statement* storeStmt   = fgNewStmtFromTree(storeRetVal);
+                fgInsertStmtAtEnd(block, storeStmt);
+                JITDUMP("Inserted store to common return local\n");
+                DISPSTMT(storeStmt);
+            }
+
+            retStmt->GetRootNode()->gtBashToNOP();
+        }
+
+        // Jump to new shared restore + return block
+        block->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(newReturnBB, block));
+        fgReturnCount--;
     }
-#endif
+
+    if (newReturnBB != nullptr)
+    {
+        newReturnBB->bbWeight = newReturnBB->computeIncomingWeight();
+    }
+
+    // After merging of returns we have at most 1 return (and we may have 0, if
+    // there were no returns before due to infinite loops or exceptions).
+    assert(fgReturnCount <= 1);
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
-// Compiler::ValidateNoAsyncSavesNecessaryInStatement:
-//   Check that there are no async calls requiring saving of ExecutionContext
-//   in the statement.
+// Compiler::AddContextArgsToAsyncCalls:
+//   Add uses of the saved ExecutionContext and SynchronizationContext to all
+//   async calls.
 //
-// Parameters:
-//   stmt - The statement
+// Remarks:
+//   This models the fact that calls have uses of the saved contexts on
+//   suspension. The async transformation will later move the uses into the
+//   suspension code path.
 //
-void Compiler::ValidateNoAsyncSavesNecessaryInStatement(Statement* stmt)
+void Compiler::AddContextArgsToAsyncCalls(BasicBlock* block)
 {
-#ifdef DEBUG
     struct Visitor : GenTreeVisitor<Visitor>
     {
         enum
@@ -247,138 +297,496 @@ void Compiler::ValidateNoAsyncSavesNecessaryInStatement(Statement* stmt)
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            if (((*use)->gtFlags & GTF_CALL) == 0)
+            GenTree* tree = *use;
+            if ((tree->gtFlags & GTF_CALL) == 0)
             {
                 return WALK_SKIP_SUBTREES;
             }
 
-            if ((*use)->IsCall())
+            if (!tree->IsCall() || !tree->AsCall()->IsAsync())
             {
-                assert(!(*use)->AsCall()->IsAsyncAndAlwaysSavesAndRestoresExecutionContext());
+                return WALK_CONTINUE;
             }
 
+            GenTreeCall* call    = tree->AsCall();
+            GenTree*     execCtx = m_compiler->gtNewLclVarNode(m_compiler->lvaAsyncExecutionContextVar, TYP_REF);
+            GenTree*     syncCtx = m_compiler->gtNewLclVarNode(m_compiler->lvaAsyncSynchronizationContextVar, TYP_REF);
+            JITDUMP("Adding exec context [%06u], sync context [%06u] to async call [%06u]\n", dspTreeID(execCtx),
+                    dspTreeID(syncCtx), dspTreeID(call));
+            call->gtArgs.PushFront(m_compiler,
+                                   NewCallArg::Primitive(syncCtx).WellKnown(WellKnownArg::AsyncSynchronizationContext));
+            call->gtArgs.PushFront(m_compiler,
+                                   NewCallArg::Primitive(execCtx).WellKnown(WellKnownArg::AsyncExecutionContext));
             return WALK_CONTINUE;
         }
     };
 
     Visitor visitor(this);
-    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
-#endif
+    for (Statement* stmt : block->Statements())
+    {
+        visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    }
 }
 
 //------------------------------------------------------------------------
-// Compiler::InsertTryFinallyForContextRestore:
-//   Insert a try-finally around the specified statements in the specified
-//   block.
+// Compiler::CreateReturnBB:
+//   Create a new return block to exit the async method.
+//
+// Parameters:
+//   mergedReturnLcl - [out] The local created to hold the merged return value.
+//                     BAD_VAR_NUM if the async method does not return a result.
 //
 // Returns:
-//   Finally block of inserted try-finally.
+//   A new basic block that restores contexts and returns a merged result.
 //
-BasicBlock* Compiler::InsertTryFinallyForContextRestore(BasicBlock* block, Statement* firstStmt, Statement* lastStmt)
+BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
 {
-    assert(!block->hasHndIndex());
-    EHblkDsc* ebd = fgTryAddEHTableEntries(block->bbTryIndex - 1, 1);
-    if (ebd == nullptr)
-    {
-        IMPL_LIMITATION("Awaits require insertion of too many EH clauses");
-    }
+    BasicBlock* newReturnBB = fgNewBBafter(BBJ_RETURN, fgLastBB, /* extendRegion */ false);
+    newReturnBB->bbTryIndex = 0; // EH region
+    newReturnBB->bbHndIndex = 0;
+    fgReturnCount++;
+    JITDUMP("Created new BBJ_RETURN block " FMT_BB "\n", newReturnBB->bbNum);
 
-    if (firstStmt == block->firstStmt())
+    // Insert "restore" call
+    CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
+
+    GenTree* resumed;
+    if (compIsForInlining())
     {
-        block = fgSplitBlockAtBeginning(block);
+        resumed = gtNewFalse();
     }
     else
     {
-        block = fgSplitBlockAfterStatement(block, firstStmt->GetPrevStmt());
+        GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
+        GenTree* null         = gtNewNull();
+        resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
     }
 
-    BasicBlock* tailBB = fgSplitBlockAfterStatement(block, lastStmt);
+    GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    restoreCall->gtArgs.PushFront(this,
+                                  NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
 
-    BasicBlock* callFinally    = fgNewBBafter(BBJ_CALLFINALLY, block, false);
-    BasicBlock* callFinallyRet = fgNewBBafter(BBJ_CALLFINALLYRET, callFinally, false);
-    BasicBlock* finallyRet     = fgNewBBafter(BBJ_EHFINALLYRET, callFinallyRet, false);
-    BasicBlock* goToTailBlock  = fgNewBBafter(BBJ_ALWAYS, finallyRet, false);
+    // This restore is an inline candidate (unlike the fault one)
+    CORINFO_CALL_INFO callInfo = {};
+    callInfo.hMethod           = restoreCall->gtCallMethHnd;
+    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+    impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
 
-    callFinally->inheritWeight(block);
-    callFinallyRet->inheritWeight(block);
-    finallyRet->inheritWeight(block);
-    goToTailBlock->inheritWeight(block);
+    Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
+    fgInsertStmtAtEnd(newReturnBB, restoreStmt);
+    JITDUMP("Inserted restore statement in return block\n");
+    DISPSTMT(restoreStmt);
 
-    // Set some info the starting blocks like fgFindBasicBlocks does
-    block->SetFlags(BBF_DONT_REMOVE);
-    finallyRet->SetFlags(BBF_DONT_REMOVE);
-    finallyRet->bbRefs++; // Artificial ref count on handler begins
+    if (!compIsForInlining())
+    {
+        *mergedReturnLcl = BAD_VAR_NUM;
 
-    fgRemoveRefPred(block->GetTargetEdge());
-    // Wire up the control flow for the new blocks
-    block->SetTargetEdge(fgAddRefPred(callFinally, block));
-    callFinally->SetTargetEdge(fgAddRefPred(finallyRet, callFinally));
+        GenTree* ret;
+        if (compMethodHasRetVal())
+        {
+            *mergedReturnLcl = lvaGrabTemp(false DEBUGARG("Async merged return local"));
 
-    FlowEdge** succs = new (this, CMK_BasicBlock) FlowEdge* [1] {
-        fgAddRefPred(callFinallyRet, finallyRet)
-    };
-    succs[0]->setLikelihood(1.0);
-    BBJumpTable* ehfDesc = new (this, CMK_BasicBlock) BBJumpTable(succs, 1);
-    finallyRet->SetEhfTargets(ehfDesc);
+            var_types retLclType = compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(info.compRetType);
 
-    callFinallyRet->SetTargetEdge(fgAddRefPred(goToTailBlock, callFinallyRet));
-    goToTailBlock->SetTargetEdge(fgAddRefPred(tailBB, goToTailBlock));
+            if (varTypeIsStruct(retLclType))
+            {
+                lvaSetStruct(*mergedReturnLcl, info.compMethodInfo->args.retTypeClass, false);
 
-    // Most of these blocks go in the old EH region
-    callFinally->bbTryIndex    = block->bbTryIndex;
-    callFinallyRet->bbTryIndex = block->bbTryIndex;
-    finallyRet->bbTryIndex     = block->bbTryIndex;
-    goToTailBlock->bbTryIndex  = block->bbTryIndex;
+                if (compMethodReturnsMultiRegRetType())
+                {
+                    lvaGetDesc(*mergedReturnLcl)->lvIsMultiRegRet = true;
+                }
+            }
+            else
+            {
+                lvaGetDesc(*mergedReturnLcl)->lvType = retLclType;
+            }
 
-    callFinally->bbHndIndex    = block->bbHndIndex;
-    callFinallyRet->bbHndIndex = block->bbHndIndex;
-    finallyRet->bbHndIndex     = block->bbHndIndex;
-    goToTailBlock->bbHndIndex  = block->bbHndIndex;
+            GenTree* retTemp = gtNewLclVarNode(*mergedReturnLcl);
+            ret              = gtNewOperNode(GT_RETURN, retTemp->TypeGet(), retTemp);
+        }
+        else
+        {
+            ret = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
+        }
 
-    // block goes into the inserted EH clause and the finally becomes the handler
-    block->bbTryIndex--;
-    finallyRet->bbHndIndex = block->bbTryIndex;
+        Statement* retStmt = fgNewStmtFromTree(ret);
 
-    ebd->ebdID          = impInlineRoot()->compEHID++;
-    ebd->ebdHandlerType = EH_HANDLER_FINALLY;
+        fgInsertStmtAtEnd(newReturnBB, retStmt);
+        JITDUMP("Inserted return statement in return block\n");
+        DISPSTMT(retStmt);
+    }
 
-    ebd->ebdTryBeg  = block;
-    ebd->ebdTryLast = block;
-
-    ebd->ebdHndBeg  = finallyRet;
-    ebd->ebdHndLast = finallyRet;
-
-    ebd->ebdTyp               = 0;
-    ebd->ebdEnclosingTryIndex = (unsigned short)goToTailBlock->getTryIndex();
-    ebd->ebdEnclosingHndIndex = EHblkDsc::NO_ENCLOSING_INDEX;
-
-    ebd->ebdTryBegOffset    = block->bbCodeOffs;
-    ebd->ebdTryEndOffset    = block->bbCodeOffsEnd;
-    ebd->ebdFilterBegOffset = 0;
-    ebd->ebdHndBegOffset    = 0;
-    ebd->ebdHndEndOffset    = 0;
-
-    finallyRet->bbCatchTyp = BBCT_FINALLY;
-    GenTree*   retFilt     = gtNewOperNode(GT_RETFILT, TYP_VOID, nullptr);
-    Statement* retFiltStmt = fgNewStmtFromTree(retFilt);
-    fgInsertStmtAtEnd(finallyRet, retFiltStmt);
-
-    return finallyRet;
+    return newReturnBB;
 }
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis:
+//   Computes which tracked locals have their default (zero) value at each
+//   basic block entry. A tracked local that still has its default value at a
+//   suspension point does not need to be hoisted into the continuation.
+//
+//   The analysis has two phases:
+//     1. Per-block: compute which tracked locals are mutated (assigned a
+//        non-default value or have their address taken) in each block.
+//     2. Inter-block: forward dataflow to propagate default value information
+//        across blocks. At merge points the sets are unioned (a local is mutated
+//        if it is mutated on any incoming path).
+//
+class DefaultValueAnalysis
+{
+    Compiler*  m_compiler;
+    VARSET_TP* m_mutatedVars;   // Per-block set of locals mutated to non-default.
+    VARSET_TP* m_mutatedVarsIn; // Per-block set of locals mutated to non-default on entry.
+
+    // DataFlow::ForwardAnalysis callback used in Phase 2.
+    class DataFlowCallback
+    {
+        DefaultValueAnalysis& m_analysis;
+        Compiler*             m_compiler;
+        VARSET_TP             m_preMergeIn;
+
+    public:
+        DataFlowCallback(DefaultValueAnalysis& analysis, Compiler* compiler)
+            : m_analysis(analysis)
+            , m_compiler(compiler)
+            , m_preMergeIn(VarSetOps::UninitVal())
+        {
+        }
+
+        void StartMerge(BasicBlock* block)
+        {
+            // Save the current in set for change detection later.
+            VarSetOps::Assign(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
+        }
+
+        void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
+        {
+            // The out set of a predecessor is its in set plus the locals
+            // mutated in that block: mutatedOut = mutatedIn | mutated.
+            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                              m_analysis.m_mutatedVarsIn[predBlock->bbNum]);
+            VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                              m_analysis.m_mutatedVars[predBlock->bbNum]);
+        }
+
+        void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
+        {
+            // A handler can be reached from any point in the try region.
+            // A local is mutated at handler entry if it was mutated at try
+            // entry or mutated anywhere within the try region.
+            for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
+            {
+                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                                  m_analysis.m_mutatedVarsIn[tryBlock->bbNum]);
+                VarSetOps::UnionD(m_compiler, m_analysis.m_mutatedVarsIn[block->bbNum],
+                                  m_analysis.m_mutatedVars[tryBlock->bbNum]);
+            }
+        }
+
+        bool EndMerge(BasicBlock* block)
+        {
+            return !VarSetOps::Equal(m_compiler, m_preMergeIn, m_analysis.m_mutatedVarsIn[block->bbNum]);
+        }
+    };
+
+public:
+    DefaultValueAnalysis(Compiler* compiler)
+        : m_compiler(compiler)
+        , m_mutatedVars(nullptr)
+        , m_mutatedVarsIn(nullptr)
+    {
+    }
+
+    void             Run();
+    const VARSET_TP& GetMutatedVarsIn(BasicBlock* block) const;
+
+private:
+    void ComputePerBlockMutatedVars();
+    void ComputeInterBlockDefaultValues();
+
+#ifdef DEBUG
+    void DumpMutatedVars();
+    void DumpMutatedVarsIn();
+#endif
+};
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::Run:
+//   Run the default value analysis: compute per-block mutation sets, then
+//   propagate default value information forward through the flow graph.
+//
+void DefaultValueAnalysis::Run()
+{
+#ifdef DEBUG
+    static ConfigMethodRange s_range;
+    s_range.EnsureInit(JitConfig.JitAsyncDefaultValueAnalysisRange());
+
+    if (!s_range.Contains(m_compiler->info.compMethodHash()))
+    {
+        JITDUMP("Default value analysis disabled because of method range\n");
+        m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+        for (BasicBlock* block : m_compiler->Blocks())
+        {
+            VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[block->bbNum], VarSetOps::MakeFull(m_compiler));
+        }
+
+        return;
+    }
+
+#endif
+    ComputePerBlockMutatedVars();
+    ComputeInterBlockDefaultValues();
+}
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::GetMutatedVarsIn:
+//   Get the set of tracked locals that have been mutated to a non-default
+//   value on entry to the specified block.
+//
+// Parameters:
+//   block - The basic block.
+//
+// Returns:
+//   The VARSET_TP of tracked locals mutated on entry. A local NOT in this
+//   set is guaranteed to have its default value.
+//
+const VARSET_TP& DefaultValueAnalysis::GetMutatedVarsIn(BasicBlock* block) const
+{
+    assert(m_mutatedVarsIn != nullptr);
+    return m_mutatedVarsIn[block->bbNum];
+}
+
+//------------------------------------------------------------------------
+// IsDefaultValue:
+//   Check if a node represents a default (zero) value.
+//
+// Parameters:
+//   node - The node to check.
+//
+// Returns:
+//   True if the node is a constant zero value (integral, floating-point, or
+//   vector).
+//
+static bool IsDefaultValue(GenTree* node)
+{
+    return node->IsIntegralConst(0) || node->IsFloatPositiveZero() || node->IsVectorZero();
+}
+
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------
+// UpdateMutatedLocal:
+//   If the given node is a local store or LCL_ADDR, and the local is tracked,
+//   mark it as mutated in the provided set. Stores of a default (zero) value
+//   are not considered mutations.
+//
+// Parameters:
+//   compiler - The compiler instance.
+//   node     - The IR node to check.
+//   mutated  - [in/out] The set to update.
+//
+static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
+{
+    if (node->OperIsLocalStore())
+    {
+        // If this is a zero initialization then we do not need to consider it
+        // mutated if we know the prolog will zero it anyway (otherwise we
+        // could be skipping this explicit zero init on resumption).
+        // We could improve this a bit by still skipping it but inserting
+        // explicit zero init on resumption, but these cases seem to be rare
+        // and that would require tracking additional information.
+        if (IsDefaultValue(node->AsLclVarCommon()->Data()) &&
+            !compiler->fgVarNeedsExplicitZeroInit(node->AsLclVarCommon()->GetLclNum(), /* bbInALoop */ false,
+                                                  /* bbIsReturn */ false))
+        {
+            return;
+        }
+    }
+    else if (node->OperIs(GT_LCL_ADDR))
+    {
+        // Fall through
+    }
+    else
+    {
+        return;
+    }
+
+    LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVarCommon());
+
+    if (varDsc->lvTracked)
+    {
+        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
+        return;
+    }
+
+    // For promoted structs the parent may not be tracked but the field locals
+    // are. When the parent is mutated, all tracked fields must be marked as
+    // mutated as well.
+    if (varDsc->lvPromoted)
+    {
+        for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
+        {
+            LclVarDsc* fieldDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
+            if (fieldDsc->lvTracked)
+            {
+                VarSetOps::AddElemD(compiler, mutated, fieldDsc->lvVarIndex);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::ComputePerBlockMutatedVars:
+//   Phase 1: For each reachable basic block compute the set of tracked locals
+//   that are mutated to a non-default value.
+//
+//   A tracked local is considered mutated if:
+//     - It has a store (STORE_LCL_VAR / STORE_LCL_FLD) whose data operand is
+//       not a zero constant.
+//     - It has a LCL_ADDR use (address taken that we cannot reason about).
+//
+void DefaultValueAnalysis::ComputePerBlockMutatedVars()
+{
+    m_mutatedVars = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+
+    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
+    {
+        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVars[i], VarSetOps::MakeEmpty(m_compiler));
+    }
+
+    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* block   = dfsTree->GetPostOrder(i);
+        VARSET_TP&  mutated = m_mutatedVars[block->bbNum];
+
+        for (GenTree* node : LIR::AsRange(block))
+        {
+            UpdateMutatedLocal(m_compiler, node, mutated);
+        }
+    }
+
+    JITDUMP("Default value analysis: per-block mutated vars\n");
+    DBEXEC(m_compiler->verbose, DumpMutatedVars());
+}
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::ComputeInterBlockDefaultValues:
+//   Phase 2: Forward dataflow to compute for each block the set of tracked
+//   locals that have been mutated to a non-default value on entry.
+//
+//   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
+//   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
+//
+//   At entry, only parameters and OSR locals are considered mutated.
+//
+void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
+{
+    m_mutatedVarsIn = m_compiler->fgAllocateTypeForEachBlk<VARSET_TP>(CMK_Async);
+
+    for (unsigned i = 0; i <= m_compiler->fgBBNumMax; i++)
+    {
+        VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
+    }
+
+    // Parameters and OSR locals are considered mutated at method entry.
+    for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
+    {
+        unsigned   lclNum = m_compiler->lvaTrackedToVarNum[i];
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
+
+        if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
+        {
+            VarSetOps::AddElemD(m_compiler, m_mutatedVarsIn[m_compiler->fgFirstBB->bbNum], varDsc->lvVarIndex);
+        }
+    }
+
+    DataFlowCallback callback(*this, m_compiler);
+    DataFlow         flow(m_compiler);
+    flow.ForwardAnalysis(callback);
+
+    JITDUMP("Default value analysis: per-block mutated vars on entry\n");
+    DBEXEC(m_compiler->verbose, DumpMutatedVarsIn());
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::DumpMutatedVars:
+//   Debug helper to print the per-block mutated variable sets.
+//
+void DefaultValueAnalysis::DumpMutatedVars()
+{
+    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* block = dfsTree->GetPostOrder(i);
+        if (!VarSetOps::IsEmpty(m_compiler, m_mutatedVars[block->bbNum]))
+        {
+            printf("  " FMT_BB " mutated: ", block->bbNum);
+            VarSetOps::Iter iter(m_compiler, m_mutatedVars[block->bbNum]);
+            unsigned        varIndex = 0;
+            const char*     sep      = "";
+            while (iter.NextElem(&varIndex))
+            {
+                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
+                printf("%sV%02u", sep, lclNum);
+                sep = " ";
+            }
+            printf("\n");
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// DefaultValueAnalysis::DumpMutatedVarsIn:
+//   Debug helper to print the per-block mutated-on-entry variable sets.
+//
+void DefaultValueAnalysis::DumpMutatedVarsIn()
+{
+    const FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    for (unsigned i = dfsTree->GetPostOrderCount(); i > 0; i--)
+    {
+        BasicBlock* block = dfsTree->GetPostOrder(i - 1);
+        printf("  " FMT_BB " mutated on entry: ", block->bbNum);
+
+        if (VarSetOps::IsEmpty(m_compiler, m_mutatedVarsIn[block->bbNum]))
+        {
+            printf("<none>");
+        }
+        else
+        {
+            VarSetOps::Iter iter(m_compiler, m_mutatedVarsIn[block->bbNum]);
+            unsigned        varIndex = 0;
+            const char*     sep      = "";
+            while (iter.NextElem(&varIndex))
+            {
+                unsigned lclNum = m_compiler->lvaTrackedToVarNum[varIndex];
+                printf("%sV%02u", sep, lclNum);
+                sep = " ";
+            }
+        }
+        printf("\n");
+    }
+}
+#endif
 
 class AsyncLiveness
 {
-    Compiler*              m_comp;
-    bool                   m_hasLiveness;
+    Compiler*              m_compiler;
     TreeLifeUpdater<false> m_updater;
     unsigned               m_numVars;
+    DefaultValueAnalysis&  m_defaultValueAnalysis;
+    VARSET_TP              m_mutatedValues;
 
 public:
-    AsyncLiveness(Compiler* comp, bool hasLiveness)
-        : m_comp(comp)
-        , m_hasLiveness(hasLiveness)
+    AsyncLiveness(Compiler* comp, DefaultValueAnalysis& defaultValueAnalysis)
+        : m_compiler(comp)
         , m_updater(comp)
         , m_numVars(comp->lvaCount)
+        , m_defaultValueAnalysis(defaultValueAnalysis)
+        , m_mutatedValues(VarSetOps::MakeEmpty(comp))
     {
     }
 
@@ -402,10 +810,8 @@ private:
 //
 void AsyncLiveness::StartBlock(BasicBlock* block)
 {
-    if (!m_hasLiveness)
-        return;
-
-    VarSetOps::Assign(m_comp, m_comp->compCurLife, block->bbLiveIn);
+    VarSetOps::Assign(m_compiler, m_compiler->compCurLife, block->bbLiveIn);
+    VarSetOps::Assign(m_compiler, m_mutatedValues, m_defaultValueAnalysis.GetMutatedVarsIn(block));
 }
 
 //------------------------------------------------------------------------
@@ -418,10 +824,8 @@ void AsyncLiveness::StartBlock(BasicBlock* block)
 //
 void AsyncLiveness::Update(GenTree* node)
 {
-    if (!m_hasLiveness)
-        return;
-
-    m_updater.UpdateLife(node);
+    m_updater.UpdateLife<true>(node);
+    UpdateMutatedLocal(m_compiler, node, m_mutatedValues);
 }
 
 //------------------------------------------------------------------------
@@ -437,47 +841,39 @@ void AsyncLiveness::Update(GenTree* node)
 bool AsyncLiveness::IsLocalCaptureUnnecessary(unsigned lclNum)
 {
 #if FEATURE_FIXED_OUT_ARGS
-    if (lclNum == m_comp->lvaOutgoingArgSpaceVar)
+    if (lclNum == m_compiler->lvaOutgoingArgSpaceVar)
     {
         return true;
     }
 #endif
 
-    if (lclNum == m_comp->info.compRetBuffArg)
+    if (lclNum == m_compiler->info.compRetBuffArg)
     {
         return true;
     }
 
-    if (lclNum == m_comp->lvaGSSecurityCookie)
+    if (lclNum == m_compiler->lvaGSSecurityCookie)
     {
         // Initialized in prolog
         return true;
     }
 
-    if (lclNum == m_comp->info.compLvFrameListRoot)
+    if (lclNum == m_compiler->info.compLvFrameListRoot)
     {
         return true;
     }
 
-    if (lclNum == m_comp->lvaInlinedPInvokeFrameVar)
+    if (lclNum == m_compiler->lvaInlinedPInvokeFrameVar)
     {
         return true;
     }
 
-#ifdef FEATURE_EH_WINDOWS_X86
-    if (lclNum == m_comp->lvaShadowSPslotsVar)
-    {
-        // Only expected to be live in handlers
-        return true;
-    }
-#endif
-
-    if (lclNum == m_comp->lvaRetAddrVar)
+    if (lclNum == m_compiler->lvaRetAddrVar)
     {
         return true;
     }
 
-    if (lclNum == m_comp->lvaAsyncContinuationArg)
+    if (lclNum == m_compiler->lvaAsyncContinuationArg)
     {
         return true;
     }
@@ -502,10 +898,9 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         return false;
     }
 
-    LclVarDsc* dsc = m_comp->lvaGetDesc(lclNum);
+    LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
 
-    if ((dsc->TypeIs(TYP_BYREF) && !dsc->IsImplicitByRef()) ||
-        (dsc->TypeIs(TYP_STRUCT) && dsc->GetLayout()->HasGCByRef()))
+    if (dsc->TypeIs(TYP_BYREF) && !dsc->IsImplicitByRef())
     {
         // Even if these are address exposed we expect them to be dead at
         // suspension points. TODO: It would be good to somehow verify these
@@ -514,8 +909,15 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         return false;
     }
 
-    if (!m_hasLiveness)
+    if ((dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef()) && dsc->GetLayout()->HasGCByRef())
     {
+        // Same as above
+        return false;
+    }
+
+    if (m_compiler->opts.compDbgCode && (lclNum < m_compiler->info.compLocalsCount))
+    {
+        // Keep all IL locals in debug codegen
         return true;
     }
 
@@ -524,7 +926,7 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         return false;
     }
 
-    Compiler::lvaPromotionType promoType = m_comp->lvaGetPromotionType(dsc);
+    Compiler::lvaPromotionType promoType = m_compiler->lvaGetPromotionType(dsc);
     if (promoType == Compiler::PROMOTION_TYPE_INDEPENDENT)
     {
         // Independently promoted structs are handled only through their
@@ -539,24 +941,41 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
         //
         // A dependently promoted struct is live if any of its fields are live.
 
+        bool anyLive    = false;
+        bool anyMutated = false;
         for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
         {
-            LclVarDsc* fieldDsc = m_comp->lvaGetDesc(dsc->lvFieldLclStart + i);
-            if (!fieldDsc->lvTracked || VarSetOps::IsMember(m_comp, m_comp->compCurLife, fieldDsc->lvVarIndex))
-            {
-                return true;
-            }
+            LclVarDsc* fieldDsc = m_compiler->lvaGetDesc(dsc->lvFieldLclStart + i);
+            anyLive |=
+                !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, fieldDsc->lvVarIndex);
+            anyMutated |=
+                !fieldDsc->lvTracked || VarSetOps::IsMember(m_compiler, m_mutatedValues, fieldDsc->lvVarIndex);
         }
 
-        return false;
+        return anyLive && anyMutated;
     }
 
-    if (dsc->lvIsStructField && (m_comp->lvaGetParentPromotionType(dsc) == Compiler::PROMOTION_TYPE_DEPENDENT))
+    if (dsc->lvIsStructField && (m_compiler->lvaGetParentPromotionType(dsc) == Compiler::PROMOTION_TYPE_DEPENDENT))
     {
         return false;
     }
 
-    return !dsc->lvTracked || VarSetOps::IsMember(m_comp, m_comp->compCurLife, dsc->lvVarIndex);
+    if (!dsc->lvTracked)
+    {
+        return true;
+    }
+
+    if (!VarSetOps::IsMember(m_compiler, m_compiler->compCurLife, dsc->lvVarIndex))
+    {
+        return false;
+    }
+
+    if (!VarSetOps::IsMember(m_compiler, m_mutatedValues, dsc->lvVarIndex))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -615,21 +1034,38 @@ PhaseStatus Compiler::TransformAsync()
 //
 PhaseStatus AsyncTransformation::Run()
 {
-    ArrayStack<BasicBlock*> worklist(m_comp->getAllocator(CMK_Async));
+    PhaseStatus             result = PhaseStatus::MODIFIED_NOTHING;
+    ArrayStack<BasicBlock*> worklist(m_compiler->getAllocator(CMK_Async));
 
     // First find all basic blocks with awaits in them. We'll have to track
     // liveness in these basic blocks, so it does not help to record the calls
     // ahead of time.
-    for (BasicBlock* block : m_comp->Blocks())
+    BasicBlock* nextBlock;
+    for (BasicBlock* block = m_compiler->fgFirstBB; block != nullptr; block = nextBlock)
     {
+        bool hasAwait = false;
+        nextBlock     = block->Next();
         for (GenTree* tree : LIR::AsRange(block))
         {
-            if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall())
+            if (!tree->IsCall() || !tree->AsCall()->IsAsync() || tree->AsCall()->IsTailCall())
             {
-                JITDUMP(FMT_BB " contains await(s)\n", block->bbNum);
-                worklist.Push(block);
+                continue;
+            }
+
+            if (tree->AsCall()->GetAsyncInfo().IsTailAwait)
+            {
+                TransformTailAwait(block, tree->AsCall(), &nextBlock);
+                result = PhaseStatus::MODIFIED_EVERYTHING;
                 break;
             }
+
+            JITDUMP(FMT_BB " contains await(s)\n", block->bbNum);
+            hasAwait = true;
+        }
+
+        if (hasAwait)
+        {
+            worklist.Push(block);
         }
     }
 
@@ -637,66 +1073,39 @@ PhaseStatus AsyncTransformation::Run()
 
     if (worklist.Height() <= 0)
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        return result;
     }
 
-    // Ask the VM to create a resumption stub for this specific version of the
-    // code. It is stored in the continuation as a function pointer, so we need
-    // the fixed entry point here.
-    m_resumeStub = m_comp->info.compCompHnd->getAsyncResumptionStub();
-    m_comp->info.compCompHnd->getFunctionFixedEntryPoint(m_resumeStub, false, &m_resumeStubLookup);
+    m_compiler->compSuspensionPoints = new (m_compiler, CMK_Async)
+        jitstd::vector<ICorDebugInfo::AsyncSuspensionPoint>(m_compiler->getAllocator(CMK_Async));
+    m_compiler->compAsyncVars = new (m_compiler, CMK_Async)
+        jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>(m_compiler->getAllocator(CMK_Async));
 
-    m_returnedContinuationVar = m_comp->lvaGrabTemp(false DEBUGARG("returned continuation"));
-    m_comp->lvaGetDesc(m_returnedContinuationVar)->lvType = TYP_REF;
-    m_newContinuationVar                                  = m_comp->lvaGrabTemp(false DEBUGARG("new continuation"));
-    m_comp->lvaGetDesc(m_newContinuationVar)->lvType      = TYP_REF;
+    m_asyncInfo = m_compiler->eeGetAsyncInfo();
 
-    m_asyncInfo = m_comp->eeGetAsyncInfo();
-
-#ifdef JIT32_GCENCODER
-    // Due to a hard cap on epilogs we need a shared return here.
-    m_sharedReturnBB = m_comp->fgNewBBafter(BBJ_RETURN, m_comp->fgLastBBInMainFunction(), false);
-    m_sharedReturnBB->bbSetRunRarely();
-    m_sharedReturnBB->clearTryIndex();
-    m_sharedReturnBB->clearHndIndex();
-
-    if (m_comp->fgIsUsingProfileWeights())
-    {
-        // All suspension BBs are cold, so we do not need to propagate any
-        // weights, but we do need to propagate the flag.
-        m_sharedReturnBB->SetFlags(BBF_PROF_WEIGHT);
-    }
-
-    GenTree* continuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-    GenTree* ret          = m_comp->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, continuation);
-    LIR::AsRange(m_sharedReturnBB).InsertAtEnd(continuation, ret);
-
-    JITDUMP("Created shared return BB " FMT_BB "\n", m_sharedReturnBB->bbNum);
-
-    DISPRANGE(LIR::AsRange(m_sharedReturnBB));
-#endif
+    // Create the shared return BB now to put it in the right place in the block order.
+    GetSharedReturnBB();
 
     // Compute liveness to be used for determining what must be captured on
-    // suspension. In unoptimized codegen we capture everything.
-    if (m_comp->opts.OptimizationEnabled())
+    // suspension.
+    if (m_compiler->m_dfsTree == nullptr)
     {
-        if (m_comp->m_dfsTree == nullptr)
-        {
-            m_comp->m_dfsTree = m_comp->fgComputeDfs<false>();
-        }
-
-        m_comp->lvaComputeRefCounts(true, false);
-        m_comp->fgLocalVarLiveness();
-        INDEBUG(m_comp->mostRecentlyActivePhase = PHASE_ASYNC);
-        VarSetOps::AssignNoCopy(m_comp, m_comp->compCurLife, VarSetOps::MakeEmpty(m_comp));
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs<false>();
     }
 
-    AsyncLiveness liveness(m_comp, m_comp->opts.OptimizationEnabled());
+    m_compiler->lvaComputePreciseRefCounts(/* isRecompute */ true, /* setSlotNumbers */ false);
+    m_compiler->fgAsyncLiveness();
+    INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
+    VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
+
+    DefaultValueAnalysis defaultValues(m_compiler);
+    defaultValues.Run();
+    AsyncLiveness liveness(m_compiler, defaultValues);
 
     // Now walk the IR for all the blocks that contain async calls. Keep track
     // of liveness and outstanding LIR edges as we go; the LIR edges that cross
     // async calls are additional live variables that must be spilled.
-    jitstd::vector<GenTree*> defs(m_comp->getAllocator(CMK_Async));
+    jitstd::vector<GenTree*> defs(m_compiler->getAllocator(CMK_Async));
 
     for (int i = 0; i < worklist.Height(); i++)
     {
@@ -730,17 +1139,18 @@ PhaseStatus AsyncTransformation::Run()
                     return GenTree::VisitResult::Continue;
                 });
 
-                // Update liveness to reflect state after this node.
-                liveness.Update(tree);
-
                 if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall())
                 {
-                    // Transform call; continue with the remainder block
+                    // Transform call; continue with the remainder block.
+                    // Transform takes care to update liveness.
                     Transform(block, tree->AsCall(), defs, liveness, &block);
                     defs.clear();
                     any = true;
                     break;
                 }
+
+                // Update liveness to reflect state after this node.
+                liveness.Update(tree);
 
                 // Push a new definition if necessary; this defined value is
                 // now a live LIR edge.
@@ -756,9 +1166,101 @@ PhaseStatus AsyncTransformation::Run()
     // create the resumption switch.
     CreateResumptionSwitch();
 
-    m_comp->fgInvalidateDfsTree();
+    m_compiler->fgInvalidateDfsTree();
+
+    if (m_compiler->opts.OptimizationDisabled())
+    {
+        // Rest of the compiler does not expect that we started tracking locals, so reset that state.
+        for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
+        {
+            m_compiler->lvaGetDesc(m_compiler->lvaTrackedToVarNum[i])->lvTracked = false;
+        }
+
+        m_compiler->lvaCurEpoch++;
+        m_compiler->lvaTrackedCount             = 0;
+        m_compiler->lvaTrackedCountInSizeTUnits = 0;
+
+        for (BasicBlock* block : m_compiler->Blocks())
+        {
+            block->bbLiveIn  = VarSetOps::UninitVal();
+            block->bbLiveOut = VarSetOps::UninitVal();
+            block->bbVarUse  = VarSetOps::UninitVal();
+            block->bbVarDef  = VarSetOps::UninitVal();
+        }
+        m_compiler->fgBBVarSetsInited = false;
+    }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::TransformTailAwait:
+//   Transform an await that was marked as a tail await.
+//
+// Parameters:
+//   block     - The block containing the async call
+//   call      - The async call
+//   nextBlock - [out] The next block to process
+//
+void AsyncTransformation::TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** nextBlock)
+{
+    JITDUMP("Transforming tail await [%06u] in " FMT_BB "\n", Compiler::dspTreeID(call), block->bbNum);
+
+    CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, nullptr);
+
+    BasicBlock* suspension = CreateTailAwaitSuspension(block, call);
+
+    CreateCheckAndSuspendAfterCall(block, call, callDefInfo, suspension, nextBlock);
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::CreateTailAwaitSuspension:
+//   Create the basic block that when branched to suspends execution after the
+//   specified async call marked as a tail await.
+//
+// Parameters:
+//   block    - The block containing the async call
+//   call     - The async call
+//
+// Returns:
+//   The new basic block that was created.
+//
+BasicBlock* AsyncTransformation::CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call)
+{
+    BasicBlock* sharedReturnBB = GetSharedReturnBB();
+
+    if (m_lastSuspensionBB == nullptr)
+    {
+        m_lastSuspensionBB = m_compiler->fgLastBBInMainFunction();
+    }
+
+    BasicBlock* suspendBB = m_compiler->fgNewBBafter(BBJ_RETURN, m_lastSuspensionBB, false);
+    suspendBB->clearTryIndex();
+    suspendBB->clearHndIndex();
+    suspendBB->inheritWeightPercentage(block, 0);
+    m_lastSuspensionBB = suspendBB;
+
+    if (sharedReturnBB != nullptr)
+    {
+        suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(sharedReturnBB, suspendBB));
+    }
+
+    JITDUMP("  Creating tail suspension " FMT_BB "\n", suspendBB->bbNum);
+
+    GenTree* returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
+
+    if (suspendBB->KindIs(BBJ_RETURN))
+    {
+        GenTree* ret = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, returnedContinuation);
+        LIR::AsRange(suspendBB).InsertAtEnd(returnedContinuation, ret);
+    }
+    else
+    {
+        GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(GetNewContinuationVar(), returnedContinuation);
+        LIR::AsRange(suspendBB).InsertAtEnd(returnedContinuation, storeNewContinuation);
+    }
+
+    return suspendBB;
 }
 
 //------------------------------------------------------------------------
@@ -776,7 +1278,7 @@ void AsyncTransformation::Transform(
     BasicBlock* block, GenTreeCall* call, jitstd::vector<GenTree*>& defs, AsyncLiveness& life, BasicBlock** remainder)
 {
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         printf("Processing call [%06u] in " FMT_BB "\n", Compiler::dspTreeID(call), block->bbNum);
         printf("  %zu live LIR edges\n", defs.size());
@@ -800,22 +1302,22 @@ void AsyncTransformation::Transform(
 
     CreateLiveSetForSuspension(block, call, defs, life, liveLocals);
 
-    ContinuationLayout layout = LayOutContinuation(block, call, liveLocals);
+    ContinuationLayout layout = LayOutContinuation(block, call, ContinuationNeedsKeepAlive(life), liveLocals);
 
-    ClearSuspendedIndicator(block, call);
-
-    CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, life);
+    CallDefinitionInfo callDefInfo = CanonicalizeCallDefinition(block, call, &life);
 
     unsigned stateNum = (unsigned)m_resumptionBBs.size();
     JITDUMP("  Assigned state %u\n", stateNum);
 
     BasicBlock* suspendBB = CreateSuspension(block, call, stateNum, life, layout);
 
-    CreateCheckAndSuspendAfterCall(block, call, callDefInfo, life, suspendBB, remainder);
+    CreateCheckAndSuspendAfterCall(block, call, callDefInfo, suspendBB, remainder);
 
     BasicBlock* resumeBB = CreateResumption(block, *remainder, call, callDefInfo, stateNum, layout);
 
     m_resumptionBBs.push_back(resumeBB);
+
+    CreateDebugInfoForSuspensionPoint(layout);
 }
 
 //------------------------------------------------------------------------
@@ -836,25 +1338,37 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
                                                      AsyncLiveness&                  life,
                                                      jitstd::vector<LiveLocalInfo>&  liveLocals)
 {
-    SmallHashTable<unsigned, bool> excludedLocals(m_comp->getAllocator(CMK_Async));
+    SmallHashTable<unsigned, bool> excludedLocals(m_compiler->getAllocator(CMK_Async));
 
+    // As a special case exclude locals that are fully defined by the call if
+    // we don't have internal EH. Liveness does this automatically, but this
+    // improves tier0 and also address exposed locals.
     auto visitDef = [&](const LocalDef& def) {
         if (def.IsEntire)
         {
-            JITDUMP("  V%02u is fully defined and will not be considered live\n", def.Def->GetLclNum());
-            excludedLocals.AddOrUpdate(def.Def->GetLclNum(), true);
+            if (HasNonContextRestoreExceptionalFlow(block))
+            {
+                JITDUMP("  V%02u is fully defined but the block has exceptional flow\n", def.Def->GetLclNum());
+            }
+            else
+            {
+                JITDUMP("  V%02u is fully defined and will not be considered live\n", def.Def->GetLclNum());
+                excludedLocals.AddOrUpdate(def.Def->GetLclNum(), true);
+            }
         }
         return GenTree::VisitResult::Continue;
     };
 
-    call->VisitLocalDefs(m_comp, visitDef);
+    call->VisitLocalDefs(m_compiler, visitDef);
 
-    const AsyncCallInfo& asyncInfo = call->GetAsyncInfo();
-
-    if (asyncInfo.SynchronizationContextLclNum != BAD_VAR_NUM)
+    // Exclude method-level context locals (only live on synchronous path)
+    if (m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
     {
-        // This one is only live on the synchronous path, which liveness cannot prove
-        excludedLocals.AddOrUpdate(asyncInfo.SynchronizationContextLclNum, true);
+        excludedLocals.AddOrUpdate(m_compiler->lvaAsyncSynchronizationContextVar, true);
+    }
+    if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+    {
+        excludedLocals.AddOrUpdate(m_compiler->lvaAsyncExecutionContextVar, true);
     }
 
     life.GetLiveLocals(liveLocals, [&](unsigned lclNum) {
@@ -863,7 +1377,7 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
     LiftLIREdges(block, defs, liveLocals);
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
         printf("  %zu live locals\n", liveLocals.size());
 
@@ -872,7 +1386,7 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
             const char* sep = "    ";
             for (LiveLocalInfo& inf : liveLocals)
             {
-                printf("%sV%02u (%s)", sep, inf.LclNum, varTypeName(m_comp->lvaGetDesc(inf.LclNum)->TypeGet()));
+                printf("%sV%02u (%s)", sep, inf.LclNum, varTypeName(m_compiler->lvaGetDesc(inf.LclNum)->TypeGet()));
                 sep = ", ";
             }
 
@@ -880,6 +1394,29 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         }
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::HasNonContextRestoreExceptionalFlow:
+//   Check if there is internal control flow out of the specified block and if
+//   that target is not the canonical "restore context" EH handler.
+//
+// Parameters:
+//   block - The block
+//
+// Returns:
+//   True if there is such control flow.
+//
+bool AsyncTransformation::HasNonContextRestoreExceptionalFlow(BasicBlock* block)
+{
+    if (!block->hasTryIndex())
+    {
+        return false;
+    }
+
+    EHblkDsc* ehDsc = m_compiler->ehGetDsc(block->getTryIndex());
+    return (ehDsc->ebdID != m_compiler->asyncContextRestoreEHID) ||
+           (ehDsc->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX);
 }
 
 //------------------------------------------------------------------------
@@ -907,7 +1444,7 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
         // call is stored.
         // if (tree->OperIs(GT_LCL_VAR))
         //{
-        //    LclVarDsc* dsc = m_comp->lvaGetDesc(tree->AsLclVarCommon());
+        //    LclVarDsc* dsc = m_compiler->lvaGetDesc(tree->AsLclVarCommon());
         //    if (!dsc->IsAddressExposed())
         //    {
         //        // No interference by IR invariants.
@@ -921,7 +1458,7 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
         bool     gotUse = LIR::AsRange(block).TryGetUse(tree, &use);
         assert(gotUse); // Defs list should not contain unused values.
 
-        unsigned newLclNum = use.ReplaceWithLclVar(m_comp);
+        unsigned newLclNum = use.ReplaceWithLclVar(m_compiler);
         liveLocals.push_back(LiveLocalInfo(newLclNum));
         GenTree* newUse = use.Def();
         LIR::AsRange(block).Remove(newUse);
@@ -930,28 +1467,112 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
 }
 
 //------------------------------------------------------------------------
+// AsyncTransformation::ContinuationNeedsKeepAlive:
+//   Check whether we need to allocate a "KeepAlive" field in the continuation.
+//
+// Parameters:
+//   life - Live locals
+//
+// Returns:
+//   True if we need to keep a LoaderAllocator for generic context or
+//   collectible method alive.
+//
+bool AsyncTransformation::ContinuationNeedsKeepAlive(AsyncLiveness& life)
+{
+    if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        // Native AOT doesn't have a LoaderAllocator
+        return false;
+    }
+
+    const unsigned GENERICS_CTXT_FROM = CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
+    if (((m_compiler->info.compMethodInfo->options & GENERICS_CTXT_FROM) != 0) &&
+        life.IsLive(m_compiler->info.compTypeCtxtArg))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+class GCPointerBitMapBuilder
+{
+    bool*  m_objRefs;
+    size_t m_size;
+
+public:
+    GCPointerBitMapBuilder(bool* objRefs, size_t size)
+        : m_objRefs(objRefs)
+        , m_size(size)
+    {
+    }
+
+    INDEBUG(unsigned NumObjRefs = 0);
+
+    void Set(unsigned offset)
+    {
+        assert((offset % TARGET_POINTER_SIZE) == 0);
+        assert(offset < m_size);
+        unsigned slot = offset / TARGET_POINTER_SIZE;
+
+        // We do not expect to set the same offset multiple times
+        assert(!m_objRefs[slot]);
+        m_objRefs[slot] = true;
+        INDEBUG(NumObjRefs++);
+    }
+
+    void SetIfNotMax(unsigned offset)
+    {
+        if (offset != UINT_MAX)
+        {
+            Set(offset);
+        }
+    }
+
+    void SetType(unsigned offset, var_types type, ClassLayout* layout)
+    {
+        if (type == TYP_REF)
+        {
+            Set(offset);
+        }
+        else if (type == TYP_STRUCT)
+        {
+            for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
+            {
+                if (layout->GetGCPtrType(slot) == TYP_REF)
+                {
+                    Set(offset + slot * TARGET_POINTER_SIZE);
+                }
+            }
+        }
+    }
+};
+
+//------------------------------------------------------------------------
 // AsyncTransformation::LayOutContinuation:
 //   Create the layout of the GC pointer and data arrays in the continuation
 //   object.
 //
 // Parameters:
-//   block      - The block containing the async call
-//   call       - The async call
-//   liveLocals - [in, out] Information about each live local. Size/alignment
-//                information is read and offset/index information is written.
+//   block          - The block containing the async call
+//   call           - The async call
+//   needsKeepAlive - Whether the layout needs a "keep alive" field allocated
+//   liveLocals     - [in, out] Information about each live local. Size/alignment
+//                    information is read and offset/index information is written.
 //
 // Returns:
 //   Layout information.
 //
 ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*                    block,
                                                            GenTreeCall*                   call,
+                                                           bool                           needsKeepAlive,
                                                            jitstd::vector<LiveLocalInfo>& liveLocals)
 {
     ContinuationLayout layout(liveLocals);
 
     for (LiveLocalInfo& inf : liveLocals)
     {
-        LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(inf.LclNum);
 
         if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
         {
@@ -960,236 +1581,218 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 
             if (layout->IsCustomLayout())
             {
-                inf.Alignment   = 1;
-                inf.DataSize    = layout->GetSize();
-                inf.GCDataCount = layout->GetGCPtrCount();
+                inf.Alignment = layout->HasGCPtr() ? TARGET_POINTER_SIZE : 1;
+                inf.Size      = layout->GetSize();
             }
             else
             {
-                inf.Alignment = m_comp->info.compCompHnd->getClassAlignmentRequirement(layout->GetClassHandle());
-                if ((layout->GetGCPtrCount() * TARGET_POINTER_SIZE) == layout->GetSize())
-                {
-                    inf.DataSize = 0;
-                }
-                else
-                {
-                    inf.DataSize = layout->GetSize();
-                }
-
-                inf.GCDataCount = layout->GetGCPtrCount();
+                inf.Alignment = m_compiler->info.compCompHnd->getClassAlignmentRequirement(layout->GetClassHandle());
+                inf.Size      = layout->GetSize();
             }
         }
         else if (dsc->TypeIs(TYP_REF))
         {
-            inf.Alignment   = TARGET_POINTER_SIZE;
-            inf.DataSize    = 0;
-            inf.GCDataCount = 1;
+            inf.Alignment = TARGET_POINTER_SIZE;
+            inf.Size      = TARGET_POINTER_SIZE;
         }
         else
         {
             assert(!dsc->TypeIs(TYP_BYREF));
 
-            inf.Alignment   = genTypeAlignments[dsc->TypeGet()];
-            inf.DataSize    = genTypeSize(dsc);
-            inf.GCDataCount = 0;
+            inf.Alignment = genTypeAlignments[dsc->TypeGet()];
+            inf.Size      = genTypeSize(dsc);
         }
+
+        // Saving/storing of longs here may be the first place we introduce
+        // long IR. We need to potentially decompose this on x86, so indicate
+        // that to the backend.
+        m_compiler->compLongUsed |= dsc->TypeIs(TYP_LONG);
     }
 
-    jitstd::sort(liveLocals.begin(), liveLocals.end(), [](const LiveLocalInfo& lhs, const LiveLocalInfo& rhs) {
-        if (lhs.Alignment == rhs.Alignment)
+    jitstd::sort(liveLocals.begin(), liveLocals.end(), [=](const LiveLocalInfo& lhs, const LiveLocalInfo& rhs) {
+        bool lhsIsRef = m_compiler->lvaGetDesc(lhs.LclNum)->TypeIs(TYP_REF);
+        bool rhsIsRef = m_compiler->lvaGetDesc(rhs.LclNum)->TypeIs(TYP_REF);
+
+        // Keep object refs first to improve sharability of continuation types.
+        if (lhsIsRef != rhsIsRef)
         {
-            // Prefer lowest local num first for same alignment.
-            return lhs.LclNum < rhs.LclNum;
+            return lhsIsRef;
         }
 
-        // Otherwise prefer highest alignment first.
-        return lhs.Alignment > rhs.Alignment;
-    });
+        // Otherwise prefer higher alignment first.
+        if (lhs.HeapAlignment() != rhs.HeapAlignment())
+        {
+            return lhs.HeapAlignment() > rhs.HeapAlignment();
+        }
 
-    // For OSR, we store the IL offset that inspired the OSR method at the
-    // beginning of the data (-1 in the tier0 version):
-    if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
-    {
-        JITDUMP("  Method %s; keeping IL offset that inspired OSR method at the beginning of non-GC data\n",
-                m_comp->doesMethodHavePatchpoints() ? "has patchpoints" : "is an OSR method");
-        layout.DataSize += sizeof(int);
-    }
+        // Prefer lowest local num first for tiebreaker.
+        return lhs.LclNum < rhs.LclNum;
+    });
 
     if (call->gtReturnType == TYP_STRUCT)
     {
-        layout.ReturnStructLayout = m_comp->typGetObjLayout(call->gtRetClsHnd);
+        layout.ReturnStructLayout = m_compiler->typGetObjLayout(call->gtRetClsHnd);
         layout.ReturnSize         = layout.ReturnStructLayout->GetSize();
-        layout.ReturnInGCData     = layout.ReturnStructLayout->HasGCPtr();
+        layout.ReturnAlignment    = m_compiler->info.compCompHnd->getClassAlignmentRequirement(call->gtRetClsHnd);
     }
     else
     {
-        layout.ReturnSize     = genTypeSize(call->gtReturnType);
-        layout.ReturnInGCData = varTypeIsGC(call->gtReturnType);
+        layout.ReturnSize      = genTypeSize(call->gtReturnType);
+        layout.ReturnAlignment = layout.ReturnSize;
     }
 
     assert((layout.ReturnSize > 0) == (call->gtReturnType != TYP_VOID));
 
-    // The return value is always stored:
-    // 1. At index 0 in GCData if it is a TYP_REF or a struct with GC references
-    // 2. At index 0 in Data, for non OSR methods without GC ref returns
-    // 3. At index 4 in Data for OSR methods without GC ref returns. The
-    // continuation flags indicates this scenario with a flag.
-    if (layout.ReturnInGCData)
+    auto allocLayout = [&layout](unsigned align, unsigned size) {
+        layout.Size     = roundUp(layout.Size, align);
+        unsigned offset = layout.Size;
+        layout.Size += size;
+        return offset;
+    };
+
+    // For OSR, we store the IL offset that inspired the OSR method at the
+    // beginning of the data (and store -1 in the tier0 version). This must be
+    // at the beginning because the tier0 and OSR versions need to agree on
+    // this.
+    if (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR())
     {
-        layout.GCRefsCount++;
-    }
-    else if (layout.ReturnSize > 0)
-    {
-        layout.ReturnValDataOffset = layout.DataSize;
-        layout.DataSize += layout.ReturnSize;
+        JITDUMP("  Method %s; keeping IL offset that inspired OSR method at the beginning of non-GC data\n",
+                m_compiler->doesMethodHavePatchpoints() ? "has patchpoints" : "is an OSR method");
+        // Must be pointer sized for compatibility with Continuation methods that access fields
+        layout.OSRILOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
-#ifdef DEBUG
-    if (layout.ReturnSize > 0)
+    if (HasNonContextRestoreExceptionalFlow(block))
     {
-        JITDUMP("  Will store return of type %s, size %u in",
-                call->gtReturnType == TYP_STRUCT ? layout.ReturnStructLayout->GetClassName()
-                                                 : varTypeName(call->gtReturnType),
-                layout.ReturnSize);
-
-        if (layout.ReturnInGCData)
-        {
-            JITDUMP(" GC data\n");
-        }
-        else
-        {
-            JITDUMP(" non-GC data at offset %u\n", layout.ReturnValDataOffset);
-        }
-    }
-#endif
-
-    if (block->hasTryIndex())
-    {
-        layout.ExceptionGCDataIndex = layout.GCRefsCount++;
-        JITDUMP("  " FMT_BB " is in try region %u; exception will be at GC@+%02u in GC data\n", block->bbNum,
-                block->getTryIndex(), layout.ExceptionGCDataIndex);
+        // If we are enclosed in any try region that isn't our special "context
+        // restore" try region then we need to rethrow an exception. For our
+        // special "context restore" try region we know that it is a no-op on
+        // the resumption path.
+        layout.ExceptionOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+        JITDUMP("  " FMT_BB " is in try region %u; exception will be at offset %u\n", block->bbNum,
+                block->getTryIndex(), layout.ExceptionOffset);
     }
 
     if (call->GetAsyncInfo().ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext)
     {
-        layout.ContinuationContextGCDataIndex = layout.GCRefsCount++;
-        JITDUMP("  Continuation continues on captured context; context will be at GC@+%02u in GC data\n",
-                layout.ContinuationContextGCDataIndex);
+        layout.ContinuationContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+        JITDUMP("  Continuation continues on captured context; context will be at offset %u\n",
+                layout.ContinuationContextOffset);
     }
 
-    if (call->GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::AsyncSaveAndRestore)
+    if (layout.ReturnSize > 0)
     {
-        layout.ExecContextGCDataIndex = layout.GCRefsCount++;
-        JITDUMP(
-            "  Call has async-only save and restore of ExecutionContext; ExecutionContext will be at GC@+%02u in GC data\n",
-            layout.ExecContextGCDataIndex);
+        layout.ReturnValOffset = allocLayout(layout.ReturnHeapAlignment(), layout.ReturnSize);
+
+        JITDUMP("  Will store return of type %s, size %u at offset %u\n",
+                call->gtReturnType == TYP_STRUCT ? layout.ReturnStructLayout->GetClassName()
+                                                 : varTypeName(call->gtReturnType),
+                layout.ReturnSize, layout.ReturnValOffset);
+    }
+
+    if (needsKeepAlive)
+    {
+        layout.KeepAliveOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+        JITDUMP("  Continuation needs keep alive object; will be at offset %u\n", layout.KeepAliveOffset);
+    }
+
+    layout.ExecutionContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+    JITDUMP("  Call has async-only save and restore of ExecutionContext; ExecutionContext will be at offset %u\n",
+            layout.ExecutionContextOffset);
+
+    for (LiveLocalInfo& inf : liveLocals)
+    {
+        inf.Offset = allocLayout(inf.HeapAlignment(), inf.Size);
+    }
+
+    layout.Size = roundUp(layout.Size, TARGET_POINTER_SIZE);
+
+#ifdef DEBUG
+    if (m_compiler->verbose)
+    {
+        printf("  Continuation layout (%u bytes):\n", layout.Size);
+        for (LiveLocalInfo& inf : liveLocals)
+        {
+            printf("    +%03u V%02u: %u bytes\n", inf.Offset, inf.LclNum, inf.Size);
+        }
+    }
+#endif
+
+    // Now create continuation type. First create bitmap of object refs.
+    bool* objRefs = layout.Size < TARGET_POINTER_SIZE
+                        ? nullptr
+                        : new (m_compiler, CMK_Async) bool[layout.Size / TARGET_POINTER_SIZE]{};
+
+    GCPointerBitMapBuilder bitmapBuilder(objRefs, layout.Size);
+    bitmapBuilder.SetIfNotMax(layout.ExceptionOffset);
+    bitmapBuilder.SetIfNotMax(layout.ContinuationContextOffset);
+    bitmapBuilder.SetIfNotMax(layout.KeepAliveOffset);
+    bitmapBuilder.SetIfNotMax(layout.ExecutionContextOffset);
+
+    if (layout.ReturnSize > 0)
+    {
+        bitmapBuilder.SetType(layout.ReturnValOffset, call->gtReturnType, layout.ReturnStructLayout);
     }
 
     for (LiveLocalInfo& inf : liveLocals)
     {
-        layout.DataSize = roundUp(layout.DataSize, inf.Alignment);
-
-        inf.DataOffset  = layout.DataSize;
-        inf.GCDataIndex = layout.GCRefsCount;
-
-        layout.DataSize += inf.DataSize;
-        layout.GCRefsCount += inf.GCDataCount;
+        LclVarDsc*   dsc = m_compiler->lvaGetDesc(inf.LclNum);
+        var_types    storedType;
+        ClassLayout* layout;
+        if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
+        {
+            storedType = TYP_STRUCT;
+            layout     = dsc->GetLayout();
+        }
+        else
+        {
+            storedType = dsc->TypeGet();
+            layout     = NULL;
+        }
+        bitmapBuilder.SetType(inf.Offset, storedType, layout);
     }
 
 #ifdef DEBUG
-    if (m_comp->verbose)
+    if (m_compiler->verbose)
     {
-        printf("  Continuation layout (%u bytes, %u GC pointers):\n", layout.DataSize, layout.GCRefsCount);
-        for (LiveLocalInfo& inf : liveLocals)
+        printf("Getting continuation layout size = %u, numGCRefs = %u\n", layout.Size, bitmapBuilder.NumObjRefs);
+        bool* start        = objRefs;
+        bool* endOfObjRefs = objRefs + layout.Size / TARGET_POINTER_SIZE;
+        while (start < endOfObjRefs)
         {
-            printf("    +%03u (GC@+%02u) V%02u: %u bytes, %u GC pointers\n", inf.DataOffset, inf.GCDataIndex,
-                   inf.LclNum, inf.DataSize, inf.GCDataCount);
+            while (start < endOfObjRefs && !*start)
+                start++;
+
+            if (start >= endOfObjRefs)
+                break;
+
+            bool* end = start;
+            while (end < endOfObjRefs && *end)
+                end++;
+
+            printf("  [%3u..%3u) obj refs\n", (start - objRefs) * TARGET_POINTER_SIZE,
+                   (end - objRefs) * TARGET_POINTER_SIZE);
+            start = end;
         }
     }
+#endif
+
+    layout.ClassHnd =
+        m_compiler->info.compCompHnd->getContinuationType(layout.Size, objRefs, layout.Size / TARGET_POINTER_SIZE);
+
+#ifdef DEBUG
+    char buffer[256];
+    JITDUMP("  Result = %s\n", m_compiler->eeGetClassName(layout.ClassHnd, buffer, ArrLen(buffer)));
 #endif
 
     return layout;
 }
 
 //------------------------------------------------------------------------
-// AsyncTransformation::ClearSuspendedIndicator:
-//   Generate IR to clear the value of the suspended indicator local.
-//
-// Parameters:
-//   block - Block to generate IR into
-//   call  - The async call (not contained in "block")
-//
-void AsyncTransformation::ClearSuspendedIndicator(BasicBlock* block, GenTreeCall* call)
-{
-    CallArg* suspendedArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
-    if (suspendedArg == nullptr)
-    {
-        return;
-    }
-
-    GenTree* suspended = suspendedArg->GetNode();
-    if (!suspended->IsLclVarAddr() &&
-        (!suspended->OperIs(GT_LCL_VAR) || m_comp->lvaVarAddrExposed(suspended->AsLclVarCommon()->GetLclNum())))
-    {
-        // We will need a second use of this, so spill to a local
-        LIR::Use use(LIR::AsRange(block), &suspendedArg->NodeRef(), call);
-        use.ReplaceWithLclVar(m_comp);
-        suspended = use.Def();
-    }
-
-    GenTree* value = m_comp->gtNewIconNode(0);
-    GenTree* storeSuspended =
-        m_comp->gtNewStoreValueNode(TYP_UBYTE, m_comp->gtCloneExpr(suspended), value, GTF_IND_NONFAULTING);
-
-    LIR::AsRange(block).InsertBefore(call, LIR::SeqTree(m_comp, storeSuspended));
-}
-
-//------------------------------------------------------------------------
-// AsyncTransformation::SetSuspendedIndicator:
-//   Generate IR to set the value of the suspended indicator local, and remove
-//   the argument from the call.
-//
-// Parameters:
-//   block     - Block to generate IR into
-//   callBlock - Block containing the call
-//   call      - The async call
-//
-void AsyncTransformation::SetSuspendedIndicator(BasicBlock* block, BasicBlock* callBlock, GenTreeCall* call)
-{
-    CallArg* suspendedArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
-    if (suspendedArg == nullptr)
-    {
-        return;
-    }
-
-    GenTree* suspended = suspendedArg->GetNode();
-    assert(suspended->IsLclVarAddr() || suspended->OperIs(GT_LCL_VAR)); // Ensured by ClearSuspendedIndicator
-
-    GenTree* value = m_comp->gtNewIconNode(1);
-    GenTree* storeSuspended =
-        m_comp->gtNewStoreValueNode(TYP_UBYTE, m_comp->gtCloneExpr(suspended), value, GTF_IND_NONFAULTING);
-
-    LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(m_comp, storeSuspended));
-
-    call->gtArgs.RemoveUnsafe(suspendedArg);
-    call->asyncInfo->HasSuspensionIndicatorDef = false;
-
-    // Avoid leaving LCL_ADDR around which will DNER the local.
-    if (suspended->IsLclVarAddr())
-    {
-        LIR::AsRange(callBlock).Remove(suspended);
-    }
-    else
-    {
-        suspended->SetUnusedValue();
-    }
-}
-
-//------------------------------------------------------------------------
 // AsyncTransformation::CanonicalizeCallDefinition:
-//   Put the call definition in a canonical form. This ensures that either the
-//   value is defined by a LCL_ADDR retbuffer or by a
-//   STORE_LCL_VAR/STORE_LCL_FLD that follows the call node.
+//   Put the call definition in a canonical form and update liveness for it.
+//   This ensures that either the value is defined by a LCL_ADDR retbuffer or
+//   by a STORE_LCL_VAR/STORE_LCL_FLD that follows the call node.
 //
 // Parameters:
 //   block - The block containing the async call
@@ -1201,7 +1804,7 @@ void AsyncTransformation::SetSuspendedIndicator(BasicBlock* block, BasicBlock* c
 //
 CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*    block,
                                                                    GenTreeCall*   call,
-                                                                   AsyncLiveness& life)
+                                                                   AsyncLiveness* life)
 {
     CallDefinitionInfo callDefInfo;
 
@@ -1209,22 +1812,63 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
 
     CallArg* retbufArg = call->gtArgs.GetRetBufferArg();
 
+    if (life != nullptr)
+    {
+        life->Update(call);
+    }
+
     if (!call->TypeIs(TYP_VOID) && !call->IsUnusedValue())
     {
         assert(retbufArg == nullptr);
         assert(call->gtNext != nullptr);
-        if (!call->gtNext->OperIsLocalStore() || (call->gtNext->Data() != call))
+        // Canonicalize the store. In the common case where we are already
+        // storing to a local we can usually reuse it, except if we may need to
+        // preserve its value because of an exception being thrown after
+        // potential resumption. (This check is conservative, we could use liveness for it as well.)
+        if (!call->gtNext->OperIsLocalStore() || (call->gtNext->Data() != call) ||
+            HasNonContextRestoreExceptionalFlow(block))
         {
             LIR::Use use;
             bool     gotUse = LIR::AsRange(block).TryGetUse(call, &use);
             assert(gotUse);
 
-            use.ReplaceWithLclVar(m_comp);
+            unsigned newLclNum = use.ReplaceWithLclVar(m_compiler);
+
+            // In some cases we may have been assigning a multireg promoted local from the call.
+            // That's not supported with a LCL_VAR source. We need to decompose.
+            if (call->IsMultiRegCall() && use.User()->OperIs(GT_STORE_LCL_VAR))
+            {
+                LclVarDsc* dsc = m_compiler->lvaGetDesc(use.User()->AsLclVar());
+                if (m_compiler->lvaGetPromotionType(dsc) == Compiler::PROMOTION_TYPE_INDEPENDENT)
+                {
+                    m_compiler->lvaSetVarDoNotEnregister(newLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                    JITDUMP("  Call is multi-reg stored to an independently promoted local; decomposing store\n");
+                    for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+                    {
+                        unsigned   fieldLclNum = dsc->lvFieldLclStart + i;
+                        LclVarDsc* fieldDsc    = m_compiler->lvaGetDesc(fieldLclNum);
+
+                        GenTree* value =
+                            m_compiler->gtNewLclFldNode(newLclNum, fieldDsc->TypeGet(), fieldDsc->lvFldOffset);
+                        GenTree* store = m_compiler->gtNewStoreLclVarNode(fieldLclNum, value);
+                        LIR::AsRange(block).InsertBefore(use.User(), value, store);
+                        DISPTREERANGE(LIR::AsRange(block), store);
+                    }
+
+                    // Remove the local and store that were created by ReplaceWithLclVar above
+                    assert(use.Def()->OperIs(GT_LCL_VAR));
+                    LIR::AsRange(block).Remove(use.Def());
+                    LIR::AsRange(block).Remove(use.User());
+                }
+            }
         }
         else
         {
-            // We will split after the store, but we still have to update liveness for it.
-            life.Update(call->gtNext);
+            if (life != nullptr)
+            {
+                // We will split after the store, but we still have to update liveness for it.
+                life->Update(call->gtNext);
+            }
         }
 
         assert(call->gtNext->OperIsLocalStore() && (call->gtNext->Data() == call));
@@ -1266,10 +1910,10 @@ BasicBlock* AsyncTransformation::CreateSuspension(
 {
     if (m_lastSuspensionBB == nullptr)
     {
-        m_lastSuspensionBB = m_comp->fgLastBBInMainFunction();
+        m_lastSuspensionBB = m_compiler->fgLastBBInMainFunction();
     }
 
-    BasicBlock* suspendBB = m_comp->fgNewBBafter(BBJ_RETURN, m_lastSuspensionBB, false);
+    BasicBlock* suspendBB = m_compiler->fgNewBBafter(BBJ_RETURN, m_lastSuspensionBB, false);
     suspendBB->clearTryIndex();
     suspendBB->clearHndIndex();
     suspendBB->inheritWeightPercentage(block, 0);
@@ -1277,71 +1921,79 @@ BasicBlock* AsyncTransformation::CreateSuspension(
 
     if (m_sharedReturnBB != nullptr)
     {
-        suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_comp->fgAddRefPred(m_sharedReturnBB, suspendBB));
+        suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(m_sharedReturnBB, suspendBB));
     }
 
     JITDUMP("  Creating suspension " FMT_BB " for state %u\n", suspendBB->bbNum, stateNum);
 
+    GenTreeILOffset* ilOffsetNode =
+        m_compiler->gtNewILOffsetNode(call->GetAsyncInfo().CallAsyncDebugInfo DEBUGARG(BAD_IL_OFFSET));
+
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, ilOffsetNode));
+
+    GenTree* recordOffset =
+        new (m_compiler, GT_RECORD_ASYNC_RESUME) GenTreeVal(GT_RECORD_ASYNC_RESUME, TYP_VOID, stateNum);
+    LIR::AsRange(suspendBB).InsertAtEnd(recordOffset);
+
     // Allocate continuation
-    GenTree* returnedContinuation = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
+    GenTree* returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
 
-    GenTreeCall* allocContinuation =
-        CreateAllocContinuationCall(life, returnedContinuation, layout.GCRefsCount, layout.DataSize);
+    GenTreeCall* allocContinuation = CreateAllocContinuationCall(life, returnedContinuation, layout);
 
-    m_comp->compCurBB = suspendBB;
-    m_comp->fgMorphTree(allocContinuation);
+    m_compiler->compCurBB = suspendBB;
+    m_compiler->fgMorphTree(allocContinuation);
 
-    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, allocContinuation));
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, allocContinuation));
 
-    GenTree* storeNewContinuation = m_comp->gtNewStoreLclVarNode(m_newContinuationVar, allocContinuation);
+    GenTree* storeNewContinuation = m_compiler->gtNewStoreLclVarNode(GetNewContinuationVar(), allocContinuation);
     LIR::AsRange(suspendBB).InsertAtEnd(storeNewContinuation);
 
-    // Fill in 'Resume'
-    GenTree* newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-    unsigned resumeOffset    = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeFldHnd);
-    GenTree* resumeStubAddr  = CreateResumptionStubAddrTree();
-    GenTree* storeResume     = StoreAtOffset(newContinuation, resumeOffset, resumeStubAddr, TYP_I_IMPL);
-    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResume));
+    // Fill in 'ResumeInfo'
+    GenTree* newContinuation  = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    unsigned resumeInfoOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeInfoFldHnd);
+    GenTree* resumeInfoAddr =
+        new (m_compiler, GT_ASYNC_RESUME_INFO) GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, (ssize_t)stateNum);
+    GenTree* storeResume = StoreAtOffset(newContinuation, resumeInfoOffset, resumeInfoAddr, TYP_I_IMPL);
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResume));
 
     // Fill in 'state'
-    newContinuation       = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-    unsigned stateOffset  = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
-    GenTree* stateNumNode = m_comp->gtNewIconNode((ssize_t)stateNum, TYP_INT);
+    newContinuation       = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    unsigned stateOffset  = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
+    GenTree* stateNumNode = m_compiler->gtNewIconNode((ssize_t)stateNum, TYP_INT);
     GenTree* storeState   = StoreAtOffset(newContinuation, stateOffset, stateNumNode, TYP_INT);
-    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeState));
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeState));
 
     // Fill in 'flags'
     const AsyncCallInfo& callInfo          = call->GetAsyncInfo();
     unsigned             continuationFlags = 0;
-    if (layout.ReturnInGCData)
-        continuationFlags |= CORINFO_CONTINUATION_RESULT_IN_GCDATA;
-    if (block->hasTryIndex())
-        continuationFlags |= CORINFO_CONTINUATION_NEEDS_EXCEPTION;
-    if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
-        continuationFlags |= CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA;
+    if (layout.OSRILOffset != UINT_MAX)
+        continuationFlags |= CORINFO_CONTINUATION_HAS_OSR_ILOFFSET;
+    if (layout.ExceptionOffset != UINT_MAX)
+        continuationFlags |= CORINFO_CONTINUATION_HAS_EXCEPTION;
+    if (layout.ContinuationContextOffset != UINT_MAX)
+        continuationFlags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
+    if (layout.ReturnValOffset != UINT_MAX)
+        continuationFlags |= CORINFO_CONTINUATION_HAS_RESULT;
     if (callInfo.ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
         continuationFlags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
 
-    newContinuation      = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-    unsigned flagsOffset = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
-    GenTree* flagsNode   = m_comp->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);
+    newContinuation      = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
+    GenTree* flagsNode   = m_compiler->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);
     GenTree* storeFlags  = StoreAtOffset(newContinuation, flagsOffset, flagsNode, TYP_INT);
-    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeFlags));
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeFlags));
 
-    if (layout.GCRefsCount > 0)
+    if (layout.Size > 0)
     {
-        FillInGCPointersOnSuspension(call, layout, suspendBB);
+        FillInDataOnSuspension(call, layout, suspendBB);
     }
 
-    if (layout.DataSize > 0)
-    {
-        FillInDataOnSuspension(layout.Locals, suspendBB);
-    }
+    RestoreContexts(block, call, suspendBB);
 
     if (suspendBB->KindIs(BBJ_RETURN))
     {
-        newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-        GenTree* ret    = m_comp->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
+        newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        GenTree* ret    = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
         LIR::AsRange(suspendBB).InsertAtEnd(newContinuation, ret);
     }
 
@@ -1355,231 +2007,35 @@ BasicBlock* AsyncTransformation::CreateSuspension(
 // Parameters:
 //   life             - Liveness information about live locals
 //   prevContinuation - IR node that has the value of the previous continuation object
-//   gcRefsCount      - Number of GC refs to allocate in the continuation object
-//   dataSize         - Number of bytes to allocate in the continuation object
+//   layout           - Layout information
 //
 // Returns:
 //   IR node representing the allocation.
 //
-GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness& life,
-                                                              GenTree*       prevContinuation,
-                                                              unsigned       gcRefsCount,
-                                                              unsigned       dataSize)
+GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness&            life,
+                                                              GenTree*                  prevContinuation,
+                                                              const ContinuationLayout& layout)
 {
-    GenTree* gcRefsCountNode = m_comp->gtNewIconNode((ssize_t)gcRefsCount, TYP_I_IMPL);
-    GenTree* dataSizeNode    = m_comp->gtNewIconNode((ssize_t)dataSize, TYP_I_IMPL);
-    // If VM requests that we report the method handle, or if we have a shared generic context method handle
-    // that is live here, then we need to call a different helper to keep the loader alive.
-    GenTree* methodHandleArg = nullptr;
-    GenTree* classHandleArg  = nullptr;
-    if (((m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODDESC) != 0) &&
-        life.IsLive(m_comp->info.compTypeCtxtArg))
+    GenTree* contClassHndNode = m_compiler->gtNewIconEmbClsHndNode(layout.ClassHnd);
+
+    // If we need to keep the loader alive, use a different helper.
+    if (ContinuationNeedsKeepAlive(life))
     {
-        methodHandleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
-    }
-    else if (((m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODTABLE) != 0) &&
-             life.IsLive(m_comp->info.compTypeCtxtArg))
-    {
-        classHandleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
-    }
-    else if (m_asyncInfo->continuationsNeedMethodHandle)
-    {
-        methodHandleArg = m_comp->gtNewIconEmbMethHndNode(m_comp->info.compMethodHnd);
+        assert(layout.KeepAliveOffset != UINT_MAX);
+        GenTree* handleArg = m_compiler->gtNewLclvNode(m_compiler->info.compTypeCtxtArg, TYP_I_IMPL);
+        // Offset passed to function is relative to instance data.
+        int keepAliveOffset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) + layout.KeepAliveOffset;
+        GenTree*        keepAliveOffsetNode = m_compiler->gtNewIconNode(keepAliveOffset);
+        CorInfoHelpFunc helperNum =
+            (m_compiler->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODTABLE) != 0
+                ? CORINFO_HELP_ALLOC_CONTINUATION_CLASS
+                : CORINFO_HELP_ALLOC_CONTINUATION_METHOD;
+        return m_compiler->gtNewHelperCallNode(helperNum, TYP_REF, prevContinuation, contClassHndNode,
+                                               keepAliveOffsetNode, handleArg);
     }
 
-    if (methodHandleArg != nullptr)
-    {
-        return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION_METHOD, TYP_REF, prevContinuation,
-                                           gcRefsCountNode, dataSizeNode, methodHandleArg);
-    }
-
-    if (classHandleArg != nullptr)
-    {
-        return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION_CLASS, TYP_REF, prevContinuation,
-                                           gcRefsCountNode, dataSizeNode, classHandleArg);
-    }
-
-    return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF, prevContinuation, gcRefsCountNode,
-                                       dataSizeNode);
-}
-
-//------------------------------------------------------------------------
-// AsyncTransformation::FillInGCPointersOnSuspension:
-//   Create IR that fills the GC pointers of the continuation object.
-//   This also nulls out the GC pointers in the locals if the local has data
-//   parts that need to be stored.
-//
-// Parameters:
-//   call      - The async call that is being transformed
-//   layout    - Layout information
-//   suspendBB - Basic block to add IR to.
-//
-void AsyncTransformation::FillInGCPointersOnSuspension(GenTreeCall*              call,
-                                                       const ContinuationLayout& layout,
-                                                       BasicBlock*               suspendBB)
-{
-    unsigned objectArrLclNum = GetGCDataArrayVar();
-
-    GenTree* newContinuation       = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-    unsigned gcDataOffset          = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationGCDataFldHnd);
-    GenTree* gcDataInd             = LoadFromOffset(newContinuation, gcDataOffset, TYP_REF);
-    GenTree* storeAllocedObjectArr = m_comp->gtNewStoreLclVarNode(objectArrLclNum, gcDataInd);
-    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedObjectArr));
-
-    for (const LiveLocalInfo& inf : layout.Locals)
-    {
-        if (inf.GCDataCount <= 0)
-        {
-            continue;
-        }
-
-        LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
-        if (dsc->TypeIs(TYP_REF))
-        {
-            GenTree* value     = m_comp->gtNewLclvNode(inf.LclNum, TYP_REF);
-            GenTree* objectArr = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
-            GenTree* store =
-                StoreAtOffset(objectArr, OFFSETOF__CORINFO_Array__data + (inf.GCDataIndex * TARGET_POINTER_SIZE), value,
-                              TYP_REF);
-            LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
-        }
-        else
-        {
-            assert(dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef());
-            ClassLayout* layout     = dsc->GetLayout();
-            unsigned     numSlots   = layout->GetSlotCount();
-            unsigned     gcRefIndex = 0;
-            for (unsigned i = 0; i < numSlots; i++)
-            {
-                var_types gcPtrType = layout->GetGCPtrType(i);
-                assert((gcPtrType == TYP_I_IMPL) || (gcPtrType == TYP_REF));
-                if (gcPtrType != TYP_REF)
-                {
-                    continue;
-                }
-
-                GenTree* value;
-                if (dsc->IsImplicitByRef())
-                {
-                    GenTree* baseAddr = m_comp->gtNewLclvNode(inf.LclNum, dsc->TypeGet());
-                    value             = LoadFromOffset(baseAddr, i * TARGET_POINTER_SIZE, TYP_REF);
-                }
-                else
-                {
-                    value = m_comp->gtNewLclFldNode(inf.LclNum, TYP_REF, i * TARGET_POINTER_SIZE);
-                }
-
-                GenTree* objectArr = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
-                unsigned offset =
-                    OFFSETOF__CORINFO_Array__data + ((inf.GCDataIndex + gcRefIndex) * TARGET_POINTER_SIZE);
-                GenTree* store = StoreAtOffset(objectArr, offset, value, TYP_REF);
-                LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
-
-                gcRefIndex++;
-
-                if (inf.DataSize > 0)
-                {
-                    // Null out the GC field in preparation of storing the rest.
-                    GenTree* null = m_comp->gtNewNull();
-
-                    if (dsc->IsImplicitByRef())
-                    {
-                        GenTree* baseAddr = m_comp->gtNewLclvNode(inf.LclNum, dsc->TypeGet());
-                        store             = StoreAtOffset(baseAddr, i * TARGET_POINTER_SIZE, null, TYP_REF);
-                    }
-                    else
-                    {
-                        store = m_comp->gtNewStoreLclFldNode(inf.LclNum, TYP_REF, i * TARGET_POINTER_SIZE, null);
-                    }
-
-                    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
-                }
-            }
-
-            if (!dsc->IsImplicitByRef())
-            {
-                m_comp->lvaSetVarDoNotEnregister(inf.LclNum DEBUGARG(DoNotEnregisterReason::LocalField));
-            }
-        }
-    }
-
-    if (layout.ContinuationContextGCDataIndex != UINT_MAX)
-    {
-        const AsyncCallInfo& callInfo = call->GetAsyncInfo();
-        assert(callInfo.SaveAndRestoreSynchronizationContextField &&
-               (callInfo.SynchronizationContextLclNum != BAD_VAR_NUM));
-
-        // Insert call
-        //   AsyncHelpers.CaptureContinuationContext(
-        //     syncContextFromBeforeCall,
-        //     ref newContinuation.GCData[ContinuationContextGCDataIndex],
-        //     ref newContinuation.Flags).
-        GenTree*     syncContextPlaceholder    = m_comp->gtNewNull();
-        GenTree*     contextElementPlaceholder = m_comp->gtNewZeroConNode(TYP_BYREF);
-        GenTree*     flagsPlaceholder          = m_comp->gtNewZeroConNode(TYP_BYREF);
-        GenTreeCall* captureCall =
-            m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureContinuationContextMethHnd, TYP_VOID);
-
-        captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(flagsPlaceholder));
-        captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(contextElementPlaceholder));
-        captureCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(syncContextPlaceholder));
-
-        m_comp->compCurBB = suspendBB;
-        m_comp->fgMorphTree(captureCall);
-
-        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, captureCall));
-
-        // Replace sync context placeholder with actual sync context from before call
-        LIR::Use use;
-        bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(syncContextPlaceholder, &use);
-        assert(gotUse);
-        GenTree* syncContextLcl = m_comp->gtNewLclvNode(callInfo.SynchronizationContextLclNum, TYP_REF);
-        LIR::AsRange(suspendBB).InsertBefore(syncContextPlaceholder, syncContextLcl);
-        use.ReplaceWith(syncContextLcl);
-        LIR::AsRange(suspendBB).Remove(syncContextPlaceholder);
-
-        // Replace contextElementPlaceholder with actual address of the context element
-        gotUse = LIR::AsRange(suspendBB).TryGetUse(contextElementPlaceholder, &use);
-        assert(gotUse);
-
-        GenTree* objectArr = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
-        unsigned offset = OFFSETOF__CORINFO_Array__data + (layout.ContinuationContextGCDataIndex * TARGET_POINTER_SIZE);
-        GenTree* contextElementOffset =
-            m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, objectArr, m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL));
-
-        LIR::AsRange(suspendBB).InsertBefore(contextElementPlaceholder, LIR::SeqTree(m_comp, contextElementOffset));
-        use.ReplaceWith(contextElementOffset);
-        LIR::AsRange(suspendBB).Remove(contextElementPlaceholder);
-
-        // Replace flagsPlaceholder with actual address of the flags
-        gotUse = LIR::AsRange(suspendBB).TryGetUse(flagsPlaceholder, &use);
-        assert(gotUse);
-
-        newContinuation          = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-        unsigned flagsOffset     = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
-        GenTree* flagsOffsetNode = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
-                                                         m_comp->gtNewIconNode((ssize_t)flagsOffset, TYP_I_IMPL));
-
-        LIR::AsRange(suspendBB).InsertBefore(flagsPlaceholder, LIR::SeqTree(m_comp, flagsOffsetNode));
-        use.ReplaceWith(flagsOffsetNode);
-        LIR::AsRange(suspendBB).Remove(flagsPlaceholder);
-    }
-
-    if (layout.ExecContextGCDataIndex != UINT_MAX)
-    {
-        GenTreeCall* captureExecContext =
-            m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureExecutionContextMethHnd, TYP_REF);
-
-        m_comp->compCurBB = suspendBB;
-        m_comp->fgMorphTree(captureExecContext);
-
-        GenTree* objectArr = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
-        GenTree* store =
-            StoreAtOffset(objectArr,
-                          OFFSETOF__CORINFO_Array__data + (layout.ExecContextGCDataIndex * TARGET_POINTER_SIZE),
-                          captureExecContext, TYP_REF);
-        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
-    }
+    return m_compiler->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF, prevContinuation,
+                                           contClassHndNode);
 }
 
 //------------------------------------------------------------------------
@@ -1587,74 +2043,231 @@ void AsyncTransformation::FillInGCPointersOnSuspension(GenTreeCall*             
 //   Create IR that fills the data array of the continuation object.
 //
 // Parameters:
-//   liveLocals - Information about each live local.
-//   suspendBB  - Basic block to add IR to.
+//   call      - The async call
+//   layout    - Information about the continuation layout
+//   suspendBB - Basic block to add IR to.
 //
-void AsyncTransformation::FillInDataOnSuspension(const jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB)
+void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
+                                                 const ContinuationLayout& layout,
+                                                 BasicBlock*               suspendBB)
 {
-    unsigned byteArrLclNum = GetDataArrayVar();
-
-    GenTree* newContinuation     = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-    unsigned dataOffset          = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationDataFldHnd);
-    GenTree* dataInd             = LoadFromOffset(newContinuation, dataOffset, TYP_REF);
-    GenTree* storeAllocedByteArr = m_comp->gtNewStoreLclVarNode(byteArrLclNum, dataInd);
-    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedByteArr));
-
-    if (m_comp->doesMethodHavePatchpoints() || m_comp->opts.IsOSR())
+    if (m_compiler->doesMethodHavePatchpoints() || m_compiler->opts.IsOSR())
     {
         GenTree* ilOffsetToStore;
-        if (m_comp->doesMethodHavePatchpoints())
-            ilOffsetToStore = m_comp->gtNewIconNode(-1);
+        if (m_compiler->doesMethodHavePatchpoints())
+            ilOffsetToStore = m_compiler->gtNewIconNode(-1);
         else
-            ilOffsetToStore = m_comp->gtNewIconNode((int)m_comp->info.compILEntry);
+            ilOffsetToStore = m_compiler->gtNewIconNode((int)m_compiler->info.compILEntry);
 
-        GenTree* byteArr               = m_comp->gtNewLclvNode(byteArrLclNum, TYP_REF);
-        unsigned offset                = OFFSETOF__CORINFO_Array__data;
-        GenTree* storePatchpointOffset = StoreAtOffset(byteArr, offset, ilOffsetToStore, TYP_INT);
-        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storePatchpointOffset));
+        // OSR IL offset needs to be at offset 0 because OSR and tier0 methods
+        // need to agree on that.
+        assert(layout.OSRILOffset == 0);
+        GenTree* newContinuation       = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        unsigned offset                = OFFSETOF__CORINFO_Continuation__data;
+        GenTree* storePatchpointOffset = StoreAtOffset(newContinuation, offset, ilOffsetToStore, TYP_INT);
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, storePatchpointOffset));
     }
 
     // Fill in data
-    for (const LiveLocalInfo& inf : liveLocals)
+    for (const LiveLocalInfo& inf : layout.Locals)
     {
-        if (inf.DataSize <= 0)
-        {
-            continue;
-        }
+        assert(inf.Size > 0);
 
-        LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(inf.LclNum);
 
-        GenTree* byteArr = m_comp->gtNewLclvNode(byteArrLclNum, TYP_REF);
-        unsigned offset  = OFFSETOF__CORINFO_Array__data + inf.DataOffset;
+        GenTree* newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        unsigned offset          = OFFSETOF__CORINFO_Continuation__data + inf.Offset;
 
         GenTree* value;
         if (dsc->IsImplicitByRef())
         {
-            GenTree* baseAddr = m_comp->gtNewLclvNode(inf.LclNum, dsc->TypeGet());
-            value             = m_comp->gtNewLoadValueNode(dsc->GetLayout(), baseAddr, GTF_IND_NONFAULTING);
+            GenTree* baseAddr = m_compiler->gtNewLclvNode(inf.LclNum, dsc->TypeGet());
+            value             = m_compiler->gtNewLoadValueNode(dsc->GetLayout(), baseAddr, GTF_IND_NONFAULTING);
         }
         else
         {
-            value = m_comp->gtNewLclVarNode(inf.LclNum);
+            value = m_compiler->gtNewLclVarNode(inf.LclNum);
         }
+
+        GenTreeFlags indirFlags =
+            GTF_IND_NONFAULTING | (inf.HeapAlignment() < inf.Alignment ? GTF_IND_UNALIGNED : GTF_EMPTY);
 
         GenTree* store;
         if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
         {
-            GenTree* cns  = m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
-            GenTree* addr = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, byteArr, cns);
-            // This is to heap, but all GC refs are nulled out already, so we can skip the write barrier.
-            // TODO-CQ: Backend does not care about GTF_IND_TGT_NOT_HEAP for STORE_BLK.
-            store =
-                m_comp->gtNewStoreValueNode(dsc->GetLayout(), addr, value, GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
+            GenTree* cns  = m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
+            GenTree* addr = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation, cns);
+            store         = m_compiler->gtNewStoreValueNode(dsc->GetLayout(), addr, value, indirFlags);
         }
         else
         {
-            store = StoreAtOffset(byteArr, offset, value, dsc->TypeGet());
+            store = StoreAtOffset(newContinuation, offset, value, dsc->TypeGet(), indirFlags);
         }
 
-        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
     }
+
+    if (layout.ContinuationContextOffset != UINT_MAX)
+    {
+        // Insert call
+        //   AsyncHelpers.CaptureContinuationContext(
+        //     ref newContinuation.ContinuationContext,
+        //     ref newContinuation.Flags).
+        GenTree*     contContextElementPlaceholder = m_compiler->gtNewZeroConNode(TYP_BYREF);
+        GenTree*     flagsPlaceholder              = m_compiler->gtNewZeroConNode(TYP_BYREF);
+        GenTreeCall* captureCall =
+            m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureContinuationContextMethHnd, TYP_VOID);
+
+        captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(flagsPlaceholder));
+        captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(contContextElementPlaceholder));
+
+        m_compiler->compCurBB = suspendBB;
+        m_compiler->fgMorphTree(captureCall);
+
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, captureCall));
+
+        // Replace contContextElementPlaceholder with actual address of the continuation context element
+        LIR::Use use;
+        bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(contContextElementPlaceholder, &use);
+        assert(gotUse);
+
+        GenTree* newContinuation   = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        unsigned contContextOffset = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationContextOffset;
+        GenTree* contContextElementOffset =
+            m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
+                                      m_compiler->gtNewIconNode((ssize_t)contContextOffset, TYP_I_IMPL));
+
+        LIR::AsRange(suspendBB).InsertBefore(contContextElementPlaceholder,
+                                             LIR::SeqTree(m_compiler, contContextElementOffset));
+        use.ReplaceWith(contContextElementOffset);
+        LIR::AsRange(suspendBB).Remove(contContextElementPlaceholder);
+
+        // Replace flagsPlaceholder with actual address of the flags
+        gotUse = LIR::AsRange(suspendBB).TryGetUse(flagsPlaceholder, &use);
+        assert(gotUse);
+
+        newContinuation      = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        unsigned flagsOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
+        GenTree* flagsOffsetNode =
+            m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, newContinuation,
+                                      m_compiler->gtNewIconNode((ssize_t)flagsOffset, TYP_I_IMPL));
+
+        LIR::AsRange(suspendBB).InsertBefore(flagsPlaceholder, LIR::SeqTree(m_compiler, flagsOffsetNode));
+        use.ReplaceWith(flagsOffsetNode);
+        LIR::AsRange(suspendBB).Remove(flagsPlaceholder);
+    }
+
+    if (layout.ExecutionContextOffset != UINT_MAX)
+    {
+        GenTreeCall* captureExecContext =
+            m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureExecutionContextMethHnd, TYP_REF);
+
+        m_compiler->compCurBB = suspendBB;
+        m_compiler->fgMorphTree(captureExecContext);
+
+        GenTree* newContinuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+        unsigned offset          = OFFSETOF__CORINFO_Continuation__data + layout.ExecutionContextOffset;
+        GenTree* store           = StoreAtOffset(newContinuation, offset, captureExecContext, TYP_REF);
+        LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
+    }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::RestoreContexts:
+//   Create IR to restore contexts on suspension.
+//
+// Parameters:
+//   block     - Block that contains the async call
+//   call      - The async call
+//   suspendBB - The basic block to add IR to.
+//
+void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* suspendBB)
+{
+    CallArg* execContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
+    CallArg* syncContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    assert((execContextArg != nullptr) == (syncContextArg != nullptr));
+    if (execContextArg == nullptr)
+    {
+        JITDUMP("    Call [%06u] does not have async contexts; skipping restore on suspension\n",
+                Compiler::dspTreeID(call));
+        return;
+    }
+
+    JITDUMP("    Call [%06u] has async contexts; will restore on suspension\n", Compiler::dspTreeID(call));
+
+    // Insert call
+    //   AsyncHelpers.RestoreContexts(resumed, execContext, syncContext);
+
+    GenTree*     resumedPlaceholder     = m_compiler->gtNewIconNode(0);
+    GenTree*     execContextPlaceholder = m_compiler->gtNewNull();
+    GenTree*     syncContextPlaceholder = m_compiler->gtNewNull();
+    GenTreeCall* restoreCall =
+        m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
+
+    restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(syncContextPlaceholder));
+    restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(execContextPlaceholder));
+    restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(resumedPlaceholder));
+
+    m_compiler->compCurBB = suspendBB;
+    m_compiler->fgMorphTree(restoreCall);
+
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, restoreCall));
+
+    // Replace resumedPlaceholder with actual "continuationParameter != null" arg
+    LIR::Use use;
+    bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(resumedPlaceholder, &use);
+    assert(gotUse);
+
+    GenTree* continuation = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+    GenTree* null         = m_compiler->gtNewNull();
+    GenTree* started      = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+
+    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_compiler, started));
+    use.ReplaceWith(started);
+    LIR::AsRange(suspendBB).Remove(resumedPlaceholder);
+
+    // Replace execContextPlaceholder with actual value
+    GenTree* execContext = execContextArg->GetNode();
+    if (!execContext->OperIs(GT_LCL_VAR))
+    {
+        // We are moving execContext into a different BB so create a temp for it.
+        LIR::Use use(LIR::AsRange(block), &execContextArg->NodeRef(), call);
+        use.ReplaceWithLclVar(m_compiler);
+        execContext = use.Def();
+    }
+
+    gotUse = LIR::AsRange(suspendBB).TryGetUse(execContextPlaceholder, &use);
+    assert(gotUse);
+
+    LIR::AsRange(block).Remove(execContext);
+    LIR::AsRange(suspendBB).InsertBefore(execContextPlaceholder, execContext);
+    use.ReplaceWith(execContext);
+    LIR::AsRange(suspendBB).Remove(execContextPlaceholder);
+
+    call->gtArgs.RemoveUnsafe(execContextArg);
+
+    // Replace syncContextPlaceholder with actual value
+    GenTree* syncContext = syncContextArg->GetNode();
+    if (!syncContext->OperIs(GT_LCL_VAR))
+    {
+        // We are moving syncContext into a different BB so create a temp for it.
+        LIR::Use use(LIR::AsRange(block), &syncContextArg->NodeRef(), call);
+        use.ReplaceWithLclVar(m_compiler);
+        syncContext = use.Def();
+    }
+
+    gotUse = LIR::AsRange(suspendBB).TryGetUse(syncContextPlaceholder, &use);
+    assert(gotUse);
+
+    LIR::AsRange(block).Remove(syncContext);
+    LIR::AsRange(suspendBB).InsertBefore(syncContextPlaceholder, syncContext);
+    use.ReplaceWith(syncContext);
+    LIR::AsRange(suspendBB).Remove(syncContextPlaceholder);
+
+    call->gtArgs.RemoveUnsafe(syncContextArg);
+
+    JITDUMP("    Created RestoreContexts call on suspension:\n");
+    DISPTREERANGE(LIR::AsRange(suspendBB), restoreCall);
 }
 
 //------------------------------------------------------------------------
@@ -1666,33 +2279,45 @@ void AsyncTransformation::FillInDataOnSuspension(const jitstd::vector<LiveLocalI
 //   block       - The block containing the async call
 //   call        - The async call
 //   callDefInfo - Information about the async call's definition
-//   life        - Liveness information about live locals
 //   suspendBB   - Basic block to add IR to
 //   remainder   - [out] The remainder block containing the IR that was after the async call.
 //
 void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                          GenTreeCall*              call,
                                                          const CallDefinitionInfo& callDefInfo,
-                                                         AsyncLiveness&            life,
                                                          BasicBlock*               suspendBB,
                                                          BasicBlock**              remainder)
 {
-    GenTree* continuationArg = new (m_comp, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
+    GenTree* continuationArg = new (m_compiler, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
     continuationArg->SetHasOrderingSideEffect();
 
-    GenTree* storeContinuation = m_comp->gtNewStoreLclVarNode(m_returnedContinuationVar, continuationArg);
+    GenTree* storeContinuation = m_compiler->gtNewStoreLclVarNode(GetReturnedContinuationVar(), continuationArg);
     LIR::AsRange(block).InsertAfter(callDefInfo.InsertAfter, continuationArg, storeContinuation);
 
-    GenTree* null                 = m_comp->gtNewNull();
-    GenTree* returnedContinuation = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
-    GenTree* neNull               = m_comp->gtNewOperNode(GT_NE, TYP_INT, returnedContinuation, null);
-    GenTree* jtrue                = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
+    GenTree* null                 = m_compiler->gtNewNull();
+    GenTree* returnedContinuation = m_compiler->gtNewLclvNode(GetReturnedContinuationVar(), TYP_REF);
+    GenTree* neNull               = m_compiler->gtNewOperNode(GT_NE, TYP_INT, returnedContinuation, null);
+    GenTree* jtrue                = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
 
     LIR::AsRange(block).InsertAfter(storeContinuation, null, returnedContinuation, neNull, jtrue);
-    *remainder = m_comp->fgSplitBlockAfterNode(block, jtrue);
+    *remainder = m_compiler->fgSplitBlockAfterNode(block, jtrue);
     JITDUMP("  Remainder is " FMT_BB "\n", (*remainder)->bbNum);
 
-    FlowEdge* retBBEdge = m_comp->fgAddRefPred(suspendBB, block);
+    // For non-inlined calls adjust offset for the split. We have the exact
+    // offset of the await call, so we can do better than
+    // fgSplitBlockAfterNode. The previous block contains the call so add 1 to
+    // include its start offset (the IL offsets are only used for range checks
+    // in the backend, so having the offset be inside an IL instruction is ok.)
+    DebugInfo di = call->GetAsyncInfo().CallAsyncDebugInfo.GetRoot();
+    DebugInfo par;
+    if (!di.GetParent(&par))
+    {
+        IL_OFFSET awaitOffset    = di.GetLocation().GetOffset();
+        block->bbCodeOffsEnd     = awaitOffset + 1;
+        (*remainder)->bbCodeOffs = awaitOffset + 1;
+    }
+
+    FlowEdge* retBBEdge = m_compiler->fgAddRefPred(suspendBB, block);
     block->SetCond(retBBEdge, block->GetTargetEdge());
 
     block->GetTrueEdge()->setLikelihood(0);
@@ -1724,11 +2349,11 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
 {
     if (m_lastResumptionBB == nullptr)
     {
-        m_lastResumptionBB = m_comp->fgLastBBInMainFunction();
+        m_lastResumptionBB = m_compiler->fgLastBBInMainFunction();
     }
 
-    BasicBlock* resumeBB      = m_comp->fgNewBBafter(BBJ_ALWAYS, m_lastResumptionBB, true);
-    FlowEdge*   remainderEdge = m_comp->fgAddRefPred(remainder, resumeBB);
+    BasicBlock* resumeBB      = m_compiler->fgNewBBafter(BBJ_ALWAYS, m_lastResumptionBB, true);
+    FlowEdge*   remainderEdge = m_compiler->fgAddRefPred(remainder, resumeBB);
 
     resumeBB->bbSetRunRarely();
     resumeBB->CopyFlags(remainder, BBF_PROF_WEIGHT);
@@ -1740,50 +2365,26 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
 
     JITDUMP("  Creating resumption " FMT_BB " for state %u\n", resumeBB->bbNum, stateNum);
 
-    SetSuspendedIndicator(resumeBB, block, call);
+    GenTreeILOffset* ilOffsetNode =
+        m_compiler->gtNewILOffsetNode(call->GetAsyncInfo().CallAsyncDebugInfo DEBUGARG(BAD_IL_OFFSET));
 
-    // We need to restore data before we restore GC pointers, since restoring
-    // the data may also write the GC pointer fields with nulls.
-    unsigned resumeByteArrLclNum = BAD_VAR_NUM;
-    if (layout.DataSize > 0)
+    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, ilOffsetNode));
+
+    if (layout.Size > 0)
     {
-        resumeByteArrLclNum = GetDataArrayVar();
-
-        GenTree* newContinuation     = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned dataOffset          = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationDataFldHnd);
-        GenTree* dataInd             = LoadFromOffset(newContinuation, dataOffset, TYP_REF);
-        GenTree* storeAllocedByteArr = m_comp->gtNewStoreLclVarNode(resumeByteArrLclNum, dataInd);
-
-        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedByteArr));
-
-        RestoreFromDataOnResumption(resumeByteArrLclNum, layout.Locals, resumeBB);
+        RestoreFromDataOnResumption(layout, resumeBB);
     }
 
-    unsigned    resumeObjectArrLclNum = BAD_VAR_NUM;
-    BasicBlock* storeResultBB         = resumeBB;
+    BasicBlock* storeResultBB = resumeBB;
 
-    if (layout.GCRefsCount > 0)
+    if (layout.ExceptionOffset != UINT_MAX)
     {
-        resumeObjectArrLclNum = GetGCDataArrayVar();
-
-        GenTree* newContinuation = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned gcDataOffset    = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationGCDataFldHnd);
-        GenTree* gcDataInd       = LoadFromOffset(newContinuation, gcDataOffset, TYP_REF);
-        GenTree* storeAllocedObjectArr = m_comp->gtNewStoreLclVarNode(resumeObjectArrLclNum, gcDataInd);
-        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeAllocedObjectArr));
-
-        RestoreFromGCPointersOnResumption(resumeObjectArrLclNum, layout, resumeBB);
-
-        if (layout.ExceptionGCDataIndex != UINT_MAX)
-        {
-            storeResultBB = RethrowExceptionOnResumption(block, resumeObjectArrLclNum, layout, resumeBB);
-        }
+        storeResultBB = RethrowExceptionOnResumption(block, layout, resumeBB);
     }
 
     if ((layout.ReturnSize > 0) && (callDefInfo.DefinitionNode != nullptr))
     {
-        CopyReturnValueOnResumption(call, callDefInfo, resumeByteArrLclNum, resumeObjectArrLclNum, layout,
-                                    storeResultBB);
+        CopyReturnValueOnResumption(call, callDefInfo, layout, storeResultBB);
     }
 
     return resumeBB;
@@ -1795,150 +2396,80 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
 //   object.
 //
 // Parameters:
-//   resumeByteArrLclNum - Local that has the continuation object's data array
-//   liveLocals          - Information about each live local.
-//   resumeBB            - Basic block to append IR to
+//   layout   - Information about the continuation layout
+//   resumeBB - Basic block to append IR to
 //
-void AsyncTransformation::RestoreFromDataOnResumption(unsigned                             resumeByteArrLclNum,
-                                                      const jitstd::vector<LiveLocalInfo>& liveLocals,
-                                                      BasicBlock*                          resumeBB)
+void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& layout, BasicBlock* resumeBB)
 {
-    // Copy data
-    for (const LiveLocalInfo& inf : liveLocals)
+    if (layout.ExecutionContextOffset != BAD_VAR_NUM)
     {
-        if (inf.DataSize <= 0)
-        {
-            continue;
-        }
-
-        LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
-
-        GenTree* byteArr = m_comp->gtNewLclvNode(resumeByteArrLclNum, TYP_REF);
-        unsigned offset  = OFFSETOF__CORINFO_Array__data + inf.DataOffset;
-        GenTree* cns     = m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
-        GenTree* addr    = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, byteArr, cns);
-
-        GenTree* value;
-        if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
-        {
-            value = m_comp->gtNewLoadValueNode(dsc->GetLayout(), addr, GTF_IND_NONFAULTING);
-        }
-        else
-        {
-            value = m_comp->gtNewIndir(dsc->TypeGet(), addr, GTF_IND_NONFAULTING);
-        }
-
-        GenTree* store;
-        if (dsc->IsImplicitByRef())
-        {
-            GenTree* baseAddr = m_comp->gtNewLclvNode(inf.LclNum, dsc->TypeGet());
-            store             = m_comp->gtNewStoreValueNode(dsc->GetLayout(), baseAddr, value,
-                                                            GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
-        }
-        else
-        {
-            store = m_comp->gtNewStoreLclVarNode(inf.LclNum, value);
-        }
-
-        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
-    }
-}
-
-//------------------------------------------------------------------------
-// AsyncTransformation::RestoreFromGCPointersOnResumption:
-//   Create IR that restores locals from the GC pointers array of the
-//   continuation object.
-//
-// Parameters:
-//   resumeObjectArrLclNum - Local that has the continuation object's GC pointers array
-//   liveLocals            - Information about each live local.
-//   resumeBB              - Basic block to append IR to
-//
-void AsyncTransformation::RestoreFromGCPointersOnResumption(unsigned                  resumeObjectArrLclNum,
-                                                            const ContinuationLayout& layout,
-                                                            BasicBlock*               resumeBB)
-{
-    if (layout.ExecContextGCDataIndex != BAD_VAR_NUM)
-    {
-        GenTree*     valuePlaceholder = m_comp->gtNewZeroConNode(TYP_REF);
+        GenTree*     valuePlaceholder = m_compiler->gtNewZeroConNode(TYP_REF);
         GenTreeCall* restoreCall =
-            m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
-        restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(valuePlaceholder));
+            m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
+        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(valuePlaceholder));
 
-        m_comp->compCurBB = resumeBB;
-        m_comp->fgMorphTree(restoreCall);
+        m_compiler->compCurBB = resumeBB;
+        m_compiler->fgMorphTree(restoreCall);
 
-        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, restoreCall));
+        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, restoreCall));
 
         LIR::Use valueUse;
         bool     gotUse = LIR::AsRange(resumeBB).TryGetUse(valuePlaceholder, &valueUse);
         assert(gotUse);
 
-        GenTree* objectArr = m_comp->gtNewLclvNode(resumeObjectArrLclNum, TYP_REF);
-        unsigned execContextOffset =
-            OFFSETOF__CORINFO_Array__data + (layout.ExecContextGCDataIndex * TARGET_POINTER_SIZE);
-        GenTree* execContextValue = LoadFromOffset(objectArr, execContextOffset, TYP_REF);
+        GenTree* continuation      = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned execContextOffset = OFFSETOF__CORINFO_Continuation__data + layout.ExecutionContextOffset;
+        GenTree* execContextValue  = LoadFromOffset(continuation, execContextOffset, TYP_REF);
 
-        LIR::AsRange(resumeBB).InsertBefore(valuePlaceholder, LIR::SeqTree(m_comp, execContextValue));
+        LIR::AsRange(resumeBB).InsertBefore(valuePlaceholder, LIR::SeqTree(m_compiler, execContextValue));
         valueUse.ReplaceWith(execContextValue);
 
         LIR::AsRange(resumeBB).Remove(valuePlaceholder);
     }
 
+    // Copy data
     for (const LiveLocalInfo& inf : layout.Locals)
     {
-        if (inf.GCDataCount <= 0)
-        {
-            continue;
-        }
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(inf.LclNum);
 
-        LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
-        if (dsc->TypeIs(TYP_REF))
-        {
-            GenTree* objectArr = m_comp->gtNewLclvNode(resumeObjectArrLclNum, TYP_REF);
-            unsigned offset    = OFFSETOF__CORINFO_Array__data + (inf.GCDataIndex * TARGET_POINTER_SIZE);
-            GenTree* value     = LoadFromOffset(objectArr, offset, TYP_REF);
-            GenTree* store     = m_comp->gtNewStoreLclVarNode(inf.LclNum, value);
+        GenTree* continuation = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offset       = OFFSETOF__CORINFO_Continuation__data + inf.Offset;
+        GenTree* cns          = m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
+        GenTree* addr         = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, continuation, cns);
 
-            LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+        GenTreeFlags indirFlags =
+            GTF_IND_NONFAULTING | (inf.HeapAlignment() < inf.Alignment ? GTF_IND_UNALIGNED : GTF_EMPTY);
+        GenTree* value;
+        if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
+        {
+            value = m_compiler->gtNewLoadValueNode(dsc->GetLayout(), addr, indirFlags);
         }
         else
         {
-            assert(dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef());
-            ClassLayout* layout     = dsc->GetLayout();
-            unsigned     numSlots   = layout->GetSlotCount();
-            unsigned     gcRefIndex = 0;
-            for (unsigned i = 0; i < numSlots; i++)
-            {
-                var_types gcPtrType = layout->GetGCPtrType(i);
-                assert((gcPtrType == TYP_I_IMPL) || (gcPtrType == TYP_REF));
-                if (gcPtrType != TYP_REF)
-                {
-                    continue;
-                }
-
-                GenTree* objectArr = m_comp->gtNewLclvNode(resumeObjectArrLclNum, TYP_REF);
-                unsigned offset =
-                    OFFSETOF__CORINFO_Array__data + ((inf.GCDataIndex + gcRefIndex) * TARGET_POINTER_SIZE);
-                GenTree* value = LoadFromOffset(objectArr, offset, TYP_REF);
-                GenTree* store;
-                if (dsc->IsImplicitByRef())
-                {
-                    GenTree* baseAddr = m_comp->gtNewLclvNode(inf.LclNum, dsc->TypeGet());
-                    store             = StoreAtOffset(baseAddr, i * TARGET_POINTER_SIZE, value, TYP_REF);
-                    // Implicit byref args are never on heap
-                    store->gtFlags |= GTF_IND_TGT_NOT_HEAP;
-                }
-                else
-                {
-                    store = m_comp->gtNewStoreLclFldNode(inf.LclNum, TYP_REF, i * TARGET_POINTER_SIZE, value);
-                }
-
-                LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
-
-                gcRefIndex++;
-            }
+            value = m_compiler->gtNewIndir(dsc->TypeGet(), addr, indirFlags);
         }
+
+        GenTree* store;
+        if (dsc->IsImplicitByRef())
+        {
+            GenTree* baseAddr = m_compiler->gtNewLclvNode(inf.LclNum, dsc->TypeGet());
+            store             = m_compiler->gtNewStoreValueNode(dsc->GetLayout(), baseAddr, value,
+                                                                GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
+        }
+        else
+        {
+            store = m_compiler->gtNewStoreLclVarNode(inf.LclNum, value);
+        }
+
+        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
+    }
+
+    if (layout.KeepAliveOffset != UINT_MAX)
+    {
+        // Ensure that the continuation remains alive until we finished loading the generic context
+        GenTree* continuation = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        GenTree* keepAlive    = m_compiler->gtNewKeepAliveNode(continuation);
+        LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, keepAlive));
     }
 }
 
@@ -1949,7 +2480,6 @@ void AsyncTransformation::RestoreFromGCPointersOnResumption(unsigned            
 //
 // Parameters:
 //   block                 - The block containing the async call
-//   resumeObjectArrLclNum - Local that has the continuation object's GC pointers array
 //   layout                - Layout information for the continuation object
 //   resumeBB              - Basic block to append IR to
 //
@@ -1959,25 +2489,33 @@ void AsyncTransformation::RestoreFromGCPointersOnResumption(unsigned            
 //   rethrow.
 //
 BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*               block,
-                                                              unsigned                  resumeObjectArrLclNum,
                                                               const ContinuationLayout& layout,
                                                               BasicBlock*               resumeBB)
 {
     JITDUMP("  We need to rethrow an exception\n");
 
-    BasicBlock* rethrowExceptionBB =
-        m_comp->fgNewBBinRegion(BBJ_THROW, block, /* runRarely */ true, /* insertAtEnd */ true);
+    BasicBlock* rethrowExceptionBB = m_compiler->fgNewBBafter(BBJ_THROW, block, /* extendRegion */ true);
+
     JITDUMP("  Created " FMT_BB " to rethrow exception on resumption\n", rethrowExceptionBB->bbNum);
 
-    BasicBlock* storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true);
+    // We split 'block' at the call, so a BBF_INTERNAL block after it would
+    // result in broken debug info if the block came from IL.
+    if (!block->HasFlag(BBF_INTERNAL))
+    {
+        rethrowExceptionBB->RemoveFlags(BBF_INTERNAL);
+        // Non-internal blocks must be marked imported
+        rethrowExceptionBB->SetFlags(BBF_IMPORTED);
+    }
+
+    BasicBlock* storeResultBB = m_compiler->fgNewBBafter(BBJ_ALWAYS, resumeBB, true);
     JITDUMP("  Created " FMT_BB " to store result when resuming with no exception\n", storeResultBB->bbNum);
 
-    FlowEdge* rethrowEdge     = m_comp->fgAddRefPred(rethrowExceptionBB, resumeBB);
-    FlowEdge* storeResultEdge = m_comp->fgAddRefPred(storeResultBB, resumeBB);
+    FlowEdge* rethrowEdge     = m_compiler->fgAddRefPred(rethrowExceptionBB, resumeBB);
+    FlowEdge* storeResultEdge = m_compiler->fgAddRefPred(storeResultBB, resumeBB);
 
     assert(resumeBB->KindIs(BBJ_ALWAYS));
     BasicBlock* remainder = resumeBB->GetTarget();
-    m_comp->fgRemoveRefPred(resumeBB->GetTargetEdge());
+    m_compiler->fgRemoveRefPred(resumeBB->GetTargetEdge());
 
     resumeBB->SetCond(rethrowEdge, storeResultEdge);
     rethrowEdge->setLikelihood(0);
@@ -1986,33 +2524,33 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     storeResultBB->inheritWeightPercentage(resumeBB, 100);
     JITDUMP("  Resumption " FMT_BB " becomes BBJ_COND to check for non-null exception\n", resumeBB->bbNum);
 
-    FlowEdge* remainderEdge = m_comp->fgAddRefPred(remainder, storeResultBB);
+    FlowEdge* remainderEdge = m_compiler->fgAddRefPred(remainder, storeResultBB);
     storeResultBB->SetTargetEdge(remainderEdge);
 
     m_lastResumptionBB = storeResultBB;
 
     // Check if we have an exception.
     unsigned exceptionLclNum = GetExceptionVar();
-    GenTree* objectArr       = m_comp->gtNewLclvNode(resumeObjectArrLclNum, TYP_REF);
-    unsigned exceptionOffset = OFFSETOF__CORINFO_Array__data + layout.ExceptionGCDataIndex * TARGET_POINTER_SIZE;
-    GenTree* exceptionInd    = LoadFromOffset(objectArr, exceptionOffset, TYP_REF);
-    GenTree* storeException  = m_comp->gtNewStoreLclVarNode(exceptionLclNum, exceptionInd);
-    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, storeException));
+    GenTree* continuation    = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+    unsigned exceptionOffset = OFFSETOF__CORINFO_Continuation__data + layout.ExceptionOffset;
+    GenTree* exceptionInd    = LoadFromOffset(continuation, exceptionOffset, TYP_REF);
+    GenTree* storeException  = m_compiler->gtNewStoreLclVarNode(exceptionLclNum, exceptionInd);
+    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeException));
 
-    GenTree* exception = m_comp->gtNewLclVarNode(exceptionLclNum, TYP_REF);
-    GenTree* null      = m_comp->gtNewNull();
-    GenTree* neNull    = m_comp->gtNewOperNode(GT_NE, TYP_INT, exception, null);
-    GenTree* jtrue     = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
+    GenTree* exception = m_compiler->gtNewLclVarNode(exceptionLclNum, TYP_REF);
+    GenTree* null      = m_compiler->gtNewNull();
+    GenTree* neNull    = m_compiler->gtNewOperNode(GT_NE, TYP_INT, exception, null);
+    GenTree* jtrue     = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
     LIR::AsRange(resumeBB).InsertAtEnd(exception, null, neNull, jtrue);
 
-    exception = m_comp->gtNewLclVarNode(exceptionLclNum, TYP_REF);
+    exception = m_compiler->gtNewLclVarNode(exceptionLclNum, TYP_REF);
 
-    GenTreeCall* rethrowException = m_comp->gtNewHelperCallNode(CORINFO_HELP_THROWEXACT, TYP_VOID, exception);
+    GenTreeCall* rethrowException = m_compiler->gtNewHelperCallNode(CORINFO_HELP_THROWEXACT, TYP_VOID, exception);
 
-    m_comp->compCurBB = rethrowExceptionBB;
-    m_comp->fgMorphTree(rethrowException);
+    m_compiler->compCurBB = rethrowExceptionBB;
+    m_compiler->fgMorphTree(rethrowException);
 
-    LIR::AsRange(rethrowExceptionBB).InsertAtEnd(LIR::SeqTree(m_comp, rethrowException));
+    LIR::AsRange(rethrowExceptionBB).InsertAtEnd(LIR::SeqTree(m_compiler, rethrowException));
 
     storeResultBB->SetFlags(BBF_ASYNC_RESUMPTION);
     JITDUMP("  Added " FMT_BB " to rethrow exception at suspension point\n", rethrowExceptionBB->bbNum);
@@ -2029,72 +2567,45 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
 //   call                  - The async call
 //   callDefInfo           - Information about the async call's definition
 //   block                 - The block containing the async call
-//   resumeByteArrLclNum   - Local that has the continuation object's data array
-//   resumeObjectArrLclNum - Local that has the continuation object's GC pointers array
 //   layout                - Layout information for the continuation object
 //   storeResultBB         - Basic block to append IR to
 //
 void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              call,
                                                       const CallDefinitionInfo& callDefInfo,
-                                                      unsigned                  resumeByteArrLclNum,
-                                                      unsigned                  resumeObjectArrLclNum,
                                                       const ContinuationLayout& layout,
                                                       BasicBlock*               storeResultBB)
 {
-    GenTree*     resultBase;
-    unsigned     resultOffset;
-    GenTreeFlags resultIndirFlags = GTF_IND_NONFAULTING;
-    if (layout.ReturnInGCData)
-    {
-        assert(resumeObjectArrLclNum != BAD_VAR_NUM);
-        resultBase = m_comp->gtNewLclvNode(resumeObjectArrLclNum, TYP_REF);
-
-        if (call->gtReturnType == TYP_STRUCT)
-        {
-            // Boxed struct.
-            resultBase   = LoadFromOffset(resultBase, OFFSETOF__CORINFO_Array__data, TYP_REF);
-            resultOffset = TARGET_POINTER_SIZE; // Offset of data inside box
-        }
-        else
-        {
-            assert(call->gtReturnType == TYP_REF);
-            resultOffset = OFFSETOF__CORINFO_Array__data;
-        }
-    }
-    else
-    {
-        assert(resumeByteArrLclNum != BAD_VAR_NUM);
-        resultBase   = m_comp->gtNewLclvNode(resumeByteArrLclNum, TYP_REF);
-        resultOffset = OFFSETOF__CORINFO_Array__data + layout.ReturnValDataOffset;
-        if (layout.ReturnValDataOffset != 0)
-            resultIndirFlags = GTF_IND_UNALIGNED;
-    }
+    GenTree* resultBase   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+    unsigned resultOffset = OFFSETOF__CORINFO_Continuation__data + layout.ReturnValOffset;
 
     assert(callDefInfo.DefinitionNode != nullptr);
-    LclVarDsc* resultLcl = m_comp->lvaGetDesc(callDefInfo.DefinitionNode);
+    LclVarDsc* resultLcl = m_compiler->lvaGetDesc(callDefInfo.DefinitionNode);
+
+    GenTreeFlags indirFlags =
+        GTF_IND_NONFAULTING | (layout.ReturnHeapAlignment() < layout.ReturnAlignment ? GTF_IND_UNALIGNED : GTF_EMPTY);
 
     // TODO-TP: We can use liveness to avoid generating a lot of this IR.
     if (call->gtReturnType == TYP_STRUCT)
     {
-        if (m_comp->lvaGetPromotionType(resultLcl) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+        if (m_compiler->lvaGetPromotionType(resultLcl) != Compiler::PROMOTION_TYPE_INDEPENDENT)
         {
-            GenTree* resultOffsetNode = m_comp->gtNewIconNode((ssize_t)resultOffset, TYP_I_IMPL);
-            GenTree* resultAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, resultBase, resultOffsetNode);
-            GenTree* resultData = m_comp->gtNewLoadValueNode(layout.ReturnStructLayout, resultAddr, resultIndirFlags);
+            GenTree* resultOffsetNode = m_compiler->gtNewIconNode((ssize_t)resultOffset, TYP_I_IMPL);
+            GenTree* resultAddr       = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, resultBase, resultOffsetNode);
+            GenTree* resultData = m_compiler->gtNewLoadValueNode(layout.ReturnStructLayout, resultAddr, indirFlags);
             GenTree* storeResult;
             if ((callDefInfo.DefinitionNode->GetLclOffs() == 0) &&
                 ClassLayout::AreCompatible(resultLcl->GetLayout(), layout.ReturnStructLayout))
             {
-                storeResult = m_comp->gtNewStoreLclVarNode(callDefInfo.DefinitionNode->GetLclNum(), resultData);
+                storeResult = m_compiler->gtNewStoreLclVarNode(callDefInfo.DefinitionNode->GetLclNum(), resultData);
             }
             else
             {
-                storeResult = m_comp->gtNewStoreLclFldNode(callDefInfo.DefinitionNode->GetLclNum(), TYP_STRUCT,
-                                                           layout.ReturnStructLayout,
-                                                           callDefInfo.DefinitionNode->GetLclOffs(), resultData);
+                storeResult = m_compiler->gtNewStoreLclFldNode(callDefInfo.DefinitionNode->GetLclNum(), TYP_STRUCT,
+                                                               layout.ReturnStructLayout,
+                                                               callDefInfo.DefinitionNode->GetLclOffs(), resultData);
             }
 
-            LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
+            LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResult));
         }
         else
         {
@@ -2103,50 +2614,50 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
             if ((resultLcl->lvFieldCnt > 1) && !resultBase->OperIsLocal())
             {
                 unsigned resultBaseVar   = GetResultBaseVar();
-                GenTree* storeResultBase = m_comp->gtNewStoreLclVarNode(resultBaseVar, resultBase);
-                LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResultBase));
+                GenTree* storeResultBase = m_compiler->gtNewStoreLclVarNode(resultBaseVar, resultBase);
+                LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResultBase));
 
-                resultBase = m_comp->gtNewLclVarNode(resultBaseVar, TYP_REF);
+                resultBase = m_compiler->gtNewLclVarNode(resultBaseVar, TYP_REF);
 
                 // Can be reallocated by above call to GetResultBaseVar
-                resultLcl = m_comp->lvaGetDesc(callDefInfo.DefinitionNode);
+                resultLcl = m_compiler->lvaGetDesc(callDefInfo.DefinitionNode);
             }
 
             assert(callDefInfo.DefinitionNode->OperIs(GT_STORE_LCL_VAR));
             for (unsigned i = 0; i < resultLcl->lvFieldCnt; i++)
             {
                 unsigned   fieldLclNum = resultLcl->lvFieldLclStart + i;
-                LclVarDsc* fieldDsc    = m_comp->lvaGetDesc(fieldLclNum);
+                LclVarDsc* fieldDsc    = m_compiler->lvaGetDesc(fieldLclNum);
 
                 unsigned fldOffset = resultOffset + fieldDsc->lvFldOffset;
-                GenTree* value     = LoadFromOffset(resultBase, fldOffset, fieldDsc->TypeGet(), resultIndirFlags);
-                GenTree* store     = m_comp->gtNewStoreLclVarNode(fieldLclNum, value);
-                LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, store));
+                GenTree* value     = LoadFromOffset(resultBase, fldOffset, fieldDsc->TypeGet(), indirFlags);
+                GenTree* store     = m_compiler->gtNewStoreLclVarNode(fieldLclNum, value);
+                LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
 
                 if (i + 1 != resultLcl->lvFieldCnt)
                 {
-                    resultBase = m_comp->gtCloneExpr(resultBase);
+                    resultBase = m_compiler->gtCloneExpr(resultBase);
                 }
             }
         }
     }
     else
     {
-        GenTree* value = LoadFromOffset(resultBase, resultOffset, call->gtReturnType, resultIndirFlags);
+        GenTree* value = LoadFromOffset(resultBase, resultOffset, call->gtReturnType, indirFlags);
 
         GenTree* storeResult;
         if (callDefInfo.DefinitionNode->OperIs(GT_STORE_LCL_VAR))
         {
-            storeResult = m_comp->gtNewStoreLclVarNode(callDefInfo.DefinitionNode->GetLclNum(), value);
+            storeResult = m_compiler->gtNewStoreLclVarNode(callDefInfo.DefinitionNode->GetLclNum(), value);
         }
         else
         {
-            storeResult = m_comp->gtNewStoreLclFldNode(callDefInfo.DefinitionNode->GetLclNum(),
-                                                       callDefInfo.DefinitionNode->TypeGet(),
-                                                       callDefInfo.DefinitionNode->GetLclOffs(), value);
+            storeResult = m_compiler->gtNewStoreLclFldNode(callDefInfo.DefinitionNode->GetLclNum(),
+                                                           callDefInfo.DefinitionNode->TypeGet(),
+                                                           callDefInfo.DefinitionNode->GetLclOffs(), value);
         }
 
-        LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResult));
+        LIR::AsRange(storeResultBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeResult));
     }
 }
 
@@ -2169,10 +2680,10 @@ GenTreeIndir* AsyncTransformation::LoadFromOffset(GenTree*     base,
                                                   GenTreeFlags indirFlags)
 {
     assert(base->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL));
-    GenTree*      cns      = m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
+    GenTree*      cns      = m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
     var_types     addrType = base->TypeIs(TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
-    GenTree*      addr     = m_comp->gtNewOperNode(GT_ADD, addrType, base, cns);
-    GenTreeIndir* load     = m_comp->gtNewIndir(type, addr, indirFlags);
+    GenTree*      addr     = m_compiler->gtNewOperNode(GT_ADD, addrType, base, cns);
+    GenTreeIndir* load     = m_compiler->gtNewIndir(type, addr, indirFlags);
     return load;
 }
 
@@ -2185,61 +2696,88 @@ GenTreeIndir* AsyncTransformation::LoadFromOffset(GenTree*     base,
 //   offset     - Offset to add on top of the base address
 //   value      - Value to store
 //   storeType  - Type of store
+//   indirFlags - Indirection flags
 //
 // Returns:
 //   IR node of the store.
 //
-GenTreeStoreInd* AsyncTransformation::StoreAtOffset(GenTree* base, unsigned offset, GenTree* value, var_types storeType)
+GenTreeStoreInd* AsyncTransformation::StoreAtOffset(
+    GenTree* base, unsigned offset, GenTree* value, var_types storeType, GenTreeFlags indirFlags)
 {
     assert(base->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL));
-    GenTree*         cns      = m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
+    GenTree*         cns      = m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
     var_types        addrType = base->TypeIs(TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
-    GenTree*         addr     = m_comp->gtNewOperNode(GT_ADD, addrType, base, cns);
-    GenTreeStoreInd* store    = m_comp->gtNewStoreIndNode(storeType, addr, value, GTF_IND_NONFAULTING);
+    GenTree*         addr     = m_compiler->gtNewOperNode(GT_ADD, addrType, base, cns);
+    GenTreeStoreInd* store    = m_compiler->gtNewStoreIndNode(storeType, addr, value, indirFlags);
     return store;
 }
 
 //------------------------------------------------------------------------
-// AsyncTransformation::GetDataArrayVar:
-//   Create a new local to hold the data array of the continuation object. This
-//   local can be validly used for the entire suspension point; the returned
-//   local may be used by multiple suspension points.
+// AsyncTransformation::CreateDebugInfoForSuspensionPoint:
+//   Create debug info for the specific suspension point we just created.
 //
-// Returns:
-//   Local number.
+// Parameters:
+//   layout         - Layout of continuation
 //
-unsigned AsyncTransformation::GetDataArrayVar()
+void AsyncTransformation::CreateDebugInfoForSuspensionPoint(const ContinuationLayout& layout)
 {
-    // Create separate locals unless we have many locals in the method for live
-    // range splitting purposes. This helps LSRA to avoid create additional
-    // callee saves that harm the prolog/epilog.
-    if ((m_dataArrayVar == BAD_VAR_NUM) || !m_comp->lvaHaveManyLocals())
+    uint32_t numLocals = 0;
+    for (const LiveLocalInfo& local : layout.Locals)
     {
-        m_dataArrayVar                             = m_comp->lvaGrabTemp(false DEBUGARG("byte[] for continuation"));
-        m_comp->lvaGetDesc(m_dataArrayVar)->lvType = TYP_REF;
+        unsigned ilVarNum = m_compiler->compMap2ILvarNum(local.LclNum);
+        if (ilVarNum == (unsigned)ICorDebugInfo::UNKNOWN_ILNUM)
+        {
+            continue;
+        }
+
+        ICorDebugInfo::AsyncContinuationVarInfo varInf;
+        varInf.VarNumber = ilVarNum;
+        varInf.Offset    = OFFSETOF__CORINFO_Continuation__data + local.Offset;
+        m_compiler->compAsyncVars->push_back(varInf);
+        numLocals++;
     }
 
-    return m_dataArrayVar;
+    ICorDebugInfo::AsyncSuspensionPoint suspensionPoint;
+    suspensionPoint.DiagnosticNativeOffset = 0;
+    suspensionPoint.NumContinuationVars    = numLocals;
+    m_compiler->compSuspensionPoints->push_back(suspensionPoint);
 }
 
 //------------------------------------------------------------------------
-// AsyncTransformation::GetGCDataArrayVar:
-//   Create a new local to hold the GC pointers array of the continuation
-//   object. This local can be validly used for the entire suspension point;
-//   the returned local may be used by multiple suspension points.
+// AsyncTransformation::GetReturnedContinuationVar:
+//   Create a new local to hold the continuation returned by called async functions.
 //
 // Returns:
 //   Local number.
 //
-unsigned AsyncTransformation::GetGCDataArrayVar()
+unsigned AsyncTransformation::GetReturnedContinuationVar()
 {
-    if ((m_gcDataArrayVar == BAD_VAR_NUM) || !m_comp->lvaHaveManyLocals())
+    if (m_returnedContinuationVar == BAD_VAR_NUM)
     {
-        m_gcDataArrayVar                             = m_comp->lvaGrabTemp(false DEBUGARG("object[] for continuation"));
-        m_comp->lvaGetDesc(m_gcDataArrayVar)->lvType = TYP_REF;
+        m_returnedContinuationVar = m_compiler->lvaGrabTemp(false DEBUGARG("returned continuation"));
+        m_compiler->lvaGetDesc(m_returnedContinuationVar)->lvType = TYP_REF;
     }
 
-    return m_gcDataArrayVar;
+    return m_returnedContinuationVar;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::GetNewContinuationVar:
+//   Create a new local to hold the continuation for this function that will be
+//   returned.
+//
+// Returns:
+//   Local number.
+//
+unsigned AsyncTransformation::GetNewContinuationVar()
+{
+    if (m_newContinuationVar == BAD_VAR_NUM)
+    {
+        m_newContinuationVar = m_compiler->lvaGrabTemp(false DEBUGARG("new continuation"));
+        m_compiler->lvaGetDesc(m_newContinuationVar)->lvType = TYP_REF;
+    }
+
+    return m_newContinuationVar;
 }
 
 //------------------------------------------------------------------------
@@ -2253,10 +2791,10 @@ unsigned AsyncTransformation::GetGCDataArrayVar()
 //
 unsigned AsyncTransformation::GetResultBaseVar()
 {
-    if ((m_resultBaseVar == BAD_VAR_NUM) || !m_comp->lvaHaveManyLocals())
+    if ((m_resultBaseVar == BAD_VAR_NUM) || !m_compiler->lvaHaveManyLocals())
     {
-        m_resultBaseVar = m_comp->lvaGrabTemp(false DEBUGARG("object for resuming result base"));
-        m_comp->lvaGetDesc(m_resultBaseVar)->lvType = TYP_REF;
+        m_resultBaseVar = m_compiler->lvaGrabTemp(false DEBUGARG("object for resuming result base"));
+        m_compiler->lvaGetDesc(m_resultBaseVar)->lvType = TYP_REF;
     }
 
     return m_resultBaseVar;
@@ -2273,72 +2811,54 @@ unsigned AsyncTransformation::GetResultBaseVar()
 //
 unsigned AsyncTransformation::GetExceptionVar()
 {
-    if ((m_exceptionVar == BAD_VAR_NUM) || !m_comp->lvaHaveManyLocals())
+    if ((m_exceptionVar == BAD_VAR_NUM) || !m_compiler->lvaHaveManyLocals())
     {
-        m_exceptionVar = m_comp->lvaGrabTemp(false DEBUGARG("object for resuming exception"));
-        m_comp->lvaGetDesc(m_exceptionVar)->lvType = TYP_REF;
+        m_exceptionVar = m_compiler->lvaGrabTemp(false DEBUGARG("object for resuming exception"));
+        m_compiler->lvaGetDesc(m_exceptionVar)->lvType = TYP_REF;
     }
 
     return m_exceptionVar;
 }
 
 //------------------------------------------------------------------------
-// AsyncTransformation::CreateResumptionStubAddrTree:
-//   Create a tree that represents the address of the resumption stub entry
-//   point.
+// AsyncTransformation::GetSharedReturnBB:
+//   Create the shared return BB, if one is needed.
 //
 // Returns:
-//   IR node.
+//   Basic block or nullptr.
 //
-GenTree* AsyncTransformation::CreateResumptionStubAddrTree()
+BasicBlock* AsyncTransformation::GetSharedReturnBB()
 {
-    switch (m_resumeStubLookup.accessType)
+#ifdef JIT32_GCENCODER
+    if (m_sharedReturnBB != nullptr)
     {
-        case IAT_VALUE:
-        {
-            return CreateFunctionTargetAddr(m_resumeStub, m_resumeStubLookup);
-        }
-        case IAT_PVALUE:
-        {
-            GenTree* tree = CreateFunctionTargetAddr(m_resumeStub, m_resumeStubLookup);
-            tree          = m_comp->gtNewIndir(TYP_I_IMPL, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-            return tree;
-        }
-        case IAT_PPVALUE:
-        {
-            noway_assert(!"Unexpected IAT_PPVALUE");
-            return nullptr;
-        }
-        case IAT_RELPVALUE:
-        {
-            GenTree* addr = CreateFunctionTargetAddr(m_resumeStub, m_resumeStubLookup);
-            GenTree* tree = CreateFunctionTargetAddr(m_resumeStub, m_resumeStubLookup);
-            tree          = m_comp->gtNewIndir(TYP_I_IMPL, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-            tree          = m_comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, tree, addr);
-            return tree;
-        }
-        default:
-        {
-            noway_assert(!"Bad accessType");
-            return nullptr;
-        }
+        return m_sharedReturnBB;
     }
-}
 
-//------------------------------------------------------------------------
-// AsyncTransformation::CreateFunctionTargetAddr:
-//   Create a tree that represents the address of the resumption stub entry
-//   point.
-//
-// Returns:
-//   IR node.
-//
-GenTree* AsyncTransformation::CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE       methHnd,
-                                                       const CORINFO_CONST_LOOKUP& lookup)
-{
-    GenTree* con = m_comp->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-    INDEBUG(con->AsIntCon()->gtTargetHandle = (size_t)methHnd);
-    return con;
+    // Due to a hard cap on epilogs we need a shared return here.
+    m_sharedReturnBB = m_compiler->fgNewBBafter(BBJ_RETURN, m_compiler->fgLastBBInMainFunction(), false);
+    m_sharedReturnBB->bbSetRunRarely();
+    m_sharedReturnBB->clearTryIndex();
+    m_sharedReturnBB->clearHndIndex();
+
+    if (m_compiler->fgIsUsingProfileWeights())
+    {
+        // All suspension BBs are cold, so we do not need to propagate any
+        // weights, but we do need to propagate the flag.
+        m_sharedReturnBB->SetFlags(BBF_PROF_WEIGHT);
+    }
+
+    GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    GenTree* ret          = m_compiler->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, continuation);
+    LIR::AsRange(m_sharedReturnBB).InsertAtEnd(continuation, ret);
+
+    JITDUMP("Created shared return BB " FMT_BB "\n", m_sharedReturnBB->bbNum);
+
+    DISPRANGE(LIR::AsRange(m_sharedReturnBB));
+    return m_sharedReturnBB;
+#else
+    return nullptr;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -2348,13 +2868,13 @@ GenTree* AsyncTransformation::CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE    
 //
 void AsyncTransformation::CreateResumptionSwitch()
 {
-    m_comp->fgCreateNewInitBB();
-    BasicBlock* newEntryBB = m_comp->fgFirstBB;
+    m_compiler->fgCreateNewInitBB();
+    BasicBlock* newEntryBB = m_compiler->fgFirstBB;
 
-    GenTree* continuationArg = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-    GenTree* null            = m_comp->gtNewNull();
-    GenTree* neNull          = m_comp->gtNewOperNode(GT_NE, TYP_INT, continuationArg, null);
-    GenTree* jtrue           = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
+    GenTree* continuationArg = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+    GenTree* null            = m_compiler->gtNewNull();
+    GenTree* neNull          = m_compiler->gtNewOperNode(GT_NE, TYP_INT, continuationArg, null);
+    GenTree* jtrue           = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, neNull);
     LIR::AsRange(newEntryBB).InsertAtEnd(continuationArg, null, neNull, jtrue);
 
     FlowEdge* resumingEdge;
@@ -2363,68 +2883,68 @@ void AsyncTransformation::CreateResumptionSwitch()
     {
         JITDUMP("  Redirecting entry " FMT_BB " directly to " FMT_BB " as it is the only resumption block\n",
                 newEntryBB->bbNum, m_resumptionBBs[0]->bbNum);
-        resumingEdge = m_comp->fgAddRefPred(m_resumptionBBs[0], newEntryBB);
+        resumingEdge = m_compiler->fgAddRefPred(m_resumptionBBs[0], newEntryBB);
     }
     else if (m_resumptionBBs.size() == 2)
     {
-        BasicBlock* condBB = m_comp->fgNewBBbefore(BBJ_COND, m_resumptionBBs[0], true);
+        BasicBlock* condBB = m_compiler->fgNewBBbefore(BBJ_COND, m_resumptionBBs[0], true);
         condBB->inheritWeightPercentage(newEntryBB, 0);
 
-        FlowEdge* to0 = m_comp->fgAddRefPred(m_resumptionBBs[0], condBB);
-        FlowEdge* to1 = m_comp->fgAddRefPred(m_resumptionBBs[1], condBB);
+        FlowEdge* to0 = m_compiler->fgAddRefPred(m_resumptionBBs[0], condBB);
+        FlowEdge* to1 = m_compiler->fgAddRefPred(m_resumptionBBs[1], condBB);
         condBB->SetCond(to1, to0);
         to1->setLikelihood(0.5);
         to0->setLikelihood(0.5);
 
-        resumingEdge = m_comp->fgAddRefPred(condBB, newEntryBB);
+        resumingEdge = m_compiler->fgAddRefPred(condBB, newEntryBB);
 
         JITDUMP("  Redirecting entry " FMT_BB " to BBJ_COND " FMT_BB " for resumption with 2 states\n",
                 newEntryBB->bbNum, condBB->bbNum);
 
-        continuationArg          = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned stateOffset     = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
-        GenTree* stateOffsetNode = m_comp->gtNewIconNode((ssize_t)stateOffset, TYP_I_IMPL);
-        GenTree* stateAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, continuationArg, stateOffsetNode);
-        GenTree* stateInd        = m_comp->gtNewIndir(TYP_INT, stateAddr, GTF_IND_NONFAULTING);
-        GenTree* zero            = m_comp->gtNewZeroConNode(TYP_INT);
-        GenTree* stateNeZero     = m_comp->gtNewOperNode(GT_NE, TYP_INT, stateInd, zero);
-        GenTree* jtrue           = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, stateNeZero);
+        continuationArg          = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned stateOffset     = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
+        GenTree* stateOffsetNode = m_compiler->gtNewIconNode((ssize_t)stateOffset, TYP_I_IMPL);
+        GenTree* stateAddr       = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, continuationArg, stateOffsetNode);
+        GenTree* stateInd        = m_compiler->gtNewIndir(TYP_INT, stateAddr, GTF_IND_NONFAULTING);
+        GenTree* zero            = m_compiler->gtNewZeroConNode(TYP_INT);
+        GenTree* stateNeZero     = m_compiler->gtNewOperNode(GT_NE, TYP_INT, stateInd, zero);
+        GenTree* jtrue           = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, stateNeZero);
 
         LIR::AsRange(condBB).InsertAtEnd(continuationArg, stateOffsetNode, stateAddr, stateInd, zero, stateNeZero,
                                          jtrue);
     }
     else
     {
-        BasicBlock* switchBB = m_comp->fgNewBBbefore(BBJ_SWITCH, m_resumptionBBs[0], true);
+        BasicBlock* switchBB = m_compiler->fgNewBBbefore(BBJ_SWITCH, m_resumptionBBs[0], true);
         switchBB->inheritWeightPercentage(newEntryBB, 0);
 
-        resumingEdge = m_comp->fgAddRefPred(switchBB, newEntryBB);
+        resumingEdge = m_compiler->fgAddRefPred(switchBB, newEntryBB);
 
         JITDUMP("  Redirecting entry " FMT_BB " to BBJ_SWITCH " FMT_BB " for resumption with %zu states\n",
                 newEntryBB->bbNum, switchBB->bbNum, m_resumptionBBs.size());
 
-        continuationArg          = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned stateOffset     = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
-        GenTree* stateOffsetNode = m_comp->gtNewIconNode((ssize_t)stateOffset, TYP_I_IMPL);
-        GenTree* stateAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, continuationArg, stateOffsetNode);
-        GenTree* stateInd        = m_comp->gtNewIndir(TYP_INT, stateAddr, GTF_IND_NONFAULTING);
-        GenTree* switchNode      = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, stateInd);
+        continuationArg          = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned stateOffset     = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
+        GenTree* stateOffsetNode = m_compiler->gtNewIconNode((ssize_t)stateOffset, TYP_I_IMPL);
+        GenTree* stateAddr       = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, continuationArg, stateOffsetNode);
+        GenTree* stateInd        = m_compiler->gtNewIndir(TYP_INT, stateAddr, GTF_IND_NONFAULTING);
+        GenTree* switchNode      = m_compiler->gtNewOperNode(GT_SWITCH, TYP_VOID, stateInd);
 
         LIR::AsRange(switchBB).InsertAtEnd(continuationArg, stateOffsetNode, stateAddr, stateInd, switchNode);
 
-        m_comp->fgHasSwitch = true;
+        m_compiler->fgHasSwitch = true;
 
         // Default case. TODO-CQ: Support bbsHasDefault = false before lowering.
         m_resumptionBBs.push_back(m_resumptionBBs[0]);
         const size_t     numCases       = m_resumptionBBs.size();
-        FlowEdge** const cases          = new (m_comp, CMK_FlowEdge) FlowEdge*[numCases * 2];
+        FlowEdge** const cases          = new (m_compiler, CMK_FlowEdge) FlowEdge*[numCases * 2];
         FlowEdge** const succs          = cases + numCases;
         unsigned         numUniqueSuccs = 0;
 
         const weight_t stateLikelihood = 1.0 / m_resumptionBBs.size();
         for (size_t i = 0; i < numCases; i++)
         {
-            FlowEdge* const edge = m_comp->fgAddRefPred(m_resumptionBBs[i], switchBB);
+            FlowEdge* const edge = m_compiler->fgAddRefPred(m_resumptionBBs[i], switchBB);
             edge->setLikelihood(stateLikelihood);
             cases[i] = edge;
 
@@ -2434,7 +2954,7 @@ void AsyncTransformation::CreateResumptionSwitch()
             }
         }
 
-        BBswtDesc* const swtDesc = new (m_comp, CMK_BasicBlock)
+        BBswtDesc* const swtDesc = new (m_compiler, CMK_BasicBlock)
             BBswtDesc(succs, numUniqueSuccs, cases, (unsigned)numCases, /* hasDefault */ true);
         switchBB->SetSwitch(swtDesc);
     }
@@ -2443,11 +2963,11 @@ void AsyncTransformation::CreateResumptionSwitch()
     resumingEdge->setLikelihood(0);
     newEntryBB->GetFalseEdge()->setLikelihood(1);
 
-    if (m_comp->doesMethodHavePatchpoints())
+    if (m_compiler->doesMethodHavePatchpoints())
     {
         JITDUMP("  Method has patch points...\n");
         // If we have patchpoints then first check if we need to resume in the OSR version.
-        BasicBlock* callHelperBB = m_comp->fgNewBBafter(BBJ_THROW, m_comp->fgLastBBInMainFunction(), false);
+        BasicBlock* callHelperBB = m_compiler->fgNewBBafter(BBJ_THROW, m_compiler->fgLastBBInMainFunction(), false);
         callHelperBB->bbSetRunRarely();
         callHelperBB->clearTryIndex();
         callHelperBB->clearHndIndex();
@@ -2455,51 +2975,49 @@ void AsyncTransformation::CreateResumptionSwitch()
         JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", callHelperBB->bbNum);
 
         BasicBlock* onContinuationBB = newEntryBB->GetTrueTarget();
-        BasicBlock* checkILOffsetBB  = m_comp->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
+        BasicBlock* checkILOffsetBB  = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
 
         JITDUMP("    Created " FMT_BB " to check whether we should transition immediately to OSR\n",
                 checkILOffsetBB->bbNum);
 
         // Redirect newEntryBB -> onContinuationBB into newEntryBB -> checkILOffsetBB -> onContinuationBB
-        m_comp->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkILOffsetBB);
+        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkILOffsetBB);
         newEntryBB->GetTrueEdge()->setLikelihood(0);
         checkILOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
-        FlowEdge* toOnContinuationBB = m_comp->fgAddRefPred(onContinuationBB, checkILOffsetBB);
-        FlowEdge* toCallHelperBB     = m_comp->fgAddRefPred(callHelperBB, checkILOffsetBB);
+        FlowEdge* toOnContinuationBB = m_compiler->fgAddRefPred(onContinuationBB, checkILOffsetBB);
+        FlowEdge* toCallHelperBB     = m_compiler->fgAddRefPred(callHelperBB, checkILOffsetBB);
         checkILOffsetBB->SetCond(toCallHelperBB, toOnContinuationBB);
         toCallHelperBB->setLikelihood(0);
         toOnContinuationBB->setLikelihood(1);
         callHelperBB->inheritWeightPercentage(checkILOffsetBB, 0);
 
         // We need to dispatch to the OSR version if the IL offset is non-negative.
-        continuationArg           = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned offsetOfData     = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationDataFldHnd);
-        GenTree* dataArr          = LoadFromOffset(continuationArg, offsetOfData, TYP_REF);
-        unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Array__data;
-        GenTree* ilOffset         = LoadFromOffset(dataArr, offsetOfIlOffset, TYP_INT);
-        unsigned ilOffsetLclNum   = m_comp->lvaGrabTemp(false DEBUGARG("IL offset for tier0 OSR method"));
-        m_comp->lvaGetDesc(ilOffsetLclNum)->lvType = TYP_INT;
-        GenTree* storeIlOffset                     = m_comp->gtNewStoreLclVarNode(ilOffsetLclNum, ilOffset);
-        LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_comp, storeIlOffset));
+        continuationArg           = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Continuation__data;
+        GenTree* ilOffset         = LoadFromOffset(continuationArg, offsetOfIlOffset, TYP_INT);
+        unsigned ilOffsetLclNum   = m_compiler->lvaGrabTemp(false DEBUGARG("IL offset for tier0 OSR method"));
+        m_compiler->lvaGetDesc(ilOffsetLclNum)->lvType = TYP_INT;
+        GenTree* storeIlOffset                         = m_compiler->gtNewStoreLclVarNode(ilOffsetLclNum, ilOffset);
+        LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, storeIlOffset));
 
-        ilOffset        = m_comp->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
-        GenTree* zero   = m_comp->gtNewIconNode(0);
-        GenTree* geZero = m_comp->gtNewOperNode(GT_GE, TYP_INT, ilOffset, zero);
-        GenTree* jtrue  = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, geZero);
+        ilOffset        = m_compiler->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
+        GenTree* zero   = m_compiler->gtNewIconNode(0);
+        GenTree* geZero = m_compiler->gtNewOperNode(GT_GE, TYP_INT, ilOffset, zero);
+        GenTree* jtrue  = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, geZero);
         LIR::AsRange(checkILOffsetBB).InsertAtEnd(ilOffset, zero, geZero, jtrue);
 
-        ilOffset = m_comp->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
+        ilOffset = m_compiler->gtNewLclvNode(ilOffsetLclNum, TYP_INT);
 
-        GenTreeCall* callHelper = m_comp->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffset);
+        GenTreeCall* callHelper = m_compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT_FORCED, TYP_VOID, ilOffset);
         callHelper->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
 
-        m_comp->compCurBB = callHelperBB;
-        m_comp->fgMorphTree(callHelper);
+        m_compiler->compCurBB = callHelperBB;
+        m_compiler->fgMorphTree(callHelper);
 
-        LIR::AsRange(callHelperBB).InsertAtEnd(LIR::SeqTree(m_comp, callHelper));
+        LIR::AsRange(callHelperBB).InsertAtEnd(LIR::SeqTree(m_compiler, callHelper));
     }
-    else if (m_comp->opts.IsOSR())
+    else if (m_compiler->opts.IsOSR())
     {
         JITDUMP("  Method is an OSR function\n");
         // If the tier-0 version resumed and then transitioned to the OSR
@@ -2508,32 +3026,30 @@ void AsyncTransformation::CreateResumptionSwitch()
         // ignore it, so create a BB that jumps back.
         BasicBlock* onContinuationBB   = newEntryBB->GetTrueTarget();
         BasicBlock* onNoContinuationBB = newEntryBB->GetFalseTarget();
-        BasicBlock* checkILOffsetBB    = m_comp->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
+        BasicBlock* checkILOffsetBB    = m_compiler->fgNewBBbefore(BBJ_COND, onContinuationBB, true);
 
         // Switch newEntryBB -> onContinuationBB into newEntryBB -> checkILOffsetBB
-        m_comp->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkILOffsetBB);
+        m_compiler->fgRedirectEdge(newEntryBB->TrueEdgeRef(), checkILOffsetBB);
         newEntryBB->GetTrueEdge()->setLikelihood(0);
         checkILOffsetBB->inheritWeightPercentage(newEntryBB, 0);
 
         // Make checkILOffsetBB ->(true)  onNoContinuationBB
         //                      ->(false) onContinuationBB
 
-        FlowEdge* toOnContinuationBB   = m_comp->fgAddRefPred(onContinuationBB, checkILOffsetBB);
-        FlowEdge* toOnNoContinuationBB = m_comp->fgAddRefPred(onNoContinuationBB, checkILOffsetBB);
+        FlowEdge* toOnContinuationBB   = m_compiler->fgAddRefPred(onContinuationBB, checkILOffsetBB);
+        FlowEdge* toOnNoContinuationBB = m_compiler->fgAddRefPred(onNoContinuationBB, checkILOffsetBB);
         checkILOffsetBB->SetCond(toOnNoContinuationBB, toOnContinuationBB);
         toOnContinuationBB->setLikelihood(0);
         toOnNoContinuationBB->setLikelihood(1);
 
         JITDUMP("    Created " FMT_BB " to check for Tier-0 continuations\n", checkILOffsetBB->bbNum);
 
-        continuationArg           = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        unsigned offsetOfData     = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationDataFldHnd);
-        GenTree* dataArr          = LoadFromOffset(continuationArg, offsetOfData, TYP_REF);
-        unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Array__data;
-        GenTree* ilOffset         = LoadFromOffset(dataArr, offsetOfIlOffset, TYP_INT);
-        GenTree* zero             = m_comp->gtNewIconNode(0);
-        GenTree* ltZero           = m_comp->gtNewOperNode(GT_LT, TYP_INT, ilOffset, zero);
-        GenTree* jtrue            = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, ltZero);
-        LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_comp, jtrue));
+        continuationArg           = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);
+        unsigned offsetOfIlOffset = OFFSETOF__CORINFO_Continuation__data;
+        GenTree* ilOffset         = LoadFromOffset(continuationArg, offsetOfIlOffset, TYP_INT);
+        GenTree* zero             = m_compiler->gtNewIconNode(0);
+        GenTree* ltZero           = m_compiler->gtNewOperNode(GT_LT, TYP_INT, ilOffset, zero);
+        GenTree* jtrue            = m_compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, ltZero);
+        LIR::AsRange(checkILOffsetBB).InsertAtEnd(LIR::SeqTree(m_compiler, jtrue));
     }
 }

@@ -179,7 +179,7 @@ namespace Internal.TypeSystem
                     TypeDesc type = GetSimpleTypeFromModule(typeName.DeclaringType, module);
                     if (type == null)
                         return null;
-                    return ((MetadataType)type).GetNestedType(TypeName.Unescape(typeName.Name));
+                    return ((MetadataType)type).GetNestedType(System.Text.Encoding.UTF8.GetBytes(TypeName.Unescape(typeName.Name)));
                 }
 
                 if (_canonGenericResolver != null)
@@ -190,7 +190,9 @@ namespace Internal.TypeSystem
                         return canonType;
                 }
 
-                return module.GetType(TypeName.Unescape(typeName.Namespace), TypeName.Unescape(typeName.Name), throwIfNotFound: false);
+                return module.GetType(
+                    System.Text.Encoding.UTF8.GetBytes(TypeName.Unescape(typeName.Namespace)),
+                    System.Text.Encoding.UTF8.GetBytes(TypeName.Unescape(typeName.Name)), throwIfNotFound: false);
             }
 
             private TypeDesc GetGenericType(TypeName typeName)

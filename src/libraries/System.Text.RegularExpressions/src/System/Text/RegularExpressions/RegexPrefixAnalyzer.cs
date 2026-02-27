@@ -826,7 +826,7 @@ namespace System.Text.RegularExpressions
                             return s1Frequency.CompareTo(s2Frequency);
                         }
 
-                        if (!RegexCharClass.IsAscii(s1Chars) && !RegexCharClass.IsAscii(s2Chars))
+                        if (!Ascii.IsValid(s1Chars) && !Ascii.IsValid(s2Chars))
                         {
                             // Prefer the set with fewer values.
                             return s1CharsLength.CompareTo(s2CharsLength);
@@ -1507,7 +1507,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>
-        private static ReadOnlySpan<float> Frequency =>
+        internal static ReadOnlySpan<float> Frequency =>
         [
             0.000f /* '\x00' */, 0.000f /* '\x01' */, 0.000f /* '\x02' */, 0.000f /* '\x03' */, 0.000f /* '\x04' */, 0.000f /* '\x05' */, 0.000f /* '\x06' */, 0.000f /* '\x07' */,
             0.000f /* '\x08' */, 0.001f /* '\x09' */, 0.000f /* '\x0A' */, 0.000f /* '\x0B' */, 0.000f /* '\x0C' */, 0.000f /* '\x0D' */, 0.000f /* '\x0E' */, 0.000f /* '\x0F' */,

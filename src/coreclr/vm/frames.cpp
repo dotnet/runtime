@@ -634,10 +634,12 @@ void Frame::PopIfChained()
 }
 #endif // TARGET_UNIX && !DACCESS_COMPILE
 
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
-/* static */
-void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
+#if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
+
+void Frame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targetSP)
 {
+    LIMITED_METHOD_CONTRACT;
+    // Default implementation unwinds floating point registers to target SP
     _ASSERTE(!ExecutionManager::IsManagedCode(::GetIP(pRD->pCurrentContext)));
 
     do
@@ -653,13 +655,25 @@ void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
     _ASSERTE(::GetSP(pRD->pCurrentContext) == targetSP);
 }
 
-void InlinedCallFrame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
+void Frame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP)
+{
+    switch (GetFrameIdentifier())
+    {
+#define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->UpdateFloatingPointRegisters_Impl(pRD, targetSP); }
+#include "FrameTypes.h"
+    default:
+        FRAME_POLYMORPHIC_DISPATCH_UNREACHABLE();
+        return;
+    }
+}
+
+void InlinedCallFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR targetSP)
 {
 #ifdef FEATURE_INTERPRETER
     if (IsInInterpreter())
     {
         InterpreterFrame *pInterpreterFrame = (InterpreterFrame *)m_Next;
-        Frame::UpdateFloatingPointRegisters(pRD, pInterpreterFrame->GetInterpExecMethodSP());
+        pInterpreterFrame->UpdateFloatingPointRegisters(pRD, pInterpreterFrame->GetInterpExecMethodSP());
         pInterpreterFrame->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
         return;
     }
@@ -676,7 +690,7 @@ void InlinedCallFrame::UpdateFloatingPointRegisters(const PREGDISPLAY pRD)
         }
     }
 }
-#endif // !TARGET_X86 || TARGET_UNIX
+#endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
@@ -840,7 +854,7 @@ static PTR_BYTE FindGCRefMap(PTR_Module pZapModule, TADDR ptr)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    PEImageLayout *pNativeImage = pZapModule->GetReadyToRunImage();
+    ReadyToRunLoadedImage *pNativeImage = pZapModule->GetReadyToRunImage();
 
     RVA rva = pNativeImage->GetDataRva(ptr);
 
@@ -1125,6 +1139,10 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_INTERPRETER
+    m_osStackLocation = this;
+#endif
+
 #ifdef USE_CHECKED_OBJECTREFS
     if (!maybeInterior) {
         UINT i;
@@ -1216,7 +1234,7 @@ void GCFrame::Push(Thread* pThread)
     // So GetOsPageSize() is a guess of the maximum stack frame size of any method
     // with multiple GCFrames in coreclr.dll
     _ASSERTE(((m_Next == GCFRAME_TOP) ||
-              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+              (PBYTE(m_Next->GetOSStackLocation()) + (2 * GetOsPageSize())) > PBYTE(this->GetOSStackLocation())) &&
              "Pushing a GCFrame out of order ?");
 
     pThread->SetGCFrame(this);
@@ -1960,6 +1978,7 @@ void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 {
     SyncRegDisplayToCurrentContext(pRD);
     TransitionFrame::UpdateRegDisplay_Impl(pRD, updateFloats);
+
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS) && !defined(DACCESS_COMPILE)
     // Update the SSP to match the updated regdisplay
     size_t *targetSSP = (size_t *)GetInterpExecMethodSSP();
@@ -1981,7 +2000,7 @@ void InterpreterFrame::ExceptionUnwind_Impl()
 
     Thread *pThread = GetThread();
     InterpThreadContext *pThreadContext = pThread->GetInterpThreadContext();
-    InterpMethodContextFrame *pInterpMethodContextFrame = m_pTopInterpMethodContextFrame;
+    InterpMethodContextFrame *pInterpMethodContextFrame = GetTopInterpMethodContextFrame();
 
     // Unwind the interpreter frames belonging to the current InterpreterFrame.
     while (pInterpMethodContextFrame != NULL)
@@ -2037,6 +2056,12 @@ void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE *
         else
         if (pMD->RequiresInstMethodTableArg())
             *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + argit.GetParamTypeArgOffset()) = GCREFMAP_TYPE_PARAM;
+    }
+
+    // Encode async continuation arg (it's a GC reference)
+    if (argit.HasAsyncContinuation())
+    {
+        FakePromote((Object **)(pFrame + argit.GetAsyncContinuationArgOffset()), &sc, 0);
     }
 
     // If the function has a this pointer, add it to the mask

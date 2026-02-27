@@ -218,7 +218,11 @@ namespace System
 
         public static string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if NET
+            SpanCasingPair args = new() { Bytes = bytes, Casing = casing };
+            return string.Create(bytes.Length * 2, args, static (chars, args) =>
+                EncodeToUtf16(args.Bytes, chars, args.Casing));
+#else
             Span<char> result = (bytes.Length > 16) ?
                 new char[bytes.Length * 2].AsSpan() :
                 stackalloc char[bytes.Length * 2];
@@ -230,17 +234,6 @@ namespace System
                 pos += 2;
             }
             return result.ToString();
-#elif NET9_0_OR_GREATER
-            SpanCasingPair args = new() { Bytes = bytes, Casing = casing };
-            return string.Create(bytes.Length * 2, args, static (chars, args) =>
-                EncodeToUtf16(args.Bytes, chars, args.Casing));
-#else
-            // .NET 8.0 path (doesn't support 'allow ref struct' feature)
-            unsafe
-            {
-                return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
-                    EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
-            }
 #endif
         }
 
@@ -403,12 +396,12 @@ namespace System
                     Vector128<short> even = AdvSimd.Arm64.TransposeEven(nibbles, Vector128<byte>.Zero).AsInt16();
                     Vector128<short> odd = AdvSimd.Arm64.TransposeOdd(nibbles, Vector128<byte>.Zero).AsInt16();
 
-                    even = AdvSimd.ShiftLeftLogical(even, 4).AsInt16();
+                    even = (even << 4).AsInt16();
                     output = AdvSimd.AddSaturate(even, odd).AsByte();
                 }
                 else if (PackedSimd.IsSupported)
                 {
-                    Vector128<byte> shiftedNibbles = PackedSimd.ShiftLeft(nibbles, 4);
+                    Vector128<byte> shiftedNibbles = nibbles << 4;
                     Vector128<byte> zipped = PackedSimd.BitwiseSelect(nibbles, shiftedNibbles, Vector128.Create<ushort>(0xFF00).AsByte());
                     output = PackedSimd.AddPairwiseWidening(zipped).AsByte();
                 }

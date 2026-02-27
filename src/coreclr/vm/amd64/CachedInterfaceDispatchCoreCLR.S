@@ -23,7 +23,7 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
         // to get the address in the vtable chunk list of what we want to dereference
 #ifdef TARGET_APPLE
 // Apple's linker has issues which break unwind info if
-// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
+// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/issues/119005
 .cfi_endproc
 #endif
     ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation

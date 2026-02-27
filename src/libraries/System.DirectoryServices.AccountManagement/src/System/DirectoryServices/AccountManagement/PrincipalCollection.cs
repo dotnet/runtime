@@ -534,7 +534,7 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             // Otherwise, check the store
-            if (_owningGroup.unpersisted == false && principal.unpersisted == false)
+            if (!_owningGroup.unpersisted && !principal.unpersisted)
                 return _owningGroup.GetStoreCtxToUse().IsMemberOfInStore(_owningGroup, principal);
 
             // We (or the principal) must not be persisted, so there's no store membership to check.

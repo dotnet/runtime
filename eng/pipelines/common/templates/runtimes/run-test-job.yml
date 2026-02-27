@@ -3,6 +3,7 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  hostedOs: ''
   container: ''
   testGroup: ''
   crossBuild: false
@@ -27,6 +28,7 @@ parameters:
   unifiedArtifactsName: ''
   unifiedBuildNameSuffix: ''
   unifiedBuildConfigOverride: ''
+  extraBuildArgs: ''
 
 ### Test run job
 
@@ -40,6 +42,8 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    hostedOs: ${{ parameters.hostedOs }}
+    extraBuildArgs: ${{ parameters.extraBuildArgs }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossBuild: ${{ parameters.crossBuild }}
@@ -64,7 +68,10 @@ jobs:
       - ${{ if notIn(parameters.testGroup, 'innerloop') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.unifiedArtifactsName, '')}}:
-        - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
+        - ${{ if eq(parameters.hostedOs, '')}}:
+          - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
+        - ${{ if ne(parameters.hostedOs, '')}}:
+          - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
 
     # Compute job name from template parameters
     ${{ if in(parameters.testGroup, 'innerloop') }}:
@@ -82,6 +89,9 @@ jobs:
       value: ${{ parameters.osSubgroup }}
     - name: archType
       value: ${{ parameters.archType }}
+
+    - name: extraBuildArgs
+      value: ${{ parameters.extraBuildArgs }}
 
     - name: monoAotBuildshCommand
       value: ''
@@ -233,19 +243,13 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts. This step also generates the final test execution scripts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg) $(extraBuildArgs)
       displayName: Copy native test components to test output folder
-
-
-    # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(logRootNameArg)Wrappers $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg)
-      displayName: Generate test wrappers
-
 
     # Compose the Core_Root folder containing all artifacts needed for running
     # CoreCLR tests. This step also compiles the framework using Crossgen2
     # in ReadyToRun jobs.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) -ci
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) -ci $(extraBuildArgs)
       displayName: Generate CORE_ROOT
 
     # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
@@ -332,7 +336,23 @@ jobs:
           msbuildParallelism: '/maxcpucount:55'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
-          ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+          ${{ if and(eq(parameters.runInterpreter, 'true'),eq(variables['Build.Reason'], 'PullRequest')) }}:
+            scenarios:
+            - interpmode3_no_tiered_compilation
+            - interpmode2_no_tiered_compilation
+            - interpmode1_no_tiered_compilation
+            - no_tiered_compilation
+          ${{ elseif eq(parameters.runInterpreter, 'true') }}:
+            scenarios:
+            - interpmode3_no_tiered_compilation
+            - interpmode3
+            - interpmode2_no_tiered_compilation
+            - interpmode2
+            - normal
+            - no_tiered_compilation
+            - interpmode1_no_tiered_compilation
+            - interpmode1
+          ${{ elseif eq(parameters.runtimeFlavor, 'mono') }}:
             # tiered compilation isn't done on mono yet
             scenarios:
             - normal
@@ -474,6 +494,7 @@ jobs:
             - fullpgo_methodprofiling_always_optimized
             - syntheticpgo
             - syntheticpgo_blend
+            - instrument_if_optimizing
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
@@ -575,7 +596,7 @@ jobs:
           condition: always()
 
         # Ensure the Python azure-storage-blob package is installed before doing the upload.
-        - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+        - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.27.0 --force-reinstall && $(PipScript) install azure.identity==1.25.1 --force-reinstall
           displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
           condition: always()
 

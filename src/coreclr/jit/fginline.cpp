@@ -395,7 +395,7 @@ private:
                 // If we end up swapping type we may need to retype the tree:
                 if (retType != newType)
                 {
-                    if ((retType == TYP_BYREF) && tree->OperIs(GT_IND))
+                    if ((retType == TYP_BYREF) && inlineCandidate->OperIs(GT_IND))
                     {
                         // - in an RVA static if we've reinterpreted it as a byref;
                         assert(newType == TYP_I_IMPL);
@@ -498,7 +498,7 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // AssignStructInlineeToVar: Store the struct inlinee to a temp local.
+    // StoreStructInlineeToVar: Store the struct inlinee to a temp local.
     //
     // Arguments:
     //    inlinee   - The inlinee of the RET_EXPR node
@@ -544,32 +544,6 @@ private:
     }
 #endif // FEATURE_MULTIREG_RET
 
-    CORINFO_METHOD_HANDLE GetMethodHandle(GenTreeCall* call)
-    {
-        assert(call->IsDevirtualizationCandidate(m_compiler));
-        if (call->IsVirtual())
-        {
-            return call->gtCallMethHnd;
-        }
-        else
-        {
-            GenTree* runtimeMethHndNode =
-                call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
-            assert(runtimeMethHndNode != nullptr);
-            switch (runtimeMethHndNode->OperGet())
-            {
-                case GT_RUNTIMELOOKUP:
-                    return runtimeMethHndNode->AsRuntimeLookup()->GetMethodHandle();
-                case GT_CNS_INT:
-                    return CORINFO_METHOD_HANDLE(runtimeMethHndNode->AsIntCon()->IconValue());
-                default:
-                    assert(!"Unexpected type in RuntimeMethodHandle arg.");
-                    return nullptr;
-            }
-            return nullptr;
-        }
-    }
-
     //------------------------------------------------------------------------
     // LateDevirtualization: re-examine calls after inlining to see if we
     //   can do more devirtualization
@@ -612,9 +586,8 @@ private:
 
         if (tree->OperIs(GT_CALL))
         {
-            GenTreeCall* call = tree->AsCall();
-            // TODO-CQ: Drop `call->gtCallType == CT_USER_FUNC` once we have GVM devirtualization
-            bool tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler) && (call->gtCallType == CT_USER_FUNC);
+            GenTreeCall* call          = tree->AsCall();
+            bool         tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
@@ -630,9 +603,9 @@ private:
                 }
 #endif // DEBUG
 
+                CORINFO_METHOD_HANDLE  method                 = call->gtLateDevirtualizationInfo->methodHnd;
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
                 InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
-                CORINFO_METHOD_HANDLE  method                 = GetMethodHandle(call);
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
@@ -701,20 +674,21 @@ private:
             // we may be able to sharpen the type for the local.
             if (tree->TypeIs(TYP_REF))
             {
-                LclVarDsc* lcl = m_compiler->lvaGetDesc(lclNum);
+                LclVarDsc* const lcl = m_compiler->lvaGetDesc(lclNum);
 
                 if (lcl->lvSingleDef)
                 {
-                    bool                 isExact;
-                    bool                 isNonNull;
-                    CORINFO_CLASS_HANDLE newClass = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
-
-                    if (newClass != NO_CLASS_HANDLE)
+                    if (lcl->lvClassHnd == NO_CLASS_HANDLE)
                     {
-                        m_compiler->lvaUpdateClass(lclNum, newClass, isExact);
-                        m_madeChanges                    = true;
-                        m_compiler->hasUpdatedTypeLocals = true;
+                        m_compiler->lvaSetClass(lclNum, value);
                     }
+                    else
+                    {
+                        m_compiler->lvaUpdateClass(lclNum, value);
+                    }
+
+                    m_madeChanges                    = true;
+                    m_compiler->hasUpdatedTypeLocals = true;
                 }
             }
 
@@ -1240,7 +1214,7 @@ Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWal
     GenTree* tree = *pTree;
     if (tree->OperIs(GT_CALL))
     {
-        Compiler*    compiler = data->compiler;
+        Compiler*    compiler = data->m_compiler;
         Statement*   stmt     = (Statement*)data->pCallbackData;
         GenTreeCall* call     = tree->AsCall();
 
@@ -1360,7 +1334,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     struct Param
     {
         Compiler*             pThis;
-        GenTree*              call;
+        GenTreeCall*          call;
         CORINFO_METHOD_HANDLE fncHandle;
         InlineCandidateInfo*  inlineCandidateInfo;
         InlineInfo*           inlineInfo;
@@ -1415,12 +1389,14 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
 
             // The following flags are lost when inlining.
             // (This is checked in Compiler::compInitOptions().)
-            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
-            compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
+            if (!pParam->call->IsAsync())
+            {
+                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_ASYNC);
+            }
 
 #ifdef DEBUG
             if (pParam->pThis->verbose)
@@ -1504,7 +1480,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // The inlining attempt cannot be failed starting from this point.
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    // We've successfully obtain the list of inlinee's basic blocks.
+    // We've successfully obtained the list of inlinee's basic blocks.
     // Let's insert it to inliner's basic block list.
     fgInsertInlineeBlocks(&inlineInfo);
 
@@ -1672,7 +1648,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         bottomBlock->RemoveFlags(BBF_DONT_REMOVE);
 
         // If the inlinee has EH, merge the EH tables, and figure out how much of
-        // a shift we need to make in the inlinee blocks EH indicies.
+        // a shift we need to make in the inlinee blocks EH indices.
         //
         unsigned const inlineeRegionCount = InlineeCompiler->compHndBBtabCount;
         const bool     inlineeHasEH       = inlineeRegionCount > 0;
@@ -1762,7 +1738,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             //
             // We just need to add in and fix up the new entries from the inlinee.
             //
-            // Fetch the new enclosing try/handler table indicies.
+            // Fetch the new enclosing try/handler table indices.
             //
             const unsigned enclosingTryIndex =
                 iciBlock->hasTryIndex() ? iciBlock->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
@@ -1797,7 +1773,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             }
         }
 
-        // Fetch the new enclosing try/handler indicies for blocks.
+        // Fetch the new enclosing try/handler indices for blocks.
         // Note these are represented differently than the EH table indices.
         //
         const unsigned blockEnclosingTryIndex = iciBlock->hasTryIndex() ? iciBlock->getTryIndex() + 1 : 0;
@@ -1950,7 +1926,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     else if (InlineeCompiler->fgPgoFailReason != nullptr)
     {
         // Single block inlinees may not have probes
-        // when we've ensabled minimal profiling (which
+        // when we've enabled minimal profiling (which
         // is now the default).
         //
         if (InlineeCompiler->fgBBcount == 1)
@@ -2057,12 +2033,16 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     // Note that if the root method needs GS cookie then this has already been taken care of.
     if (!getNeedsGSSecurityCookie() && InlineeCompiler->getNeedsGSSecurityCookie())
     {
-        setNeedsGSSecurityCookie();
-        const unsigned dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
-        LclVarDsc*     gsCookieDummy = lvaGetDesc(dummy);
-        gsCookieDummy->lvType        = TYP_INT;
-        gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
-        lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        bool canHaveCookie = setNeedsGSSecurityCookie();
+
+        if (canHaveCookie)
+        {
+            const unsigned dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
+            LclVarDsc*     gsCookieDummy = lvaGetDesc(dummy);
+            gsCookieDummy->lvType        = TYP_INT;
+            gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
+            lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        }
     }
 
     //
@@ -2286,7 +2266,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     // The only reason we move it here is for calling "impInlineFetchArg(0,..." to reserve a temp
     // for the "this" pointer.
     // Note: Here we no longer do the optimization that was done by thisDereferencedFirst in the old inliner.
-    // However the assetionProp logic will remove any unnecessary null checks that we may have added
+    // However the assertionProp logic will remove any unnecessary null checks that we may have added
     //
     GenTree* nullcheck = nullptr;
 
@@ -2317,6 +2297,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         {
             case WellKnownArg::RetBuffer:
             case WellKnownArg::AsyncContinuation:
+            case WellKnownArg::AsyncExecutionContext:
+            case WellKnownArg::AsyncSynchronizationContext:
                 continue;
             case WellKnownArg::InstParam:
                 argInfo = inlineInfo->inlInstParamArgInfo;

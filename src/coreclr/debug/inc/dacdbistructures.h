@@ -468,6 +468,18 @@ public:
     bool                                   m_fInitialized;
 }; // class SequencePoints
 
+//===================================================================================
+// AsyncLocalData serves as the Dbi equivalent of ICorDebugInfo::AsyncContinuationVarInfo.
+// It maps the offset of an async variable within a continuation to its ILVarNum.
+//===================================================================================
+struct MSLAYOUT AsyncLocalData
+{
+    // offset within a continuation object where the variable is stored
+    ULONG offset;
+    // IL variable number corresponding to the async local
+    ULONG ilVarNum;
+};
+
 //----------------------------------------------------------------------------------
 // declarations needed for getting native code regions
 //----------------------------------------------------------------------------------
@@ -697,22 +709,6 @@ struct DbiVersion
 	                                          //     easier automated enforcement during development. It is NOT recommended to use
 	                                          //     the hash as a release versioning mechanism however.
     DWORD m_dwReservedMustBeZero1;  // reserved for future use
-};
-
-// The way in which a thread is blocking on an object
-enum DacBlockingReason
-{
-    DacBlockReason_MonitorCriticalSection,
-    DacBlockReason_MonitorEvent
-};
-
-// Information about an object which is blocking a managed thread
-struct DacBlockingObject
-{
-    VMPTR_Object      vmBlockingObject;
-    VMPTR_AppDomain   vmAppDomain;
-    DWORD             dwTimeout;
-    DacBlockingReason blockingReason;
 };
 
 // Opaque user defined data used in callbacks

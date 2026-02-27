@@ -46,7 +46,7 @@ public abstract class HybridCache
         HybridCacheEntryOptions? options = null, IEnumerable<string>? tags = null, CancellationToken cancellationToken = default)
         => GetOrCreateAsync(key, factory, WrappedCallbackCache<T>.Instance, options, tags, cancellationToken);
 
-#if NET10_0_OR_GREATER
+#if NET
     /// <summary>
     /// Asynchronously gets the value associated with the key if it exists, or generates a new entry using the provided key and a value from the given factory if the key is not found.
     /// </summary>

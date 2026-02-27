@@ -971,6 +971,7 @@ BOOL ThePreStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 // Stub manager functions & globals
 // -------------------------------------------------------
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 SPTR_IMPL(PrecodeStubManager, PrecodeStubManager, g_pManager);
 
 #ifndef DACCESS_COMPILE
@@ -1010,6 +1011,15 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     else if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
     {
         Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(stubStartAddress);
+#ifdef DACCESS_COMPILE
+        // The DAC always treats GetPrecodeFromEntryPoint as if the speculative flag is TRUE.
+        // so it may return NULL
+        if (pPrecode == NULL)
+        {
+            return FALSE;
+        }
+#endif
+
         switch (pPrecode->GetType())
         {
             case PRECODE_STUB:
@@ -1105,12 +1115,10 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
             break;
         }
 
-        PCODE target = pPrecode->GetTarget();
-
         // check if the method has been jitted
-        if (!pPrecode->IsPointingToPrestub(target))
+        if (!pPrecode->IsPointingToPrestub())
         {
-            trace->InitForStub(target);
+            trace->InitForStub(pPrecode->GetTarget());
             LOG_TRACE_DESTINATION(trace, stubStartAddress, "PrecodeStubManager::DoTraceStub - code");
             return TRUE;
         }
@@ -1159,6 +1167,7 @@ BOOL PrecodeStubManager::TraceManager(Thread *thread,
     return FALSE;
 }
 #endif
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // -------------------------------------------------------
 // StubLinkStubManager
@@ -1424,6 +1433,7 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
 
 #endif // #ifndef DACCESS_COMPILE
 
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 // -------------------------------------------------------
 // JumpStub stubs
 //
@@ -1472,6 +1482,7 @@ BOOL JumpStubStubManager::DoTraceStub(PCODE stubStartAddress,
 
     return TRUE;
 }
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
@@ -1535,8 +1546,10 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 
     switch (GetStubKind(stubStartAddress))
     {
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
     case STUB_CODE_BLOCK_JUMPSTUB:
         return JumpStubStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
     case STUB_CODE_BLOCK_STUBLINK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
@@ -1735,21 +1748,23 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         _ASSERTE(!"We should never get here. Multicast Delegates should not invoke TraceManager.");
         return FALSE;
     }
-    else if (pStubMD->IsReverseStub())
+    else if (pStubMD->IsReversePInvokeStub())
     {
-        if (pStubMD->IsStatic())
-        {
-            // This is reverse P/Invoke stub, the argument is UMEntryThunkData
-            UMEntryThunkData *pEntryThunk = (UMEntryThunkData*)arg;
-            target = pEntryThunk->GetManagedTarget();
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke case %p\n", target));
-        }
-        else
-        {
-            // This is COM-to-CLR stub, the argument is the target
-            target = (PCODE)arg;
-            LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: COM-to-CLR case %p\n", target));
-        }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        UNREACHABLE_MSG("Reverse P/Invoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS.");
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+        // This is reverse P/Invoke stub, the argument is UMEntryThunkData
+        UMEntryThunkData *pEntryThunk = (UMEntryThunkData*)arg;
+        target = pEntryThunk->GetManagedTarget();
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Reverse P/Invoke case %p\n", target));
+        trace->InitForManaged(target);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+    }
+    else if (pStubMD->IsCOMToCLRStub())
+    {
+        // This is COM-to-CLR stub, the argument is the target
+        target = (PCODE)arg;
+        LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: COM-to-CLR case %p\n", target));
         trace->InitForManaged(target);
     }
     else if (pStubMD->IsPInvokeDelegateStub())
@@ -1845,6 +1860,75 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     return TRUE;
 }
 #endif //!DACCESS_COMPILE
+
+//
+// This is the stub manager for PInvoke stubs.
+//
+
+#ifndef DACCESS_COMPILE
+
+/* static */
+void PInvokeStubManager::Init()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    StubManager::AddStubManager(new PInvokeStubManager());
+}
+
+#endif // #ifndef DACCESS_COMPILE
+
+BOOL PInvokeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+
+    MethodDesc *pMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
+
+    return (pMD != NULL) && pMD->IsPInvoke();
+}
+
+BOOL PInvokeStubManager::DoTraceStub(PCODE stubStartAddress,
+                                     TraceDestination *trace)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    LOG((LF_CORDB, LL_EVERYTHING, "PInvokeStubManager::DoTraceStub called\n"));
+
+#ifndef DACCESS_COMPILE
+
+    MethodDesc* pMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
+    if (pMD == NULL || !pMD->IsPInvoke())
+    {
+        LOG((LF_CORDB, LL_INFO1000, "PISM::DoTraceStub: Not a PInvoke stub\n"));
+        return FALSE;
+    }
+
+    PInvokeMethodDesc* pNMD = reinterpret_cast<PInvokeMethodDesc*>(pMD);
+    // Note: The PInvoke target may not yet be resolved if it uses lazy binding
+    // (PRECODE_PINVOKE_IMPORT). In that case, GetPInvokeTarget() returns the
+    // precode address. There is a narrow race where the target gets resolved
+    // between this read and the debugger setting a breakpoint, but this is
+    // low priority to address.
+    PCODE target = (PCODE)pNMD->GetPInvokeTarget();
+    LOG((LF_CORDB, LL_INFO10000, "PISM::DoTraceStub: PInvoke target 0x%p\n", target));
+    trace->InitForUnmanaged(target);
+
+    LOG_TRACE_DESTINATION(trace, target, "PInvokeStubManager::DoTraceStub");
+
+    return TRUE;
+
+#else // !DACCESS_COMPILE
+    trace->InitForOther((PCODE)NULL);
+    return FALSE;
+
+#endif // !DACCESS_COMPILE
+}
 
 // This is used to recognize GenericCLRToCOMCallStub, VarargPInvokeStub, and GenericPInvokeCalliHelper.
 
@@ -2143,9 +2227,90 @@ BOOL TailCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *
 
 #endif // TARGET_X86 && !UNIX_X86_ABI
 
+#ifndef DACCESS_COMPILE
+
+/* static */
+void AsyncThunkStubManager::Init()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    StubManager::AddStubManager(new AsyncThunkStubManager());
+}
+
+#endif // #ifndef DACCESS_COMPILE
+
+BOOL AsyncThunkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+
+    MethodDesc *pMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
+
+    return (pMD != NULL) && (pMD->IsAsyncThunkMethod());
+}
+
+BOOL AsyncThunkStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *trace)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    LOG((LF_CORDB, LL_EVERYTHING, "AsyncThunkStubManager::DoTraceStub called\n"));
+
+#ifndef DACCESS_COMPILE
+     _ASSERTE(CheckIsStub_Internal(stubStartAddress));
+
+    trace->InitForManagerPush(stubStartAddress, this);
+
+    LOG_TRACE_DESTINATION(trace, stubStartAddress, "AsyncThunkStubManager::DoTraceStub");
+
+    return TRUE;
+
+#else // !DACCESS_COMPILE
+    trace->InitForOther((PCODE)NULL);
+    return FALSE;
+
+#endif // !DACCESS_COMPILE
+}
+
+#ifndef DACCESS_COMPILE
+
+BOOL AsyncThunkStubManager::TraceManager(Thread *thread,
+                                         TraceDestination *trace,
+                                         T_CONTEXT *pContext,
+                                         BYTE **pRetAddr)
+{
+    PCODE stubIP = GetIP(pContext);
+    *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
+
+    MethodDesc* pMD = NonVirtualEntry2MethodDesc(stubIP);
+    if (pMD->IsAsyncThunkMethod())
+    {
+        MethodDesc* pOtherMD = pMD->GetAsyncOtherVariant();
+        _ASSERTE_MSG(pOtherMD != NULL, "ATSM::TraceManager: Async thunk has no non-thunk variant to step through to");
+
+        LOG((LF_CORDB, LL_INFO1000, "ATSM::TraceManager: Step through async thunk to target - %p\n", pOtherMD));
+        PCODE target = GetStubTarget(pOtherMD);
+        if (target == (PCODE)NULL)
+        {
+            trace->InitForUnjittedMethod(pOtherMD);
+            return TRUE;
+        }
+
+        trace->InitForManaged(target);
+        return TRUE;
+    }
+    return FALSE;
+}
+#endif //!DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 void
 PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
@@ -2154,6 +2319,7 @@ PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p PrecodeStubManager\n", dac_cast<TADDR>(this)));
 }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 void
 StubLinkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
@@ -2165,6 +2331,7 @@ StubLinkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     GetRangeList()->EnumMemoryRegions(flags);
 }
 
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 void
 JumpStubStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
@@ -2173,6 +2340,7 @@ JumpStubStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p JumpStubStubManager\n", dac_cast<TADDR>(this)));
 }
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 void
 RangeSectionStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
@@ -2190,6 +2358,15 @@ ILStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p ILStubManager\n", dac_cast<TADDR>(this)));
+}
+
+void
+PInvokeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+    WRAPPER_NO_CONTRACT;
+    DAC_ENUM_VTHIS();
+    EMEM_OUT(("MEM: %p PInvokeStubManager\n", dac_cast<TADDR>(this)));
 }
 
 void
@@ -2222,5 +2399,13 @@ void TailCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     EMEM_OUT(("MEM: %p TailCallStubManager\n", dac_cast<TADDR>(this)));
 }
 #endif
+
+void AsyncThunkStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+    WRAPPER_NO_CONTRACT;
+    DAC_ENUM_VTHIS();
+    EMEM_OUT(("MEM: %p AsyncThunkStubManager\n", dac_cast<TADDR>(this)));
+}
 
 #endif // #ifdef DACCESS_COMPILE

@@ -129,21 +129,11 @@ typedef enum tagEFaultRepRetVal
 
 #define _WINNT_
 
-#ifndef offsetof
-#define offsetof(type, field) __builtin_offsetof(type, field)
-#endif
-
 #define CONTAINING_RECORD(address, type, field) \
     ((type *)((LONG_PTR)(address) - offsetof(type, field)))
 
 #define ARGUMENT_PRESENT(ArgumentPointer)    (\
     (CHAR *)(ArgumentPointer) != (CHAR *)(NULL) )
-
-#if defined(HOST_64BIT)
-#define MAX_NATURAL_ALIGNMENT sizeof(ULONGLONG)
-#else
-#define MAX_NATURAL_ALIGNMENT sizeof(ULONG)
-#endif
 
 #define DECLARE_HANDLE(name) struct name##__ { int unused; }; typedef struct name##__ *name
 
@@ -319,11 +309,6 @@ typedef struct tagDEC {
 #define DECIMAL_LO64_SET(dec,value)   {(dec).v.Lo64 = value; }
 
 #define DECIMAL_SETZERO(dec) {DECIMAL_LO32(dec) = 0; DECIMAL_MID32(dec) = 0; DECIMAL_HI32(dec) = 0; DECIMAL_SIGNSCALE(dec) = 0;}
-
-typedef struct tagBLOB {
-    ULONG cbSize;
-    BYTE *pBlobData;
-} BLOB, *LPBLOB;
 
 interface IStream;
 interface IRecordInfo;
@@ -572,14 +557,6 @@ typedef unsigned int ALG_ID;
 #define LCMAP_LOWERCASE           0x00000100
 #define LCMAP_UPPERCASE           0x00000200
 
-// 8 characters for language
-// 8 characters for region
-// 64 characters for suffix (script)
-// 2 characters for '-' separators
-// 2 characters for prefix like "i-" or "x-"
-// 1 null termination
-#define LOCALE_NAME_MAX_LENGTH   85
-
 
 #ifdef __cplusplus
 /*
@@ -599,7 +576,6 @@ The wrappers below are simple implementations that may not be as robust as compl
 Remember to fix the errcode definition in safecrt.h.
 */
 
-#define _wfopen_s _wfopen_unsafe
 #define fopen_s _fopen_unsafe
 
 #define _vscprintf _vscprintf_unsafe
@@ -631,17 +607,6 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
     }
 }
 
-inline errno_t __cdecl _wfopen_unsafe(FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
-{
-    FILE *result = _wfopen(fileName, mode);
-    if(result == 0) {
-        return 1;
-    } else {
-        *ff = result;
-        return 0;
-    }
-}
-
 inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const char *mode)
 {
   FILE *result = fopen(fileName, mode);
@@ -658,17 +623,6 @@ inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const cha
 
 /******************* misc ***************************************/
 
-#ifdef __cplusplus
-namespace std
-{
-    typedef decltype(nullptr) nullptr_t;
-}
-
-extern "C++"
-template< class T >
-typename std::remove_reference<T>::type&& move( T&& t );
-#endif // __cplusplus
-
 #define __RPC__out
 #define __RPC__in
 #define __RPC__deref_out_opt
@@ -679,8 +633,6 @@ typename std::remove_reference<T>::type&& move( T&& t );
 #define __RPC__in_xcount(x)
 #define __RPC__inout
 #define __RPC__deref_out_ecount_full_opt(x)
-
-typedef HANDLE HWND;
 
 typedef struct _LIST_ENTRY {
    struct _LIST_ENTRY *Flink;
@@ -1025,8 +977,6 @@ typedef struct _EXCEPTION_REGISTRATION_RECORD EXCEPTION_REGISTRATION_RECORD;
 typedef EXCEPTION_REGISTRATION_RECORD *PEXCEPTION_REGISTRATION_RECORD;
 
 typedef LPVOID HKEY;
-typedef LPVOID PACL;
-typedef LPVOID LPBC;
 typedef LPVOID PSECURITY_DESCRIPTOR;
 
 typedef struct _EXCEPTION_RECORD64 {

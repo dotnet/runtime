@@ -20,16 +20,16 @@
              Link="Common\Microsoft\Win32\TempRegistryKey.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs"
-             Link="Common\System\IO\PathFeatures.cs" />
     <Compile Include="DelegateSynchronizeInvoke.cs" />
     <Compile Include="FileAssociations.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Interop.cs" />
     <Compile Include="ProcessCollectionTests.cs" />
+    <Compile Include="ProcessExitStatusTests.cs" />
     <Compile Include="ProcessModuleTests.cs" />
     <Compile Include="ProcessStandardConsoleTests.cs" />
     <Compile Include="ProcessStartInfoTests.cs" />
+    <Compile Include="ProcessStartOptionsTests.cs" />
     <Compile Include="ProcessStreamReadTests.cs" />
     <Compile Include="ProcessTestBase.cs" />
     <Compile Include="ProcessTestBase.NonUap.cs" />
@@ -42,6 +42,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="ProcessModuleTests.Windows.cs" />
     <Compile Include="ProcessStartInfoTests.Windows.cs" />
+    <Compile Include="ProcessStartOptionsTests.Windows.cs" />
     <Compile Include="ProcessTests.Windows.cs" />
     <Compile Include="ProcessThreadTests.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
@@ -62,6 +63,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="Interop.Unix.cs" />
     <Compile Include="ProcessTests.Unix.cs" />
+    <Compile Include="ProcessStartOptionsTests.Unix.cs" />
     <Compile Include="ProcessThreadTests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
@@ -79,6 +81,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj" />
     <ProjectReference Include="LongPath\LongPath.csproj" Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>

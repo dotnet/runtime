@@ -157,7 +157,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
             // Give a more specific message for the case when we found the assembly with the same name already loaded.
             // Show the assembly name, since we know the error is about the assembly name.
             StackSString errorString;
-            errorString.LoadResource(CCompRC::Error, IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+            errorString.LoadResource(IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
             COMPlusThrow(kFileLoadException, IDS_EE_FILELOAD_ERROR_GENERIC, name, errorString);
         }
         else
@@ -742,20 +742,18 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE AssemblyNative_GetIsCollectible(QCall::AssemblyHandle pAssembly)
+FCIMPL1(FC_BOOL_RET, AssemblyNative::GetIsCollectible, Assembly* pAssembly)
 {
-    QCALL_CONTRACT;
+    CONTRACTL
+    {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pAssembly));
+    }
+    CONTRACTL_END;
 
-    BOOL retVal = FALSE;
-
-    BEGIN_QCALL;
-
-    retVal = pAssembly->IsCollectible();
-
-    END_QCALL;
-
-    return retVal;
+    FC_RETURN_BOOL(pAssembly->IsCollectible());
 }
+FCIMPLEND
 
 extern volatile uint32_t g_cAssemblies;
 
@@ -1421,7 +1419,8 @@ extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported()
     BEGIN_QCALL;
 
 #ifdef FEATURE_METADATA_UPDATER
-    result = CORDebuggerAttached() || g_pConfig->ForceEnc() || g_pConfig->DebugAssembliesModifiable();
+    result = (g_pConfig->ModifiableAssemblies() != MODIFIABLE_ASSM_NONE) &&
+             (CORDebuggerAttached() || g_pConfig->ModifiableAssemblies() == MODIFIABLE_ASSM_DEBUG);
 #endif
 
     END_QCALL;

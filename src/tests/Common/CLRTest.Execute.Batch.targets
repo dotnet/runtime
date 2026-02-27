@@ -74,6 +74,19 @@ IF NOT "%RunInUnloadableContext%"=="" (
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(InterpreterIncompatible)' == 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%RunInterpreter%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with the interpreter
+  popd
+  Exit /b 0
+)
+IF NOT "%DOTNET_InterpMode%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with the interpreter
+  popd
+  Exit /b 0
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(TieringTestIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 IF NOT "%RunTieringTest%"=="" (
@@ -120,15 +133,6 @@ IF NOT "%DOTNET_HeapVerify%"=="" (
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 IF NOT "%RunningIlasmRoundTrip%"=="" (
   ECHO SKIPPING EXECUTION BECAUSE RunningIlasmRoundTrip IS SET
-  popd
-  Exit /b 0
-)
-      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
-
-      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(SynthesizedPgoIncompatible)' == 'true'"><![CDATA[
-$(BatchCLRTestEnvironmentCompatibilityCheck)
-IF NOT "%CrossGen2SynthesizePgo%"=="" (
-  ECHO SKIPPING EXECUTION BECAUSE CrossGen2SynthesizePgo IS SET
   popd
   Exit /b 0
 )
@@ -187,6 +191,15 @@ Exit /b 2
 :ReleaseLock
 if exist %lockFolder% rd /s /q %lockFolder%
 Exit /b 0
+
+:RunWithTimeout
+REM Usage: set "__RunCmd=<command>" then call :RunWithTimeout <timeout_ms>
+REM Runs __RunCmd with a timeout, kills the process on timeout,
+REM and returns exit code 99 on timeout.
+REM Use PowerShell for reliable process management and timeout
+set __Timeout=%~1
+powershell -NoProfile -Command "& { $psi = New-Object System.Diagnostics.ProcessStartInfo 'cmd.exe','/c !__RunCmd!'%3B $psi.UseShellExecute = $false%3B $p = [System.Diagnostics.Process]::Start($psi)%3B if (-not $p.WaitForExit(!__Timeout!)) { try { $p.Kill() } catch {} %3B try { taskkill /T /F /PID $p.Id 2>$null } catch {} %3B exit 99 } else { exit $p.ExitCode } }"
+Exit /b !ERRORLEVEL!
       ]]></BatchCLRTestExitCodeCheck>
     </PropertyGroup>
 
@@ -241,76 +254,6 @@ Exit /b 0
     </ItemGroup>
 
       <PropertyGroup>
-          <ReflectionRootsXml>$(AssemblyName).reflect.xml</ReflectionRootsXml>
-          <BatchLinkerTestLaunchCmds><![CDATA[
-REM Linker commands
-
-set LinkBin=__Link
-set Assemblies=-a System.Private.CoreLib
-
-IF defined DoLink (
-    IF NOT EXIST !ILLINK! (
-      ECHO ILLink executable [%ILLINK%] Invalid
-      popd
-      Exit /b 1
-    )
-
-    REM Clean up old Linked binaries, if any
-    IF EXIST %LinkBin% rmdir /s /q %LinkBin%
-
-    REM Remove Native images, since the goal is to run from Linked binaries
-    del /q /f *.ni.* 2> nul
-
-    REM Use hints for reflection roots, if provided in $(ReflectionRootsXml)
-    IF EXIST $(ReflectionRootsXml) set ReflectionRoots=-x $(ReflectionRootsXml)
-
-    REM Include all .exe files in this directory as entry points (some tests had multiple .exe file modules)
-    FOR /F "delims=" %%E IN ('dir /b *.exe *.dll') DO SET Assemblies=!Assemblies! -a %%~nE
-
-    REM Run dotnet-linker
-    REM Run the Linker such that all assemblies except System.Private.Corlib.dll are linked
-    REM Debug symbol generation needs some fixes, and is currently omitted.
-    REM Once this is fixed, add -b true option.
-    ECHO %ILLINK% -out %LinkBin% -d %CORE_ROOT% -c link -l none -t !Assemblies! !ReflectionRoots!
-    %ILLINK% -out %LinkBin% -d %CORE_ROOT% -c link -l none -t !Assemblies! !ReflectionRoots!
-    IF NOT "!ERRORLEVEL!"=="0" (
-      ECHO ILLINK FAILED !ERRORLEVEL!
-      IF NOT defined KeepLinkedBinaries (
-          IF EXIST %LinkBin% rmdir /s /q %LinkBin%
-      )
-      popd
-      Exit /b 1
-    )
-
-    REM Copy CORECLR native binaries and the test watcher to %LinkBin%, so that we can run the test based on that directory
-    copy %CORE_ROOT%\clrjit.dll %LinkBin% > nul 2> nul
-    copy %CORE_ROOT%\coreclr.dll %LinkBin% > nul 2> nul
-    copy %CORE_ROOT%\mscorrc.dll %LinkBin% > nul 2> nul
-    copy %CORE_ROOT%\CoreRun.exe %LinkBin% > nul 2> nul
-    copy %CORE_ROOT%\watchdog.exe %LinkBin% > nul 2> nul
-
-    REM Copy some files that may be arguments
-    copy *.txt %LinkBin% > nul 2> nul
-
-    set ExePath=%LinkBin%\$(InputAssemblyName)
-    set CORE_ROOT=%scriptPath%\%LinkBin%
-)
-]]>
-          </BatchLinkerTestLaunchCmds>
-          <BatchLinkerTestCleanupCmds>
-              <![CDATA[
-REM Clean up the LinkBin directories after test execution.
-REM Otherwise, RunTests may run out of disk space.
-
-if defined DoLink (
-    if not defined KeepLinkedBinaries (
-        IF EXIST %LinkBin% rmdir /s /q %LinkBin%
-    )
-)
-]]>
-          </BatchLinkerTestCleanupCmds>
-      </PropertyGroup>
-      <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</CLRTestRunFile>
       <WatcherRunFile>"%CORE_ROOT%\watchdog.exe" %_WatcherTimeoutMins%</WatcherRunFile>
 
@@ -319,9 +262,29 @@ REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
 COPY /y %CORE_ROOT%\CoreShim.dll .
       ]]></BatchCopyCoreShimLocalCmds>
-      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) != 'android'">
+      <!-- Note that this overwrites CLRTestBatchPreCommands rather than adding to it. -->
+      <CLRTestBatchPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
+IF NOT DEFINED RunWithNodeJS (
+    REM Build wasm app containing the test dll
+    IF DEFINED __TestDotNetCmd (
+        set __Command=%__TestDotNetCmd%
+    ) ELSE (
+        set __Command=dotnet
+    )
+
+    REM workaround msbuild issue - https://github.com/dotnet/runtime/issues/74328
+    set DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
+
+    !__Command! msbuild %CORE_ROOT%\wasm-test-runner\WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=%%CD%% $(CLRTestMSBuildArgs)
+    IF NOT "!ERRORLEVEL!"=="0" (
+        popd
+        Exit /b !ERRORLEVEL!
+    )
+)
+      ]]></CLRTestBatchPreCommands>
+
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' != 'android' And '$(TargetOS)' != 'browser'">
     <![CDATA[
-$(BatchLinkerTestLaunchCmds)
 $(BatchCopyCoreShimLocalCmds)
 
 IF NOT "%CLRCustomTestLauncher%"=="" (
@@ -337,7 +300,9 @@ if defined RunCrossGen2 (
 )
 
 if defined RunInterpreter (
-  SET "DOTNET_Interpreter=$(AssemblyName)^!*"
+  if "%DOTNET_InterpMode%"=="" (
+    SET "DOTNET_Interpreter=$(AssemblyName)^!*"
+  )
 )
 
 ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
@@ -346,9 +311,43 @@ set CLRTestExitCode=!ERRORLEVEL!
 if defined RunCrossGen2 (
   call :ReleaseLock
 )
-$(BatchLinkerTestCleanupCmds)
       ]]></BatchCLRTestLaunchCmds>
-      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'android'">
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'browser'">
+    <![CDATA[
+IF NOT DEFINED RunWithNodeJS (
+    ECHO V8 execution is not supported on Windows. Set RunWithNodeJS to use Node.
+    set CLRTestExitCode=1
+) ELSE (
+    if not defined __TestTimeout (
+      set __TestTimeout=300000
+    )
+
+    REM Convert Windows paths to Unix-style paths for Node.js
+    set "__CoreRootWin=%CORE_ROOT%"
+    set "__CoreRootUnix=%CORE_ROOT%"
+    set "__CoreRootUnix=!__CoreRootUnix:\=/!"
+    if "!__CoreRootUnix:~1,1!"==":" set "__CoreRootUnix=/!__CoreRootUnix:~3!"
+    
+    set "__ExePathUnix=!CD!\%ExePath%"
+    set "__ExePathUnix=!__ExePathUnix:\=/!"
+    if "!__ExePathUnix:~1,1!"==":" set "__ExePathUnix=/!__ExePathUnix:~3!"
+    
+    set "CORE_ROOT=!__CoreRootUnix!"
+    set "TestExclusionListPath=!__CoreRootUnix!/TestExclusionList.txt"
+    
+    ECHO Running with node
+    ECHO CORE_ROOT: !CORE_ROOT!
+    ECHO ExePath: !__ExePathUnix!
+    ECHO CLRTestExecutionArguments: %CLRTestExecutionArguments%
+    ECHO Timeout in ms: !__TestTimeout!
+    
+    set "__RunCmd=node "!__CoreRootWin!\corerun.js" -c "!__CoreRootUnix!" "!__ExePathUnix!" %CLRTestExecutionArguments%"
+    ECHO Running: !__RunCmd!
+    call :RunWithTimeout !__TestTimeout!
+    set CLRTestExitCode=!ERRORLEVEL!
+)
+      ]]></BatchCLRTestLaunchCmds>
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'android'">
     <![CDATA[
 REM run Android app
 IF NOT "%__TestDotNetCmd%"=="" (
@@ -492,7 +491,6 @@ $(SuperPMICollectionBatchScript)
 
 REM Allow test environment variables or precommands to override the ExePath
 set ExePath=$(InputAssemblyName)
-set TestExclusionListPath=%CORE_ROOT%\TestExclusionList.txt
 
 REM Environment Variables
 $(BatchEnvironmentVariables)

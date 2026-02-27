@@ -95,6 +95,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(intRange, new object());
             // Implements IConvertible (throws NotSupportedException - is caught)
             yield return new TestCase(intRange, new IConvertibleImplementor() { IntThrow = new NotSupportedException() });
+            // Values that overflow int range (throws OverflowException - should be caught)
+            yield return new TestCase(intRange, 2147483648L);
+            yield return new TestCase(intRange, -2147483649L);
 
             intRange = new RangeAttribute(0, 10) { MinimumIsExclusive = true };
             yield return new TestCase(intRange, -1);
@@ -980,10 +983,12 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [Theory]
         [InlineData(1, 2, "2147483648")]
         [InlineData(1, 2, "-2147483649")]
-        public static void Validate_IntConversionOverflows_ThrowsOverflowException(int minimum, int maximum, object value)
+        [InlineData(-50, 50, 2147483648L)]
+        [InlineData(-50, 50, -2147483649L)]
+        public static void Validate_IntConversionOverflows_ReturnsFalse(int minimum, int maximum, object value)
         {
             RangeAttribute attribute = new RangeAttribute(minimum, maximum);
-            Assert.Throws<OverflowException>(() => attribute.Validate(value, new ValidationContext(new object())));
+            Assert.False(attribute.IsValid(value));
         }
 
         [Fact]

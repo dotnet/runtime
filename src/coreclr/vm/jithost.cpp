@@ -26,6 +26,11 @@ int JitHost::getIntConfigValue(const char* name, int defaultValue)
 {
     WRAPPER_NO_CONTRACT;
 
+    if (!strcmp(name, "EnableHWIntrinsic"))
+    {
+        return g_pConfig->EnableHWIntrinsic() ? 1 : 0;
+    }
+
     StackSString str;
     SString(SString::Utf8Literal, name).ConvertToUnicode(str);
 

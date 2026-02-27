@@ -116,8 +116,28 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
 
             NibbleReader reader = new NibbleReader(imageReader, (int)debugInfoOffset);
-            uint boundsByteCount = reader.ReadUInt();
-            uint variablesByteCount = reader.ReadUInt();
+
+            uint boundsByteCountOrIndicator = reader.ReadUInt();
+
+            uint boundsByteCount = 0;
+            uint variablesByteCount = 0;
+
+            const int DebugInfoFat = 0;
+            if (_runtimeFunction.ReadyToRunReader.ReadyToRunHeader.MajorVersion >= 17 && boundsByteCountOrIndicator == DebugInfoFat)
+            {
+                boundsByteCount = reader.ReadUInt();
+                variablesByteCount = reader.ReadUInt();
+                reader.ReadUInt(); // uninstrumented bounds
+                reader.ReadUInt(); // patchpoint info
+                reader.ReadUInt(); // rich debug info
+                reader.ReadUInt(); // async info
+            }
+            else
+            {
+                boundsByteCount = boundsByteCountOrIndicator;
+                variablesByteCount = reader.ReadUInt();
+            }
+
             int boundsOffset = reader.GetNextByteOffset();
             int variablesOffset = (int)(boundsOffset + boundsByteCount);
 
@@ -143,7 +163,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             // - IL offsets aren't sorted
             //   They may also include a sentinel value from MappingTypes.
             // - flags is 3 independent bits.
-            if (_runtimeFunction.ReadyToRunReader.ReadyToRunHeader.MajorVersion >= 16)
+            int version = _runtimeFunction.ReadyToRunReader.ReadyToRunHeader.MajorVersion;
+            if (version >= 16)
             {
                 NibbleReader reader = new NibbleReader(imageReader, offset);
                 uint boundsEntryCount = reader.ReadUInt();
@@ -151,7 +172,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 uint bitsForNativeDelta = reader.ReadUInt() + 1; // Number of bits needed for native deltas
                 uint bitsForILOffsets = reader.ReadUInt() + 1; // Number of bits needed for IL offsets
 
-                uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + 2; // 2 bits for source type
+                uint bitsForSourceType = version >= 17 ? 3u : 2u;
+                uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + bitsForSourceType;
                 ulong bitsMeaningfulMask = (1UL << ((int)bitsPerEntry)) - 1;
                 int offsetOfActualBoundsData = reader.GetNextByteOffset();
 
@@ -172,22 +194,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                         bitsCollected -= bitsPerEntry;
 
                         var entry = new DebugInfoBoundsEntry();
-                        switch (mappingDataEncoded & 0x3)
-                        {
-                            case 0:
-                                entry.SourceTypes = SourceTypes.SourceTypeInvalid;
-                                break;
-                            case 1:
-                                entry.SourceTypes = SourceTypes.CallInstruction;
-                                break;
-                            case 2:
-                                entry.SourceTypes = SourceTypes.StackEmpty;
-                                break;
-                            case 3:
-                                entry.SourceTypes = SourceTypes.StackEmpty | SourceTypes.CallInstruction;
-                                break;
-                        }
-                        mappingDataEncoded >>= 2;
+                        if ((mappingDataEncoded & 0x1) != 0)
+                            entry.SourceTypes |= SourceTypes.CallInstruction;
+                        if ((mappingDataEncoded & 0x2) != 0)
+                            entry.SourceTypes |= SourceTypes.StackEmpty;
+                        if (version >= 17 && (mappingDataEncoded & 0x4) != 0)
+                            entry.SourceTypes |= SourceTypes.Async;
+
+                        mappingDataEncoded >>= (int)bitsForSourceType;
                         uint nativeOffsetDelta = (uint)(mappingDataEncoded & ((1UL << (int)bitsForNativeDelta) - 1));
                         previousNativeOffset += nativeOffsetDelta;
                         entry.NativeOffset = previousNativeOffset;

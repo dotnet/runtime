@@ -136,6 +136,7 @@ namespace System.Text.Json.Serialization.Tests
         public object? /*IReadOnlyCollection<string>*/ IReadOnlyCollectionT { get; set; }
         public object? /*IReadOnlyList<string>*/ IReadOnlyListT { get; set; }
         public object? /*ISet<string>*/ ISetT { get; set; }
+        public object? /*IReadOnlySet<string>*/ IReadOnlySetT { get; set; }
         public object? /*Stack<string>*/ StackT { get; set; }
         public object? /*Queue<string>*/ QueueT { get; set; }
         public object? /*HashSet<string>*/ HashSetT { get; set; }
@@ -171,6 +172,7 @@ namespace System.Text.Json.Serialization.Tests
             IReadOnlyCollectionT = new List<string> { "Hello", "World" };
             IReadOnlyListT = new List<string> { "Hello", "World" };
             ISetT = new HashSet<string> { "Hello", "World" };
+            IReadOnlySetT = new HashSet<string> { "Hello", "World" };
             StackT = new Stack<string>(new List<string> { "Hello", "World" });
             QueueT = new Queue<string>(new List<string> { "Hello", "World" });
             HashSetT = new HashSet<string>(new List<string> { "Hello", "World" });

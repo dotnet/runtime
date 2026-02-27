@@ -218,7 +218,7 @@ namespace System.IO
                         _internalBufferSize = (uint)value;
                     }
 
-                    Restart();
+                    RestartForInternalBufferSize();
                 }
             }
         }
@@ -397,10 +397,12 @@ namespace System.IO
         {
             if (_onErrorHandler != null)
             {
-                OnError(new ErrorEventArgs(
-                        new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, _directory))));
+                OnError(new ErrorEventArgs(CreateBufferOverflowException(_directory)));
             }
         }
+
+        private static InternalBufferOverflowException CreateBufferOverflowException(string directoryPath)
+            => new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, directoryPath));
 
         /// <summary>
         /// Raises the event to each handler in the list.
@@ -733,7 +735,7 @@ namespace System.IO
 
                 public void Clear() => Items = Array.Empty<string>();
 
-                public bool Contains(string item) => Array.IndexOf(Items, item) != -1;
+                public bool Contains(string item) => Array.IndexOf(Items, item) >= 0;
 
                 public void CopyTo(string[] array, int arrayIndex) => Items.CopyTo(array, arrayIndex);
 

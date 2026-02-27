@@ -454,9 +454,9 @@ G_BEGIN_DECLS
 EMSCRIPTEN_KEEPALIVE void mono_wasm_execute_timer (void);
 EMSCRIPTEN_KEEPALIVE void mono_background_exec (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_ds_exec (void);
-extern void mono_wasm_schedule_timer (int shortestDueTimeMs);
+extern void SystemJS_ScheduleTimerImpl (int shortestDueTimeMs);
 #else
-extern void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread);
+extern void SystemJS_ScheduleSynchronizationContext(MonoNativeThreadId target_thread);
 #endif // DISABLE_THREADS
 G_END_DECLS
 
@@ -621,13 +621,13 @@ mono_wasm_execute_timer (void)
 }
 
 void
-mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
+SystemJS_ScheduleTimer (void *timerHandler, int shortestDueTimeMs)
 {
 	// NOTE: here the `timerHandler` callback is [UnmanagedCallersOnly] which wraps it with MONO_ENTER_GC_UNSAFE/MONO_EXIT_GC_UNSAFE
 
 	g_assert (timerHandler);
 	timer_handler = timerHandler;
-    mono_wasm_schedule_timer (shortestDueTimeMs);
+    SystemJS_ScheduleTimerImpl (shortestDueTimeMs);
 }
 #endif
 #endif
@@ -637,10 +637,10 @@ mono_arch_register_icall (void)
 {
 #ifdef HOST_BROWSER
 #ifdef DISABLE_THREADS
-	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", mono_wasm_main_thread_schedule_timer);
-	mono_add_internal_call_internal ("System.Threading.ThreadPool::MainThreadScheduleBackgroundJob", mono_main_thread_schedule_background_job);
+	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", SystemJS_ScheduleTimer);
+	mono_add_internal_call_internal ("System.Threading.ThreadPool::MainThreadScheduleBackgroundJob", SystemJS_ScheduleBackgroundJob);
 #else
-	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleSynchronizationContext", mono_target_thread_schedule_synchronization_context);
+	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleSynchronizationContext", SystemJS_ScheduleSynchronizationContext);
 #endif /* DISABLE_THREADS */
 #endif /* HOST_BROWSER */
 }

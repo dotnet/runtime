@@ -45,6 +45,7 @@ internal static class Entrypoints
                     return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
                 }
             },
+            [],
             out ContractDescriptorTarget? target))
             return -1;
 
@@ -147,6 +148,7 @@ internal static class Entrypoints
                     return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
                 }
             },
+            [],
             out ContractDescriptorTarget? target))
         {
             return -1;

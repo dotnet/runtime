@@ -104,58 +104,19 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
-#if NET9_0_OR_GREATER
                 return Vector128.MaxNumber(x, y);
-#else
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector128.ConditionalSelect(
-                        Vector128.LessThan(y, x) | IsNaN(y) | (Vector128.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
-                }
-
-                return Vector128.Max(x, y);
-#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
-#if NET9_0_OR_GREATER
                 return Vector256.MaxNumber(x, y);
-#else
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector256.ConditionalSelect(
-                        Vector256.LessThan(y, x) | IsNaN(y) | (Vector256.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
-                }
-
-                return Vector256.Max(x, y);
-#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
-#if NET9_0_OR_GREATER
                 return Vector512.MaxNumber(x, y);
-#else
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector512.ConditionalSelect(
-                        Vector512.LessThan(y, x) | IsNaN(y) | (Vector512.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
-                }
-
-                return Vector512.Max(x, y);
-#endif
             }
 
             public static T Invoke(Vector128<T> x) => HorizontalAggregate<T, MaxNumberOperator<T>>(x);

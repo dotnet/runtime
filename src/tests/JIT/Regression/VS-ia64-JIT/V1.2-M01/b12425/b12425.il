@@ -4,6 +4,8 @@
 .assembly extern mscorlib{}
 .assembly 'b12425'{}
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 
 .class interface public abstract auto ansi ITrees
 {
@@ -43,6 +45,12 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/89157')
+        type([TestLibrary]TestLibrary.Utilities)
+        string[1] ('IsNativeAot')
+    }
+
     .entrypoint
 
 	ldtoken    Garden

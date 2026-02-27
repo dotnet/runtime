@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -402,12 +402,6 @@
   </data>
   <data name="Arg_GuidArrayCtor" xml:space="preserve">
     <value>Byte array for Guid must be exactly {0} bytes long.</value>
-  </data>
-  <data name="Arg_HandleNotAsync" xml:space="preserve">
-    <value>Handle does not support asynchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened synchronously (that is, it was not opened for overlapped I/O).</value>
-  </data>
-  <data name="Arg_HandleNotSync" xml:space="preserve">
-    <value>Handle does not support synchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened asynchronously (that is, it was opened explicitly for overlapped I/O).</value>
   </data>
   <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
     <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types.</value>
@@ -1375,8 +1369,8 @@
   <data name="Argument_InvalidTypeName" xml:space="preserve">
     <value>The name of the type is invalid.</value>
   </data>
-  <data name="Argument_InvalidTypeWithPointersNotSupported" xml:space="preserve">
-    <value>Cannot use type '{0}'. Only value types without pointers or references are supported.</value>
+  <data name="Argument_TypeContainsReferences" xml:space="preserve">
+    <value>The type '{0}' is not supported because it contains references.</value>
   </data>
   <data name="Argument_InvalidUnity" xml:space="preserve">
     <value>Type '{0}' is not deserializable.</value>
@@ -1455,9 +1449,6 @@
   </data>
   <data name="Argument_NeedNonGenericType" xml:space="preserve">
     <value>The specified Type must not be a generic type.</value>
-  </data>
-  <data name="Argument_NeedStructWithNoRefs" xml:space="preserve">
-    <value>The specified Type must be a struct containing no references.</value>
   </data>
   <data name="Argument_NegativeFieldOffsetNotPermitted" xml:space="preserve">
     <value>Negative field offset is not allowed.</value>
@@ -1944,7 +1935,7 @@
     <value>startIndex cannot be larger than length of string.</value>
   </data>
   <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
-    <value>Stream length must be non-negative and less than the maximum array length (0x7FFFFFC7) - origin.</value>
+    <value>Stream length must be non-negative and less than the maximum array length {0} - origin.</value>
   </data>
   <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>
@@ -2026,6 +2017,9 @@
   </data>
   <data name="BadImageFormat_BadILFormat" xml:space="preserve">
     <value>Bad IL format.</value>
+  </data>
+  <data name="BadImageFormat_EmptyAssembly" xml:space="preserve">
+    <value>Assembly image is empty. The stream or byte array must contain a valid PE file.</value>
   </data>
   <data name="BadImageFormat_InvalidType" xml:space="preserve">
     <value>Corrupt .resources file.  The specified type doesn't exist.</value>
@@ -3095,9 +3089,6 @@
   <data name="NotSupported_MustBeModuleBuilder" xml:space="preserve">
     <value>Module argument must be a ModuleBuilder.</value>
   </data>
-  <data name="NotSupported_UnmanagedCallersOnlyTarget" xml:space="preserve">
-    <value>Methods with UnmanagedCallersOnlyAttribute cannot be used as delegate target.</value>
-  </data>
   <data name="NotSupported_NoCodepageData" xml:space="preserve">
     <value>No data is available for encoding {0}. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
   </data>
@@ -3109,6 +3100,9 @@
   </data>
   <data name="NotSupported_NonReflectedType" xml:space="preserve">
     <value>Not supported in a non-reflected type.</value>
+  </data>
+  <data name="InvalidProgram_AsyncMethod" xml:space="preserve">
+    <value>Async methods with UnmanagedCallersOnlyAttribute are invalid.</value>
   </data>
   <data name="InvalidProgram_NonStaticMethod" xml:space="preserve">
     <value>Non-static methods with UnmanagedCallersOnlyAttribute are invalid.</value>
@@ -4061,6 +4055,9 @@
   <data name="NotSupported_CppCli" xml:space="preserve">
     <value>C++/CLI activation has been disabled via a feature switch. See https://aka.ms/dotnet-illink/nativehost for more information.</value>
   </data>
+  <data name="NotSupported_Continuation" xml:space="preserve">
+    <value>Object.GetType() is not supported for continuations</value>
+  </data>
   <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
     <value>Queue empty.</value>
   </data>
@@ -4176,25 +4173,25 @@
     <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMixedCompositions" xml:space="preserve">
-    <value>Mixed compositions in string not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>Mixed compositions in string are not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
-    <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>CompareOptions = {0} are not supported for culture = {1} on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithMatchLength" xml:space="preserve">
-    <value>Match length calculation is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this function.</value>
+    <value>Match length calculation is not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupported_NonZeroLowerBound" xml:space="preserve">
     <value>Arrays with non-zero lower bounds are not supported.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalization" xml:space="preserve">
-    <value>{0} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>{0} is not supported on Apple mobile platforms.</value>
   </data>
   <data name="PlatformNotSupportedWithReason_HybridGlobalization" xml:space="preserve">
-    <value>{0} is not supported for {1}, when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+    <value>{0} is not supported for {1} on Apple mobile platforms.</value>
   </data>
   <data name="NotSupported_BodyRemoved" xml:space="preserve">
     <value>The body of this method was removed by the AOT compiler because it's not callable.</value>
@@ -4382,8 +4379,14 @@
   <data name="NotSupported_EmitDebugInfo" xml:space="preserve">
     <value>Emitting debug info is not supported for this member.</value>
   </data>
+  <data name="Arg_MustBeBFloat16" xml:space="preserve">
+    <value>Object must be of type BFloat16.</value>
+  </data>
   <data name="NotSupported_ReferenceEnumOrPrimitiveTypeRequired" xml:space="preserve">
     <value>The specified type must be a reference type, a primitive type, or an enum type.</value>
+  </data>
+  <data name="NotSupported_IntegerEnumOrPrimitiveTypeRequired" xml:space="preserve">
+    <value>The specified type must be an integer primitive type or an enum type.</value>
   </data>
   <data name="Argument_BadFieldForInitializeArray" xml:space="preserve">
     <value>The field is invalid for initializing array or span.</value>

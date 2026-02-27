@@ -163,10 +163,7 @@ namespace System.Data.OleDb
             {
                 OleDbConnectionInternal openConnection = GetOpenConnection();
 
-                if (null != openConnection)
-                {
-                    openConnection.LocalTransaction = value;
-                }
+                openConnection?.LocalTransaction = value;
             }
         }
 

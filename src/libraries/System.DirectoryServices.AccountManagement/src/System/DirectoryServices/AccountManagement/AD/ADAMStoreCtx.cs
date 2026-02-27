@@ -61,7 +61,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected override void SetAuthPrincipalEnableStatus(AuthenticablePrincipal ap, bool enable)
         {
-            Debug.Assert(ap.fakePrincipal == false);
+            Debug.Assert(!ap.fakePrincipal);
 
             bool acctDisabled;
             DirectoryEntry de = (DirectoryEntry)ap.UnderlyingObject;
@@ -161,7 +161,7 @@ namespace System.DirectoryServices.AccountManagement
         internal override ResultSet GetGroupsMemberOfAZ(Principal p)
         {
             // Enforced by the methods that call us
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
             Debug.Assert(p is UserPrincipal);
 
             Debug.Assert(p.UnderlyingObject != null);
@@ -210,7 +210,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal override void SetPassword(AuthenticablePrincipal p, string newPassword)
         {
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             Debug.Assert(p != null);
             Debug.Assert(newPassword != null);  // but it could be an empty string
@@ -231,10 +231,10 @@ namespace System.DirectoryServices.AccountManagement
         /// <param name="newPassword">New password</param>
         internal override void ChangePassword(AuthenticablePrincipal p, string oldPassword, string newPassword)
         {
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             // Shouldn't be being called if this is the case
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
 
             Debug.Assert(p != null);
             Debug.Assert(newPassword != null);  // but it could be an empty string

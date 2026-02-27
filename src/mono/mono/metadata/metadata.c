@@ -1975,6 +1975,15 @@ mono_metadata_init (void)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
 
 	mono_metadata_update_init ();
+
+	char *compressed_bmap = g_getenv ("MONO_COMPRESSED_INTERFACE_BITMAP");
+	if (compressed_bmap) {
+		if (compressed_bmap [0] == '1')
+			mono_opt_compressed_interface_bitmap = TRUE;
+		else if (compressed_bmap [0] == '0')
+			mono_opt_compressed_interface_bitmap = FALSE;
+		g_free (compressed_bmap);
+	}
 }
 
 /*

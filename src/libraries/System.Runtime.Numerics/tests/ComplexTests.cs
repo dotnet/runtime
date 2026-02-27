@@ -149,6 +149,8 @@ namespace System.Numerics.Tests
         public static void Parse(string valueScalar, NumberStyles style, IFormatProvider provider, double expectedScalar)
         {
             string value = $"<{valueScalar}; {valueScalar}>";
+            byte[] utf8Value = Encoding.UTF8.GetBytes(value);
+
             Complex expected = new Complex(expectedScalar, expectedScalar);
 
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
@@ -161,17 +163,26 @@ namespace System.Numerics.Tests
                     Assert.True(Complex.TryParse(value, null, out result));
                     Assert.Equal(expected, result);
 
+                    Assert.True(Complex.TryParse(utf8Value, null, out result));
+                    Assert.Equal(expected, result);
+
                     Assert.Equal(expected, Complex.Parse(value, null));
+                    Assert.Equal(expected, Complex.Parse(utf8Value, null));
                 }
 
                 Assert.Equal(expected, Complex.Parse(value, provider));
+                Assert.Equal(expected, Complex.Parse(utf8Value, provider));
             }
 
             // Use Parse(string, NumberStyles, IFormatProvider)
             Assert.True(Complex.TryParse(value, style, provider, out result));
             Assert.Equal(expected, result);
 
+            Assert.True(Complex.TryParse(utf8Value, style, provider, out result));
+            Assert.Equal(expected, result);
+
             Assert.Equal(expected, Complex.Parse(value, style, provider));
+            Assert.Equal(expected, Complex.Parse(utf8Value, style, provider));
 
             if (isDefaultProvider)
             {
@@ -179,8 +190,14 @@ namespace System.Numerics.Tests
                 Assert.True(Complex.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
                 Assert.Equal(expected, result);
 
+                Assert.True(Complex.TryParse(utf8Value, style, NumberFormatInfo.CurrentInfo, out result));
+                Assert.Equal(expected, result);
+
                 Assert.Equal(expected, Complex.Parse(value, style, null));
                 Assert.Equal(expected, Complex.Parse(value, style, NumberFormatInfo.CurrentInfo));
+
+                Assert.Equal(expected, Complex.Parse(utf8Value, style, null));
+                Assert.Equal(expected, Complex.Parse(utf8Value, style, NumberFormatInfo.CurrentInfo));
             }
         }
 

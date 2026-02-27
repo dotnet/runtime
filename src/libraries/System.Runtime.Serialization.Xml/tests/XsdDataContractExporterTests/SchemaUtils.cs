@@ -21,13 +21,13 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             return actual;
         }
 
-        public static string DumpSchema(XmlSchemaSet schemas)
+        public static string DumpSchema(XmlSchemaSet schemas, bool skipSerializationNamespace = true)
         {
             StringBuilder sb = new StringBuilder();
             StringWriter sw = new StringWriter(sb);
             foreach (XmlSchema schema in schemas.Schemas())
             {
-                if (schema.TargetNamespace != SerializationNamespace)
+                if (!skipSerializationNamespace || schema.TargetNamespace != SerializationNamespace)
                 {
                     schema.Write(sw);
                 }

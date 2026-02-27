@@ -283,7 +283,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
             var dic = new Dictionary<string, string>
@@ -295,8 +295,6 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             configurationBuilder.AddInMemoryCollection(dic);
             configurationBuilder.AddEnvironmentVariables();
             var config = configurationBuilder.Build();
-
-            MyOptions options = null;
 
             using (var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250)))
             {
@@ -310,14 +308,17 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
 
                 _ = Task.Run(ReloadLoop);
 
-                while (!cts.IsCancellationRequested)
+                MyOptions options;
+
+                do
                 {
                     options = config.Get<MyOptions>();
                 }
-            }
+                while (!cts.IsCancellationRequested);
 
-            Assert.Equal(-2, options.Number);
-            Assert.Equal("Foo", options.Text);
+                Assert.Equal(-2, options.Number);
+                Assert.Equal("Foo", options.Text);
+            }
         }
 
         private sealed class MyOptions

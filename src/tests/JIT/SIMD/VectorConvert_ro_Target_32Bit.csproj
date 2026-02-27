@@ -12,4 +12,7 @@
     <Compile Include="VectorConvert.cs" />
     <Compile Include="VectorUtil.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

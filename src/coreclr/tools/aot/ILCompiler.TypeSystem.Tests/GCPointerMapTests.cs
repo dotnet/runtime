@@ -24,13 +24,13 @@ namespace TypeSystemTests
         [Fact]
         public void TestInstanceMap()
         {
-            MetadataType classWithArrayFields = _testModule.GetType("GCPointerMap", "ClassWithArrayFields");
-            MetadataType classWithStringField = _testModule.GetType("GCPointerMap", "ClassWithStringField");
-            MetadataType mixedStruct = _testModule.GetType("GCPointerMap", "MixedStruct");
-            MetadataType structWithSameGCLayoutAsMixedStruct = _testModule.GetType("GCPointerMap", "StructWithSameGCLayoutAsMixedStruct");
-            MetadataType doubleMixedStructLayout = _testModule.GetType("GCPointerMap", "DoubleMixedStructLayout");
-            MetadataType explicitlyFarPointer = _testModule.GetType("GCPointerMap", "ExplicitlyFarPointer");
-            MetadataType struct32GcPointers = _testModule.GetType("GCPointerMap", "Struct32GcPointers");
+            MetadataType classWithArrayFields = _testModule.GetType("GCPointerMap"u8, "ClassWithArrayFields"u8);
+            MetadataType classWithStringField = _testModule.GetType("GCPointerMap"u8, "ClassWithStringField"u8);
+            MetadataType mixedStruct = _testModule.GetType("GCPointerMap"u8, "MixedStruct"u8);
+            MetadataType structWithSameGCLayoutAsMixedStruct = _testModule.GetType("GCPointerMap"u8, "StructWithSameGCLayoutAsMixedStruct"u8);
+            MetadataType doubleMixedStructLayout = _testModule.GetType("GCPointerMap"u8, "DoubleMixedStructLayout"u8);
+            MetadataType explicitlyFarPointer = _testModule.GetType("GCPointerMap"u8, "ExplicitlyFarPointer"u8);
+            MetadataType struct32GcPointers = _testModule.GetType("GCPointerMap"u8, "Struct32GcPointers"u8);
 
             {
                 var map = GCPointerMap.FromInstanceLayout(classWithArrayFields);

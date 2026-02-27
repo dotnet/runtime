@@ -651,6 +651,12 @@
   <data name="DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessorMessage" xml:space="preserve">
     <value>'DynamicallyAccessedMembersAttribute' on property '{0}' conflicts with the same attribute on its accessor '{1}'.</value>
   </data>
+  <data name="DynamicallyAccessedMembersIsNotAllowedOnExtensionPropertiesTitle" xml:space="preserve">
+    <value>'DynamicallyAccessedMembersAttribute' on extension property is ignored</value>
+  </data>
+  <data name="DynamicallyAccessedMembersIsNotAllowedOnExtensionPropertiesMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMembersAttribute' on extension property '{0}' is not supported and has no effect. Apply the attribute to the accessor return value or value parameter instead.</value>
+  </data>
   <data name="XmlCouldNotFindAnyTypeInNamespaceTitle" xml:space="preserve">
     <value>The XML descriptor specifies a namespace but there are no types found in such namespace.</value>
   </data>
@@ -1177,13 +1183,13 @@
     <value>'RequiresDynamicCodeAttribute' cannot be placed directly on static constructor '{0}'.</value>
   </data>
   <data name="RequiresDynamicCodeOnStaticConstructorTitle" xml:space="preserve">
-    <value>The use of 'RequiresDynamicCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+    <value>'RequiresDynamicCodeAttribute' cannot be used on static constructors because they are not directly callable. Consider placing the attribute on the type instead.</value>
   </data>
   <data name="RequiresAssemblyFilesOnStaticConstructorMessage" xml:space="preserve">
     <value>'RequiresAssemblyFilesAttribute' cannot be placed directly on static constructor '{0}'.</value>
   </data>
   <data name="RequiresAssemblyFilesOnStaticConstructorTitle" xml:space="preserve">
-    <value>The use of 'RequiresAssemblyFilesAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+    <value>'RequiresAssemblyFilesAttribute' cannot be used on static constructors because they are not directly callable. Consider placing the attribute on the type instead.</value>
   </data>
   <data name="RequiresUnreferencedCodeOnEntryPointMessage" xml:space="preserve">
     <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on application entry point '{0}'.</value>
@@ -1256,5 +1262,29 @@
   </data>
   <data name="DataflowAnalysisDidNotConvergeMessage" xml:space="preserve">
     <value>Trim dataflow analysis of member '{0}' took too long to complete. Trim safety cannot be guaranteed.</value>
+  </data>
+  <data name="RequiresUnsafeTitle" xml:space="preserve">
+    <value>Calling methods annotated with 'RequiresUnsafeAttribute' may break functionality in environments that do not support unsafe code.</value>
+  </data>
+  <data name="RequiresUnsafeMessage" xml:space="preserve">
+    <value>Using member '{0}' which has 'RequiresUnsafeAttribute' requires an unsafe context, such as an unsafe block or a method marked with 'RequiresUnsafeAttribute'.{1}{2}</value>
+  </data>
+  <data name="RequiresUnsafeAttributeMismatchTitle" xml:space="preserve">
+    <value>'RequiresUnsafeAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresUnsafeAttributeMismatchMessage" xml:space="preserve">
+    <value>{0}. 'RequiresUnsafeAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresUnsafeOnStaticConstructorMessage" xml:space="preserve">
+    <value>'RequiresUnsafeAttribute' cannot be placed directly on static constructor '{0}'.</value>
+  </data>
+  <data name="RequiresUnsafeOnStaticConstructorTitle" xml:space="preserve">
+    <value>'RequiresUnsafeAttribute' cannot be used on static constructors because they are not directly callable. Consider placing the attribute on the type instead.</value>
+  </data>
+  <data name="RequiresUnsafeOnEntryPointMessage" xml:space="preserve">
+    <value>'RequiresUnsafeAttribute' cannot be placed directly on application entry point '{0}'.</value>
+  </data>
+  <data name="RequiresUnsafeOnEntryPointTitle" xml:space="preserve">
+    <value>The use of 'RequiresUnsafeAttribute' on entry points is disallowed since the method will be called from outside the visible app.</value>
   </data>
 </root>

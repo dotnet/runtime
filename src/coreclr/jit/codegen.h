@@ -58,14 +58,14 @@ private:
         // We use movaps when non-VEX because it is a smaller instruction;
         // however the VEX version vmovaps would be used which is the same size as vmovdqa;
         // also vmovdqa has more available CPU ports on older processors so we switch to that
-        return compiler->canUseVexEncoding() ? INS_movdqa32 : INS_movaps;
+        return m_compiler->canUseVexEncoding() ? INS_movdqa32 : INS_movaps;
     }
     instruction simdUnalignedMovIns()
     {
         // We use movups when non-VEX because it is a smaller instruction;
         // however the VEX version vmovups would be used which is the same size as vmovdqu;
         // but vmovdqu has more available CPU ports on older processors so we switch to that
-        return compiler->canUseVexEncoding() ? INS_movdqu32 : INS_movups;
+        return m_compiler->canUseVexEncoding() ? INS_movdqu32 : INS_movups;
     }
 #endif // defined(TARGET_XARCH)
 
@@ -186,14 +186,15 @@ protected:
     // the current (pending) label ref, a label which has been referenced but not yet seen
     BasicBlock* genPendingCallLabel;
 
+    emitter::dataSection* genAsyncResumeInfoTable       = nullptr;
+    UNATIVE_OFFSET        genAsyncResumeInfoTableOffset = UINT_MAX;
+
     void**    codePtr;
     void*     codePtrRW;
     uint32_t* nativeSizeOfCode;
     unsigned  codeSize;
     void*     coldCodePtr;
     void*     coldCodePtrRW;
-    void*     consPtr;
-    void*     consPtrRW;
 
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
@@ -209,6 +210,18 @@ protected:
 
     void genCodeForBBlist();
 
+#if defined(TARGET_WASM)
+    ArrayStack<WasmInterval*>* wasmControlFlowStack = nullptr;
+    unsigned                   wasmCursor           = 0;
+    unsigned                   findTargetDepth(BasicBlock* target);
+    void                       WasmProduceReg(GenTree* node);
+    regNumber                  GetMultiUseOperandReg(GenTree* operand);
+    void                       genEmitNullCheck(regNumber reg);
+#endif
+
+    void        genEmitStartBlock(BasicBlock* block);
+    BasicBlock* genEmitEndBlock(BasicBlock* block);
+
 public:
     void genSpillVar(GenTree* tree);
 
@@ -220,6 +233,8 @@ protected:
     void genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
+
+    void genRecordAsyncResume(GenTreeVal* asyncResume);
 
 private:
     void genLogLabel(BasicBlock* bb);
@@ -238,7 +253,7 @@ protected:
     // genEmitInlineThrow: Generate code for an inline exception.
     void genEmitInlineThrow(SpecialCodeKind codeKind)
     {
-        genEmitHelperCall(compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
+        genEmitHelperCall(m_compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
     }
 
     // throwCodeFn callback follows concept -> void(*)(BasicBlock* target, bool isInline)
@@ -287,7 +302,12 @@ protected:
     }
 #endif
 
+#if defined(TARGET_WASM)
+    void genJumpToThrowHlpBlk(SpecialCodeKind codeKind);
+    void genCodeForBinaryOverflow(GenTreeOp* node);
+#else
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
+#endif
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind,
@@ -575,6 +595,7 @@ protected:
     void genReserveProlog(BasicBlock* block); // currently unused
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
+    void genBeginFnProlog();
     void genFnEpilog(BasicBlock* block);
 
     void genReserveFuncletProlog(BasicBlock* block);
@@ -646,13 +667,14 @@ protected:
     void genAddRichIPMappingHere(const DebugInfo& di);
 
     void genReportRichDebugInfo();
-
     void genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* tree);
 
 #ifdef DEBUG
     void genReportRichDebugInfoToFile();
     void genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* context, bool* first);
 #endif
+
+    void genReportAsyncDebugInfo();
 
     void genEnsureCodeEmitted(const DebugInfo& di);
 
@@ -740,9 +762,15 @@ protected:
     void genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val);
     void genSetRegToConst(regNumber targetReg, var_types targetType, simdmask_t* val);
 #endif
+    void genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum);
+
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
     bool genIsSameLocalVar(GenTree* tree1, GenTree* tree2);
+
+#if defined(TARGET_WASM)
+    void genCodeForConstant(GenTree* treeNode);
+#endif
 
 #if defined(TARGET_X86)
     void genCodeForLongUMod(GenTreeOp* node);
@@ -792,7 +820,7 @@ public:
             CHECK_NONE,
             CHECK_SMALL_INT_RANGE,
             CHECK_POSITIVE,
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             CHECK_UINT_RANGE,
             CHECK_POSITIVE_INT_RANGE,
             CHECK_INT_RANGE,
@@ -804,13 +832,13 @@ public:
             COPY,
             ZERO_EXTEND_SMALL_INT,
             SIGN_EXTEND_SMALL_INT,
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             ZERO_EXTEND_INT,
             SIGN_EXTEND_INT,
 #endif
             LOAD_ZERO_EXTEND_SMALL_INT,
             LOAD_SIGN_EXTEND_SMALL_INT,
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
             LOAD_ZERO_EXTEND_INT,
             LOAD_SIGN_EXTEND_INT,
 #endif
@@ -884,8 +912,8 @@ protected:
 
     unsigned getFirstArgWithStackSlot();
 
-    void genCompareFloat(GenTree* treeNode);
-    void genCompareInt(GenTree* treeNode);
+    void genCompareFloat(GenTreeOp* treeNode);
+    void genCompareInt(GenTreeOp* treeNode);
 #ifdef TARGET_XARCH
     bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
     GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
@@ -1044,7 +1072,7 @@ protected:
     //
     // Return Value:
     //     None.
-    __forceinline void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
+    FORCEINLINE void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
     {
         if (targetReg != REG_NA)
         {
@@ -1097,7 +1125,7 @@ protected:
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     void genConsumeMultiOpOperands(GenTreeMultiOp* tree);
 #endif
-    void genEmitGSCookieCheck(bool pushReg);
+    void genEmitGSCookieCheck(bool tailCall);
     void genCodeForShift(GenTree* tree);
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
@@ -1112,7 +1140,7 @@ protected:
     void genCodeForLclAddr(GenTreeLclFld* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);
     void genCodeForIndir(GenTreeIndir* tree);
-    void genCodeForNegNot(GenTree* tree);
+    void genCodeForNegNot(GenTreeOp* tree);
     void genCodeForBswap(GenTree* tree);
     bool genCanOmitNormalizationForBswap16(GenTree* tree);
     void genCodeForLclVar(GenTreeLclVar* tree);
@@ -1198,13 +1226,16 @@ protected:
     void genStructPutArgPartialRepMovs(GenTreePutArgStk* putArgStkNode);
 #endif
 
-    void     genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
-    void     genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
-    void     genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
-    void     genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
-    unsigned genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
-    void     genJumpTable(GenTree* tree);
-    void     genTableBasedSwitch(GenTree* tree);
+    void                 genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
+    void                 genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
+    void                 genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
+    void                 genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
+    unsigned             genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
+    void                 genJumpTable(GenTree* tree);
+    void                 genTableBasedSwitch(GenTree* tree);
+    void                 genAsyncResumeInfo(GenTreeVal* tree);
+    UNATIVE_OFFSET       genEmitAsyncResumeInfoTable(emitter::dataSection** dataSec);
+    CORINFO_FIELD_HANDLE genEmitAsyncResumeInfo(unsigned stateNum);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     instruction genGetInsForOper(GenTree* treeNode);
 #else
@@ -1235,9 +1266,6 @@ protected:
 #endif // TARGET_ARM64
 
     void genEHCatchRet(BasicBlock* block);
-#if defined(FEATURE_EH_WINDOWS_X86)
-    void genEHFinallyOrFilterRet(BasicBlock* block);
-#endif // FEATURE_EH_WINDOWS_X86
 
     void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
     void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);
@@ -1289,7 +1317,7 @@ protected:
         {
             return false;
         }
-        return compiler->lvaGetDesc(tree->AsLclVarCommon())->lvIsRegCandidate();
+        return m_compiler->lvaGetDesc(tree->AsLclVarCommon())->lvIsRegCandidate();
     }
 
 #ifdef TARGET_X86

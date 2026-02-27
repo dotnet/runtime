@@ -669,8 +669,6 @@ void ProfileSynthesis::BlendLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
-
         switch (block->GetKind())
         {
             case BBJ_THROW:
@@ -785,22 +783,25 @@ void ProfileSynthesis::ReverseLikelihoods()
     WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        for (BasicBlock* const succ : block->Succs())
+        SumOutgoingLikelihoods(block, &likelihoods);
+
+        if (likelihoods.size() < 2)
         {
-            weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
+            continue;
+        }
 
-            if (likelihoods.size() < 2)
-            {
-                continue;
-            }
+        for (size_t i = 0; i < likelihoods.size() / 2; i++)
+        {
+            size_t   j     = likelihoods.size() - i - 1;
+            weight_t t     = likelihoods[i];
+            likelihoods[i] = likelihoods[j];
+            likelihoods[j] = t;
+        }
 
-            for (size_t i = 0; i < likelihoods.size() / 2; i++)
-            {
-                size_t   j     = likelihoods.size() - i - 1;
-                weight_t t     = likelihoods[i];
-                likelihoods[i] = likelihoods[j];
-                likelihoods[j] = t;
-            }
+        size_t k = 0;
+        for (FlowEdge* const succEdge : block->SuccEdges())
+        {
+            succEdge->setLikelihood(likelihoods[k++]);
         }
     }
 #endif // DEBUG
@@ -827,7 +828,7 @@ void ProfileSynthesis::RandomizeLikelihoods()
     {
         unsigned const N = block->NumSucc();
         likelihoods.clear();
-        likelihoods.reserve(N);
+        likelihoods.resize(N, 0);
 
         weight_t sum = 0;
         unsigned i   = 0;
@@ -926,7 +927,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                 //
                 assert(m_cyclicProbabilities[nestedLoop->GetIndex()] != 0);
 
-                // Sum entry edges, multply by Cp
+                // Sum entry edges, multiply by Cp
                 //
                 weight_t newWeight = 0.0;
 
@@ -1357,7 +1358,7 @@ void ProfileSynthesis::GaussSeidelSolver()
         //
         // Likewise we can stop at the postorder num of the last block that is
         // part of any improper SCC, if we knew what that was,
-        // and ony run through the tail blocks on the last iteration.
+        // and only run through the tail blocks on the last iteration.
         //
         // (or more generally we can go SCC by SCC...)
         //

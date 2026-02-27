@@ -6,4 +6,3 @@ using Xunit;
 
 [assembly: SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", ~RuntimeConfiguration.Release)]
 [assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/131", ~(TestPlatforms.Android | TestPlatforms.Browser | TestPlatforms.Wasi), TargetFrameworkMonikers.Any, TestRuntimes.Mono)] // System.Net.Tests are flaky and/or long running
-

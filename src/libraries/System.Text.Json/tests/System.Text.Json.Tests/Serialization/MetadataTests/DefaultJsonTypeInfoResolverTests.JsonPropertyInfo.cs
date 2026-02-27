@@ -984,7 +984,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 case ModifyJsonIgnore.DontModify:
                     {
-                        string noJsonIgnoreProperty = defaultIgnoreCondition == JsonIgnoreCondition.Never ? @",""Property"":null" : null;
+                        string noJsonIgnoreProperty = defaultIgnoreCondition == JsonIgnoreCondition.Never ? ""","Property":null""" : null;
                         Assert.Equal($@"{{""NeverProperty"":null{noJsonIgnoreProperty}}}", json);
                         break;
                     }
@@ -1285,6 +1285,8 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(IDictionary<string, object>))]
         [InlineData(typeof(IDictionary<string, JsonElement>))]
+        [InlineData(typeof(IReadOnlyDictionary<string, object>))]
+        [InlineData(typeof(IReadOnlyDictionary<string, JsonElement>))]
         [InlineData(typeof(Dictionary<string, object>))]
         [InlineData(typeof(Dictionary<string, JsonElement>))]
         [InlineData(typeof(ConcurrentDictionary<string, JsonElement>))]

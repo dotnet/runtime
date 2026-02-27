@@ -1509,17 +1509,8 @@ namespace System
             get
             {
                 DateTime utc = UtcNow;
-                long offset = TimeZoneInfo.GetDateTimeNowUtcOffsetFromUtc(utc, out bool isAmbiguousLocalDst).Ticks;
-                long tick = utc.Ticks + offset;
-                if ((ulong)tick <= MaxTicks)
-                {
-                    if (!isAmbiguousLocalDst)
-                    {
-                        return new DateTime((ulong)tick | KindLocal);
-                    }
-                    return new DateTime((ulong)tick | KindLocalAmbiguousDst);
-                }
-                return new DateTime(tick < 0 ? KindLocal : MaxTicks | KindLocal);
+                long localTicks = TimeZoneInfo.GetLocalDateTimeNowTicks(utc, out bool isAmbiguousLocalDst);
+                return new DateTime((ulong)localTicks | (isAmbiguousLocalDst ? KindLocalAmbiguousDst : KindLocal));
             }
         }
 
@@ -1986,7 +1977,23 @@ namespace System
             {
                 return false;
             }
-            if ((uint)hour >= 24 || (uint)minute >= 60 || (uint)millisecond >= TimeSpan.MillisecondsPerSecond)
+
+            // Per the ISO 8601 standard, 24:00:00 represents end of a calendar day
+            // (same instant as next day's 00:00:00), but only when minute, second, and millisecond are all zero.
+            // We treat it as hour=0 and add one day at the end.
+            bool isEndOfDay = false;
+            if (hour == 24)
+            {
+                if (minute != 0 || second != 0 || millisecond != 0)
+                {
+                    return false;
+                }
+
+                hour = 0;
+                isEndOfDay = true;
+            }
+
+            if ((uint)hour > 24 || (uint)minute >= 60 || (uint)millisecond >= TimeSpan.MillisecondsPerSecond)
             {
                 return false;
             }
@@ -2017,6 +2024,16 @@ namespace System
             else
             {
                 return false;
+            }
+
+            // If hour was originally 24 (end of day per ISO 8601), add one day to advance to next day's 00:00:00
+            if (isEndOfDay)
+            {
+                ticks += TimeSpan.TicksPerDay;
+                if (ticks > MaxTicks)
+                {
+                    return false;
+                }
             }
 
             Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");

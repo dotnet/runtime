@@ -3053,11 +3053,23 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
 
     for (const ABIPassingSegment& seg : abiInfo.Segments())
     {
-        if ((offset == seg.Offset) && (genTypeSize(accessType) == seg.Size) &&
-            (varTypeUsesIntReg(accessType) == genIsValidIntReg(seg.GetRegister())))
+        // This code corresponds to code in Lower::FindInducedParameterRegisterLocals
+        if ((offset < seg.Offset) || (offset + genTypeSize(accessType) > seg.Offset + seg.Size))
         {
-            return true;
+            continue;
         }
+
+        if (!genIsValidIntReg(seg.GetRegister()) && varTypeUsesFloatReg(accessType))
+        {
+            continue;
+        }
+
+        if (genIsValidFloatReg(seg.GetRegister()) && (offset != seg.Offset))
+        {
+            continue;
+        }
+
+        return true;
     }
 
     return false;

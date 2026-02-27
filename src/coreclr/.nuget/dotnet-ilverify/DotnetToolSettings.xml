@@ -1,6 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<DotNetCliTool Version="1">
-  <Commands>
-    <Command Name="ilverify" EntryPoint="ILVerify.dll" Runner="dotnet" />
-  </Commands>
-</DotNetCliTool>

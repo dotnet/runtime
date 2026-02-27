@@ -114,7 +114,7 @@ mono_init_internal (const char *root_domain_name)
 
 #if defined(HOST_WIN32) && HAVE_API_SUPPORT_WIN32_SET_ERROR_MODE
 	/* Avoid system error message boxes. */
-	SetErrorMode (SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
+	SetErrorMode (SEM_FAILCRITICALERRORS);
 #endif
 
 #ifndef HOST_WIN32

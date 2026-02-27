@@ -1971,7 +1971,6 @@ public class InterpreterTest
         retType = itest.GenericVirtualMethod<string>(out isBase);
         if (retType != typeof(string) || isBase)
             return false;
-
         bc = new BaseClass();
         itest = bc;
         Console.WriteLine("bc.NonVirtualMethod");
@@ -2406,15 +2405,19 @@ public class InterpreterTest
 
     public static bool TestPInvoke()
     {
-        if (sumTwoInts(1, 2) != 3)
-            return false;
+        // WASM-TODO enable once we have generated pinvoke and in-tree native re-link
+        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
+        {
+            if (sumTwoInts(1, 2) != 3)
+                return false;
 
-        double summed = sumTwoDoubles(1, 2);
-        if (summed != 3)
-            return false;
+            double summed = sumTwoDoubles(1, 2);
+            if (summed != 3)
+                return false;
 
-        // Test marshaling wrappers
-        writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+            // Test marshaling wrappers
+            writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+        }
 
         bool caught = false;
         try {
@@ -2489,7 +2492,7 @@ public class InterpreterTest
         if (!ArrayUInt32(32, uint.MinValue)) return false;
         if (!ArrayUInt32(32, uint.MaxValue)) return false;
 
-        // // long
+        // long
         if (!ArrayInt64(0, 0)) return false;
         if (!ArrayInt64(1, 1)) return false;
         if (!ArrayInt64(32, 32)) return false;
@@ -2929,7 +2932,6 @@ public class InterpreterTest
             return false;
         }
 
-
         GetCalliGeneric<object>()();
         if (_typeFromFill != typeof(object))
         {
@@ -2943,6 +2945,7 @@ public class InterpreterTest
             Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
             return false;
         }
+
         return true;
     }
 

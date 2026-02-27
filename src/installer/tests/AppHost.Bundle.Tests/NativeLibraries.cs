@@ -38,7 +38,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(app, "load_native_library_pinvoke")
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
+                .DotNetRoot(selfContained ? null : HostTestContext.BuiltDotNet.BinPath)
                 // Specify an extraction root that will get cleaned up by the test app artifact
                 .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractionRoot)
                 .Execute()
@@ -66,7 +66,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(app, "load_native_library_api")
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
+                .DotNetRoot(selfContained ? null : HostTestContext.BuiltDotNet.BinPath)
                 // Specify an extraction root that will get cleaned up by the test app artifact
                 .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, extractionRoot)
                 .Execute()

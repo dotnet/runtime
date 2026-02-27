@@ -12,6 +12,10 @@ indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
 
+# Specify UTF-8 without byte-order mark
+[*.{csproj,locproj,nativeproj,proj,resx,slnx,vbproj}]
+charset = utf-8
+
 # Generated code
 [*{_AssemblyInfo.cs,.notsupported.cs,AsmOffsets.cs}]
 generated_code = true
@@ -95,7 +99,7 @@ dotnet_style_collection_initializer = true:suggestion
 dotnet_style_prefer_collection_expression = when_types_exactly_match
 dotnet_style_explicit_tuple_names = true:suggestion
 dotnet_style_coalesce_expression = true:suggestion
-dotnet_style_null_propagation = true:suggestion
+dotnet_style_null_propagation = true
 dotnet_style_prefer_is_null_check_over_reference_equality_method = true:suggestion
 dotnet_style_prefer_inferred_tuple_names = true:suggestion
 dotnet_style_prefer_inferred_anonymous_type_member_names = true:suggestion
@@ -128,6 +132,12 @@ csharp_style_prefer_index_operator = false:none
 csharp_style_prefer_range_operator = false:none
 csharp_style_pattern_local_over_anonymous_function = false:none
 
+# IDE0071: Simplify interpolation - keep as silent hint since ReadOnlySpan<char>.ToString() is required for netstandard targets
+dotnet_diagnostic.IDE0071.severity = silent
+
+# IDE0031: Use null propagation - keep as silent hint to avoid build errors with TreatWarningsAsErrors
+dotnet_diagnostic.IDE0031.severity = silent
+
 # Space preferences
 csharp_space_after_cast = false
 csharp_space_after_colon_in_inheritance_clause = true
@@ -136,7 +146,7 @@ csharp_space_after_dot = false
 csharp_space_after_keywords_in_control_flow_statements = true
 csharp_space_after_semicolon_in_for_statement = true
 csharp_space_around_binary_operators = before_and_after
-csharp_space_around_declaration_statements = do_not_ignore
+csharp_space_around_declaration_statements = false
 csharp_space_before_colon_in_inheritance_clause = true
 csharp_space_before_comma = false
 csharp_space_before_dot = false
@@ -168,23 +178,26 @@ indent_brace_style = Allman
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,nativeproj,locproj}]
 indent_size = 2
 
-[*.{csproj,vbproj,proj,nativeproj,locproj}]
-charset = utf-8
-
 # Xml build files
 [*.builds]
 indent_size = 2
 
 # Xml files
-[*.{xml,stylecop,resx,ruleset}]
+[*.{resx,ruleset,slnx,stylecop,xml}]
 indent_size = 2
+
+# Xml resource files
+[*.resx]
+# match Visual Studio behavior
+insert_final_newline = false
+trim_trailing_whitespace = false
 
 # Xml config files
 [*.{props,targets,config,nuspec}]
 indent_size = 2
 
-# YAML config files
-[*.{yml,yaml}]
+# Data serialization
+[*.{json,yaml,yml}]
 indent_size = 2
 
 # Shell scripts

@@ -7,6 +7,9 @@
     <Compile Include="Interfaces002.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="InterfacesLib.ilproj" />
   </ItemGroup>
 </Project>

@@ -10,6 +10,9 @@
 // part of 256-bit registers. The fix was for codegen to request a single temp int register
 // and assert that there was only one.
 
+
+namespace DevDiv_546018;
+
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;

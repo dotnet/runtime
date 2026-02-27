@@ -149,7 +149,7 @@ namespace System.Text.Json
         {
             Debug.Assert(AssignedProperties is null);
 
-            if (typeInfo.ShouldTrackRequiredProperties || typeInfo.Options.AllowDuplicateProperties is false)
+            if (typeInfo.ShouldTrackRequiredProperties || !typeInfo.Options.AllowDuplicateProperties)
             {
                 // This may be slightly larger than required (e.g. if there's an extension property)
                 AssignedProperties = new BitArray(typeInfo.Properties.Count);

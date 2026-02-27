@@ -92,62 +92,39 @@ namespace System.IO.Compression.Tests
             string data2 = "more test data written to file.";
             DateTimeOffset lastWrite = new DateTimeOffset(1992, 4, 5, 12, 00, 30, new TimeSpan(-5, 0, 0));
 
-            var baseline = new LocalMemoryStream();
-            ZipArchive archive = await CreateZipArchive(async, baseline, mode);
+            async Task<byte[]> WriteTestArchive(bool openEntryStream, bool emptyEntryAtTheEnd)
+            {
+                var archiveStream = new LocalMemoryStream();
+                ZipArchive archive = await CreateZipArchive(async, archiveStream, mode);
 
-            await AddEntry(archive, "data1.txt", data1, lastWrite, async);
+                await AddEntry(archive, "data1.txt", data1, lastWrite, async);
 
-            ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-            e.LastWriteTime = lastWrite;
+                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
+                e.LastWriteTime = lastWrite;
 
-            Stream s = await OpenEntryStream(async, e);
-            await DisposeStream(async, s);
+                if (openEntryStream)
+                {
+                    Stream s = await OpenEntryStream(async, e);
+                    await DisposeStream(async, s);
+                }
 
-            await AddEntry(archive, "data2.txt", data2, lastWrite, async);
+                if (!emptyEntryAtTheEnd)
+                {
+                    await AddEntry(archive, "data2.txt", data2, lastWrite, async);
+                }
 
-            await DisposeZipArchive(async, archive);
+                await DisposeZipArchive(async, archive);
 
-            var test = new LocalMemoryStream();
-            archive = await CreateZipArchive(async, test, mode);
+                return archiveStream.ToArray();
+            }
 
-            await AddEntry(archive, "data1.txt", data1, lastWrite, async);
+            var baseline = await WriteTestArchive(openEntryStream: false, emptyEntryAtTheEnd: false);
+            var test = await WriteTestArchive(openEntryStream: true, emptyEntryAtTheEnd: false);
+            Assert.Equal(baseline, test);
 
-            e = archive.CreateEntry("empty.txt");
-            e.LastWriteTime = lastWrite;
-
-            await AddEntry(archive, "data2.txt", data2, lastWrite, async);
-
-            await DisposeZipArchive(async, archive);
-
-            //compare
-            Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match");
-
-            //second test, this time empty file at end
-            baseline = baseline.Clone();
-            archive = await CreateZipArchive(async, baseline, mode);
-
-            await AddEntry(archive, "data1.txt", data1, lastWrite, async);
-
-            e = archive.CreateEntry("empty.txt");
-            e.LastWriteTime = lastWrite;
-
-            s = await OpenEntryStream(async, e);
-            await DisposeStream(async, s);
-
-            await DisposeZipArchive(async, archive);
-
-            test = test.Clone();
-            archive = await CreateZipArchive(async, test, mode);
-
-            await AddEntry(archive, "data1.txt", data1, lastWrite, async);
-
-            e = archive.CreateEntry("empty.txt");
-            e.LastWriteTime = lastWrite;
-
-            await DisposeZipArchive(async, archive);
-
-            //compare
-            Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match after update");
+            baseline = await WriteTestArchive(openEntryStream: false, emptyEntryAtTheEnd: true);
+            test = await WriteTestArchive(openEntryStream: true, emptyEntryAtTheEnd: true);
+            Assert.Equal(baseline, test);
         }
 
         [Theory]
@@ -353,13 +330,19 @@ namespace System.IO.Compression.Tests
 
             ZipArchiveEntry edeleted = target.GetEntry("first.txt");
 
+            // Record original values before opening
+            long originalLength = edeleted.Length;
+            long originalCompressedLength = edeleted.CompressedLength;
+
             Stream s = await OpenEntryStream(async, edeleted);
 
             //invalid ops while entry open
             await Assert.ThrowsAsync<IOException>(() => OpenEntryStream(async, edeleted));
 
-            Assert.Throws<InvalidOperationException>(() => { var x = edeleted.Length; });
-            Assert.Throws<InvalidOperationException>(() => { var x = edeleted.CompressedLength; });
+            // Length and CompressedLength should still be accessible while stream is open but no writes occurred
+            Assert.Equal(originalLength, edeleted.Length);
+            Assert.Equal(originalCompressedLength, edeleted.CompressedLength);
+
             Assert.Throws<IOException>(() => edeleted.Delete());
 
             await DisposeStream(async, s);
@@ -367,8 +350,9 @@ namespace System.IO.Compression.Tests
             //invalid ops on stream after entry closed
             Assert.Throws<ObjectDisposedException>(() => s.ReadByte());
 
-            Assert.Throws<InvalidOperationException>(() => { var x = edeleted.Length; });
-            Assert.Throws<InvalidOperationException>(() => { var x = edeleted.CompressedLength; });
+            // Length and CompressedLength should still be accessible after stream closed without writes
+            Assert.Equal(originalLength, edeleted.Length);
+            Assert.Equal(originalCompressedLength, edeleted.CompressedLength);
 
             edeleted.Delete();
 
@@ -388,6 +372,34 @@ namespace System.IO.Compression.Tests
 
             Assert.Throws<ObjectDisposedException>(() => e.Delete());
             Assert.Throws<ObjectDisposedException>(() => { e.LastWriteTime = new DateTimeOffset(); });
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task UpdateModeInvalidOperations_AfterWrite(bool async)
+        {
+            using LocalMemoryStream ms = await LocalMemoryStream.ReadAppFileAsync(zfile("normal.zip"));
+
+            ZipArchive target = await CreateZipArchive(async, ms, ZipArchiveMode.Update, true);
+
+            ZipArchiveEntry entry = target.GetEntry("first.txt");
+
+            Stream s = await OpenEntryStream(async, entry);
+
+            // Write to the stream - this should mark the entry as modified
+            s.WriteByte(42);
+
+            // After writing, Length and CompressedLength should throw
+            Assert.Throws<InvalidOperationException>(() => { var x = entry.Length; });
+            Assert.Throws<InvalidOperationException>(() => { var x = entry.CompressedLength; });
+
+            await DisposeStream(async, s);
+
+            // After stream is closed with writes, Length and CompressedLength should still throw
+            Assert.Throws<InvalidOperationException>(() => { var x = entry.Length; });
+            Assert.Throws<InvalidOperationException>(() => { var x = entry.CompressedLength; });
+
+            await DisposeZipArchive(async, target);
         }
 
         [Theory]
@@ -474,10 +486,10 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenFixedLengthEntryHeaderFieldChanged_Data()
         {
-            yield return [ 49, 1, 1, ];
-            yield return [ 40, 3, 2, ];
-            yield return [ 30, 5, 3, ];
-            yield return [ 0, 8, 1, ];
+            yield return [49, 1, 1,];
+            yield return [40, 3, 2,];
+            yield return [30, 5, 3,];
+            yield return [0, 8, 1,];
         }
 
         [Theory]
@@ -657,9 +669,9 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_PerformMinimalWritesWithDataAndHeaderChanges_Data()
         {
-            yield return [ 0, 0 ];
-            yield return [ 20, 40 ];
-            yield return [ 30, 10 ];
+            yield return [0, 0];
+            yield return [20, 40];
+            yield return [30, 10];
         }
 
         [Theory]
@@ -914,11 +926,11 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenEntriesModifiedAndDeleted_Data()
         {
-            yield return [ -1, 40 ];
-            yield return [ -1, 49 ];
-            yield return [ -1, 0 ];
-            yield return [ 42, 40 ];
-            yield return [ 38, 40 ];
+            yield return [-1, 40];
+            yield return [-1, 49];
+            yield return [-1, 0];
+            yield return [42, 40];
+            yield return [38, 40];
         }
 
         [Theory]
@@ -1109,10 +1121,10 @@ namespace System.IO.Compression.Tests
 
         public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenEntriesModifiedAndAdded_Data()
         {
-            yield return [ 1 ];
-            yield return [ 5 ];
-            yield return [ 10 ];
-            yield return [ 12 ];
+            yield return [1];
+            yield return [5];
+            yield return [10];
+            yield return [12];
         }
 
         [Theory]
@@ -1277,5 +1289,59 @@ namespace System.IO.Compression.Tests
                 }
             }
         }
+
+        /// <summary>
+        /// Tests that opening an entry stream and disposing it without writing does not mark the archive as modified,
+        /// thus not triggering a rewrite on Dispose.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_OpenEntryWithoutWriting_DoesNotTriggerRewrite(bool async)
+        {
+            // Create a valid zip file
+            byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            byte[] sampleZipFile = await CreateZipFile(3, sampleEntryContents, async);
+            long originalLength = sampleZipFile.Length;
+
+            // Keep a copy of the original contents to verify no in-place rewrite occurred
+            byte[] originalContents = new byte[sampleZipFile.Length];
+            Array.Copy(sampleZipFile, originalContents, sampleZipFile.Length);
+
+            // Use a non-expandable MemoryStream (fixed buffer)
+            // This would throw NotSupportedException if Dispose tries to write/grow the stream
+            using (MemoryStream ms = new MemoryStream(sampleZipFile, writable: true))
+            {
+                ZipArchive archive = async
+                    ? await ZipArchive.CreateAsync(ms, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null)
+                    : new ZipArchive(ms, ZipArchiveMode.Update, leaveOpen: true);
+
+                // Open an entry and read it without writing
+                ZipArchiveEntry entry = archive.Entries[0];
+                Stream entryStream = async ? await entry.OpenAsync() : entry.Open();
+                byte[] buffer = new byte[sampleEntryContents.Length + 1]; // +1 for the index byte added by CreateZipFile
+                int bytesRead = async
+                    ? await entryStream.ReadAsync(buffer)
+                    : entryStream.Read(buffer, 0, buffer.Length);
+                Assert.InRange(bytesRead, 1, buffer.Length);
+
+                // Close the entry stream without writing anything
+                if (async)
+                    await entryStream.DisposeAsync();
+                else
+                    entryStream.Dispose();
+
+                // Dispose should not throw NotSupportedException because no writes occurred
+                // and the archive should not try to rewrite the stream
+                if (async)
+                    await archive.DisposeAsync();
+                else
+                    archive.Dispose();
+
+                // Verify the stream was not modified - neither length nor contents
+                Assert.Equal(originalLength, ms.Length);
+                Assert.Equal(originalContents, sampleZipFile);
+            }
+        }
+
     }
 }

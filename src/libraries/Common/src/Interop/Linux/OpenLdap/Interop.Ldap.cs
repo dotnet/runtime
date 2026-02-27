@@ -171,6 +171,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_referral(ConnectionHandle ldapHandle, LdapOption option, ref LdapReferralCallback outValue);
 
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
+        public static partial int ldap_set_option_timeval(ConnectionHandle ldapHandle, LdapOption option, ref LDAP_TIMEVAL inValue);
+
         // Note that ldap_start_tls_s has a different signature across Windows LDAP and OpenLDAP
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_start_tls_s")]
         public static partial int ldap_start_tls(ConnectionHandle ldapHandle, IntPtr serverControls, IntPtr clientControls);

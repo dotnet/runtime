@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // vars.cpp - Global Var definitions
 //
-
-
 
 #include "common.h"
 #include "vars.hpp"
@@ -67,6 +66,12 @@ GPTR_IMPL(MethodTable,      g_TypedReferenceMT);
 GPTR_IMPL(MethodTable,      g_pWeakReferenceClass);
 GPTR_IMPL(MethodTable,      g_pWeakReferenceOfTClass);
 
+#ifdef DACCESS_COMPILE
+GPTR_IMPL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+#else
+GVAL_IMPL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+#endif
+
 #ifdef FEATURE_COMINTEROP
 GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
 #endif
@@ -89,18 +94,23 @@ GPTR_IMPL_INIT(StressLog, g_pStressLog, &StressLog::theLog);
 GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_COMWRAPPERS
+GARY_IMPL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
+#endif // FEATURE_COMWRAPPERS
+
 #ifdef FEATURE_INTEROP_DEBUGGING
 GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
 #endif
 GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
 GVAL_IMPL_INIT(DWORD, g_offsetOfCurrentThreadInfo, 0);
+GVAL_IMPL_INIT(DWORD, g_gcNotificationFlags, 0);
+
 
 MethodTable* g_pCastHelpers;
-#ifdef FEATURE_EH_FUNCLETS
+
 GPTR_IMPL(MethodTable,      g_pEHClass);
 GPTR_IMPL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_IMPL(MethodTable,      g_pStackFrameIteratorClass);
-#endif
 
 GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
 
@@ -126,7 +136,6 @@ SpinConstants g_SpinConstants = {
     40000,     // dwMaximumDuration - ideally (20000 * max(2, numProc))
     3,         // dwBackoffFactor
     10,        // dwRepetitions
-    0          // dwMonitorSpinCount
 };
 
 // support for Event Tracing for Windows (ETW)

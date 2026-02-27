@@ -825,8 +825,67 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 }
             ");
 
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task MethodGenericWithConstraints()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Trace, Message = ""Code: {code}"")]
+                    static partial void M1<TCode>(ILogger logger, TCode code) where TCode : struct, System.Enum;
+
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""Value: {value} Extra: {extra}"")]
+                    static partial void M2<T1, T2>(ILogger logger, T1 value, T2 extra) where T1 : class where T2 : new();
+
+                    [LoggerMessage(EventId = 2, Level = LogLevel.Information, Message = ""Data: {data}"")]
+                    static partial void M3<T>(ILogger logger, T data) where T : unmanaged;
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task MethodGenericWithNullableConstraint()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                #nullable enable
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Value: {value}"")]
+                    static partial void M1<T>(ILogger logger, T value) where T : System.IComparable<T>?;
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task MethodGenericWithAllowsRefStructConstraint()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""{value}"")]
+                    static partial void M1<T>(ILogger logger, T value) where T : allows ref struct;
+                }
+            ");
+
+            // AllowsRefLikeType is only available in Roslyn 4.9+ (C# 13). On older Roslyn
+            // versions the constraint is silently ignored and no diagnostic is produced.
+            bool roslynSupportsAllowsRefLike =
+                typeof(Microsoft.CodeAnalysis.ITypeParameterSymbol).GetProperty("AllowsRefLikeType") is not null;
+            if (!roslynSupportsAllowsRefLike)
+            {
+                Assert.Empty(diagnostics);
+                return;
+            }
+
             Assert.Single(diagnostics);
-            Assert.Equal(DiagnosticDescriptors.LoggingMethodIsGeneric.Id, diagnostics[0].Id);
+            Assert.Equal(DiagnosticDescriptors.LoggingMethodHasAllowsRefStructConstraint.Id, diagnostics[0].Id);
         }
 
         [Theory]
@@ -856,6 +915,158 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterOut.Id, diagnostics[0].Id);
+            Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
+
+        [Fact]
+        public async Task InvalidParamsParameter()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {args}"")]
+                    static partial void M(ILogger logger, params object?[] args);
+                }");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("args", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
+
+#if ROSLYN4_8_OR_GREATER
+        [Fact]
+        public async Task InvalidParamsCollectionParameter()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                using System.Collections.Generic;
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {args}"")]
+                    static partial void M(ILogger logger, params IEnumerable<string> args);
+                }");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("args", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
+
+        [Fact]
+        public async Task RefReadOnlyParameterOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, ref readonly int p1);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task InvalidScopedRefParameter()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, scoped ref int p1);
+                }");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
+
+        [Fact]
+        public async Task InvalidScopedRefReadOnlyParameter()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, scoped ref readonly int p1);
+                }");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
+
+        [Fact]
+        public async Task RefReadOnlyParameterWithMoreThan6ParamsOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""{p1} {p2} {p3} {p4} {p5} {p6} {p7}"")]
+                    static partial void M(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, ref readonly int p7);
+                }");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public async Task InvalidScopedRefParameterWithMoreThan6Params()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""{p1} {p2} {p3} {p4} {p5} {p6} {p7}"")]
+                    static partial void M(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, scoped ref int p7);
+                }");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("p7", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
+
+        [Fact]
+        public async Task InvalidScopedRefReferenceTypeWithMoreThan6Params()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""{p1} {p2} {p3} {p4} {p5} {p6} {p7}"")]
+                    static partial void M(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, scoped ref string p7);
+                }");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterParams.Id, diagnostics[0].Id);
+            Assert.Contains("p7", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
+
+        [Fact]
+        public async Task InvalidScopedValueParameter()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    ref struct MyRefStruct { }
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, scoped MyRefStruct p1);
+                }");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterRefStruct.Id, diagnostics[0].Id);
+            Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
+        }
+
+#endif
+
+        [Fact]
+        public async Task InvalidRefLikeTypeParameter()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    ref struct MyRefStruct { }
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {p1}"")]
+                    static partial void M(ILogger logger, ref MyRefStruct p1);
+                }");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InvalidLoggingMethodParameterRefStruct.Id, diagnostics[0].Id);
             Assert.Contains("p1", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
@@ -1051,7 +1262,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             // Make sure compilation was successful.
             Assert.Empty(diagnostics);
             Assert.Equal(1, generatedSources.Length);
-            Assert.Equal(21, generatedSources[0].SourceText.Lines.Count);
+            Assert.Equal(25, generatedSources[0].SourceText.Lines.Count);
         }
         [Theory]
         [InlineData("{request}", "request")]

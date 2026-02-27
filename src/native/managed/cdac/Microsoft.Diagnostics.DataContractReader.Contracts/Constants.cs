@@ -15,7 +15,11 @@ public static class Constants
         public const string GCThread = nameof(GCThread);
 
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
+        public const string FeatureComWrappers = nameof(FeatureComWrappers);
+        public const string FeatureObjCMarshal = nameof(FeatureObjCMarshal);
+        public const string FeatureJavaMarshal = nameof(FeatureJavaMarshal);
         public const string FeatureOnStackReplacement = nameof(FeatureOnStackReplacement);
+        public const string FeaturePortableEntrypoints = nameof(FeaturePortableEntrypoints);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
@@ -32,6 +36,10 @@ public static class Constants
         public const string OffsetOfCurrentThreadInfo = nameof(OffsetOfCurrentThreadInfo);
         public const string TlsIndexBase = nameof(TlsIndexBase);
         public const string ThinlockThreadIdDispenser = nameof(ThinlockThreadIdDispenser);
+        public const string DispatchThisPtrMask = nameof(DispatchThisPtrMask);
+        public const string ComWrappersVtablePtrs = nameof(ComWrappersVtablePtrs);
+        public const string GcNotificationFlags = nameof(GcNotificationFlags);
+        public const string GlobalAllocContext = nameof(GlobalAllocContext);
 
         public const string StressLogEnabled = nameof(StressLogEnabled);
         public const string StressLogHasModuleTable = nameof(StressLogHasModuleTable);
@@ -50,6 +58,8 @@ public static class Constants
         public const string SyncTableEntries = nameof(SyncTableEntries);
 
         public const string ArrayBoundsZero = nameof(ArrayBoundsZero);
+        public const string CoreLib = nameof(CoreLib);
+        public const string SizeOfGenericModeBlock = nameof(SizeOfGenericModeBlock);
 
         public const string MethodDescTokenRemainderBitCount = nameof(MethodDescTokenRemainderBitCount);
         public const string DirectorySeparator = nameof(DirectorySeparator);
@@ -62,10 +72,11 @@ public static class Constants
         public const string NumberOfTlsOffsetsNotUsedInNoncollectibleArray = nameof(NumberOfTlsOffsetsNotUsedInNoncollectibleArray);
         public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
         public const string ClrNotificationArguments = nameof(ClrNotificationArguments);
+        public const string FieldOffsetBigRVA = nameof(FieldOffsetBigRVA);
         public const string PlatformMetadata = nameof(PlatformMetadata);
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
-        public const string MethodDescSizeTable = nameof(MethodDescSizeTable);
+        public const string ComRefcountMask = nameof(ComRefcountMask);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);
@@ -85,8 +96,16 @@ public static class Constants
         public const string NumHeaps = nameof(NumHeaps);
         public const string Heaps = nameof(Heaps);
         public const string CurrentGCState = nameof(CurrentGCState);
-        public const string CFinalizeFillPointersLength = nameof(CFinalizeFillPointersLength);
+        public const string DynamicAdaptationMode = nameof(DynamicAdaptationMode);
+        public const string GCGlobalMechanisms = nameof(GCGlobalMechanisms);
+
         public const string TotalGenerationCount = nameof(TotalGenerationCount);
+        public const string CFinalizeFillPointersLength = nameof(CFinalizeFillPointersLength);
+        public const string InterestingDataLength = nameof(InterestingDataLength);
+        public const string CompactReasonsLength = nameof(CompactReasonsLength);
+        public const string ExpandMechanismsLength = nameof(ExpandMechanismsLength);
+        public const string InterestingMechanismBitsLength = nameof(InterestingMechanismBitsLength);
+        public const string GlobalMechanismsLength = nameof(GlobalMechanismsLength);
 
         public const string GCHeapMarkArray = nameof(GCHeapMarkArray);
         public const string GCHeapNextSweepObj = nameof(GCHeapNextSweepObj);
@@ -99,6 +118,22 @@ public static class Constants
         public const string GCHeapGenerationTable = nameof(GCHeapGenerationTable);
         public const string GCHeapSavedSweepEphemeralSeg = nameof(GCHeapSavedSweepEphemeralSeg);
         public const string GCHeapSavedSweepEphemeralStart = nameof(GCHeapSavedSweepEphemeralStart);
+        public const string GCHeapOomData = nameof(GCHeapOomData);
+        public const string GCHeapInternalRootArray = nameof(GCHeapInternalRootArray);
+        public const string GCHeapInternalRootArrayIndex = nameof(GCHeapInternalRootArrayIndex);
+        public const string GCHeapHeapAnalyzeSuccess = nameof(GCHeapHeapAnalyzeSuccess);
+        public const string GCHeapInterestingData = nameof(GCHeapInterestingData);
+        public const string GCHeapCompactReasons = nameof(GCHeapCompactReasons);
+        public const string GCHeapExpandMechanisms = nameof(GCHeapExpandMechanisms);
+        public const string GCHeapInterestingMechanismBits = nameof(GCHeapInterestingMechanismBits);
+        public const string HandleTableMap = nameof(HandleTableMap);
+        public const string InitialHandleTableArraySize = nameof(InitialHandleTableArraySize);
+        public const string DebugDestroyedHandleValue = nameof(DebugDestroyedHandleValue);
+        public const string HandleBlocksPerSegment = nameof(HandleBlocksPerSegment);
+        public const string HandleMaxInternalTypes = nameof(HandleMaxInternalTypes);
+        public const string HandlesPerBlock = nameof(HandlesPerBlock);
+        public const string BlockInvalid = nameof(BlockInvalid);
+        public const string TotalCpuCount = nameof(TotalCpuCount);
     }
     public static class FieldNames
     {

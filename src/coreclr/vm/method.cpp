@@ -104,25 +104,32 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
 #ifndef FEATURE_COMINTEROP
 #undef CLRToCOMCallMethodDesc
 #endif
-
-class ArgIteratorBaseForPInvoke : public ArgIteratorBase
+BOOL ArgIteratorBaseForPInvoke::IsRegPassedStruct(TypeHandle th)
 {
-protected:
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    if (th.IsNativeValueType())
     {
-        return pMT->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
+        return th.AsNativeValueType()->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
     }
-};
-
-class PInvokeArgIterator : public ArgIteratorTemplate<ArgIteratorBaseForPInvoke>
+    else
+    {
+        return th.GetMethodTable()->IsRegPassedStruct();
+    }
+}
+#if defined(UNIX_AMD64_ABI)
+SystemVEightByteRegistersInfo ArgIteratorBaseForPInvoke::GetEightByteRegistersInfo(TypeHandle th)
 {
-public:
-    PInvokeArgIterator(MetaSig* pSig)
+    if (!th.IsNativeValueType())
     {
-        m_pSig = pSig;
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
     }
-};
 
+    SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
+    bool result = th.AsNativeValueType()->ClassifyEightBytes(&helper, true /* nativeLayout */);
+    // The answer must be true at this point.
+    _ASSERTE(result);
+    return SystemVEightByteRegistersInfo(helper);
+}
+#endif
 
 //*******************************************************************************
 SIZE_T MethodDesc::SizeOf()
@@ -239,6 +246,7 @@ HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
     return S_OK;
 }
 
+#ifdef FEATURE_CODE_VERSIONING
 HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
 {
     WRAPPER_NO_CONTRACT;
@@ -252,6 +260,7 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
 
     return S_OK;
 }
+#endif // FEATURE_CODE_VERSIONING
 
 #ifdef FEATURE_INTERPRETER
 // Set the call stub for the interpreter to JIT/AOT calls
@@ -279,6 +288,7 @@ CallStubHeader *MethodDesc::GetCallStub()
 
 #endif //!DACCESS_COMPILE
 
+#ifdef FEATURE_CODE_VERSIONING
 PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
 {
     WRAPPER_NO_CONTRACT;
@@ -287,6 +297,7 @@ PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
         return NULL;
     return VolatileLoadWithoutBarrier(&codeData->VersioningState);
 }
+#endif // FEATURE_CODE_VERSIONING
 
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetNameThrowing()
@@ -462,8 +473,13 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
     if (IsAsyncVariantMethod())
     {
         Signature sig = GetAddrOfAsyncMethodData()->sig;
-        *ppSig = sig.GetRawSig();
         *pcSig = sig.GetRawSigLen();
+#ifdef DACCESS_COMPILE
+        *ppSig = (PCCOR_SIGNATURE)
+            DacInstantiateTypeByAddress((TADDR)sig.GetRawSig(), *pcSig, true);
+#else // !DACCESS_COMPILE
+        *ppSig = sig.GetRawSig();
+#endif // !DACCESS_COMPILE
         return;
     }
 
@@ -1057,7 +1073,7 @@ PCODE MethodDesc::GetNativeCodeAnyVersion()
     {
         return pDefaultCode;
     }
-
+#ifdef FEATURE_CODE_VERSIONING
     else
     {
         CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
@@ -1075,8 +1091,10 @@ PCODE MethodDesc::GetNativeCodeAnyVersion()
                 }
             }
         }
-        return (PCODE)NULL;
     }
+#endif // FEATURE_CODE_VERSIONING
+
+    return (PCODE)NULL;
 }
 
 //*******************************************************************************
@@ -1346,6 +1364,7 @@ WORD MethodDesc::GetComSlot()
         THROWS;
         GC_NOTRIGGER;
         FORBID_FAULT;
+        PRECONDITION(!IsAsyncMethod());
     }
     CONTRACTL_END
 
@@ -1717,7 +1736,7 @@ UINT MethodDesc::SizeOfArgStack()
     return argit.SizeOfArgStack();
 }
 
-
+#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 UINT MethodDesc::SizeOfNativeArgStack()
 {
 #ifndef UNIX_AMD64_ABI
@@ -1729,6 +1748,7 @@ UINT MethodDesc::SizeOfNativeArgStack()
     return argit.SizeOfArgStack();
 #endif
 }
+#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 
 #ifdef TARGET_X86
 //*******************************************************************************
@@ -1942,6 +1962,37 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
         FALSE /* no allowInstParam */ ));
 }
 
+PCODE MethodDesc::GetSingleCallableAddrOfCode()
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(!IsGenericMethodDefinition());
+    return GetMethodEntryPoint();
+}
+
+PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(HasUnmanagedCallersOnlyAttribute());
+    }
+    CONTRACTL_END;
+
+    PCODE entryPoint;
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    entryPoint = GetPortableEntryPoint();
+    (void)PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureCodeForUnmanagedCallersOnly();
+    entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    entryPoint = GetSingleCallableAddrOfCode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    return entryPoint;
+}
+
 //*******************************************************************************
 PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
 {
@@ -2093,12 +2144,13 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR);
     }
 
+#ifdef _DEBUG
     if (accessFlags & CORINFO_ACCESS_LDFTN)
     {
         // Whenever we use LDFTN on shared-generic-code-which-requires-an-extra-parameter
-        // we need to give out the address of an instantiating stub.  This is why we give
-        // out GetStableEntryPoint() for the IsInstantiatingStub() case: this is
-        // safe.  But first we assert that we only use GetMultiCallableAddrOfCode on
+        // we need to give out the address of an instantiating stub. This is why we give
+        // out GetStableEntryPoint() for IsInstantiatingStub() via the IsWrapperStub() case: this is
+        // safe. But first we assert that we only use GetMultiCallableAddrOfCode on
         // the instantiating stubs and not on the shared code itself.
         _ASSERTE(!RequiresInstArg());
         _ASSERTE(!IsSharedByGenericMethodInstantiations());
@@ -2107,8 +2159,26 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         _ASSERTE((accessFlags & ~CORINFO_ACCESS_LDFTN) == 0);
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    // If HasUnmanagedCallersOnlyAttribute() is true, then CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE must be set.
+    // We only validate this on non portable entrypoints because HasUnmanagedCallersOnlyAttribute()
+    // is an unnecessary cost, even in non-Release builds, on portable entrypoint platforms.
+    if (HasUnmanagedCallersOnlyAttribute())
+    {
+        _ASSERTE((accessFlags & CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE) != 0);
+    }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#endif // _DEBUG
+
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    return GetPortableEntryPoint();
+    PCODE entryPoint = GetPortableEntryPoint();
+    if (accessFlags & CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE
+        && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureCodeForUnmanagedCallersOnly())
+    {
+        entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+    }
+
+    return entryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (RequiresStableEntryPoint() && !HasStableEntryPoint())
@@ -2285,10 +2355,12 @@ bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
         mdToken tkTypeDef;
         Module* pModuleOfTypeDef;
 
-        ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef);
-        if (pModuleOfTypeDef->IsSystem())
+        if (ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef))
         {
-            return true;
+            if (pModuleOfTypeDef->IsSystem())
+            {
+                return true;
+            }
         }
     }
 
@@ -2366,7 +2438,7 @@ MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG
 }
 
 //*******************************************************************************
-BOOL MethodDesc::IsPointingToPrestub()
+BOOL MethodDesc::ShouldCallPrestub()
 {
     CONTRACTL
     {
@@ -2376,20 +2448,30 @@ BOOL MethodDesc::IsPointingToPrestub()
     }
     CONTRACTL_END;
 
+    PCODE methodEntryPoint;
     if (!HasStableEntryPoint())
     {
         if (IsVersionableWithVtableSlotBackpatch())
         {
-            PCODE methodEntrypoint = GetMethodEntryPointIfExists();
-            return methodEntrypoint == GetTemporaryEntryPointIfExists() && methodEntrypoint != (PCODE)NULL;
+            methodEntryPoint = GetMethodEntryPointIfExists();
+            return methodEntryPoint == (PCODE)NULL
+                || methodEntryPoint == GetTemporaryEntryPointIfExists();
         }
         return TRUE;
     }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    methodEntryPoint = GetStableEntryPoint();
+    return methodEntryPoint == (PCODE)NULL
+        || (!PortableEntryPoint::HasInterpreterData(methodEntryPoint)
+            && !PortableEntryPoint::HasNativeEntryPoint(methodEntryPoint));
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (!HasPrecode())
         return FALSE;
 
     return GetPrecode()->IsPointingToPrestub();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 //*******************************************************************************
@@ -2408,24 +2490,20 @@ void MethodDesc::Reset()
     // Reset any flags relevant to the old code
     ClearFlagsOnUpdate();
 
-    if (HasPrecode())
-    {
-        GetPrecode()->Reset();
-    }
-    else
-    {
-        // We should go here only for the rental methods
-        _ASSERTE(GetLoaderModule()->IsReflectionEmit());
-
-        InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, FALSE);
-
-        *GetAddrOfSlot() = GetTemporaryEntryPoint();
-    }
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    _ASSERTE(HasPrecode());
+    GetPrecode()->Reset();
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     if (HasNativeCodeSlot())
     {
         *GetAddrOfNativeCodeSlot() = (PCODE)NULL;
     }
+
+#ifdef FEATURE_INTERPRETER
+    ClearInterpreterCodePointer();
+#endif
+
     _ASSERTE(!HasNativeCode());
 }
 
@@ -2710,7 +2788,7 @@ void MethodDesc::SetTemporaryEntryPoint(AllocMemTracker *pamTracker)
     {
         // The rest of the system assumes that certain methods always have stable entrypoints.
         // Mark the precode as such
-        MarkPrecodeAsStableEntrypoint();
+        MarkStableEntryPoint();
     }
 }
 
@@ -2856,8 +2934,7 @@ void MethodDescChunk::DetermineAndSetIsEligibleForTieredCompilation()
     }
 }
 
-
-//*******************************************************************************
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 Precode* MethodDesc::GetOrCreatePrecode()
 {
     WRAPPER_NO_CONTRACT;
@@ -2878,11 +2955,9 @@ Precode* MethodDesc::GetOrCreatePrecode()
     PTR_PCODE pSlot = GetAddrOfSlot();
     _ASSERTE(*pSlot != (PCODE)NULL);
     _ASSERTE(*pSlot == tempEntry);
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     _ASSERTE(requiredType == availableType);
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 #endif // _DEBUG
 
     // Set the flags atomically
@@ -2890,8 +2965,9 @@ Precode* MethodDesc::GetOrCreatePrecode()
 
     return Precode::GetPrecodeFromEntryPoint(tempEntry);
 }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
-void MethodDesc::MarkPrecodeAsStableEntrypoint()
+void MethodDesc::MarkStableEntryPoint()
 {
 #if _DEBUG
     PCODE tempEntry = GetTemporaryEntryPointIfExists();
@@ -2902,12 +2978,17 @@ void MethodDesc::MarkPrecodeAsStableEntrypoint()
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
     _ASSERTE(requiredType == availableType);
+    _ASSERTE(!HasPrecode());
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 #endif // _DEBUG
-    _ASSERTE(!HasPrecode());
     _ASSERTE(RequiresStableEntryPoint());
 
-    InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
+    WORD flagsToSet = enum_flag3_HasStableEntryPoint;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    flagsToSet |= enum_flag3_HasPrecode;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+    InterlockedUpdateFlags3(flagsToSet, TRUE);
 }
 
 bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk()
@@ -3063,7 +3144,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot_Locked(
     backpatchTracker->AddSlotAndPatch_Locked(this, slotLoaderAllocator, slot, slotType, currentEntryPoint);
 }
 
-FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
+bool MethodDesc::TryBackpatchEntryPointSlots(
     PCODE entryPoint,
     bool isPrestubEntryPoint,
     bool onlyFromPrestubEntryPoint)
@@ -3120,6 +3201,7 @@ FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
     return true;
 }
 
+#ifdef FEATURE_CODE_VERSIONING
 void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
     PCODE entryPoint,
     bool mayHaveEntryPointSlotsToBackpatch)
@@ -3139,17 +3221,24 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, TRUE /* fOnlyRedirectFromPrestub */);
     }
 }
+#endif // FEATURE_CODE_VERSIONING
 
 void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(entryPoint != (PCODE)NULL);
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    SetStableEntryPointInterlocked(entryPoint);
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (MayHaveEntryPointSlotsToBackpatch())
     {
         BackpatchEntryPointSlots(entryPoint);
+        return;
     }
-    else if (IsVersionable())
+
+    if (IsVersionable())
     {
         _ASSERTE(IsVersionableWithPrecode());
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint, FALSE /* fOnlyRedirectFromPrestub */);
@@ -3157,24 +3246,35 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
         // SetTargetInterlocked() would return false if it lost the race with another thread. That is fine, this thread
         // can continue assuming it was successful, similarly to it successfully updating the target and another thread
         // updating the target again shortly afterwards.
+        return;
     }
-    else if (HasPrecode() || RequiresStableEntryPoint())
+
+    if (HasPrecode() || RequiresStableEntryPoint())
     {
         // Use this path if there already exists a Precode, OR if RequiresStableEntryPoint is set.
         //
         // RequiresStableEntryPoint currently requires that the entrypoint must be a Precode
         GetOrCreatePrecode()->SetTargetInterlocked(entryPoint);
+        return;
     }
-    else if (!HasStableEntryPoint())
+
+    if (!HasStableEntryPoint())
     {
         SetStableEntryPointInterlocked(entryPoint);
+        return;
     }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
+#ifdef FEATURE_TIERED_COMPILATION
 void MethodDesc::ResetCodeEntryPoint()
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(IsVersionable());
+
+#ifdef FEATURE_INTERPRETER
+    ClearInterpreterCodePointer();
+#endif
 
     if (MayHaveEntryPointSlotsToBackpatch())
     {
@@ -3188,6 +3288,7 @@ void MethodDesc::ResetCodeEntryPoint()
         GetPrecode()->ResetTargetInterlocked();
     }
 }
+#endif // FEATURE_TIERED_COMPILATION
 
 void MethodDesc::ResetCodeEntryPointForEnC()
 {
@@ -3197,22 +3298,29 @@ void MethodDesc::ResetCodeEntryPointForEnC()
     _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
 
     // Updates are expressed via metadata diff and a methoddef of a runtime async method
-    // would be resolved to the thunk.
-    // If we see a thunk here, fetch the other variant that owns the IL and reset that.
+    // would be resolved to the task-returning thunk.
+    // If we see a thunk here, fetch the async variant that owns the IL and reset that.
     if (IsAsyncThunkMethod())
     {
-        MethodDesc *otherVariant = GetAsyncOtherVariantNoCreate();
+        MethodDesc *otherVariant = GetAsyncVariantNoCreate();
         _ASSERTE(otherVariant != NULL);
         otherVariant->ResetCodeEntryPointForEnC();
         return;
     }
 
-    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s - HasPrecode():%s, HasNativeCodeSlot():%s\n",
-        this, m_pszDebugClassName, m_pszDebugMethodName, (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
+#ifdef FEATURE_INTERPRETER
+    ClearInterpreterCodePointer();
+#endif
+
+    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s\n", this, m_pszDebugClassName, m_pszDebugMethodName));
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: HasPrecode():%s, HasNativeCodeSlot():%s\n",
+        (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
     if (HasPrecode())
     {
         GetPrecode()->ResetTargetInterlocked();
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     if (HasNativeCodeSlot())
     {
@@ -3287,7 +3395,10 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     BOOL fResult = InterlockedCompareExchangeT(pSlot, addr, pExpected) == pExpected;
 
     InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint, TRUE);
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     _ASSERTE(!RequiresStableEntryPoint()); // The RequiresStableEntryPoint scenarios should all result in a stable entry point which is a PreCode, so that it can be replaced and adjusted over time.
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     return fResult;
 }
@@ -3747,6 +3858,7 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         {
             EX_TRY
             {
+                ilVersion.GetModule()->LookupMethodDef(ilVersion.GetMethodDef());
                 ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
                 ilVersion.GetVersionId();
                 ilVersion.GetRejitState();
@@ -3844,9 +3956,15 @@ MethodDesc *MethodDesc::GetInterfaceMD()
 }
 #endif // !DACCESS_COMPILE
 
+bool MethodDesc::IsCollectible()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetLoaderAllocator()->IsCollectible();
+}
+
 PTR_LoaderAllocator MethodDesc::GetLoaderAllocator()
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
     return GetLoaderModule()->GetLoaderAllocator();
 }
 

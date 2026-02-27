@@ -145,6 +145,9 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_X86 and TARGET_RISCV64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_X86 and TARGET_WASM32
+#endif
 #elif defined(TARGET_AMD64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_AMD64 and TARGET_X86
@@ -160,6 +163,9 @@
 #endif
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_AMD64 and TARGET_RISCV64
+#endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_AMD64 and TARGET_WASM32
 #endif
 #elif defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -177,6 +183,9 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM and TARGET_RISCV64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_ARM and TARGET_WASM32
+#endif
 #elif defined(TARGET_ARM64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_ARM64 and TARGET_X86
@@ -192,6 +201,9 @@
 #endif
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM64 and TARGET_RISCV64
+#endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_ARM64 and TARGET_WASM32
 #endif
 #elif defined(TARGET_LOONGARCH64)
 #if defined(TARGET_X86)
@@ -209,6 +221,9 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_LOONGARCH64 and TARGET_RISCV64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_WASM32
+#endif
 #elif defined(TARGET_RISCV64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_RISCV64 and TARGET_X86
@@ -225,6 +240,29 @@
 #if defined(TARGET_LOONGARCH64)
 #error Cannot define both TARGET_RISCV64 and TARGET_LOONGARCH64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_RISCV64 and TARGET_WASM32
+#endif
+
+#elif defined(TARGET_WASM32)
+#if defined(TARGET_X86)
+#error Cannot define both TARGET_WASM32 and TARGET_X86
+#endif
+#if defined(TARGET_AMD64)
+#error Cannot define both TARGET_WASM32 and TARGET_AMD64
+#endif
+#if defined(TARGET_ARM)
+#error Cannot define both TARGET_WASM32 and TARGET_ARM
+#endif
+#if defined(TARGET_ARM64)
+#error Cannot define both TARGET_WASM32 and TARGET_ARM64
+#endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_WASM32 and TARGET_LOONGARCH64
+#endif
+#if defined(TARGET_RISCV64)
+#error Cannot define both TARGET_WASM32 and TARGET_RISCV64
+#endif
 
 #else
 #error Unsupported or unset target architecture
@@ -236,6 +274,9 @@
 #endif // TARGET_X86
 #ifdef TARGET_ARM
 #error Cannot define both TARGET_ARM and TARGET_64BIT
+#endif // TARGET_ARM
+#ifdef TARGET_WASM32
+#error Cannot define both TARGET_WASM32 and TARGET_64BIT
 #endif // TARGET_ARM
 #endif // TARGET_64BIT
 
@@ -259,26 +300,6 @@
 #if !defined(TARGET_X86)
 #error When UNIX_X86_ABI is defined you must define TARGET_X86 defined as well.
 #endif
-#endif
-
-// --------------------------------------------------------------------------------
-// IMAGE_FILE_MACHINE_TARGET
-// --------------------------------------------------------------------------------
-
-#if defined(TARGET_X86)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_I386
-#elif defined(TARGET_AMD64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_AMD64
-#elif defined(TARGET_ARM)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARMNT
-#elif defined(TARGET_ARM64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARM64 // 0xAA64
-#elif defined(TARGET_LOONGARCH64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_LOONGARCH64 // 0x6264
-#elif defined(TARGET_RISCV64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_RISCV64 // 0x5064
-#else
-#error Unsupported or unset target architecture
 #endif
 
 typedef ptrdiff_t ssize_t;
@@ -499,13 +520,13 @@ public:
 #define NODEBASH_STATS      0 // Collect stats on changed gtOper values in GenTree's.
 #define COUNT_AST_OPERS     0 // Display use counts for GenTree operators.
 
+#include "jitshared.h" // Defines MEASURE_MEM_ALLOC
+
 #ifdef DEBUG
-#define MEASURE_MEM_ALLOC 1 // Collect memory allocation stats.
 #define LOOP_HOIST_STATS  1 // Collect loop hoisting stats.
 #define TRACK_LSRA_STATS  1 // Collect LSRA stats
 #define TRACK_ENREG_STATS 1 // Collect enregistration stats
 #else
-#define MEASURE_MEM_ALLOC 0 // You can set this to 1 to get memory stats in retail, as well
 #define LOOP_HOIST_STATS  0 // You can set this to 1 to get loop hoist stats in retail, as well
 #define TRACK_LSRA_STATS  0 // You can set this to 1 to get LSRA stats in retail, as well
 #define TRACK_ENREG_STATS 0

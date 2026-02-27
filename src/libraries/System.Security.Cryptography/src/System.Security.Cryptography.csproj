@@ -396,8 +396,6 @@
              Link="Common\System\Security\Cryptography\CryptoPool.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAKeyFormatHelper.cs"
              Link="Common\System\Security\Cryptography\DSAKeyFormatHelper.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\EccKeyFormatHelper.cs"
-             Link="Common\System\Security\Cryptography\EccKeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Helpers.cs"
              Link="Common\System\Security\Cryptography\Helpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"
@@ -592,6 +590,7 @@
     <Compile Include="System\Security\Cryptography\HashAlgorithmName.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmNames.cs" />
     <Compile Include="System\Security\Cryptography\HashProvider.cs" />
+    <Compile Include="System\Security\Cryptography\HashStatic.cs" />
     <Compile Include="System\Security\Cryptography\Helpers.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.cs" />
     <Compile Include="System\Security\Cryptography\HKDFManagedImplementation.cs" />
@@ -605,6 +604,7 @@
     <Compile Include="System\Security\Cryptography\HMACSHA3_256.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA3_384.cs" />
     <Compile Include="System\Security\Cryptography\HMACSHA3_512.cs" />
+    <Compile Include="System\Security\Cryptography\HMACStatic.cs" />
     <Compile Include="System\Security\Cryptography\ICryptoTransform.cs" />
     <Compile Include="System\Security\Cryptography\ICspAsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\ILiteSymmetricCipher.cs" />
@@ -614,6 +614,7 @@
     <Compile Include="System\Security\Cryptography\KeySizes.cs" />
     <Compile Include="System\Security\Cryptography\Kmac128.cs" />
     <Compile Include="System\Security\Cryptography\Kmac256.cs" />
+    <Compile Include="System\Security\Cryptography\KmacStatic.cs" />
     <Compile Include="System\Security\Cryptography\KmacXof128.cs" />
     <Compile Include="System\Security\Cryptography\KmacXof256.cs" />
     <Compile Include="System\Security\Cryptography\KeyBlobHelpers.cs" />
@@ -1065,8 +1066,8 @@
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="$(CommonPath)System\Text\UrlBase64Encoding.cs"
              Link="Common\System\Text\UrlBase64Encoding.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
-             Link="Common\System\Text\ValueUtf8Converter.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs"
+             Link="Common\System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.OpenSsl.cs" />
@@ -1242,7 +1243,7 @@
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
-    <Compile Include="System\Security\Cryptography\AesImplementation.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\AesImplementation.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.Android.cs" />
     <Compile Include="System\Security\Cryptography\AsnFormatter.Managed.cs" />
@@ -1332,6 +1333,8 @@
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.HKDF.cs"
+             Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.HKDF.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Hmac.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.KeyAgree.cs"
@@ -1404,7 +1407,7 @@
     <Compile Include="System\Security\Cryptography\ECDsa.Create.AppleCrypto.cs" />
     <Compile Include="System\Security\Cryptography\HashAlgorithmNames.Apple.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Apple.cs" />
-    <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HKDF.Apple.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Apple.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
@@ -1563,8 +1566,6 @@
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptCreateHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDecapsulateEncapsulate.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDeriveKeyPBKDF2.cs"
-             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDeriveKeyPBKDF2.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyHash.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyKey.cs"
@@ -1927,8 +1928,6 @@
              Link="Common\System\Security\Cryptography\SlhDsaImplementation.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs"
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
-             Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\CertificateHelpers.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\NCryptSafeHandles.cs" />
@@ -1986,7 +1985,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanWrapper.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderCng.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Windows.cs" />
-    <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HKDF.Windows.cs" />
     <Compile Include="System\Security\Cryptography\ICngSymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Windows.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
@@ -2011,7 +2010,6 @@
     <Compile Include="System\Security\Cryptography\SlhDsaOpenSsl.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.Windows.cs" />
     <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
-    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCng.Windows.cs" />
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.Windows.cs" />

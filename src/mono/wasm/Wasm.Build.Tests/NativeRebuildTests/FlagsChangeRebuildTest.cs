@@ -48,14 +48,22 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             var newStat = StatFilesAfterRebuild(pathsDict);
             CompareStat(originalStat, newStat, pathsDict);
-            
+
+            // check that emscripten emulator for sockets and pipe was trimmed from dotnet.native.js
+            if (config == Configuration.Release)
+            {
+                Assert.True(newStat.TryGetValue("dotnet.native.js", out var dotnetNativeJsStat));
+                var dotnetNativeJs = File.ReadAllText(dotnetNativeJsStat.FullPath);
+                Assert.DoesNotContain("var SOCKFS", dotnetNativeJs);
+                Assert.DoesNotContain("var PIPEFS", dotnetNativeJs);
+            }
+
             // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o
             // and thus doesn't cause relinking
             TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
-            
+
             // ldflags: link step args change, so it should trigger relink
-            TestUtils.AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
-            
+            TestUtils.AssertSubstring("Linking with emcc", output, contains: !dotnetNativeFilesUnchanged);
             if (aot)
             {
                 // ExtraEmccLDFlags does not affect .bc files

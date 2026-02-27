@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace System.Threading
@@ -158,7 +159,7 @@ namespace System.Threading
         {
             // Specify the default spin count, and use default spin if we're
             // on a multi-processor machine. Otherwise, we won't.
-            Initialize(initialState, SpinWait.SpinCountforSpinBeforeWait);
+            Initialize(initialState, SpinWait.SpinCountForSpinBeforeWait);
         }
 
         /// <summary>
@@ -352,9 +353,6 @@ namespace System.Threading
 #endif
         public void Wait()
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
             Wait(Timeout.Infinite, CancellationToken.None);
         }
 
@@ -491,12 +489,7 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
-#if FEATURE_WASM_MANAGED_THREADS
-            Thread.AssureBlockingPossible();
-#endif
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             if (!IsSet)
             {

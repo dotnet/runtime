@@ -18,6 +18,13 @@ namespace System.Security.Cryptography
     /// </remarks>
     public abstract class SHA3_256 : HashAlgorithm
     {
+        private sealed class HashTrait : IHashStatic
+        {
+            static int IHashStatic.HashSizeInBytes => HashSizeInBytes;
+            static string IHashStatic.HashAlgorithmName => HashAlgorithmNames.SHA3_256;
+            static bool IHashStatic.IsSupported => IsSupported;
+        }
+
         /// <summary>
         /// The hash size produced by the SHA3-256 algorithm, in bits.
         /// </summary>
@@ -55,7 +62,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static new SHA3_256 Create()
         {
-            CheckSha3Support();
+            HashStatic<HashTrait>.CheckPlatformSupport();
             return new Implementation();
         }
 
@@ -70,12 +77,7 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        public static byte[] HashData(byte[] source)
-        {
-            ArgumentNullException.ThrowIfNull(source);
-
-            return HashData(new ReadOnlySpan<byte>(source));
-        }
+        public static byte[] HashData(byte[] source) => HashStatic<HashTrait>.HashData(source);
 
         /// <summary>
         /// Computes the hash of data using the SHA3-256 algorithm.
@@ -85,15 +87,7 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        public static byte[] HashData(ReadOnlySpan<byte> source)
-        {
-            byte[] buffer = new byte[HashSizeInBytes];
-
-            int written = HashData(source, buffer.AsSpan());
-            Debug.Assert(written == buffer.Length);
-
-            return buffer;
-        }
+        public static byte[] HashData(ReadOnlySpan<byte> source) => HashStatic<HashTrait>.HashData(source);
 
         /// <summary>
         /// Computes the hash of data using the SHA3-256 algorithm.
@@ -110,10 +104,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            if (!TryHashData(source, destination, out int bytesWritten))
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            return bytesWritten;
+            return HashStatic<HashTrait>.HashData(source, destination);
         }
 
         /// <summary>
@@ -133,18 +124,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            CheckSha3Support();
-
-            if (destination.Length < HashSizeInBytes)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
-            bytesWritten = HashProviderDispenser.OneShotHashProvider.HashData(HashAlgorithmNames.SHA3_256, source, destination);
-            Debug.Assert(bytesWritten == HashSizeInBytes);
-
-            return true;
+            return HashStatic<HashTrait>.TryHashData(source, destination, out bytesWritten);
         }
 
         /// <summary>
@@ -171,16 +151,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static int HashData(Stream source, Span<byte> destination)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            CheckSha3Support();
-            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA3_256, source, destination);
+            return HashStatic<HashTrait>.HashData(source, destination);
         }
 
         /// <summary>
@@ -197,16 +168,7 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        public static byte[] HashData(Stream source)
-        {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            CheckSha3Support();
-            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA3_256, HashSizeInBytes, source);
-        }
+        public static byte[] HashData(Stream source) => HashStatic<HashTrait>.HashData(source);
 
         /// <summary>
         /// Asynchronously computes the hash of a stream using the SHA3-256 algorithm.
@@ -228,13 +190,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            CheckSha3Support();
-            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.SHA3_256, source, cancellationToken);
+            return HashStatic<HashTrait>.HashDataAsync(source, cancellationToken);
         }
 
         /// <summary>
@@ -268,26 +224,7 @@ namespace System.Security.Cryptography
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(source);
-
-            if (destination.Length < HashSizeInBytes)
-                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
-
-            if (!source.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
-
-            CheckSha3Support();
-            return LiteHashProvider.HashStreamAsync(
-                HashAlgorithmNames.SHA3_256,
-                source,
-                destination,
-                cancellationToken);
-        }
-
-        private static void CheckSha3Support()
-        {
-            if (!IsSupported)
-                throw new PlatformNotSupportedException();
+            return HashStatic<HashTrait>.HashDataAsync(source, destination, cancellationToken);
         }
 
         private sealed class Implementation : SHA3_256

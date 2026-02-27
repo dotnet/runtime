@@ -1,7 +1,11 @@
 # Required for StaticOpenSslLinking
-cmake_minimum_required(VERSION 3.10..3.20)
+cmake_minimum_required(VERSION 3.10..3.26)
 
 project(System.Security.Cryptography.Native C)
+
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    message(FATAL_ERROR "Not implemented for WASM")
+endif()
 
 # These are happening inside of OpenSSL-defined macros out of our control
 add_compile_options(-Wno-cast-align)
@@ -19,7 +23,6 @@ append_extra_cryptography_libs(NATIVE_LIBS_EXTRA)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 set(NATIVECRYPTO_SOURCES
-    apibridge.c
     apibridge_30.c
     memory_debug.c
     openssl.c

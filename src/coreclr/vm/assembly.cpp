@@ -129,6 +129,7 @@ Assembly::Assembly(PEAssembly* pPEAssembly, LoaderAllocator *pLoaderAllocator)
 #endif
     , m_isDynamic(false)
     , m_isLoading{true}
+    , m_isLoaded{false}
     , m_isTerminated{false}
     , m_level{FILE_LOAD_CREATE}
     , m_notifyFlags{NOT_NOTIFIED}
@@ -329,7 +330,10 @@ Assembly * Assembly::Create(
         PRECONDITION(pLoaderAllocator != NULL);
         PRECONDITION(pLoaderAllocator->IsCollectible() || pLoaderAllocator == SystemDomain::GetGlobalLoaderAllocator());
     }
-    CONTRACTL_END
+    CONTRACTL_END;
+
+    // Validate the assembly about to be created is suitable for execution.
+    pPEAssembly->ValidateForExecution();
 
     NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, pLoaderAllocator));
 
@@ -512,7 +516,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         pAssem->DeliverAsyncEvents();
         pAssem->FinishLoad();
         pAssem->ClearLoading();
-        pAssem->m_level = FILE_ACTIVE;
+        pAssem->SetLoadLevel(FILE_ACTIVE);
     }
 
     {
@@ -540,21 +544,16 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     RETURN pRetVal;
 } // Assembly::CreateDynamic
 
-
-
 void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 {
     CONTRACTL
     {
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pDomainAssembly));
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
     GetModule()->SetDomainAssembly(pDomainAssembly);
-
 } // Assembly::SetDomainAssembly
 
 #endif // #ifndef DACCESS_COMPILE
@@ -998,25 +997,11 @@ ReleaseHolder<FriendAssemblyDescriptor> Assembly::GetFriendAssemblyInfo()
 
 //*****************************************************************************
 // Is the given assembly a friend of this assembly?
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, FieldDesc *pFD)
+bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly)
 {
     WRAPPER_NO_CONTRACT;
 
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pFD);
-}
-
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodDesc *pMD)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMD);
-}
-
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodTable *pMT)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMT);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly);
 }
 
 bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
@@ -1076,8 +1061,8 @@ void Assembly::AddDiagnosticStartupHookPath(LPCWSTR wszPath)
 
 enum CorEntryPointType
 {
-    EntryManagedMain,                   // void main(String[])
-    EntryCrtMain                        // unsigned main(void)
+    EntryManagedMain,                   // void/int/uint Main(string[])
+    EntryCrtMain,                       // void/int/uint Main(void)
 };
 
 void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
@@ -1180,6 +1165,10 @@ struct Param
     LPWSTR *wzArgs;
 } param;
 
+#if defined(TARGET_BROWSER)
+extern "C" void SystemJS_ResolveMainPromise(int exitCode);
+#endif // TARGET_BROWSER
+
 static void RunMainInternal(Param* pParam)
 {
     MethodDescCallSite  threadStart(pParam->pFD);
@@ -1188,7 +1177,8 @@ static void RunMainInternal(Param* pParam)
     GCPROTECT_BEGIN(StrArgArray);
 
     // Build the parameter array and invoke the method.
-    if (pParam->EntryType == EntryManagedMain) {
+    if (pParam->EntryType == EntryManagedMain)
+    {
         if (pParam->stringArgs == NULL) {
             // Allocate a COM Array object with enough slots for cCommandArgs - 1
             StrArgArray = (PTRARRAYREF) AllocateObjectArray((pParam->cCommandArgs - pParam->numSkipArgs), g_pStringClass);
@@ -1213,9 +1203,16 @@ static void RunMainInternal(Param* pParam)
     }
     else
     {
+        // Call the main method
         *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
         SetLatchedExitCode(*pParam->piRetVal);
     }
+
+#if defined(TARGET_BROWSER)
+    // if the managed main was async, the first call to SystemJS_ResolveMainPromise will be ignored
+    // and the second call will come from AsyncHelpers.HandleAsyncEntryPoint
+    SystemJS_ResolveMainPromise(*pParam->piRetVal);
+#endif // TARGET_BROWSER
 
     GCPROTECT_END();
 
@@ -1417,8 +1414,10 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
     //to decide when the process should get torn down.  So, don't call it from
     // AppDomain.ExecuteAssembly()
     if (pMeth) {
+#if !defined(TARGET_BROWSER)
         if (waitForOtherThreads)
             RunMainPost();
+#endif // !TARGET_BROWSER
     }
     else {
         StackSString displayName;
@@ -1498,6 +1497,7 @@ MethodDesc* Assembly::GetEntryPoint()
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, IDS_EE_ILLEGAL_TOKEN_FOR_MAIN, displayName);
     }
 
+    MethodTable * pInitialMT;
     if (mdParent != COR_GLOBAL_PARENT_TOKEN) {
         GCX_COOP();
         // This code needs a class init frame, because without it, the
@@ -1505,7 +1505,7 @@ MethodDesc* Assembly::GetEntryPoint()
         // type handle (ie, loading an assembly) is the first line of a program.
         DebuggerClassInitMarkFrame __dcimf;
 
-        MethodTable * pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
+        pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
                                                                        ClassLoader::ThrowIfNotFound,
                                                                        ClassLoader::FailIfUninstDefOrRef).GetMethodTable();
 
@@ -1517,7 +1517,6 @@ MethodDesc* Assembly::GetEntryPoint()
     {
         m_pEntryPoint = pModule->FindMethod(mdEntry);
     }
-
     RETURN m_pEntryPoint;
 }
 
@@ -2129,9 +2128,11 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         DeliverSyncEvents();
         break;
 
+#ifdef FEATURE_IJW
     case FILE_LOAD_VTABLE_FIXUPS:
         VtableFixups();
         break;
+#endif // FEATURE_IJW
 
     case FILE_LOADED:
         FinishLoad();
@@ -2208,12 +2209,14 @@ void Assembly::EagerFixups()
 #endif // FEATURE_READYTORUN
 }
 
+#ifdef FEATURE_IJW
 void Assembly::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
     GetModule()->FixupVTables();
 }
+#endif // FEATURE_IJW
 
 void Assembly::FinishLoad()
 {
@@ -2225,7 +2228,7 @@ void Assembly::FinishLoad()
     CONTRACTL_END;
 
     // Must set this a bit prematurely for the DAC stuff to work
-    m_level = FILE_LOADED;
+    SetLoadLevel(FILE_LOADED);
 
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 namespace Internal.TypeSystem
 {
     public struct MethodImplRecord
@@ -44,6 +46,6 @@ namespace Internal.TypeSystem
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public abstract MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name);
+        public abstract MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name);
     }
 }

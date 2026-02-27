@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 /* ------------------------------------------------------------------------- *
  * DbgIPCEvents.h -- header file for private Debugger data shared by various
-//
-
  *                   debugger components.
  * ------------------------------------------------------------------------- */
 
@@ -820,8 +819,10 @@ DEFINE_VMPTR(class SimpleRWLock,    PTR_SimpleRWLock,   VMPTR_SimpleRWLock);
 DEFINE_VMPTR(class SimpleRWLock,    PTR_SimpleRWLock,   VMPTR_RWLock);
 DEFINE_VMPTR(struct ReJitInfo,       PTR_ReJitInfo,      VMPTR_ReJitInfo);
 DEFINE_VMPTR(struct SharedReJitInfo, PTR_SharedReJitInfo, VMPTR_SharedReJitInfo);
+#ifdef FEATURE_CODE_VERSIONING
 DEFINE_VMPTR(class NativeCodeVersionNode, PTR_NativeCodeVersionNode, VMPTR_NativeCodeVersionNode);
 DEFINE_VMPTR(class ILCodeVersionNode, PTR_ILCodeVersionNode, VMPTR_ILCodeVersionNode);
+#endif // FEATURE_CODE_VERSIONING
 
 typedef CORDB_ADDRESS GENERICS_TYPE_TOKEN;
 
@@ -1354,11 +1355,9 @@ struct MSLAYOUT DebuggerIPCE_JITFuncData
     LSPTR_DJI   nativeCodeJITInfoToken;
     VMPTR_MethodDesc vmNativeCodeMethodDescToken;
 
-#ifdef FEATURE_EH_FUNCLETS
     BOOL         fIsFilterFrame;
     SIZE_T       parentNativeOffset;
     FramePointer fpParentOrSelf;
-#endif // FEATURE_EH_FUNCLETS
 
     // indicates if the MethodDesc is a generic function or a method inside a generic class (or
     // both!).

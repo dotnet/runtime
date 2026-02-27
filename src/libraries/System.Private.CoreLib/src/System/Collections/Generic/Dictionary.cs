@@ -737,7 +737,7 @@ namespace System.Collections.Generic
             internal static IAlternateEqualityComparer<TAlternateKey, TKey> GetAlternateComparer(Dictionary<TKey, TValue> dictionary)
             {
                 Debug.Assert(IsCompatibleKey(dictionary));
-                return Unsafe.As<IAlternateEqualityComparer<TAlternateKey, TKey>>(dictionary._comparer);
+                return Unsafe.As<IAlternateEqualityComparer<TAlternateKey, TKey>>(dictionary._comparer)!;
             }
 
             /// <summary>Gets the value associated with the specified alternate key.</summary>

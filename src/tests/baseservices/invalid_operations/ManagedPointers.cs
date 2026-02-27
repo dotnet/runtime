@@ -7,9 +7,12 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 using Xunit;
+using TestLibrary;
 
 public unsafe class ManagedPointers
 {
+    [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+    [ActiveIssue("Function mismatch", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void Validate_BoxingHelpers_NullByRef()
     {
@@ -28,7 +31,10 @@ public unsafe class ManagedPointers
         });
     }
 
+    [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+    [ActiveIssue("Function mismatch", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void Validate_GeneratedILStubs_NullByRef()
     {
         Console.WriteLine($"Running {nameof(Validate_GeneratedILStubs_NullByRef)}...");
@@ -52,6 +58,8 @@ public unsafe class ManagedPointers
         static nint PassByRef(void* a) => (nint)a;
     }
 
+    [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+    [ActiveIssue("Function mismatch", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void Validate_IntrinsicMethodsWithByRef_NullByRef()
     {

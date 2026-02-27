@@ -61,7 +61,7 @@ TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
-TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva);
+TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
 IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
@@ -79,9 +79,13 @@ IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table)
 bool IsCollectible(ModuleHandle handle);
 bool IsAssemblyLoaded(ModuleHandle handle);
 TargetPointer GetGlobalLoaderAllocator();
+TargetPointer GetSystemAssembly();
 TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetLowFrequencyHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
+TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
+TargetPointer GetILHeader(ModuleHandle handle, uint token);
+TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 ```
 
 ## Version 1
@@ -105,6 +109,7 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `Module` | `MethodDefToDescMap` | Mapping table |
 | `Module` | `TypeDefToMethodTableMap` | Mapping table |
 | `Module` | `TypeRefToMethodTableMap` | Mapping table |
+| `Module` | `DynamicILBlobTable` | pointer to the table of dynamic IL |
 | `ModuleLookupMap` | `TableData` | Start of the mapping table's data |
 | `ModuleLookupMap` | `SupportedFlagsMask` | Mask for flag bits on lookup map entries |
 | `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
@@ -114,7 +119,7 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `Assembly` | `IsDynamic` | Flag indicating if this module is dynamic |
 | `Assembly` | `Error` | Pointer to exception. No error if nullptr |
 | `Assembly` | `NotifyFlags` | Flags relating to the debugger/profiler notification state of the assembly |
-| `Assembly` | `Level` | File load level of the assembly |
+| `Assembly` | `IsLoaded` | Whether assembly has been loaded |
 | `PEAssembly` | `PEImage` | Pointer to the PEAssembly's PEImage |
 | `PEAssembly` | `AssemblyBinder` | Pointer to the PEAssembly's binder |
 | `AssemblyBinder` | `AssemblyLoadContext` | Pointer to the AssemblyBinder's AssemblyLoadContext |
@@ -130,10 +135,12 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `AppDomain` | `DomainAssemblyList` | ArrayListBase of assemblies in the AppDomain |
 | `AppDomain` | `FriendlyName` | Friendly name of the AppDomain |
 | `SystemDomain` | `GlobalLoaderAllocator` | global LoaderAllocator |
+| `SystemDomain` | `SystemAssembly` | pointer to the system Assembly |
 | `LoaderAllocator` | `ReferenceCount` | Reference count of LoaderAllocator |
 | `LoaderAllocator` | `HighFrequencyHeap` | High-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `LowFrequencyHeap` | Low-frequency heap of LoaderAllocator |
 | `LoaderAllocator` | `StubHeap` | Stub heap of LoaderAllocator |
+| `LoaderAllocator` | `ObjectHandle` | object handle of LoaderAllocator |
 | `ArrayListBase` | `Count` | Total number of elements in the ArrayListBase |
 | `ArrayListBase` | `FirstBlock` | First ArrayListBlock |
 | `ArrayListBlock` | `Next` | Next ArrayListBlock in chain |
@@ -147,6 +154,12 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 | `InstMethodHashTable` | `Count` | Count of elements in the hash table |
 | `InstMethodHashTable` | `VolatileEntryValue` | The data stored in the hash table entry |
 | `InstMethodHashTable` | `VolatileEntryNextEntry` | Next pointer in the hash table entry |
+| `DynamicILBlobTable` | `Table` | Pointer to IL blob table |
+| `DynamicILBlobTable` | `TableSize` | Number of entries in table |
+| `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
+| `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
+| `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
+
 
 
 ### Global variables used:
@@ -159,8 +172,13 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 ### Contract Constants:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
-| `ASSEMBLY_LEVEL_LOADED` | uint | The value of Assembly Level required for an Assembly to be considered loaded. In the runtime, this is `FILE_LOAD_DELIVER_EVENTS` | `0x4` |
 | `ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED` | uint | Flag in Assembly NotifyFlags indicating the Assembly will notify profilers. | `0x1` |
+
+Contracts used:
+| Contract Name |
+| --- |
+| EcmaMetadata |
+| SHash |
 
 ### Data Structures
 ```csharp
@@ -231,7 +249,7 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
             // IncludeAvailableToProfilers contains some loaded AND loading
             // assemblies.
         }
-        else if (assembly.Level >= ASSEMBLY_LEVEL_LOADED)
+        else if (assembly.IsLoaded)
         {
             if (!iterationFlags.HasFlag(AssemblyIterationFlags.IncludeLoaded))
             {
@@ -342,6 +360,8 @@ bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddres
 
 TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
 {
+    if (rva == 0)
+        return TargetPointer.Null;
     TargetPointer peImage = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
     if(peImage == TargetPointer.Null)
         throw new InvalidOperationException("PEAssembly does not have a PEImage associated with it.");
@@ -592,15 +612,22 @@ bool IsDynamic(ModuleHandle handle)
 bool IsAssemblyLoaded(ModuleHandle handle)
 {
     TargetPointer assembly = target.ReadPointer(handle.Address + /*Module::Assembly*/);
-    uint loadLevel = target.Read<uint>(assembly + /* Assembly::Level*/);
-    return assembly.Level >= ASSEMBLY_LEVEL_LOADED;
+    bool isLoaded = target.Read<byte>(assembly + /* Assembly::IsLoaded*/) != 0;
+    return isLoaded;
 }
 
 TargetPointer GetGlobalLoaderAllocator()
 {
     TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
     TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
-    return target.ReadPointer(systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */);
+    return systemDomain + /* SystemDomain::GlobalLoaderAllocator offset */;
+}
+
+TargetPointer GetSystemAssembly()
+{
+    TargetPointer systemDomainPointer = target.ReadGlobalPointer("SystemDomain");
+    TargetPointer systemDomain = target.ReadPointer(systemDomainPointer);
+    return target.ReadPointer(systemDomain + /* SystemDomain::SystemAssembly offset */);
 }
 
 TargetPointer GetHighFrequencyHeap(TargetPointer loaderAllocatorPointer)
@@ -618,6 +645,51 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer)
     return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::StubHeap offset */);
 }
 
+TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer)
+{
+    return target.ReadPointer(loaderAllocatorPointer + /* LoaderAllocator::ObjectHandle offset */);
+}
+
+private sealed class DynamicILBlobTraits : ITraits<uint, DynamicILBlobEntry>
+{
+    public uint GetKey(DynamicILBlobEntry entry) => entry.EntryMethodToken;
+    public bool Equals(uint left, uint right) => left == right;
+    public uint Hash(uint key) => key;
+    public bool IsNull(DynamicILBlobEntry entry) => entry.EntryMethodToken == 0;
+    public DynamicILBlobEntry Null() => new DynamicILBlobEntry(0, TargetPointer.Null);
+    public bool IsDeleted(DynamicILBlobEntry entry) => false;
+}
+
+TargetPointer GetILHeader(ModuleHandle handle, uint token)
+{
+    if (GetDynamicIL(handle, token) == TargetPointer.Null)
+    {
+        TargetPointer peAssembly = loader.GetPEAssembly(handle);
+        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
+        MetadataReader? mdReader = ecmaMetadataContract.GetMetadata(handle);
+        if (mdReader == null)
+            throw new NotImplementedException();
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(token));
+        int rva = methodDef.RelativeVirtualAddress;
+        headerPtr = loader.GetILAddr(peAssembly, rva);
+    }
+    return headerPtr;
+}
+
+TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
+{
+    TargetPointer dynamicBlobTablePtr = target.ReadPointer(handle.Address + /* Module::DynamicILBlobTable offset */);
+    Contracts.IThread shashContract = target.Contracts.SHash;
+    DynamicILBlobTraits traits = new();
+    /* To construct an SHash we must pass a DataType enum.
+    We must be able to look up this enum in a dictionary of known types and retrieve a Target.TypeInfo struct.
+    This struct contains a dictionary of fields with keys corresponding to the names of offsets
+    and values corresponding to the offset values. Optionally, it contains a Size field.
+    */
+    SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
+    Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
+    return /* blob entry IL address */
+}
 ```
 
 ### DacEnumerableHash (EETypeHashTable and InstMethodHashTable)

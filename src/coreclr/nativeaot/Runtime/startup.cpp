@@ -25,6 +25,7 @@
 #include "yieldprocessornormalized.h"
 #include <minipal/cpufeatures.h>
 #include <minipal/time.h>
+#include <minipal/random.h>
 
 #ifdef FEATURE_PERFTRACING
 #include "EventPipeInterface.h"
@@ -122,13 +123,13 @@ static bool InitDLL(HANDLE hPalInstance)
         return false;
 
     // Note: The global exception handler uses RuntimeInstance
-#if !defined(USE_PORTABLE_HELPERS)
+#if !defined(FEATURE_PORTABLE_HELPERS)
 #ifdef HOST_WINDOWS
     AddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
 #else
     PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
 #endif
-#endif // !USE_PORTABLE_HELPERS
+#endif // !FEATURE_PORTABLE_HELPERS
 
 #ifdef STRESS_LOG
     uint32_t dwTotalStressLogSize = (uint32_t)g_pRhConfig->GetTotalStressLogSize();
@@ -158,7 +159,7 @@ static bool InitDLL(HANDLE hPalInstance)
     EventPipe_FinishInitialize();
 #endif
 
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     if (!DetectCPUFeatures())
         return false;
 #endif
@@ -171,7 +172,7 @@ static bool InitDLL(HANDLE hPalInstance)
     return true;
 }
 
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
 
 bool DetectCPUFeatures()
 {
@@ -206,7 +207,7 @@ bool DetectCPUFeatures()
 
     return true;
 }
-#endif // !USE_PORTABLE_HELPERS
+#endif // !FEATURE_PORTABLE_HELPERS
 
 #ifdef TARGET_UNIX
 inline
@@ -224,8 +225,9 @@ bool InitGSCookie()
     }
 #endif
 
-    // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)minipal_lowres_ticks();
+    GSCookie val;
+
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&val, sizeof(val));
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie

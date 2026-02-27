@@ -6,4 +6,3 @@
 namespace Wasm.Build.Tests;
 
 public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
-

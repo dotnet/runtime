@@ -425,7 +425,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 case UrnScheme.SidScheme:
 
-                    if (false == SecurityIdentityClaimConverterHelper(identity, false, sb, throwOnFail))
+                    if (!SecurityIdentityClaimConverterHelper(identity, false, sb, throwOnFail))
                     {
                         return false;
                     }

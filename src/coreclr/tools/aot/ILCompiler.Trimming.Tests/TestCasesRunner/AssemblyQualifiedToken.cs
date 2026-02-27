@@ -29,8 +29,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 EcmaType type => (type.Module.Assembly.GetName().Name, MetadataTokens.GetToken(type.Handle)),
                 EcmaMethod method => (method.Module.Assembly.GetName().Name, MetadataTokens.GetToken(method.Handle)),
                 EcmaField field => (field.Module.Assembly.GetName().Name, MetadataTokens.GetToken(field.Handle)),
-                PropertyPseudoDesc property => (((EcmaType)property.OwningType).Module.Assembly.GetName().Name, MetadataTokens.GetToken(property.Handle)),
-                EventPseudoDesc @event => (((EcmaType)@event.OwningType).Module.Assembly.GetName().Name, MetadataTokens.GetToken(@event.Handle)),
+                PropertyPseudoDesc property => (property.OwningType.Module.Assembly.GetName().Name, MetadataTokens.GetToken(property.Handle)),
+                EventPseudoDesc @event => (@event.OwningType.Module.Assembly.GetName().Name, MetadataTokens.GetToken(@event.Handle)),
                 ILStubMethod => (null, 0), // Ignore compiler generated methods
                 MetadataType mt when mt.GetType().Name == "BoxedValueType" => (null, 0),
                 _ => throw new NotSupportedException($"The infra doesn't support getting a token for {entity} yet.")

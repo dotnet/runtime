@@ -15,8 +15,6 @@ using System.Text;
 using System.Xml;
 using System.Xml.XPath;
 
-#pragma warning disable 56500 // Remove all the catch all statements warnings used by the interop layer
-
 namespace System.Speech.Recognition
 {
     [Serializable]
@@ -672,7 +670,7 @@ namespace System.Speech.Recognition
             {
                 IntPtr valueStringBuffer = new((long)phraseBuffer + (int)property.pszValueOffset);
                 propertyValue = Marshal.PtrToStringUni(valueStringBuffer);
-                if (!isSapi53Header && isIdName && ((string)propertyValue).Contains("$"))
+                if (!isSapi53Header && isIdName && ((string)propertyValue).Contains('$'))
                 {
                     // SAPI 5.1 result that contains script fragments rather than output of executing script.
                     // Strip this information as script-based grammars aren't supported on 5.1.

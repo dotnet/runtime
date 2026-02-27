@@ -101,9 +101,21 @@ BOOL GetDefaultDllImportSearchPathsAttributeValue(Module *pModule, mdToken token
 // Returns the index of the LCID parameter if one exists and -1 otherwise.
 int GetLCIDParameterIndex(MethodDesc *pMD);
 
+#ifdef FEATURE_COMINTEROP
+
 //---------------------------------------------------------------------------
 // Transforms an LCID into a CultureInfo.
 void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj);
+
+//---------------------------------------------------------------------------
+// Gets the current culture or UI culture for the current thread.
+OBJECTREF GetCurrentCulture(BOOL bUICulture);
+
+//---------------------------------------------------------------------------
+// Sets the current culture or UI culture for the current thread.
+void SetCurrentCulture(OBJECTREF *CultureObj, BOOL bUICulture);
+
+#endif // FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------
 // This method determines if a member is visible from COM.
@@ -357,8 +369,8 @@ VOID LogRCWDestroy(RCW* pWrap);
 
 //--------------------------------------------------------------------------------
 // Ensure COM is started up.
-HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread = TRUE);
-VOID EnsureComStarted(BOOL fCoInitCurrentThread = TRUE);
+HRESULT EnsureComStartedNoThrow();
+VOID EnsureComStarted();
 
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);

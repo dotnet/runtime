@@ -415,25 +415,25 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void SupportedLanguageVersions_SucceedCompilation(LanguageVersion langVersion)
         {
             string source = """
-                using System.Text.Json.Serialization;
+                    using System.Text.Json.Serialization;
 
-                namespace HelloWorld
-                {
-                    public class MyClass
+                    namespace HelloWorld
                     {
-                        public MyClass(int value)
+                        public class MyClass
                         {
-                            Value = value;
+                            public MyClass(int value)
+                            {
+                                Value = value;
+                            }
+
+                            public int Value { get; set; }
                         }
 
-                        public int Value { get; set; }
+                        [JsonSerializable(typeof(MyClass))]
+                        public partial class MyJsonContext : JsonSerializerContext
+                        {
+                        }
                     }
-
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class MyJsonContext : JsonSerializerContext
-                    {
-                    }
-                }
                 """;
 
             CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions(langVersion);
@@ -455,36 +455,36 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void SupportedLanguageVersions_Memory_SucceedCompilation(LanguageVersion langVersion)
         {
             string source = """
-                using System;
-                using System.Text.Json.Serialization;
+                    using System;
+                    using System.Text.Json.Serialization;
 
-                namespace HelloWorld
-                {
-                    public class MyClass<T>
+                    namespace HelloWorld
                     {
-                        public MyClass(
-                            Memory<T> memoryOfT,
-                            Memory<byte> memoryByte,
-                            ReadOnlyMemory<T> readOnlyMemoryOfT,
-                            ReadOnlyMemory<byte> readOnlyMemoryByte)
+                        public class MyClass<T>
                         {
-                            MemoryOfT = memoryOfT;
-                            MemoryByte = memoryByte;
-                            ReadOnlyMemoryOfT = readOnlyMemoryOfT;
-                            ReadOnlyMemoryByte = readOnlyMemoryByte;
+                            public MyClass(
+                                Memory<T> memoryOfT,
+                                Memory<byte> memoryByte,
+                                ReadOnlyMemory<T> readOnlyMemoryOfT,
+                                ReadOnlyMemory<byte> readOnlyMemoryByte)
+                            {
+                                MemoryOfT = memoryOfT;
+                                MemoryByte = memoryByte;
+                                ReadOnlyMemoryOfT = readOnlyMemoryOfT;
+                                ReadOnlyMemoryByte = readOnlyMemoryByte;
+                            }
+
+                            public Memory<T> MemoryOfT { get; set; }
+                            public Memory<byte> MemoryByte { get; set; }
+                            public ReadOnlyMemory<T> ReadOnlyMemoryOfT { get; set; }
+                            public ReadOnlyMemory<byte> ReadOnlyMemoryByte { get; set; }
                         }
 
-                        public Memory<T> MemoryOfT { get; set; }
-                        public Memory<byte> MemoryByte { get; set; }
-                        public ReadOnlyMemory<T> ReadOnlyMemoryOfT { get; set; }
-                        public ReadOnlyMemory<byte> ReadOnlyMemoryByte { get; set; }
+                        [JsonSerializable(typeof(MyClass<int>))]
+                        public partial class MyJsonContext : JsonSerializerContext
+                        {
+                        }
                     }
-
-                    [JsonSerializable(typeof(MyClass<int>))]
-                    public partial class MyJsonContext : JsonSerializerContext
-                    {
-                    }
-                }
                 """;
 
             CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions(langVersion);
@@ -503,25 +503,25 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void UnsupportedLanguageVersions_FailCompilation(LanguageVersion langVersion)
         {
             string source = """
-                using System.Text.Json.Serialization;
+                    using System.Text.Json.Serialization;
 
-                namespace HelloWorld
-                {
-                    public class MyClass
+                    namespace HelloWorld
                     {
-                        public MyClass(int value)
+                        public class MyClass
                         {
-                            Value = value;
+                            public MyClass(int value)
+                            {
+                                Value = value;
+                            }
+
+                            public int Value { get; set; }
                         }
 
-                        public int Value { get; set; }
+                        [JsonSerializable(typeof(MyClass))]
+                        public partial class MyJsonContext : JsonSerializerContext
+                        {
+                        }
                     }
-
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class MyJsonContext : JsonSerializerContext
-                    {
-                    }
-                }
                 """;
 
             CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions(langVersion);
@@ -705,7 +705,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
         }
 
-#if NET9_0_OR_GREATER
+#if NET
         [Fact]
         public void CollectionWithRefStructElement_CompilesWithWarning()
         {

@@ -471,5 +471,48 @@ namespace Microsoft.Extensions.Logging.Test
 
             Assert.Equal(expected, actual);
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        public void LogValues_OutOfRangeAccess_ThrowsIndexOutOfRangeExceptionWithDefaultMessage(int parameterCount)
+        {
+            // Arrange
+            var testSink = new TestSink();
+            var testLogger = new TestLogger("testlogger", testSink, enabled: true);
+
+            Delegate logAction = parameterCount switch
+            {
+                0 => LoggerMessage.Define(LogLevel.Information, new EventId(1), "Test"),
+                1 => LoggerMessage.Define<string>(LogLevel.Information, new EventId(1), "Test {P0}"),
+                2 => LoggerMessage.Define<string, string>(LogLevel.Information, new EventId(1), "Test {P0} {P1}"),
+                3 => LoggerMessage.Define<string, string, string>(LogLevel.Information, new EventId(1), "Test {P0} {P1} {P2}"),
+                4 => LoggerMessage.Define<string, string, string, string>(LogLevel.Information, new EventId(1), "Test {P0} {P1} {P2} {P3}"),
+                5 => LoggerMessage.Define<string, string, string, string, string>(LogLevel.Information, new EventId(1), "Test {P0} {P1} {P2} {P3} {P4}"),
+                6 => LoggerMessage.Define<string, string, string, string, string, string>(LogLevel.Information, new EventId(1), "Test {P0} {P1} {P2} {P3} {P4} {P5}"),
+                _ => throw new ArgumentOutOfRangeException(nameof(parameterCount))
+            };
+
+            var parameters = Enumerable.Repeat("test", parameterCount).ToArray();
+
+            // Act
+            logAction.DynamicInvoke(new object[] { testLogger }.Concat(parameters).Append(null).ToArray());
+
+            // Assert
+            Assert.Single(testSink.Writes);
+            var write = testSink.Writes.First();
+            var logValues = Assert.IsAssignableFrom<IReadOnlyList<KeyValuePair<string, object>>>(write.State);
+
+            var exception = Assert.Throws<IndexOutOfRangeException>(() => logValues[logValues.Count + 1]);
+            
+            // Verify the exception message is not just "index" but has a proper default message
+            Assert.NotEqual("index", exception.Message);
+            Assert.False(string.IsNullOrEmpty(exception.Message));
+        }
     }
 }

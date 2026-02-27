@@ -34,7 +34,9 @@ namespace System.Net.Quic.Tests
 
         public CertificateSetup()
         {
-            _pkiHolder = Configuration.Certificates.GenerateCertificates("localhost", nameof(MsQuicTests), longChain: true);
+            _pkiHolder = Configuration.Certificates.GenerateCertificates("localhost", nameof(MsQuicTests), longChain: true,
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/119641")]
+                forceRsaCertificate: !PlatformDetection.IsWindows);
         }
 
         public SslStreamCertificateContext CreateSslStreamCertificateContext() => _pkiHolder.CreateSslStreamCertificateContext();
@@ -572,7 +574,9 @@ namespace System.Net.Quic.Tests
                 throw new SkipTestException("IPv6 is not available on this platform");
             }
 
-            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(expectsError ? "badhost" : "localhost");
+            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(expectsError ? "badhost" : "localhost",
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/119641")]
+                forceRsaCertificate: !PlatformDetection.IsWindows);
             X509Certificate2 certificate = pkiHolder.EndEntity;
 
             var listenerOptions = new QuicListenerOptions()

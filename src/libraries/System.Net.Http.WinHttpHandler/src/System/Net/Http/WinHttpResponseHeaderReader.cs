@@ -42,7 +42,7 @@ namespace System.Net.Http
                 int colonIndex = Array.IndexOf(_buffer, ':', startIndex, length);
 
                 // Skip malformed header lines that are missing the colon character.
-                if (colonIndex == -1)
+                if (colonIndex < 0)
                 {
                     continue;
                 }

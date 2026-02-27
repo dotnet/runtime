@@ -128,7 +128,12 @@ namespace System.Net
             {
                 public ushort Length;
                 public ushort MaximumLength;
-                public int PayloadOffset;
+                private int _payloadOffset;
+                public int PayloadOffset
+                {
+                    readonly get =>BitConverter.IsLittleEndian? _payloadOffset: BinaryPrimitives.ReverseEndianness(_payloadOffset);
+                    set =>_payloadOffset = BitConverter.IsLittleEndian? value: BinaryPrimitives.ReverseEndianness(value);
+                }
             }
 
             [StructLayout(LayoutKind.Sequential)]
@@ -146,11 +151,16 @@ namespace System.Net
             {
                 public byte VersionMajor;
                 public byte VersionMinor;
-                public ushort ProductBuild;
+                private ushort _productBuild;
                 private byte _unused4;
                 private byte _unused5;
                 private byte _unused6;
                 public byte CurrentRevision;
+                public ushort ProductBuild
+                {
+                    readonly get =>BitConverter.IsLittleEndian? _productBuild: BinaryPrimitives.ReverseEndianness(_productBuild);
+                    set =>_productBuild = BitConverter.IsLittleEndian? value: BinaryPrimitives.ReverseEndianness(value);
+                }
             }
 
             // Type 1 message
@@ -158,10 +168,15 @@ namespace System.Net
             private unsafe struct NegotiateMessage
             {
                 public MessageHeader Header;
-                public Flags Flags;
+                private Flags _flags;
                 public MessageField DomainName;
                 public MessageField WorkStation;
                 public Version Version;
+                public Flags Flags
+                {
+                    readonly get =>BitConverter.IsLittleEndian? _flags: (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
+                    set =>_flags = BitConverter.IsLittleEndian? value: (Flags)BinaryPrimitives.ReverseEndianness((uint)value);
+                }
             }
 
             // TYPE 2 message
@@ -333,7 +348,7 @@ namespace System.Net
 
             private static unsafe void SetField(ref MessageField field, int length, int offset)
             {
-                if (length > short.MaxValue)
+                if (length is < 0 or > short.MaxValue)
                 {
                     throw new Win32Exception(NTE_FAIL);
                 }
@@ -486,7 +501,7 @@ namespace System.Net
 
                         if (ID == AvId.Timestamp)
                         {
-                            time = DateTime.FromFileTimeUtc(BitConverter.ToInt64(info.Slice(4, 8)));
+                            time = DateTime.FromFileTimeUtc(BinaryPrimitives.ReadInt64LittleEndian(info.Slice(4, 8)));
                         }
                         else if (ID == AvId.TargetName || ID == AvId.ChannelBindings)
                         {

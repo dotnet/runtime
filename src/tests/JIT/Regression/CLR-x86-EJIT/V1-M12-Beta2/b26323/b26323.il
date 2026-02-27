@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -9,6 +10,8 @@
 }
 .assembly b26323 { }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace Test
 {
   .class public auto ansi App extends [mscorlib]System.Object
@@ -29,9 +32,10 @@
 
     .method public static int32 Main() il managed
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-          01 00 00 00
-      )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+          type([TestLibrary]TestLibrary.PlatformDetection)
+          string[1] ('IsVarArgSupported')
+      }
       .entrypoint
       .maxstack  2
       .locals ([0] class Test.App app)

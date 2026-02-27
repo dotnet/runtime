@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void Combine_NullRcw_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>(null, () => ComEventsHelper.Combine(null, Guid.Empty, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => ComEventsHelper.Combine(null, Guid.Empty, 1, null));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void Remove_NullRcw_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>(null, () => ComEventsHelper.Remove(null, Guid.Empty, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>("obj", () => ComEventsHelper.Remove(null, Guid.Empty, 1, null));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]

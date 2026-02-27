@@ -41,7 +41,7 @@ const double COMDateTime::OADateMaxAsDouble = 2958466.0;
 const INT64 COMDateTime::MaxTicks = DaysTo10000 * TicksPerDay;
 const INT64 COMDateTime::MaxMillis = DaysTo10000 * MillisPerDay;
 
-const INT64 TicksMask = I64(0x3FFFFFFFFFFFFFFF);
+const INT64 TicksMask = 0x3FFFFFFFFFFFFFFFLL;
 
 // This function is duplicated in DateTime.cs
 INT64 COMDateTime::DoubleDateToTicks(const double d)

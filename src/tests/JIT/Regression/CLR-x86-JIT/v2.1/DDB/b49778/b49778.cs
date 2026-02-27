@@ -5,6 +5,9 @@
 // The test case has been checked into WbyQFE JIT\Regression tree under the VSW bug number .
 //The test checks for a gchole and an assert. The expected output is 33 and 3 when the test passes.
 
+
+namespace b49778;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -164,6 +167,7 @@ public class ReproTwo
 
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint() => Run(0);
 

@@ -5,6 +5,15 @@
 //
 // This file is compiled using the target architecture.  Preprocessor defines for the target
 // platform will be available.  It is ok to use `#ifdef`.
+//
+// When modifying this file (adding/removing types, fields, or globals), you must also:
+//   1. Update the corresponding contract doc in docs/design/datacontracts/<contract>.md
+//      to reflect the new data descriptors and any changes to the contract algorithm.
+//   2. Update the managed data class in src/native/managed/cdac/.../Data/<Type>.cs
+//      to read the new field(s).
+//   3. Update the contract implementation in src/native/managed/cdac/.../Contracts/<Contract>.cs
+//      to use the new data.
+//   4. Update the mock descriptors and tests in src/native/managed/cdac/tests/.
 
 
 CDAC_BASELINE("empty")
@@ -18,6 +27,8 @@ CDAC_TYPE_FIELD(Thread, /*uint32*/, State, cdac_data<Thread>::State)
 CDAC_TYPE_FIELD(Thread, /*uint32*/, PreemptiveGCDisabled, cdac_data<Thread>::PreemptiveGCDisabled)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, RuntimeThreadLocals, cdac_data<Thread>::RuntimeThreadLocals)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, Frame, cdac_data<Thread>::Frame)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, CachedStackBase, cdac_data<Thread>::CachedStackBase)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, CachedStackLimit, cdac_data<Thread>::CachedStackLimit)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, GCHandle, GCHandle, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, GCHandle, LastThrownObject, cdac_data<Thread>::LastThrownObject)
@@ -25,6 +36,7 @@ CDAC_TYPE_FIELD(Thread, pointer, LinkNext, cdac_data<Thread>::Link)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, ThreadLocalDataPtr, cdac_data<Thread>::ThreadLocalDataPtr)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(Thread, /*pointer*/, TEB, cdac_data<Thread>::TEB)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, UEWatsonBucketTrackerBuckets, cdac_data<Thread>::UEWatsonBucketTrackerBuckets)
 #endif
 CDAC_TYPE_END(Thread)
 
@@ -85,6 +97,8 @@ CDAC_TYPE_BEGIN(GCAllocContext)
 CDAC_TYPE_INDETERMINATE(GCAllocContext)
 CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Pointer, offsetof(gc_alloc_context, alloc_ptr))
 CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Limit, offsetof(gc_alloc_context, alloc_limit))
+CDAC_TYPE_FIELD(GCAllocContext, /*int64*/, AllocBytes, offsetof(gc_alloc_context, alloc_bytes))
+CDAC_TYPE_FIELD(GCAllocContext, /*int64*/, AllocBytesLoh, offsetof(gc_alloc_context, alloc_bytes_uoh))
 CDAC_TYPE_END(GCAllocContext)
 
 // Exception
@@ -104,8 +118,11 @@ CDAC_TYPE_END(Exception)
 
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
-CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExInfo, m_hThrowable))
+CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObjectHandle, offsetof(ExInfo, m_hThrowable))
 CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
+#ifndef TARGET_UNIX
+CDAC_TYPE_FIELD(ExceptionWatsonBucketTrackerBuckets, /*pointer*/, ExceptionWatsonBucketTrackerBuckets, cdac_data<ExInfo>::ExceptionWatsonBucketTrackerBuckets)
+#endif // TARGET_UNIX
 CDAC_TYPE_END(ExceptionInfo)
 
 
@@ -144,6 +161,23 @@ CDAC_TYPE_INDETERMINATE(SyncBlock)
 CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, InteropInfo, cdac_data<SyncBlock>::InteropInfo)
 CDAC_TYPE_END(SyncBlock)
 
+#ifdef FEATURE_COMWRAPPERS
+CDAC_TYPE_BEGIN(NativeObjectWrapperObject)
+CDAC_TYPE_INDETERMINATE(NativeObjectWrapperObject)
+CDAC_TYPE_FIELD(NativeObjectWrapperObject, /*pointer*/, ExternalComObject, cdac_data<NativeObjectWrapperObject>::ExternalComObject)
+CDAC_TYPE_END(NativeObjectWrapperObject)
+
+CDAC_TYPE_BEGIN(ManagedObjectWrapperHolderObject)
+CDAC_TYPE_INDETERMINATE(ManagedObjectWrapperHolderObject)
+CDAC_TYPE_FIELD(ManagedObjectWrapperHolderObject, /*pointer*/, WrappedObject, cdac_data<ManagedObjectWrapperHolderObject>::WrappedObject)
+CDAC_TYPE_END(ManagedObjectWrapperHolderObject)
+
+CDAC_TYPE_BEGIN(ManagedObjectWrapperLayout)
+CDAC_TYPE_INDETERMINATE(ManagedObjectWrapperLayout)
+CDAC_TYPE_FIELD(ManagedObjectWrapperLayout, /*int64*/, RefCount, cdac_data<InteropLib::ABI::ManagedObjectWrapperLayout>::RefCount)
+CDAC_TYPE_END(ManagedObjectWrapperLayout)
+#endif // FEATURE_COMWRAPPERS
+
 CDAC_TYPE_BEGIN(SyncTableEntry)
 CDAC_TYPE_SIZE(sizeof(SyncTableEntry))
 CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, SyncBlock, offsetof(SyncTableEntry, m_SyncBlock))
@@ -172,7 +206,10 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, MemberRefToDescMap, cdac_data<Module>::Memb
 CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToDescMap, cdac_data<Module>::MethodDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, TypeDefToMethodTableMap, cdac_data<Module>::TypeDefToMethodTableMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_data<Module>::TypeRefToMethodTableMap)
+#ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToILCodeVersioningStateMap, cdac_data<Module>::MethodDefToILCodeVersioningStateMap)
+#endif // FEATURE_CODE_VERSIONING
+CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicILBlobTable, cdac_data<Module>::DynamicILBlobTable)
 CDAC_TYPE_END(Module)
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)
@@ -191,7 +228,7 @@ CDAC_TYPE_FIELD(Assembly, /*bool*/, IsDynamic, cdac_data<Assembly>::IsDynamic)
 CDAC_TYPE_FIELD(Assembly, /*pointer*/, Module, cdac_data<Assembly>::Module)
 CDAC_TYPE_FIELD(Assembly, /*pointer*/, Error, cdac_data<Assembly>::Error)
 CDAC_TYPE_FIELD(Assembly, /*uint32*/, NotifyFlags, cdac_data<Assembly>::NotifyFlags)
-CDAC_TYPE_FIELD(Assembly, /*uint32*/, Level, cdac_data<Assembly>::Level)
+CDAC_TYPE_FIELD(Assembly, /*bool*/, IsLoaded, cdac_data<Assembly>::IsLoaded)
 CDAC_TYPE_END(Assembly)
 
 CDAC_TYPE_BEGIN(LoaderAllocator)
@@ -200,6 +237,7 @@ CDAC_TYPE_FIELD(LoaderAllocator, /*uint32*/, ReferenceCount, cdac_data<LoaderAll
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, HighFrequencyHeap, cdac_data<LoaderAllocator>::HighFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
 CDAC_TYPE_END(LoaderAllocator)
 
 CDAC_TYPE_BEGIN(PEAssembly)
@@ -246,6 +284,7 @@ CDAC_TYPE_END(AppDomain)
 CDAC_TYPE_BEGIN(SystemDomain)
 CDAC_TYPE_INDETERMINATE(SystemDomain)
 CDAC_TYPE_FIELD(SystemDomain, /*GlobalLoaderAllocator*/, GlobalLoaderAllocator, cdac_data<SystemDomain>::GlobalLoaderAllocator)
+CDAC_TYPE_FIELD(SystemDomain, /*pointer*/, SystemAssembly, cdac_data<SystemDomain>::SystemAssembly)
 CDAC_TYPE_END(SystemDomain)
 
 CDAC_TYPE_BEGIN(ArrayListBase)
@@ -319,6 +358,13 @@ CDAC_TYPE_BEGIN(TypeDesc)
 CDAC_TYPE_INDETERMINATE(TypeDesc)
 CDAC_TYPE_FIELD(TypeDesc, /*uint32*/, TypeAndFlags, cdac_data<TypeDesc>::TypeAndFlags)
 CDAC_TYPE_END(TypeDesc)
+
+CDAC_TYPE_BEGIN(FieldDesc)
+CDAC_TYPE_SIZE(sizeof(FieldDesc))
+CDAC_TYPE_FIELD(FieldDesc, /*uint32*/, DWord1, cdac_data<FieldDesc>::DWord1)
+CDAC_TYPE_FIELD(FieldDesc, /*uint32*/, DWord2, cdac_data<FieldDesc>::DWord2)
+CDAC_TYPE_FIELD(FieldDesc, /*pointer*/, MTOfEnclosingClass, cdac_data<FieldDesc>::MTOfEnclosingClass)
+CDAC_TYPE_END(FieldDesc)
 
 CDAC_TYPE_BEGIN(ParamTypeDesc)
 CDAC_TYPE_INDETERMINATE(ParamTypeDesc)
@@ -431,6 +477,10 @@ CDAC_TYPE_BEGIN(NativeCodeSlot)
 CDAC_TYPE_SIZE(sizeof(MethodDesc::NativeCodeSlot))
 CDAC_TYPE_END(NativeCodeSlot)
 
+CDAC_TYPE_BEGIN(AsyncMethodData)
+CDAC_TYPE_SIZE(sizeof(AsyncMethodData))
+CDAC_TYPE_END(AsyncMethodData)
+
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
 CDAC_TYPE_SIZE(sizeof(InstantiatedMethodDesc))
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*pointer*/, PerInstInfo, cdac_data<InstantiatedMethodDesc>::PerInstInfo)
@@ -476,24 +526,36 @@ CDAC_TYPE_BEGIN(CodePointer)
 CDAC_TYPE_SIZE(sizeof(PCODE))
 CDAC_TYPE_END(CodePointer)
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_TYPE_BEGIN(PortableEntryPoint)
+CDAC_TYPE_INDETERMINATE(PortableEntryPoint)
+CDAC_TYPE_FIELD(PortableEntryPoint, /*pointer*/, MethodDesc, cdac_data<PortableEntryPoint>::MethodDesc)
+CDAC_TYPE_END(PortableEntryPoint)
+#endif
+
 CDAC_TYPE_BEGIN(MethodDescCodeData)
 CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
 CDAC_TYPE_FIELD(MethodDescCodeData, /*CodePointer*/, TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
+#ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(MethodDescCodeData, /*pointer*/, VersioningState, offsetof(MethodDescCodeData,VersioningState))
+#endif // FEATURE_CODE_VERSIONING
 CDAC_TYPE_END(MethodDescCodeData)
 
+#ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_BEGIN(MethodDescVersioningState)
 CDAC_TYPE_INDETERMINATE(MethodDescVersioningState)
 CDAC_TYPE_FIELD(MethodDescVersioningState, /*pointer*/, NativeCodeVersionNode, cdac_data<MethodDescVersioningState>::NativeCodeVersionNode)
 CDAC_TYPE_FIELD(MethodDescVersioningState, /*uint8*/, Flags, cdac_data<MethodDescVersioningState>::Flags)
 CDAC_TYPE_END(MethodDescVersioningState)
+#endif // FEATURE_CODE_VERSIONING
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_BEGIN(PrecodeMachineDescriptor)
 CDAC_TYPE_INDETERMINATE(PrecodeMachineDescriptor)
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InvalidPrecodeType, offsetof(PrecodeMachineDescriptor, InvalidPrecodeType))
 #ifdef HAS_PINVOKE_IMPORT_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, PInvokeImportPrecodeType, offsetof(PrecodeMachineDescriptor, PInvokeImportPrecodeType))
-#endif
+#endif // HAS_PINVOKE_IMPORT_PRECODE
 
 #ifdef HAS_FIXUP_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupPrecodeType, offsetof(PrecodeMachineDescriptor, FixupPrecodeType))
@@ -521,13 +583,17 @@ CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, DynamicHelperPrecodeType, o
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, UMEntryPrecodeType, offsetof(PrecodeMachineDescriptor, UMEntryPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint32*/, StubCodePageSize, offsetof(PrecodeMachineDescriptor, StubCodePageSize))
 CDAC_TYPE_END(PrecodeMachineDescriptor)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 CDAC_TYPE_BEGIN(PlatformMetadata)
 CDAC_TYPE_INDETERMINATE(PlatformMetadata)
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_FIELD(PlatformMetadata, /*PrecodeMachineDescriptor*/, PrecodeMachineDescriptor, offsetof(CDacPlatformMetadata, precode))
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_FIELD(PlatformMetadata, /*uint8*/, CodePointerFlags, offsetof(CDacPlatformMetadata, codePointerFlags))
 CDAC_TYPE_END(PlatformMetadata)
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_TYPE_BEGIN(StubPrecodeData)
 CDAC_TYPE_INDETERMINATE(StubPrecodeData)
 CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, SecretParam, offsetof(StubPrecodeData, SecretParam))
@@ -545,6 +611,7 @@ CDAC_TYPE_BEGIN(FixupPrecodeData)
 CDAC_TYPE_INDETERMINATE(FixupPrecodeData)
 CDAC_TYPE_FIELD(FixupPrecodeData, /*pointer*/, MethodDesc, offsetof(FixupPrecodeData, MethodDesc))
 CDAC_TYPE_END(FixupPrecodeData)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 CDAC_TYPE_BEGIN(ReadyToRunInfo)
 CDAC_TYPE_INDETERMINATE(ReadyToRunInfo)
@@ -632,16 +699,9 @@ CDAC_TYPE_INDETERMINATE(RealCodeHeader)
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, MethodDesc, offsetof(RealCodeHeader, phdrMDesc))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, DebugInfo, offsetof(RealCodeHeader, phdrDebugInfo))
 CDAC_TYPE_FIELD(RealCodeHeader, /*pointer*/, GCInfo, offsetof(RealCodeHeader, phdrJitGCInfo))
-#ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_FIELD(RealCodeHeader, /*uint32*/, NumUnwindInfos, offsetof(RealCodeHeader, nUnwindInfos))
 CDAC_TYPE_FIELD(RealCodeHeader, /* T_RUNTIME_FUNCTION */, UnwindInfos, offsetof(RealCodeHeader, unwindInfos))
-#endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(RealCodeHeader)
-
-CDAC_TYPE_BEGIN(PatchpointInfo)
-CDAC_TYPE_SIZE(sizeof(PatchpointInfo))
-CDAC_TYPE_FIELD(PatchpointInfo, /*uint32*/, LocalCount, cdac_data<PatchpointInfo>::LocalCount)
-CDAC_TYPE_END(PatchpointInfo)
 
 CDAC_TYPE_BEGIN(CodeHeapListNode)
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, Next, offsetof(HeapList, hpNext))
@@ -651,6 +711,7 @@ CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, MapBase, offsetof(HeapList, mapBa
 CDAC_TYPE_FIELD(CodeHeapListNode, /*pointer*/, HeaderMap, offsetof(HeapList, pHdrMap))
 CDAC_TYPE_END(CodeHeapListNode)
 
+#ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_BEGIN(ILCodeVersioningState)
 CDAC_TYPE_INDETERMINATE(ILCodeVersioningState)
 CDAC_TYPE_FIELD(ILCodeVersioningState, /*pointer*/, FirstVersionNode, cdac_data<ILCodeVersioningState>::FirstVersionNode)
@@ -677,10 +738,13 @@ CDAC_TYPE_INDETERMINATE(ILCodeVersionNode)
 CDAC_TYPE_FIELD(ILCodeVersionNode, /*nuint*/, VersionId, cdac_data<ILCodeVersionNode>::VersionId)
 CDAC_TYPE_FIELD(ILCodeVersionNode, /*pointer*/, Next, cdac_data<ILCodeVersionNode>::Next)
 CDAC_TYPE_FIELD(ILCodeVersionNode, /*uint32*/, RejitState, cdac_data<ILCodeVersionNode>::RejitState)
+CDAC_TYPE_FIELD(ILCodeVersionNode, /*pointer*/, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
 CDAC_TYPE_END(ILCodeVersionNode)
+#endif // FEATURE_CODE_VERSIONING
 
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, /*uint64*/, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
+CDAC_TYPE_FIELD(ProfControlBlock, /*bool*/, RejitOnAttachEnabled, offsetof(ProfControlBlock, fRejitOnAttachEnabled))
 CDAC_TYPE_END(ProfControlBlock)
 
 #ifdef HAVE_GCCOVER
@@ -810,15 +874,49 @@ CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R9, offsetof(HijackArgs, R9))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R10, offsetof(HijackArgs, R10))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R11, offsetof(HijackArgs, R11))
 
+#elif defined(TARGET_RISCV64)
+
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Fp, offsetof(HijackArgs, Fp))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Ra, offsetof(HijackArgs, Ra))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S1, offsetof(HijackArgs, S1))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S2, offsetof(HijackArgs, S2))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S3, offsetof(HijackArgs, S3))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S4, offsetof(HijackArgs, S4))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S5, offsetof(HijackArgs, S5))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S6, offsetof(HijackArgs, S6))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S7, offsetof(HijackArgs, S7))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S8, offsetof(HijackArgs, S8))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S9, offsetof(HijackArgs, S9))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S10, offsetof(HijackArgs, S10))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S11, offsetof(HijackArgs, S11))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Gp, offsetof(HijackArgs, Gp))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Tp, offsetof(HijackArgs, Tp))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, A0, offsetof(HijackArgs, A0))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, A1, offsetof(HijackArgs, A1))
+
+#elif defined(TARGET_LOONGARCH64)
+
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Fp, offsetof(HijackArgs, Fp))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Ra, offsetof(HijackArgs, Ra))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S0, offsetof(HijackArgs, S0))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S1, offsetof(HijackArgs, S1))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S2, offsetof(HijackArgs, S2))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S3, offsetof(HijackArgs, S3))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S4, offsetof(HijackArgs, S4))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S5, offsetof(HijackArgs, S5))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S6, offsetof(HijackArgs, S6))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S7, offsetof(HijackArgs, S7))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S8, offsetof(HijackArgs, S8))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, A0, offsetof(HijackArgs, A0))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, A1, offsetof(HijackArgs, A1))
+
 #endif // Platform switch
 CDAC_TYPE_END(HijackArgs)
 #endif // FEATURE_HIJACK
 
 CDAC_TYPE_BEGIN(FaultingExceptionFrame)
 CDAC_TYPE_SIZE(sizeof(FaultingExceptionFrame))
-#ifdef FEATURE_EH_FUNCLETS
 CDAC_TYPE_FIELD(FaultingExceptionFrame, /*T_CONTEXT*/, TargetContext, cdac_data<FaultingExceptionFrame>::TargetContext)
-#endif // FEATURE_EH_FUNCLETS
 CDAC_TYPE_END(FaultingExceptionFrame)
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
@@ -879,6 +977,38 @@ CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X28, offsetof(CalleeSavedRegist
 CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Fp, offsetof(CalleeSavedRegisters, x29))
 CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Lr, offsetof(CalleeSavedRegisters, x30))
 
+#elif defined(TARGET_RISCV64)
+
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Fp, offsetof(CalleeSavedRegisters, fp))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Ra, offsetof(CalleeSavedRegisters, ra))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S1, offsetof(CalleeSavedRegisters, s1))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S2, offsetof(CalleeSavedRegisters, s2))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S3, offsetof(CalleeSavedRegisters, s3))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S4, offsetof(CalleeSavedRegisters, s4))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S5, offsetof(CalleeSavedRegisters, s5))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S6, offsetof(CalleeSavedRegisters, s6))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S7, offsetof(CalleeSavedRegisters, s7))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S8, offsetof(CalleeSavedRegisters, s8))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S9, offsetof(CalleeSavedRegisters, s9))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S10, offsetof(CalleeSavedRegisters, s10))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S11, offsetof(CalleeSavedRegisters, s11))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Tp, offsetof(CalleeSavedRegisters, tp))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Gp, offsetof(CalleeSavedRegisters, gp))
+
+#elif defined(TARGET_LOONGARCH64)
+
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Fp, offsetof(CalleeSavedRegisters, fp))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Ra, offsetof(CalleeSavedRegisters, ra))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S0, offsetof(CalleeSavedRegisters, s0))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S1, offsetof(CalleeSavedRegisters, s1))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S2, offsetof(CalleeSavedRegisters, s2))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S3, offsetof(CalleeSavedRegisters, s3))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S4, offsetof(CalleeSavedRegisters, s4))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S5, offsetof(CalleeSavedRegisters, s5))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S6, offsetof(CalleeSavedRegisters, s6))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S7, offsetof(CalleeSavedRegisters, s7))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S8, offsetof(CalleeSavedRegisters, s8))
+
 #endif // Platform switch
 CDAC_TYPE_END(CalleeSavedRegisters)
 
@@ -898,14 +1028,58 @@ CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryValue, cdac_data<
 CDAC_TYPE_FIELD(InstMethodHashTable, /*pointer*/, VolatileEntryNextEntry, cdac_data<InstMethodHashTable>::VolatileEntryNextEntry)
 CDAC_TYPE_END(InstMethodHashTable)
 
+CDAC_TYPE_BEGIN(CoreLibBinder)
+CDAC_TYPE_INDETERMINATE(CoreLibBinder)
+CDAC_TYPE_FIELD(CoreLibBinder, /*pointer*/, Classes, cdac_data<CoreLibBinder>::Classes)
+CDAC_TYPE_END(CoreLibBinder)
+
+// this is an SHash type
+CDAC_TYPE_BEGIN(DynamicILBlobTable)
+CDAC_TYPE_SIZE(cdac_data<DynamicILBlobTable>::EntrySize)
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, Table, cdac_data<DynamicILBlobTable>::Table)
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, TableSize, cdac_data<DynamicILBlobTable>::TableSize)
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, cdac_data<DynamicILBlobTable>::EntryMethodToken)
+CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, EntryIL, cdac_data<DynamicILBlobTable>::EntryIL)
+CDAC_TYPE_END(DynamicILBlobTable)
+
+#ifdef FEATURE_COMINTEROP
+CDAC_TYPE_BEGIN(ComCallWrapper)
+CDAC_TYPE_INDETERMINATE(ComCallWrapper)
+CDAC_TYPE_FIELD(ComCallWrapper, /*pointer*/, SimpleWrapper, cdac_data<ComCallWrapper>::SimpleWrapper)
+CDAC_TYPE_END(ComCallWrapper)
+
+CDAC_TYPE_BEGIN(SimpleComCallWrapper)
+CDAC_TYPE_INDETERMINATE(SimpleComCallWrapper)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*int64*/, RefCount, cdac_data<SimpleComCallWrapper>::RefCount)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*uint32*/, Flags, cdac_data<SimpleComCallWrapper>::Flags)
+CDAC_TYPE_END(SimpleComCallWrapper)
+#endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_COMWRAPPERS
+CDAC_TYPE_BEGIN(ComWrappersVtablePtrs)
+CDAC_TYPE_SIZE(g_numKnownQueryInterfaceImplementations * sizeof(PCODE))
+CDAC_TYPE_END(ComWrappersVtablePtrs)
+#endif
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
 
-#if defined(TARGET_UNIX)
-CDAC_GLOBAL_STRING(OperatingSystem, unix)
+#if defined(TARGET_BROWSER)
+#ifdef Browser
+#error Handle 'Browser' define
+#endif // Browser
+CDAC_GLOBAL_STRING(OperatingSystem, Browser)
+#elif defined(TARGET_UNIX)
+#ifdef Unix
+#error Handle 'Unix' define
+#endif // Unix
+CDAC_GLOBAL_STRING(OperatingSystem, Unix)
 #elif defined(TARGET_WINDOWS)
-CDAC_GLOBAL_STRING(OperatingSystem, windows)
+#ifdef Windows
+#error Handle 'Windows' define
+#endif // Windows
+CDAC_GLOBAL_STRING(OperatingSystem, Windows)
 #else
 #error TARGET_{OS} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
 #endif
@@ -922,6 +1096,8 @@ CDAC_GLOBAL_STRING(Architecture, arm64)
 CDAC_GLOBAL_STRING(Architecture, loongarch64)
 #elif defined(TARGET_RISCV64)
 CDAC_GLOBAL_STRING(Architecture, riscv64)
+#elif defined(TARGET_WASM)
+CDAC_GLOBAL_STRING(Architecture, wasm)
 #else
 #error TARGET_{ARCH} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
 #endif
@@ -949,6 +1125,21 @@ CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
 #endif
+#if FEATURE_COMWRAPPERS
+CDAC_GLOBAL(FeatureComWrappers, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureComWrappers, uint8, 0)
+#endif
+#if FEATURE_OBJCMARSHAL
+CDAC_GLOBAL(FeatureObjCMarshal, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureObjCMarshal, uint8, 0)
+#endif
+#if FEATURE_JAVAMARSHAL
+CDAC_GLOBAL(FeatureJavaMarshal, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureJavaMarshal, uint8, 0)
+#endif
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 1)
 #else
@@ -960,6 +1151,11 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
 #else
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 1)
+#else
+CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 0)
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)
@@ -969,10 +1165,14 @@ CDAC_GLOBAL(ObjectHeaderSize, uint64, OBJHEADER_SIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, uint16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
 CDAC_GLOBAL(StubCodeBlockLast, uint8, STUB_CODE_BLOCK_LAST)
 CDAC_GLOBAL(DefaultADID, uint32, DefaultADID)
+#ifndef TARGET_UNIX
+CDAC_GLOBAL(SizeOfGenericModeBlock, uint32, sizeof(GenericModeBlock))
+#endif
 CDAC_GLOBAL(StaticsPointerMask, uintptr_t, DynamicStaticsInfo::STATICSPOINTERMASK)
 CDAC_GLOBAL(PtrArrayOffsetToDataArray, uintptr_t, offsetof(PtrArray, m_Array))
 CDAC_GLOBAL(NumberOfTlsOffsetsNotUsedInNoncollectibleArray, uint8, NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)
 CDAC_GLOBAL(MaxClrNotificationArgs, uint32, MAX_CLR_NOTIFICATION_ARGS)
+CDAC_GLOBAL(FieldOffsetBigRVA, uint32, FIELD_OFFSET_BIG_RVA)
 CDAC_GLOBAL_POINTER(ClrNotificationArguments, &::g_clrNotificationArguments)
 CDAC_GLOBAL_POINTER(ArrayBoundsZero, cdac_data<ArrayBase>::ArrayBoundsZero)
 CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
@@ -986,6 +1186,13 @@ CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(DacNotificationFlags, &::g_dacNotificationFlags)
 CDAC_GLOBAL_POINTER(OffsetOfCurrentThreadInfo, &::g_offsetOfCurrentThreadInfo)
 CDAC_GLOBAL_POINTER(ThinlockThreadIdDispenser, &::g_pThinLockThreadIdDispenser)
+#ifdef FEATURE_COMWRAPPERS
+CDAC_GLOBAL(DispatchThisPtrMask, uintptr_t, InteropLib::ABI::DispatchThisPtrMask)
+CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, InteropLib::ABI::g_knownQueryInterfaceImplementations)
+#endif // FEATURE_COMWRAPPERS
+CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
+CDAC_GLOBAL_POINTER(GlobalAllocContext, &::g_global_alloc_context)
+CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS
 CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
 #endif // TARGET_WINDOWS
@@ -1003,11 +1210,45 @@ CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
-CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
+#if FEATURE_COMINTEROP
+CDAC_GLOBAL(ComRefcountMask, int64, SimpleComCallWrapper::COM_REFCOUNT_MASK)
+#endif // FEATURE_COMINTEROP
 
+// It is important for the subdescriptor pointers to be the last pointers in the global structure.
+// EnumMemDataDescriptors in enummem.cpp hardcodes the number of subdescriptors and utilizes
+// this order to find and enumerate the subdescriptors.
+//
+// When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
+
+#if FEATURE_COMINTEROP
+CDAC_GLOBAL_CONTRACT(BuiltInCOM, 1)
+#endif // FEATURE_COMINTEROP
+CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
+#ifdef FEATURE_COMWRAPPERS
+CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
+#endif // FEATURE_COMWRAPPERS
+CDAC_GLOBAL_CONTRACT(DacStreams, 1)
+CDAC_GLOBAL_CONTRACT(DebugInfo, 2)
+CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
+CDAC_GLOBAL_CONTRACT(Exception, 1)
+CDAC_GLOBAL_CONTRACT(ExecutionManager, 2)
+CDAC_GLOBAL_CONTRACT(GCInfo, 1)
+CDAC_GLOBAL_CONTRACT(Loader, 1)
+CDAC_GLOBAL_CONTRACT(Notifications, 1)
+CDAC_GLOBAL_CONTRACT(Object, 1)
+CDAC_GLOBAL_CONTRACT(PlatformMetadata, 1)
+CDAC_GLOBAL_CONTRACT(PrecodeStubs, 3)
+CDAC_GLOBAL_CONTRACT(ReJIT, 1)
+CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
+CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
+CDAC_GLOBAL_CONTRACT(SHash, 1)
+CDAC_GLOBAL_CONTRACT(SignatureDecoder, 1)
+CDAC_GLOBAL_CONTRACT(StackWalk, 1)
+CDAC_GLOBAL_CONTRACT(StressLog, 2)
+CDAC_GLOBAL_CONTRACT(Thread, 1)
 
 CDAC_GLOBALS_END()

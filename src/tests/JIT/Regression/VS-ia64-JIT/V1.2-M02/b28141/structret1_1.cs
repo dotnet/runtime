@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b28141;
+
 using System;
 using Xunit;
 
@@ -92,6 +95,7 @@ public class Test_structret1_1
         return (s1);
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

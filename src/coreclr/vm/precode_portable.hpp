@@ -8,24 +8,32 @@
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 #error Requires FEATURE_PORTABLE_ENTRYPOINTS to be set
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#include "cdacdata.h"
 
 class PortableEntryPoint final
 {
 public: // static
     static bool HasNativeEntryPoint(PCODE addr);
+    static bool HasInterpreterData(PCODE addr);
 
     static void* GetActualCode(PCODE addr);
+    static void SetActualCode(PCODE addr, PCODE actualCode);
     static MethodDesc* GetMethodDesc(PCODE addr);
     static void* GetInterpreterData(PCODE addr);
     static void SetInterpreterData(PCODE addr, PCODE interpreterData);
-
-private: // static
-    static PortableEntryPoint* ToPortableEntryPoint(PCODE addr);
 
 private:
     Volatile<void*> _pActualCode;
     MethodDesc* _pMD;
     void* _pInterpreterData;
+
+    enum PortableEntryPointFlag
+    {
+        kNone = 0,
+        kUnmanagedCallersOnly_Has = 0x1,
+        kUnmanagedCallersOnly_Checked = 0x2,
+    };
+    Volatile<int32_t> _flags;
 
     // We keep the canary value last to ensure a stable ABI across build flavors
     INDEBUG(size_t _canary);
@@ -34,9 +42,17 @@ private:
     bool IsValid() const;
 #endif // _DEBUG
 
+public: // static
+    static PortableEntryPoint* ToPortableEntryPoint(PCODE addr);
+
 public:
     void Init(MethodDesc* pMD);
     void Init(void* nativeEntryPoint);
+
+    // Check if the entry point represents a method with the UnmanagedCallersOnly attribute.
+    // If it does, update the entry point to point to the UnmanagedCallersOnly thunk if not
+    // already done.
+    bool EnsureCodeForUnmanagedCallersOnly();
 
     // Query methods for entry point state.
     bool HasInterpreterCode() const
@@ -61,7 +77,14 @@ public:
         // pActualCode is a managed calling convention -> interpreter executor call stub in this case.
         return _pInterpreterData != nullptr && _pActualCode != nullptr;
     }
+    friend struct ::cdac_data<PortableEntryPoint>;
 };
+template<>
+struct cdac_data<PortableEntryPoint>
+{
+    static constexpr size_t MethodDesc = offsetof(PortableEntryPoint, _pMD);
+};
+
 
 extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
 
@@ -77,35 +100,7 @@ enum PrecodeType
 
 class StubPrecode
 {
-public: // static
-    static const BYTE Type = PRECODE_STUB;
-
-public:
-    void Init(StubPrecode* pPrecodeRX, TADDR secretParam, LoaderAllocator *pLoaderAllocator = NULL, TADDR type = StubPrecode::Type, TADDR target = 0);
-
-    BYTE GetType();
-
-    void SetTargetUnconditional(TADDR target);
-
-    TADDR GetSecretParam() const;
-
-    MethodDesc* GetMethodDesc();
 };
-
-typedef DPTR(StubPrecode) PTR_StubPrecode;
-
-class FixupPrecode final
-{
-public: // static
-    static const int FixupCodeOffset = 0;
-
-public:
-    PCODE* GetTargetSlot();
-
-    MethodDesc* GetMethodDesc();
-};
-
-class UMEntryThunk;
 
 class Precode
 {
@@ -113,32 +108,16 @@ public: // static
     static Precode* Allocate(PrecodeType t, MethodDesc* pMD,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
-    static Precode* GetPrecodeFromEntryPoint(PCODE addr, BOOL fSpeculative = FALSE);
-
 public:
     PrecodeType GetType();
-
-    UMEntryThunk* AsUMEntryThunk();
-
-    StubPrecode* AsStubPrecode();
 
     MethodDesc* GetMethodDesc(BOOL fSpeculative = FALSE);
 
     PCODE GetEntryPoint();
 
-    BOOL IsPointingToNativeCode(PCODE pNativeCode);
-
-    void Reset();
-
-    PCODE GetTarget();
-
     void ResetTargetInterlocked();
 
     BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE);
-
-    BOOL IsPointingToPrestub();
-
-    BOOL IsPointingToPrestub(PCODE target);
 };
 
 void FlushCacheForDynamicMappedStub(void* code, SIZE_T size);

@@ -17,6 +17,7 @@
 #if !defined(DACCESS_COMPILE)
 
 #include "frameinfo.h"
+#include "executioncontrol.h"
 
 /* ------------------------------------------------------------------------- *
  * Forward declarations
@@ -600,6 +601,13 @@ public:
 };
 
 typedef DPTR(DebuggerControllerPatch) PTR_DebuggerControllerPatch;
+
+// Determines whether a breakpoint patch should be bound to a given MethodDesc.
+// When pMethodDescFilter is NULL, the default filtering policy is applied which
+// excludes async thunk methods (they should not have user breakpoints bound to them).
+// When pMethodDescFilter is non-NULL, the patch is explicitly targeting that specific
+// MethodDesc and no default filtering is applied.
+bool ShouldBindPatchToMethodDesc(MethodDesc* pMD, MethodDesc* pMethodDescFilter);
 
 /* class DebuggerPatchTable:  This is the table that contains
  *  information about the patches (breakpoints) maintained by the
@@ -1223,7 +1231,7 @@ private:
     static void ApplyTraceFlag(Thread *thread);
     static void UnapplyTraceFlag(Thread *thread);
 
-    virtual void DebuggerDetachClean();
+    virtual bool DebuggerDetachClean();
 
   public:
     static const BYTE *GetILPrestubDestination(const BYTE *prestub);
@@ -1525,7 +1533,7 @@ class DebuggerPatchSkip : public DebuggerController
 
     void DecodeInstruction(CORDB_ADDRESS_TYPE *code);
 
-    void DebuggerDetachClean();
+    bool DebuggerDetachClean();
 
     CORDB_ADDRESS_TYPE      *m_address;
     int                      m_iOrigDisp;        // the original displacement of a relative call or jump
@@ -1767,11 +1775,9 @@ protected:
     // This is the only frame that the ranges are valid in.
     FramePointer            m_fp;
 
-#if defined(FEATURE_EH_FUNCLETS)
     // This frame pointer is used for funclet stepping.
     // See IsRangeAppropriate() for more information.
     FramePointer            m_fpParentMethod;
-#endif // FEATURE_EH_FUNCLETS
 
     //m_fpException is 0 if we haven't stepped into an exception,
     //  and is ignored.  If we get a TriggerUnwind while mid-step, we note

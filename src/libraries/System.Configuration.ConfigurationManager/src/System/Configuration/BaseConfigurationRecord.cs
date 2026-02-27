@@ -19,11 +19,7 @@ namespace System.Configuration
     [DebuggerDisplay("ConfigPath = {ConfigPath}")]
     internal abstract class BaseConfigurationRecord : IInternalConfigRecord
     {
-#if NET
         private static readonly SearchValues<char> s_invalidSubPathChars = SearchValues.Create(InvalidSubPathCharactersString);
-#else
-        private static ReadOnlySpan<char> s_invalidSubPathChars => InvalidSubPathCharactersString.AsSpan();
-#endif
 
         protected const string NewLine = "\r\n";
 
@@ -2466,7 +2462,7 @@ namespace System.Configuration
                     if (!factoryRecord.HasErrors)
                     {
                         // We have a valid factoryRecord for a section
-                        if (inLocation && (factoryRecord.AllowLocation == false))
+                        if (inLocation && !factoryRecord.AllowLocation)
                         {
                             xmlUtil.SchemaErrors.AddError(
                                 new ConfigurationErrorsException(
@@ -3082,7 +3078,7 @@ namespace System.Configuration
                 throw new ConfigurationErrorsException(SR.Config_location_path_invalid_first_character, errorInfo);
 
             // do not allow problematic starting characters
-            if (InvalidFirstSubPathCharacters.IndexOf(subPath[0]) != -1)
+            if (InvalidFirstSubPathCharacters.Contains(subPath[0]))
                 throw new ConfigurationErrorsException(SR.Config_location_path_invalid_first_character, errorInfo);
 
             // do not allow whitespace at end of subPath, as the OS
@@ -3092,11 +3088,11 @@ namespace System.Configuration
                 throw new ConfigurationErrorsException(SR.Config_location_path_invalid_last_character, errorInfo);
 
             // the file system ignores trailing '.', '\', or '/', so do not allow it in a location subpath specification
-            if (InvalidLastSubPathCharacters.IndexOf(subPath[subPath.Length - 1]) != -1)
+            if (InvalidLastSubPathCharacters.Contains(subPath[subPath.Length - 1]))
                 throw new ConfigurationErrorsException(SR.Config_location_path_invalid_last_character, errorInfo);
 
             // combination of URI reserved characters and OS invalid filename characters, minus / (allowed reserved character)
-            if (subPath.AsSpan().IndexOfAny(s_invalidSubPathChars) >= 0)
+            if (subPath.AsSpan().ContainsAny(s_invalidSubPathChars))
                 throw new ConfigurationErrorsException(SR.Config_location_path_invalid_character, errorInfo);
 
             return subPath;
@@ -3205,7 +3201,7 @@ namespace System.Configuration
             if (string.IsNullOrEmpty(configSource) || Path.IsPathRooted(configSource))
                 throw new ConfigurationErrorsException(SR.Config_source_invalid_format, errorInfo);
 
-            if (configSource.IndexOf('\\') != -1 || configSource.IndexOf('/') != -1) // string.Contains(char) is .NetCore2.1+ specific
+            if (configSource.AsSpan().IndexOfAny('\\', '/') >= 0)
             {
                 string newConfigSource = configSource.Replace('\\', '/');
                 if (!ConfigPathUtility.IsValid(newConfigSource))

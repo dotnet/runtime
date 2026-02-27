@@ -78,9 +78,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
+        internal static void ThrowArgument_TypeContainsReferences(Type targetType)
         {
-            throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
+            throw new ArgumentException(SR.Format(SR.Argument_TypeContainsReferences, targetType));
         }
 
         [DoesNotReturn]
@@ -333,18 +333,6 @@ namespace System
         internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument)
         {
             throw GetArgumentException(resource, argument);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentException_HandleNotSync(string paramName)
-        {
-            throw new ArgumentException(SR.Arg_HandleNotSync, paramName);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentException_HandleNotAsync(string paramName)
-        {
-            throw new ArgumentException(SR.Arg_HandleNotAsync, paramName);
         }
 
         [DoesNotReturn]

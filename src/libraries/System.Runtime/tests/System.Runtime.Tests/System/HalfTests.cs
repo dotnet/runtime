@@ -555,6 +555,7 @@ namespace System.Tests
 
         [MemberData(nameof(ExplicitConversion_FromSingle_TestData))]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103347", TestPlatforms.Browser)]
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)f;
@@ -893,6 +894,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, float expectedFloat)
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
@@ -1692,17 +1694,17 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Hypot_TestData))]
-        public static void Hypot(float x, float y, float expectedResult, float allowedVariance)
+        public static void Hypot(Half x, Half y, Half expectedResult, Half allowedVariance)
         {
-            AssertExtensions.Equal(expectedResult, float.Hypot(-x, -y), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(-x, +y), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(+x, -y), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(+x, +y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(-x, -y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(-x, +y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(+x, -y), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(+x, +y), allowedVariance);
 
-            AssertExtensions.Equal(expectedResult, float.Hypot(-y, -x), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(-y, +x), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(+y, -x), allowedVariance);
-            AssertExtensions.Equal(expectedResult, float.Hypot(+y, +x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(-y, -x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(-y, +x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(+y, -x), allowedVariance);
+            AssertExtensions.Equal(expectedResult, Half.Hypot(+y, +x), allowedVariance);
         }
 
         public static IEnumerable<object[]> RootN_TestData()
@@ -2241,6 +2243,31 @@ namespace System.Tests
         {
             AssertExtensions.Equal(-expectedResult, Half.RadiansToDegrees(-value), allowedVariance);
             AssertExtensions.Equal(+expectedResult, Half.RadiansToDegrees(+value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(float.PositiveInfinity, int.MaxValue)]
+        [InlineData(float.NaN, int.MaxValue)]
+        [InlineData(0.0f, int.MinValue)]
+        [InlineData(1.0f, 0)]
+        [InlineData(2.0f, 1)]
+        [InlineData(4.0f, 2)]
+        [InlineData(0.5f, -1)]
+        public static void ILogB(float value, int expectedResult)
+        {
+            Assert.Equal(expectedResult, Half.ILogB((Half)value));
+        }
+
+        [Fact]
+        public static void ILogB_Subnormal()
+        {
+            // Half.Epsilon is the smallest positive subnormal value
+            // Its ILogB should be -24 (floor(log2(5.9604645E-08)))
+            Assert.Equal(-24, Half.ILogB(Half.Epsilon));
+
+            // Test another subnormal value: 0x0200 (half of max subnormal)
+            Half subnormal = BitConverter.UInt16BitsToHalf(0x0200);
+            Assert.Equal(-15, Half.ILogB(subnormal));
         }
     }
 }

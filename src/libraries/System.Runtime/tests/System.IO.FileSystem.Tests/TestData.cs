@@ -91,4 +91,74 @@ internal static class TestData
             return data;
         }
     }
+
+    /// <summary>
+    /// Filenames with problematic but valid characters that work on all platforms.
+    /// These test scenarios from: https://www.dwheeler.com/essays/fixing-unix-linux-filenames.html
+    /// </summary>
+    public static TheoryData<string> ValidFileNames
+    {
+        get
+        {
+            TheoryData<string> data = new TheoryData<string>
+            {
+                // Leading spaces
+                " leading",
+                "  leading",
+                "   leading",
+                // Leading dots
+                ".leading",
+                "..leading",
+                "...leading",
+                // Dash-prefixed names
+                "-",
+                "--",
+                "-filename",
+                "--filename",
+                // Embedded spaces and periods
+                "name with spaces",
+                "name  with  multiple  spaces",
+                "name.with.periods",
+                "name with spaces.txt"
+            };
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // On Unix, control characters are also valid in filenames
+                data.Add("file\tname");      // tab
+                data.Add("file\rname");      // carriage return
+                data.Add("file\vname");      // vertical tab
+                data.Add("file\fname");      // form feed
+                // Trailing spaces and periods are also valid on Unix (but problematic on Windows)
+                data.Add("trailing ");
+                data.Add("trailing  ");
+                data.Add("trailing.");
+                data.Add("trailing..");
+                data.Add("trailing .");
+                data.Add("trailing. ");
+            }
+
+            return data;
+        }
+    }
+
+    /// <summary>
+    /// Filenames with trailing spaces or periods. On Windows, these require \\?\ prefix for creation
+    /// but can be enumerated. Direct string-based APIs will have the trailing characters stripped.
+    /// </summary>
+    public static TheoryData<string> WindowsTrailingProblematicFileNames
+    {
+        get
+        {
+            return new TheoryData<string>
+            {
+                "trailing ",
+                "trailing  ",
+                "trailing.",
+                "trailing..",
+                "trailing .",
+                "trailing. "
+            };
+        }
+    }
 }

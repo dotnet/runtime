@@ -182,6 +182,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?<=(abc)+?)", "123abc", RegexOptions.None, 0, 6, true, "");
                 yield return (@"(?<=(abc)+?)", "123ab", RegexOptions.None, 0, 5, false, "");
                 yield return (@"(?<=(abc)+?123)", "abcabc123", RegexOptions.None, 0, 9, true, "");
+                yield return (@"(?<=(abc)+?123)a", "abcabc123a", RegexOptions.None, 0, 10, true, "a");
+                yield return (@"(?<=(abc)+?)a", "abca", RegexOptions.None, 0, 4, true, "a");
                 yield return (@"a+(?!c)(?<=y)", "yaab", RegexOptions.None, 0, 4, false, "");
                 yield return (@"(?<=a{2,4})b+", "aaabbb", RegexOptions.None, 0, 6, true, "bbb");
                 yield return (@"(?<=a+)b+?", "aaabbb", RegexOptions.None, 0, 6, true, "b");
@@ -329,11 +331,67 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(b|a|aa)((?:aa)+?)+?$", "aaaaaaaa", RegexOptions.None, 0, 8, true, "aaaaaaaa");
             yield return (@"(|a|aa)(((?:aa)+?)+?|aaaaab)\w$", "aaaaaabc", RegexOptions.None, 0, 8, true, "aaaaaabc");
 
+            // Lazy loops with empty matches
+            if (!PlatformDetection.IsNetFramework)
+            {
+                // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/111051
+                yield return (@"(.)+()+?b", "xyzb", RegexOptions.None, 0, 4, true, "xyzb");
+                yield return (@"^(.)+()+?b", "xyzb", RegexOptions.None, 0, 4, true, "xyzb");
+
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/58786
+                    yield return (@"(?<!a*(?:a?)+?)", @"x", RegexOptions.None, 0, 1, false, "");
+
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/114626
+                    yield return (@"(?>(-*)+?-*)$", "abc", RegexOptions.None, 0, 3, true, "");
+
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/63385
+                    yield return (@"(^+?)?()", "1", RegexOptions.None, 0, 1, true, "");
+                }
+            }
+
             // Nested loops
             yield return (@"(abcd*)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*?)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*?)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+
+            // Lazy loop inside loop body where the Atomic wrapper must not suppress within-body backtracking.
+            // Each variation tests a different kind of backtracking construct inside the loop body.
+            // Notonelazy (.*?): lazy . expands past first ) to find the correct closing delimiter.
+            yield return (@"\w+(\(.*?\))?,", @"Foo(one()?,two,three),", RegexOptions.None, 0, 22, true, @"Foo(one()?,two,three),");
+            yield return (@"\w+(<.*?>)?!", "foo<a>b>!", RegexOptions.None, 0, 9, true, "foo<a>b>!");
+            yield return (@"(\(.*?\))+;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            yield return (@"(a.*?b)+c", "axbbc", RegexOptions.None, 0, 5, true, "axbbc");
+            // Notoneloop (.+): greedy . overshoots past the right ), must back up to find an earlier one.
+            yield return (@"\w+(\(.+\))?,", "Foo(a),(b)x,", RegexOptions.None, 0, 12, true, "Foo(a),");
+            // Setlazy ([^,]+?): lazy char class expands past first ) to find the right one.
+            yield return (@"\w+(\([^,]+?\))?,", "Foo(one()three),", RegexOptions.None, 0, 16, true, "Foo(one()three),");
+            // Setloop ([^;]+): greedy char class overshoots past the right ), must back up to earlier one.
+            yield return (@"\w+(\([^;]+\))?,", "Foo(a),b)x,", RegexOptions.None, 0, 11, true, "Foo(a),");
+            // Onelazy ()+?): lazy single-char loop must expand to consume more )'s for , to follow.
+            yield return (@"\w+(\(\)+?\))?,", "Foo())),", RegexOptions.None, 0, 8, true, "Foo())),");
+            // Oneloop ()+): greedy single-char loop of the delimiter char itself.
+            yield return (@"\w+(\(\)+\))?,", "Foo())),", RegexOptions.None, 0, 8, true, "Foo())),");
+            // Alternate: short branch matches + \) succeeds, but , fails. Longer branch includes \) in it.
+            yield return (@"\w+(\((?:a|a\)b)\))?,", "Foo(a)b),", RegexOptions.None, 0, 9, true, "Foo(a)b),");
+            // Loop (general greedy multi-char body): 2 iters of \), overshoots, backing up to 1 iter works.
+            yield return (@"\w+(\((?:\),){1,3}\))?,", "Foo(),),)),", RegexOptions.None, 0, 11, true, "Foo(),),");
+            // Lazyloop (general lazy multi-char body): 1 iter of \)a, outer \) OK but , fails. Expand to 2.
+            yield return (@"\w+(\((?:\)a){1,3}?\))?,", "Foo()a)a),", RegexOptions.None, 0, 10, true, "Foo()a)a),");
+            // Same patterns with lazy outer loops (??, +?, *?) to ensure lazy expansion is not broken.
+            yield return (@"\w+(\(.*?\))??,", @"Foo(one()?,two,three),", RegexOptions.None, 0, 22, true, @"Foo(one()?,two,three),");
+            yield return (@"(\(.*?\))+?;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            yield return (@"(\(.*?\))*;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            yield return (@"(\(.*?\))*?;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            // Non-backtracking body: optimization correctly applies. These verify bodies without backtracking
+            // inside the outer loop are still correctly matched after the outer loop is made atomic.
+            yield return (@"\w+(\(abc\))?,", "Foo(abc),", RegexOptions.None, 0, 9, true, "Foo(abc),");
+            yield return (@"\w+(\(abc\))??,", "Foo(abc),", RegexOptions.None, 0, 9, true, "Foo(abc),");
+            yield return (@"\w+(\(\w{3}\))?,", "Foo(abc),", RegexOptions.None, 0, 9, true, "Foo(abc),");
+            yield return (@"\w+(\(\w+!\))?,", "Foo(abc!),", RegexOptions.None, 0, 10, true, "Foo(abc!),");
+
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you m you", RegexOptions.None, 0, 9, true, "m");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
@@ -384,6 +442,11 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(\d{2,3}?)*", "123456", RegexOptions.None, 0, 4, true, "1234");
             yield return (@"(\d{2,3}?)+?", "1234", RegexOptions.None, 0, 4, true, "12");
             yield return (@"(\d{2,3}?)*?", "123456", RegexOptions.None, 0, 4, true, "");
+
+            yield return (@"^.*$", "abcd\nefg", RegexOptions.Singleline, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:.|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:.|\r|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
+            yield return (@"^(?:\r|.|\n)*$", "abcd\nefg", RegexOptions.None, 0, 8, true, "abcd\nefg");
 
             foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline })
             {
@@ -573,6 +636,9 @@ namespace System.Text.RegularExpressions.Tests
 
                 // Actual - "abc(?(1)111|222)"
                 yield return ("(abbc)(?(1)111|222)", "abbc222", RegexOptions.None, 0, 7, false, string.Empty);
+
+                yield return (@"(?(?=(a)+?b)ab|no)", "ab", RegexOptions.None, 0, 2, true, "ab");
+                yield return (@"(?(?=(a)+?b)ab|no)", "c", RegexOptions.None, 0, 1, false, "");
             }
 
             // "x" option. Removes unescaped whitespace from the pattern: Actual - " ([^/]+) ","x"
@@ -580,6 +646,49 @@ namespace System.Text.RegularExpressions.Tests
 
             // "x" option. Removes unescaped whitespace from the pattern. : Actual - "\x20([^/]+)\x20","x"
             yield return ("\x20([^/]+)\x20\x20\x20\x20\x20\x20\x20", " abc       ", RegexOptions.IgnorePatternWhitespace, 0, 10, true, " abc      ");
+
+            // Comprehensive tests for IgnorePatternWhitespace - whitespace characters that should be ignored
+            // Tab (\t), newline (\n), form feed (\f), carriage return (\r), and space
+            yield return ("a\tb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a\nb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a\fb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a\rb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("a b", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+
+            // Whitespace in various positions
+            yield return (" a", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+            yield return ("a ", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+            yield return (" a ", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+
+            // Escaped whitespace should NOT be ignored - it should match literally
+            yield return (@"a\ b", "a b", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "a b");
+            yield return ("a\\\tb", "a\tb", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "a\tb");
+
+            // Comments with # should extend to end of line
+            yield return ("ab#comment", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            yield return ("ab#comment\ncd", "abcd", RegexOptions.IgnorePatternWhitespace, 0, 4, true, "abcd");
+            yield return ("a#comment\nb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+
+            // Escaped # should match literally
+            yield return (@"a\#b", "a#b", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "a#b");
+
+            // Whitespace inside character classes should NOT be ignored
+            yield return ("[ ]", " ", RegexOptions.IgnorePatternWhitespace, 0, 1, true, " ");
+            yield return ("[\t]", "\t", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "\t");
+            yield return ("[a b]", "a", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "a");
+            yield return ("[a b]", " ", RegexOptions.IgnorePatternWhitespace, 0, 1, true, " ");
+            yield return ("[a b]", "b", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "b");
+
+            // # inside character class should NOT start a comment
+            yield return ("[#]", "#", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "#");
+            yield return ("[a#b]", "#", RegexOptions.IgnorePatternWhitespace, 0, 1, true, "#");
+
+            // Vertical tab (\v) tests - only on .NET Core (not .NET Framework)
+            if (!PlatformDetection.IsNetFramework)
+            {
+                yield return ("a\vb", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+                yield return ("a \t\n\v\f\r b", "ab", RegexOptions.IgnorePatternWhitespace, 0, 2, true, "ab");
+            }
 
             // Turning on case insensitive option in mid-pattern : Actual - "aaa(?i:match this)bbb"
             if ("i".ToUpper() == "I")
@@ -649,6 +758,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?<cat>cat)\w+(?<dog-0>dog)", "cat_Hello_World_dog", RegexOptions.None, 0, 19, false, string.Empty);
                 yield return (@"(.)(?'2-1'(?'-1'))", "cat", RegexOptions.None, 0, 3, false, string.Empty);
                 yield return (@"(?'2-1'(.))", "cat", RegexOptions.None, 0, 3, true, "c");
+
+                // Balancing groups in negative lookarounds should not be removed
+                // The pattern captures group 1, uncaptures it, then checks the negative lookahead
+                // The negative lookahead contains a balancing group that should not be removed
+                yield return (@"()(?'-1')(?!(?'-1'))", "a", RegexOptions.None, 0, 1, true, string.Empty);
             }
 
             // Atomic Zero-Width Assertions \A \Z \z \b \B
@@ -735,8 +849,28 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
                 yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.None, 0, input.Length, false, "");
             }
+            // Alternation prefix extraction with IgnoreCase: correctness after single-node branch handling
+            yield return (@"(?:http|https)://foo", "HTTP://FOO", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 10, true, "HTTP://FOO");
+            yield return (@"(?:http|https)://foo", "HTTPS://FOO", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 11, true, "HTTPS://FOO");
+            yield return (@"(?:http|https)://foo", "ftp://foo", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, false, "");
+
             yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
             yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
+
+            // Alternations with many branches starting with unique characters (switch optimization)
+            if (!RegexHelpers.IsNonBacktracking(engine))
+            {
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "hij", RegexOptions.None, 0, 3, true, "hij");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "efg", RegexOptions.None, 0, 3, true, "efg");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "xyz", RegexOptions.None, 0, 3, false, "");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "ab", RegexOptions.None, 0, 2, false, "");
+                yield return (@"(?>abc|bcd|cde|def|efg|fgh|ghi|hij)", "abcdef", RegexOptions.None, 0, 6, true, "abc");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "e5", RegexOptions.None, 0, 2, true, "e5");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "h8", RegexOptions.None, 0, 2, true, "h8");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "a1", RegexOptions.None, 0, 2, true, "a1");
+                yield return (@"(?>a1|b2|c3|d4|e5|f6|g7|h8)", "z9", RegexOptions.None, 0, 2, false, "");
+            }
+
             foreach (string aOptional in new[] { "(a|)", "(|a)", "(a?)", "(a??)" })
             {
                 yield return (@$"^{aOptional}{{0,2}}?b", "aab", RegexOptions.None, 0, 3, true, "aab");
@@ -1088,6 +1222,40 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"a?(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
             yield return (@"(a|())*(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
             yield return (@"(\b|a)*", "a", RegexOptions.None, 0, 1, true, "");
+
+            // Tests for patterns with both beginning and end anchors with fixed length (optimization for early fail-fast)
+            yield return (@"^1234\z", "1234", RegexOptions.None, 0, 4, true, "1234");
+            yield return (@"^1234\z", "12345", RegexOptions.None, 0, 5, false, "");
+            yield return (@"^1234\z", "123", RegexOptions.None, 0, 3, false, "");
+            yield return (@"^1234\z", "x1234", RegexOptions.None, 0, 5, false, "");
+            yield return (@"\Aabc\z", "abc", RegexOptions.None, 0, 3, true, "abc");
+            yield return (@"\Aabc\z", "abcd", RegexOptions.None, 0, 4, false, "");
+
+            // Test variations without starting anchor (should not trigger optimization)
+            yield return (@"1234\z", "1234", RegexOptions.None, 0, 4, true, "1234");
+            yield return (@"1234\z", "x1234", RegexOptions.None, 0, 5, true, "1234");
+
+            // Test with ^ anchor but with Multiline (should not trigger optimization as ^ matches line start in Multiline)
+            yield return (@"^1234\z", "1234", RegexOptions.Multiline, 0, 4, true, "1234");
+            yield return (@"^1234\z", "x\n1234", RegexOptions.Multiline, 0, 6, true, "1234");
+
+            // Test with \Z anchor (allows optional \n, so should not trigger optimization)
+            yield return (@"^1234\Z", "1234", RegexOptions.None, 0, 4, true, "1234");
+            yield return (@"^1234\Z", "1234\n", RegexOptions.None, 0, 5, true, "1234");
+            yield return (@"^1234\Z", "12345", RegexOptions.None, 0, 5, false, "");
+
+            // Test with $ anchor (should not trigger optimization as $ allows optional \n)
+            yield return (@"^1234$", "1234", RegexOptions.None, 0, 4, true, "1234");
+            yield return (@"^1234$", "1234\n", RegexOptions.None, 0, 5, true, "1234");
+            yield return (@"^1234$", "12345", RegexOptions.None, 0, 5, false, "");
+
+            // Test with something before the ^ starting anchor
+            yield return (@"x^1234\z", "1234", RegexOptions.None, 0, 4, false, "");
+            yield return (@"x^1234\z", "x1234", RegexOptions.None, 0, 5, false, "");
+
+            // Test with something after the \z trailing anchor
+            yield return (@"^1234\zx", "1234", RegexOptions.None, 0, 4, false, "");
+            yield return (@"^1234\zx", "1234x", RegexOptions.None, 0, 5, false, "");
         }
 
         [OuterLoop("Takes several seconds to run")]
@@ -1427,7 +1595,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
 
-                Regex r = Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl();
+                Regex r = Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl;
                 string input = new string('a', 50) + "@a.a";
 
                 Assert.Throws<RegexMatchTimeoutException>(() => r.Match(input));
@@ -1437,7 +1605,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [GeneratedRegex(@"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$")]
-        private static partial Regex Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl();
+        private static partial Regex Match_InstanceMethods_DefaultTimeout_SourceGenerated_ThrowsImpl { get; }
 #endif
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1813,6 +1981,72 @@ namespace System.Text.RegularExpressions.Tests
                         }
                     };
 
+                    // Backreferences with RightToLeft
+                    // Note: For RTL, the pattern is processed right-to-left, so the group must come
+                    // AFTER the backreference in the pattern (i.e., to the right of \1)
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "aa", RegexOptions.RightToLeft, 2, 2,
+                        new CaptureData[]
+                        {
+                            new CaptureData("aa", 0, 2),
+                            new CaptureData("a", 1, 1),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w+)", "abcabc", RegexOptions.RightToLeft, 6, 6,
+                        new CaptureData[]
+                        {
+                            new CaptureData("abcabc", 0, 6),
+                            new CaptureData("abc", 3, 3),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "abba", RegexOptions.RightToLeft, 4, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("bb", 1, 2),
+                            new CaptureData("b", 2, 1),
+                        }
+                    };
+
+                    // Backreferences with RightToLeft and IgnoreCase
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "aA", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 2, 2,
+                        new CaptureData[]
+                        {
+                            new CaptureData("aA", 0, 2),
+                            new CaptureData("A", 1, 1),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w+)", "abcABC", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 6, 6,
+                        new CaptureData[]
+                        {
+                            new CaptureData("abcABC", 0, 6),
+                            new CaptureData("ABC", 3, 3),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "aBBa", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 4, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("BB", 1, 2),
+                            new CaptureData("B", 2, 1),
+                        }
+                    };
+
                     // Actual - "(?<1>\\d+)abc(?(1)222|111)"
                     yield return new object[]
                     {
@@ -1853,6 +2087,61 @@ namespace System.Text.RegularExpressions.Tests
                         new CaptureData[]
                         {
                             new CaptureData("bbb", 0, 3)
+                        }
+                    };
+                }
+
+                // Lookbehind assertions with captures - regression test for https://github.com/dotnet/runtime/issues/117605
+                // Verify that captures in positive lookbehind assertions are preserved correctly in compiled mode
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(abc)+?123)a", "abcabc123a", RegexOptions.None, 0, 10,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 9, 1),
+                            new CaptureData("abc", 3, 3, new CaptureData[] { new CaptureData("abc", 3, 3) })
+                        }
+                    };
+
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(abc){2,}?123)a", "abcabc123a", RegexOptions.None, 0, 10,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 9, 1),
+                            new CaptureData("abc", 0, 3, new CaptureData[]
+                            {
+                                new CaptureData("abc", 3, 3),
+                                new CaptureData("abc", 0, 3)
+                            })
+                        }
+                    };
+
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(abc)+?)a", "abca", RegexOptions.None, 0, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 3, 1),
+                            new CaptureData("abc", 0, 3, new CaptureData[] { new CaptureData("abc", 0, 3) })
+                        }
+                    };
+
+                    // Multiple groups in lookbehind
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(?'1'abc)+?(?'2')123)a", "abcabc123a", RegexOptions.None, 0, 10,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 9, 1),
+                            new CaptureData("abc", 3, 3, new CaptureData[] { new CaptureData("abc", 3, 3) }),
+                            new CaptureData(string.Empty, 6, 0, new CaptureData[] { new CaptureData(string.Empty, 6, 0) })
                         }
                     };
                 }
@@ -2044,7 +2333,7 @@ namespace System.Text.RegularExpressions.Tests
 
         private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
 
-        [ConditionalTheory(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
+        [ConditionalTheory(typeof(RegexMatchTests), nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", ~RuntimeConfiguration.Release)]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeTestModes.JitMinOpts)]
@@ -2672,7 +2961,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop("Takes several seconds")]
         [MemberData(nameof(UseRegexConcurrently_ThreadSafe_Success_MemberData))]
         public async Task UseRegexConcurrently_ThreadSafe_Success(RegexEngine engine, TimeSpan timeout)
@@ -2754,6 +3043,197 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Equal(1, ms.Count);
                 Assert.Equal(0, ms[0].Index);
                 Assert.Equal(272, ms[0].Length);
+            }
+        }
+
+        /// <summary>
+        /// Tests for balancing groups where the balancing group's captured content
+        /// precedes the position of the group being balanced.
+        /// This tests the fix for https://github.com/dotnet/runtime/issues/111161
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(BalancingGroup_WithConditional_MemberData))]
+        public void BalancingGroup_WithConditional_ConsistentBehavior(Regex regex, string input, bool expectedGroup2Matched, string expectedMatch)
+        {
+            Match m = regex.Match(input);
+
+            Assert.True(m.Success, $"Match should succeed for input '{input}'");
+            Assert.Equal(expectedMatch, m.Value);
+
+#if !NETFRAMEWORK // This bug was fixed in .NET Core and doesn't exist in .NET Framework
+            // Check that the group 2 state is consistent
+            bool group2Success = m.Groups[2].Success;
+            int group2CapturesCount = m.Groups[2].Captures.Count;
+
+            // The key test: Group.Success and Captures.Count should be consistent with the conditional behavior
+            Assert.Equal(expectedGroup2Matched, group2Success);
+            if (expectedGroup2Matched)
+            {
+                Assert.True(group2CapturesCount > 0, "If group 2 matched, it should have at least one capture");
+            }
+            else
+            {
+                Assert.Equal(0, group2CapturesCount);
+            }
+#else
+            // On .NET Framework, just use the parameters to avoid xUnit warning
+            _ = expectedGroup2Matched;
+#endif
+        }
+
+        public static IEnumerable<object[]> BalancingGroup_WithConditional_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (RegexHelpers.IsNonBacktracking(engine))
+                {
+                    // NonBacktracking engine doesn't support balancing groups
+                    continue;
+                }
+
+                var cases = new (string Pattern, string Input, bool ExpectedGroup2Matched, string ExpectedMatch)[]
+                {
+                    // Original bug report pattern
+                    // The balancing group (?'2-1'(?'x1'..)) captures content that comes BEFORE group 1's capture
+                    (@"\d+((?'x'[a-z-[b]]+)).(?<=(?'2-1'(?'x1'..)).{6})b(?(2)(?'Group2Captured'.)|(?'Group2NotCaptured'.))",
+                        "00123xzacvb1", true, "00123xzacvb1"),
+
+                    // Simpler test case: balancing group in forward context (normal case)
+                    (@"(a)(?'2-1'b)(?(2)c|d)", "abc", true, "abc"),
+
+                    // Balancing group in lookbehind where captured content comes after balanced group
+                    (@"(a)b(?<=(?'2-1'.))c(?(2)d|e)", "abcd", true, "abcd"),
+
+                    // Balancing group in lookbehind where captured content comes before balanced group (bug scenario)
+                    (@"a(b)c(?<=(?'2-1'a)..)d(?(2)e|f)", "abcde", true, "abcde"),
+                };
+
+                Regex[] regexes = RegexHelpers.GetRegexes(engine, cases.Select(c => (c.Pattern, (System.Globalization.CultureInfo?)null, (RegexOptions?)null, (TimeSpan?)null)).ToArray());
+                for (int i = 0; i < cases.Length; i++)
+                {
+                    yield return new object[] { regexes[i], cases[i].Input, cases[i].ExpectedGroup2Matched, cases[i].ExpectedMatch };
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tests that IsMatched() behavior is consistent with Group.Success and Group.Captures.Count
+        /// after TidyBalancing is called.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(BalancingGroup_IsMatched_Consistency_MemberData))]
+        public void BalancingGroup_IsMatched_Consistency(Regex regex, string input, int groupNumber, bool expectedMatched)
+        {
+            Match m = regex.Match(input);
+
+            Assert.True(m.Success, $"Match should succeed for input '{input}'");
+
+#if !NETFRAMEWORK // This bug was fixed in .NET Core and doesn't exist in .NET Framework
+            // Check that the group state is consistent
+            bool groupSuccess = m.Groups[groupNumber].Success;
+            int capturesCount = m.Groups[groupNumber].Captures.Count;
+
+            Assert.Equal(expectedMatched, groupSuccess);
+            if (expectedMatched)
+            {
+                Assert.True(capturesCount > 0, $"If group {groupNumber} matched, it should have at least one capture");
+            }
+            else
+            {
+                Assert.Equal(0, capturesCount);
+            }
+#else
+            // On .NET Framework, just use the parameters to avoid xUnit warning
+            _ = groupNumber;
+            _ = expectedMatched;
+#endif
+        }
+
+        public static IEnumerable<object[]> BalancingGroup_IsMatched_Consistency_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (RegexHelpers.IsNonBacktracking(engine))
+                {
+                    continue;
+                }
+
+                var cases = new (string Pattern, string Input, int GroupNumber, bool ExpectedMatched)[]
+                {
+                    // Group 1 should be balanced out (no captures remaining)
+                    (@"(a)(?'2-1'b)", "ab", 1, false),
+
+                    // Group 2 should have a capture
+                    (@"(a)(?'2-1'b)", "ab", 2, true),
+
+                    // Balancing in lookbehind - group 1 should be balanced out
+                    (@"(a)b(?<=(?'2-1'.))c", "abc", 1, false),
+
+                    // Balancing in lookbehind - group 2 should have a capture
+                    (@"(a)b(?<=(?'2-1'.))c", "abc", 2, true),
+
+                    // Original bug pattern - group 1 should be balanced out
+                    (@"\d+((?'x'[a-z-[b]]+)).(?<=(?'2-1'(?'x1'..)).{6})b", "00123xzacvb", 1, false),
+
+                    // Original bug pattern - group 2 should have a capture
+                    (@"\d+((?'x'[a-z-[b]]+)).(?<=(?'2-1'(?'x1'..)).{6})b", "00123xzacvb", 2, true),
+                };
+
+                Regex[] regexes = RegexHelpers.GetRegexes(engine, cases.Select(c => (c.Pattern, (System.Globalization.CultureInfo?)null, (RegexOptions?)null, (TimeSpan?)null)).ToArray());
+                for (int i = 0; i < cases.Length; i++)
+                {
+                    yield return new object[] { regexes[i], cases[i].Input, cases[i].GroupNumber, cases[i].ExpectedMatched };
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tests various balancing group scenarios to ensure correct behavior.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(BalancingGroup_Various_MemberData))]
+        public void BalancingGroup_Various_Scenarios(Regex regex, string input, string expectedValue, int expectedGroup1Count, int expectedGroup2Count)
+        {
+            Match m = regex.Match(input);
+
+            Assert.True(m.Success);
+            Assert.Equal(expectedValue, m.Value);
+
+#if !NETFRAMEWORK // This test depends on the fix for balancing groups
+            Assert.Equal(expectedGroup1Count, m.Groups[1].Captures.Count);
+            Assert.Equal(expectedGroup2Count, m.Groups[2].Captures.Count);
+#else
+            // On .NET Framework, just use the parameters to avoid xUnit warning
+            _ = expectedGroup1Count;
+            _ = expectedGroup2Count;
+#endif
+        }
+
+        public static IEnumerable<object[]> BalancingGroup_Various_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                if (RegexHelpers.IsNonBacktracking(engine))
+                {
+                    continue;
+                }
+
+                var cases = new (string Pattern, string Input, string ExpectedValue, int ExpectedGroup1Count, int ExpectedGroup2Count)[]
+                {
+                    // Basic balancing: group 1 captured, then balanced into group 2
+                    // Creates a zero-length capture in group 2
+                    (@"(a)(?'2-1'b)", "ab", "ab", 0, 1),
+
+                    // Multiple captures: group 2 is the second (a), then balancing transfers from group 1
+                    // Group 2 gets its own capture plus a zero-length capture from balancing
+                    (@"(a)(a)(?'2-1'b)", "aab", "aab", 0, 2),
+                };
+
+                Regex[] regexes = RegexHelpers.GetRegexes(engine, cases.Select(c => (c.Pattern, (System.Globalization.CultureInfo?)null, (RegexOptions?)null, (TimeSpan?)null)).ToArray());
+                for (int i = 0; i < cases.Length; i++)
+                {
+                    yield return new object[] { regexes[i], cases[i].Input, cases[i].ExpectedValue, cases[i].ExpectedGroup1Count, cases[i].ExpectedGroup2Count };
+                }
             }
         }
     }

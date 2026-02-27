@@ -9,18 +9,26 @@ set(INTERPRETER_SOURCES
   stackmap.cpp
   naming.cpp
   methodset.cpp
-  intrinsics.cpp)
+  intrinsics.cpp
+  simdhash.cpp
+  ../jitshared/histogram.cpp
+  )
 
 set(INTERPRETER_LINK_LIBRARIES
   gcinfo
+  minipal
 )
 
 if(CLR_CMAKE_HOST_WIN32)
-    list(APPEND INTERPRETER_LINK_LIBRARIES
-        ${STATIC_MT_CRT_LIB}
-        ${STATIC_MT_VCRT_LIB}
-    )
-endif(CLR_CMAKE_HOST_WIN32)
+  list(APPEND INTERPRETER_LINK_LIBRARIES
+    ${STATIC_MT_CRT_LIB}
+    ${STATIC_MT_VCRT_LIB}
+  )
+  list(APPEND INTERPRETER_SOURCES
+    Native.rc
+  )
+  add_definitions(-DFX_VER_INTERNALNAME_STR=clrinterpreter.dll)
+endif()
 
 if(CLR_CMAKE_HOST_WIN32)
     set(CLRINTERPRETER_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/clrinterpreter.exports)
@@ -36,11 +44,17 @@ endif()
 
 add_library_clr(clrinterpreter_objects OBJECT ${INTERPRETER_SOURCES})
 
+target_include_directories(clrinterpreter_objects PRIVATE ../jitshared)
+
 if (NOT CMAKE_GENERATOR MATCHES "Visual Studio")
   set_target_properties(clrinterpreter_objects PROPERTIES EXCLUDE_FROM_ALL $<NOT:${FEATURE_INTERPRETER}>)
 endif()
 
-add_library_clr(clrinterpreter SHARED $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers>)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  add_library_clr(clrinterpreter SHARED $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers>)
+else()
+  add_library_clr(clrinterpreter STATIC $<TARGET_OBJECTS:clrinterpreter_objects> $<TARGET_OBJECTS:dn-containers>)
+endif()
 
 target_include_directories(clrinterpreter INTERFACE "interpreter/inc")
 
@@ -63,4 +77,8 @@ target_link_libraries(clrinterpreter
         ${INTERPRETER_LINK_LIBRARIES}
     )
 
-install_clr(TARGETS clrinterpreter DESTINATIONS . sharedFramework COMPONENT runtime OPTIONAL)
+if (FEATURE_STATICALLY_LINKED)
+    install_clr(TARGETS clrinterpreter DESTINATIONS . COMPONENT runtime OPTIONAL)
+else()
+    install_clr(TARGETS clrinterpreter DESTINATIONS . sharedFramework COMPONENT runtime OPTIONAL)
+endif()

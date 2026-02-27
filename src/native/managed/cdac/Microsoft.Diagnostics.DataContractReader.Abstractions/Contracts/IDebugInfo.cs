@@ -12,7 +12,7 @@ public enum SourceTypes : uint
     /// <summary>
     /// Indicates that no other options apply
     /// </summary>
-    SourceTypeInvalid = 0x00,
+    Default = 0x00,
     /// <summary>
     /// The stack is empty here
     /// </summary>
@@ -21,6 +21,10 @@ public enum SourceTypes : uint
     /// The actual instruction of a call
     /// </summary>
     CallInstruction = 0x02,
+    /// <summary>
+    /// Indicates suspension/resumption for an async call
+    /// </summary>
+    Async = 0x04,
 }
 
 public readonly struct OffsetMapping
@@ -33,6 +37,14 @@ public readonly struct OffsetMapping
 public interface IDebugInfo : IContract
 {
     static string IContract.Name { get; } = nameof(DebugInfo);
+    /// <summary>
+    /// Returns true if the method at <paramref name="pCode"/> has debug info associated with it.
+    /// Methods such as ILStubs may be JIT-compiled but have no debug metadata.
+    /// </summary>
+    bool HasDebugInfo(TargetCodePointer pCode) => throw new NotImplementedException();
+    /// <summary>
+    /// Given a code pointer, return the associated native/IL offset mapping and codeOffset.
+    /// </summary>
     IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset) => throw new NotImplementedException();
 }
 

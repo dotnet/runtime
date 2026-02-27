@@ -204,7 +204,8 @@ namespace
         _X("riscv64"),
         _X("s390x"),
         _X("x64"),
-        _X("x86")
+        _X("x86"),
+        _X("wasm")
     };
     static_assert((sizeof(s_all_architectures) / sizeof(*s_all_architectures)) == static_cast<size_t>(pal::architecture::__last), "Invalid known architectures count");
 }
@@ -229,6 +230,8 @@ pal::architecture get_current_arch()
     return pal::architecture::s390X;
 #elif defined(TARGET_POWERPC64)
     return pal::architecture::ppc64le;
+#elif defined(TARGET_WASM)
+    return pal::architecture::wasm;
 #else
 #error "Unknown target"
 #endif

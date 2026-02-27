@@ -297,7 +297,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             JsonSerializerOptions options = FastPathSerializationContext.Default.Options;
 
-            JsonTypeInfo<JsonMessage> jsonMessageInfo = (JsonTypeInfo<JsonMessage>)options.GetTypeInfo(typeof(JsonMessage));
+            JsonTypeInfo<JsonMessage> jsonMessageInfo = options.GetTypeInfo<JsonMessage>();
             Assert.NotNull(jsonMessageInfo.SerializeHandler);
 
             var value = new JsonMessage { Message = "Hi" };
@@ -325,7 +325,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 TypeInfoResolver = JsonTypeInfoResolver.Combine(fastPathContext, appendedResolver, new DefaultJsonTypeInfoResolver())
             };
 
-            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = (JsonTypeInfo<PocoWithInteger>)options.GetTypeInfo(typeof(PocoWithInteger));
+            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = options.GetTypeInfo<PocoWithInteger>();
             Assert.NotNull(jsonMessageInfo.SerializeHandler);
 
             var value = new PocoWithInteger { Value = 42 };
@@ -339,7 +339,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expectedJson, json);
             Assert.Equal(2, fastPathContext.FastPathInvocationCount);
 
-            JsonTypeInfo<ContainingClass> classInfo = (JsonTypeInfo<ContainingClass>)options.GetTypeInfo(typeof(ContainingClass));
+            JsonTypeInfo<ContainingClass> classInfo = options.GetTypeInfo<ContainingClass>();
             Assert.Null(classInfo.SerializeHandler);
 
             var largerValue = new ContainingClass { Message = value };
@@ -367,7 +367,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 TypeInfoResolver = JsonTypeInfoResolver.Combine(prependedResolver, fastPathContext, new DefaultJsonTypeInfoResolver())
             };
 
-            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = (JsonTypeInfo<PocoWithInteger>)options.GetTypeInfo(typeof(PocoWithInteger));
+            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = options.GetTypeInfo<PocoWithInteger>();
             Assert.NotNull(jsonMessageInfo.SerializeHandler);
 
             var value = new PocoWithInteger { Value = 42 };
@@ -381,7 +381,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expectedJson, json);
             Assert.Equal(2, fastPathContext.FastPathInvocationCount);
 
-            JsonTypeInfo<ContainingClass> classInfo = (JsonTypeInfo<ContainingClass>)options.GetTypeInfo(typeof(ContainingClass));
+            JsonTypeInfo<ContainingClass> classInfo = options.GetTypeInfo<ContainingClass>();
             Assert.Null(classInfo.SerializeHandler);
 
             var largerValue = new ContainingClass { Message = value };
@@ -409,7 +409,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 TypeInfoResolver = JsonTypeInfoResolver.Combine(prependedResolver, fastPathContext, new DefaultJsonTypeInfoResolver())
             };
 
-            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = (JsonTypeInfo<PocoWithInteger>)options.GetTypeInfo(typeof(PocoWithInteger));
+            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = options.GetTypeInfo<PocoWithInteger>();
             Assert.NotNull(jsonMessageInfo.SerializeHandler);
 
             var value = new PocoWithInteger { Value = 42 };
@@ -423,7 +423,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expectedJson, json);
             Assert.Equal(0, fastPathContext.FastPathInvocationCount);
 
-            JsonTypeInfo<ContainingClass> classInfo = (JsonTypeInfo<ContainingClass>)options.GetTypeInfo(typeof(ContainingClass));
+            JsonTypeInfo<ContainingClass> classInfo = options.GetTypeInfo<ContainingClass>();
             Assert.Null(classInfo.SerializeHandler);
 
             var largerValue = new ContainingClass { Message = value };
@@ -564,7 +564,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             var options = new JsonSerializerOptions { TypeInfoResolverChain = { NestedContext.Default, PersonJsonContext.Default } };
 
-            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T))!;
+            JsonTypeInfo<T> typeInfo = options.GetTypeInfo<T>();
 
             string json = JsonSerializer.Serialize(value, typeInfo);
             JsonTestHelper.AssertJsonEqual(expectedJson, json);
@@ -692,7 +692,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             var value = new ClassWithCustomConverterFactoryProperty { MyEnum = SourceGenSampleEnum.MinZero };
             string json = JsonSerializer.Serialize(value, SingleClassWithCustomConverterFactoryPropertyContext.Default.ClassWithCustomConverterFactoryProperty);
-            Assert.Equal(@"{""MyEnum"":""MinZero""}", json);
+            Assert.Equal("""{"MyEnum":"MinZero"}""", json);
         }
 
         public class ParentClass
@@ -711,7 +711,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             // Regression test for https://github.com/dotnet/runtime/issues/61860
             var value = new List<TestEnum> { TestEnum.Cee };
             string json = JsonSerializer.Serialize(value, GenericParameterWithCustomConverterFactoryContext.Default.ListTestEnum);
-            Assert.Equal(@"[""Cee""]", json);
+            Assert.Equal("""["Cee"]""", json);
         }
 
         [Fact]
@@ -822,7 +822,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public static void FastPathSerialization_EvaluatePropertyOnlyOnceWhenIgnoreNullOrDefaultIsSpecified()
         {
             JsonSerializerOptions options = FastPathSerializationContext.Default.Options;
-            JsonTypeInfo<AllocatingOnPropertyAccess> allocatingOnPropertyAccessInfo = (JsonTypeInfo<AllocatingOnPropertyAccess>)options.GetTypeInfo(typeof(AllocatingOnPropertyAccess));
+            JsonTypeInfo<AllocatingOnPropertyAccess> allocatingOnPropertyAccessInfo = options.GetTypeInfo<AllocatingOnPropertyAccess>();
             Assert.NotNull(allocatingOnPropertyAccessInfo.SerializeHandler);
 
             var value = new AllocatingOnPropertyAccess();
@@ -990,6 +990,39 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Dictionary<string, int>))]
         internal partial class ContextWithAllowDuplicateProperties : JsonSerializerContext
         {
+        }
+
+        // Test for https://github.com/dotnet/runtime/issues/99669
+        // Verifies that partial contexts with [JsonSerializable] attributes on multiple declarations
+        // work correctly at runtime - all types from all partial declarations should be available.
+        [Fact]
+        public static void PartialContextWithAttributesOnMultipleDeclarations_RuntimeBehavior()
+        {
+            // Verify both types from both partial declarations are available
+            Assert.NotNull(MultiplePartialDeclarationsContext.Default.TypeFromPartial1);
+            Assert.NotNull(MultiplePartialDeclarationsContext.Default.TypeFromPartial2);
+
+            // Test serialization of type from first partial
+            var obj1 = new TypeFromPartial1 { Id = 42, Name = "Test" };
+            string json1 = JsonSerializer.Serialize(obj1, MultiplePartialDeclarationsContext.Default.TypeFromPartial1);
+            Assert.Contains("42", json1);
+            Assert.Contains("Test", json1);
+
+            // Test deserialization of type from first partial
+            var deserialized1 = JsonSerializer.Deserialize<TypeFromPartial1>(json1, MultiplePartialDeclarationsContext.Default.TypeFromPartial1);
+            Assert.Equal(42, deserialized1.Id);
+            Assert.Equal("Test", deserialized1.Name);
+
+            // Test serialization of type from second partial
+            var obj2 = new TypeFromPartial2 { Value = 3.14, IsActive = true };
+            string json2 = JsonSerializer.Serialize(obj2, MultiplePartialDeclarationsContext.Default.TypeFromPartial2);
+            Assert.Contains("3.14", json2);
+            Assert.Contains("true", json2);
+
+            // Test deserialization of type from second partial
+            var deserialized2 = JsonSerializer.Deserialize<TypeFromPartial2>(json2, MultiplePartialDeclarationsContext.Default.TypeFromPartial2);
+            Assert.Equal(3.14, deserialized2.Value);
+            Assert.True(deserialized2.IsActive);
         }
     }
 }

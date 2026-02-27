@@ -179,13 +179,13 @@ namespace System.Collections.Immutable
             equalityComparer ??= EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)
             {
-                return Array.IndexOf(self.array!, item, startIndex, count);
+                return Array.IndexOf(self.array, item, startIndex, count);
             }
             else
             {
                 for (int i = startIndex; i < startIndex + count; i++)
                 {
-                    if (equalityComparer.Equals(self.array![i], item))
+                    if (equalityComparer.Equals(self.array[i], item))
                     {
                         return i;
                     }
@@ -264,13 +264,13 @@ namespace System.Collections.Immutable
             equalityComparer ??= EqualityComparer<T>.Default;
             if (equalityComparer == EqualityComparer<T>.Default)
             {
-                return Array.LastIndexOf(self.array!, item, startIndex, count);
+                return Array.LastIndexOf(self.array, item, startIndex, count);
             }
             else
             {
                 for (int i = startIndex; i >= startIndex - count + 1; i--)
                 {
-                    if (equalityComparer.Equals(item, self.array![i]))
+                    if (equalityComparer.Equals(item, self.array[i]))
                     {
                         return i;
                     }
@@ -326,11 +326,11 @@ namespace System.Collections.Immutable
 
             if (index != 0)
             {
-                Array.Copy(self.array!, tmp, index);
+                Array.Copy(self.array, tmp, index);
             }
             if (index != self.Length)
             {
-                Array.Copy(self.array!, index, tmp, index + 1, self.Length - index);
+                Array.Copy(self.array, index, tmp, index + 1, self.Length - index);
             }
 
             return new ImmutableArray<T>(tmp);
@@ -364,11 +364,11 @@ namespace System.Collections.Immutable
 
             if (index != 0)
             {
-                Array.Copy(self.array!, tmp, index);
+                Array.Copy(self.array, tmp, index);
             }
             if (index != self.Length)
             {
-                Array.Copy(self.array!, index, tmp, index + count, self.Length - index);
+                Array.Copy(self.array, index, tmp, index + count, self.Length - index);
             }
 
             // We want to copy over the items we need to insert.
@@ -464,7 +464,7 @@ namespace System.Collections.Immutable
             }
 
             T[] tmp = new T[self.Length + length];
-            Array.Copy(self.array!, tmp, self.Length);
+            Array.Copy(self.array, tmp, self.Length);
             Array.Copy(items, 0, tmp, self.Length, length);
 
             return new ImmutableArray<T>(tmp);
@@ -488,7 +488,7 @@ namespace System.Collections.Immutable
             }
 
             T[] tmp = new T[self.Length + items.Length];
-            Array.Copy(self.array!, tmp, self.Length);
+            Array.Copy(self.array, tmp, self.Length);
             Array.Copy(items, 0, tmp, self.Length, items.Length);
 
             return new ImmutableArray<T>(tmp);
@@ -558,7 +558,7 @@ namespace System.Collections.Immutable
             Requires.Range(index >= 0 && index < self.Length, nameof(index));
 
             T[] tmp = new T[self.Length];
-            Array.Copy(self.array!, tmp, self.Length);
+            Array.Copy(self.array, tmp, self.Length);
             tmp[index] = item;
             return new ImmutableArray<T>(tmp);
         }
@@ -658,8 +658,8 @@ namespace System.Collections.Immutable
             }
 
             T[] tmp = new T[self.Length - length];
-            Array.Copy(self.array!, tmp, index);
-            Array.Copy(self.array!, index + length, tmp, index, self.Length - index - length);
+            Array.Copy(self.array, tmp, index);
+            Array.Copy(self.array, index + length, tmp, index, self.Length - index - length);
             return new ImmutableArray<T>(tmp);
         }
 
@@ -757,7 +757,7 @@ namespace System.Collections.Immutable
             }
 
             List<int>? removeIndices = null;
-            for (int i = 0; i < self.array!.Length; i++)
+            for (int i = 0; i < self.array.Length; i++)
             {
                 if (match(self.array[i]))
                 {
@@ -838,7 +838,7 @@ namespace System.Collections.Immutable
                 bool outOfOrder = false;
                 for (int i = index + 1; i < index + count; i++)
                 {
-                    if (comparer.Compare(self.array![i - 1], self.array[i]) > 0)
+                    if (comparer.Compare(self.array[i - 1], self.array[i]) > 0)
                     {
                         outOfOrder = true;
                         break;
@@ -848,7 +848,7 @@ namespace System.Collections.Immutable
                 if (outOfOrder)
                 {
                     var tmp = new T[self.Length];
-                    Array.Copy(self.array!, tmp, self.Length);
+                    Array.Copy(self.array, tmp, self.Length);
                     Array.Sort(tmp, index, count, comparer);
                     return new ImmutableArray<T>(tmp);
                 }
@@ -1372,7 +1372,7 @@ namespace System.Collections.Immutable
         {
             ImmutableArray<T> self = this;
             self.ThrowInvalidOperationIfNotInitialized();
-            Array.Copy(self.array!, 0, array, index, self.Length);
+            Array.Copy(self.array, 0, array, index, self.Length);
         }
 
         /// <summary>
@@ -1494,13 +1494,13 @@ namespace System.Collections.Immutable
             {
                 int copyLength = lastIndexRemoved == -1 ? indexToRemove : (indexToRemove - lastIndexRemoved - 1);
                 Debug.Assert(indexToRemove > lastIndexRemoved); // We require that the input be a sorted set.
-                Array.Copy(self.array!, copied + removed, newArray, copied, copyLength);
+                Array.Copy(self.array, copied + removed, newArray, copied, copyLength);
                 removed++;
                 copied += copyLength;
                 lastIndexRemoved = indexToRemove;
             }
 
-            Array.Copy(self.array!, copied + removed, newArray, copied, self.Length - (copied + removed));
+            Array.Copy(self.array, copied + removed, newArray, copied, self.Length - (copied + removed));
 
             return new ImmutableArray<T>(newArray);
         }

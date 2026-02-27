@@ -100,6 +100,7 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
         GC_NOTRIGGER;
         SUPPORTS_DAC;
         PRECONDITION(pMD != NULL);
+        PRECONDITION(!pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
@@ -107,9 +108,6 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
     m_pMT = nullptr;
     m_sig           = pMD->GetSignature();
     m_pModule       = pMD->GetModule();         // Used for token resolution.
-
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    _ASSERTE(!pMD->IsAsyncMethod());
 
     m_tkMethodDef = pMD->GetMemberDef();
     SigTypeContext::InitTypeContext(pMD, &m_typeContext);
@@ -231,10 +229,10 @@ static bool IsSharedStubScenario(DWORD dwStubFlags)
         return false;
     }
 
-    if (SF_IsForwardPInvokeStub(dwStubFlags) && !SF_IsCALLIStub(dwStubFlags) && !SF_IsVarArgStub(dwStubFlags))
-    {
-        return false;
-    }
+    // Forward P/Invoke stubs (non-CALLI, non-vararg) are not shared across different
+    // target methods, but they still use the ILStubCache for de-duplication when
+    // multiple threads race to create a stub for the same target. The hash blob for
+    // these stubs is keyed by target MethodDesc rather than by signature.
 
     return true;
 }
@@ -491,7 +489,7 @@ public:
                 pStubMD->SetStatic();
             }
 
-#ifndef TARGET_X86
+#if !defined(TARGET_X86) && defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
             // we store the real managed argument stack size in the stub MethodDesc on non-X86
             UINT stackSize = pStubMD->SizeOfNativeArgStack();
 
@@ -572,7 +570,6 @@ public:
         {
         default:
             UNREACHABLE_MSG("Unexpected element type found on native return type.");
-            break;
         case ELEMENT_TYPE_VOID:
             _ASSERTE(retvalLocalNum == (DWORD)-1);
             pcsExceptionHandler->EmitPOP();
@@ -1132,7 +1129,6 @@ public:
         DWORD dwToken = 0;
         if (pTargetMD)
         {
-            // TODO: (async) revisit and examine if this needs to be supported somehow
             _ASSERTE(!pTargetMD->IsAsyncVariantMethod());
             dwToken = pTargetMD->GetMemberDef();
         }
@@ -2014,6 +2010,10 @@ void PInvokeStubLinker::Begin(DWORD dwStubFlags)
     {
         if (SF_IsDelegateStub(dwStubFlags))
         {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            _ASSERTE(!"Delegate reverse pinvoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS");
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
             //
             // recover delegate object from UMEntryThunk
 
@@ -2024,6 +2024,7 @@ void PInvokeStubLinker::Begin(DWORD dwStubFlags)
             m_pcsDispatch->EmitLDIND_I();      // get OBJECTHANDLE
             m_pcsDispatch->EmitLDIND_REF();    // get Delegate object
             m_pcsDispatch->EmitLDFLD(GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__TARGET)));
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
         }
     }
 
@@ -2186,6 +2187,10 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
     }
     else // native-to-managed
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        _ASSERTE(!"Delegate reverse pinvoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS");
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (SF_IsDelegateStub(dwStubFlags)) // reverse P/Invoke via delegate
         {
             int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
@@ -2212,6 +2217,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             // pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();  // Get UMEntryThunk::m_pManagedTarget
         }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     // For managed-to-native calls, the rest of the work is done by the JIT. It will
@@ -2755,6 +2761,10 @@ void PInvokeStaticSigInfo::DllImportInit(
 
         PRECONDITION(CheckPointer(pMD));
 
+        // P/Invoke methods should never be marked as async.
+        // This should be blocked in the class loader.
+        PRECONDITION(!pMD->IsAsyncMethod());
+
         // These preconditions to prevent multithreaded regression
         // where pMD->m_szLibName was passed in directly, cleared
         // by this API, then accessed on another thread before being reset here.
@@ -2770,9 +2780,6 @@ void PInvokeStaticSigInfo::DllImportInit(
     IMDInternalImport  *pInternalImport = pMD->GetMDImport();
     CorPinvokeMap mappingFlags = pmMaxValue;
     mdModuleRef modref = mdModuleRefNil;
-    // TODO: (async) revisit and examine if this needs to be supported somehow
-    if (pMD->IsAsyncMethod())
-        ThrowHR(COR_E_NOTSUPPORTED);
 
     if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
@@ -3044,6 +3051,7 @@ namespace
             STANDARD_VM_CHECK;
             PRECONDITION(pMD != NULL);
             PRECONDITION(pMD->IsPInvoke());
+            PRECONDITION(!pMD->IsAsyncMethod());
             PRECONDITION(callConv != NULL);
         }
         CONTRACTL_END;
@@ -3051,9 +3059,7 @@ namespace
         CorInfoCallConvExtension callConvLocal;
         IMDInternalImport* pInternalImport = pMD->GetMDImport();
         CorPinvokeMap mappingFlags = pmMaxValue;
-        // TODO: (async) revisit and examine if this needs to be supported somehow
-        if (pMD->IsAsyncMethod())
-            ThrowHR(COR_E_NOTSUPPORTED);
+
 
         HRESULT hr = pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, NULL /*pszImportName*/, NULL /*pmrImportDLL*/);
         if (FAILED(hr))
@@ -3240,6 +3246,12 @@ BOOL PInvoke::MarshalingRequired(
     {
         STANDARD_VM_CHECK;
         PRECONDITION(pMD != NULL || (!sigPointer.IsNull() && pModule != NULL));
+
+        // We should never see an async method here.
+        // Delegate Invoke methods should never be async.
+        // Async P/Invokes are not supported.
+        // Async UnmanagedCallersOnly methods are not supported.
+        PRECONDITION(pMD == NULL || !pMD->IsAsyncMethod());
     }
     CONTRACTL_END;
 
@@ -3315,10 +3327,6 @@ BOOL PInvoke::MarshalingRequired(
     mdMethodDef methodToken = mdMethodDefNil;
     if (pMD != NULL)
     {
-        // TODO: (async) revisit and examine if this needs to be supported somehow
-        if (pMD->IsAsyncMethod())
-            ThrowHR(COR_E_NOTSUPPORTED);
-
         methodToken = pMD->GetMemberDef();
     }
     CollateParamTokens(pMDImport, methodToken, numArgs - 1, pParamTokenArray);
@@ -3326,7 +3334,7 @@ BOOL PInvoke::MarshalingRequired(
     // We enable the runtime marshalling system whenever it is enabled on the module as a whole
     // or when the call is a COM interop call. COM interop calls are already using a significant portion of the runtime
     // marshalling system just to function at all, so we aren't going to disable the parameter marshalling;
-    // we'd rather have developers use the feature flag to diable the whole COM interop subsystem at once.
+    // we'd rather have developers use the feature flag to disable the whole COM interop subsystem at once.
     bool runtimeMarshallingEnabled = pModule->IsRuntimeMarshallingEnabled();
 #ifdef FEATURE_COMINTEROP
     runtimeMarshallingEnabled |= pMD && pMD->IsCLRToCOMCall();
@@ -3468,6 +3476,7 @@ BOOL PInvoke::MarshalingRequired(
     if (!FitsInU2(dwStackSize))
         return TRUE;
 
+#ifdef TARGET_X86
     // do not set the stack size for varargs - the number is call site specific
     if (pMD != NULL && !pMD->IsVarArg())
     {
@@ -3483,6 +3492,7 @@ BOOL PInvoke::MarshalingRequired(
         }
 #endif // FEATURE_COMINTEROP
     }
+#endif // TARGET_X86
 
     return FALSE;
 }
@@ -3877,11 +3887,13 @@ static void CreatePInvokeStubWorker(StubState*               pss,
         if (!FitsInU2(nativeStackSize))
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
+#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
         DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
 
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
         if (fStubNeedsCOM)
             pDMD->SetFlags(DynamicMethodDesc::FlagRequiresCOM);
+#endif
     }
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
@@ -3975,11 +3987,13 @@ static void CreateStructStub(ILStubState* pss,
         pss->MarshalField(&mlInfo, managedOffset, externalOffset, pFD);
     }
 
+#if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
     if (pMD->IsDynamicMethod())
     {
         DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
         pDMD->SetNativeStackArgSize(4 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
     }
+#endif
 
     // FinishEmit needs to know the native stack arg size so we call it after the number
     // has been set in the stub MD (code:DynamicMethodDesc.SetNativeStackArgSize)
@@ -4067,9 +4081,36 @@ namespace
         PCCOR_SIGNATURE pvNativeType;
     };
 
-    ILStubHashBlob* CreateHashBlob(PInvokeStubParameters* pParams)
+    ILStubHashBlob* CreateHashBlob(PInvokeStubParameters* pParams, MethodDesc* pTargetMD)
     {
         STANDARD_VM_CONTRACT;
+
+        // The hash blob for a forward P/Invoke stub is just the target MethodDesc pointer.
+        // In order to help avoid collisions, ensure various blob sizes are different.
+        // See asserts below.
+        constexpr size_t forwardPInvokeHashBlobSize = sizeof(ILStubHashBlobBase) + sizeof(MethodDesc*);
+
+        DWORD dwStubFlags = pParams->m_dwStubFlags;
+
+        // The target MethodDesc may be NULL for field marshalling.
+        // Forward P/Invoke stubs (non-CALLI, non-vararg) each target a specific method,
+        // so the hash blob is just the target MethodDesc pointer. This ensures racing
+        // threads for the same P/Invoke converge on the same DynamicMethodDesc in the
+        // ILStubCache, while different P/Invoke methods get distinct cache entries.
+        if (pTargetMD != NULL
+            && SF_IsForwardPInvokeStub(dwStubFlags)
+            && !SF_IsCALLIStub(dwStubFlags)
+            && !SF_IsVarArgStub(dwStubFlags))
+        {
+            const size_t blobSize = forwardPInvokeHashBlobSize;
+            NewArrayHolder<BYTE> pBytes = new BYTE[blobSize];
+            ZeroMemory(pBytes, blobSize);
+            ILStubHashBlob* pBlob = (ILStubHashBlob*)(BYTE*)pBytes;
+            pBlob->m_cbSizeOfBlob = blobSize;
+            memcpy(pBlob->m_rgbBlobData, &pTargetMD, sizeof(pTargetMD));
+            pBytes.SuppressRelease();
+            return pBlob;
+        }
 
         PInvokeStubHashBlob*    pBlob;
 
@@ -4124,6 +4165,8 @@ namespace
 
         if (cbSizeOfBlob.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
+
+        _ASSERTE(cbSizeOfBlob.Value() != forwardPInvokeHashBlobSize);
 
         static_assert(nltMaxValue   <= 0xFF);
         static_assert(nlfMaxValue   <= 0xFF);
@@ -4748,8 +4791,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
             pStubClassMT,
             stubClassType.GetAssembly(),
             pStubMD->GetAttrs(),
-            pStubMD,
-            NULL))
+            pStubMD))
     {
         StackSString interopMethodName(SString::Utf8, pTargetMD->GetName());
 
@@ -4782,16 +4824,14 @@ namespace
     class ILStubCreatorHelper
     {
     public:
-        ILStubCreatorHelper(MethodDesc *pTargetMD,
-                            PInvokeStubParameters* pParams
-                            ) :
-            m_pTargetMD(pTargetMD),
-            m_pParams(pParams),
-            m_pStubMD(NULL),
-            m_bILStubCreator(false)
+        ILStubCreatorHelper(PInvokeStubParameters* pParams, MethodDesc *pTargetMD)
+            : m_pParams(pParams)
+            , m_pTargetMD(pTargetMD)
+            , m_pStubMD(NULL)
+            , m_bILStubCreator(false)
         {
             STANDARD_VM_CONTRACT;
-            m_pHashParams = CreateHashBlob(m_pParams);
+            m_pHashParams = CreateHashBlob(m_pParams, m_pTargetMD);
         }
 
         ~ILStubCreatorHelper()
@@ -4853,11 +4893,10 @@ namespace
         }
 
     private:
-        MethodDesc*                      m_pTargetMD;
         PInvokeStubParameters*           m_pParams;
-        NewArrayHolder<ILStubHashBlob>   m_pHashParams;
-        AllocMemTracker*                 m_pAmTracker;
+        MethodDesc*                      m_pTargetMD;
         MethodDesc*                      m_pStubMD;
+        NewArrayHolder<ILStubHashBlob>   m_pHashParams;
         AllocMemTracker                  m_amTracker;
         bool                             m_bILStubCreator;     // Only the creator can remove the ILStub from the Cache
     };  //ILStubCreatorHelper
@@ -4953,7 +4992,7 @@ namespace
         // remove it from cache if OOM occurs
 
         {
-            ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
+            ILStubCreatorHelper ilStubCreatorHelper(&params, pTargetMD);
 
             // take the domain level lock
             ListLockHolder pILStubLock(AppDomain::GetCurrentDomain()->GetILStubGenLock());
@@ -5650,6 +5689,9 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
     {
         CONSISTENCY_CHECK(pNMD->IsVarArgs());
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         //
         // varargs goes through vararg PInvoke stub
         //
@@ -5657,6 +5699,7 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
 
         // Only vararg P/Invoke use shared stubs, they need a precode to push the hidden argument.
         (void)pNMD->GetOrCreatePrecode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     if (pNMD->IsEarlyBound())
@@ -5668,18 +5711,12 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
         PInvokeLink(pNMD);
     }
 
-    //
-    // NOTE: there is a race in updating this MethodDesc.  We depend on all
-    // threads getting back the same DynamicMethodDesc for a particular
-    // PInvokeMethodDesc, in that case, the locking around the actual JIT
-    // operation will prevent the code from being jitted more than once.
-    // By the time we get here, all threads get the same address of code
-    // back from the JIT operation and they all just fill in the same value
-    // here.
-    //
-    // In the NGEN case, all threads will get the same preimplemented code
-    // address much like the JIT case.
-    //
+    // NOTE: For IL-stub-backed P/Invoke stubs (i.e., when *ppStubMD is non-null
+    // and the stub is obtained via JitILStub/ILStubCache), racing threads will
+    // resolve to the same DynamicMethodDesc via the ILStubCache (keyed by the
+    // target MethodDesc). The locking around the JIT operation prevents the
+    // code from being jitted more than once, and all threads get back the same
+    // PCODE. See CreateHashBlob() for the hashing logic.
 
     return pStub;
 }
@@ -5706,7 +5743,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
             //
 
             pCode = pStubMD->PrepareInitialCode();
-#if defined(FEATURE_INTERPRETER) && defined(FEATURE_JIT)
+#if defined(FEATURE_INTERPRETER) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
             // Interpreter-TODO: Figure out how to create the call stub for the IL stub only when it is
             // needed, like we do for the regular methods.
             InterpByteCodeStart *pInterpreterCode = pStubMD->GetInterpreterCode();
@@ -5714,7 +5751,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
             {
                 CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
             }
-#endif // FEATURE_INTERPRETER && FEATURE_JIT
+#endif // FEATURE_INTERPRETER && FEATURE_DYNAMIC_CODE_COMPILED
 
             _ASSERTE(pCode == pStubMD->GetNativeCode());
         }
@@ -5918,7 +5955,7 @@ void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNati
 // it can reenter managed mode and throw a CLR exception if the DLL linking
 // fails.
 //==========================================================================
-EXTERN_C LPVOID STDCALL PInvokeImportWorker(PInvokeMethodDesc* pMD)
+EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 {
     LPVOID ret = NULL;
 
@@ -6068,11 +6105,9 @@ static void GetILStubForCalli(VASigCookie* pVASigCookie, MethodDesc* pMD)
 
     if (pMD != NULL)
     {
+        _ASSERTE(pMD->IsPInvoke());
+        _ASSERTE(!pMD->IsAsyncMethod());
         PInvokeStaticSigInfo sigInfo(pMD);
-
-        // TODO: (async) revisit and examine if this needs to be supported somehow
-        if (pMD->IsAsyncMethod())
-            ThrowHR(COR_E_NOTSUPPORTED);
 
         md = pMD->GetMemberDef();
         nlFlags = sigInfo.GetLinkFlags();
@@ -6151,6 +6186,43 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     GetILStubForCalli(pVASigCookie, NULL);
 
     pFrame->Pop(CURRENT_THREAD);
+}
+
+EXTERN_C void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        ENTRY_POINT;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(fullQualifiedTypeName != nullptr);
+    _ASSERTE(methodName != nullptr);
+    _ASSERTE(ppMD != nullptr);
+
+    SString fullQualifiedTypeNameUtf8(SString::Utf8, fullQualifiedTypeName);
+    TypeHandle type = TypeName::GetTypeFromAsmQualifiedName(fullQualifiedTypeNameUtf8.GetUnicode(), /*bThrowIfNotFound*/ TRUE);
+    _ASSERTE(!type.IsTypeDesc());
+
+    // Iterate the type looking for a method with the given name that has the
+    // UnmanagedCallersOnly attribute.
+    MethodTable* pMT = type.GetMethodTable();
+    MethodTable::MethodIterator it(pMT);
+    it.MoveToEnd();
+    for (; it.IsValid(); it.Prev())
+    {
+        MethodDesc* pMD = it.GetMethodDesc();
+        if (strcmp(pMD->GetNameOnNonArrayClass(), methodName) == 0
+            && pMD->HasUnmanagedCallersOnlyAttribute())
+        {
+            *ppMD = pMD;
+            return;
+        }
+    }
+
+    // Fallback if no UCO match found.
+    *ppMD = MemberLoader::FindMethodByName(pMT, methodName);
 }
 
 namespace

@@ -50,7 +50,7 @@ eng_root=`cd -P "$scriptroot/.." && pwd`
 azure_variable_prefix=''
 diff_target=''
 
-while [[ $# > 0 ]]; do
+while [[ $# -gt 0 ]]; do
   opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     -help|-h)

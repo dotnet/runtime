@@ -602,6 +602,3 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
 
     }
 }
-
-
-

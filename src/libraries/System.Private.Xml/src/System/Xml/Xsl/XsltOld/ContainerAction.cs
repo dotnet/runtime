@@ -492,7 +492,7 @@ namespace System.Xml.Xsl.XsltOld
         protected void CompileTopLevelElements(Compiler compiler)
         {
             // Navigator positioned at parent root, need to move to child and then back
-            if (compiler.Recurse() == false)
+            if (!compiler.Recurse())
             {
                 return;
             }

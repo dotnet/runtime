@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // This file contains the globals and statics that are visible to DAC.
 // It is used for the following:
 // 1. in daccess.h to build the table of DAC globals
@@ -95,10 +96,14 @@ DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
 DEFINE_DACVAR(PTR_StubManager, StubManager__g_pFirstManager, StubManager::g_pFirstManager)
 DEFINE_DACVAR(PTR_PrecodeStubManager, PrecodeStubManager__g_pManager, PrecodeStubManager::g_pManager)
 DEFINE_DACVAR(PTR_StubLinkStubManager, StubLinkStubManager__g_pManager, StubLinkStubManager::g_pManager)
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 DEFINE_DACVAR(PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, JumpStubStubManager::g_pManager)
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 DEFINE_DACVAR(PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
 DEFINE_DACVAR(PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
+#ifdef FEATURE_TIERED_COMPILATION
 DEFINE_DACVAR(PTR_CallCountingStubManager, CallCountingStubManager__g_pManager, CallCountingStubManager::g_pManager)
+#endif // FEATURE_TIERED_COMPILATION
 
 DEFINE_DACVAR(PTR_ThreadStore, ThreadStore__s_pThreadStore, ThreadStore::s_pThreadStore)
 
@@ -117,20 +122,21 @@ DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 DEFINE_DACVAR(DWORD, dac__g_TlsIndex, g_TlsIndex)
 DEFINE_DACVAR(DWORD, dac__g_offsetOfCurrentThreadInfo, g_offsetOfCurrentThreadInfo)
 
-#ifdef FEATURE_EH_FUNCLETS
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pExceptionServicesInternalCallsClass, ::g_pExceptionServicesInternalCallsClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pStackFrameIteratorClass, ::g_pStackFrameIteratorClass)
-#endif
 
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
 
 DEFINE_DACVAR(INT32, ArrayBase__s_arrayBoundsZero, ArrayBase::s_arrayBoundsZero)
+#ifdef FEATURE_CODE_VERSIONING
 DEFINE_DACVAR(BOOL, CodeVersionManager__s_HasNonDefaultILVersions, CodeVersionManager::s_HasNonDefaultILVersions)
+#endif // FEATURE_CODE_VERSIONING
 
 DEFINE_DACVAR(PTR_JITNotification, dac__g_pNotificationTable, ::g_pNotificationTable)
 DEFINE_DACVAR(ULONG32, dac__g_dacNotificationFlags, ::g_dacNotificationFlags)
-DEFINE_DACVAR(PTR_GcNotification, dac__g_pGcNotificationTable, ::g_pGcNotificationTable)
+
+DEFINE_DACVAR(DWORD, dac__g_gcNotificationFlags, g_gcNotificationFlags)
 
 DEFINE_DACVAR(PTR_EEConfig, dac__g_pConfig, ::g_pConfig)
 
@@ -172,6 +178,8 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_TypedReferenceMT, ::g_TypedReferenceM
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pWeakReferenceClass, ::g_pWeakReferenceClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pWeakReferenceOfTClass, ::g_pWeakReferenceOfTClass)
 
+DEFINE_DACVAR_VOLATILE(UNKNOWN_POINTER_TYPE, dac__g_pContinuationClassIfSubTypeCreated, ::g_pContinuationClassIfSubTypeCreated)
+
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pBaseCOMObject, ::g_pBaseCOMObject)
 #endif
@@ -199,6 +207,10 @@ DEFINE_DACVAR(PTR_SyncTableEntry, dac__g_pSyncTable, ::g_pSyncTable)
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pRCWCleanupList, ::g_pRCWCleanupList)
 #endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_COMWRAPPERS
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_knownQueryInterfaceImplementations, InteropLib::ABI::g_knownQueryInterfaceImplementations)
+#endif // FEATURE_COMWRAPPERS
 
 #ifndef TARGET_UNIX
 DEFINE_DACVAR(SIZE_T, dac__g_runtimeLoadedBaseAddress, ::g_runtimeLoadedBaseAddress)

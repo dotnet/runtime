@@ -169,7 +169,7 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
     HRESULT hr = E_FAIL;
 
     ShimRemoteDataTarget * pRemoteDataTarget = NULL;
-    DbgTransportTarget *   pProxy = g_pDbgTransportTarget;
+    DbgTransportTarget *   pProxy = &g_DbgTransportTarget;
     DbgTransportSession *  pTransport = NULL;
 
     hr = pProxy->GetTransportForProcess(pProcessDescriptor, &pTransport, &hDummy);
