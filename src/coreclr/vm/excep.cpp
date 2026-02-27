@@ -9476,7 +9476,7 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
 
 static Volatile<bool> g_firstChanceExceptionHasHandler = false;
 
-extern "C" void QCALLTYPE AppDomain_SetFirstChanceExceptionHandler()
+extern "C" void QCALLTYPE AppContext_SetFirstChanceExceptionHandler()
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
     g_firstChanceExceptionHasHandler.Store(true);

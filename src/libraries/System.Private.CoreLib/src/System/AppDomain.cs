@@ -83,15 +83,15 @@ namespace System
             add
             {
                 AppContext.FirstChanceException += value;
+#if CORECLR
                 // Once a handler is added, the runtime will attempt
                 // to deliver first chance notifications for all exceptions.
                 // We don't care if handlers are removed.
-                SetFirstChanceExceptionHandler();
+                AppContext.SetFirstChanceExceptionHandler();
+#endif
             }
             remove { AppContext.FirstChanceException -= value; }
         }
-
-        static partial void SetFirstChanceExceptionHandler();
 
         public event EventHandler? ProcessExit;
 

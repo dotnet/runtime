@@ -108,30 +108,27 @@ namespace System
             }
         }
 
-        [UnmanagedCallersOnly]
-        internal static unsafe void OnFirstChanceException(Exception* pException, Exception* pOutException)
+#if NATIVEAOT
+        [System.Runtime.RuntimeExport("OnFirstChanceException")]
+        internal static void OnFirstChanceException(object e)
+            => OnFirstChanceException(e, sender: null);
+#endif
+
+        private static void OnFirstChanceException(object e, object? sender)
         {
-            try
+            if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
             {
-                if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
+                FirstChanceExceptionEventArgs args = new((Exception)e);
+                foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
                 {
-                    var appDomain = AppDomain.CurrentDomain;
-                    FirstChanceExceptionEventArgs args = new(*pException);
-                    foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                    try
                     {
-                        try
-                        {
-                            handler(appDomain, args);
-                        }
-                        catch
-                        {
-                        }
+                        handler(sender, args);
+                    }
+                    catch
+                    {
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                *pOutException = ex;
             }
         }
 
