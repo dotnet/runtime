@@ -126,6 +126,7 @@ internal partial class MockDescriptors
         [
             new(nameof(Data.InteropSyncBlockInfo.RCW), DataType.pointer),
             new(nameof(Data.InteropSyncBlockInfo.CCW), DataType.pointer),
+            new(nameof(Data.InteropSyncBlockInfo.CCF), DataType.pointer),
         ]
     };
 

@@ -8,12 +8,12 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
 /// Dump-based integration tests for the SyncBlock contract.
-/// Uses the SyncBlockInterop debuggee dump, which creates lock contention
+/// Uses the SyncBlock debuggee dump, which creates lock contention
 /// and COM interop state before crashing.
 /// </summary>
 public class SyncBlockDumpTests : DumpTestBase
 {
-    protected override string DebuggeeName => "SyncBlockInterop";
+    protected override string DebuggeeName => "SyncBlock";
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

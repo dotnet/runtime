@@ -115,9 +115,9 @@ internal readonly struct Object_1 : IObject
         if (interopInfo == null)
             return false;
 
-        rcw = interopInfo.RCW;
+        rcw = interopInfo.RCW == 1 ? TargetPointer.Null : interopInfo.RCW;
         ccw = interopInfo.CCW == 1 ? TargetPointer.Null : interopInfo.CCW;
-        ccf = interopInfo.CCF;
+        ccf = interopInfo.CCF == 1 ? TargetPointer.Null : interopInfo.CCF;
         return rcw != TargetPointer.Null || ccw != TargetPointer.Null || ccf != TargetPointer.Null;
     }
 
