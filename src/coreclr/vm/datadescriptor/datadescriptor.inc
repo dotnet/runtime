@@ -5,6 +5,15 @@
 //
 // This file is compiled using the target architecture.  Preprocessor defines for the target
 // platform will be available.  It is ok to use `#ifdef`.
+//
+// When modifying this file (adding/removing types, fields, or globals), you must also:
+//   1. Update the corresponding contract doc in docs/design/datacontracts/<contract>.md
+//      to reflect the new data descriptors and any changes to the contract algorithm.
+//   2. Update the managed data class in src/native/managed/cdac/.../Data/<Type>.cs
+//      to read the new field(s).
+//   3. Update the contract implementation in src/native/managed/cdac/.../Contracts/<Contract>.cs
+//      to use the new data.
+//   4. Update the mock descriptors and tests in src/native/managed/cdac/tests/.
 
 
 CDAC_BASELINE("empty")
@@ -88,6 +97,8 @@ CDAC_TYPE_BEGIN(GCAllocContext)
 CDAC_TYPE_INDETERMINATE(GCAllocContext)
 CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Pointer, offsetof(gc_alloc_context, alloc_ptr))
 CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Limit, offsetof(gc_alloc_context, alloc_limit))
+CDAC_TYPE_FIELD(GCAllocContext, /*int64*/, AllocBytes, offsetof(gc_alloc_context, alloc_bytes))
+CDAC_TYPE_FIELD(GCAllocContext, /*int64*/, AllocBytesLoh, offsetof(gc_alloc_context, alloc_bytes_uoh))
 CDAC_TYPE_END(GCAllocContext)
 
 // Exception
@@ -733,6 +744,7 @@ CDAC_TYPE_END(ILCodeVersionNode)
 
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, /*uint64*/, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
+CDAC_TYPE_FIELD(ProfControlBlock, /*bool*/, RejitOnAttachEnabled, offsetof(ProfControlBlock, fRejitOnAttachEnabled))
 CDAC_TYPE_END(ProfControlBlock)
 
 #ifdef HAVE_GCCOVER
@@ -1030,6 +1042,19 @@ CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, cdac_data<Dyna
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, EntryIL, cdac_data<DynamicILBlobTable>::EntryIL)
 CDAC_TYPE_END(DynamicILBlobTable)
 
+#ifdef FEATURE_COMINTEROP
+CDAC_TYPE_BEGIN(ComCallWrapper)
+CDAC_TYPE_INDETERMINATE(ComCallWrapper)
+CDAC_TYPE_FIELD(ComCallWrapper, /*pointer*/, SimpleWrapper, cdac_data<ComCallWrapper>::SimpleWrapper)
+CDAC_TYPE_END(ComCallWrapper)
+
+CDAC_TYPE_BEGIN(SimpleComCallWrapper)
+CDAC_TYPE_INDETERMINATE(SimpleComCallWrapper)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*int64*/, RefCount, cdac_data<SimpleComCallWrapper>::RefCount)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*uint32*/, Flags, cdac_data<SimpleComCallWrapper>::Flags)
+CDAC_TYPE_END(SimpleComCallWrapper)
+#endif // FEATURE_COMINTEROP
+
 #ifdef FEATURE_COMWRAPPERS
 CDAC_TYPE_BEGIN(ComWrappersVtablePtrs)
 CDAC_TYPE_SIZE(g_numKnownQueryInterfaceImplementations * sizeof(PCODE))
@@ -1099,6 +1124,21 @@ CDAC_GLOBAL(MethodDescTokenRemainderBitCount, uint8, METHOD_TOKEN_REMAINDER_BIT_
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
+#endif
+#if FEATURE_COMWRAPPERS
+CDAC_GLOBAL(FeatureComWrappers, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureComWrappers, uint8, 0)
+#endif
+#if FEATURE_OBJCMARSHAL
+CDAC_GLOBAL(FeatureObjCMarshal, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureObjCMarshal, uint8, 0)
+#endif
+#if FEATURE_JAVAMARSHAL
+CDAC_GLOBAL(FeatureJavaMarshal, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureJavaMarshal, uint8, 0)
 #endif
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 1)
@@ -1173,7 +1213,9 @@ CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
-
+#if FEATURE_COMINTEROP
+CDAC_GLOBAL(ComRefcountMask, int64, SimpleComCallWrapper::COM_REFCOUNT_MASK)
+#endif // FEATURE_COMINTEROP
 
 // It is important for the subdescriptor pointers to be the last pointers in the global structure.
 // EnumMemDataDescriptors in enummem.cpp hardcodes the number of subdescriptors and utilizes
@@ -1182,6 +1224,9 @@ CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 // When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
+#if FEATURE_COMINTEROP
+CDAC_GLOBAL_CONTRACT(BuiltInCOM, 1)
+#endif // FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
 #ifdef FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
