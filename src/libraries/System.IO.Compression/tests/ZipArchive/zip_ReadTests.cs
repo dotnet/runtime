@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO.Compression.Tests.Utilities;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -887,6 +888,50 @@ namespace System.IO.Compression.Tests
             ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
             ZipArchiveEntry readEntry = readArchive.Entries[0];
             Assert.Equal(ZipCompressionMethod.Deflate64, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        // A minimal zip file containing a single entry "test.txt" compressed with ZStandard (method 93).
+        // The entry contains the UTF-8 bytes for "Hello, ZStandard World!" (23 bytes uncompressed, 32 bytes compressed).
+        private static readonly byte[] s_zstandardZipBytes =
+        [
+            0x50, 0x4B, 0x03, 0x04, 0x3F, 0x00, 0x00, 0x00, 0x5D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21, 0xD9,
+            0xD4, 0x8F, 0x20, 0x00, 0x00, 0x00, 0x17, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x74, 0x65,
+            0x73, 0x74, 0x2E, 0x74, 0x78, 0x74, 0x28, 0xB5, 0x2F, 0xFD, 0x00, 0x58, 0xB9, 0x00, 0x00, 0x48,
+            0x65, 0x6C, 0x6C, 0x6F, 0x2C, 0x20, 0x5A, 0x53, 0x74, 0x61, 0x6E, 0x64, 0x61, 0x72, 0x64, 0x20,
+            0x57, 0x6F, 0x72, 0x6C, 0x64, 0x21, 0x50, 0x4B, 0x01, 0x02, 0x3F, 0x00, 0x3F, 0x00, 0x00, 0x00,
+            0x5D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x21, 0xD9, 0xD4, 0x8F, 0x20, 0x00, 0x00, 0x00, 0x17, 0x00,
+            0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x74, 0x65, 0x73, 0x74, 0x2E, 0x74, 0x78, 0x74, 0x50, 0x4B, 0x05, 0x06,
+            0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x36, 0x00, 0x00, 0x00, 0x46, 0x00, 0x00, 0x00,
+            0x00, 0x00,
+        ];
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task CompressionMethod_ZStandard_ReturnsZStandard(bool async)
+        {
+            using var ms = new MemoryStream(s_zstandardZipBytes);
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry readEntry = readArchive.Entries[0];
+            Assert.Equal(ZipCompressionMethod.ZStandard, readEntry.CompressionMethod);
+            await DisposeZipArchive(async, readArchive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ZStandard_ReadEntryData_Succeeds(bool async)
+        {
+            using var ms = new MemoryStream(s_zstandardZipBytes);
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry entry = readArchive.Entries[0];
+
+            Stream stream = await OpenEntryStream(async, entry);
+            using var result = new MemoryStream();
+            await stream.CopyToAsync(result);
+            await DisposeStream(async, stream);
+
+            Assert.Equal("Hello, ZStandard World!", System.Text.Encoding.UTF8.GetString(result.ToArray()));
             await DisposeZipArchive(async, readArchive);
         }
 

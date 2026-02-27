@@ -9,7 +9,8 @@ namespace System.IO.Compression
         ExplicitDirectory = 20,
         Deflate = 20,
         Deflate64 = 21,
-        Zip64 = 45
+        Zip64 = 45,
+        ZStandard = 63
     }
 
     /// <summary>
