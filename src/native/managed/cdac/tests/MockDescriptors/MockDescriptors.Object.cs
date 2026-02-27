@@ -221,7 +221,7 @@ internal partial class MockDescriptors
 
             string name = string.Join(',', array);
 
-            // BaseSize encodes rank for multidimensional arrays: ArrayBaseBaseSize + Rank * sizeof(int) * 2
+            // BaseSize encodes rank for multidimensional arrays: ArrayBaseSize + Rank * sizeof(int) * 2
             uint baseSize = targetTestHelpers.ArrayBaseBaseSize;
             if (!isSingleDimensionZeroLowerBound)
                 baseSize += (uint)(array.Rank * sizeof(int) * 2);

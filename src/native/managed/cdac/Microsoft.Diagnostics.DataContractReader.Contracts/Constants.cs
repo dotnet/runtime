@@ -53,7 +53,7 @@ public static class Constants
 
         public const string MethodDescAlignment = nameof(MethodDescAlignment);
         public const string ObjectHeaderSize = nameof(ObjectHeaderSize);
-        public const string ArrayBaseBaseSize = nameof(ArrayBaseBaseSize);
+        public const string ArrayBaseSize = nameof(ArrayBaseSize);
         public const string SyncBlockValueToObjectOffset = nameof(SyncBlockValueToObjectOffset);
 
         public const string SyncTableEntries = nameof(SyncTableEntries);

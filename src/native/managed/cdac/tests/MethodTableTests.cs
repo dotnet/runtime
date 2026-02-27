@@ -242,7 +242,7 @@ public class MethodTableTests
             // Category_Array (without Category_IfArrayThenSzArray) marks a multidim ELEMENT_TYPE_ARRAY
             const uint multidimFlags = (uint)(MethodTableFlags_1.WFLAGS_HIGH.HasComponentSize | MethodTableFlags_1.WFLAGS_HIGH.Category_Array);
 
-            // rank-4: BaseSize = ArrayBaseBaseSize + 4 * sizeof(int) * 2
+            // rank-4: BaseSize = ArrayBaseSize + 4 * sizeof(int) * 2
             uint baseSize4 = targetTestHelpers.ArrayBaseBaseSize + 4 * sizeof(uint) * 2;
             TargetPointer eeClass4 = rtsBuilder.AddEEClass("EEClass int[,,,]", attr: multidimArrayCorTypeAttr, numMethods: 0, numNonVirtualSlots: 0);
             rank4MethodTablePtr = rtsBuilder.AddMethodTable("MethodTable int[,,,]",
@@ -250,7 +250,7 @@ public class MethodTableTests
                 module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: 0);
             rtsBuilder.SetEEClassAndCanonMTRefs(eeClass4, rank4MethodTablePtr);
 
-            // rank-1 multidim (ELEMENT_TYPE_ARRAY, not SZARRAY): BaseSize = ArrayBaseBaseSize + 1 * sizeof(int) * 2
+            // rank-1 multidim (ELEMENT_TYPE_ARRAY, not SZARRAY): BaseSize = ArrayBaseSize + 1 * sizeof(int) * 2
             uint baseSize1 = targetTestHelpers.ArrayBaseBaseSize + 1 * sizeof(uint) * 2;
             TargetPointer eeClass1 = rtsBuilder.AddEEClass("EEClass int[*]", attr: multidimArrayCorTypeAttr, numMethods: 0, numNonVirtualSlots: 0);
             rank1MultiDimMethodTablePtr = rtsBuilder.AddMethodTable("MethodTable int[*]",

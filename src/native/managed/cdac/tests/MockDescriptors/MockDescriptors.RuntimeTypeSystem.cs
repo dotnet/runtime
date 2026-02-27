@@ -102,7 +102,7 @@ internal partial class MockDescriptors
             [
                 (nameof(Constants.Globals.FreeObjectMethodTable), TestFreeObjectMethodTableGlobalAddress),
                 (nameof(Constants.Globals.MethodDescAlignment), GetMethodDescAlignment(Builder.TargetTestHelpers)),
-                (nameof(Constants.Globals.ArrayBaseBaseSize), Builder.TargetTestHelpers.ArrayBaseBaseSize),
+                (nameof(Constants.Globals.ArrayBaseSize), Builder.TargetTestHelpers.ArrayBaseBaseSize),
             ];
         }
 

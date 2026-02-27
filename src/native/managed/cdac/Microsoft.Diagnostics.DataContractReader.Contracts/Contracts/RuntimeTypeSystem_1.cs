@@ -731,9 +731,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             switch (methodTable.Flags.GetFlag(MethodTableFlags_1.WFLAGS_HIGH.Category_Mask))
             {
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_Array:
-                    // Multidim array: BaseSize = ArrayBaseBaseSize + Rank * sizeof(uint) * 2
-                    uint arrayBaseBaseSize = _target.ReadGlobal<uint>(Constants.Globals.ArrayBaseBaseSize);
-                    uint boundsSize = methodTable.Flags.BaseSize - arrayBaseBaseSize;
+                    // Multidim array: BaseSize = ArrayBaseSize + Rank * sizeof(uint) * 2
+                    uint arrayBaseSize = _target.ReadGlobal<uint>(Constants.Globals.ArrayBaseSize);
+                    uint boundsSize = methodTable.Flags.BaseSize - arrayBaseSize;
                     rank = boundsSize / (sizeof(uint) * 2);
                     return true;
 
