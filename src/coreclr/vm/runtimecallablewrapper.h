@@ -63,6 +63,7 @@
 #include "spinlock.h"
 #include "interoputil.h"
 #include "excep.h"
+#include "cdacdata.h"
 #include "comcache.h"
 #include "threads.h"
 #include "comcache.h"

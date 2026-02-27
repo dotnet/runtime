@@ -10,7 +10,8 @@ internal sealed class RCW : IData<RCW>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RCW);
 
-        InterfaceEntries = target.ReadPointer(address + (ulong)type.Fields[nameof(InterfaceEntries)].Offset);
+        // m_aInterfaceEntries is an inline array - the offset is the address of the first element
+        InterfaceEntries = address + (ulong)type.Fields[nameof(InterfaceEntries)].Offset;
     }
 
     public TargetPointer InterfaceEntries { get; init; }

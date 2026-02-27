@@ -1056,7 +1056,7 @@ CDAC_TYPE_END(SimpleComCallWrapper)
 
 CDAC_TYPE_BEGIN(RCW)
 CDAC_TYPE_INDETERMINATE(RCW)
-CDAC_TYPE_FIELD(RCW, /*pointer*/, InterfaceEntries, cdac_data<RCW>::InterfaceEntries)
+CDAC_TYPE_FIELD(RCW, /*inline array*/, InterfaceEntries, cdac_data<RCW>::InterfaceEntries)
 CDAC_TYPE_END(RCW)
 
 CDAC_TYPE_BEGIN(InterfaceEntry)

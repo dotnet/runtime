@@ -64,7 +64,7 @@ Data descriptors used:
 | `ComCallWrapper` | `SimpleWrapper` | Address of the associated `SimpleComCallWrapper` |
 | `SimpleComCallWrapper` | `RefCount` | The wrapper refcount value |
 | `SimpleComCallWrapper` | `Flags` | Bit flags for wrapper properties |
-| `RCW` | `InterfaceEntries` | Address of the first element of the inline interface entry cache array |
+| `RCW` | `InterfaceEntries` | Offset of the inline interface entry cache array within the RCW struct |
 | `InterfaceEntry` | `MethodTable` | MethodTable pointer for the cached COM interface |
 | `InterfaceEntry` | `Unknown` | `IUnknown*` pointer for the cached COM interface |
 
@@ -82,7 +82,8 @@ Contracts used:
 ``` csharp
 public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw)
 {
-    var rcwData = /* read RCW from address */;
+    // InterfaceEntries is the address of the inline array (address + offset of m_aInterfaceEntries)
+    var rcwData = /* read RCW: InterfaceEntries = address + offset */;
     uint cacheSize = _target.ReadGlobal<uint>("RCWInterfaceCacheSize");
     uint entrySize = /* size of InterfaceEntry */;
 
@@ -90,7 +91,8 @@ public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInt
     {
         TargetPointer entryAddress = rcwData.InterfaceEntries + i * entrySize;
         var entry = /* read InterfaceEntry from entryAddress */;
-        if (entry.MethodTable != TargetPointer.Null && entry.Unknown != TargetPointer.Null)
+        // An entry is free if Unknown == null (matches InterfaceEntry::IsFree())
+        if (entry.Unknown != TargetPointer.Null)
             yield return (entry.MethodTable, entry.Unknown);
     }
 }

@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -43,11 +40,6 @@ internal readonly struct BuiltInCOM_2 : IBuiltInCOM
     private readonly Target _target;
     private readonly BuiltInCOM_1 _v1;
 
-    private enum Flags
-    {
-        IsHandleWeak = 0x4,
-    }
-
     internal BuiltInCOM_2(Target target)
     {
         _target = target;
@@ -68,7 +60,7 @@ internal readonly struct BuiltInCOM_2 : IBuiltInCOM
         {
             TargetPointer entryAddress = rcwData.InterfaceEntries + i * entrySize;
             Data.InterfaceEntry entry = _target.ProcessedData.GetOrAdd<Data.InterfaceEntry>(entryAddress);
-            if (entry.MethodTable != TargetPointer.Null && entry.Unknown != TargetPointer.Null)
+            if (entry.Unknown != TargetPointer.Null)
             {
                 yield return (entry.MethodTable, entry.Unknown);
             }

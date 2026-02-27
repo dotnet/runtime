@@ -62,39 +62,32 @@ public class BuiltInCOMTests
         testCase(target);
     }
 
-    private static TargetPointer AddRCW(
-        MockMemorySpace.Builder builder,
-        TargetTestHelpers targetTestHelpers,
-        Dictionary<DataType, Target.TypeInfo> types,
-        MockMemorySpace.BumpAllocator allocator,
-        TargetPointer interfaceEntriesAddress)
-    {
-        Target.TypeInfo rcwTypeInfo = types[DataType.RCW];
-        MockMemorySpace.HeapFragment fragment = allocator.Allocate(rcwTypeInfo.Size!.Value, "RCW");
-        Span<byte> data = fragment.Data;
-        targetTestHelpers.WritePointer(
-            data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.InterfaceEntries)].Offset),
-            interfaceEntriesAddress);
-        builder.AddHeapFragment(fragment);
-        return fragment.Address;
-    }
-
-    private static TargetPointer AddInterfaceEntries(
+    /// <summary>
+    /// Allocates an RCW mock with the interface entries embedded inline (matching the real C++ layout
+    /// where m_aInterfaceEntries is an inline array within the RCW struct).
+    /// Returns the address of the RCW.
+    /// </summary>
+    private static TargetPointer AddRCWWithInlineEntries(
         MockMemorySpace.Builder builder,
         TargetTestHelpers targetTestHelpers,
         Dictionary<DataType, Target.TypeInfo> types,
         MockMemorySpace.BumpAllocator allocator,
         (TargetPointer MethodTable, TargetPointer Unknown)[] entries)
     {
+        Target.TypeInfo rcwTypeInfo = types[DataType.RCW];
         Target.TypeInfo entryTypeInfo = types[DataType.InterfaceEntry];
         uint entrySize = entryTypeInfo.Size!.Value;
-        uint totalSize = entrySize * TestRCWInterfaceCacheSize;
-        MockMemorySpace.HeapFragment fragment = allocator.Allocate(totalSize, "InterfaceEntries");
+        uint entriesOffset = (uint)rcwTypeInfo.Fields[nameof(Data.RCW.InterfaceEntries)].Offset;
+
+        // The RCW block must be large enough to hold the RCW header plus all inline entries
+        uint totalSize = entriesOffset + entrySize * TestRCWInterfaceCacheSize;
+        MockMemorySpace.HeapFragment fragment = allocator.Allocate(totalSize, "RCW with inline entries");
         Span<byte> data = fragment.Data;
 
+        // Write the inline interface entries starting at entriesOffset
         for (int i = 0; i < entries.Length && i < TestRCWInterfaceCacheSize; i++)
         {
-            Span<byte> entryData = data.Slice((int)(i * entrySize));
+            Span<byte> entryData = data.Slice((int)(entriesOffset + i * entrySize));
             targetTestHelpers.WritePointer(
                 entryData.Slice(entryTypeInfo.Fields[nameof(Data.InterfaceEntry.MethodTable)].Offset),
                 entries[i].MethodTable);
@@ -122,9 +115,7 @@ public class BuiltInCOMTests
             (builder, targetTestHelpers, types) =>
             {
                 MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
-
-                TargetPointer entriesAddress = AddInterfaceEntries(builder, targetTestHelpers, types, allocator, expectedEntries);
-                rcwAddress = AddRCW(builder, targetTestHelpers, types, allocator, entriesAddress);
+                rcwAddress = AddRCWWithInlineEntries(builder, targetTestHelpers, types, allocator, expectedEntries);
             },
             (target) =>
             {
@@ -145,14 +136,14 @@ public class BuiltInCOMTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetRCWInterfaces_SkipsEmptyEntries(MockTarget.Architecture arch)
+    public void GetRCWInterfaces_SkipsEntriesWithNullUnknown(MockTarget.Architecture arch)
     {
         TargetPointer rcwAddress = default;
-        // Only some entries are filled; the rest have null MT/Unknown
+        // The IsFree() check uses only Unknown == null; entries with Unknown == null are skipped.
         (TargetPointer MethodTable, TargetPointer Unknown)[] entries =
         [
             (new TargetPointer(0x1000), new TargetPointer(0x2000)),
-            (TargetPointer.Null, TargetPointer.Null),  // empty
+            (TargetPointer.Null, TargetPointer.Null),  // free entry (Unknown == null)
             (new TargetPointer(0x5000), new TargetPointer(0x6000)),
         ];
 
@@ -160,8 +151,7 @@ public class BuiltInCOMTests
             (builder, targetTestHelpers, types) =>
             {
                 MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
-                TargetPointer entriesAddress = AddInterfaceEntries(builder, targetTestHelpers, types, allocator, entries);
-                rcwAddress = AddRCW(builder, targetTestHelpers, types, allocator, entriesAddress);
+                rcwAddress = AddRCWWithInlineEntries(builder, targetTestHelpers, types, allocator, entries);
             },
             (target) =>
             {
@@ -169,7 +159,7 @@ public class BuiltInCOMTests
                 List<(TargetPointer MethodTable, TargetPointer Unknown)> results =
                     contract.GetRCWInterfaces(rcwAddress).ToList();
 
-                // Only the 2 non-null entries should be returned
+                // Only the 2 entries with non-null Unknown are returned
                 Assert.Equal(2, results.Count);
                 Assert.Equal(new TargetPointer(0x1000), results[0].MethodTable);
                 Assert.Equal(new TargetPointer(0x2000), results[0].Unknown);
@@ -188,8 +178,7 @@ public class BuiltInCOMTests
             (builder, targetTestHelpers, types) =>
             {
                 MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
-                TargetPointer entriesAddress = AddInterfaceEntries(builder, targetTestHelpers, types, allocator, []);
-                rcwAddress = AddRCW(builder, targetTestHelpers, types, allocator, entriesAddress);
+                rcwAddress = AddRCWWithInlineEntries(builder, targetTestHelpers, types, allocator, []);
             },
             (target) =>
             {
