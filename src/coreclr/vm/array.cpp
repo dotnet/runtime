@@ -66,7 +66,7 @@ DWORD ArrayMethodDesc::GetAttrs()
 // Generate a short sig (descr) for an array accessors
 //
 
-static VOID GenerateArrayAccessorCallSig(
+static void GenerateArrayAccessorCallSig(
     DWORD   dwRank,
     DWORD   dwFuncType,    // Load, store, or <init>
     PCCOR_SIGNATURE *ppSig,// Generated signature

@@ -7790,11 +7790,6 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
         if (pClass.IsValid())
         {
-            if (IsArray())
-            {
-                // Array MethodTables use EEClass directly (no extra fields).
-                DacEnumMemoryRegion(dac_cast<TADDR>(pClass), sizeof(EEClass));
-            }
             pClass->EnumMemoryRegions(flags, this);
         }
         else

@@ -1914,9 +1914,6 @@ public:
 
 
 
-// Dynamically generated array class structure - no additional fields beyond EEClass
-typedef DPTR(EEClass) PTR_ArrayClass;
-
 inline EEClassLayoutInfo *EEClass::GetLayoutInfo()
 {
     LIMITED_METHOD_CONTRACT;
