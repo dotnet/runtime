@@ -580,7 +580,7 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
     }
 
     regNumber reg = ReleaseTemporaryRegister(genActualType(operand));
-assert((reg == operand->GetRegNum()) && "Temporary reg being consumed out of order");
+    assert((reg == operand->GetRegNum()) && "Temporary reg being consumed out of order");
     CollectReference(operand);
 
     operand->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
@@ -624,7 +624,7 @@ void WasmRegAlloc::ResolveReferences()
     {
         TemporaryRegStack& temporaryRegs          = m_temporaryRegs[static_cast<unsigned>(type)];
         TemporaryRegBank&  allocatedTemporaryRegs = temporaryRegMap[static_cast<unsigned>(type)];
-assert((temporaryRegs.Count == 0) && "Some temporary regs were not consumed/released");
+        assert((temporaryRegs.Count == 0) && "Some temporary regs were not consumed/released");
 
         allocatedTemporaryRegs.Count = temporaryRegs.MaxCount;
         if (allocatedTemporaryRegs.Count == 0)

@@ -486,14 +486,11 @@ void Lowering::AfterLowerBlock()
             }
         }
 
-        bool CanMoveNodePast (GenTree* node, GenTree* past)
+        bool CanMoveNodePast(GenTree* node, GenTree* past)
         {
-            bool result = node->IsInvariant() ||
-                node->isContained() ||
-                (
-                    node->OperIs(GT_LCL_VAR) &&
-                    !m_lower->m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed()
-                );
+            bool result = node->IsInvariant() || node->isContained() ||
+                          (node->OperIs(GT_LCL_VAR) &&
+                           !m_lower->m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed());
 
             if (result)
             {
