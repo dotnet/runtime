@@ -23,5 +23,9 @@ namespace System
 
             return dataStore;
         }
+
+        [RuntimeExport("OnFirstChanceException")]
+        internal static void OnFirstChanceException(object e)
+            => OnFirstChanceException((Exception)e, sender: null);
     }
 }

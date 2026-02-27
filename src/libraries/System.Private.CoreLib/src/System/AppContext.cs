@@ -108,17 +108,11 @@ namespace System
             }
         }
 
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("OnFirstChanceException")]
-        internal static void OnFirstChanceException(object e)
-            => OnFirstChanceException(e, sender: null);
-#endif
-
-        private static void OnFirstChanceException(object e, object? sender)
+        private static void OnFirstChanceException(Exception e, object? sender)
         {
             if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
             {
-                FirstChanceExceptionEventArgs args = new((Exception)e);
+                FirstChanceExceptionEventArgs args = new(e);
                 foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
                 {
                     try
