@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Text.Json
 {
@@ -139,7 +140,7 @@ namespace System.Text.Json
                 return property;
             }
 
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, propertyName));
         }
 
         /// <summary>
@@ -177,7 +178,7 @@ namespace System.Text.Json
                 return property;
             }
 
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, propertyName.ToString()));
         }
 
         /// <summary>
@@ -217,7 +218,7 @@ namespace System.Text.Json
                 return property;
             }
 
-            throw new KeyNotFoundException();
+            throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, Encoding.UTF8.GetString(utf8PropertyName)));
         }
 
         /// <summary>
