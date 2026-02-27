@@ -6584,7 +6584,7 @@ void Compiler::compCompileFinish()
 #endif
         }
     }
-#else
+#else // DEBUG
 
     if (JitConfig.JitReportMetrics())
     {
