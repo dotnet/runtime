@@ -33,17 +33,21 @@ internal class GcScanner
         CodeManagerFlags flags,
         GcScanContext scanContext)
     {
-        TargetNUInt curOffs = _eman.GetRelativeOffset(cbh);
+        _ = context;
+        _ = scanContext;
+        _ = _eman.GetRelativeOffset(cbh);
 
-        _eman.GetGCInfo(cbh, out TargetPointer pGcInfo, out uint gcVersion);
+        _eman.GetGCInfo(cbh, out _, out _);
 
         if (_eman.IsFilterFunclet(cbh))
         {
-            // Filters are the only funclet that run during the 1st pass, and must have
-            // both the leaf and the parent frame reported.  In order to avoid double
-            // reporting of the untracked variables, do not report them for the filter.
             flags |= CodeManagerFlags.NoReportUntracked;
         }
+        _ = flags;
+
+        // TODO(stackref): Use GCInfoDecoder.EnumerateLiveSlots to enumerate live slots,
+        // translate slot descriptors into target addresses using the context,
+        // and report them via scanContext.GCEnumCallback / scanContext.GCReportCallback.
 
         return false;
     }

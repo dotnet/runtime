@@ -106,13 +106,12 @@ internal partial class StackWalk_1 : IStackWalk
 
                 if (reportGcReferences)
                 {
-                    if (IsFrameless(gcFrame.Frame))
+                    if (gcFrame.Frame.State == StackWalkState.SW_FRAMELESS)
                     {
-                        // TODO(stackref): are the "GetCodeManagerFlags" flags relevant?
                         if (!IsManaged(gcFrame.Frame.Context.InstructionPointer, out CodeBlockHandle? cbh))
                             throw new InvalidOperationException("Expected managed code");
                         GcScanner gcScanner = new(_target);
-                        gcScanner.EnumGcRefs(gcFrame.Frame.Context, cbh.Value, scanContext);
+                        gcScanner.EnumGcRefs(gcFrame.Frame.Context, cbh.Value, 0, scanContext);
                     }
                     else
                     {
