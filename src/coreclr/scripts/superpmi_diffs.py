@@ -22,7 +22,7 @@ from jitutil import run_command, TempDir, determine_jit_name
 
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-type", help="Type of diff (asmdiffs, tpdiff, all)")
+parser.add_argument("-type", help="Type of diff (asmdiffs, tpdiff, memorydiff, all)")
 parser.add_argument("-partition_info", help="Path to partition info file")
 parser.add_argument("-base_jit_directory", help="path to the directory containing base clrjit binaries")
 parser.add_argument("-diff_jit_directory", help="path to the directory containing diff clrjit binaries")
@@ -51,7 +51,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "type",
-                        lambda type: type in ["asmdiffs", "tpdiff", "all"],
+                        lambda type: type in ["asmdiffs", "tpdiff", "memorydiff", "all"],
                         "Invalid type \"{}\"".format)
 
     coreclr_args.verify(args,
@@ -318,6 +318,48 @@ class Diff:
             print("Failed during tpdiff. Log file: {}".format(log_file))
             self.failed = True
 
+    def do_memorydiff(self):
+        """ Run memorydiff
+        """
+
+        print("Running memorydiff")
+
+        # Figure out which JITs to use
+        jit_name = determine_jit_name(self.host_os, self.target_os, self.host_arch_name, self.arch_name, use_cross_compile_jit=True)
+        base_checked_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "checked", jit_name)
+        diff_checked_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "checked", jit_name)
+
+        log_file = os.path.join(self.log_directory, "superpmi_memorydiff_{}.log".format(self.target))
+
+        # This is the summary file name and location written by superpmi.py. If the file exists, remove it to ensure superpmi.py doesn't created a numbered version.
+        overall_json_memorydiff_summary_file = os.path.join(self.spmi_location, "memorydiff_summary.json")
+        if os.path.isfile(overall_json_memorydiff_summary_file):
+            os.remove(overall_json_memorydiff_summary_file)
+
+        overall_json_memorydiff_summary_file_target = os.path.join(self.log_directory, "superpmi_memorydiff_summary_{}.json".format(self.target))
+        self.summary_json_files.append((overall_json_memorydiff_summary_file, overall_json_memorydiff_summary_file_target))
+
+        _, _, return_code = run_command([
+            self.python_path,
+            os.path.join(self.script_dir, "superpmi.py"),
+            "memorydiff",
+            "--no_progress",
+            "-core_root", self.core_root_dir,
+            "-target_os", self.target_os,
+            "-target_arch", self.arch_name,
+            "-arch", self.host_arch_name,
+            "-base_jit_path", base_checked_jit_path,
+            "-diff_jit_path", diff_checked_jit_path,
+            "-spmi_location", self.spmi_location,
+            "-error_limit", "100",
+            "--summary_as_json",
+            "-log_level", "debug",
+            "-log_file", log_file] + self.create_jit_options_args())
+
+        if return_code != 0:
+            print("Failed during memorydiff. Log file: {}".format(log_file))
+            self.failed = True
+
     def create_jit_options_args(self):
         options = []
         if self.coreclr_args.base_jit_options is not None:
@@ -365,13 +407,17 @@ def main(main_args):
 
     do_asmdiffs = False
     do_tpdiff = False
+    do_memorydiff = False
     if coreclr_args.type == 'asmdiffs':
         do_asmdiffs = True
     if coreclr_args.type == 'tpdiff':
         do_tpdiff = True
+    if coreclr_args.type == 'memorydiff':
+        do_memorydiff = True
     if coreclr_args.type == 'all':
         do_asmdiffs = True
         do_tpdiff = True
+        do_memorydiff = True
 
     diff = Diff(coreclr_args)
 
@@ -381,6 +427,8 @@ def main(main_args):
         diff.do_asmdiffs()
     if do_tpdiff:
         diff.do_tpdiff()
+    if do_memorydiff:
+        diff.do_memorydiff()
 
     diff.summarize()
 

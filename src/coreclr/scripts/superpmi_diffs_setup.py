@@ -32,7 +32,7 @@ parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", required=True, help="Architecture")
 parser.add_argument("-platform", required=True, help="OS platform")
-parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, all)")
+parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, memorydiff, all)")
 parser.add_argument("-source_directory", required=True, help="Path to the root directory of the dotnet/runtime source tree")
 parser.add_argument("-checked_directory", help="Path to the directory containing built checked binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Checked)")
 parser.add_argument("-release_directory", help="Path to the directory containing built release binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Release)")
@@ -67,7 +67,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "type",
-                        lambda type: type in ["asmdiffs", "tpdiff", "all"],
+                        lambda type: type in ["asmdiffs", "tpdiff", "memorydiff", "all"],
                         "Invalid type \"{}\"".format)
 
     coreclr_args.verify(args,
@@ -87,17 +87,23 @@ def setup_args(args):
 
     do_asmdiffs = False
     do_tpdiff = False
+    do_memorydiff = False
     if coreclr_args.type == 'asmdiffs':
         do_asmdiffs = True
     if coreclr_args.type == 'tpdiff':
         do_tpdiff = True
+    if coreclr_args.type == 'memorydiff':
+        do_memorydiff = True
     if coreclr_args.type == 'all':
         do_asmdiffs = True
         do_tpdiff = True
+        do_memorydiff = True
 
     use_checked = False
     use_release = False
     if do_asmdiffs:
+        use_checked = True
+    if do_memorydiff:
         use_checked = True
     if do_tpdiff:
         use_release = True
@@ -328,17 +334,23 @@ def main(main_args):
 
     do_asmdiffs = False
     do_tpdiff = False
+    do_memorydiff = False
     if coreclr_args.type == 'asmdiffs':
         do_asmdiffs = True
     if coreclr_args.type == 'tpdiff':
         do_tpdiff = True
+    if coreclr_args.type == 'memorydiff':
+        do_memorydiff = True
     if coreclr_args.type == 'all':
         do_asmdiffs = True
         do_tpdiff = True
+        do_memorydiff = True
 
     use_checked = False
     use_release = False
     if do_asmdiffs:
+        use_checked = True
+    if do_memorydiff:
         use_checked = True
     if do_tpdiff:
         use_release = True

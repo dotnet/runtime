@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser(description="description")
 parser.add_argument("-diff_summary_dir", required=True, help="Path to diff summary directory")
 parser.add_argument("-arch", required=True, help="Architecture")
 parser.add_argument("-platform", required=True, help="OS platform")
-parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, all)")
+parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, memorydiff, all)")
 parser.add_argument("-source_directory", required=True, help="Path to the root directory of the dotnet/runtime source tree")
 
 def setup_args(args):
@@ -58,7 +58,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "type",
-                        lambda type: type in ["asmdiffs", "tpdiff", "all"],
+                        lambda type: type in ["asmdiffs", "tpdiff", "memorydiff", "all"],
                         "Invalid type \"{}\"".format)
 
     coreclr_args.verify(args,
@@ -91,7 +91,7 @@ def append_diff_file(f, file_name, full_file_path):
 
     diff_os = "unknown"
     diff_arch = "unknown"
-    match_obj = re.search(r'^superpmi_(tpdiff|asmdiffs)_summary_(.*)_(.*).md', file_name)
+    match_obj = re.search(r'^superpmi_(tpdiff|asmdiffs|memorydiff)_summary_(.*)_(.*).md', file_name)
     if match_obj is not None:
         diff_os = match_obj.group(2)
         diff_arch = match_obj.group(3)
@@ -131,13 +131,17 @@ def main(main_args):
 
     do_asmdiffs = False
     do_tpdiff = False
+    do_memorydiff = False
     if coreclr_args.type == 'asmdiffs':
         do_asmdiffs = True
     if coreclr_args.type == 'tpdiff':
         do_tpdiff = True
+    if coreclr_args.type == 'memorydiff':
+        do_memorydiff = True
     if coreclr_args.type == 'all':
         do_asmdiffs = True
         do_tpdiff = True
+        do_memorydiff = True
 
     superpmi_scripts_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
     python_path = sys.executable
@@ -219,6 +223,22 @@ def main(main_args):
 
             if not any_tpdiff_found:
                 f.write("No throughput diffs found\n")
+
+        if do_memorydiff:
+            f.write("# Memory allocation impact on {} {}\n\n".format(platform_name, arch))
+            f.write("The following shows the impact on JIT memory allocations. " +
+                    "Negative percentages/lower numbers are better.\n\n")
+
+            any_memorydiff_found = False
+            for dirpath, _, files in os.walk(diff_summary_dir):
+                for file_name in files:
+                    if file_name.startswith("superpmi_memorydiff") and file_name.endswith(".md"):
+                        full_file_path = os.path.join(dirpath, file_name)
+                        if append_diff_file(f, file_name, full_file_path):
+                            any_memorydiff_found = True
+
+            if not any_memorydiff_found:
+                f.write("No memory allocation diffs found\n")
 
     with open(final_md_path, "r") as f:
         print(f.read())

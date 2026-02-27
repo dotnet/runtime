@@ -103,6 +103,10 @@ throughput_description = """\
 Measure throughput using PIN on one or more collections.
 """
 
+memorydiff_description = """\
+Measure JIT memory allocation differences on one or more collections.
+"""
+
 upload_description = """\
 Upload a collection to SuperPMI Azure storage.
 """
@@ -131,7 +135,7 @@ summarize_description = """\
 Summarize multiple .json summaries created by --summary_as_json into a single .md file.
 """
 
-summary_type_help = "Type of summaries: asmdiffs or tpdiff"
+summary_type_help = "Type of summaries: asmdiffs, tpdiff, or memorydiff"
 
 summaries_help = "List of .json files to summarize"
 
@@ -375,6 +379,9 @@ asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a 
 # subparser for throughput
 throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help)
+
+# subparser for memorydiff
+memorydiff_parser = subparsers.add_parser("memorydiff", description=memorydiff_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -3285,6 +3292,339 @@ def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_
                 write_fh.write("\n")
 
 ################################################################################
+# SuperPMI Memory Diff
+################################################################################
+
+
+class SuperPMIReplayMemoryDiff:
+    """ SuperPMI Replay memory diff class
+
+    Notes:
+        The object is responsible for replaying the mch files given to the
+        instance of the class and measuring JIT memory allocation differences.
+    """
+
+    def __init__(self, coreclr_args, mch_files, base_jit_path, diff_jit_path):
+        """ Constructor
+
+        Args:
+            coreclr_args (CoreclrArguments) : parsed args
+            mch_files (list)                : list of MCH files to replay
+            base_jit_path (str)             : path to baseline clrjit
+            diff_jit_path (str)             : path to diff clrjit
+
+        """
+
+        self.base_jit_path = base_jit_path
+        self.diff_jit_path = diff_jit_path
+        self.mch_files = mch_files
+        self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
+
+        self.coreclr_args = coreclr_args
+        self.diff_mcl_contents = None
+
+    ############################################################################
+    # Instance Methods
+    ############################################################################
+
+    def replay_with_memory_diff(self):
+        """ Replay SuperPMI collections measuring memory allocation differences.
+
+        Returns:
+            (bool) True on success; False otherwise
+        """
+
+        target_flags = []
+        if self.coreclr_args.arch != self.coreclr_args.target_arch:
+            target_flags += [ "-target", self.coreclr_args.target_arch ]
+
+        base_option_flags = []
+        if self.coreclr_args.base_jit_option:
+            for o in self.coreclr_args.base_jit_option:
+                base_option_flags += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                base_option_flags += "-jitoption", o
+
+        diff_option_flags = []
+        if self.coreclr_args.diff_jit_option:
+            for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                diff_option_flags += "-jit2option", o
+
+        memory_diffs = []
+
+        with TempDir(None, self.coreclr_args.skip_cleanup) as temp_location:
+            logging.debug("")
+            logging.debug("Temp Location: %s", temp_location)
+            logging.debug("")
+
+            for mch_file in self.mch_files:
+
+                logging.info("Running memory diff of %s", mch_file)
+
+                if self.coreclr_args.details:
+                    details_info_file = self.coreclr_args.details
+                else:
+                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+
+                flags = [
+                    "-applyDiff",
+                    "-v", "ewi",
+                    "-details", details_info_file,
+                ]
+                flags += target_flags
+                flags += base_option_flags
+                flags += diff_option_flags
+
+                if not self.coreclr_args.sequential and not self.coreclr_args.compile:
+                    if not self.coreclr_args.parallelism:
+                        flags += [ "-p" ]
+                    else:
+                        flags += [ "-p", self.coreclr_args.parallelism ]
+
+                if self.coreclr_args.break_on_assert:
+                    flags += [ "-boa" ]
+
+                if self.coreclr_args.break_on_error:
+                    flags += [ "-boe" ]
+
+                if self.coreclr_args.compile:
+                    flags += [ "-c", self.coreclr_args.compile ]
+
+                if self.coreclr_args.spmi_log_file is not None:
+                    flags += [ "-w", self.coreclr_args.spmi_log_file ]
+
+                if self.coreclr_args.error_limit is not None:
+                    flags += ["-failureLimit", self.coreclr_args.error_limit]
+
+                with ChangeDir(self.coreclr_args.core_root):
+                    command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
+                    return_code = run_and_log(command)
+
+                print_superpmi_error_result(return_code, self.coreclr_args)
+
+                (base_metrics, diff_metrics) = aggregate_memory_diff_metrics(details_info_file)
+                print_superpmi_success_result(return_code, base_metrics, diff_metrics)
+
+                if base_metrics is not None and diff_metrics is not None:
+                    base_bytes = base_metrics["Overall"]["Diffed BytesAllocated"]
+                    diff_bytes = diff_metrics["Overall"]["Diffed BytesAllocated"]
+
+                    logging.info("Total bytes allocated by base: {:,d}".format(base_bytes))
+                    logging.info("Total bytes allocated by diff: {:,d}".format(diff_bytes))
+                    if base_bytes != 0 and diff_bytes != 0:
+                        delta_bytes = diff_bytes - base_bytes
+                        logging.info("Total bytes allocated delta: {:,d} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
+                        memory_diffs.append((os.path.basename(mch_file), base_metrics, diff_metrics))
+                    else:
+                        logging.warning("One compilation failed to produce any results")
+                else:
+                    logging.warning("No metric files present?")
+
+            ################################################################################################ end of for mch_file in self.mch_files
+
+        # Report the overall results summary of the memorydiff run
+
+        logging.info("Memory diff summary:")
+
+        # Construct an overall Markdown summary file.
+
+        if len(memory_diffs) > 0:
+            if not os.path.isdir(self.coreclr_args.spmi_location):
+                os.makedirs(self.coreclr_args.spmi_location)
+
+            (base_jit_options, diff_jit_options) = get_base_diff_jit_options(self.coreclr_args)
+
+            if self.coreclr_args.summary_as_json:
+                overall_json_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_summary", "json")
+                if os.path.isfile(overall_json_summary_file):
+                    os.remove(overall_json_summary_file)
+
+                with open(overall_json_summary_file, "w") as write_fh:
+                    # Strip Per-context ratios lists to avoid bloating the JSON file
+                    json_memory_diffs = []
+                    for (mch_file, base_m, diff_m) in memory_diffs:
+                        json_base = {k: {mk: mv for mk, mv in v.items() if mk != "Per-context ratios"} for k, v in base_m.items()}
+                        json_diff = {k: {mk: mv for mk, mv in v.items() if mk != "Per-context ratios"} for k, v in diff_m.items()}
+                        json_memory_diffs.append((mch_file, json_base, json_diff))
+                    json.dump((base_jit_options, diff_jit_options, json_memory_diffs), write_fh)
+                    logging.info("  Summary JSON file: %s", overall_json_summary_file)
+            else:
+                overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_summary", "md")
+
+                if os.path.isfile(overall_md_summary_file):
+                    os.remove(overall_md_summary_file)
+
+                with open(overall_md_summary_file, "w") as write_fh:
+                    write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, True)
+                    logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+                short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_short_summary", "md")
+
+                if os.path.isfile(short_md_summary_file):
+                    os.remove(short_md_summary_file)
+
+                with open(short_md_summary_file, "w") as write_fh:
+                    write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, False)
+                    logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
+
+        return True
+        ################################################################################################ end of replay_with_memory_diff()
+
+
+def aggregate_memory_diff_metrics(details_file):
+    """ Given the path to a CSV details file output by SPMI for a diff, aggregate the BytesAllocated metrics.
+
+    Returns:
+        (base_metrics, diff_metrics) tuple of dictionaries with "Overall", "MinOpts", "FullOpts" keys
+    """
+
+    base_minopts = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0,
+                    "Diffed BytesAllocated": 0, "Diffed contexts": 0,
+                    "Per-context ratios": []}
+    base_fullopts = base_minopts.copy()
+    base_fullopts["Per-context ratios"] = []
+
+    diff_minopts = base_minopts.copy()
+    diff_minopts["Per-context ratios"] = []
+    diff_fullopts = base_minopts.copy()
+    diff_fullopts["Per-context ratios"] = []
+
+    for row in read_csv(details_file):
+        base_result = row["Base result"]
+
+        if row["MinOpts"] == "True":
+            base_dict = base_minopts
+            diff_dict = diff_minopts
+        else:
+            base_dict = base_fullopts
+            diff_dict = diff_fullopts
+
+        if base_result == "Success":
+            base_dict["Successful compiles"] += 1
+        elif base_result == "Miss":
+            base_dict["Missing compiles"] += 1
+        else:
+            assert(base_result == "Error")
+            base_dict["Failing compiles"] += 1
+
+        diff_result = row["Diff result"]
+        if diff_result == "Success":
+            diff_dict["Successful compiles"] += 1
+        elif diff_result == "Miss":
+            diff_dict["Missing compiles"] += 1
+        else:
+            assert(diff_result == "Error")
+            diff_dict["Failing compiles"] += 1
+
+        if base_result == "Success" and diff_result == "Success":
+            base_bytes = int(row["Base BytesAllocated"])
+            diff_bytes = int(row["Diff BytesAllocated"])
+            base_dict["Diffed BytesAllocated"] += base_bytes
+            diff_dict["Diffed BytesAllocated"] += diff_bytes
+
+            base_dict["Diffed contexts"] += 1
+            diff_dict["Diffed contexts"] += 1
+
+            if base_bytes > 0:
+                ratio = diff_bytes / base_bytes
+                base_dict["Per-context ratios"].append(ratio)
+                diff_dict["Per-context ratios"].append(ratio)
+
+    base_overall = base_minopts.copy()
+    base_overall["Per-context ratios"] = list(base_minopts["Per-context ratios"])
+    for k in base_overall.keys():
+        if k == "Per-context ratios":
+            base_overall[k] += base_fullopts["Per-context ratios"]
+        else:
+            base_overall[k] += base_fullopts[k]
+
+    diff_overall = diff_minopts.copy()
+    diff_overall["Per-context ratios"] = list(diff_minopts["Per-context ratios"])
+    for k in diff_overall.keys():
+        if k == "Per-context ratios":
+            diff_overall[k] += diff_fullopts["Per-context ratios"]
+        else:
+            diff_overall[k] += diff_fullopts[k]
+
+    # Compute P90 of per-context ratios
+    for d in [base_overall, base_minopts, base_fullopts, diff_overall, diff_minopts, diff_fullopts]:
+        ratios = sorted(d["Per-context ratios"])
+        if len(ratios) > 0:
+            p90_index = int(math.ceil(0.9 * len(ratios))) - 1
+            d["P90 ratio"] = ratios[p90_index]
+        else:
+            d["P90 ratio"] = 1.0
+
+    return ({"Overall": base_overall, "MinOpts": base_minopts, "FullOpts": base_fullopts},
+            {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts})
+
+
+def write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, include_details):
+
+    def is_significant_pct(base, diff):
+        if base == 0:
+            return diff != 0
+        return round((diff - base) / base * 100, 2) != 0
+
+    def is_significant(row, base, diff):
+        return is_significant_pct(base[row]["Diffed BytesAllocated"], diff[row]["Diffed BytesAllocated"])
+
+    write_jit_options(base_jit_options, diff_jit_options, write_fh)
+
+    if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in memory_diffs):
+        def write_pivot_section(row):
+            if not any(is_significant(row, base, diff) for (_, base, diff) in memory_diffs):
+                return
+
+            pcts = [compute_pct(base_metrics[row]["Diffed BytesAllocated"], diff_metrics[row]["Diffed BytesAllocated"]) for (_, base_metrics, diff_metrics) in memory_diffs]
+            min_pct_str = format_pct(min(pcts))
+            max_pct_str = format_pct(max(pcts))
+            if min_pct_str == max_pct_str:
+                mem_summary = "{} ({})".format(row, min_pct_str)
+            else:
+                mem_summary = "{} ({} to {})".format(row, min_pct_str, max_pct_str)
+
+            with DetailsSection(write_fh, mem_summary):
+                write_fh.write("|Collection|PDIFF|P90 ratio|\n")
+                write_fh.write("|---|--:|--:|\n")
+                for mch_file, base, diff in memory_diffs:
+                    base_bytes = base[row]["Diffed BytesAllocated"]
+                    diff_bytes = diff[row]["Diffed BytesAllocated"]
+                    p90 = diff[row]["P90 ratio"]
+
+                    if is_significant(row, base, diff):
+                        write_fh.write("|{}|{}|{:.4f}|\n".format(
+                            mch_file,
+                            compute_and_format_pct(base_bytes, diff_bytes),
+                            p90))
+
+        write_pivot_section("Overall")
+        write_pivot_section("MinOpts")
+        write_pivot_section("FullOpts")
+    elif include_details:
+        write_fh.write("No significant memory allocation differences found\n")
+
+    if include_details:
+        with DetailsSection(write_fh, "Details"):
+            for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
+                write_fh.write("{} contexts:\n\n".format(disp))
+                write_fh.write("|Collection|Base bytes allocated|Diff bytes allocated|PDIFF|P90 ratio|\n")
+                write_fh.write("|---|--:|--:|--:|--:|\n")
+                for mch_file, base, diff in memory_diffs:
+                    base_bytes = base[row]["Diffed BytesAllocated"]
+                    diff_bytes = diff[row]["Diffed BytesAllocated"]
+                    p90 = diff[row]["P90 ratio"]
+                    write_fh.write("|{}|{:,d}|{:,d}|{}|{:.4f}|\n".format(
+                        mch_file, base_bytes, diff_bytes,
+                        compute_and_format_pct(base_bytes, diff_bytes),
+                        p90))
+                write_fh.write("\n")
+
+################################################################################
 # Argument handling helpers
 ################################################################################
 
@@ -4240,7 +4580,7 @@ def summarize_json_summaries(coreclr_args):
     for file in coreclr_args.summaries:
         logging.info("  {}".format(file))
 
-    file_name_prefix = "diff" if coreclr_args.summary_type == "asmdiffs" else "tpdiff"
+    file_name_prefix = "diff" if coreclr_args.summary_type == "asmdiffs" else ("memorydiff" if coreclr_args.summary_type == "memorydiff" else "tpdiff")
 
     if coreclr_args.output_long_summary_path:
         overall_md_summary_file = coreclr_args.output_long_summary_path
@@ -4272,6 +4612,26 @@ def summarize_json_summaries(coreclr_args):
 
         with open(short_md_summary_file, "w") as write_fh:
             write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, False)
+            logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
+    elif coreclr_args.summary_type == "memorydiff":
+        base_jit_options = []
+        diff_jit_options = []
+        summarizable_memory_diffs = []
+
+        for json_file in coreclr_args.summaries:
+            with open(json_file, "r") as fh:
+                (base_jit_options, diff_jit_options, memory_diffs) = json.load(fh)
+                summarizable_memory_diffs.extend(memory_diffs)
+
+        # Sort by collection name
+        summarizable_memory_diffs.sort(key=lambda t: t[0])
+
+        with open(overall_md_summary_file, "w") as write_fh:
+            write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_memory_diffs, True)
+            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+        with open(short_md_summary_file, "w") as write_fh:
+            write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_memory_diffs, False)
             logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
     else:
         base_jit_build_string_decoded = ""
@@ -5279,6 +5639,20 @@ def setup_args(args):
         process_base_jit_path_arg(coreclr_args)
         download_clrjit_pintool(coreclr_args)
 
+    elif coreclr_args.mode == "memorydiff":
+
+        verify_target_args()
+        verify_superpmi_common_args()
+        verify_replay_common_args()
+        verify_base_diff_args()
+
+        coreclr_args.verify(determine_coredis_tools(coreclr_args),
+                            "coredistools_location",
+                            os.path.isfile,
+                            "Unable to find coredistools.")
+
+        process_base_jit_path_arg(coreclr_args)
+
     elif coreclr_args.mode == "upload":
 
         verify_target_args()
@@ -5384,7 +5758,7 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set output_long_summary_path")
 
-    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "download":
+    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "memorydiff" or coreclr_args.mode == "download":
         if hasattr(coreclr_args, "private_store") and coreclr_args.private_store is not None:
             logging.info("Using private stores:")
             for path in coreclr_args.private_store:
@@ -5526,6 +5900,37 @@ def main(args):
 
         tp_diff = SuperPMIReplayThroughputDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
         success = tp_diff.replay_with_throughput_diff()
+
+        end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
+
+        logging.debug("Finish time: %s", end_time.strftime("%H:%M:%S"))
+        logging.debug("Elapsed time: %s", elapsed_time)
+
+    elif coreclr_args.mode == "memorydiff":
+        local_mch_paths = process_mch_files_arg(coreclr_args)
+        mch_files = get_mch_files_for_replay(local_mch_paths, coreclr_args.filter)
+        if mch_files is None:
+            return 1
+
+        begin_time = datetime.datetime.now()
+
+        logging.info("SuperPMI memory diff")
+        logging.debug("------------------------------------------------------------")
+        logging.debug("Start time: %s", begin_time.strftime("%H:%M:%S"))
+
+        base_jit_path = coreclr_args.base_jit_path
+        diff_jit_path = coreclr_args.diff_jit_path
+
+        logging.info("Base JIT Path: %s", base_jit_path)
+        logging.info("Diff JIT Path: %s", diff_jit_path)
+
+        logging.info("Using MCH files:")
+        for mch_file in mch_files:
+            logging.info("  %s", mch_file)
+
+        memory_diff = SuperPMIReplayMemoryDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
+        success = memory_diff.replay_with_memory_diff()
 
         end_time = datetime.datetime.now()
         elapsed_time = end_time - begin_time
