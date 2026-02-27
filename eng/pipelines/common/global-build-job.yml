@@ -2,6 +2,7 @@ parameters:
   buildConfig: ''
   nameSuffix: ''
   buildArgs: ''
+  skipBuild: false
   archType: ''
   hostedOs: ''
   osGroup: ''
@@ -174,7 +175,7 @@ jobs:
 
     - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
-    - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+    - ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), not(in(parameters.hostedOs, 'linux', 'windows'))) }}:
       - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies
 
@@ -214,28 +215,29 @@ jobs:
         - ${{ else }}:
           - ${{ preBuildStep }}
 
-    # Build
-    - template: /eng/pipelines/common/templates/global-build-step.yml
-      parameters:
-        buildArgs: ${{ parameters.buildArgs }}
-        useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
-        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    - ${{ if ne(parameters.skipBuild, true) }}:
+      # Build
+      - template: /eng/pipelines/common/templates/global-build-step.yml
+        parameters:
+          buildArgs: ${{ parameters.buildArgs }}
+          useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
-    - task: CopyFiles@2
-      displayName: Gather CMakeConfigureLog for publish to artifacts
-      inputs:
-        SourceFolder: 'artifacts/obj'
-        Contents: '**/CMakeConfigureLog.yaml'
-        TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
-      continueOnError: true
-      condition: always()
-
-    - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
-      - script: |
-          du -sh $(Build.SourcesDirectory)/*
-          df -h
-        displayName: Disk Usage after Build
+      - task: CopyFiles@2
+        displayName: Gather CMakeConfigureLog for publish to artifacts
+        inputs:
+          SourceFolder: 'artifacts/obj'
+          Contents: '**/CMakeConfigureLog.yaml'
+          TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
+        continueOnError: true
         condition: always()
+
+      - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
+        - script: |
+            du -sh $(Build.SourcesDirectory)/*
+            df -h
+          displayName: Disk Usage after Build
+          condition: always()
 
       # If intended to send extra steps after regular build add them here.
     - ${{ if ne(parameters.postBuildSteps,'') }}:
