@@ -244,3 +244,73 @@ PALEXPORT int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask);
  * resolving symbolic links. The caller is responsible for releasing the buffer.
  */
 PALEXPORT char* SystemNative_GetProcessPath(void);
+
+/**
+ * Spawns a new process.
+ *
+ * Returns 0 on success, -1 on error (errno is set).
+ */
+PALEXPORT int32_t SystemNative_SpawnProcess(
+    const char* path,
+    char* const argv[],
+    char* const envp[],
+    const char* working_dir,
+    const int32_t* inherited_handles,
+    int32_t inherited_handles_count,
+    int32_t stdin_fd,
+    int32_t stdout_fd,
+    int32_t stderr_fd,
+    int32_t kill_on_parent_death,
+    int32_t create_suspended,
+    int32_t create_new_process_group,
+    int32_t* out_pid,
+    int32_t* out_pidfd);
+
+/**
+ * Sends a signal to a process.
+ *
+ * Returns 0 on success, -1 on error (errno is set).
+ */
+PALEXPORT int32_t SystemNative_SendSignal(int32_t pidfd, int32_t pid, int32_t managed_signal);
+
+/**
+ * Waits for a process to exit and reaps it.
+ *
+ * Returns 0 on success, -1 on error (errno is set).
+ */
+PALEXPORT int32_t SystemNative_WaitForExitAndReap(int32_t pidfd, int32_t pid, int32_t* out_exitCode, int32_t* out_signal);
+
+/**
+ * Tries to wait for a process to exit with a timeout.
+ *
+ * Returns 0 if process exited, 1 on timeout, -1 on error (errno is set).
+ */
+PALEXPORT int32_t SystemNative_TryWaitForExit(int32_t pidfd, int32_t pid, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal);
+
+/**
+ * Tries to wait for a process to exit with cancellation support.
+ *
+ * Returns 0 if process exited, 1 on cancellation, -1 on error (errno is set).
+ */
+PALEXPORT int32_t SystemNative_TryWaitForExitCancellable(int32_t pidfd, int32_t pid, int32_t cancelPipeFd, int32_t* out_exitCode, int32_t* out_signal);
+
+/**
+ * Waits for a process to exit or kills it on timeout.
+ *
+ * Returns 0 on success, -1 on error (errno is set).
+ */
+PALEXPORT int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal, int32_t* out_timeout);
+
+/**
+ * Tries to get the exit code of a process without blocking.
+ *
+ * Returns 0 if exit code is available, -1 if process is still running or error.
+ */
+PALEXPORT int32_t SystemNative_TryGetExitCode(int32_t pidfd, int32_t pid, int32_t* out_exitCode, int32_t* out_signal);
+
+/**
+ * Opens an existing child process by its process ID.
+ *
+ * Returns 0 on success, -1 on error (errno is set).
+ */
+PALEXPORT int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd);

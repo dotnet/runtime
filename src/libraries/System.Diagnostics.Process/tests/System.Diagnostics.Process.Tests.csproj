@@ -67,6 +67,7 @@
     <Compile Include="ProcessTests.Unix.cs" />
     <Compile Include="ProcessStartOptionsTests.Unix.cs" />
     <Compile Include="ProcessThreadTests.Unix.cs" />
+    <Compile Include="SafeProcessHandleTests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.cs"

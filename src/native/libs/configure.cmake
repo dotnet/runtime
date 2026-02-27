@@ -498,6 +498,9 @@ check_symbol_exists(
     HAVE_KQUEUE)
 set(CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
+# posix_spawn_file_actions_addchdir_np is not available on tvOS
+check_symbol_exists(posix_spawn_file_actions_addchdir_np "spawn.h" HAVE_POSIX_SPAWN_FILE_ACTIONS_ADDCHDIR_NP)
+
 check_symbol_exists(
     disconnectx
     "sys/socket.h"
