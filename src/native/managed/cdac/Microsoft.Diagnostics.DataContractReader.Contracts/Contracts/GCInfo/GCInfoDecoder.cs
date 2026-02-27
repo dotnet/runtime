@@ -516,7 +516,28 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         return _interruptibleRanges;
     }
 
+    public uint StackBaseRegister
+    {
+        get
+        {
+            EnsureDecodedTo(DecodePoints.ReversePInvoke);
+            return _stackBaseRegister;
+        }
+    }
+
     public uint NumTrackedSlots => _numSlots - _numUntrackedSlots;
+
+    bool IGCInfoDecoder.EnumerateLiveSlots(
+        uint instructionOffset,
+        uint inputFlags,
+        LiveSlotCallback reportSlot)
+    {
+        return EnumerateLiveSlots(instructionOffset, inputFlags,
+            (uint slotIndex, GcSlotDesc slot, uint gcFlags) =>
+            {
+                reportSlot(slot.IsRegister, slot.RegisterNumber, slot.SpOffset, (uint)slot.Base, gcFlags);
+            });
+    }
 
     /// <summary>
     /// Enumerates all GC slots that are live at the given instruction offset, invoking the callback for each.
