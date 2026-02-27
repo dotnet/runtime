@@ -173,8 +173,6 @@ class CallStubGenerator
 
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
     bool m_interpreterToNative = false;
-    bool m_hasSwiftError = false;
-    bool m_isSwiftCallConv = false;
 
 #if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
     PCODE GetGPRegRefRoutine(int r);
@@ -193,10 +191,12 @@ class CallStubGenerator
 #endif // TARGET_ARM64
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     // Swift calling convention state
+    bool m_isSwiftCallConv = false;
+    bool m_isSwiftILStub = false;
+    bool m_hasSwiftError = false;
+    bool m_hasSwiftReturnLowering = false;
     int m_swiftSelfByRefSize = 0;
     CORINFO_SWIFT_LOWERING m_swiftReturnLowering = {};
-    bool m_hasSwiftReturnLowering = false;
-    bool m_isSwiftILStub = false;
 
     // Swift routine helpers
     PCODE GetSwiftSelfRoutine();

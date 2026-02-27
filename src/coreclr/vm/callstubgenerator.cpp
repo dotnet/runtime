@@ -1592,8 +1592,13 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     LoaderAllocator *pLoaderAllocator = pMD->GetLoaderAllocator();
     S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
     void *pHeaderStorage = pamTracker->Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize));
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     bool hasSwiftError = m_isSwiftCallConv && m_hasSwiftError;
     bool hasSwiftReturnLowering = m_isSwiftCallConv && m_hasSwiftReturnLowering && !m_interpreterToNative;
+#else
+    bool hasSwiftError = false;
+    bool hasSwiftReturnLowering = false;
+#endif
 
     int targetSlotIndex = m_interpreterToNative ? m_targetSlotIndex : (m_routineIndex - 1);
     CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, hasSwiftReturnLowering, m_pInvokeFunction);
@@ -1702,7 +1707,9 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     hashState.AddPointer((void*)m_pInvokeFunction);
     hashState.Add(sig.IsAsyncCall() ? 1 : 0);
     hashState.Add(m_targetSlotIndex);
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     hashState.Add(m_hasSwiftError ? 1 : 0);
+#endif
 
     CachedCallStubKey cachedHeaderKey(
         hashState.ToHashCode(),
@@ -1711,7 +1718,9 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         pRoutines,
         ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE),
         sig.IsAsyncCall(),
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         m_hasSwiftError,
+#endif
         m_pInvokeFunction);
 
     CrstHolder lockHolder(&s_callStubCrst);
@@ -1729,7 +1738,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         // We only need to allocate the actual pRoutines array, and then we can just use the cachedHeader we already constructed
         size_t finalCachedCallStubSize = sizeof(CachedCallStub) + m_routineIndex * sizeof(PCODE);
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, false /* hasSwiftReturnLowering */, m_pInvokeFunction);
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, m_hasSwiftReturnLowering, m_pInvokeFunction);
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
 
@@ -2100,9 +2109,7 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
-    // For reverse P/Invoke (UnmanagedCallersOnly): emit Store_SwiftError before processing regular args
-    // SwiftError* is excluded from rewritten signature for reverse P/Invoke (uses x21)
-    // For direct P/Invoke, SwiftError* stays in signature and is handled in the main loop
+    // For reverse P/Invoke emit Store_SwiftError before processing regular args because it is excluded from rewritten signature
     if (m_hasSwiftError && !m_interpreterToNative && !m_isSwiftILStub)
     {
 #if LOG_COMPUTE_CALL_STUB
@@ -2133,17 +2140,12 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         {
             MethodTable* pArgMT = nullptr;
 
-            // For ELEMENT_TYPE_PTR, thArgTypeHandle from GetArgType may be empty
-            // Use GetTypeHandleThrowing to get the full type (including PTR/BYREF wrapper)
             if (corType == ELEMENT_TYPE_PTR || corType == ELEMENT_TYPE_BYREF)
             {
-                // GetArgProps returns SigPointer at the current argument (set by SkipArg after GetArgType)
                 SigPointer argSig = sig.GetArgProps();
-                // GetTypeHandleThrowing returns the full type including the PTR wrapper as a TypeDesc
                 TypeHandle thFullType = argSig.GetTypeHandleThrowing(sig.GetModule(), sig.GetSigTypeContext());
                 if (!thFullType.IsNull() && thFullType.IsTypeDesc())
                 {
-                    // For PTR/BYREF, get the inner type
                     TypeHandle innerType = thFullType.AsTypeDesc()->GetTypeParam();
                     if (!innerType.IsNull() && !innerType.IsTypeDesc())
                     {
@@ -2308,10 +2310,6 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         if (returnType == ReturnTypeSwiftLowered)
         {
-            // For reverse PInvoke with Swift lowered return:
-            // 1. SwiftReverseReturnLoweredHandler calls ExecuteInterpretedMethod
-            // 2. Sets x9 = result pointer, chains to Load_X*_AtOffset routines
-            // 3. SwiftReverseReturnLoweredTerminator does final return
             pRoutines[m_routineIndex++] = (PCODE)SwiftReverseReturnLoweredHandler;
 
             int gpRegIndex = 0;
@@ -2321,19 +2319,20 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
                 CorInfoType elemType = m_swiftReturnLowering.loweredElements[i];
                 uint32_t offset = m_swiftReturnLowering.offsets[i];
                 bool isFloat = (elemType == CORINFO_TYPE_FLOAT || elemType == CORINFO_TYPE_DOUBLE);
+                PCODE packedData = (PCODE)offset | ((PCODE)0 << 16);
 
                 if (isFloat)
                 {
                     _ASSERTE(fpRegIndex < 4);
                     pRoutines[m_routineIndex++] = GetSwiftLoadFPAtOffsetRoutine(fpRegIndex);
-                    pRoutines[m_routineIndex++] = (PCODE)offset;
+                    pRoutines[m_routineIndex++] = packedData;
                     fpRegIndex++;
                 }
                 else
                 {
                     _ASSERTE(gpRegIndex < 4);
                     pRoutines[m_routineIndex++] = GetSwiftLoadGPAtOffsetRoutine(gpRegIndex);
-                    pRoutines[m_routineIndex++] = (PCODE)offset;
+                    pRoutines[m_routineIndex++] = packedData;
                     gpRegIndex++;
                 }
             }
@@ -2344,13 +2343,6 @@ void CallStubGenerator::ComputeCallStubWorker(bool hasUnmanagedCallConv, CorInfo
         {
             pRoutines[m_routineIndex++] = GetInterpreterReturnTypeHandler(returnType);
         }
-    }
-
-    // Check routines array bounds
-    size_t maxRoutines = (ComputeTempStorageSize(sig) - sizeof(CallStubHeader)) / sizeof(PCODE);
-    if ((size_t)m_routineIndex > maxRoutines)
-    {
-        _ASSERTE(!"Routines array overflow");
     }
 }
 
@@ -2951,55 +2943,50 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
 
             if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_SELF))
             {
-                swiftSelfCount++;
-                if (swiftSelfCount > 1)
+                if (swiftSelfCount > 0)
                 {
                     COMPlusThrow(kInvalidProgramException);
                 }
+                swiftSelfCount++;
                 newArgCount++;
                 continue;
             }
 
             if (pArgMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SWIFT_SELF_T)))
             {
-                swiftSelfCount++;
-                if (swiftSelfCount > 1)
+                if (swiftSelfCount > 0)
                 {
                     COMPlusThrow(kInvalidProgramException);
                 }
+                swiftSelfCount++;
 
                 // Fall through for struct lowering
             }
 
             if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))
             {
-                if (argType == ELEMENT_TYPE_VALUETYPE)
+                if (argType == ELEMENT_TYPE_VALUETYPE || swiftErrorCount > 0)
                 {
                     COMPlusThrow(kInvalidProgramException);
                 }
                 swiftErrorCount++;
                 m_hasSwiftError = true;
-                if (swiftErrorCount > 1)
+
+                // Direct P/Invoke
+                if (m_interpreterToNative || m_isSwiftILStub)
                 {
-                    COMPlusThrow(kInvalidProgramException);
+                    newArgCount++;
                 }
-                // For reverse P/Invoke: SwiftError* goes in x21, exclude from rewritten signature
-                // For direct P/Invoke: keep in signature so ProcessSwiftSpecialArgument handles it at natural position
-                if (!m_interpreterToNative && !m_isSwiftILStub)
-                {
-                    continue;
-                }
-                newArgCount++;
                 continue;
             }
 
             if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_INDIRECT_RESULT))
             {
-                swiftIndirectResultCount++;
-                if (swiftIndirectResultCount > 1)
+                if (swiftIndirectResultCount > 0)
                 {
                     COMPlusThrow(kInvalidProgramException);
                 }
+                swiftIndirectResultCount++;
                 // SwiftIndirectResult goes in x8, not in argument registers
                 continue;
             }
@@ -3041,8 +3028,6 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
     sig.Reset();
     while ((argType = sig.NextArg()) != ELEMENT_TYPE_END)
     {
-        // Handle pointer types (like SwiftError*) - only for reverse P/Invoke
-        // For direct P/Invoke, SwiftError* stays in signature so ProcessSwiftSpecialArgument handles it
         if (!m_interpreterToNative && !m_isSwiftILStub && (argType == ELEMENT_TYPE_PTR || argType == ELEMENT_TYPE_BYREF))
         {
             TypeHandle thArgType = sig.GetLastTypeHandleThrowing();
@@ -3076,13 +3061,7 @@ void CallStubGenerator::RewriteSignatureForSwiftLowering(MetaSig &sig, SigBuilde
                     // SwiftIndirectResult goes in x8, not in argument registers
                     continue;
                 }
-                // For reverse P/Invoke, SwiftError is excluded from signature
-                // For direct P/Invoke, SwiftError stays in signature (processed in loop)
-                // if (!m_interpreterToNative && pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_ERROR))
-                // {
-                //     // SwiftError goes in x21, not in argument registers
-                //     continue;
-                // }
+
                 // Don't lower Swift* types except SwiftSelf<T>
                 if (pArgMT == CoreLibBinder::GetClass(CLASS__SWIFT_SELF))
                 {

@@ -739,7 +739,6 @@ LOCAL_LABEL(HaveInterpThreadContext):
     add x10, x9, #OFFSETOF__CallStubHeader__Routines
     ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
 #ifdef TARGET_APPLE
-    // Initialize Swift error value slot to zero (in extraLocals area)
     str xzr, [sp, #0]
 #endif
     // x19 contains IR bytecode address
@@ -747,19 +746,32 @@ LOCAL_LABEL(HaveInterpThreadContext):
     ldr x11, [x10], #8
     blr x11
 
-    // Skip ContinuationContext load if this is a Swift lowered return (x2 holds return data)
+    // Swift-specific epilog handling. There are three cases to consider:
+    //
+    // - Swift return lowering:
+    //    If HasSwiftReturnLowering is set, the return value was lowered and x2
+    //    may already contains the return data. In that case, do not load the
+    //    ContinuationContext from the stack.
+    //
+    // - Swift error set in UnmanagedCallersOnly:
+    //    If [sp, #0] is non-zero, a Swift error was set.
+    //    Restore x21 and return via the Swift-error epilog.
+    //
+    // - Swift error set in direct P/Invoke:
+    //    If HasSwiftError is set, use the Swift-error epilog.
+    //    Otherwise, use the normal epilog.
+
     ldrb w11, [x23, #OFFSETOF__CallStubHeader__HasSwiftReturnLowering]
     cbnz x11, LOCAL_LABEL(InterpreterStub_SkipSwiftReturnLowering)
     // Fill in the ContinuationContext register
     ldr x2, [sp, #(__PWTB_ArgumentRegister_FirstArg + 16)]
 LOCAL_LABEL(InterpreterStub_SkipSwiftReturnLowering):
 
-    // Check if this stub has Swift error handling
     ldr x11, [sp, #0]
-    cbz x11, LOCAL_LABEL(InterpreterStub_SkipSwiftError)
+    cbz x11, LOCAL_LABEL(InterpreterStub_SkipStoreSwiftError)
     mov x21, x11
     EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
-LOCAL_LABEL(InterpreterStub_SkipSwiftError):
+LOCAL_LABEL(InterpreterStub_SkipStoreSwiftError):
 
     ldrb w11, [x23, #OFFSETOF__CallStubHeader__HasSwiftError]
     cbz x11, LOCAL_LABEL(InterpreterStub_Epilog)
@@ -1026,30 +1038,22 @@ NESTED_ENTRY InterpreterStubRet4Vector128, _TEXT, NoHandler
 NESTED_END InterpreterStubRet4Vector128, _TEXT
 
 #ifdef TARGET_APPLE
-// Swift lowered return handler for reverse PInvoke callbacks.
-// Calls ExecuteInterpretedMethod to get result, then chains to
-// Load_X*_AtOffset routines to decompose the struct return into registers.
+// Swift lowered return handler for reverse PInvoke callbacks
 NESTED_ENTRY SwiftReverseReturnLoweredHandler, _TEXT, NoHandler
-    // Save x10 (routines pointer) in the float argument area of the
-    // transition block (no longer needed after arg Store routines ran).
-    str x10, [sp, #0]
+    str x10, [sp, #0] // Save routines pointer
     PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
     // The +16 is for the fp, lr above
     add x0, sp, #__PWTB_TransitionBlock + 16
     mov x1, x19 // the IR bytecode pointer
     mov x2, xzr
     bl C_FUNC(ExecuteInterpretedMethod)
-    // x0 = pointer to result struct on interpreter stack
-    mov x9, x0
-    // Restore x10 from the float arg area (sp+16 = pre-push sp, then +0)
-    ldr x10, [sp, #16]
-    // Chain to Load_X*_AtOffset routines for return decomposition
+    mov x9, x0 // x0 is pointer to result struct on interpreter stack
+    ldr x10, [sp, #16] // restore x10
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 NESTED_END SwiftReverseReturnLoweredHandler, _TEXT
 
-// Terminator for reverse PInvoke Swift lowered return.
-// Restores fp/lr saved by SwiftReverseReturnLoweredHandler and returns.
+// Terminator for reverse PInvoke Swift lowered return
 LEAF_ENTRY SwiftReverseReturnLoweredTerminator
     ldp fp, lr, [sp], #16
     ret
@@ -1242,9 +1246,9 @@ LEAF_ENTRY Load_SwiftError
 LEAF_END Load_SwiftError
 
 LEAF_ENTRY Store_SwiftError
-    sub x11, fp, #__PWTB_StackAlloc  // Get address of error value slot from fp (stable across calls)
-    str x11, [x9], #8        // Pass address to managed code as SwiftError* parameter
-    ldr x11, [x10], #8       // Load next routine address
+    sub x11, fp, #__PWTB_StackAlloc
+    str x11, [x9], #8
+    ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Store_SwiftError
 
@@ -1255,8 +1259,7 @@ LEAF_ENTRY Load_SwiftIndirectResult
 LEAF_END Load_SwiftIndirectResult
 
 LEAF_ENTRY Store_SwiftSelf
-    // x20 was overwritten by INLINE_GETTHREAD; load original from [fp + 24].
-    ldr x11, [fp, #24]
+    ldr x11, [fp, #24] // x20 was overwritten by INLINE_GETTHREAD; load original from [fp + 24]
     str x11, [x9], #8
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
@@ -1365,8 +1368,7 @@ LEAF_ENTRY Load_Stack_AtOffset
     EPILOG_BRANCH_REG x11
 LEAF_END Load_Stack_AtOffset
 
-// Reverse direction: read from caller's stack frame and store to interpreter stack
-.macro Store_Stack_AtOffset_Common
+.macro Store_Stack_AtOffset_Prolog
     ldr x12, [x10], #8       // Load offset|structSize|stackOffset
     and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
     lsr x14, x12, #32        // Extract stackOffset (upper 32 bits)
@@ -1375,7 +1377,7 @@ LEAF_END Load_Stack_AtOffset
 .endm
 
 .macro Store_Stack_AtOffset_Epilog
-    str x13, [x9, x11]       // Store 8 bytes to [x9 + offset] (interpreter stack)
+    str x13, [x9, x11]       // Store 8 bytes to [x9 + offset]
     ubfx x12, x12, #16, #16  // Extract structSize (bits 16-31)
     add x9, x9, x12          // Advance x9 by structSize
     ldr x11, [x10], #8
@@ -1383,25 +1385,25 @@ LEAF_END Load_Stack_AtOffset
 .endm
 
 LEAF_ENTRY Store_Stack_AtOffset
-    Store_Stack_AtOffset_Common
+    Store_Stack_AtOffset_Prolog
     ldr x13, [x14]
     Store_Stack_AtOffset_Epilog
 LEAF_END Store_Stack_AtOffset
 
 LEAF_ENTRY Store_Stack_4B_AtOffset
-    Store_Stack_AtOffset_Common
+    Store_Stack_AtOffset_Prolog
     ldr w13, [x14]
     Store_Stack_AtOffset_Epilog
 LEAF_END Store_Stack_4B_AtOffset
 
 LEAF_ENTRY Store_Stack_2B_AtOffset
-    Store_Stack_AtOffset_Common
+    Store_Stack_AtOffset_Prolog
     ldrh w13, [x14]
     Store_Stack_AtOffset_Epilog
 LEAF_END Store_Stack_2B_AtOffset
 
 LEAF_ENTRY Store_Stack_1B_AtOffset
-    Store_Stack_AtOffset_Common
+    Store_Stack_AtOffset_Prolog
     ldrb w13, [x14]
     Store_Stack_AtOffset_Epilog
 LEAF_END Store_Stack_1B_AtOffset
