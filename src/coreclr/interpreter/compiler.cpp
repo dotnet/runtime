@@ -3256,7 +3256,13 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             m_pStackPointer--;
             AddIns(INTOP_RET_VOID);
             return true;
-
+        case NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait:
+            if ((m_methodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)
+            {
+                BADCODE("TailAwait is not supported in async methods that capture contexts");
+            }
+            m_nextAwaitIsTail = true;
+            return true;
         case NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation:
             if (m_methodInfo->args.isAsyncCall())
             {
@@ -4682,7 +4688,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation ||
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation ||
-                    ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend);
+                    ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend ||
+                    ni == NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
                 if (EmitNamedIntrinsicCall(ni, callInfo.kind == CORINFO_CALL, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
@@ -5478,8 +5485,15 @@ void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotOffset)
     gcRefMap.Set(slotIndex, true);
 }
 
-void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling ContinuationContextHandling)
+void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling continuationContextHandling)
 {
+    if (m_nextAwaitIsTail)
+    {
+        AddIns(INTOP_RET_EXISTING_CONTINUATION);
+        m_nextAwaitIsTail = false;
+        return;
+    }
+
     CORINFO_LOOKUP_KIND kindForAllocationContinuation;
     m_compHnd->getLocationOfThisType(m_methodHnd, &kindForAllocationContinuation);
 
@@ -5502,7 +5516,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     }
     bool needsEHHandling = m_pCBB->enclosingTryBlockCount > (m_isAsyncMethodWithContextSaveRestore ? 1 : 0);
 
-    bool captureContinuationContext = ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext;
+    bool captureContinuationContext = continuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext;
 
     // 1. For each IL var that is live across the await/continuation point. Add it to the list of live vars
     // 2. For each stack var that is live other than the return value from the call
@@ -5725,7 +5739,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         flags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
     }
 
-    if (ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
+    if (continuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
     {
         flags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
     }
