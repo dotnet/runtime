@@ -4,6 +4,7 @@
 #ifndef _SIMPLERHASHTABLE_H_
 #define _SIMPLERHASHTABLE_H_
 
+#include "contract.h"
 #include "iallocator.h"
 
 // SimplerHashTable implements a mapping from a Key type to a Value type,

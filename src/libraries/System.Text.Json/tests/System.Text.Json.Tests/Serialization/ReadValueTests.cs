@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.PropertyNameCaseInsensitive = true;
 
-            byte[] utf8 = Encoding.UTF8.GetBytes(@"{""myint16"":1}");
+            byte[] utf8 = Encoding.UTF8.GetBytes("""{"myint16":1}""");
             var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
 
             SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(ref reader, options);

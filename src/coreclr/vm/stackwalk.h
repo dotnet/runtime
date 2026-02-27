@@ -639,18 +639,6 @@ private:
     bool          m_isRuntimeWrappedExceptions;
     // Indicates that the stack walk has moved past a funclet
     bool          m_fFoundFirstFunclet;
-#ifdef FEATURE_INTERPRETER
-    // Saved registers of the context of the InterpExecMethod. These registers are reused for interpreter frames,
-    // but we need to restore the original values after we are done with all the interpreted frames belonging to
-    // that InterpExecMethod.
-    TADDR         m_interpExecMethodIP;
-    TADDR         m_interpExecMethodSP;
-    TADDR         m_interpExecMethodFP;
-    TADDR         m_interpExecMethodFirstArgReg;
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-    TADDR         m_interpExecMethodSSP;
-#endif // TARGET_AMD64 && TARGET_WINDOWS
-#endif // FEATURE_INTERPRETER
 
     LPVOID m_pvResumableFrameTargetSP;
     ExInfo* m_pNextExInfo;
