@@ -2315,7 +2315,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
                 (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
             void* ilStubInterpData = helperMD->GetInterpreterCode();
             // WASM-TODO: update this when we will have codegen
-            // WASM-TODO: update this when we will have codegen
             _ASSERTE(ilStubInterpData != NULL);
             SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
 
