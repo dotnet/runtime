@@ -128,6 +128,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             typeof(StaticInterfaceMethods).RequiresPublicMethods();
 
             DerivedClassWithRequiresOnRequires.Test();
+            DerivedClassWithRUCOnTypeOverridingBaseTypeWithRUC.Test();
         }
 
         class BaseClassWithRequires
@@ -715,6 +716,37 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 [RequiresAssemblyFiles("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.AbstractMethod--")]
                 [RequiresDynamicCode("Message for --StaticInterfaceMethods.ImplINoRequiresMatching.AbstractMethod--")]
                 public static void AbstractMethod() { }
+            }
+        }
+
+        // Test for issue: https://github.com/dotnet/runtime/issues/112426
+        // When a base class has RUC on the type, derived classes with RUC on overridden methods should not warn
+        class DerivedClassWithRUCOnTypeOverridingBaseTypeWithRUC
+        {
+            [RequiresUnreferencedCode("Base")]
+            class BaseTypeWithRUC
+            {
+                public BaseTypeWithRUC() { }
+
+                public virtual void Instance() { }
+            }
+
+            class DerivedTypeWithRUCOnOverride : BaseTypeWithRUC
+            {
+                [RequiresUnreferencedCode("Base")]
+                public DerivedTypeWithRUCOnOverride() { }
+
+                // Should not warn - base type has RUC, so adding RUC to override is acceptable
+                [RequiresUnreferencedCode("Instance")]
+                public override void Instance() { }
+
+                public static void Static() { }
+            }
+
+            [UnconditionalSuppressMessage("test", "IL2026")]
+            public static void Test()
+            {
+                typeof(DerivedTypeWithRUCOnOverride).RequiresPublicMethods();
             }
         }
     }
