@@ -50,24 +50,6 @@ void WasmRegAlloc::dumpLsraStatsSummary(FILE* file)
 }
 #endif // TRACK_LSRA_STATS
 
-bool WasmRegAlloc::isContainableMemoryOp(GenTree* node)
-{
-    if (node->isMemoryOp())
-    {
-        return true;
-    }
-    if (node->IsLocal())
-    {
-        if (!m_compiler->compEnregLocals())
-        {
-            return true;
-        }
-        const LclVarDsc* varDsc = m_compiler->lvaGetDesc(node->AsLclVar());
-        return varDsc->lvDoNotEnregister;
-    }
-    return false;
-}
-
 //------------------------------------------------------------------------
 // CurrentRange: Get the LIR range under current processing.
 //

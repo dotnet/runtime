@@ -645,42 +645,6 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
 }
 
 //------------------------------------------------------------------------
-// IsContainableMemoryOp: Checks whether this is a memory op that can be contained.
-//
-// Arguments:
-//    node        - the node of interest.
-//
-// Return value:
-//    True if this will definitely be a memory reference that could be contained.
-//
-// Notes:
-//    This differs from the isMemoryOp() method on GenTree because it checks for
-//    the case of doNotEnregister local. This won't include locals that
-//    for some other reason do not become register candidates, nor those that get
-//    spilled.
-//    Also, because we usually call this before we redo dataflow, any new lclVars
-//    introduced after the last dataflow analysis will not yet be marked lvTracked,
-//    so we don't use that.
-//
-bool LinearScan::isContainableMemoryOp(GenTree* node)
-{
-    if (node->isMemoryOp())
-    {
-        return true;
-    }
-    if (node->IsLocal())
-    {
-        if (!enregisterLocalVars)
-        {
-            return true;
-        }
-        const LclVarDsc* varDsc = m_compiler->lvaGetDesc(node->AsLclVar());
-        return varDsc->lvDoNotEnregister;
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------
 // addKillForRegs: Adds a RefTypeKill ref position for the given registers.
 //
 // Arguments:
