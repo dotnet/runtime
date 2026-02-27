@@ -1512,6 +1512,11 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
     assert(tree->OperIs(GT_BITCAST));
     genConsumeOperands(tree);
 
+    if (tree->gtGetOp1()->isContained())
+    {
+        NYI_WASM("Contained bitcast operands");
+    }
+
     var_types toType   = tree->TypeGet();
     var_types fromType = genActualType(tree->gtGetOp1()->TypeGet());
     assert(toType == genActualType(tree));
@@ -2426,6 +2431,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         default:
             unreached();
     }
+
+    genUpdateLife(blkOp);
 }
 
 //------------------------------------------------------------------------
@@ -2453,6 +2460,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         srcAddrType = source->TypeGet();
         srcReg      = GetMultiUseOperandReg(source);
         srcOffset   = 0;
+
+        genEmitNullCheck(srcReg);
     }
     else
     {
@@ -2481,7 +2490,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     emitter* emit = GetEmitter();
 
-    // TODO-WASM: Implicit null check
+    genEmitNullCheck(dstReg);
 
     // TODO-WASM: Remove the need to do this somehow
     // The dst and src may be on the evaluation stack, but we can't reliably use them, so drop them.
@@ -2544,8 +2553,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     {
         // TODO-WASM: Memory barrier
     }
-
-    WasmProduceReg(cpObjNode);
 }
 
 //------------------------------------------------------------------------
