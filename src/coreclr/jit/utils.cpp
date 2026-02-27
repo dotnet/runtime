@@ -1763,19 +1763,19 @@ void HelperCallProperties::init()
                 exceptions  = ExceptionSetFlags::NullReferenceException;
                 break;
 
-            case CORINFO_HELP_ASYNC_HELPERS_ALLOC_CONTINUATION:
-            case CORINFO_HELP_ASYNC_HELPERS_ALLOC_CONTINUATION_CLASS:
-            case CORINFO_HELP_ASYNC_HELPERS_ALLOC_CONTINUATION_METHOD:
+            case CORINFO_HELP_ALLOC_CONTINUATION:
+            case CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
+            case CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
                 mutatesHeap = true;
                 isAllocator = true;
                 break;
 
-            case CORINFO_HELP_ASYNC_HELPERS_CAPTURE_CONTEXTS:
-            case CORINFO_HELP_ASYNC_HELPERS_RESTORE_CONTEXTS:
-            case CORINFO_HELP_ASYNC_HELPERS_CAPTURE_EXECUTION_CONTEXT:
-            case CORINFO_HELP_ASYNC_HELPERS_RESTORE_EXECUTION_CONTEXT:
-            case CORINFO_HELP_ASYNC_HELPERS_RESTORE_CONTEXTS_ON_SUSPENSION:
-            case CORINFO_HELP_ASYNC_HELPERS_CAPTURE_CONTINUATION_CONTEXT:
+            case CORINFO_HELP_ASYNC_CAPTURE_CONTEXTS:
+            case CORINFO_HELP_ASYNC_RESTORE_CONTEXTS:
+            case CORINFO_HELP_ASYNC_CAPTURE_EXECUTION_CONTEXT:
+            case CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT:
+            case CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION:
+            case CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT:
                 mutatesHeap = true;
                 break;
 

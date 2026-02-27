@@ -465,11 +465,11 @@ namespace Internal.IL
 
                     _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
 
-                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AsyncHelpersAllocContinuation), asyncReason);
-                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AsyncHelpersCaptureExecutionContext), asyncReason);
-                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AsyncHelpersRestoreExecutionContext), asyncReason);
-                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AsyncHelpersCaptureContinuationContext), asyncReason);
-                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AsyncHelpersRestoreContextsOnSuspension), asyncReason);
+                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
+                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AsyncCaptureExecutionContext), asyncReason);
+                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AsyncRestoreExecutionContext), asyncReason);
+                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AsyncCaptureContinuationContext), asyncReason);
+                    _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AsyncRestoreContextsOnSuspension), asyncReason);
                 }
 
                 // If this is the task await pattern, we're actually going to call the variant

@@ -163,7 +163,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     // For OSR, we did this in the tier0 method.
     if (!opts.IsOSR())
     {
-        GenTreeCall* captureCall = gtNewHelperCallNode(CORINFO_HELP_ASYNC_HELPERS_CAPTURE_CONTEXTS, TYP_VOID);
+        GenTreeCall* captureCall = gtNewHelperCallNode(CORINFO_HELP_ASYNC_CAPTURE_CONTEXTS, TYP_VOID);
         captureCall->gtArgs.PushFront(this,
                                       NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
         captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
@@ -191,7 +191,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
         resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
     }
 
-    GenTreeCall* restoreCall = gtNewHelperCallNode(CORINFO_HELP_ASYNC_HELPERS_RESTORE_CONTEXTS, TYP_VOID);
+    GenTreeCall* restoreCall = gtNewHelperCallNode(CORINFO_HELP_ASYNC_RESTORE_CONTEXTS, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
@@ -357,7 +357,7 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
         resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
     }
 
-    GenTreeCall* restoreCall = gtNewHelperCallNode(CORINFO_HELP_ASYNC_HELPERS_RESTORE_CONTEXTS, TYP_VOID);
+    GenTreeCall* restoreCall = gtNewHelperCallNode(CORINFO_HELP_ASYNC_RESTORE_CONTEXTS, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
@@ -2017,13 +2017,13 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness&    
         GenTree*        keepAliveOffsetNode = m_compiler->gtNewIconNode(keepAliveOffset);
         CorInfoHelpFunc helperNum =
             (m_compiler->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODTABLE) != 0
-                ? CORINFO_HELP_ASYNC_HELPERS_ALLOC_CONTINUATION_CLASS
-                : CORINFO_HELP_ASYNC_HELPERS_ALLOC_CONTINUATION_METHOD;
+                ? CORINFO_HELP_ALLOC_CONTINUATION_CLASS
+                : CORINFO_HELP_ALLOC_CONTINUATION_METHOD;
         return m_compiler->gtNewHelperCallNode(helperNum, TYP_REF, prevContinuation, contClassHndNode,
                                                keepAliveOffsetNode, handleArg);
     }
 
-    return m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_HELPERS_ALLOC_CONTINUATION, TYP_REF, prevContinuation,
+    return m_compiler->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF, prevContinuation,
                                            contClassHndNode);
 }
 
@@ -2105,7 +2105,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
         GenTree*     contContextElementPlaceholder = m_compiler->gtNewZeroConNode(TYP_BYREF);
         GenTree*     flagsPlaceholder              = m_compiler->gtNewZeroConNode(TYP_BYREF);
         GenTreeCall* captureCall =
-            m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_HELPERS_CAPTURE_CONTINUATION_CONTEXT, TYP_VOID);
+            m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT, TYP_VOID);
 
         captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(flagsPlaceholder));
         captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(contContextElementPlaceholder));
@@ -2149,7 +2149,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
     if (layout.ExecutionContextOffset != UINT_MAX)
     {
         GenTreeCall* captureExecContext =
-            m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_HELPERS_CAPTURE_EXECUTION_CONTEXT, TYP_REF);
+            m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_CAPTURE_EXECUTION_CONTEXT, TYP_REF);
 
         m_compiler->compCurBB = suspendBB;
         m_compiler->fgMorphTree(captureExecContext);
@@ -2191,7 +2191,7 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
     GenTree*     execContextPlaceholder = m_compiler->gtNewNull();
     GenTree*     syncContextPlaceholder = m_compiler->gtNewNull();
     GenTreeCall* restoreCall =
-        m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_HELPERS_RESTORE_CONTEXTS_ON_SUSPENSION, TYP_VOID);
+        m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION, TYP_VOID);
 
     restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(syncContextPlaceholder));
     restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(execContextPlaceholder));
@@ -2394,7 +2394,7 @@ void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& 
     {
         GenTree*     valuePlaceholder = m_compiler->gtNewZeroConNode(TYP_REF);
         GenTreeCall* restoreCall =
-            m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_HELPERS_RESTORE_EXECUTION_CONTEXT, TYP_VOID);
+            m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT, TYP_VOID);
         restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(valuePlaceholder));
 
         m_compiler->compCurBB = resumeBB;

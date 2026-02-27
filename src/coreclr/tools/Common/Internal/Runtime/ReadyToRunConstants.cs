@@ -359,15 +359,16 @@ namespace Internal.ReadyToRunConstants
         InitClass                   = 0x116,
         InitInstClass               = 0x117,
 
-        AsyncHelpersAllocContinuation              = 0x120,
-        AsyncHelpersAllocContinuationClass         = 0x121,
-        AsyncHelpersAllocContinuationMethod        = 0x122,
-        AsyncHelpersCaptureContexts                = 0x123,
-        AsyncHelpersRestoreContexts                = 0x124,
-        AsyncHelpersCaptureExecutionContext        = 0x125,
-        AsyncHelpersRestoreExecutionContext        = 0x126,
-        AsyncHelpersRestoreContextsOnSuspension    = 0x127,
-        AsyncHelpersCaptureContinuationContext     = 0x128,
+        // Helpers for runtime async (see System.Runtime.CompilerServices.AsyncHelpers)
+        AllocContinuation              = 0x120,
+        AllocContinuationClass         = 0x121,
+        AllocContinuationMethod        = 0x122,
+        AsyncCaptureContexts                = 0x123,
+        AsyncRestoreContexts                = 0x124,
+        AsyncCaptureExecutionContext        = 0x125,
+        AsyncRestoreExecutionContext        = 0x126,
+        AsyncRestoreContextsOnSuspension    = 0x127,
+        AsyncCaptureContinuationContext     = 0x128,
 
         // **********************************************************************************************
         //
