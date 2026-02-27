@@ -214,6 +214,9 @@ protected:
     ArrayStack<WasmInterval*>* wasmControlFlowStack = nullptr;
     unsigned                   wasmCursor           = 0;
     unsigned                   findTargetDepth(BasicBlock* target);
+    void                       WasmProduceReg(GenTree* node);
+    regNumber                  GetMultiUseOperandReg(GenTree* operand);
+    void                       genEmitNullCheck(regNumber reg);
 #endif
 
     void        genEmitStartBlock(BasicBlock* block);
@@ -299,7 +302,12 @@ protected:
     }
 #endif
 
+#if defined(TARGET_WASM)
+    void genJumpToThrowHlpBlk(SpecialCodeKind codeKind);
+    void genCodeForBinaryOverflow(GenTreeOp* node);
+#else
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
+#endif
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind,

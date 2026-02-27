@@ -6202,49 +6202,6 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     return pFrame;
 }
 
-OBJECTREF Thread::GetCulture(BOOL bUICulture)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // This is the case when we're building CoreLib and haven't yet created
-    // the system assembly.
-    if (SystemDomain::System()->SystemAssembly()==NULL) {
-        return NULL;
-    }
-
-    OBJECTREF pCurrentCulture;
-    MethodDescCallSite propGet(bUICulture ? METHOD__CULTURE_INFO__GET_CURRENT_UI_CULTURE : METHOD__CULTURE_INFO__GET_CURRENT_CULTURE);
-    ARG_SLOT retVal = propGet.Call_RetArgSlot(NULL);
-    pCurrentCulture = ArgSlotToObj(retVal);
-    return pCurrentCulture;
-}
-
-void Thread::SetCulture(OBJECTREF *CultureObj, BOOL bUICulture)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    MethodDescCallSite propSet(bUICulture
-        ? METHOD__CULTURE_INFO__SET_CURRENT_UI_CULTURE
-        : METHOD__CULTURE_INFO__SET_CURRENT_CULTURE);
-
-    // Set up the Stack.
-    ARG_SLOT pNewArgs[] = {
-        ObjToArgSlot(*CultureObj)
-    };
-
-    // Make the actual call.
-    propSet.Call_RetArgSlot(pNewArgs);
-}
 
 BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
 {

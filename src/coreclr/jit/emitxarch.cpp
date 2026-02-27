@@ -12347,7 +12347,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail) const
     if (jdsc && !noDetail)
     {
         unsigned     cnt = (jdsc->dsSize - 1) / TARGET_POINTER_SIZE;
-        BasicBlock** bbp = (BasicBlock**)jdsc->dsCont;
+        BasicBlock** bbp = jdsc->Blocks();
 
 #ifdef TARGET_AMD64
 #define SIZE_LETTER "Q"

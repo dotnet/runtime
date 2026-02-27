@@ -722,11 +722,12 @@ void SystemDomain::Attach()
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeStubManager::Init();
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
     JumpStubStubManager::Init();
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
     RangeSectionStubManager::Init();
     ILStubManager::Init();
+    PInvokeStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
     TailCallStubManager::Init();
@@ -1124,7 +1125,7 @@ void SystemDomain::LoadBaseSystemClasses()
         // all base system classes are loaded.  Profilers are not allowed to call any type-loading
         // APIs until g_profControlBlock.fBaseSystemClassesLoaded is TRUE.  It is important that
         // all base system classes need to be loaded before profilers can trigger the type loading.
-        g_profControlBlock.fBaseSystemClassesLoaded = TRUE;
+        g_profControlBlock.fBaseSystemClassesLoaded = true;
     #endif // PROFILING_SUPPORTED
 
     #if defined(_DEBUG)

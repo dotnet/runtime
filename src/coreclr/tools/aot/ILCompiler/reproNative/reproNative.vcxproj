@@ -46,7 +46,7 @@
     <NativeAotSourceRoot>$(CoreClrSourceRoot)nativeaot\</NativeAotSourceRoot>
     <ArtifactsRoot>$(CoreClrSourceRoot)..\..\artifacts\</ArtifactsRoot>
     <NativeRoot>$(CoreClrSourceRoot)..\native\</NativeRoot>
-    <Win32SDKLibs>advapi32.lib;bcrypt.lib;crypt32.lib;iphlpapi.lib;kernel32.lib;mswsock.lib;ncrypt.lib;normaliz.lib;ntdll.lib;ole32.lib;oleaut32.lib;secur32.lib;user32.lib;version.lib;ws2_32.lib</Win32SDKLibs>
+    <Win32SDKLibs>advapi32.lib;bcrypt.lib;crypt32.lib;iphlpapi.lib;kernel32.lib;mswsock.lib;ncrypt.lib;normaliz.lib;ntdll.lib;ole32.lib;oleaut32.lib;secur32.lib;user32.lib;version.lib;ws2_32.lib;Synchronization.lib</Win32SDKLibs>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">

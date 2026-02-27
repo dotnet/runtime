@@ -111,9 +111,9 @@ struct ExceptionClauseArgs
 };
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs = NULL);
-extern "C" void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont, uint8_t* resultStorage);
+EXTERN_C FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage);
 
-extern "C" void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
+extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
 
 CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod);
@@ -157,5 +157,8 @@ struct UnmanagedMethodWithTransitionParam
     int8_t *pRet;
     PCODE callTarget;
 };
+
+void InterpDispatchCache_ReclaimAll();
+void InterpDispatchCache_ClearForLoaderAllocator(LoaderAllocator* pLoaderAllocator);
 
 #endif // _INTERPEXEC_H_

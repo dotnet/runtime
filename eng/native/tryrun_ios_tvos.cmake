@@ -5,7 +5,6 @@ endmacro()
 
 set_cache_value(HAVE_SCHED_GETCPU_EXITCODE 1)
 set_cache_value(HAVE_CLOCK_MONOTONIC_COARSE_EXITCODE 1)
-set_cache_value(HAVE_CLOCK_MONOTONIC_EXITCODE 0)
 
 
 # TODO: these are taken from macOS, check these whether they're correct for iOS

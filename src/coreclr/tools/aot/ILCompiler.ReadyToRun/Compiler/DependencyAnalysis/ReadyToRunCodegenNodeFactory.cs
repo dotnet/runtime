@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
+using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Win32Resources;
@@ -357,6 +358,11 @@ namespace ILCompiler.DependencyAnalysis
             _copiedManagedResources = new NodeCache<EcmaModule, CopiedManagedResourcesNode>(module =>
             {
                 return new CopiedManagedResourcesNode(module);
+            });
+
+            _wasmTypeNodes = new(key =>
+            {
+                return new WasmTypeNode(key);
             });
         }
 
@@ -1071,6 +1077,14 @@ namespace ILCompiler.DependencyAnalysis
                 return new Utf8String("RTR_HEADER"u8);
             }
             return default;
+        }
+
+        private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
+
+        public WasmTypeNode WasmTypeNode(CorInfoWasmType[] types)
+        {
+            WasmFuncType funcType = WasmFuncType.FromCorInfoSignature(types);
+            return _wasmTypeNodes.GetOrAdd(funcType);
         }
     }
 }
