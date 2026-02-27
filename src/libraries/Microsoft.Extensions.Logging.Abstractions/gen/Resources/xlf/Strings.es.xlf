@@ -49,7 +49,7 @@
       </trans-unit>
       <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
         <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
-        <target state="needs-translation">Los métodos de registro no pueden ser genéricos</target>
+        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
@@ -204,22 +204,22 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
         <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported params or scoped parameter modifier</target>
+        <target state="translated">El argumento '{0}' usa los parámetros no admitidos o el modificador de parámetro con ámbito</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
         <source>Argument is using the unsupported params or scoped parameter modifier</source>
-        <target state="new">Argument is using the unsupported params or scoped parameter modifier</target>
+        <target state="translated">El argumento usa parámetros no admitidos o un modificador de parámetro con ámbito</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
         <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
-        <target state="new">Parameter '{0}' is a ref struct, which is not supported by the logging source generator</target>
+        <target state="translated">El parámetro '{0}' es un struct ref, que no es compatible con el generador de origen de registro</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
         <source>Logging method parameter is a ref struct</source>
-        <target state="new">Logging method parameter is a ref struct</target>
+        <target state="translated">El parámetro del método de registro es un struct ref</target>
         <note />
       </trans-unit>
     </body>
