@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class Object : IData<Object>
@@ -12,7 +14,7 @@ internal sealed class Object : IData<Object>
 
         Address = address;
         MethodTable = target.ProcessedData.GetOrAdd<Data.MethodTable>(target.ReadPointer(address + (ulong)type.Fields["m_pMethTab"].Offset));
-        Data = address + (ulong)type.Size!; // Data starts immediately after the Object header, which is the size of the Object type.
+        Data = address + (type.Size ?? throw new InvalidOperationException("Object size must be known"));
     }
 
     public TargetPointer Address { get; init; }

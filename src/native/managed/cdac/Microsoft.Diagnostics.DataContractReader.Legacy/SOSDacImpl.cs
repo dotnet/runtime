@@ -3421,15 +3421,15 @@ public sealed unsafe partial class SOSDacImpl
             if (data == null)
                 throw new ArgumentException();
             *data = default;
-            data->bFree = 1;
+            data->bFree = Interop.BOOL.TRUE;
 
             ISyncBlock syncBlock = _target.Contracts.SyncBlock;
             uint syncBlockCount = syncBlock.GetSyncBlockCount();
             data->SyncBlockCount = syncBlockCount;
             if (syncBlockCount > 0 && number <= syncBlockCount)
             {
-                data->bFree = syncBlock.IsSyncBlockFree(number) ? 1 : 0;
-                if (data->bFree == 0)
+                data->bFree = syncBlock.IsSyncBlockFree(number) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                if (data->bFree == Interop.BOOL.FALSE)
                 {
                     TargetPointer obj = syncBlock.GetSyncBlockObject(number);
                     data->Object = obj.ToClrDataAddress(_target);
