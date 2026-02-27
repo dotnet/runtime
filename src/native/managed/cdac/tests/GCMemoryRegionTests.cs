@@ -283,7 +283,7 @@ public class GCMemoryRegionTests
         helpers.WritePointer(bkSpan.Slice(0, ptrSize), ctiFragment.Address);
 
         var globals = BuildGlobals(
-            new() { [Constants.Globals.GCHeapBookkeepingStart] = bkFragment.Address },
+            new() { [Constants.Globals.BookkeepingStart] = bkFragment.Address },
             new() { [Constants.Globals.CardTableInfoSize] = cardTableTypeSize });
 
         var readContext = builder.GetMemoryContext();

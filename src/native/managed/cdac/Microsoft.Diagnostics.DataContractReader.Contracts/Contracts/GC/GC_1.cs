@@ -554,26 +554,12 @@ internal readonly struct GC_1 : IGC
     {
         List<GCMemoryRegionData> regions = new();
 
-        if (!_target.TryReadGlobalPointer(Constants.Globals.GCHeapBookkeepingStart, out TargetPointer? bookkeepingStartGlobal))
+        if (!_target.TryReadGlobalPointer(Constants.Globals.BookkeepingStart, out TargetPointer? bookkeepingStartGlobal))
             return regions;
 
-        TargetPointer bookkeepingStart;
-        if (GetGCType() == GCType.Server)
-        {
-            // For server GC, bookkeeping_start is a per-heap field - read from first heap
-            TargetPointer heapTable = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.Heaps));
-            TargetPointer firstHeap = _target.ReadPointer(heapTable);
-            Data.GCHeapSVR heap = _target.ProcessedData.GetOrAdd<Data.GCHeapSVR>(firstHeap);
-            if (heap.BookkeepingStart is null || heap.BookkeepingStart.Value == TargetPointer.Null)
-                return regions;
-            bookkeepingStart = heap.BookkeepingStart.Value;
-        }
-        else
-        {
-            bookkeepingStart = _target.ReadPointer(bookkeepingStartGlobal.Value);
-            if (bookkeepingStart == TargetPointer.Null)
-                return regions;
-        }
+        TargetPointer bookkeepingStart = _target.ReadPointer(bookkeepingStartGlobal.Value);
+        if (bookkeepingStart == TargetPointer.Null)
+            return regions;
 
         uint cardTableInfoSize = _target.ReadGlobal<uint>(Constants.Globals.CardTableInfoSize);
         Data.CardTableInfo cardTableInfo = _target.ProcessedData.GetOrAdd<Data.CardTableInfo>(bookkeepingStart);

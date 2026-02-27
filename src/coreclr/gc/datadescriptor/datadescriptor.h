@@ -77,13 +77,18 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
     GC_HEAP_FIELD(ExpandMechanisms, expand_mechanisms_per_heap)
     GC_HEAP_FIELD(InterestingMechanismBits, interesting_mechanism_bits_per_heap)
     /* For use in GCFreeRegions APIs */
+#ifdef BACKGROUND_GC
     GC_HEAP_FIELD(FreeableSohSegment, freeable_soh_segment)
     GC_HEAP_FIELD(FreeableUohSegment, freeable_uoh_segment)
+#endif // BACKGROUND_GC
+#ifdef USE_REGIONS
     GC_HEAP_FIELD(FreeRegions, free_regions)
-    GC_HEAP_FIELD(BookkeepingStart, bookkeeping_start)
 
     static constexpr decltype(&GC_NAMESPACE::gc_heap::global_free_huge_regions) GlobalFreeHugeRegions = &GC_NAMESPACE::gc_heap::global_free_huge_regions;
     static constexpr decltype(&GC_NAMESPACE::gc_heap::global_regions_to_decommit) GlobalRegionsToDecommit = &GC_NAMESPACE::gc_heap::global_regions_to_decommit;
+#endif // USE_REGIONS
+
+    static constexpr decltype(&GC_NAMESPACE::gc_heap::bookkeeping_start) BookkeepingStart = &GC_NAMESPACE::gc_heap::bookkeeping_start;
 };
 
 template<>

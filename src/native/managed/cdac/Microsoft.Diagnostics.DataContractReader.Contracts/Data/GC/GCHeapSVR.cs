@@ -47,8 +47,6 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
             FreeableUohSegment = target.ReadPointer(address + (ulong)type.Fields[nameof(FreeableUohSegment)].Offset);
         if (type.Fields.ContainsKey(nameof(FreeRegions)))
             FreeRegions = address + (ulong)type.Fields[nameof(FreeRegions)].Offset;
-        if (type.Fields.ContainsKey(nameof(BookkeepingStart)))
-            BookkeepingStart = target.ReadPointer(address + (ulong)type.Fields[nameof(BookkeepingStart)].Offset);
     }
 
     public TargetPointer MarkArray { get; }
@@ -78,5 +76,4 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
     public TargetPointer? FreeableSohSegment { get; }
     public TargetPointer? FreeableUohSegment { get; }
     public TargetPointer? FreeRegions { get; }
-    public TargetPointer? BookkeepingStart { get; }
 }

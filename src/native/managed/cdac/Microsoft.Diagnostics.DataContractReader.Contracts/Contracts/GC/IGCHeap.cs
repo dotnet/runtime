@@ -32,5 +32,4 @@ internal interface IGCHeap
     TargetPointer? FreeableSohSegment { get; }
     TargetPointer? FreeableUohSegment { get; }
     TargetPointer? FreeRegions { get; }
-    TargetPointer? BookkeepingStart { get; }
 }
