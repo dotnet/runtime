@@ -435,8 +435,8 @@ public struct DacpSyncBlockData
 {
     public enum COMFlagsEnum : uint
     {
-        HasRCW = 0x1,
-        HasCCW = 0x2,
+        HasCCW = 0x1,
+        HasRCW = 0x2,
         HasCCF = 0x4
     }
     public ClrDataAddress Object;

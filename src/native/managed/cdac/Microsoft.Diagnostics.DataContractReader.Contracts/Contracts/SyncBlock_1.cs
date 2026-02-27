@@ -11,6 +11,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct SyncBlock_1 : ISyncBlock
 {
+    private const string LockStateName = "_state";
+    private const string LockOwningThreadIdName = "_owningThreadId";
+    private const string LockRecursionCountName = "_recursionCount";
+    private const string LockName = "Lock";
+    private const string LockNamespace = "System.Threading";
     private readonly Target _target;
     private readonly TargetPointer _syncTableEntries;
 
@@ -35,12 +40,12 @@ internal readonly struct SyncBlock_1 : ISyncBlock
     public bool IsSyncBlockFree(uint index)
     {
         Data.SyncTableEntry ste = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + index * _target.GetTypeInfo(DataType.SyncTableEntry).Size!.Value);
-        return (ste.Object?.Address & 1) == 0;
+        return (ste.Object?.Address & 1) != 0;
     }
 
     public uint GetSyncBlockCount()
     {
-        TargetPointer syncBlockCache = _target.ReadGlobalPointer(Constants.Globals.SyncBlockCache);
+        TargetPointer syncBlockCache = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.SyncBlockCache));
         Data.SyncBlockCache cache = _target.ProcessedData.GetOrAdd<Data.SyncBlockCache>(syncBlockCache);
         return cache.FreeSyncTableIndex - 1;
     }
@@ -59,15 +64,17 @@ internal readonly struct SyncBlock_1 : ISyncBlock
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-            TypeHandle lockType = rts.GetTypeByNameAndModule("Lock", "System.Threading", moduleHandle);
+            TypeHandle lockType = rts.GetTypeByNameAndModule(LockName, LockNamespace, moduleHandle);
             MetadataReader mdReader = ecmaMetadataContract.GetMetadata(moduleHandle)!;
-            TargetPointer dataAddr = sb.Lock.Data;
-            uint state = ReadUintField(lockType, "_state", rts, mdReader, dataAddr);
+            TargetPointer lockObjPtr = sb.Lock.Object;
+            Data.Object lockObj = _target.ProcessedData.GetOrAdd<Data.Object>(lockObjPtr);
+            TargetPointer dataAddr = lockObj.Data;
+            uint state = ReadUintField(lockType, LockStateName, rts, mdReader, dataAddr);
             bool monitorHeld = (state & 1) != 0;
             if (monitorHeld)
             {
-                owningThreadId = ReadUintField(lockType, "_owningThreadId", rts, mdReader, dataAddr);
-                recursion = ReadUintField(lockType, "_recursionCount", rts, mdReader, dataAddr);
+                owningThreadId = ReadUintField(lockType, LockOwningThreadIdName, rts, mdReader, dataAddr);
+                recursion = ReadUintField(lockType, LockRecursionCountName, rts, mdReader, dataAddr);
             }
             return monitorHeld;
         }

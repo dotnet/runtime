@@ -34,6 +34,7 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | TypeHierarchy | Type inheritance, method tables | Heap |
 | PInvokeStub | P/Invoke with SetLastError ILStub | Full |
 | VarargPInvoke | Vararg P/Invoke via __arglist (sprintf) | Full |
+| SyncBlockInterop | Sync block lock contention and built-in COM sync block data | Heap |
 
 The dump type is configured per-debuggee via the `DumpTypes` property in each debuggee's
 `.csproj` (default: `Heap`, set in `Debuggees/Directory.Build.props`). Debuggees that
@@ -56,6 +57,7 @@ use. Tests are `[ConditionalTheory]` methods parameterized by `TestConfiguration
 | EcmaMetadataDumpTests | EcmaMetadata | MultiModule |
 | PInvokeStubDumpTests | StackWalk + RTS | PInvokeStub |
 | VarargPInvokeDumpTests | StackWalk + RTS | VarargPInvoke |
+| SyncBlockDumpTests | SyncBlock (+ Object built-in COM data) | SyncBlockInterop |
 
 ### Runtime Versions
 

@@ -156,7 +156,7 @@ CDAC_TYPE_END(SyncBlock)
 
 CDAC_TYPE_BEGIN(SLink)
 CDAC_TYPE_INDETERMINATE(SLink)
-CDAC_TYPE_FIELD(SLink, /*pointer*/, Next, offsetof(SList, m_pNext))
+CDAC_TYPE_FIELD(SLink, /*pointer*/, Next, offsetof(SLink, m_pNext))
 CDAC_TYPE_END(SLink)
 
 #ifdef FEATURE_COMWRAPPERS
@@ -1221,6 +1221,7 @@ CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
 CDAC_GLOBAL_CONTRACT(SHash, 1)
 CDAC_GLOBAL_CONTRACT(SignatureDecoder, 1)
+CDAC_GLOBAL_CONTRACT(SyncBlock, 1)
 CDAC_GLOBAL_CONTRACT(StackWalk, 1)
 CDAC_GLOBAL_CONTRACT(StressLog, 2)
 CDAC_GLOBAL_CONTRACT(Thread, 1)

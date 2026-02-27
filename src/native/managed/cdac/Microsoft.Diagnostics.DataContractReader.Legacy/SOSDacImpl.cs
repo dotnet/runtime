@@ -2716,7 +2716,7 @@ public sealed unsafe partial class SOSDacImpl
             if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0
                 && objectContract.GetBuiltInComData(objPtr, out TargetPointer rcw, out TargetPointer ccw, out _))
             {
-                data->RCW = rcw;
+                data->RCW = rcw & ~(_rcwMask);
                 data->CCW = ccw;
             }
 
@@ -3193,7 +3193,7 @@ public sealed unsafe partial class SOSDacImpl
             if (syncBlockCount > 0 && number <= syncBlockCount)
             {
                 data->bFree = syncBlock.IsSyncBlockFree(number) ? 1 : 0;
-                if (data->bFree != 0)
+                if (data->bFree == 0)
                 {
                     TargetPointer obj = syncBlock.GetSyncBlockObject(number);
                     data->Object = obj.ToClrDataAddress(_target);
@@ -3203,7 +3203,7 @@ public sealed unsafe partial class SOSDacImpl
                         IObject objContract = _target.Contracts.Object;
                         if (objContract.GetBuiltInComData(obj, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf))
                         {
-                            data->COMFlags = rcw != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasRCW : 0;
+                            data->COMFlags = (rcw & ~(_rcwMask)) != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasRCW : 0;
                             data->COMFlags |= ccw != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasCCW : 0;
                             data->COMFlags |= ccf != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasCCF : 0;
                         }
@@ -3244,8 +3244,11 @@ public sealed unsafe partial class SOSDacImpl
                 Debug.Assert(data->SyncBlockPointer == dataLocal.SyncBlockPointer, $"cDAC: {data->SyncBlockPointer:x}, DAC: {dataLocal.SyncBlockPointer:x}");
                 Debug.Assert(data->COMFlags == dataLocal.COMFlags, $"cDAC: {data->COMFlags}, DAC: {dataLocal.COMFlags}");
                 Debug.Assert(data->MonitorHeld == dataLocal.MonitorHeld, $"cDAC: {data->MonitorHeld}, DAC: {dataLocal.MonitorHeld}");
-                Debug.Assert(data->Recursion == dataLocal.Recursion, $"cDAC: {data->Recursion}, DAC: {dataLocal.Recursion}");
-                Debug.Assert(data->HoldingThread == dataLocal.HoldingThread, $"cDAC: {data->HoldingThread:x}, DAC: {dataLocal.HoldingThread:x}");
+                if (data->MonitorHeld != 0)
+                {
+                    Debug.Assert(data->Recursion == dataLocal.Recursion, $"cDAC: {data->Recursion}, DAC: {dataLocal.Recursion}");
+                    Debug.Assert(data->HoldingThread == dataLocal.HoldingThread, $"cDAC: {data->HoldingThread:x}, DAC: {dataLocal.HoldingThread:x}");
+                }
                 Debug.Assert(data->AdditionalThreadCount == dataLocal.AdditionalThreadCount, $"cDAC: {data->AdditionalThreadCount}, DAC: {dataLocal.AdditionalThreadCount}");
                 Debug.Assert(data->appDomainPtr == dataLocal.appDomainPtr, $"cDAC: {data->appDomainPtr:x}, DAC: {dataLocal.appDomainPtr:x}");
                 Debug.Assert(data->SyncBlockCount == dataLocal.SyncBlockCount, $"cDAC: {data->SyncBlockCount}, DAC: {dataLocal.SyncBlockCount}");
