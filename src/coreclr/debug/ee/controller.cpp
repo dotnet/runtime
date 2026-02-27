@@ -494,58 +494,6 @@ void ControllerStackInfo::GetStackInfo(
         _ASSERTE(!ISREDIRECTEDTHREAD(thread));
     }
 
-#ifdef FEATURE_INTERPRETER
-    // When hitting interpreter breakpoints, InterpBreakpoint creates a synthetic context
-    // with SP pointing to InterpMethodContextFrame instead of native stack.
-    //
-    // The interpreter context has:
-    // - IP = bytecode address (interpreter IR)
-    // - SP = InterpMethodContextFrame pointer  
-    // - First arg register = InterpreterFrame pointer
-    //
-    // The stack walker's interpreter frame handling (stackwalk.cpp:2413-2468) expects to
-    // DISCOVER the InterpreterFrame during the walk, saving the native context before
-    // switching to interpreter frame enumeration. When we start with a synthetic context,
-    // the "native context" being saved is actually the synthetic interpreter context,
-    // which has invalid values for native stack restoration.
-    //
-    // Fix: When we detect an interpreter synthetic context, temporarily clear the filter
-    // context and mark context as invalid so the stack walker starts from the thread's
-    // frame chain. The InterpreterFrame will be discovered naturally and handled correctly.
-    CONTEXT *pSavedFilterContext = NULL;
-    bool fRestoredFilterContext = false;
-    if (contextValid)
-    {
-        PCODE ip = GetIP(pContext);
-        EECodeInfo codeInfo(ip);
-        if (codeInfo.IsInterpretedCode())
-        {
-            TADDR interpreterFrameAddr = GetFirstArgReg(pContext);
-            if (interpreterFrameAddr != 0)
-            {
-                Frame *pFrame = (Frame*)interpreterFrameAddr;
-                if (pFrame != FRAME_TOP && pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
-                {
-                    LOG((LF_CORDB, LL_INFO10000, "CSI::GSI: Interpreter synthetic context detected - IP=%p, SP=%p, InterpreterFrame=%p. Using frame chain instead.\n",
-                         (void*)ip, (void*)GetSP(pContext), (void*)interpreterFrameAddr));
-
-                    // Temporarily clear the filter context so the stack walker uses the thread's
-                    // frame chain. The InterpreterFrame is on the frame chain and will be found
-                    // and processed correctly, with proper native context saving/restoration.
-                    pSavedFilterContext = g_pEEInterface->GetThreadFilterContext(thread);
-                    if (pSavedFilterContext != NULL)
-                    {
-                        g_pEEInterface->SetThreadFilterContext(thread, NULL);
-                        fRestoredFilterContext = true;
-                    }
-                    contextValid = FALSE;
-                    pContext = &this->m_tempContext;
-                }
-            }
-        }
-    }
-#endif // FEATURE_INTERPRETER
-
     // Mark this stackwalk as valid so that it can in turn be used to grandfather
     // in other stackwalks.
     INDEBUG(m_dbgExecuted = true);
@@ -565,14 +513,6 @@ void ControllerStackInfo::GetStackInfo(
                                    WalkStack,
                                    (void *) this,
                                    FALSE);
-
-#ifdef FEATURE_INTERPRETER
-    // Restore the filter context if we temporarily cleared it for interpreter stack walk
-    if (fRestoredFilterContext)
-    {
-        g_pEEInterface->SetThreadFilterContext(thread, pSavedFilterContext);
-    }
-#endif // FEATURE_INTERPRETER
 
     _ASSERTE(m_activeFound); // All threads have at least one unmanaged frame
 

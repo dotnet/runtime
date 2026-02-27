@@ -990,17 +990,6 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_isRuntimeWrappedExceptions = false;
     m_fFoundFirstFunclet = false;
     m_pvResumableFrameTargetSP = NULL;
-#ifdef FEATURE_INTERPRETER
-    // Initialize to sentinel value to detect if we ever saved context during interpreter frame walking.
-    // When stackwalk starts with filter context inside interpreter code, the save path may be skipped.
-    m_interpExecMethodIP = (TADDR)-1;
-    m_interpExecMethodSP = (TADDR)-1;
-    m_interpExecMethodFP = (TADDR)-1;
-    m_interpExecMethodFirstArgReg = (TADDR)-1;
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-    m_interpExecMethodSSP = (TADDR)-1;
-#endif
-#endif // FEATURE_INTERPRETER
 } // StackFrameIterator::CommonCtor()
 
 //---------------------------------------------------------------------------------------
@@ -2449,21 +2438,16 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 {
                     // We have finished walking the interpreted frames. Process the InterpreterFrame itself.
                     // Restore the registers to the values they had before we started walking the interpreter frames.
-                    // Only restore if we actually saved - when stackwalk starts with filter context inside
-                    // interpreter code, the save path is skipped and m_interpExecMethodIP remains sentinel.
-                    if (m_interpExecMethodIP != (TADDR)-1)
-                    {
-                        LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Completed walking of interpreted frames for InterpreterFrame %p, restoring SP=%p, IP=%p\n", m_crawl.pFrame, m_interpExecMethodSP, m_interpExecMethodIP));
-                        _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) == GetFirstArgReg(pRD->pCurrentContext));
-                        SetIP(pRD->pCurrentContext, m_interpExecMethodIP);
-                        SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
-                        SetFP(pRD->pCurrentContext, m_interpExecMethodFP);
-                        SetFirstArgReg(pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
+                    LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Completed walking of interpreted frames for InterpreterFrame %p, restoring SP=%p, IP=%p\n", m_crawl.pFrame, m_interpExecMethodSP, m_interpExecMethodIP));
+                    _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) == GetFirstArgReg(pRD->pCurrentContext));
+                    SetIP(pRD->pCurrentContext, m_interpExecMethodIP);
+                    SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
+                    SetFP(pRD->pCurrentContext, m_interpExecMethodFP);
+                    SetFirstArgReg(pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-                        pRD->SSP = m_interpExecMethodSSP;
+                    pRD->SSP = m_interpExecMethodSSP;
 #endif
-                        SyncRegDisplayToCurrentContext(pRD);
-                    }
+                    SyncRegDisplayToCurrentContext(pRD);
                 }
             }
             else if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) && ((PTR_InlinedCallFrame)m_crawl.pFrame)->IsInInterpreter())
