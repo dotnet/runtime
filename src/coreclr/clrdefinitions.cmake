@@ -151,6 +151,10 @@ if(FEATURE_OBJCMARSHAL)
   add_compile_definitions(FEATURE_OBJCMARSHAL)
 endif()
 
+if(FEATURE_WEBCIL)
+  add_compile_definitions(FEATURE_WEBCIL)
+endif(FEATURE_WEBCIL)
+
 add_compile_definitions($<${FEATURE_JAVAMARSHAL}:FEATURE_JAVAMARSHAL>)
 
 add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>>:FEATURE_PROFAPI_ATTACH_DETACH>)

@@ -144,7 +144,8 @@ namespace BINDER_SPACE
         else
         {
             if ((CLRPeKind & peILonly) && !(CLRPeKind & pe32Plus) &&
-                !(CLRPeKind & pe32BitRequired) && dwImageType == IMAGE_FILE_MACHINE_I386)
+                !(CLRPeKind & pe32BitRequired) &&
+                (dwImageType == IMAGE_FILE_MACHINE_I386 || dwImageType == IMAGE_FILE_MACHINE_UNKNOWN))
             {
                 // Processor-agnostic (MSIL)
                 *PeKind = peMSIL;

@@ -556,15 +556,15 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
                 // limitations (doesn't support in-memory or embedded PDBs).
                 if (pModule->GetPEAssembly()->HasLoadedPEImage())
                 {
-                    PEDecoder* pe = pModule->GetPEAssembly()->GetLoadedLayout();
-                    IMAGE_DATA_DIRECTORY* debugDirectoryEntry = pe->GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG);
-                    if (debugDirectoryEntry != nullptr)
+                    PEImageLayout* pe = pModule->GetPEAssembly()->GetLoadedLayout();
+                    if (pe->HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG))
                     {
-                        IMAGE_DEBUG_DIRECTORY* debugDirectory = (IMAGE_DEBUG_DIRECTORY*)pe->GetDirectoryData(debugDirectoryEntry);
+                        COUNT_T debugDirSize = 0;
+                        IMAGE_DEBUG_DIRECTORY* debugDirectory = (IMAGE_DEBUG_DIRECTORY*)(TADDR)pe->GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_DEBUG, &debugDirSize);
                         if (debugDirectory != nullptr)
                         {
                             size_t nbytes = 0;
-                            while (nbytes < debugDirectoryEntry->Size)
+                            while (nbytes < debugDirSize)
                             {
                                 if ((debugDirectory->Type == IMAGE_DEBUG_TYPE_CODEVIEW && debugDirectory->MinorVersion == PORTABLE_PDB_MINOR_VERSION) ||
                                     (debugDirectory->Type == IMAGE_DEBUG_TYPE_EMBEDDED_PORTABLE_PDB))
