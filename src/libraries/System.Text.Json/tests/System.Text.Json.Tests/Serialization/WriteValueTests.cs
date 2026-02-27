@@ -280,12 +280,14 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = "{\"type\":\"array\",\"array\":[1]}";
             string jsonFormatted =
-@"{
-  ""type"": ""array"",
-  ""array"": [
-    1
-  ]
-}";
+"""
+    {
+      "type": "array",
+      "array": [
+        1
+      ]
+    }
+    """;
             string expectedInner = "{\"array\":[1]}";
 
             var tempOptions = new JsonSerializerOptions();
