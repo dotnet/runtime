@@ -17,8 +17,6 @@
 #define GC_NAMESPACE WKS
 #endif // SERVER_GC
 
-extern uint32_t g_totalCpuCount;
-
 // These files are designed to be used inside of the GC namespace.
 // Without the namespace (WKS/SVR) there are naming conflicts.
 namespace GC_NAMESPACE {
@@ -77,12 +75,6 @@ struct cdac_data<GC_NAMESPACE::gc_heap>
     GC_HEAP_FIELD(CompactReasons, compact_reasons_per_heap)
     GC_HEAP_FIELD(ExpandMechanisms, expand_mechanisms_per_heap)
     GC_HEAP_FIELD(InterestingMechanismBits, interesting_mechanism_bits_per_heap)
-
-    /* For use in GCFreeRegions APIs */
-    GC_HEAP_FIELD(FreeableSohSegment, freeable_soh_segment)
-    GC_HEAP_FIELD(FreeableUohSegment, freeable_uoh_segment)
-    GC_HEAP_FIELD(FreeRegions, free_regions)
-    GC_HEAP_FIELD(BookkeepingStart, bookkeeping_start)
 };
 
 template<>

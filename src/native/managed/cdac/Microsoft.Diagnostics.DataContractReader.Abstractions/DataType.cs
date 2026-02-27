@@ -150,10 +150,4 @@ public enum DataType
     CFinalize,
     HeapSegment,
     OomHistory,
-    HandleTableMap,
-    HandleTableBucket,
-    HandleTable,
-    HandleTableSegment,
-    CardTableInfo,
-    RegionFreeList,
 }

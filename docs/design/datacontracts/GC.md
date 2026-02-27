@@ -66,24 +66,6 @@ public readonly struct GCOomData
     public TargetNUInt AvailablePagefileMB { get; init; }
     public bool LohP { get; init; }
 }
-
-public enum FreeRegionKind
-{
-    FreeUnknownRegion = 0,
-    FreeGlobalHugeRegion = 1,
-    FreeGlobalRegion = 2,
-    FreeRegion = 3,
-    FreeSohSegment = 4,
-    FreeUohSegment = 5,
-}
-
-public readonly struct GCMemoryRegionData
-{
-    public ulong Start { get; init; }
-    public ulong Size { get; init; }
-    public ulong ExtraData { get; init; }
-    public int Heap { get; init; }
-}
 ```
 
 ```csharp
@@ -128,14 +110,6 @@ public readonly struct GCMemoryRegionData
 
     // Gets the global allocation context pointer and limit
     void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit);
-
-    // Enumerates handle table memory regions by walking handle_table_map → buckets → tables → segments
-    IEnumerable<GCMemoryRegionData> GetHandleTableMemoryRegions();
-    // Enumerates GC bookkeeping memory regions by walking the card_table_info linked list
-    IEnumerable<GCMemoryRegionData> GetGCBookkeepingMemoryRegions();
-    // Enumerates GC free regions including global free huge regions, regions to decommit,
-    // per-heap free regions, and freeable SOH/UOH segments
-    IEnumerable<GCMemoryRegionData> GetGCFreeRegions();
 ```
 
 ## Version 1
@@ -162,9 +136,6 @@ Data descriptors used:
 | `GCHeap` | CompactReasons | GC | Data array stored per heap (in sever builds) |
 | `GCHeap` | ExpandMechanisms | GC | Data array stored per heap (in sever builds) |
 | `GCHeap` | InterestingMechanismBits | GC | Data array stored per heap (in sever builds) |
-| `GCHeap` | FreeableSohSegment | GC | Pointer to the freeable SOH segment list head (in server builds) |
-| `GCHeap` | FreeableUohSegment | GC | Pointer to the freeable UOH segment list head (in server builds) |
-| `GCHeap` | FreeRegions | GC | Pointer to start of an array of `"CountFreeRegionKinds"` `RegionFreeList` structs (in server builds with regions) |
 | `Generation` | AllocationContext | GC | A `GCAllocContext` struct |
 | `Generation` | StartSegment | GC | Pointer to the start heap segment |
 | `Generation` | AllocationStart | GC | Pointer to the allocation start |
@@ -192,17 +163,6 @@ Data descriptors used:
 | `GCAllocContext` | AllocBytes | VM | Number of bytes allocated on SOH by this context |
 | `GCAllocContext` | AllocBytesLoh | VM | Number of bytes allocated not on SOH by this context |
 | `EEAllocContext` | GCAllocationContext | VM | The `GCAllocContext` struct within an `EEAllocContext` |
-| `HandleTableMap` | Buckets | GC | Pointer to array of `HandleTableBucket` pointers |
-| `HandleTableMap` | Next | GC | Pointer to the next `HandleTableMap` in the linked list |
-| `HandleTableMap` | MaxIndex | GC | Maximum index in this map node |
-| `HandleTableBucket` | Table | GC | Pointer to array of `HandleTable` pointers |
-| `HandleTableBucket` | HandleTableIndex | GC | Index of this bucket |
-| `HandleTable` | SegmentList | GC | Pointer to the first `HandleTableSegment` |
-| `HandleTableSegment` | NextSegment | GC | Pointer to the next segment in the linked list |
-| `CardTableInfo` | Recount | GC | Reference count for the card table |
-| `CardTableInfo` | Size | GC | Size of the card table bookkeeping region |
-| `CardTableInfo` | NextCardTable | GC | Pointer to the next card table |
-| `RegionFreeList` | HeadFreeRegion | GC | Pointer to the head `HeapSegment` of the free region list |
 
 Global variables used:
 | Global Name | Type | Source | Purpose |
@@ -210,7 +170,6 @@ Global variables used:
 | `GCIdentifiers` | string | GC | CSV string containing identifiers of the GC. Current values are "server", "workstation", "regions", and "segments" |
 | `NumHeaps` | TargetPointer | GC | Pointer to the number of heaps for server GC (int) |
 | `Heaps` | TargetPointer | GC | Pointer to an array of pointers to heaps |
-| `TotalCpuCount` | TargetPointer | GC | Pointer to the total CPU/processor count used by the GC for handle table slot allocation (in server builds) |
 | `StructureInvalidCount` | TargetPointer | GC | Pointer to the count of invalid GC structures (int) |
 | `MaxGeneration` | TargetPointer | GC | Pointer to the maximum generation number (uint) |
 | `TotalGenerationCount` | uint | GC | The total number of generations in the GC |
@@ -243,17 +202,6 @@ Global variables used:
 | `GCLowestAddress` | TargetPointer | VM | Lowest GC address as recorded by the VM/GC interface |
 | `GCHighestAddress` | TargetPointer | VM | Highest GC address as recorded by the VM/GC interface |
 | `GlobalAllocContext` | TargetPointer | VM | Pointer to the global `EEAllocContext` |
-| `HandleTableMap` | TargetPointer | GC | Pointer to the root `HandleTableMap` linked list node |
-| `HandleSegmentSize` | uint | GC | Size in bytes of each handle table segment |
-| `InitialHandleTableArraySize` | uint | GC | Number of bucket slots in each `HandleTableMap` node |
-| `CardTableInfoSize` | nuint | GC | Size in bytes of a `CardTableInfo` struct |
-| `CountFreeRegionKinds` | int | GC | Number of free region kinds (array length for per-heap `RegionFreeList` arrays) |
-| `GCHeapBookkeepingStart` | TargetPointer | GC | Pointer to the bookkeeping start address (in workstation builds) |
-| `GCHeapFreeRegions` | TargetPointer | GC | Pointer to the per-heap `RegionFreeList` array (in workstation builds with regions) |
-| `GCHeapFreeableSohSegment` | TargetPointer | GC | Pointer to the freeable SOH segment list head (in workstation builds) |
-| `GCHeapFreeableUohSegment` | TargetPointer | GC | Pointer to the freeable UOH segment list head (in workstation builds) |
-| `GlobalRegionsToDecommit` | TargetPointer | GC | Pointer to the global regions-to-decommit `RegionFreeList` array (in region builds) |
-| `GlobalFreeHugeRegions` | TargetPointer | GC | Pointer to the global free huge regions `RegionFreeList` (in region builds) |
 
 Contracts used:
 | Contract Name |
@@ -265,10 +213,6 @@ Constants used:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `WRK_HEAP_COUNT` | uint | The number of heaps in the `workstation` GC type | `1` |
-| `MAX_HANDLE_TABLE_REGIONS` | int | Safety cap for handle table region iteration | `8192` |
-| `MAX_BOOKKEEPING_REGIONS` | int | Safety cap for card table linked list iteration | `32` |
-| `MAX_FREE_REGION_KINDS` | int | Safety cap for free region kinds count | `16` |
-| `MAX_SEGMENT_LIST_ITERATIONS` | int | Safety cap for segment list iteration | `2048` |
 
 ```csharp
 GCHeapType IGC.GetGCIdentifiers()
@@ -619,219 +563,5 @@ void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointe
     TargetPointer globalAllocContextAddress = target.ReadGlobalPointer("GlobalAllocContext");
     allocPtr = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Pointer offset */);
     allocLimit = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Limit offset */);
-}
-```
-
-GetHandleTableMemoryRegions
-```csharp
-IEnumerable<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
-{
-    List<GCMemoryRegionData> regions = [];
-
-    int maxSlots = 1;
-    if (IsServerGC())
-        maxSlots = (int)target.Read<uint>(target.ReadGlobalPointer("TotalCpuCount"));
-
-    uint handleSegmentSize = target.ReadGlobal<uint>("HandleSegmentSize");
-    uint initialHandleTableArraySize = target.ReadGlobal<uint>("InitialHandleTableArraySize");
-
-    int maxRegions = MAX_HANDLE_TABLE_REGIONS; // 8192
-    TargetPointer mapAddr = target.ReadGlobalPointer("HandleTableMap");
-
-    while (mapAddr != null && maxRegions >= 0)
-    {
-        HandleTableMap map = Read<HandleTableMap>(mapAddr);
-
-        for (int i = 0; i < initialHandleTableArraySize; i++)
-        {
-            TargetPointer bucketPtr = target.ReadPointer(map.Buckets + (i * pointerSize));
-            if (bucketPtr == null)
-                continue;
-
-            HandleTableBucket bucket = Read<HandleTableBucket>(bucketPtr);
-
-            for (int j = 0; j < maxSlots; j++)
-            {
-                TargetPointer tablePtr = target.ReadPointer(bucket.Table + (j * pointerSize));
-                HandleTable table = Read<HandleTable>(tablePtr);
-                TargetPointer firstSegment = table.SegmentList;
-                TargetPointer curr = firstSegment;
-
-                do
-                {
-                    regions.Add(new GCMemoryRegionData()
-                    {
-                        Start = curr,
-                        Size = handleSegmentSize,
-                        Heap = j,
-                    });
-
-                    HandleTableSegment segment = Read<HandleTableSegment>(curr);
-                    curr = segment.NextSegment;
-                } while (curr != null && curr != firstSegment);
-            }
-        }
-
-        mapAddr = map.Next;
-        maxRegions--;
-    }
-
-    return regions;
-}
-```
-
-GetGCBookkeepingMemoryRegions
-```csharp
-IEnumerable<GCMemoryRegionData> IGC.GetGCBookkeepingMemoryRegions()
-{
-    List<GCMemoryRegionData> regions = [];
-
-    if (!target.TryReadGlobalPointer("GCHeapBookkeepingStart", out TargetPointer? bookkeepingPtr))
-        return regions;
-
-    TargetPointer ctiAddr = target.ReadPointer(bookkeepingPtr);
-    if (ctiAddr == null)
-        return regions;
-
-    ulong cardTableInfoSize = target.ReadGlobal<ulong>("CardTableInfoSize");
-
-    CardTableInfo cardTableInfo = Read<CardTableInfo>(ctiAddr);
-
-    if (cardTableInfo.Recount != 0 && cardTableInfo.Size != 0)
-    {
-        regions.Add(new GCMemoryRegionData() { Start = ctiAddr, Size = cardTableInfo.Size });
-    }
-
-    TargetPointer next = cardTableInfo.NextCardTable;
-    int maxRegions = MAX_BOOKKEEPING_REGIONS; // 32
-
-    // Walk the linked list: each next_card_table points past the card_table_info header,
-    // so subtract cardTableInfoSize to get the card_table_info address.
-    while (next > cardTableInfoSize)
-    {
-        TargetPointer ctAddr = next - cardTableInfoSize;
-        CardTableInfo ct = Read<CardTableInfo>(ctAddr);
-
-        if (ct.Recount != 0 && ct.Size != 0)
-        {
-            regions.Add(new GCMemoryRegionData() { Start = ctAddr, Size = ct.Size });
-        }
-
-        next = ct.NextCardTable;
-        if (next == cardTableInfo.NextCardTable)
-            break;
-
-        if (--maxRegions <= 0)
-            break;
-    }
-
-    return regions;
-}
-```
-
-GetGCFreeRegions
-```csharp
-IEnumerable<GCMemoryRegionData> IGC.GetGCFreeRegions()
-{
-    List<GCMemoryRegionData> regions = [];
-
-    int countFreeRegionKinds = target.ReadGlobal<int>("CountFreeRegionKinds");
-    countFreeRegionKinds = Min(countFreeRegionKinds, MAX_FREE_REGION_KINDS); // cap at 16
-
-    // Global free huge regions
-    if (target.TryReadGlobalPointer("GlobalFreeHugeRegions", out TargetPointer? globalFreeHugeRegionsPtr))
-    {
-        TargetPointer freeHugeRegionAddr = target.ReadPointer(globalFreeHugeRegionsPtr);
-        AddFreeList(regions, freeHugeRegionAddr, FreeRegionKind.FreeGlobalHugeRegion);
-    }
-
-    // Global regions to decommit
-    if (target.TryReadGlobalPointer("GlobalRegionsToDecommit", out TargetPointer? globalRegionsToDecommitPtr))
-    {
-        AddFreeListArray(regions, globalRegionsToDecommitPtr, countFreeRegionKinds, FreeRegionKind.FreeGlobalRegion);
-    }
-
-    if (IsServerGC())
-        AddServerFreeRegions(regions, countFreeRegionKinds);
-    else
-        AddWorkstationFreeRegions(regions, countFreeRegionKinds);
-
-    return regions;
-}
-
-// For workstation GC: read free regions and freeable segments from globals
-void AddWorkstationFreeRegions(regions, countFreeRegionKinds)
-{
-    // Per-heap free regions (regions GC only)
-    if (TryReadGlobalPointer("GCHeapFreeRegions", out freeRegionsPtr))
-        AddFreeListArray(regions, freeRegionsPtr, countFreeRegionKinds, FreeRegionKind.FreeRegion);
-
-    // Freeable SOH/UOH segments
-    if (TryReadGlobalPointer("GCHeapFreeableSohSegment", out freeableSohPtr))
-        AddSegmentList(regions, ReadPointer(freeableSohPtr), FreeRegionKind.FreeSohSegment);
-    if (TryReadGlobalPointer("GCHeapFreeableUohSegment", out freeableUohPtr))
-        AddSegmentList(regions, ReadPointer(freeableUohPtr), FreeRegionKind.FreeUohSegment);
-}
-
-// For server GC: read per-heap free regions and freeable segments from each GCHeap
-void AddServerFreeRegions(regions, countFreeRegionKinds)
-{
-    foreach (heapAddress in GetGCHeaps())
-    {
-        GCHeap heap = Read<GCHeap>(heapAddress);
-
-        // Per-heap free regions (regions GC only)
-        if (heap.FreeRegions is present)
-            AddFreeListArray(regions, heap.FreeRegions, countFreeRegionKinds, FreeRegionKind.FreeRegion, heapIndex);
-
-        // Per-heap freeable segments
-        if (heap.FreeableSohSegment is present)
-            AddSegmentList(regions, heap.FreeableSohSegment, FreeRegionKind.FreeSohSegment, heapIndex);
-        if (heap.FreeableUohSegment is present)
-            AddSegmentList(regions, heap.FreeableUohSegment, FreeRegionKind.FreeUohSegment, heapIndex);
-    }
-}
-
-// Walk a RegionFreeList array of `count` entries starting at `arrayStart`
-void AddFreeListArray(regions, arrayStart, count, kind)
-{
-    regionFreeListSize = sizeof(RegionFreeList);
-    for (int i = 0; i < count; i++)
-    {
-        RegionFreeList rfl = Read<RegionFreeList>(arrayStart + (i * regionFreeListSize));
-        AddSegmentList(regions, rfl.HeadFreeRegion, kind);
-    }
-}
-
-// Walk a HeapSegment linked list via the Next pointer
-void AddSegmentList(regions, start, kind, heap = 0)
-{
-    int iterationMax = MAX_SEGMENT_LIST_ITERATIONS; // 2048
-    TargetPointer curr = start;
-
-    while (curr != null)
-    {
-        HeapSegment segment = Read<HeapSegment>(curr);
-
-        ulong regionStart = segment.Mem;
-        ulong regionSize = (segment.Mem < segment.Committed) ? (segment.Committed - segment.Mem) : 0;
-
-        if (regionStart != 0)
-        {
-            regions.Add(new GCMemoryRegionData()
-            {
-                Start = regionStart,
-                Size = regionSize,
-                ExtraData = (ulong)kind,
-                Heap = heap,
-            });
-        }
-
-        curr = segment.Next;
-        if (curr == start)
-            break;
-        if (--iterationMax <= 0)
-            break;
-    }
 }
 ```

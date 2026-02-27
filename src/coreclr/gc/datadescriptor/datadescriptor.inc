@@ -34,9 +34,6 @@ CDAC_TYPE_FIELD(GCHeap, /*pointer*/, InterestingData, cdac_data<GC_NAMESPACE::gc
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, CompactReasons, cdac_data<GC_NAMESPACE::gc_heap>::CompactReasons)
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, ExpandMechanisms, cdac_data<GC_NAMESPACE::gc_heap>::ExpandMechanisms)
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, InterestingMechanismBits, cdac_data<GC_NAMESPACE::gc_heap>::InterestingMechanismBits)
-CDAC_TYPE_FIELD(GCHeap, /*pointer*/, FreeableSohSegment, cdac_data<GC_NAMESPACE::gc_heap>::FreeableSohSegment)
-CDAC_TYPE_FIELD(GCHeap, /*pointer*/, FreeableUohSegment, cdac_data<GC_NAMESPACE::gc_heap>::FreeableUohSegment)
-CDAC_TYPE_FIELD(GCHeap, /*pointer*/, FreeRegions, cdac_data<GC_NAMESPACE::gc_heap>::FreeRegions)
 CDAC_TYPE_END(GCHeap)
 #endif // SERVER_GC
 
@@ -81,41 +78,6 @@ CDAC_TYPE_FIELD(OomHistory, /*nuint*/, Size, offsetof(oom_history, size))
 CDAC_TYPE_FIELD(OomHistory, /*nuint*/, AvailablePagefileMb, offsetof(oom_history, available_pagefile_mb))
 CDAC_TYPE_FIELD(OomHistory, /*uint32*/, LohP, offsetof(oom_history, loh_p))
 CDAC_TYPE_END(OomHistory)
-
-CDAC_TYPE_BEGIN(HandleTableMap)
-CDAC_TYPE_INDETERMINATE(HandleTableMap)
-CDAC_TYPE_FIELD(HandleTableMap, /*pointer*/, Buckets, offsetof(dac_handle_table_map, pBuckets))
-CDAC_TYPE_FIELD(HandleTableMap, /*pointer*/, Next, offsetof(dac_handle_table_map, pNext))
-CDAC_TYPE_FIELD(HandleTableMap, /*uint32*/, MaxIndex, offsetof(dac_handle_table_map, dwMaxIndex))
-CDAC_TYPE_END(HandleTableMap)
-
-CDAC_TYPE_BEGIN(HandleTableBucket)
-CDAC_TYPE_INDETERMINATE(HandleTableBucket)
-CDAC_TYPE_FIELD(HandleTableBucket, /*pointer*/, Table, offsetof(dac_handle_table_bucket, pTable))
-CDAC_TYPE_FIELD(HandleTableBucket, /*uint32*/, HandleTableIndex, offsetof(dac_handle_table_bucket, HandleTableIndex))
-CDAC_TYPE_END(HandleTableBucket)
-
-CDAC_TYPE_BEGIN(HandleTable)
-CDAC_TYPE_INDETERMINATE(HandleTable)
-CDAC_TYPE_FIELD(HandleTable, /*pointer*/, SegmentList, offsetof(dac_handle_table, pSegmentList))
-CDAC_TYPE_END(HandleTable)
-
-CDAC_TYPE_BEGIN(HandleTableSegment)
-CDAC_TYPE_INDETERMINATE(HandleTableSegment)
-CDAC_TYPE_FIELD(HandleTableSegment, /*pointer*/, NextSegment, offsetof(dac_handle_table_segment, pNextSegment))
-CDAC_TYPE_END(HandleTableSegment)
-
-CDAC_TYPE_BEGIN(CardTableInfo)
-CDAC_TYPE_INDETERMINATE(CardTableInfo)
-CDAC_TYPE_FIELD(CardTableInfo, /*uint32*/, Recount, offsetof(dac_card_table_info, recount))
-CDAC_TYPE_FIELD(CardTableInfo, /*nuint*/, Size, offsetof(dac_card_table_info, size))
-CDAC_TYPE_FIELD(CardTableInfo, /*pointer*/, NextCardTable, offsetof(dac_card_table_info, next_card_table))
-CDAC_TYPE_END(CardTableInfo)
-
-CDAC_TYPE_BEGIN(RegionFreeList)
-CDAC_TYPE_SIZE(sizeof(dac_region_free_list))
-CDAC_TYPE_FIELD(RegionFreeList, /*pointer*/, HeadFreeRegion, offsetof(dac_region_free_list, head_free_region))
-CDAC_TYPE_END(RegionFreeList)
 
 CDAC_TYPES_END()
 
@@ -189,7 +151,6 @@ CDAC_GLOBAL_POINTER(StructureInvalidCount, &GCScan::m_GcStructuresInvalidCnt)
 #ifdef SERVER_GC
 CDAC_GLOBAL_POINTER(NumHeaps, &GC_NAMESPACE::gc_heap::n_heaps)
 CDAC_GLOBAL_POINTER(Heaps, cdac_data<GC_NAMESPACE::gc_heap>::Heaps)
-CDAC_GLOBAL_POINTER(TotalCpuCount, &::g_totalCpuCount)
 #endif // SERVER_GC
 
 #ifdef BACKGROUND_GC
@@ -203,31 +164,6 @@ CDAC_GLOBAL_POINTER(DynamicAdaptationMode, cdac_data<GC_NAMESPACE::gc_heap>::Dyn
 #ifdef GC_CONFIG_DRIVEN
 CDAC_GLOBAL_POINTER(GCGlobalMechanisms, &gc_global_mechanisms)
 #endif // GC_CONFIG_DRIVEN
-
-CDAC_GLOBAL(HandleSegmentSize, /*uint32*/, (uint32_t)HANDLE_SEGMENT_SIZE)
-CDAC_GLOBAL(InitialHandleTableArraySize, /*uint32*/, (uint32_t)INITIAL_HANDLE_TABLE_ARRAY_SIZE)
-CDAC_GLOBAL(CardTableInfoSize, /*nuint*/, (size_t)sizeof(dac_card_table_info))
-CDAC_GLOBAL(CountFreeRegionKinds, /*int32*/, (int32_t)FREE_REGION_KINDS)
-
-CDAC_GLOBAL_POINTER(HandleTableMap, &g_HandleTableMap)
-
-#ifndef SERVER_GC
-CDAC_GLOBAL_POINTER(GCHeapBookkeepingStart, cdac_data<GC_NAMESPACE::gc_heap>::BookkeepingStart)
-#ifdef USE_REGIONS
-CDAC_GLOBAL_POINTER(GCHeapFreeRegions, cdac_data<GC_NAMESPACE::gc_heap>::FreeRegions)
-CDAC_GLOBAL_POINTER(GlobalRegionsToDecommit, &GC_NAMESPACE::gc_heap::global_regions_to_decommit)
-CDAC_GLOBAL_POINTER(GlobalFreeHugeRegions, &GC_NAMESPACE::gc_heap::global_free_huge_regions)
-#endif // USE_REGIONS
-CDAC_GLOBAL_POINTER(GCHeapFreeableSohSegment, cdac_data<GC_NAMESPACE::gc_heap>::FreeableSohSegment)
-CDAC_GLOBAL_POINTER(GCHeapFreeableUohSegment, cdac_data<GC_NAMESPACE::gc_heap>::FreeableUohSegment)
-#endif // !SERVER_GC
-
-#ifdef SERVER_GC
-#ifdef USE_REGIONS
-CDAC_GLOBAL_POINTER(GlobalRegionsToDecommit, &GC_NAMESPACE::gc_heap::global_regions_to_decommit)
-CDAC_GLOBAL_POINTER(GlobalFreeHugeRegions, &GC_NAMESPACE::gc_heap::global_free_huge_regions)
-#endif // USE_REGIONS
-#endif // SERVER_GC
 
 CDAC_GLOBAL_CONTRACT(GC, 1)
 

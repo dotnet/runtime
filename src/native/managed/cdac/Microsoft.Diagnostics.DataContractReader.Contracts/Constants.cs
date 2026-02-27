@@ -121,19 +121,6 @@ public static class Constants
         public const string GCHeapCompactReasons = nameof(GCHeapCompactReasons);
         public const string GCHeapExpandMechanisms = nameof(GCHeapExpandMechanisms);
         public const string GCHeapInterestingMechanismBits = nameof(GCHeapInterestingMechanismBits);
-
-        public const string HandleTableMap = nameof(HandleTableMap);
-        public const string HandleSegmentSize = nameof(HandleSegmentSize);
-        public const string InitialHandleTableArraySize = nameof(InitialHandleTableArraySize);
-        public const string TotalCpuCount = nameof(TotalCpuCount);
-        public const string CardTableInfoSize = nameof(CardTableInfoSize);
-        public const string CountFreeRegionKinds = nameof(CountFreeRegionKinds);
-        public const string GCHeapBookkeepingStart = nameof(GCHeapBookkeepingStart);
-        public const string GCHeapFreeRegions = nameof(GCHeapFreeRegions);
-        public const string GCHeapFreeableSohSegment = nameof(GCHeapFreeableSohSegment);
-        public const string GCHeapFreeableUohSegment = nameof(GCHeapFreeableUohSegment);
-        public const string GlobalRegionsToDecommit = nameof(GlobalRegionsToDecommit);
-        public const string GlobalFreeHugeRegions = nameof(GlobalFreeHugeRegions);
     }
     public static class FieldNames
     {
