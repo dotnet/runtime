@@ -1038,6 +1038,13 @@ public:
     }
 
     void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    // Static helper that resolves PatchpointInfo to read callee-saves from Tier0's stack.
+    static void UpdateContextForOSRTransition(TransitionBlock* pTransitionBlock, CONTEXT* pContext, 
+                                              UINT_PTR* pCurrentSP, UINT_PTR* pCurrentFP,
+                                              const EECodeInfo& codeInfo);
+#endif // FEATURE_ON_STACK_REPLACEMENT
 #endif
 
     TADDR GetReturnAddressPtr_Impl()

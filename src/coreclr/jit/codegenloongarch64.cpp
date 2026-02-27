@@ -6829,6 +6829,9 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
 
     genSaveCalleeSavedRegistersHelp(rsPushRegs, FP_offset + 16);
 
+    m_compiler->compFrameInfo.calleeSaveSpOffset = FP_offset + 16;
+    m_compiler->compFrameInfo.offsetSpToSavedFp  = FP_offset;
+
     JITDUMP("    offsetSpToSavedFp=%d\n", FP_offset);
     genEstablishFramePointer(FP_offset, /* reportUnwindData */ true);
 

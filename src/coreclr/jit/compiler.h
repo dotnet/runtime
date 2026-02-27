@@ -11311,21 +11311,29 @@ public:
     unsigned compMapILvarNum(unsigned ILvarNum);      // map accounting for hidden args
     unsigned compMap2ILvarNum(unsigned varNum) const; // map accounting for hidden args
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     struct FrameInfo
     {
+#if defined(TARGET_ARM64)
         // Frame type (1-5)
         int frameType = 0;
+#endif
 
         // Distance from established (method body) SP to base of callee save area
         int calleeSaveSpOffset = 0;
 
+        // Distance from established SP to where caller's FP was saved
+        int offsetSpToSavedFp = 0;
+
+#if defined(TARGET_ARM64)
         // Amount to subtract from SP before saving (prolog) OR
         // to add to SP after restoring (epilog) callee saves
         int calleeSaveSpDelta = 0;
 
-        // Distance from established SP to where caller's FP was saved
-        int offsetSpToSavedFp = 0;
+        // For OSR: the final-SP-relative offset to callee-saves.
+        // This differs from calleeSaveSpOffset for frame types 3/4/5.
+        int osrCalleeSaveSpOffset = 0;
+#endif
     } compFrameInfo;
 #endif
 
