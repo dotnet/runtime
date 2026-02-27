@@ -289,15 +289,10 @@ inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsi
     return start <= value && value <= end;
 }
 
-#define HISTOGRAM_MAX_SIZE_COUNT 64
+#include "dumpable.h"
+#include "histogram.h"
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
-
-class Dumpable
-{
-public:
-    virtual void dump(FILE* output) = 0;
-};
 
 // Helper class record and display a simple single value.
 class Counter : public Dumpable
@@ -310,32 +305,7 @@ public:
     {
     }
 
-    void dump(FILE* output);
-};
-
-// Helper class to record and display a histogram of different values.
-// Usage like:
-// static unsigned s_buckets[] = { 1, 2, 5, 10, 0 }; // Must have terminating 0
-// static Histogram s_histogram(s_buckets);
-// ...
-// s_histogram.record(someValue);
-//
-// The histogram can later be dumped with the dump function, or automatically
-// be dumped on shutdown of the JIT library using the DumpOnShutdown helper
-// class (see below). It will display how many recorded values fell into each
-// of the buckets (<= 1, <= 2, <= 5, <= 10, > 10).
-class Histogram : public Dumpable
-{
-public:
-    Histogram(const unsigned* const sizeTable);
-
-    void dump(FILE* output);
-    void record(unsigned size);
-
-private:
-    unsigned              m_sizeCount;
-    const unsigned* const m_sizeTable;
-    LONG                  m_counts[HISTOGRAM_MAX_SIZE_COUNT];
+    void dump(FILE* output) const override;
 };
 
 // Helper class to record and display counts of node types. Use like:
@@ -363,7 +333,7 @@ public:
     {
     }
 
-    void dump(FILE* output);
+    void dump(FILE* output) const override;
     void record(genTreeOps oper);
 
 private:
@@ -384,7 +354,7 @@ private:
 class DumpOnShutdown
 {
 public:
-    DumpOnShutdown(const char* name, Dumpable* histogram);
+    DumpOnShutdown(const char* name, const Dumpable* dumpable);
     static void DumpAll();
 };
 

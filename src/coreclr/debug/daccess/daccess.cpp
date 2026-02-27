@@ -7528,12 +7528,23 @@ void DacHandleWalker::WalkHandles()
 
     mEnumerated = true;
 
-    // The table slots are based on the number of GC heaps in the process.
-    int max_slots = 1;
+    // The GC sets the number of slots based on the number of processors. Prior to
+    // DATAS, num_processors == GCHeapCount() for ServerGC. Unfortunately the GC DAC
+    // contract didn't record the number of processors independently until minor
+    // version 8 and DATAS was enabled prior to that. When using a standalone GC version
+    // < 8 the DAC approximates the processor count as GCHeapCount() because we don't
+    // have more accurate data to work with. This may cause handle enumeration to be
+    // incomplete.
+    uint32_t max_slots = 1;
 
 #ifdef FEATURE_SVR_GC
     if (GCHeapUtilities::IsServerHeap())
-        max_slots = GCHeapCount();
+    {
+        if (g_gcDacGlobals->minor_version_number >= 8)
+            max_slots = *g_gcDacGlobals->g_totalCpuCount;
+        else
+            max_slots = GCHeapCount();
+    }
 #endif // FEATURE_SVR_GC
 
     DacHandleWalkerParam param(&mList);
@@ -7545,9 +7556,9 @@ void DacHandleWalker::WalkHandles()
         {
             if (map->pBuckets[i] != NULL)
             {
-                for (int j = 0; j < max_slots && SUCCEEDED(param.Result); ++j)
+                for (uint32_t j = 0; j < max_slots && SUCCEEDED(param.Result); ++j)
                 {
-                    DPTR(dac_handle_table) hTable = map->pBuckets[i]->pTable[j];
+                    DPTR(dac_handle_table) hTable = map->pBuckets[i]->pTable[(int)j];
                     if (hTable)
                     {
                         // handleType is the integer from 1 -> HANDLE_MAX_INTERNAL_TYPES based on the requested handle kinds to walk.
