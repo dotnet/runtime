@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Moq;
 using Xunit;
 
@@ -154,6 +155,118 @@ public unsafe class ObjectTests
                     Assert.Equal(TargetPointer.Null.Value, ccw.Value);
                     Assert.Equal(TargetPointer.Null.Value, ccf.Value);
                 }
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetObjectClassName_ZeroAddress(MockTarget.Architecture arch)
+    {
+        ObjectContractHelper(arch,
+            (objectBuilder) => { },
+            (target) =>
+            {
+                ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+                char[] buffer = new char[256];
+                uint needed;
+                int hr;
+                fixed (char* ptr = buffer)
+                {
+                    hr = sosDac.GetObjectClassName(default, (uint)buffer.Length, ptr, &needed);
+                }
+                Assert.NotEqual(HResults.S_OK, hr);
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetObjectClassName_UnloadedModule(MockTarget.Architecture arch)
+    {
+        TargetPointer TestObjectAddress = default;
+        TargetPointer TestMethodTableAddress = default;
+        ObjectContractHelper(arch,
+            (objectBuilder) =>
+            {
+                TargetPointer eeClass = objectBuilder.RTSBuilder.AddEEClass("TestClass", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
+                TestMethodTableAddress = objectBuilder.RTSBuilder.AddMethodTable("TestClass",
+                    mtflags: default, mtflags2: default, baseSize: objectBuilder.Builder.TargetTestHelpers.ObjectBaseSize,
+                    module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: 0);
+                objectBuilder.RTSBuilder.SetEEClassAndCanonMTRefs(eeClass, TestMethodTableAddress);
+                TestObjectAddress = objectBuilder.AddObject(TestMethodTableAddress);
+            },
+            (target) =>
+            {
+                var mockRts = new Mock<IRuntimeTypeSystem>();
+                TypeHandle handle = new TypeHandle(TestMethodTableAddress);
+                mockRts.Setup(r => r.GetTypeHandle(TestMethodTableAddress)).Returns(handle);
+                mockRts.Setup(r => r.GetModule(handle)).Returns(TargetPointer.Null);
+
+                var mockLoader = new Mock<ILoader>();
+                mockLoader.Setup(l => l.GetModuleHandleFromModulePtr(It.IsAny<TargetPointer>())).Returns(default(Contracts.ModuleHandle));
+                mockLoader.Setup(l => l.TryGetLoadedImageContents(It.IsAny<Contracts.ModuleHandle>(), out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny, out It.Ref<uint>.IsAny)).Returns(false);
+
+                var mockObject = new Mock<IObject>();
+                mockObject.Setup(o => o.GetMethodTableAddress(It.IsAny<TargetPointer>())).Returns(TestMethodTableAddress);
+
+                ((TestPlaceholderTarget)target).SetContracts(Mock.Of<ContractRegistry>(
+                    c => c.Object == mockObject.Object
+                        && c.RuntimeTypeSystem == mockRts.Object
+                        && c.Loader == mockLoader.Object));
+
+                ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+                char[] buffer = new char[256];
+                uint needed;
+                int hr;
+                fixed (char* ptr = buffer)
+                {
+                    hr = sosDac.GetObjectClassName(new ClrDataAddress(TestObjectAddress.Value), (uint)buffer.Length, ptr, &needed);
+                }
+                Assert.Equal(HResults.S_OK, hr);
+                Assert.Equal((uint)"<Unloaded Type>".Length + 1, needed);
+                Assert.Equal("<Unloaded Type>", new string(buffer, 0, (int)needed - 1));
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetObjectClassName_NullBufferReturnsNeededSize(MockTarget.Architecture arch)
+    {
+        TargetPointer TestObjectAddress = default;
+        TargetPointer TestMethodTableAddress = default;
+        ObjectContractHelper(arch,
+            (objectBuilder) =>
+            {
+                TargetPointer eeClass = objectBuilder.RTSBuilder.AddEEClass("TestClass", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
+                TestMethodTableAddress = objectBuilder.RTSBuilder.AddMethodTable("TestClass",
+                    mtflags: default, mtflags2: default, baseSize: objectBuilder.Builder.TargetTestHelpers.ObjectBaseSize,
+                    module: TargetPointer.Null, parentMethodTable: TargetPointer.Null, numInterfaces: 0, numVirtuals: 0);
+                objectBuilder.RTSBuilder.SetEEClassAndCanonMTRefs(eeClass, TestMethodTableAddress);
+                TestObjectAddress = objectBuilder.AddObject(TestMethodTableAddress);
+            },
+            (target) =>
+            {
+                var mockRts = new Mock<IRuntimeTypeSystem>();
+                TypeHandle handle = new TypeHandle(TestMethodTableAddress);
+                mockRts.Setup(r => r.GetTypeHandle(TestMethodTableAddress)).Returns(handle);
+                mockRts.Setup(r => r.GetModule(handle)).Returns(TargetPointer.Null);
+
+                var mockLoader = new Mock<ILoader>();
+                mockLoader.Setup(l => l.GetModuleHandleFromModulePtr(It.IsAny<TargetPointer>())).Returns(default(Contracts.ModuleHandle));
+                mockLoader.Setup(l => l.TryGetLoadedImageContents(It.IsAny<Contracts.ModuleHandle>(), out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny, out It.Ref<uint>.IsAny)).Returns(false);
+
+                var mockObject = new Mock<IObject>();
+                mockObject.Setup(o => o.GetMethodTableAddress(It.IsAny<TargetPointer>())).Returns(TestMethodTableAddress);
+
+                ((TestPlaceholderTarget)target).SetContracts(Mock.Of<ContractRegistry>(
+                    c => c.Object == mockObject.Object
+                        && c.RuntimeTypeSystem == mockRts.Object
+                        && c.Loader == mockLoader.Object));
+
+                ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null);
+                uint needed;
+                int hr = sosDac.GetObjectClassName(new ClrDataAddress(TestObjectAddress.Value), 0, null, &needed);
+                Assert.Equal(HResults.S_OK, hr);
+                Assert.Equal((uint)"<Unloaded Type>".Length + 1, needed);
             });
     }
 }

@@ -355,18 +355,28 @@ RESTORE_FLOAT_ARGUMENT_REGISTERS macro ofs
 ; xmm2
 ; xmm1
 ; xmm0                      <- __PWTB_FloatArgumentRegisters
+; Optional: Callee saved floating point registers
+;   xmm15
+;   .
+;   .
+;   xmm6
 ; extra locals + padding to qword align
 ; callee's r9
 ; callee's r8
 ; callee's rdx
 ; callee's rcx
 
-PROLOG_WITH_TRANSITION_BLOCK macro extraLocals := <0>, stackAllocOnEntry := <0>, stackAllocSpill1, stackAllocSpill2, stackAllocSpill3
+PROLOG_WITH_TRANSITION_BLOCK macro extraLocals := <0>, calleeSavedFloatRegs := <DoNotPushCalleeSavedFloatRegs>, stackAllocOnEntry := <0>, stackAllocSpill1, stackAllocSpill2, stackAllocSpill3
 
         __PWTB_FloatArgumentRegisters = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES + extraLocals
 
         if (__PWTB_FloatArgumentRegisters mod 16) ne 0
         __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 8
+        endif
+
+        ifidn <calleeSavedFloatRegs>, <PushCalleeSavedFloatRegs>
+        __PWTB_FloatCalleeSavedRegisters = __PWTB_FloatArgumentRegisters
+        __PWTB_FloatArgumentRegisters = __PWTB_FloatArgumentRegisters + 10 * 16
         endif
 
         __PWTB_StackAlloc = __PWTB_FloatArgumentRegisters + 4 * 16 + 8
@@ -402,6 +412,19 @@ PROLOG_WITH_TRANSITION_BLOCK macro extraLocals := <0>, stackAllocOnEntry := <0>,
         alloc_stack     __PWTB_StackAlloc
         SAVE_ARGUMENT_REGISTERS __PWTB_ArgumentRegisters
         SAVE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+
+        ifidn <calleeSavedFloatRegs>, <PushCalleeSavedFloatRegs>
+        movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters], xmm6
+        movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters + 10h], xmm7
+        movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters + 20h], xmm8
+        movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters + 30h], xmm9
+        movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters + 40h], xmm10
+        movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters + 50h], xmm11
+        movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters + 60h], xmm12
+        movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters + 70h], xmm13
+        movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters + 80h], xmm14
+        movdqa  [rsp + __PWTB_FloatCalleeSavedRegisters + 90h], xmm15
+        endif
 
         if stackAllocOnEntry ge 3*8
         mov stackAllocSpill3, [rsp + __PWTB_StackAlloc + 28h]
@@ -490,9 +513,9 @@ POP_COOP_PINVOKE_FRAME macro
 ; need to capture the complete register state including FP callee-saved registers.
 ;
 ; Stack layout (from high to low address after prologue):
+;   Outgoing argument homes (32 bytes)
 ;   Return address (m_ReturnAddress)
 ;   CalleeSavedRegisters (r15, r14, r13, r12, rbp, rbx, rsi, rdi - 64 bytes) <- TransitionBlock starts here
-;   Outgoing argument homes (32 bytes)
 ;   FloatArgumentRegisters (xmm0-xmm3, 64 bytes)
 ;   FP Callee-saved registers (xmm6-xmm15, 160 bytes)
 ;   Shadow space for call (32 bytes)

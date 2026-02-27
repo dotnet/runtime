@@ -8,16 +8,14 @@ import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
-import { fetchDll, fetchIcu, fetchNativeSymbols, fetchPdb, fetchVfs, fetchWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded } from "./assets";
+import { fetchDll, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded } from "./assets";
 import { initPolyfills } from "./polyfills";
 import { validateWasmFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
 // WASM-TODO: downloadOnly - blazor render mode auto pre-download. Really no start.
-// WASM-TODO: loadAllSatelliteResources
 // WASM-TODO: debugLevel
-// WASM-TODO: load symbolication json https://github.com/dotnet/runtime/issues/122647
 
 // many things happen in parallel here, but order matters for performance!
 // ideally we want to utilize network and CPU at the same time
@@ -56,6 +54,9 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         const coreVfsPromise = Promise.all((loaderConfig.resources.coreVfs || []).map(fetchVfs));
 
         const assembliesPromise = Promise.all(loaderConfig.resources.assembly.map(fetchDll));
+        const satelliteResourcesPromise = loaderConfig.loadAllSatelliteResources && loaderConfig.resources.satelliteResources
+            ? fetchSatelliteAssemblies(Object.keys(loaderConfig.resources.satelliteResources))
+            : Promise.resolve();
         const vfsPromise = Promise.all((loaderConfig.resources.vfs || []).map(fetchVfs));
 
         const icuResourceName = getIcuResourceName();
@@ -87,6 +88,7 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         }
 
         await assembliesPromise;
+        await satelliteResourcesPromise;
         await corePDBsPromise;
         await pdbsPromise;
         await runtimeModuleReady;

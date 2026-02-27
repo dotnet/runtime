@@ -5,6 +5,15 @@
 //
 // This file is compiled using the target architecture.  Preprocessor defines for the target
 // platform will be available.  It is ok to use `#ifdef`.
+//
+// When modifying this file (adding/removing types, fields, or globals), you must also:
+//   1. Update the corresponding contract doc in docs/design/datacontracts/<contract>.md
+//      to reflect the new data descriptors and any changes to the contract algorithm.
+//   2. Update the managed data class in src/native/managed/cdac/.../Data/<Type>.cs
+//      to read the new field(s).
+//   3. Update the contract implementation in src/native/managed/cdac/.../Contracts/<Contract>.cs
+//      to use the new data.
+//   4. Update the mock descriptors and tests in src/native/managed/cdac/tests/.
 
 
 CDAC_BASELINE("empty")
@@ -88,6 +97,8 @@ CDAC_TYPE_BEGIN(GCAllocContext)
 CDAC_TYPE_INDETERMINATE(GCAllocContext)
 CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Pointer, offsetof(gc_alloc_context, alloc_ptr))
 CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Limit, offsetof(gc_alloc_context, alloc_limit))
+CDAC_TYPE_FIELD(GCAllocContext, /*int64*/, AllocBytes, offsetof(gc_alloc_context, alloc_bytes))
+CDAC_TYPE_FIELD(GCAllocContext, /*int64*/, AllocBytesLoh, offsetof(gc_alloc_context, alloc_bytes_uoh))
 CDAC_TYPE_END(GCAllocContext)
 
 // Exception
@@ -743,6 +754,7 @@ CDAC_TYPE_END(ILCodeVersionNode)
 
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, /*uint64*/, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
+CDAC_TYPE_FIELD(ProfControlBlock, /*bool*/, RejitOnAttachEnabled, offsetof(ProfControlBlock, fRejitOnAttachEnabled))
 CDAC_TYPE_END(ProfControlBlock)
 
 #ifdef HAVE_GCCOVER

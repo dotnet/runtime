@@ -2641,7 +2641,77 @@ public sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetObjectClassName(ClrDataAddress obj, uint count, char* className, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetObjectClassName(obj, count, className, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (obj == 0)
+                throw new ArgumentException();
+
+            Contracts.IObject objectContract = _target.Contracts.Object;
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+
+            TargetPointer mt = objectContract.GetMethodTableAddress(obj.ToTargetPointer(_target));
+            Contracts.TypeHandle typeHandle = rts.GetTypeHandle(mt);
+
+            TargetPointer modulePointer = rts.GetModule(typeHandle);
+            if (modulePointer == TargetPointer.Null)
+            {
+                OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, "<Unloaded Type>");
+            }
+            else
+            {
+                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
+                if (!loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _))
+                {
+                    OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, "<Unloaded Type>");
+                }
+                else
+                {
+                    StringBuilder classNameBuilder = new();
+                    try
+                    {
+                        TypeNameBuilder.AppendType(_target, classNameBuilder, typeHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+                    }
+                    catch
+                    {
+                        string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt);
+                        if (fallbackName != null)
+                        {
+                            classNameBuilder.Clear();
+                            classNameBuilder.Append(fallbackName);
+                        }
+                    }
+                    OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, classNameBuilder.ToString());
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            char[] classNameLocal = new char[count];
+            uint neededLocal;
+            int hrLocal;
+            fixed (char* ptr = classNameLocal)
+            {
+                hrLocal = _legacyImpl.GetObjectClassName(obj, count, ptr, &neededLocal);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+                Debug.Assert(className == null || new ReadOnlySpan<char>(classNameLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(className)));
+            }
+        }
+#endif
+        return hr;
+    }
 
     int ISOSDacInterface.GetObjectData(ClrDataAddress objAddr, DacpObjectData* data)
     {
@@ -3257,8 +3327,42 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetThreadAllocData(thread, data) : HResults.E_NOTIMPL;
+
+    int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, DacpAllocData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (thread == 0)
+                throw new ArgumentException();
+            if (data is null)
+                throw new NullReferenceException();
+
+            Contracts.IThread contract = _target.Contracts.Thread;
+            contract.GetThreadAllocContext(thread.ToTargetPointer(_target), out long allocBytes, out long allocBytesLoh);
+            data->allocBytes = (ClrDataAddress)(ulong)allocBytes;
+            data->allocBytesLoh = (ClrDataAddress)(ulong)allocBytesLoh;
+        }
+        catch (global::System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpAllocData dataLocal = default;
+            int hrLocal = _legacyImpl.GetThreadAllocData(thread, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->allocBytes == dataLocal.allocBytes, $"cDAC: {data->allocBytes:x}, DAC: {dataLocal.allocBytes:x}");
+                Debug.Assert(data->allocBytesLoh == dataLocal.allocBytesLoh, $"cDAC: {data->allocBytesLoh:x}, DAC: {dataLocal.allocBytesLoh:x}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     int ISOSDacInterface.GetThreadData(ClrDataAddress thread, DacpThreadData* data)
     {
