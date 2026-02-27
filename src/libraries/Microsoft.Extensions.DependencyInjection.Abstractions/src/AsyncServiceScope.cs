@@ -30,13 +30,32 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <inheritdoc />
         public IServiceProvider ServiceProvider => _serviceScope.ServiceProvider;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Ends the scope lifetime and disposes all resolved services.
+        /// </summary>
+        /// <remarks>
+        /// Prefer calling <see cref="DisposeAsync"/> over this method. If any resolved service implements
+        /// <see cref="IAsyncDisposable"/> but not <see cref="IDisposable"/>, this method throws an
+        /// <see cref="InvalidOperationException"/> (or an <see cref="AggregateException"/> if multiple such
+        /// services are resolved). Use <see cref="DisposeAsync"/> to properly handle all disposable services,
+        /// or explicitly perform sync-over-async on the caller side if synchronous disposal is required.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">A resolved service implements <see cref="IAsyncDisposable"/> but not <see cref="IDisposable"/>.</exception>
+        /// <exception cref="AggregateException">Multiple resolved services implement <see cref="IAsyncDisposable"/> but not <see cref="IDisposable"/>.</exception>
         public void Dispose()
         {
             _serviceScope.Dispose();
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Asynchronously ends the scope lifetime and disposes all resolved services that implement <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is the preferred disposal method. When the underlying scope implements <see cref="IAsyncDisposable"/>,
+        /// this method handles services that implement only <see cref="IAsyncDisposable"/> without throwing.
+        /// When it does not, this method falls back to calling <see cref="Dispose"/>.
+        /// </remarks>
+        /// <returns>A value task that represents the asynchronous operation.</returns>
         public ValueTask DisposeAsync()
         {
             if (_serviceScope is IAsyncDisposable ad)
