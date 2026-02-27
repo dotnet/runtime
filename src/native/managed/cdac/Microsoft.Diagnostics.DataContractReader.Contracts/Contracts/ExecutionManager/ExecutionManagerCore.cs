@@ -337,7 +337,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
         IExecutionManager eman = this;
 
-        if (eman.IsFunclet(codeInfoHandle) == false)
+        if (!eman.IsFunclet(codeInfoHandle))
             return false;
 
         TargetPointer codeAddress = info.StartAddress.Value + info.RelativeOffset.Value;
