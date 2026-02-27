@@ -404,7 +404,7 @@ namespace Microsoft.Win32.SafeHandles
             using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
             if (!processWaitHandle.WaitOne(milliseconds))
             {
-                wasKilledOnTimeout = KillCore(throwOnError: false);
+                wasKilledOnTimeout = KillCore(throwOnError: false, entireProcessGroup: _processGroupJobHandle != IntPtr.Zero);
                 processWaitHandle.WaitOne(Timeout.Infinite);
             }
 
@@ -474,7 +474,7 @@ namespace Microsoft.Win32.SafeHandles
                         static state =>
                         {
                             var (handle, wasCancelled) = ((SafeProcessHandle, StrongBox<bool>))state!;
-                            wasCancelled.Value = handle.KillCore(throwOnError: false);
+                            wasCancelled.Value = handle.KillCore(throwOnError: false, entireProcessGroup: handle._processGroupJobHandle != IntPtr.Zero);
                         },
                         (this, wasKilledBox));
                 }
