@@ -967,23 +967,22 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else
                     {
-                        // Reflection fallback for fields: use FieldInfo.GetValue/SetValue (fields don't have MethodInfo).
+                        // Reflection fallback for fields: cache the FieldInfo and use GetValue/SetValue.
+                        // Fields don't have MethodInfo, so Delegate.CreateDelegate can't be used.
                         string fieldExpr = $"typeof({declaringTypeFQN}).GetField({FormatStringLiteral(property.MemberName)}, {BindingFlagsTypeRef}.Instance | {BindingFlagsTypeRef}.Public | {BindingFlagsTypeRef}.NonPublic)!";
+                        string fieldCacheName = GetReflectionCacheName(typeFriendlyName, "field", property.MemberName, i, disambiguate);
+                        writer.WriteLine($"private static global::System.Reflection.FieldInfo? {fieldCacheName};");
 
                         if (needsGetterAccessor)
                         {
-                            string cacheName = GetReflectionCacheName(typeFriendlyName, "get", property.MemberName, i, disambiguate);
                             string wrapperName = GetAccessorName(typeFriendlyName, "get", property.MemberName, i, disambiguate);
-                            writer.WriteLine($"private static global::System.Func<object?, object?>? {cacheName};");
-                            writer.WriteLine($"private static {propertyTypeFQN} {wrapperName}(object obj) => ({propertyTypeFQN})({cacheName} ??= {fieldExpr}.GetValue)(obj)!;");
+                            writer.WriteLine($"private static {propertyTypeFQN} {wrapperName}(object obj) => ({propertyTypeFQN})({fieldCacheName} ??= {fieldExpr}).GetValue(obj)!;");
                         }
 
                         if (needsSetterAccessor)
                         {
-                            string cacheName = GetReflectionCacheName(typeFriendlyName, "set", property.MemberName, i, disambiguate);
                             string wrapperName = GetAccessorName(typeFriendlyName, "set", property.MemberName, i, disambiguate);
-                            writer.WriteLine($"private static global::System.Action<object?, object?>? {cacheName};");
-                            writer.WriteLine($"private static void {wrapperName}(object obj, {propertyTypeFQN} value) => ({cacheName} ??= {fieldExpr}.SetValue)(obj, value);");
+                            writer.WriteLine($"private static void {wrapperName}(object obj, {propertyTypeFQN} value) => ({fieldCacheName} ??= {fieldExpr}).SetValue(obj, value);");
                         }
                     }
                 }
