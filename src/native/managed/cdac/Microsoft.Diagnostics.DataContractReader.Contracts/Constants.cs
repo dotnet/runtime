@@ -134,6 +134,15 @@ public static class Constants
         public const string HandlesPerBlock = nameof(HandlesPerBlock);
         public const string BlockInvalid = nameof(BlockInvalid);
         public const string TotalCpuCount = nameof(TotalCpuCount);
+        public const string HandleSegmentSize = nameof(HandleSegmentSize);
+        public const string CardTableInfoSize = nameof(CardTableInfoSize);
+        public const string CountFreeRegionKinds = nameof(CountFreeRegionKinds);
+        public const string GlobalFreeHugeRegions = nameof(GlobalFreeHugeRegions);
+        public const string GlobalRegionsToDecommit = nameof(GlobalRegionsToDecommit);
+        public const string GCHeapBookkeepingStart = nameof(GCHeapBookkeepingStart);
+        public const string GCHeapFreeableSohSegment = nameof(GCHeapFreeableSohSegment);
+        public const string GCHeapFreeableUohSegment = nameof(GCHeapFreeableUohSegment);
+        public const string GCHeapFreeRegions = nameof(GCHeapFreeRegions);
     }
     public static class FieldNames
     {

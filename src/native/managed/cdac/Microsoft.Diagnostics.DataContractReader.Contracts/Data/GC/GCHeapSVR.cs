@@ -40,6 +40,15 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
         CompactReasons = address + (ulong)type.Fields[nameof(CompactReasons)].Offset;
         ExpandMechanisms = address + (ulong)type.Fields[nameof(ExpandMechanisms)].Offset;
         InterestingMechanismBits = address + (ulong)type.Fields[nameof(InterestingMechanismBits)].Offset;
+
+        if (type.Fields.ContainsKey(nameof(FreeableSohSegment)))
+            FreeableSohSegment = target.ReadPointer(address + (ulong)type.Fields[nameof(FreeableSohSegment)].Offset);
+        if (type.Fields.ContainsKey(nameof(FreeableUohSegment)))
+            FreeableUohSegment = target.ReadPointer(address + (ulong)type.Fields[nameof(FreeableUohSegment)].Offset);
+        if (type.Fields.ContainsKey(nameof(FreeRegions)))
+            FreeRegions = address + (ulong)type.Fields[nameof(FreeRegions)].Offset;
+        if (type.Fields.ContainsKey(nameof(BookkeepingStart)))
+            BookkeepingStart = target.ReadPointer(address + (ulong)type.Fields[nameof(BookkeepingStart)].Offset);
     }
 
     public TargetPointer MarkArray { get; }
@@ -65,4 +74,9 @@ internal sealed class GCHeapSVR : IData<GCHeapSVR>, IGCHeap
     public TargetPointer CompactReasons { get; }
     public TargetPointer ExpandMechanisms { get; }
     public TargetPointer InterestingMechanismBits { get; }
+
+    public TargetPointer? FreeableSohSegment { get; }
+    public TargetPointer? FreeableUohSegment { get; }
+    public TargetPointer? FreeRegions { get; }
+    public TargetPointer? BookkeepingStart { get; }
 }
