@@ -1161,7 +1161,6 @@ PCODE CallStubGenerator::GetSwiftSelfByRefRoutine()
     {
         COMPlusThrow(kPlatformNotSupportedException, W("SwiftSelf<T> is not supported for reverse PInvoke"));
     }
-    _ASSERTE(m_interpreterToNative && "SwiftSelf<T> is not supported for reverse PInvoke");
     return (PCODE)Load_SwiftSelf_ByRef;
 }
 
