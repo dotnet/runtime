@@ -280,6 +280,46 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void IsContinuationReturnsTrueForContinuationType(MockTarget.Architecture arch)
+    {
+        TargetPointer continuationInstanceMethodTablePtr = default;
+        RTSContractHelper(arch,
+        (rtsBuilder) =>
+        {
+            TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+            TargetPointer systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
+
+            // Create the base Continuation class (parent is System.Object)
+            TargetPointer continuationBaseEEClassPtr = rtsBuilder.AddEEClass("Continuation", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
+            TargetPointer continuationBaseMethodTablePtr = rtsBuilder.AddMethodTable("Continuation",
+                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
+                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
+            rtsBuilder.SetEEClassAndCanonMTRefs(continuationBaseEEClassPtr, continuationBaseMethodTablePtr);
+
+            // Set the global to point to the base continuation MT
+            rtsBuilder.SetContinuationMethodTable(continuationBaseMethodTablePtr);
+
+            // Create a derived continuation instance MT (shares EEClass with the base, parent is the base continuation MT)
+            TargetPointer continuationInstanceEEClassPtr = rtsBuilder.AddEEClass("ContinuationInstance", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
+            continuationInstanceMethodTablePtr = rtsBuilder.AddMethodTable("ContinuationInstance",
+                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
+                                    module: TargetPointer.Null, parentMethodTable: continuationBaseMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
+            // Continuation instances share the EEClass with the base, similar to arrays
+            rtsBuilder.SetEEClassAndCanonMTRefs(continuationInstanceEEClassPtr, continuationInstanceMethodTablePtr);
+        },
+        (target) =>
+        {
+            Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+            Assert.NotNull(rts);
+            Contracts.TypeHandle continuationTypeHandle = rts.GetTypeHandle(continuationInstanceMethodTablePtr);
+            Assert.True(rts.IsContinuation(continuationTypeHandle));
+            Assert.False(rts.IsFreeObjectMethodTable(continuationTypeHandle));
+            Assert.False(rts.IsString(continuationTypeHandle));
+        });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public unsafe void GetMethodTableDataReturnsEInvalidArgWhenMethodTablePartiallyReadable(MockTarget.Architecture arch)
     {
         // Analogous to the EEClass test above but for the MethodTable itself.
@@ -336,6 +376,104 @@ public class MethodTableTests
 
             // Should return E_INVALIDARG to match legacy DAC behavior
             AssertHResult(HResults.E_INVALIDARG, hr);
+        });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsContinuationReturnsFalseForRegularType(MockTarget.Architecture arch)
+    {
+        TargetPointer systemObjectMethodTablePtr = default;
+        RTSContractHelper(arch,
+        (rtsBuilder) =>
+        {
+            systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
+        },
+        (target) =>
+        {
+            Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+            Assert.NotNull(rts);
+            Contracts.TypeHandle objectTypeHandle = rts.GetTypeHandle(systemObjectMethodTablePtr);
+            Assert.False(rts.IsContinuation(objectTypeHandle));
+        });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IsContinuationReturnsFalseWhenGlobalIsNull(MockTarget.Architecture arch)
+    {
+        TargetPointer systemObjectMethodTablePtr = default;
+        TargetPointer childMethodTablePtr = default;
+        RTSContractHelper(arch,
+        (rtsBuilder) =>
+        {
+            TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+            systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
+
+            // Don't set the continuation global (it remains null)
+            // Create a child type with System.Object as parent
+            TargetPointer childEEClassPtr = rtsBuilder.AddEEClass("ChildType", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
+            childMethodTablePtr = rtsBuilder.AddMethodTable("ChildType",
+                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
+                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
+            rtsBuilder.SetEEClassAndCanonMTRefs(childEEClassPtr, childMethodTablePtr);
+        },
+        (target) =>
+        {
+            Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+            Assert.NotNull(rts);
+
+            // System.Object has ParentMethodTable == Null, same as the null continuation global.
+            // Verify the null guard prevents a false positive match.
+            Contracts.TypeHandle objectTypeHandle = rts.GetTypeHandle(systemObjectMethodTablePtr);
+            Assert.False(rts.IsContinuation(objectTypeHandle));
+
+            Contracts.TypeHandle childTypeHandle = rts.GetTypeHandle(childMethodTablePtr);
+            Assert.False(rts.IsContinuation(childTypeHandle));
+        });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateContinuationMethodTablePointer(MockTarget.Architecture arch)
+    {
+        TargetPointer continuationInstanceMethodTablePtr = default;
+        RTSContractHelper(arch,
+        (rtsBuilder) =>
+        {
+            TargetTestHelpers targetTestHelpers = rtsBuilder.Builder.TargetTestHelpers;
+            TargetPointer systemObjectMethodTablePtr = AddSystemObjectMethodTable(rtsBuilder).MethodTable;
+
+            // Create the base Continuation class
+            TargetPointer continuationBaseEEClassPtr = rtsBuilder.AddEEClass("Continuation", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
+            TargetPointer continuationBaseMethodTablePtr = rtsBuilder.AddMethodTable("Continuation",
+                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
+                                    module: TargetPointer.Null, parentMethodTable: systemObjectMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
+            rtsBuilder.SetEEClassAndCanonMTRefs(continuationBaseEEClassPtr, continuationBaseMethodTablePtr);
+            rtsBuilder.SetContinuationMethodTable(continuationBaseMethodTablePtr);
+
+            // Create a derived continuation instance
+            // Continuation instances share the EEClass with the singleton sub-continuation class
+            TargetPointer sharedEEClassPtr = rtsBuilder.AddEEClass("SubContinuation", attr: 0, numMethods: 0, numNonVirtualSlots: 0);
+            TargetPointer sharedCanonMTPtr = rtsBuilder.AddMethodTable("SubContinuationCanon",
+                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
+                                    module: TargetPointer.Null, parentMethodTable: continuationBaseMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
+            rtsBuilder.SetEEClassAndCanonMTRefs(sharedEEClassPtr, sharedCanonMTPtr);
+
+            // The actual continuation instance MT points to the shared EEClass via CanonMT
+            continuationInstanceMethodTablePtr = rtsBuilder.AddMethodTable("ContinuationInstance",
+                                    mtflags: default, mtflags2: default, baseSize: targetTestHelpers.ObjectBaseSize,
+                                    module: TargetPointer.Null, parentMethodTable: continuationBaseMethodTablePtr, numInterfaces: 0, numVirtuals: 3);
+            rtsBuilder.SetMethodTableCanonMT(continuationInstanceMethodTablePtr, sharedCanonMTPtr);
+        },
+        (target) =>
+        {
+            Contracts.IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+            Assert.NotNull(rts);
+            // Validation should succeed - the MT→CanonMT→EEClass→MT roundtrip is handled for continuations
+            Contracts.TypeHandle continuationTypeHandle = rts.GetTypeHandle(continuationInstanceMethodTablePtr);
+            Assert.Equal(continuationInstanceMethodTablePtr.Value, continuationTypeHandle.Address.Value);
+            Assert.True(rts.IsContinuation(continuationTypeHandle));
         });
     }
 }

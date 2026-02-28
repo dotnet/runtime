@@ -12,6 +12,7 @@ internal partial class MockDescriptors
     public class RuntimeTypeSystem
     {
         internal const ulong TestFreeObjectMethodTableGlobalAddress = 0x00000000_7a0000a0;
+        internal const ulong TestContinuationMethodTableGlobalAddress = 0x00000000_7a0000b0;
 
         private const ulong DefaultAllocationRangeStart = 0x00000000_4a000000;
         private const ulong DefaultAllocationRangeEnd = 0x00000000_4b000000;
@@ -86,6 +87,7 @@ internal partial class MockDescriptors
         internal MockMemorySpace.BumpAllocator TypeSystemAllocator { get; }
 
         internal TargetPointer FreeObjectMethodTableAddress { get; private set; }
+        internal TargetPointer ContinuationMethodTableAddress { get; private set; }
 
         public RuntimeTypeSystem(MockMemorySpace.Builder builder)
             : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -102,6 +104,7 @@ internal partial class MockDescriptors
             Globals =
             [
                 (nameof(Constants.Globals.FreeObjectMethodTable), TestFreeObjectMethodTableGlobalAddress),
+                (nameof(Constants.Globals.ContinuationMethodTable), TestContinuationMethodTableGlobalAddress),
                 (nameof(Constants.Globals.MethodDescAlignment), GetMethodDescAlignment(Builder.TargetTestHelpers)),
             ];
         }
@@ -109,6 +112,7 @@ internal partial class MockDescriptors
         private void AddGlobalPointers()
         {
             AddFreeObjectMethodTable();
+            AddContinuationMethodTableGlobal();
         }
 
         private void AddFreeObjectMethodTable()
@@ -122,6 +126,24 @@ internal partial class MockDescriptors
             MockMemorySpace.HeapFragment globalAddr = new() { Name = "Address of Free Object Method Table", Address = TestFreeObjectMethodTableGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
             targetTestHelpers.WritePointer(globalAddr.Data, FreeObjectMethodTableAddress);
             Builder.AddHeapFragment(globalAddr);
+        }
+
+        private void AddContinuationMethodTableGlobal()
+        {
+            // Initially the continuation method table global points to null (no continuations created yet)
+            TargetTestHelpers targetTestHelpers = Builder.TargetTestHelpers;
+            MockMemorySpace.HeapFragment globalAddr = new() { Name = "Address of Continuation Method Table", Address = TestContinuationMethodTableGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
+            targetTestHelpers.WritePointer(globalAddr.Data, TargetPointer.Null);
+            Builder.AddHeapFragment(globalAddr);
+            ContinuationMethodTableAddress = TargetPointer.Null;
+        }
+
+        internal void SetContinuationMethodTable(TargetPointer continuationMethodTable)
+        {
+            TargetTestHelpers targetTestHelpers = Builder.TargetTestHelpers;
+            Span<byte> globalAddrBytes = Builder.BorrowAddressRange(TestContinuationMethodTableGlobalAddress, targetTestHelpers.PointerSize);
+            targetTestHelpers.WritePointer(globalAddrBytes, continuationMethodTable);
+            ContinuationMethodTableAddress = continuationMethodTable;
         }
 
         // set the eeClass MethodTable pointer to the canonMT and the canonMT's EEClass pointer to the eeClass
