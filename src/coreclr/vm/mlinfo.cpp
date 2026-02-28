@@ -271,6 +271,7 @@ BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pParamInfo,
                 return FALSE;
 
             pvNativeType += strLen;
+            _ASSERTE((ULONG)(pvNativeType - pvNativeTypeStart) < cbNativeType);
 
             // Skip the name of the native type.
             if (S_OK != CheckForCompressedData(pvNativeTypeStart, pvNativeType, cbNativeType))
@@ -280,6 +281,7 @@ BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pParamInfo,
                 return FALSE;
 
             pvNativeType += strLen;
+            _ASSERTE((ULONG)(pvNativeType - pvNativeTypeStart) < cbNativeType);
 
             // Extract the name of the custom marshaler.
             if (S_OK != CheckForCompressedData(pvNativeTypeStart, pvNativeType, cbNativeType))
@@ -291,6 +293,7 @@ BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pParamInfo,
             pParamInfo->m_strCMMarshalerTypeName = (LPUTF8)pvNativeType;
             pParamInfo->m_cCMMarshalerTypeNameBytes = strLen;
             pvNativeType += strLen;
+            _ASSERTE((ULONG)(pvNativeType - pvNativeTypeStart) < cbNativeType);
 
             // Extract the cookie string.
             if (S_OK != CheckForCompressedData(pvNativeTypeStart, pvNativeType, cbNativeType))
