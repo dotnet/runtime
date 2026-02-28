@@ -91,7 +91,7 @@ def append_diff_file(f, file_name, full_file_path):
 
     diff_os = "unknown"
     diff_arch = "unknown"
-    match_obj = re.search(r'^superpmi_(tpdiff|asmdiffs|memorydiff)_summary_(.*)_(.*).md', file_name)
+    match_obj = re.search(r'^superpmi_(tpdiff|asmdiffs|memorydiff)_summary_([^_]+)_([^_]+)\.md$', file_name)
     if match_obj is not None:
         diff_os = match_obj.group(2)
         diff_arch = match_obj.group(3)
