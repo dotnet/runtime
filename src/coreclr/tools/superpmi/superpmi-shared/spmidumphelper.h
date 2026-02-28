@@ -189,6 +189,7 @@ inline std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(
         {
             Agnostic_CORINFO_RUNTIME_LOOKUP agnosticRL;
             memcpy(&agnosticRL, buffers->GetBuffer(lookup.runtimeLookup_Index), sizeof(agnosticRL));
+            buffers->Unlock();
             lookupDescription = DumpAgnostic_CORINFO_RUNTIME_LOOKUP(agnosticRL);
         }
         else
