@@ -13,7 +13,11 @@ internal sealed class SyncBlockCache : IData<SyncBlockCache>
         Target.TypeInfo type = target.GetTypeInfo(DataType.SyncBlockCache);
 
         FreeSyncTableIndex = target.Read<uint>(address + (ulong)type.Fields[nameof(FreeSyncTableIndex)].Offset);
+        CleanupBlockList = type.Fields.TryGetValue(nameof(CleanupBlockList), out Target.FieldInfo cleanupField)
+            ? target.ReadPointer(address + (ulong)cleanupField.Offset)
+            : TargetPointer.Null;
     }
 
     public uint FreeSyncTableIndex { get; init; }
+    public TargetPointer CleanupBlockList { get; init; }
 }

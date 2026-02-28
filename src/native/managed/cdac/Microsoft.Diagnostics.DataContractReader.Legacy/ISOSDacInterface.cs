@@ -457,6 +457,15 @@ public struct DacpSyncBlockData
     public uint SyncBlockCount;
 };
 
+public struct DacpSyncBlockCleanupData
+{
+    public ClrDataAddress SyncBlockPointer;
+    public ClrDataAddress nextSyncBlock;
+    public ClrDataAddress blockRCW;
+    public ClrDataAddress blockClassFactory;
+    public ClrDataAddress blockCCW;
+};
+
 public struct SOSHandleData
 {
     public ClrDataAddress AppDomain;
@@ -634,7 +643,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetSyncBlockData(uint number, DacpSyncBlockData* data);
     [PreserveSig]
-    int GetSyncBlockCleanupData(ClrDataAddress addr, /*struct DacpSyncBlockCleanupData */ void* data);
+    int GetSyncBlockCleanupData(ClrDataAddress addr, DacpSyncBlockCleanupData* data);
 
     // Handles
     [PreserveSig]

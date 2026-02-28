@@ -15,11 +15,13 @@ internal readonly struct SyncBlock_1 : ISyncBlock
     private const string LockNamespace = "System.Threading";
     private readonly Target _target;
     private readonly TargetPointer _syncTableEntries;
+    private readonly ulong _syncBlockLinkOffset;
 
     internal SyncBlock_1(Target target, TargetPointer syncTableEntries)
     {
         _target = target;
         _syncTableEntries = syncTableEntries;
+        _syncBlockLinkOffset = (ulong)target.GetTypeInfo(DataType.SyncBlock).Fields[nameof(Data.SyncBlock.LinkNext)].Offset;
     }
 
     public TargetPointer GetSyncBlock(uint index)
@@ -104,6 +106,38 @@ internal readonly struct SyncBlock_1 : ISyncBlock
             next = _target.ProcessedData.GetOrAdd<Data.SLink>(next).Next;
         }
         return threadCount;
+    }
+
+    public TargetPointer GetSyncBlockFromCleanupList()
+    {
+        TargetPointer syncBlockCache = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.SyncBlockCache));
+        Data.SyncBlockCache cache = _target.ProcessedData.GetOrAdd<Data.SyncBlockCache>(syncBlockCache);
+        TargetPointer cleanupBlockList = cache.CleanupBlockList;
+        if (cleanupBlockList == TargetPointer.Null)
+            return TargetPointer.Null;
+        return new TargetPointer(cleanupBlockList.Value - _syncBlockLinkOffset);
+    }
+
+    public SyncBlockCleanupInfo GetSyncBlockCleanupInfo(TargetPointer syncBlock)
+    {
+        Data.SyncBlock sb = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlock);
+
+        TargetPointer nextSyncBlock = TargetPointer.Null;
+        if (sb.LinkNext != TargetPointer.Null)
+            nextSyncBlock = new TargetPointer(sb.LinkNext.Value - _syncBlockLinkOffset);
+
+        TargetPointer blockRCW = TargetPointer.Null;
+        TargetPointer blockClassFactory = TargetPointer.Null;
+        TargetPointer blockCCW = TargetPointer.Null;
+        if (sb.InteropInfo is Data.InteropSyncBlockInfo interopInfo)
+        {
+            blockRCW = interopInfo.RCW & ~1ul;
+            // CCW and CCF use sentinel value 0x1 to mean "was set but is now null"
+            blockCCW = interopInfo.CCW == 1 ? TargetPointer.Null : interopInfo.CCW;
+            blockClassFactory = interopInfo.CCF == 1 ? TargetPointer.Null : interopInfo.CCF;
+        }
+
+        return new SyncBlockCleanupInfo(nextSyncBlock, blockRCW, blockClassFactory, blockCCW);
     }
 
     private uint ReadUintField(TypeHandle enclosingType, string fieldName, IRuntimeTypeSystem rts, MetadataReader mdReader, TargetPointer dataAddr)

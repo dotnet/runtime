@@ -1074,6 +1074,7 @@ CDAC_TYPE_END(ComWrappersVtablePtrs)
 CDAC_TYPE_BEGIN(SyncBlockCache)
 CDAC_TYPE_INDETERMINATE(SyncBlockCache)
 CDAC_TYPE_FIELD(SyncBlockCache, /*uint32*/, FreeSyncTableIndex, cdac_data<SyncBlockCache>::FreeSyncTableIndex)
+CDAC_TYPE_FIELD(SyncBlockCache, /*pointer*/, CleanupBlockList, cdac_data<SyncBlockCache>::CleanupBlockList)
 CDAC_TYPE_END(SyncBlockCache)
 
 CDAC_TYPES_END()
