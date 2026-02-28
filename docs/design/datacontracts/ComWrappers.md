@@ -48,6 +48,7 @@ Contracts used:
 
 
 ``` csharp
+
 public TargetPointer GetComWrappersIdentity(TargetPointer address)
 {
     return _target.ReadPointer(address + /* NativeObjectWrapperObject::ExternalComObject offset */);
