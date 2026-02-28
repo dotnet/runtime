@@ -24,14 +24,14 @@ parameters:
   DotNetCliVersion: ''                   # optional -- version of the CLI to send to Helix; based on this: https://raw.githubusercontent.com/dotnet/core/main/release-notes/releases-index.json
   WaitForWorkItemCompletion: true        # optional -- true will make the task wait until work items have been completed and fail the build if work items fail. False is "fire and forget."
   IsExternal: false                      # [DEPRECATED] -- doesn't do anything, jobs are external if HelixAccessToken is empty and Creator is set
-  HelixBaseUri: 'https://helix.dot.net/' # optional -- sets the Helix API base URI (allows targeting https://helix.int-dot.net )
+  HelixBaseUri: 'https://helix.int-dot.net/' # optional -- sets the Helix API base URI (allows targeting https://helix.int-dot.net )
   Creator: ''                            # optional -- if the build is external, use this to specify who is sending the job
-  DisplayNamePrefix: 'Run Tests'         # optional -- rename the beginning of the displayName of the steps in AzDO 
+  DisplayNamePrefix: 'Run Tests'         # optional -- rename the beginning of the displayName of the steps in AzDO
   condition: succeeded()                 # optional -- condition for step to execute; defaults to succeeded()
   continueOnError: false                 # optional -- determines whether to continue the build if the step errors; defaults to false
 
 steps:
-  - powershell: 'powershell "$env:BUILD_SOURCESDIRECTORY\eng\common\msbuild.ps1 $env:BUILD_SOURCESDIRECTORY/${{ parameters.HelixProjectPath }} /restore /p:TreatWarningsAsErrors=false ${{ parameters.HelixProjectArguments }} /t:Test /bl:$env:BUILD_SOURCESDIRECTORY\artifacts\log\$env:BuildConfig\SendToHelix.binlog"'
+  - powershell: 'powershell "$env:BUILD_SOURCESDIRECTORY\eng\common\msbuild.ps1 $env:BUILD_SOURCESDIRECTORY/${{ parameters.HelixProjectPath }} /restore /p:HelixBaseUri=https://helix.int-dot.net/  /p:TreatWarningsAsErrors=false ${{ parameters.HelixProjectArguments }} /t:Test /bl:$env:BUILD_SOURCESDIRECTORY\artifacts\log\$env:BuildConfig\SendToHelix.binlog"'
     displayName: ${{ parameters.DisplayNamePrefix }} (Windows)
     env:
       BuildConfig: $(_BuildConfig)
@@ -56,12 +56,13 @@ steps:
       DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
       DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-      HelixBaseUri: ${{ parameters.HelixBaseUri }}
+      HelixBaseUri: "https://helix.int-dot.net/"
+      SYSTEM_HELIX_URI: "https://helix.int-dot.net/"
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'Windows_NT'))
     continueOnError: ${{ parameters.continueOnError }}
-  - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/${{ parameters.HelixProjectPath }} /restore /p:TreatWarningsAsErrors=false ${{ parameters.HelixProjectArguments }} /t:Test /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
+  - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/${{ parameters.HelixProjectPath }} /restore /p:TreatWarningsAsErrors=false ${{ parameters.HelixProjectArguments }} /p:HelixBaseUri=https://helix.int-dot.net/ /t:Test /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Unix)
     env:
       BuildConfig: $(_BuildConfig)
@@ -86,7 +87,8 @@ steps:
       DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
       DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-      HelixBaseUri: ${{ parameters.HelixBaseUri }}
+      HelixBaseUri: "https://helix.int-dot.net/"
+      SYSTEM_HELIX_URI: "https://helix.int-dot.net/"
       Creator: ${{ parameters.Creator }}
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     condition: and(${{ parameters.condition }}, ne(variables['Agent.Os'], 'Windows_NT'))
