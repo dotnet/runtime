@@ -1052,6 +1052,9 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 // In what follows we co-opt the bbPreorderNum slot of each block to instead hold the index of the
 // block in the loop-aware RPO.
 //
+// Return Value:
+//    PhaseStatus indicating whether the flow graph was modified.
+//
 // Still TODO
 // * Blocks only reachable via EH
 // * proper handling of BR_TABLE defaults

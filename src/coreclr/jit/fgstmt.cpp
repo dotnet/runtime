@@ -430,6 +430,12 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const D
 //------------------------------------------------------------------------
 // fgNewStmtFromTree: Create a new statement from a tree with no debug info.
 //
+// Arguments:
+//    tree - the root node of the new statement
+//
+// Return Value:
+//    The new statement.
+//
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree)
 {
     return fgNewStmtFromTree(tree, nullptr, DebugInfo());
@@ -438,6 +444,13 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree)
 //------------------------------------------------------------------------
 // fgNewStmtFromTree: Create a new statement from a tree in the given block.
 //
+// Arguments:
+//    tree  - the root node of the new statement
+//    block - the block to use for debug checks (may be nullptr)
+//
+// Return Value:
+//    The new statement.
+//
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block)
 {
     return fgNewStmtFromTree(tree, block, DebugInfo());
@@ -445,6 +458,13 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block)
 
 //------------------------------------------------------------------------
 // fgNewStmtFromTree: Create a new statement from a tree with the given debug info.
+//
+// Arguments:
+//    tree - the root node of the new statement
+//    di   - debug info for the new statement
+//
+// Return Value:
+//    The new statement.
 //
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, const DebugInfo& di)
 {
@@ -544,8 +564,16 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
 #endif // DEBUG
 }
 
-// Returns true if the operator is involved in control-flow.
+//------------------------------------------------------------------------
+// OperIsControlFlow: Returns true if the operator is involved in control-flow.
+//
 // TODO-Cleanup: Make this a GenTreeOperKind.
+//
+// Arguments:
+//    oper - the operator to check
+//
+// Return Value:
+//    true if the operator is a control-flow operator; false otherwise.
 //
 inline bool OperIsControlFlow(genTreeOps oper)
 {

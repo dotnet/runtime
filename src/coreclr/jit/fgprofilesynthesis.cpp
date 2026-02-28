@@ -383,7 +383,7 @@ void ProfileSynthesis::AssignLikelihoods()
 // AssignLikelihoodJump: update edge likelihood for a block that always
 //   transfers control to its target block
 //
-// Arguments;
+// Arguments:
 //   block -- block in question
 //
 void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
@@ -396,7 +396,7 @@ void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 // AssignLikelihoodCond: update edge likelihood for a block that
 //   ends in a conditional branch
 //
-// Arguments;
+// Arguments:
 //   block -- block in question (BBJ_COND)
 //
 void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
@@ -519,7 +519,7 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 // AssignLikelihoodSwitch: update edge likelihood for a block that
 //   ends in a switch
 //
-// Arguments;
+// Arguments:
 //   block -- block in question (BBJ_SWITCH)
 //
 void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
@@ -866,8 +866,11 @@ void ProfileSynthesis::ComputeCyclicProbabilities()
 }
 
 //------------------------------------------------------------------------
-// FindCyclicProbabilities: for a given loop, compute how much flow returns
+// ComputeCyclicProbabilities: for a given loop, compute how much flow returns
 //   to the loop head given one external count.
+//
+// Arguments:
+//   loop -- loop to compute cyclic probabilities for
 //
 void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 {

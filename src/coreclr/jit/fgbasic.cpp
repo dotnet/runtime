@@ -4644,6 +4644,13 @@ IL_OFFSET Compiler::fgFindBlockILOffset(BasicBlock* block)
 //                   All code in the block stays in the original block.
 //                   Control falls through from original to new block, and
 //                   the new block is returned.
+//
+// Arguments:
+//    curr - the block to split
+//
+// Return Value:
+//    the new block that follows 'curr' and inherits its successors
+//
 //------------------------------------------------------------------------------
 BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
 {
@@ -4719,6 +4726,14 @@ BasicBlock* Compiler::fgSplitBlockAtEnd(BasicBlock* curr)
 //------------------------------------------------------------------------------
 // fgSplitBlockAfterStatement - Split the given block, with all code after
 //                              the given statement going into the second block.
+//
+// Arguments:
+//    curr - the block to split
+//    stmt - the statement after which to split; if nullptr, the block must be empty
+//
+// Return Value:
+//    the new block containing the statements after 'stmt'
+//
 //------------------------------------------------------------------------------
 BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt)
 {
@@ -4810,6 +4825,14 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
 // fgSplitBlockAfterNode - Split the given block, with all code after
 //                         the given node going into the second block.
 //                         This function is only used in LIR.
+//
+// Arguments:
+//    curr - the block to split (must be in LIR form)
+//    node - the node after which to split; if nullptr, the block must be empty
+//
+// Return Value:
+//    the new block containing the nodes after 'node'
+//
 //------------------------------------------------------------------------------
 BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
 {
@@ -4896,6 +4919,13 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
 //                         Control falls through from original to new block,
 //                         and the new block is returned.
 //                         All code in the original block goes into the new block
+//
+// Arguments:
+//    curr - the block to split
+//
+// Return Value:
+//    the new block containing all the code from the original block
+//
 //------------------------------------------------------------------------------
 BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 {

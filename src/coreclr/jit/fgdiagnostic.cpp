@@ -263,6 +263,14 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
     return nameOut;
 }
 
+//------------------------------------------------------------------------
+// fprintfDouble: Print a non-negative double value to a file, choosing
+//    an appropriate precision format based on the magnitude of the value.
+//
+// Arguments:
+//    fgxFile - The file to write to.
+//    value   - The non-negative double value to print.
+//
 static void fprintfDouble(FILE* fgxFile, double value)
 {
     assert(value >= 0.0);
@@ -2561,6 +2569,13 @@ void Compiler::fgDumpBlockMemorySsaOut(BasicBlock* block)
 //------------------------------------------------------------------------
 // fgStress64RsltMulCB: Callback to stress-test 64-bit result multiplication.
 //    Converts 'intOp1*intOp2' into 'int(long(nop(intOp1))*long(intOp2))'.
+//
+// Arguments:
+//    pTree - Pointer to the current tree node being visited.
+//    data  - Walk data containing the compiler context.
+//
+// Return Value:
+//    WALK_SKIP_SUBTREES if the tree was transformed; WALK_CONTINUE otherwise.
 //
 // static
 Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData* data)

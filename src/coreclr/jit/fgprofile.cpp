@@ -36,6 +36,9 @@ bool Compiler::fgHaveProfileData()
 //------------------------------------------------------------------------
 // fgHaveProfileWeights: Check if we have a profile that has weights.
 //
+// Returns:
+//    true if profile weights are available
+//
 // Notes:
 //    These weights may come from instrumentation or from synthesis.
 //
@@ -46,6 +49,9 @@ bool Compiler::fgHaveProfileWeights()
 
 //------------------------------------------------------------------------
 // fgRemoveProfileData: Remove all traces of profile info
+//
+// Arguments:
+//   reason -- string describing why profile data is being removed
 //
 // Notes:
 //   Needed if the jit initially thought it was going to optimize
@@ -4445,6 +4451,9 @@ bool Compiler::fgComputeMissingBlockWeights()
 //   weight2 -- second weight
 //   epsilon -- maximum absolute difference for weights to be considered equal
 //
+// Returns:
+//   true if the weights are within epsilon of each other
+//
 // Notes:
 //   In most cases you should probably call fgProfileWeightsConsistent instead
 //   of this method.
@@ -4461,6 +4470,9 @@ bool Compiler::fgProfileWeightsEqual(weight_t weight1, weight_t weight2, weight_
 // Arguments:
 //   weight1 -- first weight
 //   weight2 -- second weight
+//
+// Returns:
+//   true if the weights are within a small relative percentage of each other
 //
 bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 {
@@ -4482,6 +4494,9 @@ bool Compiler::fgProfileWeightsConsistent(weight_t weight1, weight_t weight2)
 //   weight1 -- first weight
 //   weight2 -- second weight
 //   epsilon -- small weight threshold
+//
+// Returns:
+//   true if the weights are consistent or both are smaller than epsilon
 //
 bool Compiler::fgProfileWeightsConsistentOrSmall(weight_t weight1, weight_t weight2, weight_t epsilon)
 {

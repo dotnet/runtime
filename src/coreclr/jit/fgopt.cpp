@@ -2268,7 +2268,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
 // Arguments:
 //   block - block that was tail duplicated or compacted
 //
-// Returns Value:
+// Returns:
 //   true if control flow was changed
 //
 bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
@@ -4963,6 +4963,9 @@ unsigned Compiler::fgGetCodeEstimate(BasicBlock* block)
 //------------------------------------------------------------------------
 // fgMeasureIR: count and return the number of IR nodes in the function.
 //
+// Returns:
+//   The number of IR nodes in the function.
+//
 unsigned Compiler::fgMeasureIR()
 {
     unsigned nodeCount = 0;
@@ -5601,6 +5604,10 @@ bool Compiler::fgHeadMerge(BasicBlock* block, bool early)
 // Parameters:
 //   tree - The tree
 //
+// Returns:
+//   true if any node in the tree is a tail call or tail call candidate;
+//   false otherwise.
+//
 // Remarks:
 //   While tail calls are generally expected to be top level nodes we do allow
 //   some other shapes of calls to be tail calls, including some cascading
@@ -5658,6 +5665,10 @@ bool Compiler::gtTreeContainsAsyncCall(GenTree* tree)
 //               we do not have valid address exposure/GTF_GLOB_REF).
 //   firstStmt - The statement to move
 //   pred      - The predecessor block
+//
+// Returns:
+//   true if the first statement can be moved into the predecessor block;
+//   false otherwise.
 //
 // Remarks:
 //   Unlike tail merging, for head merging we have to either spill the

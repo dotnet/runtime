@@ -13,6 +13,9 @@
 // fgCheckForInlineDepthAndRecursion: compute depth of the candidate, and
 // check for recursion.
 //
+// Arguments:
+//    inlineInfo - inline info for the inline candidate
+//
 // Return Value:
 //    The depth of the inline candidate. The root method is a depth 0, top-level
 //    candidates at depth 1, etc.
@@ -59,6 +62,10 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
 //------------------------------------------------------------------------
 // IsDisallowedRecursiveInline: Check whether 'info' is a recursive inline (of
 // 'ancestor'), and whether it should be disallowed.
+//
+// Arguments:
+//    ancestor   - inline context of the ancestor
+//    inlineInfo - inline info for the inline candidate
 //
 // Return Value:
 //    True if the inline is recursive and should be disallowed.
@@ -1268,6 +1275,13 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
 //------------------------------------------------------------------------
 // fgDebugCheckInlineCandidates: Callback to make sure there is no more
 //    GT_RET_EXPR and GTF_CALL_INLINE_CANDIDATE nodes.
+//
+// Arguments:
+//    pTree - pointer to the tree node being walked
+//    data  - walk data
+//
+// Return Value:
+//    WALK_CONTINUE
 //
 // static
 Compiler::fgWalkResult Compiler::fgDebugCheckInlineCandidates(GenTree** pTree, fgWalkData* data)
