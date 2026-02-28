@@ -368,25 +368,25 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithConstructorInitOnlyProperties()
         {
             string source = """
-                using System.Text.Json.Serialization;
+                    using System.Text.Json.Serialization;
 
-                namespace HelloWorld
-                {
-                    public class MyClass
+                    namespace HelloWorld
                     {
-                        public MyClass(int value)
+                        public class MyClass
                         {
-                            Value = value;
+                            public MyClass(int value)
+                            {
+                                Value = value;
+                            }
+
+                            public int Value { get; init; }
                         }
 
-                        public int Value { get; init; }
+                        [JsonSerializable(typeof(MyClass))]
+                        public partial class MyJsonContext : JsonSerializerContext
+                        {
+                        }
                     }
-
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class MyJsonContext : JsonSerializerContext
-                    {
-                    }
-                }
                 """;
 
             return CreateCompilation(source);
@@ -395,26 +395,26 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithMixedInitOnlyProperties()
         {
             string source = """
-                using System.Text.Json.Serialization;
+                    using System.Text.Json.Serialization;
 
-                namespace HelloWorld
-                {
-                    public class MyClass
+                    namespace HelloWorld
                     {
-                        public MyClass(int value)
+                        public class MyClass
                         {
-                            Value = value;
+                            public MyClass(int value)
+                            {
+                                Value = value;
+                            }
+
+                            public int Value { get; init; }
+                            public string Orphaned { get; init; }
                         }
 
-                        public int Value { get; init; }
-                        public string Orphaned { get; init; }
+                        [JsonSerializable(typeof(MyClass))]
+                        public partial class MyJsonContext : JsonSerializerContext
+                        {
+                        }
                     }
-
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class MyJsonContext : JsonSerializerContext
-                    {
-                    }
-                }
                 """;
 
             return CreateCompilation(source);
@@ -424,26 +424,26 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateCompilationWithRequiredProperties()
         {
             string source = """
-                using System.Text.Json.Serialization;
+                    using System.Text.Json.Serialization;
 
-                namespace HelloWorld
-                {
-                    public class MyClass
+                    namespace HelloWorld
                     {
-                        public required string Required1 { get; set; }
-                        public required string Required2 { get; set; }
-
-                        public MyClass(string required1)
+                        public class MyClass
                         {
-                            Required1 = required1;
+                            public required string Required1 { get; set; }
+                            public required string Required2 { get; set; }
+
+                            public MyClass(string required1)
+                            {
+                                Required1 = required1;
+                            }
+                        }
+
+                        [JsonSerializable(typeof(MyClass))]
+                        public partial class MyJsonContext : JsonSerializerContext
+                        {
                         }
                     }
-
-                    [JsonSerializable(typeof(MyClass))]
-                    public partial class MyJsonContext : JsonSerializerContext
-                    {
-                    }
-                }
                 """;
 
             CSharpParseOptions parseOptions = CreateParseOptions(LanguageVersion.CSharp11);
@@ -669,45 +669,45 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static Compilation CreateTypesWithInvalidJsonConverterAttributeType()
         {
             string source = """
-                using System;
-                using System.Text.Json;
-                using System.Text.Json.Serialization;
+                    using System;
+                    using System.Text.Json;
+                    using System.Text.Json.Serialization;
 
-                namespace HelloWorld
-                {
-                    [JsonSerializable(typeof(MyClass))]
-                    internal partial class JsonContext : JsonSerializerContext
+                    namespace HelloWorld
                     {
-                    }
-
-                    public class MyClass
-                    {
-                        [JsonConverter(null)]
-                        public int Value1 { get; set; }
-
-                        [JsonConverter(typeof(int))]
-                        public int Value2 { get; set; }
-
-                        [JsonConverter(typeof(InacessibleConverter))]
-                        public int Value3 { get; set; }
-                    }
-
-                    public class InacessibleConverter : JsonConverter<int>
-                    {
-                        private InacessibleConverter()
-                        { }
-
-                        public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                        [JsonSerializable(typeof(MyClass))]
+                        internal partial class JsonContext : JsonSerializerContext
                         {
-                            throw new NotImplementedException();
                         }
 
-                        public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+                        public class MyClass
                         {
-                            throw new NotImplementedException();
+                            [JsonConverter(null)]
+                            public int Value1 { get; set; }
+
+                            [JsonConverter(typeof(int))]
+                            public int Value2 { get; set; }
+
+                            [JsonConverter(typeof(InacessibleConverter))]
+                            public int Value3 { get; set; }
+                        }
+
+                        public class InacessibleConverter : JsonConverter<int>
+                        {
+                            private InacessibleConverter()
+                            { }
+
+                            public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                            {
+                                throw new NotImplementedException();
+                            }
+
+                            public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+                            {
+                                throw new NotImplementedException();
+                            }
                         }
                     }
-                }
                 """;
 
             return CreateCompilation(source);

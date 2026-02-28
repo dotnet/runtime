@@ -686,9 +686,9 @@ LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
 #ifdef TARGET_APPLE
-    PROLOG_WITH_TRANSITION_BLOCK extraLocals=8*16, SaveFPArgs=0,SaveGPArgs=0
+    PROLOG_WITH_TRANSITION_BLOCK extraLocals=8*16, SaveFPArgs=0,SaveGPArgs=0, pushCalleeSavedFloatRegs=1
 #else
-    PROLOG_WITH_TRANSITION_BLOCK
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 #endif
 
     // IR bytecode address
@@ -3287,6 +3287,58 @@ LEAF_ENTRY SwiftLoweredReturnTerminator
 LEAF_END SwiftLoweredReturnTerminator
 
 #endif // TARGET_APPLE
+// ------------------------------------------------------------------
+// Create a real TransitionBlock and call CallInterpreterFuncletWorker
+// to execute an interpreter funclet (catch/finally/filter handler).
+//
+// extern "C" DWORD_PTR CallInterpreterFunclet(
+//     OBJECTREF throwable,        // x0
+//     void* pHandler,             // x1
+//     REGDISPLAY *pRD,            // x2
+//     ExInfo *pExInfo,            // x3
+//     bool isFilter               // x4
+// );
+// ------------------------------------------------------------------
+NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
+
+    // Pass TransitionBlock* as last (6th) argument
+    // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+    // Original args: x0=throwable, x1=pHandler, x2=pRD, x3=pExInfo, x4=isFilter
+    // x0-x4 remain unchanged
+
+    add     x5, sp, #__PWTB_TransitionBlock     // TransitionBlock* as 6th param (x5)
+
+    bl      C_FUNC(CallInterpreterFuncletWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END CallInterpreterFunclet, _TEXT
+
+// ------------------------------------------------------------------
+// Resume an interpreter continuation after an async await.
+// The worker function will restore callee-saved registers from the
+// TransitionBlock.
+//
+// FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage);
+//
+// ------------------------------------------------------------------
+NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
+
+    // Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
+    // x0, x1 remain unchanged
+
+    add     x2, sp, #__PWTB_TransitionBlock     // TransitionBlock* as 3rd param (x2)
+
+    bl      C_FUNC(AsyncHelpers_ResumeInterpreterContinuationWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END AsyncHelpers_ResumeInterpreterContinuation, _TEXT
+
 
 #endif // FEATURE_INTERPRETER
 
