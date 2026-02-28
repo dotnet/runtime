@@ -1942,8 +1942,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     // Update no-return call count
     optNoReturnCallCount += InlineeCompiler->optNoReturnCallCount;
 
+#ifdef DEBUG
     // Update metrics
     Metrics.mergeToRoot(InlineeCompiler);
+#endif
 
     // Update optMethodFlags
 
