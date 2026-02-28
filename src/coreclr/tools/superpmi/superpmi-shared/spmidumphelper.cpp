@@ -74,7 +74,9 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(const Agnostic_CORINFO_L
     std::string lookupDescription;
     if (lookup.lookupKind.needsRuntimeLookup)
     {
-        lookupDescription = DumpAgnostic_CORINFO_RUNTIME_LOOKUP(lookup.runtimeLookup);
+        char buffer[MAX_BUFFER_SIZE];
+        sprintf_s(buffer, MAX_BUFFER_SIZE, "runtimeLookup bufIdx-%u", lookup.runtimeLookup_Index);
+        lookupDescription = std::string(buffer);
     }
     else
     {
