@@ -12,17 +12,20 @@
 //
 extern BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pInfo, PCCOR_SIGNATURE pvNativeType, ULONG cbNativeType);
 
-FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
+FCIMPL14(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
     BYTE*   pvNativeType,
     ULONG   cbNativeType,
     INT32*  unmanagedType,
     INT32*  safeArraySubType,
     LPUTF8* safeArrayUserDefinedSubType,
+    INT32*  safeArrayUserDefinedSubTypeLength,
     INT32*  arraySubType,
     INT32*  sizeParamIndex,
     INT32*  sizeConst,
     LPUTF8* marshalType,
+    INT32*  marshalTypeLength,
     LPUTF8* marshalCookie,
+    INT32*  marshalCookieLength,
     INT32*  iidParamIndex)
 {
     FCALL_CONTRACT;
@@ -50,18 +53,22 @@ FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
 
     *safeArraySubType = info.m_SafeArrayElementVT;
 
-    *safeArrayUserDefinedSubType = info.m_cSafeArrayUserDefTypeNameBytes > 0 ? info.m_strSafeArrayUserDefTypeName : NULL;
+    *safeArrayUserDefinedSubType = info.m_strSafeArrayUserDefTypeName;
+    *safeArrayUserDefinedSubTypeLength = info.m_cSafeArrayUserDefTypeNameBytes;
 #else
     *iidParamIndex = 0;
 
     *safeArraySubType = VT_EMPTY;
 
     *safeArrayUserDefinedSubType = NULL;
+    *safeArrayUserDefinedSubTypeLength = 0;
 #endif
 
-    *marshalType = info.m_cCMMarshalerTypeNameBytes > 0 ? info.m_strCMMarshalerTypeName : NULL;
+    *marshalType = info.m_strCMMarshalerTypeName;
+    *marshalTypeLength = info.m_cCMMarshalerTypeNameBytes;
 
-    *marshalCookie = info.m_cCMCookieStrBytes > 0 ? info.m_strCMCookie : NULL;
+    *marshalCookie = info.m_strCMCookie;
+    *marshalCookieLength = info.m_cCMCookieStrBytes;
 
     FC_RETURN_BOOL(TRUE);
 }

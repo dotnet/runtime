@@ -234,11 +234,14 @@ namespace System.Reflection
             out int unmanagedType,
             out int safeArraySubType,
             out byte* safeArrayUserDefinedSubType,
+            out int safeArrayUserDefinedSubTypeLength,
             out int arraySubType,
             out int sizeParamIndex,
             out int sizeConst,
             out byte* marshalType,
+            out int marshalTypeLength,
             out byte* marshalCookie,
+            out int marshalCookieLength,
             out int iidParamIndex);
 
         internal static unsafe MarshalAsAttribute GetMarshalAs(ConstArray nativeType, RuntimeModule scope)
@@ -249,25 +252,28 @@ namespace System.Reflection
                     out int unmanagedTypeRaw,
                     out int safeArraySubTypeRaw,
                     out byte* safeArrayUserDefinedSubTypeRaw,
+                    out int safeArrayUserDefinedSubTypeLength,
                     out int arraySubTypeRaw,
                     out int sizeParamIndex,
                     out int sizeConst,
                     out byte* marshalTypeRaw,
+                    out int marshalTypeLength,
                     out byte* marshalCookieRaw,
+                    out int marshalCookieLength,
                     out int iidParamIndex))
             {
                 throw new BadImageFormatException();
             }
 
-            string? safeArrayUserDefinedTypeName = safeArrayUserDefinedSubTypeRaw == null
+            string? safeArrayUserDefinedTypeName = safeArrayUserDefinedSubTypeRaw == null || safeArrayUserDefinedSubTypeLength == 0
                 ? null
-                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(safeArrayUserDefinedSubTypeRaw));
-            string? marshalTypeName = marshalTypeRaw == null
+                : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(safeArrayUserDefinedSubTypeRaw, safeArrayUserDefinedSubTypeLength));
+            string? marshalTypeName = marshalTypeRaw == null || marshalTypeLength == 0
                 ? null
-                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalTypeRaw));
-            string? marshalCookie = marshalCookieRaw == null
+                : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(marshalTypeRaw, marshalTypeLength));
+            string? marshalCookie = marshalCookieRaw == null || marshalCookieLength == 0
                 ? null
-                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalCookieRaw));
+                : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(marshalCookieRaw, marshalCookieLength));
 
             RuntimeType? safeArrayUserDefinedType = null;
 
