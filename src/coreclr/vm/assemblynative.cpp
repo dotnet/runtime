@@ -1541,8 +1541,7 @@ namespace
     bool ProcessPrecachedTypeMapInfo(
         TReadyToRunInfoFilter filter,
         TReadyToRunInfoCallback callback,
-        Assembly* pAssembly,
-        bool* pHasPrecachedInfo
+        Assembly* pAssembly
     )
     {
         STANDARD_VM_CONTRACT;
@@ -1550,18 +1549,16 @@ namespace
         PTR_Module pModule = pAssembly->GetModule();
         if (!pModule->IsReadyToRun())
         {
-            *pHasPrecachedInfo = false;
-            return true;
+            return false;
         }
 
         PTR_ReadyToRunInfo pR2RInfo = pModule->GetReadyToRunInfo();
 
         if (filter(pR2RInfo))
         {
-            *pHasPrecachedInfo = true;
             return callback(pR2RInfo);
         }
-        return true;
+        return false;
     }
 #endif
 
@@ -1708,6 +1705,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
     MethodTable* groupTypeMT = groupTypeTH.AsMethodTable();
 
     AssemblyTargetProcessor assemblies{ pAssembly };
+    ExternalTypeNameHash seenPreprocessedExternalEntries;
     while (!assemblies.IsEmpty())
     {
         Assembly* currAssembly = assemblies.GetNext();
@@ -1721,32 +1719,30 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
 
 #ifdef FEATURE_READYTORUN
         // Only process the external type map if requested.
-        if (newExternalTypeEntry != nullptr
-            && !ProcessPrecachedTypeMapInfo(
-            [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedExternalTypeMap(groupTypeMT); },
-            [=](PTR_ReadyToRunInfo pR2RInfo) { return newPrecachedExternalTypeMap(context); },
-            currAssembly,
-            &hasPrecachedInfo))
+        if (newExternalTypeEntry != nullptr)
         {
-            // Return now so we can throw the exception encountered during creation.
-            return;
+            hasPrecachedInfo = ProcessPrecachedTypeMapInfo(
+                [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedExternalTypeMap(groupTypeMT); },
+                [=, &seenPreprocessedExternalEntries](PTR_ReadyToRunInfo pR2RInfo) -> BOOL
+                {
+                    if (!pR2RInfo->CheckForUniqueExternalTypeMapKeys(groupTypeMT, &seenPreprocessedExternalEntries))
+                    {
+                        return FALSE;
+                    }
+                    return newPrecachedExternalTypeMap(context);
+                },
+                currAssembly);
         }
 
         // Only process the proxy type map if requested.
-        if (newProxyTypeEntry != nullptr
-            && !ProcessPrecachedTypeMapInfo(
-            [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedProxyTypeMap(groupTypeMT); },
-            [=](PTR_ReadyToRunInfo pR2RInfo) { return newPrecachedProxyTypeMap(context); },
-            currAssembly,
-            &hasPrecachedInfo))
+        if (newProxyTypeEntry != nullptr)
         {
-            // Return now so we can throw the exception encountered during creation.
-            return;
+            hasPrecachedInfo = ProcessPrecachedTypeMapInfo(
+                [=](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasPrecachedProxyTypeMap(groupTypeMT); },
+                [=](PTR_ReadyToRunInfo pR2RInfo) { return newPrecachedProxyTypeMap(context); },
+                currAssembly);
         }
 
-        // Don't count having external assembly targets as having precached info.
-        // We don't want valid external assembly targets to make us mistakenly think that the pre-cached maps are valid when they are not.
-        bool hasExternalTypeMapAssemblyTargets;
         COUNT_T assemblyTargetCount = 0;
         ProcessPrecachedTypeMapInfo(
             [=, &assemblyTargetCount](PTR_ReadyToRunInfo pR2RInfo) { return pR2RInfo->HasTypeMapAssemblyTargets(groupTypeMT, &assemblyTargetCount); },
@@ -1763,8 +1759,7 @@ extern "C" void QCALLTYPE TypeMapLazyDictionary_ProcessAttributes(
                 }
                 return true;
              },
-             currAssembly,
-            &hasExternalTypeMapAssemblyTargets
+             currAssembly
         );
 #endif // FEATURE_READYTORUN
 

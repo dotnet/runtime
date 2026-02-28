@@ -296,7 +296,7 @@ namespace System.Runtime.InteropServices
         private abstract class LazyTypeLoadDictionary<TKey> : IReadOnlyDictionary<TKey, Type> where TKey : notnull
         {
             protected RuntimeType _groupType;
-            private readonly List<RuntimeModule> _preCachedModules = [];
+            protected readonly List<RuntimeModule> _preCachedModules = [];
 
             protected abstract bool TryGetOrLoadType(TKey key, [NotNullWhen(true)] out Type? type);
 
@@ -432,6 +432,17 @@ namespace System.Runtime.InteropServices
                 if (_lazyData.ContainsKey(key))
                 {
                     ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                }
+
+                // Check if any of the pre-cached dictionaries have an entry for this key.
+                // We can go down the path that would load the type as we will only load the type in the
+                // error case (duplicate key).
+                foreach (RuntimeModule module in _preCachedModules)
+                {
+                    if (TryGetOrLoadTypeFromPreCachedDictionary(module, key, out Type? _))
+                    {
+                        ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                    }
                 }
 
                 _lazyData.Add(key, new DelayedType(targetType, fallbackAssembly));

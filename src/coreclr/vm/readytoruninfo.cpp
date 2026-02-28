@@ -1705,6 +1705,59 @@ TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(MethodTable* pGroup
     return TypeHandle();
 }
 
+bool ReadyToRunInfo::CheckForUniqueExternalTypeMapKeys(MethodTable* pGroupType, ExternalTypeNameHash* pHash)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pGroupType != nullptr);
+    if (m_externalTypeMaps.IsNull())
+    {
+        return true;
+    }
+
+    UINT32 hash = GetVersionResilientTypeHashCode(pGroupType);
+    NativeHashtable::Enumerator lookup = m_externalTypeMaps.Lookup(hash);
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        uint32_t groupTypeImportSection = entryParser.GetUnsigned();
+        uint32_t groupTypeFixupIndex = entryParser.GetUnsigned();
+        TypeHandle groupTypeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, groupTypeImportSection, groupTypeFixupIndex);
+        if (groupTypeHandle != TypeHandle(pGroupType))
+        {
+            continue;
+        }
+
+        if (entryParser.GetUnsigned() == 0)
+        {
+            // Table is not valid
+            return true;
+        }
+
+        NativeHashtable typeMapTable = NativeHashtable(entryParser);
+
+        NativeHashtable::AllEntriesEnumerator allEntries(&typeMapTable);
+
+        for (NativeParser typeMapEntryParser = allEntries.GetNext(); !typeMapEntryParser.IsNull(); typeMapEntryParser = allEntries.GetNext())
+        {
+            LPCUTF8 string;
+            uint32_t stringLength;
+            typeMapEntryParser.GetString((PTR_CBYTE*)&string, &stringLength);
+
+            StringWithLength key = {string, stringLength};
+
+            if (pHash->LookupPtr(key) != nullptr)
+            {
+                // Hash already contains this key, we found a duplicate.
+                return false;
+            }
+            pHash->Add(key);
+        }
+    }
+
+    return true;
+}
+
 bool ReadyToRunInfo::HasPrecachedProxyTypeMap(MethodTable* pGroupType)
 {
     STANDARD_VM_CONTRACT;
