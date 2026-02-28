@@ -748,9 +748,9 @@ private:
     {
         NumVtablePtrs = 5,
 #ifdef HOST_64BIT
-        enum_ThisMask = ~0x3f, // mask on IUnknown ** to get at the OBJECT-REF handle
+        enum_ThisMask = ~0x3f, // [cDAC] [BuiltInCOM]: Contract depends on this value - mask on IUnknown ** to get at the OBJECT-REF handle
 #else
-        enum_ThisMask = ~0x1f, // mask on IUnknown ** to get at the OBJECT-REF handle
+        enum_ThisMask = ~0x1f, // [cDAC] [BuiltInCOM]: Contract depends on this value - mask on IUnknown ** to get at the OBJECT-REF handle
 #endif
         Slot_Basic = 0,
         Slot_IClassX = 1,
@@ -1050,6 +1050,7 @@ struct cdac_data<ComCallWrapper>
     static constexpr size_t IPtr = offsetof(ComCallWrapper, m_rgpIPtr);
     static constexpr size_t Next = offsetof(ComCallWrapper, m_pNext);
     static constexpr uint32_t NumInterfaces = ComCallWrapper::NumVtablePtrs;
+    static constexpr uintptr_t ThisMask = (uintptr_t)ComCallWrapper::enum_ThisMask;
 };
 
 FORCEINLINE void CCWRelease(ComCallWrapper* p)
@@ -1624,6 +1625,8 @@ struct cdac_data<SimpleComCallWrapper>
 {
     static constexpr size_t RefCount = offsetof(SimpleComCallWrapper, m_llRefCount);
     static constexpr size_t Flags = offsetof(SimpleComCallWrapper, m_flags);
+    static constexpr size_t MainWrapper = offsetof(SimpleComCallWrapper, m_pWrap);
+    static constexpr size_t VTablePtr = offsetof(SimpleComCallWrapper, m_rgpVtable);
 };
 
 //--------------------------------------------------------------------------------

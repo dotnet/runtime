@@ -1054,6 +1054,8 @@ CDAC_TYPE_BEGIN(SimpleComCallWrapper)
 CDAC_TYPE_INDETERMINATE(SimpleComCallWrapper)
 CDAC_TYPE_FIELD(SimpleComCallWrapper, /*int64*/, RefCount, cdac_data<SimpleComCallWrapper>::RefCount)
 CDAC_TYPE_FIELD(SimpleComCallWrapper, /*uint32*/, Flags, cdac_data<SimpleComCallWrapper>::Flags)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*pointer*/, MainWrapper, cdac_data<SimpleComCallWrapper>::MainWrapper)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*pointer*/, VTablePtr, cdac_data<SimpleComCallWrapper>::VTablePtr)
 CDAC_TYPE_END(SimpleComCallWrapper)
 
 CDAC_TYPE_BEGIN(ComMethodTable)
@@ -1224,6 +1226,10 @@ CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(ComRefcountMask, int64, SimpleComCallWrapper::COM_REFCOUNT_MASK)
 CDAC_GLOBAL(CCWNumInterfaces, uint32, cdac_data<ComCallWrapper>::NumInterfaces)
+CDAC_GLOBAL(CCWThisMask, nuint, cdac_data<ComCallWrapper>::ThisMask)
+CDAC_GLOBAL_POINTER(TearOffAddRef, &g_cdacTearOffAddRef)
+CDAC_GLOBAL_POINTER(TearOffAddRefSimple, &g_cdacTearOffAddRefSimple)
+CDAC_GLOBAL_POINTER(TearOffAddRefSimpleInner, &g_cdacTearOffAddRefSimpleInner)
 #endif // FEATURE_COMINTEROP
 
 // It is important for the subdescriptor pointers to be the last pointers in the global structure.
