@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -132,13 +133,13 @@ namespace System.Security.Cryptography.Tests
         private static void CheckIsSupported()
         {
             if (!IsSupported)
-                throw new SkipTestException(nameof(IsSupported));
+                throw SkipException.ForSkip(nameof(IsSupported));
         }
 
         private static void CheckIsNotSupported()
         {
             if (!IsNotSupported)
-                throw new SkipTestException(nameof(IsNotSupported));
+                throw SkipException.ForSkip(nameof(IsNotSupported));
         }
 
         public static KeySizes? PlatformKeySizeRequirements { get; } =
@@ -1882,7 +1883,7 @@ namespace System.Security.Cryptography.Tests
         {
             if (!IsSupported)
             {
-                throw new SkipTestException("Algorithm is not supported on current platform.");
+                throw SkipException.ForSkip("Algorithm is not supported on current platform.");
             }
 
             // This ensures that KMAC is the first cryptographic algorithm touched in the process, which kicks off

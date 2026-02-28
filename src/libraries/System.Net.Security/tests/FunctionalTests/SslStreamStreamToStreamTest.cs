@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Security.Tests
 {
@@ -139,7 +140,7 @@ namespace System.Net.Security.Tests
         {
             if (PlatformDetection.IsNetworkFrameworkEnabled())
             {
-                throw new SkipTestException("Reads and writes to inner streams are happening on different thread, so the exception does not propagate");
+                throw SkipException.ForSkip("Reads and writes to inner streams are happening on different thread, so the exception does not propagate");
             }
 
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
@@ -221,7 +222,7 @@ namespace System.Net.Security.Tests
         {
             if (PlatformDetection.IsNetworkFrameworkEnabled())
             {
-                throw new SkipTestException("Reads and writes to inner streams are happening on different thread, so we're calling InnerStream Read/Write async.");
+                throw SkipException.ForSkip("Reads and writes to inner streams are happening on different thread, so we're calling InnerStream Read/Write async.");
             }
 
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();

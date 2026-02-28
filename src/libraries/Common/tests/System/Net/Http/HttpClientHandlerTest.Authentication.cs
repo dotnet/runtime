@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 
 using Xunit;
+using Xunit.Sdk;
 
 
 namespace System.Net.Http.Functional.Tests
@@ -561,7 +562,7 @@ namespace System.Net.Http.Functional.Tests
             // work with the loopback proxy server.
             if (!PlatformDetection.IsWindows || !PlatformDetection.IsNotWindowsNanoServer)
             {
-                throw new SkipTestException("Test can only run on domain joined Windows client machine");
+                throw SkipException.ForSkip("Test can only run on domain joined Windows client machine");
             }
 
             var options = new LoopbackProxyServer.Options { AuthenticationSchemes = AuthenticationSchemes.Negotiate };

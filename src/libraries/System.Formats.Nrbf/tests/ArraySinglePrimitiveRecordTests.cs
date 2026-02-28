@@ -7,6 +7,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Formats.Nrbf.Tests;
 
@@ -157,7 +158,7 @@ public class ArraySinglePrimitiveRecordTests : ReadTests
     {
         if (!IsPatched)
         {
-            throw new SkipTestException("Current machine has not been patched with the most recent BinaryFormatter fix.");
+            throw SkipException.ForSkip("Current machine has not been patched with the most recent BinaryFormatter fix.");
         }
 
         // Arrays of abstractions that store primitive values (example: new IComparable[1] { int.MaxValue })

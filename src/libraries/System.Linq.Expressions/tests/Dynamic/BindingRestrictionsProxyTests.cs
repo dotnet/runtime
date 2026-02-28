@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Dynamic.Tests
 {
@@ -71,7 +72,7 @@ namespace System.Dynamic.Tests
         {
             if (BindingRestrictionsDebugViewType == null)
             {
-                throw new SkipTestException("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
+                throw SkipException.ForSkip("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
             }
             BindingRestrictions empty = BindingRestrictions.Empty;
             BindingRestrictionsProxyProxy view = GetDebugViewObject(empty);
@@ -88,7 +89,7 @@ namespace System.Dynamic.Tests
         {
             if (BindingRestrictionsDebugViewType == null)
             {
-                throw new SkipTestException("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
+                throw SkipException.ForSkip("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
             }
             ConstantExpression exp = Expression.Constant(false);
             BindingRestrictions custom = BindingRestrictions.GetExpressionRestriction(exp);
@@ -122,7 +123,7 @@ namespace System.Dynamic.Tests
 
             if (BindingRestrictionsDebugViewType == null)
             {
-                throw new SkipTestException("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
+                throw SkipException.ForSkip("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
             }
 
             BindingRestrictionsProxyProxy view = GetDebugViewObject(br);
@@ -154,7 +155,7 @@ namespace System.Dynamic.Tests
 
             if (BindingRestrictionsDebugViewType == null)
             {
-                throw new SkipTestException("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
+                throw SkipException.ForSkip("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
             }
 
             BindingRestrictionsProxyProxy view = GetDebugViewObject(br);
@@ -199,7 +200,7 @@ namespace System.Dynamic.Tests
         {
             if (BindingRestrictionsDebugViewType == null)
             {
-                throw new SkipTestException("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
+                throw SkipException.ForSkip("Didn't find DebuggerTypeProxyAttribute on BindingRestrictions.");
             }
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => BindingRestrictionsProxyCtor.Invoke(new object[] {null}));
             ArgumentNullException ane = (ArgumentNullException)tie.InnerException;

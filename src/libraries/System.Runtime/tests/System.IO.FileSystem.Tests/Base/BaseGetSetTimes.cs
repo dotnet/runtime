@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Xunit;
+using Xunit.Sdk;
 using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
@@ -25,13 +26,13 @@ namespace System.IO.Tests
         private static void CheckHighTemporalResolution()
         {
             if (!HighTemporalResolution)
-                throw new SkipTestException(nameof(HighTemporalResolution));
+                throw SkipException.ForSkip(nameof(HighTemporalResolution));
         }
 
         private static void CheckLowTemporalResolution()
         {
             if (!LowTemporalResolution)
-                throw new SkipTestException(nameof(LowTemporalResolution));
+                throw SkipException.ForSkip(nameof(LowTemporalResolution));
         }
 
         protected abstract bool CanBeReadOnly { get; }

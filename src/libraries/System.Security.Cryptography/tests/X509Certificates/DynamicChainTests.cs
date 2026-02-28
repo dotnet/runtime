@@ -12,6 +12,7 @@ using System.Security.Cryptography.X509Certificates.Asn1;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -602,7 +603,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
             {
-                throw new SkipTestException("Platform does not handle excludedSubtrees correctly.");
+                throw SkipException.ForSkip("Platform does not handle excludedSubtrees correctly.");
             }
 
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -751,7 +752,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
             {
-                throw new SkipTestException("Platform does not handle excludedSubtrees correctly.");
+                throw SkipException.ForSkip("Platform does not handle excludedSubtrees correctly.");
             }
 
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();

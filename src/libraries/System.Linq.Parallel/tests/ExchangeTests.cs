@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Linq.Parallel.Tests
 {
@@ -94,7 +95,7 @@ namespace System.Linq.Parallel.Tests
         {
             if (partitions > 1 && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
+                throw SkipException.ForSkip(nameof(PlatformDetection.IsMultithreadingSupported));
             }
 
             _ = count;
@@ -119,7 +120,7 @@ namespace System.Linq.Parallel.Tests
         {
             if (partitions > 1 && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
+                throw SkipException.ForSkip(nameof(PlatformDetection.IsMultithreadingSupported));
             }
 
             int seen = 0;

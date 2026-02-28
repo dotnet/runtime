@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Threading.Channels.Tests
 {
@@ -639,7 +640,7 @@ namespace System.Threading.Channels.Tests
         {
             if (!allowSynchronousContinuations && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
+                throw SkipException.ForSkip(nameof(PlatformDetection.IsMultithreadingSupported));
             }
 
             var c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { AllowSynchronousContinuations = allowSynchronousContinuations });

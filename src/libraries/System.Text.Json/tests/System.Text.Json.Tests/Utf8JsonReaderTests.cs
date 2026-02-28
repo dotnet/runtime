@@ -9,6 +9,7 @@ using System.Linq;
 using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Text.Json.Tests
 {
@@ -1655,7 +1656,7 @@ namespace System.Text.Json.Tests
         {
             if (PlatformDetection.IsInterpreter && depth >= 256)
             {
-                throw new SkipTestException("Takes very long to run on interpreter.");
+                throw SkipException.ForSkip("Takes very long to run on interpreter.");
             }
 
             foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))

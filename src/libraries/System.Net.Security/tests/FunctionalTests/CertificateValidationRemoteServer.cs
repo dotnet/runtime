@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Security.Tests
 {
@@ -38,7 +39,7 @@ namespace System.Net.Security.Tests
                 {
                     // if we cannot connect, skip the test instead of failing.
                     // This test is not trying to test networking.
-                    throw new SkipTestException($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.Message}");
+                    throw SkipException.ForSkip($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.Message}");
                 }
 
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
@@ -59,7 +60,7 @@ namespace System.Net.Security.Tests
                     {
                         // Since we try to verify certificate validation, ignore IO errors
                         // caused most likely by environmental failures.
-                        throw new SkipTestException($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.InnerException.Message}");
+                        throw SkipException.ForSkip($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.InnerException.Message}");
                     }
                 }
             }
@@ -385,7 +386,7 @@ namespace System.Net.Security.Tests
                 catch (Exception ex)
                 {
                     // if we cannot connect skip the test instead of failing.
-                    throw new SkipTestException($"Unable to connect to '{host}': {ex.Message}");
+                    throw SkipException.ForSkip($"Unable to connect to '{host}': {ex.Message}");
                 }
 
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
@@ -406,7 +407,7 @@ namespace System.Net.Security.Tests
                 catch (Exception ex)
                 {
                     // if we cannot connect skip the test instead of failing.
-                    throw new SkipTestException($"Unable to connect to '{clientOptions.TargetHost}': {ex.Message}");
+                    throw SkipException.ForSkip($"Unable to connect to '{clientOptions.TargetHost}': {ex.Message}");
                 }
 
                 using (SslStream sslStream = new SslStream(client.GetStream()))

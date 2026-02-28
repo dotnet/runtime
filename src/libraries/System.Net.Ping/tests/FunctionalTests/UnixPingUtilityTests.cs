@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Sdk;
 using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.NetworkInformation.Tests
@@ -48,7 +49,7 @@ namespace System.Net.NetworkInformation.Tests
 
             if (destinationNetUnreachable)
             {
-                throw new SkipTestException($"Network doesn't route {TestSettings.UnreachableAddress}, skipping test.");
+                throw SkipException.ForSkip($"Network doesn't route {TestSettings.UnreachableAddress}, skipping test.");
             }
 
             //ensure that the process takes longer than or within 10ms of 'timeout', with a 5s maximum

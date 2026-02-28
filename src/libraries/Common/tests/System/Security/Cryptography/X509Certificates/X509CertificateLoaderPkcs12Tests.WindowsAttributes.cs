@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -18,7 +19,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             if (machineKey && !PlatformDetection.IsPrivilegedProcess)
             {
-                throw new SkipTestException("Test requires administrator privileges.");
+                throw SkipException.ForSkip("Test requires administrator privileges.");
             }
 
             Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
@@ -66,7 +67,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             if (machineKey && !PlatformDetection.IsPrivilegedProcess)
             {
-                throw new SkipTestException("Test requires administrator privileges.");
+                throw SkipException.ForSkip("Test requires administrator privileges.");
             }
 
             Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
@@ -119,7 +120,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             if (machineKey && !PlatformDetection.IsPrivilegedProcess)
             {
-                throw new SkipTestException("Test requires administrator privileges.");
+                throw SkipException.ForSkip("Test requires administrator privileges.");
             }
 
             // This test forces a key creation with CAPI, and verifies that
@@ -181,7 +182,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             if (!PlatformDetection.IsPrivilegedProcess)
             {
-                throw new SkipTestException("Test requires administrator privileges.");
+                throw SkipException.ForSkip("Test requires administrator privileges.");
             }
 
             // This test mainly shows that when duplicate attributes are present contents

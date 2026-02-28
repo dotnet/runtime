@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 
 namespace System.Net.Http.Functional.Tests
@@ -1616,7 +1617,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (UseVersion != HttpVersion30 || !TestAsync)
             {
-                throw new SkipTestException("This test is specific to async HTTP/3 runs.");
+                throw SkipException.ForSkip("This test is specific to async HTTP/3 runs.");
             }
 
             await RemoteExecutor.Invoke(RunTest).DisposeAsync();
@@ -1743,7 +1744,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (UseVersion != HttpVersion.Version11)
             {
-                throw new SkipTestException("Test only for HTTP/1.1");
+                throw SkipException.ForSkip("Test only for HTTP/1.1");
             }
 
             await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();

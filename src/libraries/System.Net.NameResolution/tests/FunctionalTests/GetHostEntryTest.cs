@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.NameResolution.Tests
 {
@@ -283,7 +284,7 @@ namespace System.Net.NameResolution.Tests
         public async Task DnsGetHostEntry_LoopbackIP_MatchesGetHostEntryLoopbackString(int mode)
         {
             if (OperatingSystem.IsWasi() && mode == 2)
-                throw new SkipTestException("mode 2 is not supported on WASI");
+                throw SkipException.ForSkip("mode 2 is not supported on WASI");
 
             IPAddress address = IPAddress.Loopback;
 

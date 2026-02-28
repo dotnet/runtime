@@ -5,6 +5,7 @@ using Microsoft.DotNet.XUnitExtensions;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -40,7 +41,7 @@ namespace System.IO.Tests
         {
             if (Environment.OSVersion.Version.Major == 12)
             {
-                throw new SkipTestException("Unreliable on Monterey"); // https://github.com/dotnet/runtime/issues/70164
+                throw SkipException.ForSkip("Unreliable on Monterey"); // https://github.com/dotnet/runtime/issues/70164
             }
 
             // On Mac, the FSStream aggregate old events caused by the test setup.

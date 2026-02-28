@@ -1075,7 +1075,7 @@ public static class Test
             action();
             s_succeeded++;
         }
-        catch (SkipTestException) { }
+        catch (SkipException) { }
         catch (Exception e)
         {
             s_failed++;
@@ -1094,7 +1094,7 @@ public static class Test
             action().GetAwaiter().GetResult();
             s_succeeded++;
         }
-        catch (SkipTestException) { }
+        catch (SkipException) { }
         catch (Exception e)
         {
             s_failed++;

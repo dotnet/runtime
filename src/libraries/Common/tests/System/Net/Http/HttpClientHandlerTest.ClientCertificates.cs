@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -83,7 +84,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Manual_CertificateOnlySentWhenValid_Success(int certIndex, bool serverExpectsClientCertificate)
         {
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/69238")]
-            if (IsWinHttpHandler) throw new SkipTestException("https://github.com/dotnet/runtime/issues/69238");
+            if (IsWinHttpHandler) throw SkipException.ForSkip("https://github.com/dotnet/runtime/issues/69238");
 
             var options = new LoopbackServer.Options { UseSsl = true };
 

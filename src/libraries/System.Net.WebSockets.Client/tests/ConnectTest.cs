@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 using EchoQueryKey = System.Net.Test.Common.WebSocketEchoOptions.EchoQueryKey;
 
 namespace System.Net.WebSockets.Client.Tests
@@ -179,7 +180,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (HttpVersion != Net.HttpVersion.Version11)
             {
-                throw new SkipTestException("LoopbackProxyServer is HTTP/1.1 only");
+                throw SkipException.ForSkip("LoopbackProxyServer is HTTP/1.1 only");
             }
 
             using (var cws = new ClientWebSocket())
@@ -279,12 +280,12 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets are not supported on this platform")]
-        [Fact] // Uses SkipTestException
+        [Fact] // Uses SkipException
         public async Task ConnectAsync_Http11Server_DowngradeFail()
         {
             if (UseSharedHandler)
             {
-                throw new SkipTestException("HTTP/2 is not supported with SharedHandler");
+                throw SkipException.ForSkip("HTTP/2 is not supported with SharedHandler");
             }
 
             using (var cws = new ClientWebSocket())
@@ -307,13 +308,13 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets are not supported on this platform")]
-        [Theory] // Uses SkipTestException
+        [Theory] // Uses SkipException
         [MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_Http11Server_DowngradeSuccess(Uri server)
         {
             if (UseSharedHandler)
             {
-                throw new SkipTestException("HTTP/2 is not supported with SharedHandler");
+                throw SkipException.ForSkip("HTTP/2 is not supported with SharedHandler");
             }
 
             using (var cws = new ClientWebSocket())
@@ -327,13 +328,13 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets are not supported on this platform")]
-        [Theory] // Uses SkipTestException
+        [Theory] // Uses SkipException
         [MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_Http11WithRequestVersionOrHigher_DowngradeSuccess(Uri server)
         {
             if (UseSharedHandler)
             {
-                throw new SkipTestException("HTTP/2 is not supported with SharedHandler");
+                throw SkipException.ForSkip("HTTP/2 is not supported with SharedHandler");
             }
 
             using (var cws = new ClientWebSocket())

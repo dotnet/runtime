@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -855,7 +856,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (UseVersion.Major == 1 && includeContentLength)
             {
-                throw new SkipTestException("HTTP/1.1 trailers are only supported with chunked encoding.");
+                throw SkipException.ForSkip("HTTP/1.1 trailers are only supported with chunked encoding.");
             }
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -892,7 +893,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (UseVersion.Major == 1 && includeContentLength)
             {
-                throw new SkipTestException("HTTP/1.1 trailers are only supported with chunked encoding.");
+                throw SkipException.ForSkip("HTTP/1.1 trailers are only supported with chunked encoding.");
             }
 
             SemaphoreSlim sendDataAgain = new SemaphoreSlim(0);
@@ -1717,7 +1718,7 @@ namespace System.Net.Http.Functional.Tests
             if (PlatformDetection.IsAndroid && PlatformDetection.Is32BitProcess)
             {
                 // https://github.com/dotnet/runtime/issues/77474
-                throw new SkipTestException("This test runs out of memory on 32-bit Android devices");
+                throw SkipException.ForSkip("This test runs out of memory on 32-bit Android devices");
             }
 
             Memory<byte> responsePrefix = Encoding.ASCII.GetBytes(trailingHeaders
@@ -2897,7 +2898,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
             {
-                throw new SkipTestException("Currently this test is failing on Android API 29 (used on Android-x64 and Android-x86 emulators)");
+                throw SkipException.ForSkip("Currently this test is failing on Android API 29 (used on Android-x64 and Android-x86 emulators)");
             }
 
             const int MaxConcurrentStreams = 2;

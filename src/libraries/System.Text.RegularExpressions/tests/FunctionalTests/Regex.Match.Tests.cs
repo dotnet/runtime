@@ -11,6 +11,7 @@ using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -1417,7 +1418,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 if (!RemoteExecutor.IsSupported)
                 {
-                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+                    throw SkipException.ForSkip("RemoteExecutor is not supported on this platform.");
                 }
 
                 RemoteExecutor.Invoke(func, engine.ToString()).Dispose();
@@ -2564,7 +2565,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 if (!RemoteExecutor.IsSupported)
                 {
-                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+                    throw SkipException.ForSkip("RemoteExecutor is not supported on this platform.");
                 }
 
                 RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();
@@ -2626,7 +2627,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 if (!RemoteExecutor.IsSupported)
                 {
-                    throw new SkipTestException("RemoteExecutor is not supported on this platform.");
+                    throw SkipException.ForSkip("RemoteExecutor is not supported on this platform.");
                 }
 
                 RemoteExecutor.Invoke(func, engine.ToString(), fullpattern, fullinput).Dispose();

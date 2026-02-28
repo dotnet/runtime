@@ -579,7 +579,7 @@ namespace System.Threading.Tasks.Tests
         {
             if (!PlatformDetection.IsPreciseGcSupported)
             {
-                throw new SkipTestException("Test requires precise GC");
+                throw SkipException.ForSkip("Test requires precise GC");
             }
 
             RemoteExecutor.Invoke(() =>

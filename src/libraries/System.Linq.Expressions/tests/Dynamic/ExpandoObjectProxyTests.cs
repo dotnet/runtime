@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Dynamic.Tests
 {
@@ -88,7 +89,7 @@ namespace System.Dynamic.Tests
             object view = GetDebugViewObject(eo);
             if (view == null)
             {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {eo}.");
+                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {eo}.");
             }
             PropertyInfo itemsProp = view.GetType().GetProperty("Items");
             var browsable = (DebuggerBrowsableAttribute)itemsProp.GetCustomAttribute(typeof(DebuggerBrowsableAttribute));
@@ -101,7 +102,7 @@ namespace System.Dynamic.Tests
             object view = GetDebugViewObject(keys);
             if (view == null)
             {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {keys}.");
+                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {keys}.");
             }
             PropertyInfo itemsProp = view.GetType().GetProperty("Items");
             string[] items = (string[])itemsProp.GetValue(view);
@@ -114,7 +115,7 @@ namespace System.Dynamic.Tests
             object view = GetDebugViewObject(keys);
             if (view == null)
             {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {keys}.");
+                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {keys}.");
             }
             PropertyInfo itemsProp = view.GetType().GetProperty("Items");
             object[] items = (object[])itemsProp.GetValue(view);
@@ -127,7 +128,7 @@ namespace System.Dynamic.Tests
             Type debugViewType = GetDebugViewType(collection.GetType());
             if (debugViewType == null)
             {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {collection.GetType()}.");
+                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {collection.GetType()}.");
             }
             ConstructorInfo constructor = debugViewType.GetConstructors().Single();
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(new object[] {null}));

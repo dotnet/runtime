@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Formats.Nrbf.Tests
 {
@@ -108,7 +109,7 @@ namespace System.Formats.Nrbf.Tests
         {
             if (elementType != ElementType.Object && !IsPatched)
             {
-                throw new SkipTestException("Current machine has not been patched with the most recent BinaryFormatter fix.");
+                throw SkipException.ForSkip("Current machine has not been patched with the most recent BinaryFormatter fix.");
             }
 
             const int Integer = 123;
@@ -136,7 +137,7 @@ namespace System.Formats.Nrbf.Tests
         {
             if (elementType != ElementType.Object && !IsPatched)
             {
-                throw new SkipTestException("Current machine has not been patched with the most recent BinaryFormatter fix.");
+                throw SkipException.ForSkip("Current machine has not been patched with the most recent BinaryFormatter fix.");
             }
 
             const int Integer = 123;
@@ -165,7 +166,7 @@ namespace System.Formats.Nrbf.Tests
         {
             if (elementType != ElementType.Object && !IsPatched)
             {
-                throw new SkipTestException("Current machine has not been patched with the most recent BinaryFormatter fix.");
+                throw SkipException.ForSkip("Current machine has not been patched with the most recent BinaryFormatter fix.");
             }
 
             const int Integer = 123;

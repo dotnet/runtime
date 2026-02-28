@@ -308,7 +308,7 @@ namespace System.Net.Sockets.Tests
         {
             if (UsesEap && connectMode is "multi")
             {
-                throw new SkipTestException("EAP does not support IPAddress[] connect");
+                throw SkipException.ForSkip("EAP does not support IPAddress[] connect");
             }
 
             IPAddress address = (await Dns.GetHostAddressesAsync("localhost"))[0];
@@ -345,7 +345,7 @@ namespace System.Net.Sockets.Tests
         {
             if (UsesEap && !dnsConnect)
             {
-                throw new SkipTestException("EAP does not support IPAddress[] connect");
+                throw SkipException.ForSkip("EAP does not support IPAddress[] connect");
             }
 
             IPAddress[] addresses = await Dns.GetHostAddressesAsync("localhost");
@@ -355,7 +355,7 @@ namespace System.Net.Sockets.Tests
             bool testFailingConnect = addresses.Length > 1;
             if (!testFailingConnect)
             {
-                throw new SkipTestException("'localhost' should resolve to both IPv6 and IPv4 for this test to be valid.");
+                throw SkipException.ForSkip("'localhost' should resolve to both IPv6 and IPv4 for this test to be valid.");
             }
 
             // PortBlocker's "shadow socket" will be the one addresses[0] is pointing to. The test will fail to connect to that socket.
@@ -418,7 +418,7 @@ namespace System.Net.Sockets.Tests
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task MultiConnect_DualMode_Preserved()
         {
-            if (UsesEap) throw new SkipTestException("EAP does not support IPAddress[] connect");
+            if (UsesEap) throw SkipException.ForSkip("EAP does not support IPAddress[] connect");
 
             int port = -1;
             using PortBlocker portBlocker = new PortBlocker(() =>
@@ -446,7 +446,7 @@ namespace System.Net.Sockets.Tests
         {
             if (UsesEap && !dnsConnect)
             {
-                throw new SkipTestException("EAP does not support IPAddress[] connect");
+                throw SkipException.ForSkip("EAP does not support IPAddress[] connect");
             }
 
             IPAddress[] addresses = await Dns.GetHostAddressesAsync("localhost");

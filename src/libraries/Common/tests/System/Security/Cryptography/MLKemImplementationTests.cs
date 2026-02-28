@@ -4,6 +4,7 @@
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -35,7 +36,7 @@ namespace System.Security.Cryptography.Tests
         {
             if (!MLKem.IsSupported)
             {
-                throw new SkipTestException("Algorithm is not supported on current platform.");
+                throw SkipException.ForSkip("Algorithm is not supported on current platform.");
             }
 
             // This ensures that ML-KEM is the first cryptographic algorithm touched in the process, which kicks off

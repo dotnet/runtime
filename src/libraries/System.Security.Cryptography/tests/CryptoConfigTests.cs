@@ -7,6 +7,7 @@ using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
+using Xunit.Sdk;
 
 // String factory methods are obsolete. Warning is disabled for the entire file as most tests exercise the obsolete methods
 #pragma warning disable SYSLIB0045
@@ -155,7 +156,7 @@ namespace System.Security.Cryptography.Tests
         {
             if (!PlatformSupport.IsDSASupported)
             {
-                throw new SkipTestException("Platform does not support DSA.");
+                throw SkipException.ForSkip("Platform does not support DSA.");
             }
 
             using (AsymmetricAlgorithm created = AsymmetricAlgorithm.Create(identifier))

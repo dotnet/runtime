@@ -4,6 +4,7 @@
 using Test.Cryptography;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Encryption.Aes.Tests
 {
@@ -173,7 +174,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 return;
 
             if (PlatformDetection.IstvOS && invalidIvSize == 536870928)
-                throw new SkipTestException($"https://github.com/dotnet/runtime/issues/76728 This test case flakily crashes tvOS arm64");
+                throw SkipException.ForSkip($"https://github.com/dotnet/runtime/issues/76728 This test case flakily crashes tvOS arm64");
 
             using (Aes aes = AesFactory.Create())
             {

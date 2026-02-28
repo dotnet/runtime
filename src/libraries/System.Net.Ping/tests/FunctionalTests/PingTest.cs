@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 
 using Xunit;
+using Xunit.Sdk;
 using System.Threading;
 
 namespace System.Net.NetworkInformation.Tests
@@ -776,7 +777,7 @@ namespace System.Net.NetworkInformation.Tests
             }
             if (!reachable)
             {
-                throw new SkipTestException($"Host {host} is not reachable. Skipping test.");
+                throw SkipException.ForSkip($"Host {host} is not reachable. Skipping test.");
             }
 
             options.Ttl = 1;
@@ -804,7 +805,7 @@ namespace System.Net.NetworkInformation.Tests
 
             if (reply.Status == IPStatus.DestinationNetworkUnreachable)
             {
-                throw new SkipTestException("Unable to verify timeouts. Skipping test.");
+                throw SkipException.ForSkip("Unable to verify timeouts. Skipping test.");
             }
 
             Assert.Equal(IPStatus.TimedOut, reply.Status);

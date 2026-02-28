@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Test.Cryptography;
 using Xunit;
+using Xunit.Sdk;
 using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Security.Cryptography.Tests
@@ -18,13 +19,13 @@ namespace System.Security.Cryptography.Tests
         private static void CheckIsSupported()
         {
             if (!IsSupported)
-                throw new SkipTestException(nameof(IsSupported));
+                throw SkipException.ForSkip(nameof(IsSupported));
         }
 
         private static void CheckIsNotSupported()
         {
             if (!IsNotSupported)
-                throw new SkipTestException(nameof(IsNotSupported));
+                throw SkipException.ForSkip(nameof(IsNotSupported));
         }
 
         // RFC2202 defines the test vectors for HMACMD5 and HMACSHA1

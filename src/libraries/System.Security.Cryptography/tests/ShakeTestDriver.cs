@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -59,19 +60,19 @@ namespace System.Security.Cryptography.Tests
         private static void CheckIsSupported()
         {
             if (!IsSupported)
-                throw new SkipTestException(nameof(IsSupported));
+                throw SkipException.ForSkip(nameof(IsSupported));
         }
 
         private static void CheckIsNotSupported()
         {
             if (!IsNotSupported)
-                throw new SkipTestException(nameof(IsNotSupported));
+                throw SkipException.ForSkip(nameof(IsNotSupported));
         }
 
         private static void CheckIsReadSupported()
         {
             if (!IsReadSupported)
-                throw new SkipTestException(nameof(IsReadSupported));
+                throw SkipException.ForSkip(nameof(IsReadSupported));
         }
 
         [Fact]
@@ -824,7 +825,7 @@ namespace System.Security.Cryptography.Tests
         {
             if (!IsSupported)
             {
-                throw new SkipTestException("Algorithm is not supported on this platform.");
+                throw SkipException.ForSkip("Algorithm is not supported on this platform.");
             }
 
             RemoteExecutor.Invoke(static () =>

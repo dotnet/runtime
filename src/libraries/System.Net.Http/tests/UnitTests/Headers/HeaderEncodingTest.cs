@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Http.Tests
 {
@@ -64,7 +65,7 @@ namespace System.Net.Http.Tests
             bool isUnicode = input.Any(c => c > 255);
             if (isUnicode && encodingName == null)
             {
-                throw new SkipTestException("The test case is invalid for the default encoding.");
+                throw SkipException.ForSkip("The test case is invalid for the default encoding.");
             }
 
             Encoding encoding = encodingName == null ? null : Encoding.GetEncoding(encodingName);

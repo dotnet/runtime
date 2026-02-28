@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -113,7 +114,7 @@ namespace System.Security.Cryptography.Tests
                 (hashAlgorithmName == "SHA3-384" && !SHA3_384.IsSupported) ||
                 (hashAlgorithmName == "SHA3-512" && !SHA3_512.IsSupported))
             {
-                throw new SkipTestException($"Algorithm '{hashAlgorithmName}' is not supported on the current platform.");
+                throw SkipException.ForSkip($"Algorithm '{hashAlgorithmName}' is not supported on the current platform.");
             }
 #endif
 

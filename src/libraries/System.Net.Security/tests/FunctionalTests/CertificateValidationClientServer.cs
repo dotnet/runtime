@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Sdk;
 using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Security.Tests
@@ -46,7 +47,7 @@ namespace System.Net.Security.Tests
         {
             if (delayCertificate && OperatingSystem.IsAndroid())
             {
-                throw new SkipTestException("Android does not support delayed certificate selection.");
+                throw SkipException.ForSkip("Android does not support delayed certificate selection.");
             }
 
             X509Certificate? remoteCertificate = null;

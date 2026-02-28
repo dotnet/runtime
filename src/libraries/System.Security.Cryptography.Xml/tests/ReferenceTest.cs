@@ -16,6 +16,7 @@ using System.Text;
 using System.Xml;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Xml.Tests
 {
@@ -134,7 +135,7 @@ namespace System.Security.Cryptography.Xml.Tests
 #if NET
             if (!RuntimeFeature.IsDynamicCodeSupported)
             {
-                throw new SkipTestException("XSLTs are only supported when dynamic code is supported. See https://github.com/dotnet/runtime/issues/84389");
+                throw SkipException.ForSkip("XSLTs are only supported when dynamic code is supported. See https://github.com/dotnet/runtime/issues/84389");
             }
 #endif
             string test = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms>";

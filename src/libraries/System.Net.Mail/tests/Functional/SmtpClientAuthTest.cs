@@ -5,6 +5,7 @@ using System.Net.Mail.Tests;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Mail.Tests
@@ -17,7 +18,7 @@ namespace System.Net.Mail.Tests
         private static void CheckIsNtlmInstalled()
         {
             if (!IsNtlmInstalled)
-                throw new SkipTestException(nameof(IsNtlmInstalled));
+                throw SkipException.ForSkip(nameof(IsNtlmInstalled));
         }
 
         public SmtpClientAuthTest(ITestOutputHelper output) : base(output)

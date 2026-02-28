@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Test.Cryptography;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -28,12 +29,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
             {
-                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
+                throw SkipException.ForSkip(name + " uses PBES2, which is not supported on this version.");
             }
 
             if (usesRC2 && !PlatformSupport.IsRC2Supported)
             {
-                throw new SkipTestException(name + " uses RC2, which is not supported on this platform.");
+                throw SkipException.ForSkip(name + " uses RC2, which is not supported on this platform.");
             }
 
             RemoteExecutor.Invoke((certName) =>
@@ -57,12 +58,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
             {
-                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
+                throw SkipException.ForSkip(name + " uses PBES2, which is not supported on this version.");
             }
 
             if (usesRC2 && !PlatformSupport.IsRC2Supported)
             {
-                throw new SkipTestException(name + " uses RC2, which is not supported on this platform.");
+                throw SkipException.ForSkip(name + " uses RC2, which is not supported on this platform.");
             }
 
             RemoteExecutor.Invoke((certName) =>
@@ -85,12 +86,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
             {
-                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
+                throw SkipException.ForSkip(name + " uses PBES2, which is not supported on this version.");
             }
 
             if (usesRC2 && !PlatformSupport.IsRC2Supported)
             {
-                throw new SkipTestException(name + " uses RC2, which is not supported on this platform.");
+                throw SkipException.ForSkip(name + " uses RC2, which is not supported on this platform.");
             }
 
             RemoteExecutor.Invoke((certName) =>
@@ -114,12 +115,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
             {
-                throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
+                throw SkipException.ForSkip(name + " uses PBES2, which is not supported on this version.");
             }
 
             if (usesRC2 && !PlatformSupport.IsRC2Supported)
             {
-                throw new SkipTestException(name + " uses RC2, which is not supported on this platform.");
+                throw SkipException.ForSkip(name + " uses RC2, which is not supported on this platform.");
             }
 
             RemoteExecutor.Invoke((certName) =>

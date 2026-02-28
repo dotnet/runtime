@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 
 namespace System.Net.Http.Functional.Tests
@@ -607,7 +608,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (!testHttp11 && UseVersion == HttpVersion.Version11)
             {
-                throw new SkipTestException("This case is not valid for HTTP 1.1");
+                throw SkipException.ForSkip("This case is not valid for HTTP 1.1");
             }
 
             string expectedValue = value.Replace('\r', ' ').Replace('\n', ' ').Replace('\0', ' ');

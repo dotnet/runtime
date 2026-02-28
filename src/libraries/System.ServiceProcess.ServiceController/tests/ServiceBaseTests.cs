@@ -4,6 +4,7 @@
 using Microsoft.DotNet.XUnitExtensions;
 using System.Diagnostics;
 using Xunit;
+using Xunit.Sdk;
 
 /// <summary>
 /// NOTE: All tests checking the output file should always call Stop before checking because Stop will flush the file to disk.
@@ -155,7 +156,7 @@ namespace System.ServiceProcess.Tests
         {
             if (PlatformDetection.IsWindowsServerCore)
             {
-                throw new SkipTestException("Skip on Windows Server Core"); // https://github.com/dotnet/runtime/issues/43207
+                throw SkipException.ForSkip("Skip on Windows Server Core"); // https://github.com/dotnet/runtime/issues/43207
             }
 
             ServiceController controller = ConnectToServer();

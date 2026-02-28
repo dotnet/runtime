@@ -6,6 +6,7 @@ using System.Net.Test.Common;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 namespace System.Net.NetworkInformation.Tests
 {
     public class NetworkInterfaceBasicTest
@@ -282,7 +283,7 @@ namespace System.Net.NetworkInformation.Tests
         {
             if (ipv6 && !Socket.OSSupportsIPv6)
             {
-                throw new SkipTestException("IPv6 is not supported");
+                throw SkipException.ForSkip("IPv6 is not supported");
             }
 
             using (var client = new Socket(SocketType.Dgram, ProtocolType.Udp))
@@ -324,7 +325,7 @@ namespace System.Net.NetworkInformation.Tests
 
             if (!foundLla)
             {
-                throw new SkipTestException("Did not find any LLA");
+                throw SkipException.ForSkip("Did not find any LLA");
             }
         }
     }

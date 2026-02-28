@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -703,7 +704,7 @@ namespace System.Net.Sockets.Tests
             {
                 if (PlatformDetection.IsQemuLinux && invalidatingAction == 1)
                 {
-                    throw new SkipTestException("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]");
+                    throw SkipException.ForSkip("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]");
                 }
 
                 switch (invalidatingAction)
@@ -741,7 +742,7 @@ namespace System.Net.Sockets.Tests
             {
                 if (PlatformDetection.IsQemuLinux && invalidatingAction == 1)
                 {
-                    throw new SkipTestException("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]");
+                    throw SkipException.ForSkip("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104542)]");
                 }
 
                 switch (invalidatingAction)

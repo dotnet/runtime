@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -693,7 +694,7 @@ namespace System.IO.Tests
 
             if (!isSynchronized && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
+                throw SkipException.ForSkip(nameof(PlatformDetection.IsMultithreadingSupported));
             }
 
             using (CharArrayTextWriter ctw = NewTextWriter)
@@ -713,7 +714,7 @@ namespace System.IO.Tests
 
             if (!isSynchronized && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
+                throw SkipException.ForSkip(nameof(PlatformDetection.IsMultithreadingSupported));
             }
 
             using (CharArrayTextWriter ctw = NewTextWriter)

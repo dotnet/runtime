@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -373,7 +374,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (UseVersion == HttpVersion.Version30)
             {
-                throw new SkipTestException("No remote HTTP/3 server available for testing.");
+                throw SkipException.ForSkip("No remote HTTP/3 server available for testing.");
             }
 
             using InstrumentRecorder<double> requestDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
@@ -926,7 +927,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (UseVersion == HttpVersion30 && !useTls)
             {
-                throw new SkipTestException("No insecure connections with HTTP/3.");
+                throw SkipException.ForSkip("No insecure connections with HTTP/3.");
             }
 
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>

@@ -12,6 +12,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace BasicEventSourceTests
 {
@@ -38,7 +39,7 @@ namespace BasicEventSourceTests
             // Today you have to be Admin to turn on ETW events (anyone can write ETW events).
             if (TraceEventSession.IsElevated() != true)
             {
-                throw new SkipTestException("Need to be elevated to run. ");
+                throw SkipException.ForSkip("Need to be elevated to run. ");
             }
         }
 

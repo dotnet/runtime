@@ -7,6 +7,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Security.Tests
@@ -57,7 +58,7 @@ namespace System.Net.Security.Tests
         {
             if (PlatformDetection.IsNetworkFrameworkEnabled())
             {
-                throw new SkipTestException("NetworkFramework works in Async and does not issue zero-byte reads to underlying stream.");
+                throw SkipException.ForSkip("NetworkFramework works in Async and does not issue zero-byte reads to underlying stream.");
             }
 
             return base.ZeroByteRead_PerformsZeroByteReadOnUnderlyingStreamWhenDataNeeded(mode);

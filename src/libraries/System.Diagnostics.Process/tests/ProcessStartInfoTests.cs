@@ -18,6 +18,7 @@ using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Diagnostics.Tests
 {
@@ -1460,7 +1461,7 @@ namespace System.Diagnostics.Tests
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION)
             {
-                throw new SkipTestException($"{process.StartInfo.FileName} has been locked by some other process");
+                throw SkipException.ForSkip($"{process.StartInfo.FileName} has been locked by some other process");
             }
         }
 

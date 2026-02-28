@@ -4,6 +4,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -148,7 +149,7 @@ namespace System.Net.Sockets.Tests
         {
             if (PlatformDetection.IsQemuLinux && (buffer == null || buffer.Length == 0))
             {
-                throw new SkipTestException("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104545)]");
+                throw SkipException.ForSkip("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104545)]");
             }
 
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

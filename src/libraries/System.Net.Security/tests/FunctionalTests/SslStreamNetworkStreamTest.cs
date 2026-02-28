@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
@@ -75,7 +76,7 @@ namespace System.Net.Security.Tests
             }
             else
             {
-                throw new SkipTestException("Did not find disjoined sets");
+                throw SkipException.ForSkip("Did not find disjoined sets");
             }
 
             TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
@@ -754,7 +755,7 @@ namespace System.Net.Security.Tests
         {
             if (usePartialChain && OperatingSystem.IsAndroid())
             {
-                throw new SkipTestException("Android does not support partial chain validation.");
+                throw SkipException.ForSkip("Android does not support partial chain validation.");
             }
 
             int split = Random.Shared.Next(0, _certificates.ServerChain.Count - 1);
@@ -1135,7 +1136,7 @@ namespace System.Net.Security.Tests
         {
             if (PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsOpenSsl3)
             {
-                throw new SkipTestException("OpenSSL 3.0 or later is required.");
+                throw SkipException.ForSkip("OpenSSL 3.0 or later is required.");
             }
 
             (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
@@ -1176,7 +1177,7 @@ namespace System.Net.Security.Tests
         {
             if (PlatformDetection.IsOpenSslSupported && !PlatformDetection.IsOpenSsl3)
             {
-                throw new SkipTestException("OpenSSL 3.0 or later is required.");
+                throw SkipException.ForSkip("OpenSSL 3.0 or later is required.");
             }
 
             (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();

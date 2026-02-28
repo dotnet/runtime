@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Formats.Tar.Tests;
 
@@ -60,7 +61,7 @@ public partial class TarWriter_WriteEntryAsync_File_Tests : TarWriter_File_Base
         string? appExecLinkPath = MountHelper.GetAppExecLinkPath();
         if (appExecLinkPath is null)
         {
-            throw new SkipTestException("Could not find an appexeclink in this machine.");
+            throw SkipException.ForSkip("Could not find an appexeclink in this machine.");
         }
 
         await using MemoryStream archive = new MemoryStream();

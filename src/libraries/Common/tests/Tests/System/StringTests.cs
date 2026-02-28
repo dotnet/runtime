@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 using static System.Text.Tests.StringBuilderTests;
 
 #pragma warning disable xUnit2009 // these are the tests for String and so should be using the explicit methods on String
@@ -2946,7 +2947,7 @@ namespace System.Tests
             // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
             if (target == '\0' && PlatformDetection.IsIcuGlobalization)
             {
-                throw new SkipTestException("Target \\0 is not supported in ICU");
+                throw SkipException.ForSkip("Target \\0 is not supported in ICU");
             }
 
             bool safeForCurrentCulture =

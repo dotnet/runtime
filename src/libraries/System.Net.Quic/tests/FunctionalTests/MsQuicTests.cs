@@ -18,6 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 using TestUtilities;
 
 namespace System.Net.Quic.Tests
@@ -570,7 +571,7 @@ namespace System.Net.Quic.Tests
             var ipAddress = IPAddress.Parse(ipString);
             if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6 && !IsIPv6Available)
             {
-                throw new SkipTestException("IPv6 is not available on this platform");
+                throw SkipException.ForSkip("IPv6 is not available on this platform");
             }
 
             using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(expectsError ? "badhost" : "localhost",

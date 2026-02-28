@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.NameResolution.Tests
 {
@@ -46,14 +47,14 @@ namespace System.Net.NameResolution.Tests
                             try
                             {
                                 Dns.GetHostEntry(Configuration.Sockets.InvalidHost);
-                                throw new SkipTestException("GetHostEntry should fail but it did not.");
+                                throw SkipException.ForSkip("GetHostEntry should fail but it did not.");
                             }
                             catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
                             {
                             }
                             catch (Exception e)
                             {
-                                throw new SkipTestException($"GetHostEntry failed unexpectedly: {e.Message}");
+                                throw SkipException.ForSkip($"GetHostEntry failed unexpectedly: {e.Message}");
                             }
                         });
 
@@ -68,9 +69,9 @@ namespace System.Net.NameResolution.Tests
                     }
                 }).DisposeAsync();
             }
-            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
+            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipException), StringComparison.Ordinal))
             {
-                throw new SkipTestException(ex.ToString());
+                throw SkipException.ForSkip(ex.ToString());
             }
         }
 
@@ -90,7 +91,7 @@ namespace System.Net.NameResolution.Tests
                             try
                             {
                                 await Dns.GetHostEntryAsync(Configuration.Sockets.InvalidHost).ConfigureAwait(false);
-                                throw new SkipTestException("GetHostEntryAsync should fail but it did not.");
+                                throw SkipException.ForSkip("GetHostEntryAsync should fail but it did not.");
                             }
                             catch (SocketException e) when (e.SocketErrorCode == SocketError.HostNotFound)
                             {
@@ -98,7 +99,7 @@ namespace System.Net.NameResolution.Tests
                             }
                             catch (Exception e)
                             {
-                                throw new SkipTestException($"GetHostEntryAsync failed unexpectedly: {e.Message}");
+                                throw SkipException.ForSkip($"GetHostEntryAsync failed unexpectedly: {e.Message}");
                             }
                         }).ConfigureAwait(false);
 
@@ -113,9 +114,9 @@ namespace System.Net.NameResolution.Tests
                     }
                 }).DisposeAsync();
             }
-            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
+            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipException), StringComparison.Ordinal))
             {
-                throw new SkipTestException(ex.ToString());
+                throw SkipException.ForSkip(ex.ToString());
             }
 
             static async Task WaitForErrorEventAsync(ConcurrentQueue<EventWrittenEventArgs> events)
@@ -154,7 +155,7 @@ namespace System.Net.NameResolution.Tests
                             }
                             catch (Exception e)
                             {
-                                throw new SkipTestException($"Localhost lookup failed unexpectedly: {e.Message}");
+                                throw SkipException.ForSkip($"Localhost lookup failed unexpectedly: {e.Message}");
                             }
                         });
 
@@ -165,9 +166,9 @@ namespace System.Net.NameResolution.Tests
                     }
                 }).DisposeAsync();
             }
-            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipTestException), StringComparison.Ordinal))
+            catch (Exception ex) when (ex.ToString().Contains(nameof(SkipException), StringComparison.Ordinal))
             {
-                throw new SkipTestException(ex.ToString());
+                throw SkipException.ForSkip(ex.ToString());
             }
         }
     }

@@ -5,6 +5,7 @@ using Microsoft.DotNet.XUnitExtensions;
 using System.Diagnostics;
 using System.Security;
 using Xunit;
+using Xunit.Sdk;
 namespace System.IO.Tests
 {
     public partial class EncryptDecrypt : FileSystemTest
@@ -49,7 +50,7 @@ namespace System.IO.Tests
                 {
                     // Ignore ERROR_NOT_FOUND 1168 (0x490). It is reported when EFS is disabled by domain policy.
                     // Ignore ERROR_NO_USER_KEYS (0x1776). This occurs when no user key exists to encrypt with.
-                    throw new SkipTestException($"Encrypt not available. Error 0x{e.HResult:X}");
+                    throw SkipException.ForSkip($"Encrypt not available. Error 0x{e.HResult:X}");
                 }
                 catch (IOException e)
                 {

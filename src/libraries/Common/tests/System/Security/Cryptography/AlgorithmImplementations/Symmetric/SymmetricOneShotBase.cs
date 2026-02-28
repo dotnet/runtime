@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -426,7 +427,7 @@ namespace System.Security.Cryptography.Tests
             {
                 if (alg is RC2)
                 {
-                    throw new SkipTestException("RC2 does not support CFB.");
+                    throw SkipException.ForSkip("RC2 does not support CFB.");
                 }
 
                 alg.Key = Key;
@@ -511,7 +512,7 @@ namespace System.Security.Cryptography.Tests
             {
                 if (alg is RC2)
                 {
-                    throw new SkipTestException("RC2 does not support CFB.");
+                    throw SkipException.ForSkip("RC2 does not support CFB.");
                 }
 
                 alg.Key = Key;
@@ -563,7 +564,7 @@ namespace System.Security.Cryptography.Tests
             {
                 if (alg is RC2)
                 {
-                    throw new SkipTestException("RC2 does not support CFB.");
+                    throw SkipException.ForSkip("RC2 does not support CFB.");
                 }
 
                 alg.Key = Key;

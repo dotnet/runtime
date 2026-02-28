@@ -8,6 +8,7 @@ using System.Text;
 using Legacy.Support;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Ports.Tests
 {
@@ -46,7 +47,7 @@ namespace System.IO.Ports.Tests
             if (PlatformDetection.IsWindows && PlatformDetection.IsArmOrArm64Process)
             {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/28851")]
-                throw new SkipTestException("Port detection broken on Windows IoT");
+                throw SkipException.ForSkip("Port detection broken on Windows IoT");
             }
 
             string[] serialPortNames = SerialPort.GetPortNames();

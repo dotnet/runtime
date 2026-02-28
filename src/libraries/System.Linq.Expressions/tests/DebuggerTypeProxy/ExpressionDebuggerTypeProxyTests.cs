@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Linq.Expressions.Tests
 {
@@ -83,7 +84,7 @@ namespace System.Linq.Expressions.Tests
             Type viewType = GetDebugViewType(type);
             if (viewType == null)
             {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {type}.");
+                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {type}.");
             }
             object view = viewType.GetConstructors().Single().Invoke(new[] {obj});
             IEnumerable<PropertyInfo> properties =
@@ -170,7 +171,7 @@ namespace System.Linq.Expressions.Tests
             Type viewType = GetDebugViewType(type);
             if (viewType == null)
             {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {type}.");
+                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {type}.");
             }
             ConstructorInfo ctor = viewType.GetConstructors().Single();
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] { null }));

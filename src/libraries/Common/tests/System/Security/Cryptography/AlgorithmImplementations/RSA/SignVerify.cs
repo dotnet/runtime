@@ -7,6 +7,7 @@ using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Test.IO.Streams;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
@@ -1440,7 +1441,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             if (!SupportsPss)
             {
-                throw new SkipTestException("Platform does not support PSS");
+                throw SkipException.ForSkip("Platform does not support PSS");
             }
 
             RSASignaturePadding padding = usePss ? RSASignaturePadding.Pss : RSASignaturePadding.Pkcs1;
@@ -1471,7 +1472,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             if (!SupportsPss)
             {
-                throw new SkipTestException("Platform does not support PSS");
+                throw SkipException.ForSkip("Platform does not support PSS");
             }
 
             RSASignaturePadding padding = usePss ? RSASignaturePadding.Pss : RSASignaturePadding.Pkcs1;

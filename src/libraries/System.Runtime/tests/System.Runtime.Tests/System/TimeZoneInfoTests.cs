@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 using System.Reflection;
 
 namespace System.Tests
@@ -2361,7 +2362,7 @@ namespace System.Tests
 
             if (!File.Exists(tzPath))
             {
-                throw new SkipTestException($"The file {tzPath} does not exist.");
+                throw SkipException.ForSkip($"The file {tzPath} does not exist.");
             }
 
             string tmp = Path.GetTempPath() + Path.GetRandomFileName();
@@ -2772,7 +2773,7 @@ namespace System.Tests
         {
             if (OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(26))
             {
-                throw new SkipTestException("This test won't work on API level < 26");
+                throw SkipException.ForSkip("This test won't work on API level < 26");
             }
 
             // Clear cached data to always ensure predictable results

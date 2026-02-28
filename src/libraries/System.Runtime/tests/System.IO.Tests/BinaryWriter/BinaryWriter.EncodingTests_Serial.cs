@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -31,7 +32,7 @@ namespace System.IO.Tests
                 }
                 catch (OutOfMemoryException)
                 {
-                    throw new SkipTestException($"Unable to execute {nameof(WriteChars_VeryLargeArray_DoesNotOverflow)} due to OOM"); // skip test in low-mem conditions
+                    throw SkipException.ForSkip($"Unable to execute {nameof(WriteChars_VeryLargeArray_DoesNotOverflow)} due to OOM"); // skip test in low-mem conditions
                 }
 
                 Assert.True((long)unmanagedBuffer.ByteLength > int.MaxValue);

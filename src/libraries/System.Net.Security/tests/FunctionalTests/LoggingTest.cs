@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Security.Tests
 {
@@ -30,7 +31,7 @@ namespace System.Net.Security.Tests
         {
             if (PlatformDetection.IsNetworkFrameworkEnabled())
             {
-                throw new SkipTestException("We'll deal with EventSources later.");
+                throw SkipException.ForSkip("We'll deal with EventSources later.");
             }
             await RemoteExecutor.Invoke(async () =>
             {
@@ -47,7 +48,7 @@ namespace System.Net.Security.Tests
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
-                catch (SkipTestException)
+                catch (SkipException)
                 {
                     // Don't throw inside RemoteExecutor if SslStream_StreamToStream_Authentication_Success chose to skip the test
                 }

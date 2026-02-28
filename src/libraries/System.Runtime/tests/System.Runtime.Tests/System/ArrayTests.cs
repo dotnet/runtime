@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Tests
 {
@@ -4917,14 +4918,14 @@ namespace System.Tests
             // If this test is run in a 32-bit process, the large allocation will fail.
             if (IntPtr.Size != sizeof(long))
             {
-                throw new SkipTestException("Unable to allocate enough memory");
+                throw SkipException.ForSkip("Unable to allocate enough memory");
             }
 
             if (memoryInfo.TotalAvailableMemoryBytes < 4_000_000_000 )
             {
                 // On these platforms, occasionally the OOM Killer will terminate the
                 // tests when they're using ~1GB, before they complete.
-                throw new SkipTestException($"Prone to OOM killer. {memoryInfo.TotalAvailableMemoryBytes} is available.");
+                throw SkipException.ForSkip($"Prone to OOM killer. {memoryInfo.TotalAvailableMemoryBytes} is available.");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
@@ -4943,14 +4944,14 @@ namespace System.Tests
             // If this test is run in a 32-bit process, the large allocation will fail.
             if (IntPtr.Size != sizeof(long))
             {
-                throw new SkipTestException("Unable to allocate enough memory");
+                throw SkipException.ForSkip("Unable to allocate enough memory");
             }
 
             if (memoryInfo.TotalAvailableMemoryBytes < 4_000_000_000 )
             {
                 // On these platforms, occasionally the OOM Killer will terminate the
                 // tests when they're using ~1GB, before they complete.
-                throw new SkipTestException($"Prone to OOM killer. ${memoryInfo.TotalAvailableMemoryBytes} is available.");
+                throw SkipException.ForSkip($"Prone to OOM killer. ${memoryInfo.TotalAvailableMemoryBytes} is available.");
             }
 
             short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
@@ -4975,7 +4976,7 @@ namespace System.Tests
             catch (OutOfMemoryException)
             {
                 // not a fatal error - we'll just skip the test in this case
-                throw new SkipTestException("Unable to allocate enough memory");
+                throw SkipException.ForSkip("Unable to allocate enough memory");
             }
         }
     }

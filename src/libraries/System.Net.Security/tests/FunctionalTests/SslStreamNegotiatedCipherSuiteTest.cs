@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Security.Tests
 {
@@ -484,7 +485,7 @@ namespace System.Net.Security.Tests
 
                 if (Tls13Supported)
                 {
-                    throw new SkipTestException($"Test requires that at least {minCipherSuites} non TLS 1.3 cipher suites are supported.");
+                    throw SkipException.ForSkip($"Test requires that at least {minCipherSuites} non TLS 1.3 cipher suites are supported.");
                 }
                 else
                 {
