@@ -314,28 +314,28 @@ namespace System.Linq.Tests
         [Fact]
         public void AppendOverflowCountWithICollection()
         {
-            // Without fast path, Count() enumerates; MockCollection has 0 actual elements
+            // AppendPrepend1Iterator overflow when source is ICollection
             var source = new MockCollection<int>(int.MaxValue);
             var appended = source.Append(1);
-            Assert.Equal(1, appended.Count());
+            Assert.Throws<OverflowException>(() => appended.Count());
         }
 
         [Fact]
         public void PrependOverflowCountWithICollection()
         {
-            // Without fast path, Count() enumerates; MockCollection has 0 actual elements
+            // AppendPrepend1Iterator overflow when source is ICollection
             var source = new MockCollection<int>(int.MaxValue);
             var prepended = source.Prepend(1);
-            Assert.Equal(1, prepended.Count());
+            Assert.Throws<OverflowException>(() => prepended.Count());
         }
 
         [Fact]
         public void AppendPrependNOverflowCountWithICollection()
         {
-            // Without fast path, Count() enumerates; MockCollection has 0 actual elements
+            // AppendPrependN overflow when source is ICollection
             var source = new MockCollection<int>(int.MaxValue);
             var result = source.Append(1).Prepend(2);
-            Assert.Equal(2, result.Count());
+            Assert.Throws<OverflowException>(() => result.Count());
         }
     }
 }

@@ -15,6 +15,21 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (source is ICollection<TSource> collectionoft)
+            {
+                return collectionoft.Count;
+            }
+
+            if (source is Iterator<TSource> iterator)
+            {
+                return iterator.GetCount(onlyIfCheap: false);
+            }
+
+            if (source is ICollection collection)
+            {
+                return collection.Count;
+            }
+
             int count = 0;
             using IEnumerator<TSource> e = source.GetEnumerator();
             checked
