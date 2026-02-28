@@ -1492,7 +1492,7 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
         value.contextHandle,
         value.exactContextNeedsRuntimeLookup,
         (bool)value.exactContextNeedsRuntimeLookup ? "true" : "false",
-        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.stubLookup).c_str(),
+        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.stubLookup, GetCallInfo).c_str(),
         value.instParamLookup.accessType,
         toString((InfoAccessType)value.instParamLookup.accessType),
         value.instParamLookup.handle,
@@ -1666,7 +1666,7 @@ void MethodContext::dmpExpandRawHandleIntrinsic(const Agnostic_ExpandRawHandleIn
 {
     printf("ExpandRawHandleIntrinsic key: %s, value %s cth-%016" PRIx64 " ht-%u",
         SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENin(key.ResolvedToken).c_str(),
-        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(result.lookup).c_str(),
+        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(result.lookup, ExpandRawHandleIntrinsic).c_str(),
         result.compileTimeHandle,
         result.handleType);
 }
@@ -2302,7 +2302,7 @@ void MethodContext::dmpGetReadyToRunDelegateCtorHelper(GetReadyToRunDelegateCtor
 {
     printf("GetReadyToRunDelegateCtorHelper key: method tk{%s} type-%016" PRIX64 " constraint-%08X",
            SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.TargetMethod).c_str(), key.delegateType, key.targetConstraint);
-    printf(", value: %s", SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value).c_str());
+    printf(", value: %s", SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value, GetReadyToRunDelegateCtorHelper).c_str());
 }
 
 void MethodContext::repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
@@ -3116,7 +3116,7 @@ void MethodContext::dmpEmbedGenericHandle(const Agnostic_EmbedGenericHandle&    
     printf("EmbedGenericHandle key rt{%s} emb-%u, value %s cth-%016" PRIX64 " ht-%u",
         SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(),
         key.fEmbedParent,
-        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.lookup).c_str(),
+        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.lookup, EmbedGenericHandle).c_str(),
         value.compileTimeHandle,
         value.handleType);
 }

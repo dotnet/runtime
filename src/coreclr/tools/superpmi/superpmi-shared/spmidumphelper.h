@@ -26,6 +26,10 @@ public:
     static std::string DumpAgnostic_CORINFO_LOOKUP(const Agnostic_CORINFO_LOOKUP& lookup);
 
     template <typename key, typename value>
+    static std::string DumpAgnostic_CORINFO_LOOKUP(const Agnostic_CORINFO_LOOKUP& lookup,
+                                                   LightWeightMap<key, value>* buffers);
+
+    template <typename key, typename value>
     static std::string DumpPSig(
         DWORD                       pSig_Index,
         DWORD                       cbSig,
@@ -170,6 +174,35 @@ inline std::string SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(
     sizeOfBuffer -= cch;
 
     return std::string(buffer);
+}
+
+template <typename key, typename value>
+inline std::string SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(
+    const Agnostic_CORINFO_LOOKUP& lookup,
+    LightWeightMap<key, value>* buffers)
+{
+    std::string kind = DumpAgnostic_CORINFO_LOOKUP_KIND(lookup.lookupKind);
+    std::string lookupDescription;
+    if (lookup.lookupKind.needsRuntimeLookup)
+    {
+        if (buffers != nullptr)
+        {
+            Agnostic_CORINFO_RUNTIME_LOOKUP agnosticRL;
+            memcpy(&agnosticRL, buffers->GetBuffer(lookup.runtimeLookup_Index), sizeof(agnosticRL));
+            lookupDescription = DumpAgnostic_CORINFO_RUNTIME_LOOKUP(agnosticRL);
+        }
+        else
+        {
+            char buffer[MAX_BUFFER_SIZE];
+            sprintf_s(buffer, MAX_BUFFER_SIZE, "runtimeLookup bufIdx-%u", lookup.runtimeLookup_Index);
+            lookupDescription = std::string(buffer);
+        }
+    }
+    else
+    {
+        lookupDescription = DumpAgnostic_CORINFO_CONST_LOOKUP(lookup.constLookup);
+    }
+    return kind + std::string(" ") + lookupDescription;
 }
 
 #endif

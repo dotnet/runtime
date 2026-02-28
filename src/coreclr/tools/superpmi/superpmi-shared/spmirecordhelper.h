@@ -530,6 +530,7 @@ inline Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(
     lookup.lookupKind = CreateAgnostic_CORINFO_LOOKUP_KIND(&pLookup->lookupKind);
     if (pLookup->lookupKind.needsRuntimeLookup)
     {
+        Assert(buffers != nullptr);
         Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup = StoreAgnostic_CORINFO_RUNTIME_LOOKUP(&pLookup->runtimeLookup);
         lookup.runtimeLookup_Index = (DWORD)buffers->AddBuffer(
             (unsigned char*)&runtimeLookup, sizeof(runtimeLookup));
@@ -551,9 +552,10 @@ inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(
     lookup.lookupKind = RestoreCORINFO_LOOKUP_KIND(agnosticLookup.lookupKind);
     if (lookup.lookupKind.needsRuntimeLookup)
     {
-        Agnostic_CORINFO_RUNTIME_LOOKUP* pRL =
-            (Agnostic_CORINFO_RUNTIME_LOOKUP*)buffers->GetBuffer(agnosticLookup.runtimeLookup_Index);
-        lookup.runtimeLookup = RestoreCORINFO_RUNTIME_LOOKUP(*pRL);
+        Assert(buffers != nullptr);
+        Agnostic_CORINFO_RUNTIME_LOOKUP agnosticRL;
+        memcpy(&agnosticRL, buffers->GetBuffer(agnosticLookup.runtimeLookup_Index), sizeof(agnosticRL));
+        lookup.runtimeLookup = RestoreCORINFO_RUNTIME_LOOKUP(agnosticRL);
     }
     else
     {
