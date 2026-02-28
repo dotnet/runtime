@@ -97,7 +97,7 @@ public:
     static Agnostic_CORINFO_LOOKUP_KIND CreateAgnostic_CORINFO_LOOKUP_KIND(
         const CORINFO_LOOKUP_KIND* pGenericLookupKind);
 
-    static CORINFO_LOOKUP_KIND RestoreCORINFO_LOOKUP_KIND(Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
+    static CORINFO_LOOKUP_KIND RestoreCORINFO_LOOKUP_KIND(const Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
 
     static Agnostic_CORINFO_CONST_LOOKUP StoreAgnostic_CORINFO_CONST_LOOKUP(
         const CORINFO_CONST_LOOKUP* pLookup);
@@ -109,9 +109,13 @@ public:
 
     static CORINFO_RUNTIME_LOOKUP RestoreCORINFO_RUNTIME_LOOKUP(Agnostic_CORINFO_RUNTIME_LOOKUP& Lookup);
 
-    static Agnostic_CORINFO_LOOKUP StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup);
+    template <typename key, typename value>
+    static Agnostic_CORINFO_LOOKUP StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup,
+                                                                LightWeightMap<key, value>* buffers);
 
-    static CORINFO_LOOKUP RestoreCORINFO_LOOKUP(Agnostic_CORINFO_LOOKUP& agnosticLookup);
+    template <typename key, typename value>
+    static CORINFO_LOOKUP RestoreCORINFO_LOOKUP(const Agnostic_CORINFO_LOOKUP& agnosticLookup,
+                                                LightWeightMap<key, value>* buffers);
 
     static Agnostic_CORINFO_TYPE_LAYOUT_NODE StoreAgnostic_CORINFO_TYPE_LAYOUT_NODE(const CORINFO_TYPE_LAYOUT_NODE& node);
     static CORINFO_TYPE_LAYOUT_NODE RestoreCORINFO_TYPE_LAYOUT_NODE(const Agnostic_CORINFO_TYPE_LAYOUT_NODE& node);
@@ -454,7 +458,7 @@ inline Agnostic_CORINFO_LOOKUP_KIND SpmiRecordsHelper::CreateAgnostic_CORINFO_LO
 }
 
 inline CORINFO_LOOKUP_KIND SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(
-    Agnostic_CORINFO_LOOKUP_KIND& lookupKind)
+    const Agnostic_CORINFO_LOOKUP_KIND& lookupKind)
 {
     CORINFO_LOOKUP_KIND genericLookupKind;
     genericLookupKind.needsRuntimeLookup = lookupKind.needsRuntimeLookup != 0;
@@ -516,14 +520,19 @@ inline CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(
     return runtimeLookup;
 }
 
-inline Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup)
+template <typename key, typename value>
+inline Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(
+    CORINFO_LOOKUP* pLookup,
+    LightWeightMap<key, value>* buffers)
 {
     Agnostic_CORINFO_LOOKUP lookup;
     ZeroMemory(&lookup, sizeof(lookup));
     lookup.lookupKind = CreateAgnostic_CORINFO_LOOKUP_KIND(&pLookup->lookupKind);
     if (pLookup->lookupKind.needsRuntimeLookup)
     {
-        lookup.runtimeLookup = StoreAgnostic_CORINFO_RUNTIME_LOOKUP(&pLookup->runtimeLookup);
+        Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup = StoreAgnostic_CORINFO_RUNTIME_LOOKUP(&pLookup->runtimeLookup);
+        lookup.runtimeLookup_Index = (DWORD)buffers->AddBuffer(
+            (unsigned char*)&runtimeLookup, sizeof(runtimeLookup));
     }
     else
     {
@@ -532,14 +541,19 @@ inline Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(C
     return lookup;
 }
 
-inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(Agnostic_CORINFO_LOOKUP& agnosticLookup)
+template <typename key, typename value>
+inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(
+    const Agnostic_CORINFO_LOOKUP& agnosticLookup,
+    LightWeightMap<key, value>* buffers)
 {
     CORINFO_LOOKUP lookup;
     ZeroMemory(&lookup, sizeof(lookup));
     lookup.lookupKind = RestoreCORINFO_LOOKUP_KIND(agnosticLookup.lookupKind);
     if (lookup.lookupKind.needsRuntimeLookup)
     {
-        lookup.runtimeLookup = RestoreCORINFO_RUNTIME_LOOKUP(agnosticLookup.runtimeLookup);
+        Agnostic_CORINFO_RUNTIME_LOOKUP* pRL =
+            (Agnostic_CORINFO_RUNTIME_LOOKUP*)buffers->GetBuffer(agnosticLookup.runtimeLookup_Index);
+        lookup.runtimeLookup = RestoreCORINFO_RUNTIME_LOOKUP(*pRL);
     }
     else
     {

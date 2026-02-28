@@ -298,9 +298,8 @@ struct Agnostic_CORINFO_RUNTIME_LOOKUP
 
 struct Agnostic_CORINFO_LOOKUP
 {
-    Agnostic_CORINFO_LOOKUP_KIND    lookupKind;
-    Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup; // This and constLookup actually a union, but with different
-                                                   // layouts.. :-| copy the right one based on lookupKinds value
+    Agnostic_CORINFO_LOOKUP_KIND  lookupKind;
+    DWORD                         runtimeLookup_Index; // Index into LWM buffer for Agnostic_CORINFO_RUNTIME_LOOKUP
     Agnostic_CORINFO_CONST_LOOKUP constLookup;
 };
 
