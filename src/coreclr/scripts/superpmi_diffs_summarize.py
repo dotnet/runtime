@@ -226,9 +226,8 @@ def main(main_args):
                 f.write("No throughput diffs found\n")
 
         if do_metricdiff:
-            f.write("# Memory allocation impact on {} {}\n\n".format(platform_name, arch))
-            f.write("The following shows the impact on JIT memory allocations. " +
-                    "Negative percentages/lower numbers are better.\n\n")
+            f.write("# JIT metric diffs on {} {}\n\n".format(platform_name, arch))
+            f.write("The following shows the impact on JIT metrics.\n\n")
 
             any_metricdiff_found = False
             for dirpath, _, files in os.walk(diff_summary_dir):
@@ -239,7 +238,7 @@ def main(main_args):
                             any_metricdiff_found = True
 
             if not any_metricdiff_found:
-                f.write("No memory allocation diffs found\n")
+                f.write("No metric diffs found\n")
 
     with open(final_md_path, "r") as f:
         print(f.read())

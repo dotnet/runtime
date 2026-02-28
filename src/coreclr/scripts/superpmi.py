@@ -3411,23 +3411,31 @@ class SuperPMIReplayMetricDiff:
                 diff_metrics = None
                 try:
                     if os.path.isfile(details_info_file):
-                        (base_metrics, diff_metrics) = aggregate_memory_diff_metrics(details_info_file)
+                        (base_metrics, diff_metrics) = aggregate_metric_diff_metrics(details_info_file)
                     else:
-                        logging.warning("Details info file '%s' not found; skipping memory diff aggregation", details_info_file)
+                        logging.warning("Details info file '%s' not found; skipping metric diff aggregation", details_info_file)
                 except Exception as ex:
-                    logging.warning("Failed to aggregate memory diff metrics from '%s': %s", details_info_file, ex)
+                    logging.warning("Failed to aggregate metric diff metrics from '%s': %s", details_info_file, ex)
 
                 if base_metrics is not None and diff_metrics is not None:
-                    print_superpmi_success_result(return_code, base_metrics, diff_metrics)
+                    if return_code == 0:
+                        logging.info("Clean SuperPMI diff ({} contexts processed)".format(base_metrics["Successful compiles"]))
+                    elif return_code == 3:
+                        logging.warning("SuperPMI encountered missing data for {} contexts".format(base_metrics["Missing compiles"]))
 
-                    base_bytes = base_metrics["Overall"]["Diffed BytesAllocated"]
-                    diff_bytes = diff_metrics["Overall"]["Diffed BytesAllocated"]
-
-                    logging.info("Total bytes allocated by base: {:,d}".format(base_bytes))
-                    logging.info("Total bytes allocated by diff: {:,d}".format(diff_bytes))
-                    if base_bytes != 0 and diff_bytes != 0:
-                        delta_bytes = diff_bytes - base_bytes
-                        logging.info("Total bytes allocated delta: {:,d} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
+                    has_any_data = any(base_metrics[m] != 0 or diff_metrics[m] != 0 for m in METRIC_DIFF_METRICS)
+                    if has_any_data:
+                        for metric in METRIC_DIFF_METRICS:
+                            base_val = base_metrics[metric]
+                            diff_val = diff_metrics[metric]
+                            if base_val != 0 or diff_val != 0:
+                                delta = diff_val - base_val
+                                if base_val != 0:
+                                    logging.info("  {}: base={:,d}, diff={:,d}, delta={:,d} ({:.2%})".format(
+                                        metric, base_val, diff_val, delta, delta / base_val))
+                                else:
+                                    logging.info("  {}: base={:,d}, diff={:,d}, delta={:,d}".format(
+                                        metric, base_val, diff_val, delta))
                         memory_diffs.append((os.path.basename(mch_file), base_metrics, diff_metrics))
                     else:
                         logging.warning("One compilation failed to produce any results")
@@ -3438,7 +3446,7 @@ class SuperPMIReplayMetricDiff:
 
         # Report the overall results summary of the metricdiff run
 
-        logging.info("Memory diff summary:")
+        logging.info("Metric diff summary:")
 
         # Construct overall summary files.
 
@@ -3453,13 +3461,7 @@ class SuperPMIReplayMetricDiff:
                 os.remove(overall_json_summary_file)
 
             with open(overall_json_summary_file, "w") as write_fh:
-                # Strip Per-context ratios lists to avoid bloating the JSON file
-                json_memory_diffs = []
-                for (mch_file, base_m, diff_m) in memory_diffs:
-                    json_base = {k: {mk: mv for mk, mv in v.items() if mk != "Per-context ratios"} for k, v in base_m.items()}
-                    json_diff = {k: {mk: mv for mk, mv in v.items() if mk != "Per-context ratios"} for k, v in diff_m.items()}
-                    json_memory_diffs.append((mch_file, json_base, json_diff))
-                json.dump((base_jit_options, diff_jit_options, json_memory_diffs), write_fh)
+                json.dump((base_jit_options, diff_jit_options, memory_diffs), write_fh)
                 logging.info("  Summary JSON file: %s", overall_json_summary_file)
         elif len(memory_diffs) > 0:
             if not os.path.isdir(self.coreclr_args.spmi_location):
@@ -3488,154 +3490,76 @@ class SuperPMIReplayMetricDiff:
         ################################################################################################ end of replay_with_memory_diff()
 
 
-def aggregate_memory_diff_metrics(details_file):
-    """ Given the path to a CSV details file output by SPMI for a diff, aggregate the BytesAllocated metrics.
+METRIC_DIFF_METRICS = ["BytesAllocated", "StackAllocatedRefClasses", "StackAllocatedBoxedValueClasses",
+                       "StackAllocatedArrays", "LoopsCloned", "CseCount"]
+
+def aggregate_metric_diff_metrics(details_file):
+    """ Given the path to a CSV details file output by SPMI for a diff, aggregate multiple metrics.
 
     Returns:
-        (base_metrics, diff_metrics) tuple of dictionaries with "Overall", "MinOpts", "FullOpts" keys
+        (base_metrics, diff_metrics) where each is a dict mapping metric name to its aggregated value.
     """
 
-    base_minopts = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0,
-                    "Diffed BytesAllocated": 0, "Diffed contexts": 0,
-                    "Per-context ratios": []}
-    base_fullopts = base_minopts.copy()
-    base_fullopts["Per-context ratios"] = []
-
-    diff_minopts = base_minopts.copy()
-    diff_minopts["Per-context ratios"] = []
-    diff_fullopts = base_minopts.copy()
-    diff_fullopts["Per-context ratios"] = []
+    base_totals = {m: 0 for m in METRIC_DIFF_METRICS}
+    diff_totals = {m: 0 for m in METRIC_DIFF_METRICS}
+    compile_stats = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0}
 
     for row in read_csv(details_file):
         base_result = row["Base result"]
-
-        if row["MinOpts"] == "True":
-            base_dict = base_minopts
-            diff_dict = diff_minopts
-        else:
-            base_dict = base_fullopts
-            diff_dict = diff_fullopts
+        diff_result = row["Diff result"]
 
         if base_result == "Success":
-            base_dict["Successful compiles"] += 1
+            compile_stats["Successful compiles"] += 1
         elif base_result == "Miss":
-            base_dict["Missing compiles"] += 1
+            compile_stats["Missing compiles"] += 1
         else:
-            assert(base_result == "Error")
-            base_dict["Failing compiles"] += 1
-
-        diff_result = row["Diff result"]
-        if diff_result == "Success":
-            diff_dict["Successful compiles"] += 1
-        elif diff_result == "Miss":
-            diff_dict["Missing compiles"] += 1
-        else:
-            assert(diff_result == "Error")
-            diff_dict["Failing compiles"] += 1
+            compile_stats["Failing compiles"] += 1
 
         if base_result == "Success" and diff_result == "Success":
-            base_bytes = int(row["Base BytesAllocated"])
-            diff_bytes = int(row["Diff BytesAllocated"])
-            base_dict["Diffed BytesAllocated"] += base_bytes
-            diff_dict["Diffed BytesAllocated"] += diff_bytes
+            for metric in METRIC_DIFF_METRICS:
+                base_totals[metric] += int(row["Base " + metric])
+                diff_totals[metric] += int(row["Diff " + metric])
 
-            base_dict["Diffed contexts"] += 1
-            diff_dict["Diffed contexts"] += 1
+    base_totals.update(compile_stats)
+    diff_totals.update(compile_stats)
 
-            if base_bytes > 0:
-                ratio = diff_bytes / base_bytes
-                base_dict["Per-context ratios"].append(ratio)
-                diff_dict["Per-context ratios"].append(ratio)
-
-    base_overall = base_minopts.copy()
-    base_overall["Per-context ratios"] = list(base_minopts["Per-context ratios"])
-    for k in base_overall.keys():
-        if k == "Per-context ratios":
-            base_overall[k] += base_fullopts["Per-context ratios"]
-        else:
-            base_overall[k] += base_fullopts[k]
-
-    diff_overall = diff_minopts.copy()
-    diff_overall["Per-context ratios"] = list(diff_minopts["Per-context ratios"])
-    for k in diff_overall.keys():
-        if k == "Per-context ratios":
-            diff_overall[k] += diff_fullopts["Per-context ratios"]
-        else:
-            diff_overall[k] += diff_fullopts[k]
-
-    # Compute P90 of per-context ratios
-    for d in [base_overall, base_minopts, base_fullopts, diff_overall, diff_minopts, diff_fullopts]:
-        ratios = sorted(d["Per-context ratios"])
-        if len(ratios) > 0:
-            p90_index = int(math.ceil(0.9 * len(ratios))) - 1
-            d["P90 ratio"] = ratios[p90_index]
-        else:
-            d["P90 ratio"] = 1.0
-
-    return ({"Overall": base_overall, "MinOpts": base_minopts, "FullOpts": base_fullopts},
-            {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts})
+    return (base_totals, diff_totals)
 
 
-def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, include_details):
-
-    def is_significant_pct(base, diff):
-        if base == 0:
-            return diff != 0
-        return round((diff - base) / base * 100, 2) != 0
-
-    def is_significant(row, base, diff):
-        return is_significant_pct(base[row]["Diffed BytesAllocated"], diff[row]["Diffed BytesAllocated"])
+def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs, include_details):
 
     write_jit_options(base_jit_options, diff_jit_options, write_fh)
 
-    if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in memory_diffs):
-        def write_pivot_section(row):
-            if not any(is_significant(row, base, diff) for (_, base, diff) in memory_diffs):
-                return
+    any_significant = False
+    for metric in METRIC_DIFF_METRICS:
+        significant_diffs = [(mch, base, diff) for (mch, base, diff) in metric_diffs
+                             if base[metric] != diff[metric]]
+        if not significant_diffs:
+            continue
 
-            pcts = [compute_pct(base_metrics[row]["Diffed BytesAllocated"], diff_metrics[row]["Diffed BytesAllocated"]) for (_, base_metrics, diff_metrics) in memory_diffs]
+        any_significant = True
+        pcts = [compute_pct(base[metric], diff[metric]) for (_, base, diff) in significant_diffs
+                if base[metric] != 0]
+        if pcts:
             min_pct_str = format_pct(min(pcts))
             max_pct_str = format_pct(max(pcts))
             if min_pct_str == max_pct_str:
-                mem_summary = "{} ({})".format(row, min_pct_str)
+                header = "{} ({})".format(metric, min_pct_str)
             else:
-                mem_summary = "{} ({} to {})".format(row, min_pct_str, max_pct_str)
+                header = "{} ({} to {})".format(metric, min_pct_str, max_pct_str)
+        else:
+            header = metric
 
-            with DetailsSection(write_fh, mem_summary):
-                write_fh.write("|Collection|PDIFF|P90 ratio|\n")
-                write_fh.write("|---|--:|--:|\n")
-                for mch_file, base, diff in memory_diffs:
-                    base_bytes = base[row]["Diffed BytesAllocated"]
-                    diff_bytes = diff[row]["Diffed BytesAllocated"]
-                    p90 = diff[row]["P90 ratio"]
+        with DetailsSection(write_fh, header):
+            write_fh.write("|Collection|Base|Diff|PDIFF|\n")
+            write_fh.write("|---|--:|--:|--:|\n")
+            for mch_file, base, diff in significant_diffs:
+                write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
+                    mch_file, base[metric], diff[metric],
+                    compute_and_format_pct(base[metric], diff[metric])))
 
-                    if is_significant(row, base, diff):
-                        write_fh.write("|{}|{}|{:.4f}|\n".format(
-                            mch_file,
-                            compute_and_format_pct(base_bytes, diff_bytes),
-                            p90))
-
-        write_pivot_section("Overall")
-        write_pivot_section("MinOpts")
-        write_pivot_section("FullOpts")
-    elif include_details:
-        write_fh.write("No significant memory allocation differences found\n")
-
-    if include_details:
-        with DetailsSection(write_fh, "Details"):
-            for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
-                write_fh.write("{} contexts:\n\n".format(disp))
-                write_fh.write("|Collection|Base bytes allocated|Diff bytes allocated|PDIFF|P90 ratio|\n")
-                write_fh.write("|---|--:|--:|--:|--:|\n")
-                for mch_file, base, diff in memory_diffs:
-                    base_bytes = base[row]["Diffed BytesAllocated"]
-                    diff_bytes = diff[row]["Diffed BytesAllocated"]
-                    p90 = diff[row]["P90 ratio"]
-                    write_fh.write("|{}|{:,d}|{:,d}|{}|{:.4f}|\n".format(
-                        mch_file, base_bytes, diff_bytes,
-                        compute_and_format_pct(base_bytes, diff_bytes),
-                        p90))
-                write_fh.write("\n")
+    if not any_significant and include_details:
+        write_fh.write("No significant metric differences found\n")
 
 ################################################################################
 # Argument handling helpers
