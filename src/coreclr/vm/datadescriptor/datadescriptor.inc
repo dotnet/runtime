@@ -163,7 +163,6 @@ CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, InteropInfo, cdac_data<SyncBlock>::Inter
 CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, Lock, cdac_data<SyncBlock>::Lock)
 CDAC_TYPE_FIELD(SyncBlock, /*uint32*/, ThinLock, cdac_data<SyncBlock>::ThinLock)
 CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, LinkNext, cdac_data<SyncBlock>::LinkNext)
-CDAC_TYPE_FIELD(SyncBlock, /*uint32*/, SyncIndex, cdac_data<SyncBlock>::SyncIndex)
 CDAC_TYPE_END(SyncBlock)
 
 CDAC_TYPE_BEGIN(SLink)

@@ -100,4 +100,51 @@ public class SyncBlockTests
 
         Assert.Equal(TargetPointer.Null, next);
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetBuiltInComData_NoInteropInfo(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.SyncBlock syncBlockDesc = new(builder);
+
+        TargetPointer syncBlockAddr = syncBlockDesc.AddSyncBlockToCleanupList(
+            TargetPointer.Null, TargetPointer.Null, TargetPointer.Null, hasInteropInfo: false);
+
+        Target target = CreateTarget(syncBlockDesc);
+        ISyncBlock contract = target.Contracts.SyncBlock;
+
+        bool result = contract.GetBuiltInComData(syncBlockAddr, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
+
+        Assert.False(result);
+        Assert.Equal(TargetPointer.Null, rcw);
+        Assert.Equal(TargetPointer.Null, ccw);
+        Assert.Equal(TargetPointer.Null, ccf);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetBuiltInComData_WithInteropData(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.SyncBlock syncBlockDesc = new(builder);
+
+        TargetPointer expectedRCW = new TargetPointer(0x1000);
+        TargetPointer expectedCCW = new TargetPointer(0x2000);
+        TargetPointer expectedCCF = new TargetPointer(0x3000);
+
+        TargetPointer syncBlockAddr = syncBlockDesc.AddSyncBlockToCleanupList(expectedRCW, expectedCCW, expectedCCF);
+
+        Target target = CreateTarget(syncBlockDesc);
+        ISyncBlock contract = target.Contracts.SyncBlock;
+
+        bool result = contract.GetBuiltInComData(syncBlockAddr, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
+
+        Assert.True(result);
+        Assert.Equal(expectedRCW, rcw);
+        Assert.Equal(expectedCCW, ccw);
+        Assert.Equal(expectedCCF, ccf);
+    }
 }

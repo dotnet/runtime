@@ -3442,16 +3442,11 @@ public sealed unsafe partial class SOSDacImpl
             {
                 data->SyncBlockPointer = syncBlockPtr.ToClrDataAddress(_target);
                 data->nextSyncBlock = syncBlockContract.GetNextSyncBlock(syncBlockPtr).ToClrDataAddress(_target);
-                TargetPointer obj = syncBlockContract.GetSyncBlockObject(syncBlockPtr);
-                if (obj != TargetPointer.Null)
+                if (syncBlockContract.GetBuiltInComData(syncBlockPtr, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf))
                 {
-                    IObject objContract = _target.Contracts.Object;
-                    if (objContract.GetBuiltInComData(obj, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf))
-                    {
-                        data->blockRCW = rcw.ToClrDataAddress(_target);
-                        data->blockClassFactory = ccf.ToClrDataAddress(_target);
-                        data->blockCCW = ccw.ToClrDataAddress(_target);
-                    }
+                    data->blockRCW = rcw.ToClrDataAddress(_target);
+                    data->blockClassFactory = ccf.ToClrDataAddress(_target);
+                    data->blockCCW = ccw.ToClrDataAddress(_target);
                 }
             }
         }
@@ -3500,8 +3495,7 @@ public sealed unsafe partial class SOSDacImpl
                     if (syncBlock.GetSyncBlock(number) is TargetPointer syncBlockAddr && syncBlockAddr != TargetPointer.Null)
                     {
                         data->SyncBlockPointer = syncBlockAddr.ToClrDataAddress(_target);
-                        IObject objContract = _target.Contracts.Object;
-                        if (objContract.GetBuiltInComData(obj, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf))
+                        if (syncBlock.GetBuiltInComData(syncBlockAddr, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf))
                         {
                             data->COMFlags = (rcw & ~(_rcwMask)) != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasRCW : 0;
                             data->COMFlags |= ccw != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasCCW : 0;

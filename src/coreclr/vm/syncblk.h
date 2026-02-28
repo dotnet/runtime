@@ -605,7 +605,6 @@ struct cdac_data<SyncBlock>
     static constexpr size_t Lock = offsetof(SyncBlock, m_Lock);
     static constexpr size_t ThinLock = offsetof(SyncBlock, m_thinLock);
     static constexpr size_t LinkNext = offsetof(SyncBlock, m_Link) + offsetof(SLink, m_pNext);
-    static constexpr size_t SyncIndex = offsetof(SyncBlock, m_dwSyncIndex);
 
 };
 

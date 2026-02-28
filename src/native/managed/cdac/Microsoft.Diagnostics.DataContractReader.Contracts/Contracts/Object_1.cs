@@ -107,32 +107,18 @@ internal readonly struct Object_1 : IObject
         ccw = TargetPointer.Null;
         ccf = TargetPointer.Null;
 
-        Data.SyncBlock? syncBlock = GetSyncBlock(address);
-        if (syncBlock == null)
-            return false;
-
-        Data.InteropSyncBlockInfo? interopInfo = syncBlock.InteropInfo;
-        if (interopInfo == null)
-            return false;
-
-        rcw = interopInfo.RCW & ~1ul;
-        ccw = interopInfo.CCW == 1 ? TargetPointer.Null : interopInfo.CCW;
-        ccf = interopInfo.CCF == 1 ? TargetPointer.Null : interopInfo.CCF;
-        return rcw != TargetPointer.Null || ccw != TargetPointer.Null || ccf != TargetPointer.Null;
-    }
-
-    private Data.SyncBlock? GetSyncBlock(TargetPointer address)
-    {
         uint syncBlockValue = _target.Read<uint>(address - _target.ReadGlobal<ushort>(Constants.Globals.SyncBlockValueToObjectOffset));
 
         // Check if the sync block value represents a sync block index
         if ((syncBlockValue & (uint)(SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex | SyncBlockValue.Bits.IsHashCode)) != (uint)SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex)
-            return null;
+            return false;
 
-        // Get the offset into the sync table entries
         uint index = syncBlockValue & SyncBlockValue.SyncBlockIndexMask;
         ulong offsetInSyncTableEntries = index * (ulong)_target.GetTypeInfo(DataType.SyncTableEntry).Size!;
         Data.SyncTableEntry entry = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + offsetInSyncTableEntries);
-        return entry.SyncBlock;
+        if (entry.SyncBlock is not Data.SyncBlock syncBlock)
+            return false;
+
+        return _target.Contracts.SyncBlock.GetBuiltInComData(syncBlock.Address, out rcw, out ccw, out ccf);
     }
 }

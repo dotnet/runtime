@@ -126,10 +126,21 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         return new TargetPointer(sb.LinkNext.Value - _syncBlockLinkOffset);
     }
 
-    public TargetPointer GetSyncBlockObject(TargetPointer syncBlock)
+    public bool GetBuiltInComData(TargetPointer syncBlock, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf)
     {
+        rcw = TargetPointer.Null;
+        ccw = TargetPointer.Null;
+        ccf = TargetPointer.Null;
+
         Data.SyncBlock sb = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlock);
-        return GetSyncBlockObject(sb.SyncIndex);
+        Data.InteropSyncBlockInfo? interopInfo = sb.InteropInfo;
+        if (interopInfo == null)
+            return false;
+
+        rcw = interopInfo.RCW & ~1ul;
+        ccw = interopInfo.CCW == 1 ? TargetPointer.Null : interopInfo.CCW;
+        ccf = interopInfo.CCF == 1 ? TargetPointer.Null : interopInfo.CCF;
+        return rcw != TargetPointer.Null || ccw != TargetPointer.Null || ccf != TargetPointer.Null;
     }
 
     private uint ReadUintField(TypeHandle enclosingType, string fieldName, IRuntimeTypeSystem rts, MetadataReader mdReader, TargetPointer dataAddr)
