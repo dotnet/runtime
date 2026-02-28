@@ -1685,4 +1685,44 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
         return fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
     }
+
+    TargetPointer IRuntimeTypeSystem.GetFieldDescByName(TypeHandle typeHandle, string fieldName)
+    {
+        if (!typeHandle.IsMethodTable())
+            return TargetPointer.Null;
+
+        TargetPointer modulePtr = GetModule(typeHandle);
+        if (modulePtr == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        uint typeDefToken = GetTypeDefToken(typeHandle);
+        if (typeDefToken == 0)
+            return TargetPointer.Null;
+
+        EntityHandle entityHandle = MetadataTokens.EntityHandle((int)typeDefToken);
+        if (entityHandle.Kind != HandleKind.TypeDefinition)
+            return TargetPointer.Null;
+
+        TypeDefinitionHandle typeDefHandle = (TypeDefinitionHandle)entityHandle;
+
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? md = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (md is null)
+            return TargetPointer.Null;
+
+        TargetPointer fieldDefToDescMap = loader.GetLookupTables(moduleHandle).FieldDefToDesc;
+        foreach (FieldDefinitionHandle fieldDefHandle in md.GetTypeDefinition(typeDefHandle).GetFields())
+        {
+            FieldDefinition fieldDef = md.GetFieldDefinition(fieldDefHandle);
+            if (md.GetString(fieldDef.Name) == fieldName)
+            {
+                uint fieldDefToken = (uint)MetadataTokens.GetToken(fieldDefHandle);
+                TargetPointer fieldDescPtr = loader.GetModuleLookupMapElement(fieldDefToDescMap, fieldDefToken, out _);
+                return fieldDescPtr;
+            }
+        }
+
+        return TargetPointer.Null;
+    }
 }

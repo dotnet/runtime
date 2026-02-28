@@ -128,29 +128,32 @@ public unsafe class ObjectTests
 
         TargetPointer expectedRCW = 0xaaaa;
         TargetPointer expectedCCW = 0xbbbb;
+        TargetPointer expectedCCF = 0xcccc;
 
         ObjectContractHelper(arch,
             (objectBuilder) =>
             {
                 uint syncBlockIndex = 0;
-                TestComObjectAddress = objectBuilder.AddObjectWithSyncBlock(0, syncBlockIndex++, expectedRCW, expectedCCW);
-                TestNonComObjectAddress = objectBuilder.AddObjectWithSyncBlock(0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null);
+                TestComObjectAddress = objectBuilder.AddObjectWithSyncBlock(0, syncBlockIndex++, expectedRCW, expectedCCW, expectedCCF);
+                TestNonComObjectAddress = objectBuilder.AddObjectWithSyncBlock(0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null, TargetPointer.Null);
             },
             (target) =>
             {
                 Contracts.IObject contract = target.Contracts.Object;
                 Assert.NotNull(contract);
                 {
-                    bool res = contract.GetBuiltInComData(TestComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
+                    bool res = contract.GetBuiltInComData(TestComObjectAddress, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
                     Assert.True(res);
                     Assert.Equal(expectedRCW.Value, rcw.Value);
                     Assert.Equal(expectedCCW.Value, ccw.Value);
+                    Assert.Equal(expectedCCF.Value, ccf.Value);
                 }
                 {
-                    bool res = contract.GetBuiltInComData(TestNonComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
+                    bool res = contract.GetBuiltInComData(TestNonComObjectAddress, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
                     Assert.False(res);
                     Assert.Equal(TargetPointer.Null.Value, rcw.Value);
                     Assert.Equal(TargetPointer.Null.Value, ccw.Value);
+                    Assert.Equal(TargetPointer.Null.Value, ccf.Value);
                 }
             });
     }
