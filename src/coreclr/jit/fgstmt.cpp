@@ -515,7 +515,6 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
 #endif // DEBUG
 }
 
-////////////////////////////////////////////////////////////////////////////////
 // Returns true if the operator is involved in control-flow.
 // TODO-Cleanup: Make this a GenTreeOperKind.
 //

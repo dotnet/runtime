@@ -1747,7 +1747,6 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
 
 #endif // DUMP_FLOWGRAPHS
 
-///////////////////////////////////////////////////////////////////////////////
 #ifdef DEBUG
 
 void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
@@ -2369,8 +2368,6 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
                "--------------\n");
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////
 
 void Compiler::fgDispBasicBlocks(bool dumpTrees)
 {
@@ -4762,5 +4759,4 @@ void Compiler::fgDebugCheckFlowGraphAnnotations()
     assert((m_reachabilitySets == nullptr) || (m_reachabilitySets->GetDfsTree() == m_dfsTree));
 }
 
-///////////////////////////////////////////////////////////////////////////////
 #endif // DEBUG
