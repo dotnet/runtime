@@ -860,6 +860,11 @@ void emitter::emitDispIns(
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
             dispHandleIfAny();
+
+            if (fmt == IF_ULEB128)
+            {
+                dispLclVarInfoIfAny();
+            }
         }
         break;
 
