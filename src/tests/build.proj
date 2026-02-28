@@ -157,6 +157,9 @@
       <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(MergedAssemblyMarkerPaths)' != ''" />
       <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
       <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(OutOfProcessTestMarkerPaths)' != ''" />
+      <!-- Remove scripts under out-of-process test directories; they are components of the out-of-process test, not standalone tests. -->
+      <OutOfProcessTestFolders Include="$([System.IO.Path]::GetDirectoryName('%(OutOfProcessTestMarkerPaths.Identity)'))" />
+      <AllRunnableTestPaths Remove="%(OutOfProcessTestFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(OutOfProcessTestFolders)' != ''" />
       <NoMonoAotMarkerPaths Include="$(XunitTestBinBase)\**\*.NoMonoAot" />
       <NoMonoAotAssemblyPaths Include="$([System.IO.Path]::ChangeExtension('%(NoMonoAotMarkerPaths.Identity)', '.dll'))" Condition="'@(NoMonoAotMarkerPaths)' != ''" />
     </ItemGroup>
