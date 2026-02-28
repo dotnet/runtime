@@ -3561,20 +3561,21 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
     if not any_significant:
         if include_details:
             write_fh.write("No significant metric differences found\n")
-    
+
     if include_details:
-        write_fh.write("\n")
-        with DetailsSection(write_fh, "Details"):
-            write_fh.write("|Collection|Metric|Base|Diff|PDIFF|\n")
-            write_fh.write("|---|---|--:|--:|--:|\n")
-            for mch_file, base, diff in metric_diffs:
-                for metric in METRIC_DIFF_METRICS:
-                    base_val = base[metric]
-                    diff_val = diff[metric]
-                    if base_val != 0 or diff_val != 0:
-                        write_fh.write("|{}|{}|{:,d}|{:,d}|{}|\n".format(
-                            mch_file, metric, base_val, diff_val,
-                            compute_and_format_pct(base_val, diff_val)))
+        for metric in METRIC_DIFF_METRICS:
+            rows = [(mch, base[metric], diff[metric]) for (mch, base, diff) in metric_diffs
+                    if base[metric] != 0 or diff[metric] != 0]
+            if not rows:
+                continue
+            write_fh.write("\n")
+            with DetailsSection(write_fh, metric):
+                write_fh.write("|Collection|Base|Diff|PDIFF|\n")
+                write_fh.write("|---|--:|--:|--:|\n")
+                for mch_file, base_val, diff_val in rows:
+                    write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
+                        mch_file, base_val, diff_val,
+                        compute_and_format_pct(base_val, diff_val)))
 
 ################################################################################
 # Argument handling helpers
