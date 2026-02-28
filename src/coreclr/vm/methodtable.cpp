@@ -3580,7 +3580,6 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         MethodTable* instantiatingArg = pCanonMT->IsSharedByGenericInstantiations() ? this : nullptr;
         UnmanagedCallersOnlyCaller caller(METHOD__INITHELPERS__CALLCLASSCONSTRUCTOR);
         caller.InvokeThrowing(pCctorCode, instantiatingArg);
- 
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100000, "RunClassInit: Returned Successfully from class constructor for type %pT\n", this);
 
         fRet = TRUE;
