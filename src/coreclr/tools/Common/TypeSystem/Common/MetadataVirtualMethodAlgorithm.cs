@@ -936,18 +936,28 @@ namespace Internal.TypeSystem
 
         public static DefaultInterfaceMethodResolution ResolveVariantInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, MetadataType currentType, out MethodDesc impl)
         {
-            MetadataType interfaceType = (MetadataType)interfaceMethod.OwningType;
-            bool foundInterface = IsInterfaceImplementedOnType(currentType, interfaceType);
+            DefaultInterfaceMethodResolution resolution = ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, currentType, out impl);
+            if (resolution != DefaultInterfaceMethodResolution.None)
+                return resolution;
 
-            if (foundInterface)
+            DefType[] consideredInterfaces;
+            if (!currentType.IsInterface)
             {
-                DefaultInterfaceMethodResolution resolution = ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, currentType, out impl);
-                if (resolution != DefaultInterfaceMethodResolution.None)
-                    return resolution;
+                // If this is not an interface, only things on the interface list could provide
+                // default implementations.
+                consideredInterfaces = currentType.RuntimeInterfaces;
+            }
+            else
+            {
+                // If we're asking about an interface, include the interface in the list.
+                consideredInterfaces = new DefType[currentType.RuntimeInterfaces.Length + 1];
+                consideredInterfaces[0] = currentType.IsGenericDefinition ? (DefType)currentType.InstantiateAsOpen() : currentType;
+                Array.Copy(currentType.RuntimeInterfaces, 0, consideredInterfaces, 1, currentType.RuntimeInterfaces.Length);
             }
 
+            MetadataType interfaceType = (MetadataType)interfaceMethod.OwningType;
             MethodDesc interfaceMethodDefinition = interfaceMethod.GetMethodDefinition();
-            foreach (TypeDesc iface in currentType.RuntimeInterfaces)
+            foreach (TypeDesc iface in consideredInterfaces)
             {
                 if (iface.HasSameTypeDefinition(interfaceType) && iface.CanCastTo(interfaceType))
                 {
@@ -955,7 +965,7 @@ namespace Internal.TypeSystem
                     Debug.Assert(variantMethod != null);
                     if (interfaceMethod != interfaceMethodDefinition)
                         variantMethod = variantMethod.MakeInstantiatedMethod(interfaceMethod.Instantiation);
-                    DefaultInterfaceMethodResolution resolution = ResolveInterfaceMethodToDefaultImplementationOnType(variantMethod, currentType, out impl);
+                    resolution = ResolveInterfaceMethodToDefaultImplementationOnType(variantMethod, currentType, out impl);
                     if (resolution != DefaultInterfaceMethodResolution.None)
                         return resolution;
                 }
