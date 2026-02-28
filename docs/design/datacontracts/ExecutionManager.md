@@ -43,6 +43,8 @@ struct CodeBlockHandle
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion);
     // Gets the offset of the codeInfoHandle inside of the code block
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
+    // Gets information about the EEJitManager: its address, code type, and head of the code heap list.
+    JitManagerInfo GetEEJitManagerInfo();
 
     // Extension Methods (implemented in terms of other APIs)
     bool IsFunclet(CodeBlockHandle codeInfoHandle);
@@ -76,6 +78,7 @@ Data descriptors used:
 | `CodeHeapListNode` | `MapBase` | Start of the map - start address rounded down based on OS page size |
 | `CodeHeapListNode` | `HeaderMap` | Bit array used to find the start of methods - relative to `MapBase` |
 | `EEJitManager` | `StoreRichDebugInfo` | Boolean value determining if debug info associated with the JitManager contains rich info. |
+| `EEJitManager` | `AllCodeHeaps` | Pointer to the head of the linked list of all code heaps managed by the EEJitManager. |
 | `RealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` |
 | `RealCodeHeader` | `NumUnwindInfos` | Number of Unwind Infos |
 | `RealCodeHeader` | `UnwindInfos` | Start address of Unwind Infos |
@@ -108,6 +111,7 @@ Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | `ExecutionManagerCodeRangeMapAddress` | TargetPointer | Pointer to the global RangeSectionMap |
+| `EEJitManagerAddress` | TargetPointer | Address of the global pointer to the EEJitManager instance (read a TargetPointer from this address to obtain the instance address) |
 | `StubCodeBlockLast` | uint8 | Maximum sentinel code header value indentifying a stub code block |
 | `HashMapSlotsPerBucket` | uint32 | Number of slots in each bucket of a `HashMap` |
 | `HashMapValueMask` | uint64 | Bitmask used when storing values in a `HashMap` |

@@ -437,6 +437,13 @@ public struct DacpFieldDescData
     public ClrDataAddress NextField;
 };
 
+public struct DacpJitManagerInfo
+{
+    public ClrDataAddress managerAddr;
+    public uint codeType;
+    public ClrDataAddress ptrHeapList;
+};
+
 public struct SOSHandleData
 {
     public ClrDataAddress AppDomain;
@@ -526,7 +533,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetCodeHeaderData(ClrDataAddress ip, DacpCodeHeaderData* data);
     [PreserveSig]
-    int GetJitManagerList(uint count, /*struct DacpJitManagerInfo*/ void* managers, uint* pNeeded);
+    int GetJitManagerList(uint count, DacpJitManagerInfo* managers, uint* pNeeded);
     [PreserveSig]
     int GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded);
     [PreserveSig]
