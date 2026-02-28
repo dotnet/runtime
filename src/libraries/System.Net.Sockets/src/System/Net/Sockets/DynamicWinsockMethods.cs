@@ -10,7 +10,7 @@ namespace System.Net.Sockets
 {
     internal sealed class DynamicWinsockMethods
     {
-        // In practice there will rarely be more than four of these, so its not worth a complicated
+        // In practice there will rarely be more than four of these, so it's not worth a complicated
         // hash table structure. Store them in an array and search through it. The array is replaced
         // copy-on-write under s_methodTableLock, so reads always see a consistent, immutable snapshot.
         private static volatile DynamicWinsockMethods[] s_methodTable = [];
