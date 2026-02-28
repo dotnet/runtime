@@ -555,6 +555,7 @@ inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(
         Assert(buffers != nullptr);
         Agnostic_CORINFO_RUNTIME_LOOKUP agnosticRL;
         memcpy(&agnosticRL, buffers->GetBuffer(agnosticLookup.runtimeLookup_Index), sizeof(agnosticRL));
+        buffers->Unlock();
         lookup.runtimeLookup = RestoreCORINFO_RUNTIME_LOOKUP(agnosticRL);
     }
     else
