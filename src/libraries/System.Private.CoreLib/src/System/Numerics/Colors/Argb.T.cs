@@ -63,7 +63,8 @@ namespace System.Numerics.Colors
         /// </param>
         public Argb(ReadOnlySpan<T> values)
         {
-            ThrowHelper.ThrowIfSpanTooShortForColor(values);
+            if (values.Length < 4)
+                ThrowHelper.ThrowSpanTooShortForColor(nameof(values));
 
             A = values[0];
             R = values[1];
@@ -80,7 +81,8 @@ namespace System.Numerics.Colors
         /// </param>
         public void CopyTo(Span<T> destination)
         {
-            ThrowHelper.ThrowIfSpanTooShortForColor((ReadOnlySpan<T>)destination, paramName: nameof(destination));
+            if (destination.Length < 4)
+                ThrowHelper.ThrowSpanTooShortForColor(nameof(destination));
 
             destination[0] = A;
             destination[1] = R;

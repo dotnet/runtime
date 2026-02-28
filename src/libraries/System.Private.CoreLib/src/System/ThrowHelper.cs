@@ -101,19 +101,10 @@ namespace System
             throw new ArgumentException(SR.Argument_DestinationTooShort, "destination");
         }
 
-        internal static void ThrowIfSpanTooShortForColor<T>(ReadOnlySpan<T> span,
-            [CallerArgumentExpression(nameof(span))] string? paramName = null)
-        {
-            if (span.Length < 4)
-            {
-                ThrowSpanTooShortForColor(paramName);
-            }
-        }
-
         [DoesNotReturn]
         internal static void ThrowSpanTooShortForColor(string? paramName = null)
         {
-            throw new ArgumentException(SR.Format(SR.Arg_SpanMustHaveElementsForColor, 4), paramName);
+            throw new ArgumentException(SR.Arg_SpanMustHaveElementsForColor, paramName);
         }
 
         [DoesNotReturn]
