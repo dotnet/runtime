@@ -3281,6 +3281,8 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             return true;
 
+        case NI_PRIMITIVE_ConvertToInteger:
+            FALLTHROUGH;
         case NI_PRIMITIVE_ConvertToIntegerNative:
         {
             CHECK_STACK(1);
