@@ -40,7 +40,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         [Out, MarshalUsing(CountElementName = nameof(contextBufSize))] byte[] contextBuf)
         => _legacyImpl is not null ? _legacyImpl.GetContext(contextFlags, contextBufSize, contextSize, contextBuf) : HResults.E_NOTIMPL;
 
-    int IXCLRDataFrame.GetAppDomain(void** appDomain)
+    int IXCLRDataFrame.GetAppDomain(/*IXCLRDataAppDomain*/ void** appDomain)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomain(appDomain) : HResults.E_NOTIMPL;
 
     int IXCLRDataFrame.GetNumArguments(uint* numArgs)

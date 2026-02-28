@@ -106,13 +106,13 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
         => _legacyProcess is not null ? _legacyProcess.StartEnumAppDomains(handle) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain)
+    int IXCLRDataProcess.EnumAppDomain(ulong* handle, IXCLRDataAppDomain** appDomain)
         => _legacyProcess is not null ? _legacyProcess.EnumAppDomain(handle, appDomain) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.EndEnumAppDomains(ulong handle)
         => _legacyProcess is not null ? _legacyProcess.EndEnumAppDomains(handle) : HResults.E_NOTIMPL;
 
-    int IXCLRDataProcess.GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain)
+    int IXCLRDataProcess.GetAppDomainByUniqueID(ulong id, IXCLRDataAppDomain** appDomain)
         => _legacyProcess is not null ? _legacyProcess.GetAppDomainByUniqueID(id, appDomain) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumAssemblies(ulong* handle)
@@ -329,7 +329,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
     }
 
-    int IXCLRDataProcess.StartEnumMethodInstancesByAddress(ClrDataAddress address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
+    int IXCLRDataProcess.StartEnumMethodInstancesByAddress(ClrDataAddress address, IXCLRDataAppDomain* appDomain, ulong* handle)
     {
         int hr = HResults.S_FALSE;
         *handle = 0;
@@ -449,7 +449,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
     int IXCLRDataProcess.GetDataByAddress(
         ClrDataAddress address,
         uint flags,
-        /*IXCLRDataAppDomain*/ void* appDomain,
+        IXCLRDataAppDomain* appDomain,
         /*IXCLRDataTask*/ void* tlsTask,
         uint bufLen,
         uint* nameLen,
@@ -468,7 +468,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         => _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.CreateMemoryValue(
-        /*IXCLRDataAppDomain*/ void* appDomain,
+        IXCLRDataAppDomain* appDomain,
         /*IXCLRDataTask*/ void* tlsTask,
         /*IXCLRDataTypeInstance*/ void* type,
         ClrDataAddress addr,

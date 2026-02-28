@@ -48,7 +48,7 @@ public unsafe partial interface IXCLRDataModule
     int EndEnumTypeDefinitions(ulong handle);
 
     [PreserveSig]
-    int StartEnumTypeInstances(/*IXCLRDataAppDomain*/ void* appDomain, ulong* handle);
+    int StartEnumTypeInstances(IXCLRDataAppDomain* appDomain, ulong* handle);
     [PreserveSig]
     int EnumTypeInstance(ulong* handle, /*IXCLRDataTypeInstance*/ void** typeInstance);
     [PreserveSig]
@@ -62,7 +62,7 @@ public unsafe partial interface IXCLRDataModule
     int EndEnumTypeDefinitionsByName(ulong handle);
 
     [PreserveSig]
-    int StartEnumTypeInstancesByName(char* name, uint flags, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle);
+    int StartEnumTypeInstancesByName(char* name, uint flags, IXCLRDataAppDomain* appDomain, ulong* handle);
     [PreserveSig]
     int EnumTypeInstanceByName(ulong* handle, /*IXCLRDataTypeInstance*/ void** type);
     [PreserveSig]
@@ -79,7 +79,7 @@ public unsafe partial interface IXCLRDataModule
     int EndEnumMethodDefinitionsByName(ulong handle);
 
     [PreserveSig]
-    int StartEnumMethodInstancesByName(char* name, uint flags, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle);
+    int StartEnumMethodInstancesByName(char* name, uint flags, IXCLRDataAppDomain* appDomain, ulong* handle);
     [PreserveSig]
     int EnumMethodInstanceByName(ulong* handle, out IXCLRDataMethodInstance? method);
     [PreserveSig]
@@ -89,7 +89,7 @@ public unsafe partial interface IXCLRDataModule
     int GetMethodDefinitionByToken(/*mdMethodDef*/ uint token, /*IXCLRDataMethodDefinition*/ void** methodDefinition);
 
     [PreserveSig]
-    int StartEnumDataByName(char* name, uint flags, /*IXCLRDataAppDomain*/ void* appDomain, /*IXCLRDataTask*/ void* tlsTask, ulong* handle);
+    int StartEnumDataByName(char* name, uint flags, IXCLRDataAppDomain* appDomain, /*IXCLRDataTask*/ void* tlsTask, ulong* handle);
     [PreserveSig]
     int EnumDataByName(ulong* handle, /*IXCLRDataValue*/ void** value);
     [PreserveSig]
@@ -119,7 +119,7 @@ public unsafe partial interface IXCLRDataModule
     [PreserveSig]
     int StartEnumAppDomains(ulong* handle);
     [PreserveSig]
-    int EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain);
+    int EnumAppDomain(ulong* handle, IXCLRDataAppDomain** appDomain);
     [PreserveSig]
     int EndEnumAppDomains(ulong handle);
 
@@ -183,11 +183,11 @@ public unsafe partial interface IXCLRDataProcess
     [PreserveSig]
     int StartEnumAppDomains(ulong* handle);
     [PreserveSig]
-    int EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain);
+    int EnumAppDomain(ulong* handle, IXCLRDataAppDomain** appDomain);
     [PreserveSig]
     int EndEnumAppDomains(ulong handle);
     [PreserveSig]
-    int GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain);
+    int GetAppDomainByUniqueID(ulong id, IXCLRDataAppDomain** appDomain);
 
     [PreserveSig]
     int StartEnumAssemblies(ulong* handle);
@@ -206,7 +206,7 @@ public unsafe partial interface IXCLRDataProcess
     int GetModuleByAddress(ClrDataAddress address, /*IXCLRDataModule*/ void** mod);
 
     [PreserveSig]
-    int StartEnumMethodInstancesByAddress(ClrDataAddress address, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle);
+    int StartEnumMethodInstancesByAddress(ClrDataAddress address, IXCLRDataAppDomain* appDomain, ulong* handle);
     [PreserveSig]
     int EnumMethodInstanceByAddress(ulong* handle, out IXCLRDataMethodInstance? method);
     [PreserveSig]
@@ -216,7 +216,7 @@ public unsafe partial interface IXCLRDataProcess
     int GetDataByAddress(
         ClrDataAddress address,
         uint flags,
-        /*IXCLRDataAppDomain*/ void* appDomain,
+        IXCLRDataAppDomain* appDomain,
         /*IXCLRDataTask*/ void* tlsTask,
         uint bufLen,
         uint* nameLen,
@@ -234,7 +234,7 @@ public unsafe partial interface IXCLRDataProcess
 
     [PreserveSig]
     int CreateMemoryValue(
-        /*IXCLRDataAppDomain*/ void* appDomain,
+        IXCLRDataAppDomain* appDomain,
         /*IXCLRDataTask*/ void* tlsTask,
         /*IXCLRDataTypeInstance*/ void* type,
         ClrDataAddress addr,
@@ -332,6 +332,36 @@ public unsafe partial interface IXCLRDataProcess2 : IXCLRDataProcess
     int GetGcNotification(GcEvtArgs* gcEvtArgs);
     [PreserveSig]
     int SetGcNotification(GcEvtArgs gcEvtArgs);
+}
+
+[GeneratedComInterface]
+[Guid("7CA04601-C702-4670-A63C-FA44F7DA7BD5")]
+public unsafe partial interface IXCLRDataAppDomain
+{
+    [PreserveSig]
+    int GetProcess(IXCLRDataProcess** process);
+
+    [PreserveSig]
+    int GetName(uint bufLen, uint* nameLen, char* name);
+
+    [PreserveSig]
+    int GetUniqueID(ulong* id);
+
+    [PreserveSig]
+    int GetFlags(uint* flags);
+
+    [PreserveSig]
+    int IsSameObject(IXCLRDataAppDomain* appDomain);
+
+    [PreserveSig]
+    int GetManagedObject(/*IXCLRDataValue*/ void** value);
+
+    [PreserveSig]
+    int Request(uint reqCode,
+                uint inBufferSize,
+                [In, MarshalUsing(CountElementName = nameof(inBufferSize))] byte[] inBuffer,
+                uint outBufferSize,
+                [Out, MarshalUsing(CountElementName = nameof(outBufferSize))] byte[] outBuffer);
 }
 
 [GeneratedComInterface]
@@ -447,7 +477,7 @@ public unsafe partial interface IXCLRDataTask
     int GetProcess(/*IXCLRDataProcess*/ void** process);
 
     [PreserveSig]
-    int GetCurrentAppDomain(/*IXCLRDataAppDomain*/ void** appDomain);
+    int GetCurrentAppDomain(out IXCLRDataAppDomain? appDomain);
 
     [PreserveSig]
     int GetUniqueID(ulong* id);
