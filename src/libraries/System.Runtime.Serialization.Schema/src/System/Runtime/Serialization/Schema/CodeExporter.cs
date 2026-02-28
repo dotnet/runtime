@@ -486,7 +486,8 @@ namespace System.Runtime.Serialization
             if (containingContractCodeDomInfo.ReferencedTypeExists)
                 return null;
 
-            CodeTypeDeclaration containingType = containingContractCodeDomInfo.TypeDeclaration!; // Nested types by definition have containing types.
+            Debug.Assert(containingContractCodeDomInfo.TypeDeclaration != null, "Nested types have containing types by definition - types with declaration");
+            CodeTypeDeclaration containingType = containingContractCodeDomInfo.TypeDeclaration;
             if (TypeContainsNestedType(containingType, nestedTypeName))
             {
                 for (int i = 1; ; i++)
@@ -502,7 +503,8 @@ namespace System.Runtime.Serialization
 
             CodeTypeDeclaration type = CreateTypeDeclaration(nestedTypeName, dataContract);
             containingType.Members.Add(type);
-            contractCodeDomInfo.TypeReference = new CodeTypeReference(containingContractCodeDomInfo.TypeReference!.BaseType + "+" + nestedTypeName); // Again, nested types by definition have containing types.
+            Debug.Assert(containingContractCodeDomInfo.TypeReference != null, "Nested types have containing types by definition - types with reference");
+            contractCodeDomInfo.TypeReference = new CodeTypeReference(containingContractCodeDomInfo.TypeReference.BaseType + "+" + nestedTypeName);
 
             if (GenerateInternalTypes)
                 type.TypeAttributes = TypeAttributes.NestedAssembly;
@@ -518,8 +520,9 @@ namespace System.Runtime.Serialization
             CodeAttributeDeclaration generatedCodeAttribute = new CodeAttributeDeclaration(typeof(GeneratedCodeAttribute).FullName!);
 
             AssemblyName assemblyName = Assembly.GetExecutingAssembly().GetName();
-            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Name!)));
-            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Version?.ToString()!)));
+            Debug.Assert(assemblyName.Name != null, $"Current executing assembly name is not expected to be null in {nameof(CodeExporter)}.{nameof(CreateTypeDeclaration)} scenario");
+            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Name)));
+            generatedCodeAttribute.Arguments.Add(new CodeAttributeArgument(new CodePrimitiveExpression(assemblyName.Version?.ToString())));
 
             // System.Diagnostics.DebuggerStepThroughAttribute not allowed on enums
             // ensure that the attribute is only generated on types that are not enums
@@ -607,6 +610,7 @@ namespace System.Runtime.Serialization
                 if (!TryGetReferencedDictionaryType(collectionContract, out typeReference))
                 {
                     // ItemContract - aka BaseContract - is never null for CollectionDataContract
+                    Debug.Assert(collectionContract.BaseContract != null, "BaseContract should not be null for CollectionDataContract");
                     DataContract itemContract = collectionContract.BaseContract!;
                     if (collectionContract.IsDictionaryLike(out _, out _, out _))
                     {
@@ -629,6 +633,7 @@ namespace System.Runtime.Serialization
         private static bool HasDefaultCollectionNames(DataContract collectionContract)
         {
             Debug.Assert(collectionContract.Is(DataContractType.CollectionDataContract));
+            Debug.Assert(collectionContract.BaseContract != null, "BaseContract should not be null for CollectionDataContract");
 
             // ItemContract - aka BaseContract - is never null for CollectionDataContract
             DataContract itemContract = collectionContract.BaseContract!;
@@ -647,6 +652,7 @@ namespace System.Runtime.Serialization
         private bool TryGetReferencedDictionaryType(DataContract collectionContract, [NotNullWhen(true)] out CodeTypeReference? typeReference)
         {
             Debug.Assert(collectionContract.Is(DataContractType.CollectionDataContract));
+            Debug.Assert(collectionContract.BaseContract != null, "BaseContract should not be null for CollectionDataContract");
 
             // Check if it is a dictionary and use referenced dictionary type if present
             if (collectionContract.IsDictionaryLike(out _, out _, out _)
@@ -819,7 +825,8 @@ namespace System.Runtime.Serialization
             {
                 ContractCodeDomInfo baseContractCodeDomInfo = GetContractCodeDomInfo(classDataContract.BaseContract);
                 Debug.Assert(baseContractCodeDomInfo.IsProcessed, "Cannot generate code for type if code for base type has not been generated");
-                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference!);
+                Debug.Assert(baseContractCodeDomInfo.TypeReference != null, "Class data contracts should have non-null TypeReference");
+                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference);
                 AddBaseMemberNames(baseContractCodeDomInfo, contractCodeDomInfo);
                 if (baseContractCodeDomInfo.ReferencedTypeExists)
                 {
@@ -1068,6 +1075,7 @@ namespace System.Runtime.Serialization
 
             CodeTypeDeclaration type = contractCodeDomInfo.TypeDeclaration;
             // BaseContract is never null for EnumDataContract
+            Debug.Assert(enumDataContract.BaseContract != null, "BaseContract should not be null for EnumDataContract");
             Type baseType = enumDataContract.BaseContract!.UnderlyingType;
             type.IsEnum = true;
             type.BaseTypes.Add(baseType);
@@ -1152,7 +1160,9 @@ namespace System.Runtime.Serialization
             {
                 ContractCodeDomInfo baseContractCodeDomInfo = GetContractCodeDomInfo(classDataContract.BaseContract);
                 GenerateType(classDataContract.BaseContract, baseContractCodeDomInfo);
-                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference!);
+
+                Debug.Assert(baseContractCodeDomInfo.TypeReference != null, "Class data contracts should have non-null TypeReference");
+                type.BaseTypes.Add(baseContractCodeDomInfo.TypeReference);
                 if (baseContractCodeDomInfo.ReferencedTypeExists)
                 {
                     Type? actualType = (Type?)baseContractCodeDomInfo.TypeReference?.UserData[s_codeUserDataActualTypeKey];
@@ -1202,8 +1212,8 @@ namespace System.Runtime.Serialization
                     SR.Format(SR.CannotUseGenericTypeAsBase, dataContractName,
                     collectionContract.XmlName.Namespace)));
 
-            // ItemContract - aka BaseContract - is never null for CollectionDataContract
-            DataContract itemContract = collectionContract.BaseContract!;
+            Debug.Assert(collectionContract.BaseContract != null, "BaseContract should not be null for CollectionDataContract");
+            DataContract itemContract = collectionContract.BaseContract;
             bool isItemTypeNullable = collectionContract.IsItemTypeNullable();
             bool isDictionary = collectionContract.IsDictionaryLike(out string? keyName, out string? valueName, out string? itemName);
 
@@ -1235,15 +1245,17 @@ namespace System.Runtime.Serialization
 
             // This is supposed to be set by GenerateType. If it wasn't, there is a problem.
             Debug.Assert(contractCodeDomInfo.TypeDeclaration != null);
+            Debug.Assert(baseTypeReference != null, "Base type reference should not be null for Dictionary/List collection data contracts");
 
             CodeTypeDeclaration generatedType = contractCodeDomInfo.TypeDeclaration;
-            generatedType.BaseTypes.Add(baseTypeReference!);
+            generatedType.BaseTypes.Add(baseTypeReference);
             CodeAttributeDeclaration collectionContractAttribute = new CodeAttributeDeclaration(GetClrTypeFullName(typeof(CollectionDataContractAttribute)));
             collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.NameProperty, new CodePrimitiveExpression(dataContractName)));
             collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.NamespaceProperty, new CodePrimitiveExpression(collectionContract.XmlName.Namespace)));
             if (collectionContract.IsReference != ImportGlobals.DefaultIsReference)
                 collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.IsReferenceProperty, new CodePrimitiveExpression(collectionContract.IsReference)));
-            collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.ItemNameProperty, new CodePrimitiveExpression(GetNameForAttribute(itemName!))));    // ItemName is never null for Collection contracts.
+            Debug.Assert(itemName != null, "ItemName is never null for Collection contracts.");
+            collectionContractAttribute.Arguments.Add(new CodeAttributeArgument(ImportGlobals.ItemNameProperty, new CodePrimitiveExpression(GetNameForAttribute(itemName))));
             if (foundDictionaryBase)
             {
                 // These are not null if we are working with a dictionary. See CollectionDataContract.IsDictionary
