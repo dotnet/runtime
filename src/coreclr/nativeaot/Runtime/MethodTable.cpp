@@ -40,8 +40,10 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
     {
     case CanonicalEEType:
     {
+        MethodTable* pBaseType = GetNonArrayBaseType();
+
         // If the parent type is NULL this had better look like Object.
-        if (!IsInterface() && (m_RelatedType.m_pBaseType == NULL))
+        if (pBaseType == NULL)
         {
             if (IsValueType() ||
                 HasFinalizer() ||
@@ -51,6 +53,24 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
                 REPORT_FAILURE();
             }
         }
+        else if (GetNumVtableSlots() == 0
+            && !IsGCStaticMethodTable())
+        {
+            // We only really expect zero vtable slots for GCStatic MethodTables, however
+            // to cover the unlikely case that we managed to trim out Equals/GetHashCode/ToString,
+            // check an invariant that says if a derived type has zero vtable slots, all bases need
+            // to have zero slots.
+            MethodTable* pCurrentType = pBaseType;
+            do
+            {
+                if (pCurrentType->GetNumVtableSlots() > GetNumVtableSlots())
+                {
+                    REPORT_FAILURE();
+                }
+                pCurrentType = pCurrentType->GetNonArrayBaseType();
+            }
+            while (pCurrentType != NULL);
+        }
         break;
     }
 
@@ -59,7 +79,8 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
         // The only parameter EETypes that can exist on the heap are arrays
 
         // Array types must have a related type.
-        if (m_RelatedType.m_pRelatedParameterType == NULL)
+        MethodTable* pParameterType = GetRelatedParameterType();
+        if (pParameterType == NULL)
             REPORT_FAILURE();
 
         // Component size cannot be zero in this case.
@@ -71,6 +92,38 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
             HasGenericVariance())
         {
             REPORT_FAILURE();
+        }
+
+        // Zero vtable slots is suspicious. To cover the unlikely case that we managed to trim
+        // out Equals/GetHashCode/ToString, compare with number of slots of Object class.
+        if (GetNumVtableSlots() == 0)
+        {
+            // Drill into the type to find System.Object
+
+            MethodTable* pCurrentType = pParameterType;
+
+            while (pCurrentType->IsParameterizedType())
+                pCurrentType = pCurrentType->GetRelatedParameterType();
+
+            // We don't have facilities to unwrap function pointers, so just skip for now.
+            // We won't get System.Object from interfaces, skip too.
+            if (!pCurrentType->IsFunctionPointer() && !pCurrentType->IsInterface())
+            {
+                do
+                {
+                    MethodTable* pBaseType = pCurrentType->GetNonArrayBaseType();
+                    if (pBaseType == NULL)
+                    {
+                        // Found System.Object, now compare number of slots
+                        if (pCurrentType->GetNumVtableSlots() > GetNumVtableSlots())
+                        {
+                            REPORT_FAILURE();
+                        }
+                    }
+
+                    pCurrentType = pBaseType;
+                } while (pCurrentType != NULL);
+            }
         }
 
         break;

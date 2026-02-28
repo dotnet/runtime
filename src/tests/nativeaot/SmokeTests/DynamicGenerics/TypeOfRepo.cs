@@ -194,8 +194,6 @@ namespace TypeOfRepo
                 s_TypeRepo["D_IFace"] = typeof(Dictionaries.IFace<>);
                 s_TypeRepo["D_IFace3"] = typeof(Dictionaries.IFace3<>);
                 s_TypeRepo["D_SingleUseArrayOnlyGen"] = typeof(Dictionaries.SingleUseArrayOnlyGen<>);
-                s_TypeRepo["D_GenericStruct"] = typeof(Dictionaries.GenericStruct<>);
-                s_TypeRepo["D_NullableTest"] = typeof(Dictionaries.NullableTest<>);
                 s_TypeRepo["D_DelegateTarget"] = typeof(Dictionaries.DelegateTarget<>);
                 s_TypeRepo["D_DelWithNullable"] = typeof(Dictionaries.DelWithNullable<>);
 
@@ -448,8 +446,6 @@ namespace TypeOfRepo
         public static Type D_IFace { get { return s_TypeRepo["D_IFace"]; } }
         public static Type D_IFace3 { get { return s_TypeRepo["D_IFace3"]; } }
         public static Type D_SingleUseArrayOnlyGen { get { return s_TypeRepo["D_SingleUseArrayOnlyGen"]; } }
-        public static Type D_GenericStruct { get { return s_TypeRepo["D_GenericStruct"]; } }
-        public static Type D_NullableTest { get { return s_TypeRepo["D_NullableTest"]; } }
         public static Type D_DelegateTarget { get { return s_TypeRepo["D_DelegateTarget"]; } }
         public static Type D_DelWithNullable { get { return s_TypeRepo["D_DelWithNullable"]; } }
         public static Type TDT_MyStruct { get { return s_TypeRepo["TDT_MyStruct"]; } }
