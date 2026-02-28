@@ -104,7 +104,7 @@ Measure throughput using PIN on one or more collections.
 """
 
 metricdiff_description = """\
-Measure JIT memory allocation differences on one or more collections.
+Measure JIT metric differences (for all metrics in the -details CSV, such as memory allocations) on one or more collections.
 """
 
 upload_description = """\

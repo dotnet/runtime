@@ -331,7 +331,7 @@ class Diff:
 
         log_file = os.path.join(self.log_directory, "superpmi_metricdiff_{}.log".format(self.target))
 
-        # This is the summary file name and location written by superpmi.py. If the file exists, remove it to ensure superpmi.py doesn't created a numbered version.
+        # This is the summary file name and location written by superpmi.py. If the file exists, remove it to ensure superpmi.py doesn't create a numbered version.
         overall_json_metricdiff_summary_file = os.path.join(self.spmi_location, "metricdiff_summary.json")
         if os.path.isfile(overall_json_metricdiff_summary_file):
             os.remove(overall_json_metricdiff_summary_file)
