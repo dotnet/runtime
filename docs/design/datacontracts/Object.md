@@ -26,7 +26,7 @@ Data descriptors used:
 | `Array` | `m_NumComponents` | Number of items in the array |
 | `InteropSyncBlockInfo` | `RCW` | Pointer to the RCW for the object (if it exists) |
 | `InteropSyncBlockInfo` | `CCW` | Pointer to the CCW for the object (if it exists) |
-| `InteropSyncBlockInfo` | `CCF` | Pointer to the COM callable factory for the object (if it exists) |
+| `InteropSyncBlockInfo` | `CCF` | Pointer to the COM class factory for the object (if it exists) |
 | `Object` | `m_pMethTab` | Method table for the object |
 | `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string (encoded in UTF-16) |
 | `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
