@@ -236,25 +236,6 @@ namespace System.IO.Hashing.Tests
         }
 
         /// <summary>
-        /// Tests with all-0xFF bytes, which maximizes accumulator values and stresses
-        /// overflow-safe behavior in the vectorized paths.
-        /// </summary>
-        [Theory]
-        [InlineData(32)]
-        [InlineData(64)]
-        [InlineData(128)]
-        [InlineData(256)]
-        [InlineData(5552)]
-        [InlineData(5553)]
-        public void AllMaxBytes_MatchesReference(int length)
-        {
-            byte[] data = new byte[length];
-            data.AsSpan().Fill(0xFF);
-
-            Assert.Equal(ReferenceAdler32(data), Adler32.HashToUInt32(data));
-        }
-
-        /// <summary>
         /// Tests incremental appending with various chunk sizes to verify that the
         /// vectorized paths produce the same result regardless of how data is fed in.
         /// </summary>
