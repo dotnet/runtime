@@ -36,9 +36,29 @@ $logContent = Invoke-RestMethod -Uri "https://dev.azure.com/dnceng-public/cbb182
 $logContent | Select-String -Pattern "error|FAIL" -Context 2,5
 ```
 
+## Search Helix Logs and Artifacts Remotely
+
+> 💡 **Prefer remote search over download.** `hlx_search_log` and `hlx_search_file` let you find errors in Helix console logs and uploaded files without downloading them first. Use these before falling back to `hlx_logs` (full log) or `hlx_download` (file download).
+
+```
+# Search a work item's console log for error patterns
+hlx_search_log(jobId, workItem, pattern="error", contextLines=3)
+
+# Search an uploaded file (e.g., testResults.xml) for specific text
+hlx_search_file(jobId, workItem, fileName="testResults.xml", pattern="Failed")
+
+# Find which work items have specific file types
+hlx_find_files(jobId, pattern="*.binlog")
+```
+
+These tools return matching lines with context — much faster than downloading full logs and grepping locally. Use them for:
+- Finding specific error messages across large console logs
+- Searching test result files for failure patterns
+- Locating crash dumps or binlogs across work items
+
 ## Query Helix APIs
 
-> 💡 **Prefer MCP tools when available** — they handle most Helix queries without manual curl commands. Use the APIs below only as fallback.
+> 💡 **Prefer MCP tools when available** — `hlx_search_log`, `hlx_search_file`, `hlx_status`, `hlx_logs`, `hlx_files`, etc. handle most Helix queries without manual curl commands. Use the APIs below only as fallback.
 
 ```bash
 # Get job details
