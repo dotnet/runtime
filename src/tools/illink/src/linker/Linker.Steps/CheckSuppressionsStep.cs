@@ -5,7 +5,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker.Steps
 {
-    public class CheckSuppressionsStep : BaseSubStep
+    internal class CheckSuppressionsStep : BaseSubStep
     {
         public override SubStepTargets Targets
         {

@@ -12,7 +12,7 @@ namespace Mono.Linker.Steps
         readonly string fileName;
         readonly AssemblyRootMode rootMode;
 
-        public RootAssemblyInput(string fileName, AssemblyRootMode rootMode)
+        internal RootAssemblyInput(string fileName, AssemblyRootMode rootMode)
         {
             this.fileName = fileName;
             this.rootMode = rootMode;

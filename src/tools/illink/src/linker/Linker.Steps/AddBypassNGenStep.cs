@@ -9,7 +9,7 @@ using Mono.Collections.Generic;
 namespace Mono.Linker.Steps
 {
 
-    public class AddBypassNGenStep : BaseStep
+    internal class AddBypassNGenStep : BaseStep
     {
 
         AssemblyDefinition? coreLibAssembly;
