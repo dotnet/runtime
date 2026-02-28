@@ -10,9 +10,19 @@
 // Flowgraph Statements
 
 #ifdef DEBUG
-// Check to see if block contains a statement but don't spend more than a certain
-// budget doing this per method compiled.
-// If the budget is exceeded, return 'answerOnBoundExceeded' as the answer.
+//------------------------------------------------------------------------
+// fgBlockContainsStatementBounded: Check if a block contains a statement,
+//    with a budget limit to avoid excessive cost.
+//
+// Arguments:
+//    block                 - the block to search
+//    stmt                  - the statement to look for
+//    answerOnBoundExceeded - value to return if the budget is exceeded
+//
+// Return Value:
+//    true if the block contains the statement, or "answerOnBoundExceeded"
+//    if the budget is exceeded.
+//
 // static
 bool Compiler::fgBlockContainsStatementBounded(BasicBlock* block,
                                                Statement*  stmt,
@@ -382,7 +392,17 @@ Statement* Compiler::fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAft
     return stmtLast;
 }
 
-//  Create a new statement from tree and wire the links up.
+//------------------------------------------------------------------------
+// fgNewStmtFromTree: Create a new statement from a tree and wire the links up.
+//
+// Arguments:
+//    tree  - the root node of the new statement
+//    block - the block to use for debug checks (may be nullptr)
+//    di    - debug info for the new statement
+//
+// Return Value:
+//    The new statement.
+//
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di)
 {
     Statement* stmt = gtNewStmt(tree, di);
@@ -407,16 +427,25 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const D
     return stmt;
 }
 
+//------------------------------------------------------------------------
+// fgNewStmtFromTree: Create a new statement from a tree with no debug info.
+//
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree)
 {
     return fgNewStmtFromTree(tree, nullptr, DebugInfo());
 }
 
+//------------------------------------------------------------------------
+// fgNewStmtFromTree: Create a new statement from a tree in the given block.
+//
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block)
 {
     return fgNewStmtFromTree(tree, block, DebugInfo());
 }
 
+//------------------------------------------------------------------------
+// fgNewStmtFromTree: Create a new statement from a tree with the given debug info.
+//
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, const DebugInfo& di)
 {
     return fgNewStmtFromTree(tree, nullptr, di);
@@ -543,9 +572,17 @@ inline bool OperIsControlFlow(genTreeOps oper)
     }
 }
 
-//  Tries to throw away a stmt. The statement can be anywhere in block->bbStmtList.
-//  Returns true if it did remove the statement.
-
+//------------------------------------------------------------------------
+// fgCheckRemoveStmt: Tries to remove a statement if it has no side effects.
+//    The statement can be anywhere in block->bbStmtList.
+//
+// Arguments:
+//    block - the block containing the statement
+//    stmt  - the statement to try to remove
+//
+// Return Value:
+//    true if the statement was removed, false otherwise
+//
 bool Compiler::fgCheckRemoveStmt(BasicBlock* block, Statement* stmt)
 {
     if (opts.compDbgCode)

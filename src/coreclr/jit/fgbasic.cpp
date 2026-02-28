@@ -110,7 +110,12 @@ void Compiler::fgCreateNewInitBB()
     JITDUMP("New init " FMT_BB "\n", block->bbNum);
 }
 
-// Removes a block from the return block list
+//------------------------------------------------------------------------
+// fgRemoveReturnBlock: Removes a block from the return block list.
+//
+// Arguments:
+//    block - the block to remove from the return block list
+//
 void Compiler::fgRemoveReturnBlock(BasicBlock* block)
 {
     if (fgReturnBlocks == nullptr)
@@ -189,13 +194,18 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     }
 }
 
-// fgChangeSwitchBlock:
+//------------------------------------------------------------------------
+// fgChangeSwitchBlock: Update predecessor lists when moving a switch jump.
 //
 // We have a BBJ_SWITCH jump at 'oldSwitchBlock' and we want to move this
 // switch jump over to 'newSwitchBlock'.  All of the blocks that are jumped
 // to from jumpTab[] need to have their predecessor lists updated by removing
 // the 'oldSwitchBlock' and adding 'newSwitchBlock'.
-
+//
+// Arguments:
+//    oldSwitchBlock - the block currently containing the switch jump
+//    newSwitchBlock - the block that will contain the switch jump
+//
 void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSwitchBlock)
 {
     noway_assert(oldSwitchBlock != nullptr);
@@ -561,8 +571,16 @@ void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
     assert(target->checkPredListOrder());
 }
 
-//  For a block that is in a handler region, find the first block of the most-nested
-//  handler containing the block.
+//------------------------------------------------------------------------
+// fgFirstBlockOfHandler: For a block that is in a handler region, find the
+//    first block of the most-nested handler containing the block.
+//
+// Arguments:
+//    block - the block in a handler region
+//
+// Return Value:
+//    The first block of the most-nested handler containing 'block'.
+//
 BasicBlock* Compiler::fgFirstBlockOfHandler(BasicBlock* block)
 {
     assert(block->hasHndIndex());
@@ -580,8 +598,9 @@ void Compiler::fgInvalidateBBLookup()
 }
 #endif // DEBUG
 
-//  The following helps find a basic block given its PC offset.
-
+//------------------------------------------------------------------------
+// fgInitBBLookup: Initialize the basic block lookup table used by fgLookupBB.
+//
 void Compiler::fgInitBBLookup()
 {
     BasicBlock** dscBBptr;
@@ -600,6 +619,15 @@ void Compiler::fgInitBBLookup()
     noway_assert(dscBBptr == fgBBs + fgBBcount);
 }
 
+//------------------------------------------------------------------------
+// fgLookupBB: Find a basic block given its IL offset.
+//
+// Arguments:
+//    addr - the IL offset to look up
+//
+// Return Value:
+//    The basic block corresponding to the given IL offset.
+//
 BasicBlock* Compiler::fgLookupBB(unsigned addr)
 {
     unsigned lo;
@@ -3406,8 +3434,10 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     fgThrowCount  = throwBlocks;
 }
 
-//  Main entry point to discover the basic blocks for the current function.
-
+//------------------------------------------------------------------------
+// fgFindBasicBlocks: Main entry point to discover the basic blocks for
+//    the current function.
+//
 void Compiler::fgFindBasicBlocks()
 {
 #ifdef DEBUG
@@ -4088,9 +4118,10 @@ void Compiler::fgFixEntryFlowForOSR()
     }
 }
 
-// Check control flow constraints for well formed IL. Bail if any of the constraints
-// are violated.
-
+//------------------------------------------------------------------------
+// fgCheckBasicBlockControlFlow: Check control flow constraints for well
+//    formed IL. Bail if any of the constraints are violated.
+//
 void Compiler::fgCheckBasicBlockControlFlow()
 {
     assert(!fgNormalizeEHDone); // These rules aren't quite correct after EH normalization has introduced new blocks
@@ -4200,9 +4231,15 @@ void Compiler::fgCheckBasicBlockControlFlow()
     }
 }
 
-// Check that the leave from the block is legal.
-// Consider removing this check here if we  can do it cheaply during importing
-
+//------------------------------------------------------------------------
+// fgControlFlowPermitted: Check that the leave from the block is legal.
+//    Consider removing this check here if we can do it cheaply during importing.
+//
+// Arguments:
+//    blkSrc  - the source block
+//    blkDest - the destination block
+//    isLeave - true if this is a leave instruction
+//
 void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, bool isLeave)
 {
     assert(!fgNormalizeEHDone); // These rules aren't quite correct after EH normalization has introduced new blocks
@@ -4453,9 +4490,18 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, b
     }
 }
 
-//  Check that blkDest is the first block of an inner try or a sibling
-//    with no intervening trys in between
-
+//------------------------------------------------------------------------
+// fgFlowToFirstBlockOfInnerTry: Check that "blkDest" is the first block of
+//    an inner try or a sibling with no intervening trys in between.
+//
+// Arguments:
+//    blkSrc  - the source block
+//    blkDest - the destination block
+//    sibling - true if checking for sibling try regions
+//
+// Return Value:
+//    true if flow from "blkSrc" to "blkDest" is legal
+//
 bool Compiler::fgFlowToFirstBlockOfInnerTry(BasicBlock* blkSrc, BasicBlock* blkDest, bool sibling)
 {
     assert(!fgNormalizeEHDone); // These rules aren't quite correct after EH normalization has introduced new blocks
@@ -4510,10 +4556,18 @@ bool Compiler::fgFlowToFirstBlockOfInnerTry(BasicBlock* blkSrc, BasicBlock* blkD
     return true;
 }
 
-//  Returns the handler nesting level of the block.
-//  *pFinallyNesting is set to the nesting level of the inner-most
-//  finally-protected try the block is in.
-
+//------------------------------------------------------------------------
+// fgGetNestingLevel: Returns the handler nesting level of the block.
+//    "pFinallyNesting" is set to the nesting level of the inner-most
+//    finally-protected try the block is in.
+//
+// Arguments:
+//    block          - the block to query
+//    pFinallyNesting - [OUT] nesting level of the innermost finally-protected try
+//
+// Return Value:
+//    The handler nesting level of the block.
+//
 unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNesting)
 {
     unsigned  curNesting = 0;            // How many handlers is the block in
@@ -4955,9 +5009,14 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     return newBlock;
 }
 
-// Removes the block from the bbPrev/bbNext chain
-// Updates fgFirstBB and fgLastBB if necessary
-// Does not update fgFirstFuncletBB
+//------------------------------------------------------------------------
+// fgUnlinkBlock: Removes the block from the bbPrev/bbNext chain.
+//    Updates fgFirstBB and fgLastBB if necessary.
+//    Does not update fgFirstFuncletBB.
+//
+// Arguments:
+//    block - the block to unlink
+//
 void Compiler::fgUnlinkBlock(BasicBlock* block)
 {
     if (block->IsFirst())
@@ -4993,10 +5052,14 @@ void Compiler::fgUnlinkBlockForRemoval(BasicBlock* block)
     fgBBcount--;
 }
 
-//  Function called to unlink basic block range [bBeg .. bEnd] from the basic block list.
+//------------------------------------------------------------------------
+// fgUnlinkRange: Unlink basic block range [bBeg .. bEnd] from the basic block list.
+//    "bBeg" can't be the first block.
 //
-//  'bBeg' can't be the first block.
-
+// Arguments:
+//    bBeg - the first block in the range
+//    bEnd - the last block in the range
+//
 void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
 {
     assert(bBeg != nullptr);
@@ -5231,10 +5294,15 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
     block->SetKind(BBJ_ALWAYS);
 }
 
-//  Function called to move the range of blocks [bStart .. bEnd].
-//  The blocks are placed immediately after the insertAfterBlk.
-//  fgFirstFuncletBB is not updated; that is the responsibility of the caller, if necessary.
-
+//------------------------------------------------------------------------
+// fgMoveBlocksAfter: Move the range of blocks [bStart .. bEnd] to after "insertAfterBlk".
+//    fgFirstFuncletBB is not updated; that is the responsibility of the caller, if necessary.
+//
+// Arguments:
+//    bStart         - the first block in the range to move
+//    bEnd           - the last block in the range to move
+//    insertAfterBlk - the block after which the range will be inserted
+//
 void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk)
 {
     // We have decided to insert the block(s) after 'insertAfterBlk'
@@ -5264,14 +5332,23 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
     insertAfterBlk->SetNext(bStart);
 }
 
-//  Function called to relocate a single range to the end of the method.
-//  Only an entire consecutive region can be moved and it will be kept together.
-//  Except for the first block, the range cannot have any blocks that jump into or out of the region.
-//  When successful we return the bLast block which is the last block that we relocated.
-//  When unsuccessful we return NULL.
+//------------------------------------------------------------------------
+// fgRelocateEHRange: Relocate a single EH region to the end of the method.
+//    Only an entire consecutive region can be moved and it will be kept together.
+//    Except for the first block, the range cannot have any blocks that jump into
+//    or out of the region.
 //
-// NOTE: This function can invalidate all pointers into the EH table, as well as change the size of the EH table!
-
+// Arguments:
+//    regionIndex  - the EH region index to relocate
+//    relocateType - the type of relocation (handler or try)
+//
+// Return Value:
+//    The last block that was relocated, or nullptr on failure.
+//
+// Notes:
+//    This function can invalidate all pointers into the EH table, as well as
+//    change the size of the EH table!
+//
 BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE relocateType)
 {
     INDEBUG(const char* reason = "None";)
@@ -5505,8 +5582,17 @@ DONE:
     return bLast;
 }
 
-// Insert a BasicBlock before the given block.
-
+//------------------------------------------------------------------------
+// fgNewBBbefore: Insert a new BasicBlock before the given block.
+//
+// Arguments:
+//    jumpKind     - the jump kind of the new block
+//    block        - the block before which the new block is inserted
+//    extendRegion - if true, extend the EH region to include the new block
+//
+// Return Value:
+//    The new block.
+//
 BasicBlock* Compiler::fgNewBBbefore(BBKinds jumpKind, BasicBlock* block, bool extendRegion)
 {
     // Create a new BasicBlock and chain it in
@@ -5536,8 +5622,17 @@ BasicBlock* Compiler::fgNewBBbefore(BBKinds jumpKind, BasicBlock* block, bool ex
     return newBlk;
 }
 
-// Insert a BasicBlock after the given block.
-
+//------------------------------------------------------------------------
+// fgNewBBafter: Insert a new BasicBlock after the given block.
+//
+// Arguments:
+//    jumpKind     - the jump kind of the new block
+//    block        - the block after which the new block is inserted
+//    extendRegion - if true, extend the EH region to include the new block
+//
+// Return Value:
+//    The new block.
+//
 BasicBlock* Compiler::fgNewBBafter(BBKinds jumpKind, BasicBlock* block, bool extendRegion)
 {
     // Create a new BasicBlock and chain it in
@@ -5601,11 +5696,17 @@ BasicBlock* Compiler::fgNewBBFromTreeAfter(
     return newBlock;
 }
 
-//  Inserts basic block before existing basic block.
+//------------------------------------------------------------------------
+// fgInsertBBbefore: Inserts basic block before existing basic block.
 //
-//  If insertBeforeBlk is in the funclet region, then newBlk will be in the funclet region.
-//  (If insertBeforeBlk is the first block of the funclet region, then 'newBlk' will be the
-//  new first block of the funclet region.)
+//    If "insertBeforeBlk" is in the funclet region, then "newBlk" will be in the
+//    funclet region. (If "insertBeforeBlk" is the first block of the funclet
+//    region, then "newBlk" will be the new first block of the funclet region.)
+//
+// Arguments:
+//    insertBeforeBlk - the block before which the new block is inserted
+//    newBlk          - the new block to insert
+//
 void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
 {
     if (insertBeforeBlk == fgFirstBB)
@@ -5626,10 +5727,17 @@ void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
     }
 }
 
-//  Inserts basic block after existing basic block.
+//------------------------------------------------------------------------
+// fgInsertBBafter: Inserts basic block after existing basic block.
 //
-//  If insertBeforeBlk is in the funclet region, then newBlk will be in the funclet region.
-//  (It can't be used to insert a block as the first block of the funclet region).
+//    If "insertAfterBlk" is in the funclet region, then "newBlk" will be in the
+//    funclet region. (It can't be used to insert a block as the first block of
+//    the funclet region.)
+//
+// Arguments:
+//    insertAfterBlk - the block after which the new block is inserted
+//    newBlk         - the new block to insert
+//
 void Compiler::fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk)
 {
     if (fgLastBB == insertAfterBlk)

@@ -13,6 +13,10 @@
 // Flowgraph Check and Dump Support
 
 #ifdef DEBUG
+
+//------------------------------------------------------------------------
+// fgPrintEdgeWeights: Print all edge weights to the debug output.
+//
 void Compiler::fgPrintEdgeWeights()
 {
     // Print out all of the edge weights
@@ -50,8 +54,9 @@ void Compiler::fgPrintEdgeWeights()
 }
 #endif // DEBUG
 
-//  Check that the flow graph is really updated
-
+//------------------------------------------------------------------------
+// fgDebugCheckUpdate: Check that the flow graph is really updated.
+//
 #ifdef DEBUG
 
 void Compiler::fgDebugCheckUpdate()
@@ -174,6 +179,16 @@ static escapeMapping_t s_EscapeMapping[] =
 };
 // clang-format on
 
+//------------------------------------------------------------------------
+// fgProcessEscapes: Process escape sequences in a string for use in file names.
+//
+// Arguments:
+//    nameIn - the input string
+//    map    - the escape mapping table
+//
+// Return Value:
+//    The processed string with escape sequences applied.
+//
 const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
 {
     const char* nameOut = nameIn;
@@ -1749,6 +1764,16 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
 
 #ifdef DEBUG
 
+//------------------------------------------------------------------------
+// fgTableDispBasicBlock: Display a basic block in the block table format.
+//
+// Arguments:
+//    block                 - the block to display
+//    nextBlock             - the next block in layout order (for highlighting fall-through)
+//    printEdgeLikelihoods  - whether to print edge likelihoods
+//    blockTargetFieldWidth - width of the block target field
+//    ibcColWidth           - width of the IBC column
+//
 void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                                      const BasicBlock* nextBlock /* = nullptr */,
                                      bool              printEdgeLikelihoods /* = true */,
@@ -2193,8 +2218,14 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
     printf("\n");
 }
 
-// Dump blocks from firstBlock to lastBlock.
-
+//------------------------------------------------------------------------
+// fgDispBasicBlocks: Dump blocks from "firstBlock" to "lastBlock".
+//
+// Arguments:
+//    firstBlock - the first block to dump
+//    lastBlock  - the last block to dump (or nullptr for all remaining blocks)
+//    dumpTrees  - if true, also dump the trees in each block
+//
 void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, bool dumpTrees)
 {
     // Build vector of blocks in order.
@@ -2369,6 +2400,12 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
     }
 }
 
+//------------------------------------------------------------------------
+// fgDispBasicBlocks: Dump all basic blocks in the function.
+//
+// Arguments:
+//    dumpTrees - if true, also dump the trees in each block
+//
 void Compiler::fgDispBasicBlocks(bool dumpTrees)
 {
     fgDispBasicBlocks(fgFirstBB, nullptr, dumpTrees);
@@ -2521,9 +2558,10 @@ void Compiler::fgDumpBlockMemorySsaOut(BasicBlock* block)
     }
 }
 
-// Try to create as many candidates for GTF_MUL_64RSLT as possible.
-// We convert 'intOp1*intOp2' into 'int(long(nop(intOp1))*long(intOp2))'.
-
+//------------------------------------------------------------------------
+// fgStress64RsltMulCB: Callback to stress-test 64-bit result multiplication.
+//    Converts 'intOp1*intOp2' into 'int(long(nop(intOp1))*long(intOp2))'.
+//
 // static
 Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData* data)
 {
@@ -2553,6 +2591,10 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
     return WALK_SKIP_SUBTREES;
 }
 
+//------------------------------------------------------------------------
+// fgStress64RsltMul: Stress-test 64-bit result multiplications by walking
+//    all trees and converting eligible multiply operations.
+//
 void Compiler::fgStress64RsltMul()
 {
     if (!compStressCompile(STRESS_64RSLT_MUL, 20))
@@ -2643,6 +2685,18 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
     return blockRefs;
 }
 
+//------------------------------------------------------------------------
+// BBPredsChecker::CheckEhTryDsc: Verify that a predecessor edge into a try
+//    region is legal.
+//
+// Arguments:
+//    block     - the target block
+//    blockPred - the predecessor block
+//    ehTryDsc  - the EH try descriptor for the target block
+//
+// Return Value:
+//    true if the edge is legal, false otherwise
+//
 bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehTryDsc)
 {
     // You can jump to the start of a try
@@ -2694,6 +2748,18 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     return false;
 }
 
+//------------------------------------------------------------------------
+// BBPredsChecker::CheckEhHndDsc: Verify that a predecessor edge into a
+//    handler region is legal.
+//
+// Arguments:
+//    block     - the target block
+//    blockPred - the predecessor block
+//    ehHndlDsc - the EH handler descriptor for the target block
+//
+// Return Value:
+//    true if the edge is legal, false otherwise
+//
 bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehHndlDsc)
 {
     // You can do a BBJ_EHFINALLYRET or BBJ_EHFILTERRET into a handler region
@@ -2727,6 +2793,17 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     return false;
 }
 
+//------------------------------------------------------------------------
+// BBPredsChecker::CheckJump: Verify that the predecessor block's jump kind
+//    and target are consistent with the edge to "block".
+//
+// Arguments:
+//    blockPred - the predecessor block
+//    block     - the target block
+//
+// Return Value:
+//    true if the jump is consistent, false otherwise
+//
 bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
 {
     switch (blockPred->GetKind())
@@ -2788,6 +2865,17 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
     return false;
 }
 
+//------------------------------------------------------------------------
+// BBPredsChecker::CheckEHFinallyRet: Verify that a BBJ_EHFINALLYRET predecessor
+//    is consistent with the successor block.
+//
+// Arguments:
+//    blockPred - the BBJ_EHFINALLYRET predecessor block
+//    block     - the successor block
+//
+// Return Value:
+//    true if the edge is consistent, false otherwise
+//
 bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 {
     // If the current block is a successor to a BBJ_EHFINALLYRET (return from finally),
@@ -2885,9 +2973,14 @@ void Compiler::fgDebugCheckBBNumIncreasing()
 // postponed a *long* time.
 static volatile int bbTraverseLabel = 1;
 
-// A DEBUG routine to check the consistency of the flowgraph,
-// i.e. bbNum, bbRefs, bbPreds have to be up to date.
-
+//------------------------------------------------------------------------
+// fgDebugCheckBBlist: Check the consistency of the flowgraph,
+//    i.e. bbNum, bbRefs, bbPreds have to be up to date.
+//
+// Arguments:
+//    checkBBNum  - if true, verify that bbNum values are sequential
+//    checkBBRefs - if true, verify that bbRefs counts match predecessor lists
+//
 void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRefs /* = true  */)
 {
     if (verbose)
@@ -3537,9 +3630,15 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
     }
 }
 
-// DEBUG routine to check correctness of the internal gtNext, gtPrev threading of a statement.
-// This threading is only valid when fgStmtListThreaded is true.
-// This calls an alternate method for FGOrderLinear.
+//------------------------------------------------------------------------
+// fgDebugCheckNodeLinks: Check correctness of the internal gtNext, gtPrev
+//    threading of a statement. This threading is only valid when
+//    fgStmtListThreaded is true. Calls an alternate method for FGOrderLinear.
+//
+// Arguments:
+//    block - the block containing the statement
+//    stmt  - the statement to check
+//
 void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
 {
     // LIR blocks are checked using BasicBlock::CheckLIR().
@@ -3776,9 +3875,13 @@ void Compiler::fgDebugCheckLinkedLocals()
     }
 }
 
-// A DEBUG routine to check the correctness of the links between statements
-// and ordinary nodes within a statement.
-
+//------------------------------------------------------------------------
+// fgDebugCheckLinks: Check the correctness of the links between statements
+//    and ordinary nodes within a statement.
+//
+// Arguments:
+//    morphTrees - if true, morph trees during the check
+//
 void Compiler::fgDebugCheckLinks(bool morphTrees)
 {
     if ((fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
@@ -3877,7 +3980,9 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
     }
 }
 
-// ensure that bbNext and bbPrev are consistent
+//------------------------------------------------------------------------
+// fgDebugCheckBlockLinks: Ensure that bbNext and bbPrev are consistent.
+//
 void Compiler::fgDebugCheckBlockLinks()
 {
     assert(fgFirstBB->IsFirst());

@@ -2421,6 +2421,12 @@ void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& sch
     }
 }
 
+//------------------------------------------------------------------------
+// ValueInstrumentor::Prepare: Prepare for value instrumentation.
+//
+// Arguments:
+//    isPreImport - true if this is the pre-import phase
+//
 void ValueInstrumentor::Prepare(bool isPreImport)
 {
     if (isPreImport)
@@ -2438,6 +2444,14 @@ void ValueInstrumentor::Prepare(bool isPreImport)
 #endif
 }
 
+//------------------------------------------------------------------------
+// ValueInstrumentor::BuildSchemaElements: Build schema elements for value
+//    profiling in the given block.
+//
+// Arguments:
+//    block  - the block to build schema elements for
+//    schema - [IN/OUT] the schema to add elements to
+//
 void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
     if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
@@ -2455,6 +2469,15 @@ void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
     }
 }
 
+//------------------------------------------------------------------------
+// ValueInstrumentor::Instrument: Instrument the given block with value
+//    profiling probes.
+//
+// Arguments:
+//    block         - the block to instrument
+//    schema        - the schema describing the instrumentation
+//    profileMemory - the profile data buffer
+//
 void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
     if (!block->HasFlag(BBF_HAS_VALUE_PROFILE))
