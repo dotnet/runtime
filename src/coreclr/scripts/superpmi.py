@@ -3407,11 +3407,12 @@ class SuperPMIReplayMetricDiff:
 
                 print_superpmi_error_result(return_code, self.coreclr_args)
 
+                metrics_list = None
                 base_metrics = None
                 diff_metrics = None
                 try:
                     if os.path.isfile(details_info_file):
-                        (base_metrics, diff_metrics) = aggregate_metric_diff_metrics(details_info_file)
+                        (metrics_list, base_metrics, diff_metrics) = aggregate_metric_diff_metrics(details_info_file)
                     else:
                         logging.warning("Details info file '%s' not found; skipping metric diff aggregation", details_info_file)
                 except Exception as ex:
@@ -3423,20 +3424,21 @@ class SuperPMIReplayMetricDiff:
                     elif return_code == 3:
                         logging.warning("SuperPMI encountered missing data for {} contexts".format(base_metrics["Missing compiles"]))
 
-                    has_any_data = any(base_metrics[m] != 0 or diff_metrics[m] != 0 for m in METRIC_DIFF_METRICS)
+                    has_any_data = any(base_metrics[m] != 0 or diff_metrics[m] != 0 for m in metrics_list)
                     if has_any_data:
-                        for metric in METRIC_DIFF_METRICS:
+                        for metric in metrics_list:
                             base_val = base_metrics[metric]
                             diff_val = diff_metrics[metric]
                             if base_val != 0 or diff_val != 0:
                                 delta = diff_val - base_val
+                                fmt = "{:,.2f}" if isinstance(base_val, float) else "{:,d}"
                                 if base_val != 0:
-                                    logging.info("  {}: base={:,d}, diff={:,d}, delta={:,d} ({:.2%})".format(
-                                        metric, base_val, diff_val, delta, delta / base_val))
+                                    logging.info("  {}: base={}, diff={}, delta={} ({:.2%})".format(
+                                        metric, fmt.format(base_val), fmt.format(diff_val), fmt.format(delta), delta / base_val))
                                 else:
-                                    logging.info("  {}: base={:,d}, diff={:,d}, delta={:,d}".format(
-                                        metric, base_val, diff_val, delta))
-                        memory_diffs.append((os.path.basename(mch_file), base_metrics, diff_metrics))
+                                    logging.info("  {}: base={}, diff={}, delta={}".format(
+                                        metric, fmt.format(base_val), fmt.format(diff_val), fmt.format(delta)))
+                        memory_diffs.append((os.path.basename(mch_file), metrics_list, base_metrics, diff_metrics))
                     else:
                         logging.warning("One compilation failed to produce any results")
                 else:
@@ -3490,18 +3492,29 @@ class SuperPMIReplayMetricDiff:
         ################################################################################################ end of replay_with_memory_diff()
 
 
-METRIC_DIFF_METRICS = ["BytesAllocated", "StackAllocatedRefClasses", "StackAllocatedBoxedValueClasses",
-                       "StackAllocatedArrays", "LoopsCloned", "CseCount"]
+def discover_metrics_from_csv(details_file):
+    """ Read the CSV header and return all metric column names (those with 'Base X' / 'Diff X' pairs). """
+    with open(details_file, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        headers = reader.fieldnames
+    metrics = []
+    for h in headers:
+        if h.startswith("Base ") and ("Diff " + h[5:]) in headers:
+            name = h[5:]
+            if name not in ("result", "instructions"):
+                metrics.append(name)
+    return metrics
 
 def aggregate_metric_diff_metrics(details_file):
-    """ Given the path to a CSV details file output by SPMI for a diff, aggregate multiple metrics.
+    """ Given the path to a CSV details file output by SPMI for a diff, aggregate all metrics.
 
     Returns:
-        (base_metrics, diff_metrics) where each is a dict mapping metric name to its aggregated value.
+        (metrics_list, base_metrics, diff_metrics)
     """
 
-    base_totals = {m: 0 for m in METRIC_DIFF_METRICS}
-    diff_totals = {m: 0 for m in METRIC_DIFF_METRICS}
+    metrics_list = discover_metrics_from_csv(details_file)
+    base_totals = {m: 0 for m in metrics_list}
+    diff_totals = {m: 0 for m in metrics_list}
     compile_stats = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0}
 
     for row in read_csv(details_file):
@@ -3516,25 +3529,39 @@ def aggregate_metric_diff_metrics(details_file):
             compile_stats["Failing compiles"] += 1
 
         if base_result == "Success" and diff_result == "Success":
-            for metric in METRIC_DIFF_METRICS:
-                base_totals[metric] += int(row["Base " + metric])
-                diff_totals[metric] += int(row["Diff " + metric])
+            for metric in metrics_list:
+                base_val = row["Base " + metric]
+                diff_val = row["Diff " + metric]
+                base_totals[metric] += float(base_val) if '.' in base_val else int(base_val)
+                diff_totals[metric] += float(diff_val) if '.' in diff_val else int(diff_val)
 
     base_totals.update(compile_stats)
     diff_totals.update(compile_stats)
 
-    return (base_totals, diff_totals)
+    return (metrics_list, base_totals, diff_totals)
 
 
 def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs, include_details):
 
+    def fmt_val(v):
+        return "{:,.2f}".format(v) if isinstance(v, float) else "{:,d}".format(v)
+
     write_jit_options(base_jit_options, diff_jit_options, write_fh)
+
+    # Collect the union of all metrics across all collections
+    all_metrics = []
+    seen = set()
+    for (_, metrics_list, _, _) in metric_diffs:
+        for m in metrics_list:
+            if m not in seen:
+                all_metrics.append(m)
+                seen.add(m)
 
     any_significant = False
     metrics_with_diffs = set()
-    for metric in METRIC_DIFF_METRICS:
-        significant_diffs = [(mch, base, diff) for (mch, base, diff) in metric_diffs
-                             if base[metric] != diff[metric]]
+    for metric in all_metrics:
+        significant_diffs = [(mch, base, diff) for (mch, _, base, diff) in metric_diffs
+                             if metric in base and base[metric] != diff[metric]]
         if not significant_diffs:
             continue
 
@@ -3556,8 +3583,8 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
             write_fh.write("|Collection|Base|Diff|PDIFF|\n")
             write_fh.write("|---|--:|--:|--:|\n")
             for mch_file, base, diff in significant_diffs:
-                write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
-                    mch_file, base[metric], diff[metric],
+                write_fh.write("|{}|{}|{}|{}|\n".format(
+                    mch_file, fmt_val(base[metric]), fmt_val(diff[metric]),
                     compute_and_format_pct(base[metric], diff[metric])))
 
     if not any_significant:
@@ -3565,11 +3592,11 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
             write_fh.write("No significant metric differences found\n")
 
     if include_details:
-        for metric in METRIC_DIFF_METRICS:
+        for metric in all_metrics:
             if metric in metrics_with_diffs:
                 continue
-            rows = [(mch, base[metric], diff[metric]) for (mch, base, diff) in metric_diffs
-                    if base[metric] != 0 or diff[metric] != 0]
+            rows = [(mch, base.get(metric, 0), diff.get(metric, 0)) for (mch, _, base, diff) in metric_diffs
+                    if base.get(metric, 0) != 0 or diff.get(metric, 0) != 0]
             if not rows:
                 continue
             write_fh.write("\n")
@@ -3577,8 +3604,8 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
                 write_fh.write("|Collection|Base|Diff|PDIFF|\n")
                 write_fh.write("|---|--:|--:|--:|\n")
                 for mch_file, base_val, diff_val in rows:
-                    write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
-                        mch_file, base_val, diff_val,
+                    write_fh.write("|{}|{}|{}|{}|\n".format(
+                        mch_file, fmt_val(base_val), fmt_val(diff_val),
                         compute_and_format_pct(base_val, diff_val)))
 
 ################################################################################
