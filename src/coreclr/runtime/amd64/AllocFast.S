@@ -116,7 +116,7 @@ NESTED_END RhpNewObject, _TEXT
 // Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
 //  RAX == string/array size
 //  RDI == MethodTable
-//  ESI == character/element count
+//  RSI == character/element count
 .macro NEW_ARRAY_FAST
 
         push_nonvol_reg rbx
@@ -200,7 +200,7 @@ LEAF_END RhNewString, _TEXT
 
 // Allocate one dimensional, zero based array (SZARRAY).
 //  RDI == MethodTable
-//  ESI == element count
+//  RSI == element count
 LEAF_ENTRY RhpNewArrayFast, _TEXT
 
         // we want to limit the element count to the non-negative 32-bit int range
@@ -229,16 +229,12 @@ LEAF_END RhpNewArrayFast, _TEXT
 
 // Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 //  RDI == MethodTable
-//  ESI == element count
+//  RSI == element count
 LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
-        // Delegate overflow handling to the generic helper conservatively
-        // The constant 0x8000000 is (0x40000000 / sizeof(void*))
-        // Some assemblers don't like an expression here, so the
-        // constant expression is reduced to it's simple form.
-
-        cmp         rsi, 0x8000000        // (0x40000000 / 8)
-        jae         C_FUNC(RhpNewArrayFast)
+        // we want to limit the element count to the non-negative 32-bit int range
+        cmp         rsi, 0x07FFFFFFF
+        ja          LOCAL_LABEL(ArraySizeOverflow)
 
         // In this case we know the element size is sizeof(void *), or 8 for x64
         // This helps us in two ways - we can shift instead of multiplying, and

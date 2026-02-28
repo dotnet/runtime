@@ -215,14 +215,13 @@ LOCAL_LABEL(ArraySizeOverflow):
 //  x1 == element count
     LEAF_ENTRY RhpNewPtrArrayFast, _Text
 
-        // Delegate overflow handling to the generic helper conservatively
-
-        mov         x2, #(0x40000000 / 8) // sizeof(void*)
+        // we want to limit the element count to the non-negative 32-bit int range
+        mov         x2, #0x7FFFFFFF
         cmp         x1, x2
 #if defined(__APPLE__)
         bhs         1f
 #else
-        bhs         C_FUNC(RhpNewArrayFast)
+        bhs         LOCAL_LABEL(ArraySizeOverflow)
 #endif
 
         // In this case we know the element size is sizeof(void *), or 8 for arm64
