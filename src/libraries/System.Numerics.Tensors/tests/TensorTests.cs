@@ -767,6 +767,27 @@ namespace System.Numerics.Tensors.Tests
             Assert.False(ts1.SequenceEqual(ts3));
         }
 
+        /// <summary>
+        /// Computes the set of buffer offsets that correspond to logical elements in a non-dense tensor.
+        /// </summary>
+        private static HashSet<int> ComputeLogicalOffsets(nint[] shape, nint[] strides, nint flattenedLength)
+        {
+            HashSet<int> logicalOffsets = new HashSet<int>();
+            for (nint i = 0; i < flattenedLength; i++)
+            {
+                nint offset = 0;
+                nint remaining = i;
+                for (int d = shape.Length - 1; d >= 0; d--)
+                {
+                    nint dimIndex = remaining % shape[d];
+                    remaining /= shape[d];
+                    offset += dimIndex * strides[d];
+                }
+                logicalOffsets.Add((int)offset);
+            }
+            return logicalOffsets;
+        }
+
         [Theory]
         [MemberData(nameof(NonDenseTensorData))]
         public static void TensorFillGaussianNormalDistributionNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
@@ -785,24 +806,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             // Gap positions should remain untouched (zero)
-            var denseSpan = new TensorSpan<double>(dblData, shape, strides);
-            var enumerator = denseSpan.GetEnumerator();
-            HashSet<int> logicalOffsets = new HashSet<int>();
-            nint[] indexes = new nint[shape.Length];
-            for (nint i = 0; i < ts.FlattenedLength; i++)
-            {
-                nint offset = 0;
-                // Compute i-th logical element's linear offset
-                nint remaining = i;
-                for (int d = shape.Length - 1; d >= 0; d--)
-                {
-                    nint dimIndex = remaining % shape[d];
-                    remaining /= shape[d];
-                    offset += dimIndex * strides[d];
-                }
-                logicalOffsets.Add((int)offset);
-            }
-
+            HashSet<int> logicalOffsets = ComputeLogicalOffsets(shape, strides, ts.FlattenedLength);
             for (int i = 0; i < dblData.Length; i++)
             {
                 if (!logicalOffsets.Contains(i))
@@ -831,20 +835,7 @@ namespace System.Numerics.Tensors.Tests
             }
 
             // Gap positions should remain untouched (zero)
-            HashSet<int> logicalOffsets = new HashSet<int>();
-            for (nint i = 0; i < ts.FlattenedLength; i++)
-            {
-                nint offset = 0;
-                nint remaining = i;
-                for (int d = shape.Length - 1; d >= 0; d--)
-                {
-                    nint dimIndex = remaining % shape[d];
-                    remaining /= shape[d];
-                    offset += dimIndex * strides[d];
-                }
-                logicalOffsets.Add((int)offset);
-            }
-
+            HashSet<int> logicalOffsets = ComputeLogicalOffsets(shape, strides, ts.FlattenedLength);
             for (int i = 0; i < dblData.Length; i++)
             {
                 if (!logicalOffsets.Contains(i))
