@@ -11,12 +11,12 @@
 class MCList
 {
 public:
-    static bool processArgAsMCL(char* input, int* count, int** list);
+    static bool processArgAsMCL(char* input, std::vector<int>& list);
 
     MCList()
     {
         // Initialize the static file handle
-        hMCLFile = INVALID_HANDLE_VALUE;
+        fpMCLFile = NULL;
     }
 
     // Methods to create an MCL file
@@ -25,9 +25,9 @@ public:
     void CloseMCL();
 
 private:
-    static bool getLineData(const char* nameOfInput, /* OUT */ int* pIndexCount, /* OUT */ int** pIndexes);
+    static bool getLineData(const char* nameOfInput, std::vector<int>& indexes);
 
     // File handle for MCL file
-    HANDLE hMCLFile;
+    FILE* fpMCLFile;
 };
 #endif

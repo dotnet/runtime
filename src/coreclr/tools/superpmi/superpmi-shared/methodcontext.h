@@ -68,16 +68,16 @@ public:
 
 private:
     void MethodInitHelper(unsigned char* buff, unsigned int totalLen);
-    void MethodInitHelperFile(HANDLE hFile);
+    void MethodInitHelperFile(FILE* fp);
 
     bool Initialize(int mcIndex, unsigned char* buff, DWORD size);
-    bool Initialize(int mcIndex, HANDLE hFile);
+    bool Initialize(int mcIndex, FILE* fp);
 
     int dumpHashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
 
 public:
     static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
-    static bool Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, FILE* fp, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
 
@@ -87,7 +87,7 @@ public:
     }
 
     bool Equal(MethodContext* other);
-    unsigned int saveToFile(HANDLE hFile);
+    unsigned int saveToFile(FILE* fp);
     unsigned int calculateFileSize();
     unsigned int calculateRawFileSize();
 
