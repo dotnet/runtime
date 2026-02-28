@@ -571,7 +571,7 @@ enum EEToManagedCallFlags
         __retval = DispatchCallSimple(__pArgs,          \
                            __numStackSlotsToCopy,       \
                            __pSlot,                     \
-                           __criticalDispatchCall);     \ 
+                           __criticalDispatchCall);     \
 
 #ifdef CALLDESCR_ARGREGS
 
