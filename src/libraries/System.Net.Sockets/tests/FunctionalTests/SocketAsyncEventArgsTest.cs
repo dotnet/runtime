@@ -425,7 +425,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false, 1)]
         [InlineData(false, 10_000)]
         [InlineData(true, 1)]           // This should fit with SYN flag

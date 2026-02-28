@@ -300,7 +300,7 @@ namespace System.Net.Quic.Tests
         }
 
 
-        [ConditionalFact]
+        [Fact]
         public async Task UntrustedClientCertificateFails()
         {
             var listenerOptions = new QuicListenerOptions()
@@ -560,7 +560,7 @@ namespace System.Net.Quic.Tests
             await using QuicConnection connection = await CreateQuicConnection(clientOptions);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData("127.0.0.1", true)]
         [InlineData("::1", true)]
         [InlineData("127.0.0.1", false)]
@@ -612,7 +612,7 @@ namespace System.Net.Quic.Tests
             CertificateContext
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true, ClientCertSource.ClientCertificate)]
         [InlineData(false, ClientCertSource.ClientCertificate)]
         [InlineData(true, ClientCertSource.SelectionCallback)]

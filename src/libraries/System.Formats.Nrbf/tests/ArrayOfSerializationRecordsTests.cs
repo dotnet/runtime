@@ -100,7 +100,7 @@ namespace System.Formats.Nrbf.Tests
             Assert.Equal(Text, stringRecord.Value);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(ElementType.Object)]
         [InlineData(ElementType.NonGeneric)]
         [InlineData(ElementType.Generic)]
@@ -128,7 +128,7 @@ namespace System.Formats.Nrbf.Tests
             Assert.Equal(Integer, intRecord.Value);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(ElementType.Object)]
         [InlineData(ElementType.NonGeneric)]
         [InlineData(ElementType.Generic)]
@@ -157,7 +157,7 @@ namespace System.Formats.Nrbf.Tests
             Assert.Equal(Integer, intRecord.Value);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(ElementType.Object)]
         [InlineData(ElementType.NonGeneric)]
         [InlineData(ElementType.Generic)]

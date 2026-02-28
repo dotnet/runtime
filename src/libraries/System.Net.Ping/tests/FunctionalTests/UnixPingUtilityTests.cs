@@ -20,7 +20,7 @@ namespace System.Net.NetworkInformation.Tests
     {
         private const int IcmpHeaderLengthInBytes = 8;
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(0)]
         [InlineData(100)]
         [InlineData(1000)]

@@ -2891,7 +2891,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData("Hello", 'l', 0, 5, 2)]
         [InlineData("Hello", 'x', 0, 5, -1)]
         [InlineData("Hello", 'l', 1, 4, 2)]

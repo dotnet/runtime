@@ -869,7 +869,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void VerifyFiles_ParentRedundantSegment_HasMatches()
         {
             string file = "sdk/9.0.100-preview.4.24207.1/.version";
@@ -882,7 +882,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void VerifyFiles_ParentRedundantSegment_CurrentDirectory_HasMatches()
         {
             string cwd = Environment.CurrentDirectory;

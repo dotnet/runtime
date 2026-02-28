@@ -46,7 +46,7 @@ namespace System.Net.Security.Tests
             return new StreamPair(ssl1, ssl2);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(ReadWriteMode.SyncArray)]
         [InlineData(ReadWriteMode.SyncSpan)]
         [InlineData(ReadWriteMode.AsyncArray)]

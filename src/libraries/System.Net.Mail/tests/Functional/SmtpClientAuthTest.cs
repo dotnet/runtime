@@ -44,7 +44,7 @@ namespace System.Net.Mail.Tests
             Assert.Equal("NTLM", Server.AuthMethodUsed, StringComparer.OrdinalIgnoreCase);
         }
 
-        [ConditionalFact]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
         public async Task TestGssapiAuthentication()
         {

@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(64, false)]        // smaller than default BlockSize
         [InlineData(129, false)]       // larger than default BlockSize
         // Skip on .NET Framework because change is not ported https://github.com/dotnet/runtime/issues/21236

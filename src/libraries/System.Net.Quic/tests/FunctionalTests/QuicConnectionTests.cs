@@ -26,7 +26,7 @@ namespace System.Net.Quic.Tests
 
         public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(LocalAddresses))]
         public async Task TestConnect(IPAddress address)
         {

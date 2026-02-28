@@ -80,7 +80,7 @@ namespace System.Dynamic.Tests
                 Assert.Contains(item, expected);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(KeyCollections))]
         [MemberData(nameof(ValueCollections))]
         public void ItemsAreRootHidden(object eo)
@@ -95,7 +95,7 @@ namespace System.Dynamic.Tests
             Assert.Equal(DebuggerBrowsableState.RootHidden, browsable.State);
         }
 
-        [ConditionalTheory, MemberData(nameof(KeyCollections))]
+        [Theory, MemberData(nameof(KeyCollections))]
         public void KeyCollectionCorrectlyViewed(ICollection<string> keys)
         {
             object view = GetDebugViewObject(keys);
@@ -108,7 +108,7 @@ namespace System.Dynamic.Tests
             AssertSameCollectionIgnoreOrder(keys, items);
         }
 
-        [ConditionalTheory, MemberData(nameof(ValueCollections))]
+        [Theory, MemberData(nameof(ValueCollections))]
         public void ValueCollectionCorrectlyViewed(ICollection<object> keys)
         {
             object view = GetDebugViewObject(keys);
@@ -121,7 +121,7 @@ namespace System.Dynamic.Tests
             AssertSameCollectionIgnoreOrder(keys, items);
         }
 
-        [ConditionalTheory, MemberData(nameof(OneOfEachCollection))]
+        [Theory, MemberData(nameof(OneOfEachCollection))]
         public void ViewTypeThrowsOnNull(object collection)
         {
             Type debugViewType = GetDebugViewType(collection.GetType());

@@ -165,7 +165,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ListenerRestart_Success(bool sync)

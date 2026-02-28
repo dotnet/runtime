@@ -1111,7 +1111,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test that we can map special character devices on Unix using FileStream.
         /// </summary>
-        [ConditionalTheory]
+        [Theory]
         [InlineData(MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWrite)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
@@ -1141,7 +1141,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test that we can map special character devices on Unix using file name.
         /// </summary>
-        [ConditionalTheory]
+        [Theory]
         [InlineData(MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWrite)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]

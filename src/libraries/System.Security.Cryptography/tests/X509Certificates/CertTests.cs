@@ -465,7 +465,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26213")]
-        [ConditionalFact]
+        [Fact]
         [OuterLoop("May require using the network, to download CRLs and intermediates", ~TestPlatforms.Browser)]
         public void TestVerify()
         {

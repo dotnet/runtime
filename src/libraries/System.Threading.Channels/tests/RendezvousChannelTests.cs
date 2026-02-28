@@ -291,7 +291,7 @@ namespace System.Threading.Channels.Tests
             r.GetAwaiter().GetResult();
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void AllowSynchronousContinuations_CompletionTask_ContinuationsInvokedAccordingToSetting(bool allowSynchronousContinuations)

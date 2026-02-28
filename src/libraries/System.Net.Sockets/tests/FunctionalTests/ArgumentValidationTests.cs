@@ -693,7 +693,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         [InlineData(0)]
         [InlineData(1)]
@@ -729,7 +729,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // API throws PNSE on Unix
         [InlineData(0)]
         [InlineData(1)]

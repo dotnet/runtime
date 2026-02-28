@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public abstract partial class X509CertificateLoaderPkcs12Tests
     {
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, true)]
@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
         [InlineData(false, true)]
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true, true, true)]
         [InlineData(true, true, false)]
         [InlineData(true, false, true)]
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void VerifyNamesWithDuplicateAttributes(bool noLimits)

@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 () => VerifyData(ecdsa, data, sig, HashAlgorithmName.SHA256));
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(RealImplementations))]
         public void SignHash_Roundtrip(ECDsa ecdsa)
         {
@@ -245,7 +245,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.True(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(RealImplementations))]
         public void SignHash_TamperedSignature(ECDsa ecdsa)
         {
@@ -257,7 +257,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.False(VerifyHash(ecdsa, hash, 0, hash.Length, signature), nameof(VerifyHash));
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(RealImplementations))]
         public void SignHash_DifferentHashes(ECDsa ecdsa)
         {

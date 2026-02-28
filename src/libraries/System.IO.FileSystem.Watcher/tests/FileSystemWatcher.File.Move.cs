@@ -31,7 +31,7 @@ namespace System.IO.Tests
             FileMove_FromWatchedToUnwatched(WatcherChangeTypes.Deleted);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData(1)]
         [InlineData(2)]

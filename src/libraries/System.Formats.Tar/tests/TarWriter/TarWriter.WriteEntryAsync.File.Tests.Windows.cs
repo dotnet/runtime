@@ -50,7 +50,7 @@ public partial class TarWriter_WriteEntryAsync_File_Tests : TarWriter_File_Base
         }
     }
 
-    [ConditionalTheory]
+    [Theory]
     [InlineData(TarEntryFormat.V7)]
     [InlineData(TarEntryFormat.Ustar)]
     [InlineData(TarEntryFormat.Pax)]

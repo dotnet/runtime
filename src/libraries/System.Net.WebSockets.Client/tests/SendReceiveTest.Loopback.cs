@@ -20,7 +20,7 @@ namespace System.Net.WebSockets.Client.Tests
         public Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendReceive_PartialMessageDueToSmallReceiveBuffer_Success, server, type), useSsl);
 
-        [ConditionalTheory, MemberData(nameof(UseSslAndSendReceiveType))] // Uses SkipTestException
+        [Theory, MemberData(nameof(UseSslAndSendReceiveType))] // Uses SkipTestException
         public Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendReceive_PartialMessageBeforeCompleteMessageArrives_Success, server, type), useSsl);
 
@@ -40,7 +40,7 @@ namespace System.Net.WebSockets.Client.Tests
         public Task SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success, server, type), useSsl);
 
-        [ConditionalTheory, MemberData(nameof(UseSslAndSendReceiveType))] // Uses SkipTestException
+        [Theory, MemberData(nameof(UseSslAndSendReceiveType))] // Uses SkipTestException
         public Task SendReceive_VaryingLengthBuffers_Success(bool useSsl, SendReceiveType type) => RunEchoAsync(
             server => RunSendReceive(RunClient_SendReceive_VaryingLengthBuffers_Success, server, type), useSsl);
 

@@ -25,7 +25,7 @@ namespace System.Net.Http.Functional.Tests
             from host in Hosts(scheme)
             select new object[] { scheme, useSsl, useAuth, host };
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(TestLoopbackAsync_MemberData))]
         public async Task TestLoopbackAsync(string scheme, bool useSsl, bool useAuth, string host)
         {

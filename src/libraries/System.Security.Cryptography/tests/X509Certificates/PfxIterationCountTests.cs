@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         internal abstract X509Certificate Import(string fileName, string password);
         internal abstract X509Certificate Import(string fileName, SecureString password);
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetCertsWith_IterationCountNotExceedingDefaultLimit_AndNullOrEmptyPassword_MemberData))]
         public void Import_IterationCounLimitNotExceeded_Succeeds(string name, bool usesPbes2, byte[] blob, long iterationCount, bool usesRC2)
         {
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetCertsWith_IterationCountExceedingDefaultLimit_MemberData))]
         public void Import_IterationCountLimitExceeded_Throws(string name, string password, bool usesPbes2, byte[] blob, long iterationCount, bool usesRC2)
         {
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.DoesNotContain(FwlinkId, ce.Message);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetCertsWith_NonNullOrEmptyPassword_MemberData))]
         public void Import_NonNullOrEmptyPasswordExpected_Throws(string name, string password, bool usesPbes2, byte[] blob, long iterationCount, bool usesRC2)
         {

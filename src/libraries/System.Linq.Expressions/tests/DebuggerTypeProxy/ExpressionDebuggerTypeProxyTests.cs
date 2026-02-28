@@ -50,7 +50,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<NotSupportedException>(() => collection.Remove(default(T)));
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(BinaryExpressionProxy))]
         [MemberData(nameof(BlockExpressionProxy))]
         [MemberData(nameof(CatchBlockProxy))]
@@ -163,7 +163,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory, MemberData(nameof(OnePerType))]
+        [Theory, MemberData(nameof(OnePerType))]
         public void ThrowOnNullToCtor(object sourceObject)
         {
             Type type = sourceObject.GetType();

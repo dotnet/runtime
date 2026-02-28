@@ -279,7 +279,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets are not supported on this platform")]
-        [ConditionalFact] // Uses SkipTestException
+        [Fact] // Uses SkipTestException
         public async Task ConnectAsync_Http11Server_DowngradeFail()
         {
             if (UseSharedHandler)
@@ -307,7 +307,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets are not supported on this platform")]
-        [ConditionalTheory] // Uses SkipTestException
+        [Theory] // Uses SkipTestException
         [MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_Http11Server_DowngradeSuccess(Uri server)
         {
@@ -327,7 +327,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [SkipOnPlatform(TestPlatforms.Browser, "HTTP/2 WebSockets are not supported on this platform")]
-        [ConditionalTheory] // Uses SkipTestException
+        [Theory] // Uses SkipTestException
         [MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_Http11WithRequestVersionOrHigher_DowngradeSuccess(Uri server)
         {

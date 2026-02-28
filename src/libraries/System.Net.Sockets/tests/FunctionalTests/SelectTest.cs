@@ -424,7 +424,7 @@ namespace System.Net.Sockets.Tests
     // Set of tests to not run  together with any other tests.
     public class NoParallelSelectTests
     {
-        [ConditionalFact]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Select_LargeNumber_Succcess()
         {

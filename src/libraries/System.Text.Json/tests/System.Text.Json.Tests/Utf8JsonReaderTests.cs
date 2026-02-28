@@ -1636,7 +1636,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(4)]

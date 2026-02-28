@@ -368,7 +368,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server.")]
-        [ConditionalFact]
+        [Fact]
         public async Task ExternalServer_DurationMetrics_Recorded()
         {
             if (UseVersion == HttpVersion.Version30)

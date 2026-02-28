@@ -66,7 +66,7 @@ namespace System.Dynamic.Tests
         private static BindingRestrictionsProxyProxy GetDebugViewObject(object obj)
             => new BindingRestrictionsProxyProxy(BindingRestrictionsProxyCtor.Invoke(new[] {obj}));
 
-        [ConditionalFact]
+        [Fact]
         public void EmptyRestiction()
         {
             if (BindingRestrictionsDebugViewType == null)
@@ -83,7 +83,7 @@ namespace System.Dynamic.Tests
             Assert.Equal(empty.ToExpression().ToString(), view.ToString());
         }
 
-        [ConditionalFact]
+        [Fact]
         public void CustomRestriction()
         {
             if (BindingRestrictionsDebugViewType == null)
@@ -102,7 +102,7 @@ namespace System.Dynamic.Tests
             Assert.Equal(exp.ToString(), view.ToString());
         }
 
-        [ConditionalFact]
+        [Fact]
         public void MergedRestrictionsProperties()
         {
             var exps = new Expression[]
@@ -137,7 +137,7 @@ namespace System.Dynamic.Tests
             Assert.True(viewedRestrictions.All(r => restrictions.Contains(r)));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void MergedRestrictionsExpressions()
         {
             var exps = new Expression[]
@@ -194,7 +194,7 @@ namespace System.Dynamic.Tests
             Assert.True(notAndAlso.All(ex => exps.Contains(ex)));
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ThrowOnNullToCtor()
         {
             if (BindingRestrictionsDebugViewType == null)

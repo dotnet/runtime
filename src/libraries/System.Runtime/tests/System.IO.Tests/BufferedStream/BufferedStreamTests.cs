@@ -276,7 +276,7 @@ namespace System.IO.Tests
             Assert.Equal(TaskStatus.Faulted, stream.FlushAsync().Status);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task CopyToTest_RequiresFlushingOfWrites(bool copyAsynchronously)

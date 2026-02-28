@@ -100,7 +100,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(HostNameData))]
         public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
@@ -274,7 +274,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(rawHostname, client.TargetHostName);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData("www-.volal.cz")]
         [InlineData("www-.colorhexa.com")]
         [InlineData("xn--www-7m0a.thegratuit.com")]

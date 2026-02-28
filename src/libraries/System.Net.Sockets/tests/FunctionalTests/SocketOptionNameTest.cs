@@ -427,7 +427,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task TcpFastOpen_Roundrip_Succeeds()
         {
             if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater)
@@ -541,7 +541,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]

@@ -140,7 +140,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(null)]
         [InlineData(new byte[0])]
         [InlineData(new byte[3] { 0, 0, 0 })]

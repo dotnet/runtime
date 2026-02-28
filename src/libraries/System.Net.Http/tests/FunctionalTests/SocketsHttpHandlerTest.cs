@@ -887,7 +887,7 @@ namespace System.Net.Http.Functional.Tests
 
         [InlineData(false)]
         [InlineData(true)]
-        [ConditionalTheory]
+        [Theory]
         public async Task GetAsync_UseResponseHeadersReadOption_TrailingHeadersReceived(bool includeContentLength)
         {
             if (UseVersion.Major == 1 && includeContentLength)
@@ -1710,7 +1710,7 @@ namespace System.Net.Http.Functional.Tests
 
         private delegate int StreamReadSpanDelegate(Span<byte> buffer);
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(TripleBoolValues))]
         public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async, bool lineFolds)
         {

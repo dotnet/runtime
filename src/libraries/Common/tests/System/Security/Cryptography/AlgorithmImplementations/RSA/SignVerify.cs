@@ -1433,7 +1433,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public void SignHash_NullSignature_Fails(bool usePss)
@@ -1464,7 +1464,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public void SignData_NullSignature_Fails(bool usePss)

@@ -72,7 +72,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(OneOrBothUseDefaulData))]
         public async Task ClientAndServer_OneOrBothUseDefault_Ok(SslProtocols? clientProtocols, SslProtocols? serverProtocols)
         {

@@ -242,7 +242,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(s.Connected);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
@@ -267,7 +267,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(3, keepAliveRetryCount);
             });
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
@@ -282,7 +282,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(42, c.LingerState.LingerTime);
             });
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
@@ -299,7 +299,7 @@ namespace System.Net.Sockets.Tests
             });
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalTheory]
+        [Theory]
         [InlineData("single")]
         [InlineData("multi")]
         [InlineData("dns")]
@@ -337,7 +337,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
@@ -413,7 +413,7 @@ namespace System.Net.Sockets.Tests
             await Assert.ThrowsAsync<PlatformNotSupportedException>(() => ConnectAsync(c, ep));
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task MultiConnect_DualMode_Preserved()

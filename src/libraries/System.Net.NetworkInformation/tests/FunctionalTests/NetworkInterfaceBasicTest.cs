@@ -273,7 +273,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.True(NetworkInterface.GetIsNetworkAvailable());
         }
 
-        [ConditionalTheory]
+        [Theory]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
         [InlineData(false)]
@@ -305,7 +305,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void NetworkInterface_UnicastLLA_ScopeIdSet()
         {
             bool foundLla = false;

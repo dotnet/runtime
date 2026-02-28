@@ -57,7 +57,7 @@ namespace System.Net.Http.Tests
             { "abc\rfoo", "UTF-16" },
         };
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(RoundTrips_Data))]
         public void GetHeaderValue_RoundTrips_ReplacesDangerousCharacters(string input, string? encodingName)
         {

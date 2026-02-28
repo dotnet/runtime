@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(1, reference.TransformChain.Count);
         }
 
-        [ConditionalFact]
+        [Fact]
         public void LoadXsltTransforms()
         {
 #if NET

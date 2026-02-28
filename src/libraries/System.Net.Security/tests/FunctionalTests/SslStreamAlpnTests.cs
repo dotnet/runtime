@@ -239,7 +239,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(BackendSupportsAlpn))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
         public async Task SslStream_StreamToStream_AlpnListTotalSizeExceedsLimit_Throws()
         {
             // Each protocol is 255 bytes, serialized with a 1-byte length prefix = 256 bytes each.

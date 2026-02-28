@@ -39,7 +39,7 @@ namespace System.Net.WebSockets.Client.Tests
         public Task ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol(bool useSsl) => RunEchoAsync(
             RunClient_ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol, useSsl);
 
-        [ConditionalTheory] // Uses SkipTestException
+        [Theory] // Uses SkipTestException
         [MemberData(nameof(UseSsl))]
         public Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(bool useSsl) => RunEchoAsync(
             RunClient_ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState, useSsl);
@@ -51,7 +51,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         #region HTTP/1.1-only loopback tests
 
-        [ConditionalTheory] // Uses SkipTestException
+        [Theory] // Uses SkipTestException
         [MemberData(nameof(UseSsl))]
         public async Task ConnectAsync_Http11WithRequestVersionOrHigher_Loopback_DowngradeSuccess(bool useSsl)
         {

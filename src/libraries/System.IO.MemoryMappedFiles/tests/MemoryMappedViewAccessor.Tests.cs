@@ -82,7 +82,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             yield return new object[] { MemoryMappedFileAccess.Read, MemoryMappedFileAccess.CopyOnWrite };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(AccessLevelCombinationsData))]
         public void ValidAccessLevelCombinations(MemoryMappedFileAccess mapAccess, MemoryMappedFileAccess viewAccess)
         {

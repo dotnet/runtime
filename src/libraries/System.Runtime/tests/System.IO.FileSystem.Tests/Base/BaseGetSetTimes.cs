@@ -245,7 +245,7 @@ namespace System.IO.Tests
             ValidateSetTimes(item, beforeTime, afterTime);
         }
 
-        [ConditionalFact] // OSX HFS driver format and Browser platform do not support millisec granularity
+        [Fact] // OSX HFS driver format and Browser platform do not support millisec granularity
         public void TimesIncludeMillisecondPart()
         {
             CheckHighTemporalResolution();
@@ -278,7 +278,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public void TimesIncludeMillisecondPart_LowTempRes()
         {
             CheckLowTemporalResolution();

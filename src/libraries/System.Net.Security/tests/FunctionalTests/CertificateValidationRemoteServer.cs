@@ -66,7 +66,7 @@ namespace System.Net.Security.Tests
         }
 
         // MacOS has special validation rules for apple.com and icloud.com
-        [ConditionalTheory]
+        [Theory]
         [OuterLoop("Uses external servers")]
         [InlineData("www.apple.com")]
         [InlineData("www.icloud.com")]
@@ -103,7 +103,7 @@ namespace System.Net.Security.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Linux)]
-        [ConditionalTheory]
+        [Theory]
         [OuterLoop("Subject to system load race conditions")]
         [InlineData(false, false)]
         [InlineData(true, false)]
@@ -129,7 +129,7 @@ namespace System.Net.Security.Tests
         }
 
 #if WINDOWS
-        [ConditionalTheory]
+        [Theory]
         [OuterLoop("Uses external servers")]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(X509RevocationMode.Offline)]

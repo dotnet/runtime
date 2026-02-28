@@ -88,7 +88,7 @@ namespace System.Linq.Parallel.Tests
         // The basic tests are covered elsewhere, although without WithDegreeOfParallelism
         // or WithMergeOptions
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Default(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
@@ -113,7 +113,7 @@ namespace System.Linq.Parallel.Tests
             Partitioning_Default(labeled, count, partitions);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Striped(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {

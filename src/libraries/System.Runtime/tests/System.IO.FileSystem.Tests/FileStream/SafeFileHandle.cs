@@ -66,7 +66,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void SafeFileHandle_PseudoFile_DoesNotThrow()
         {

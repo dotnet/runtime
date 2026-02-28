@@ -155,7 +155,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
@@ -187,7 +187,7 @@ namespace System.Net.Http.Functional.Tests
             }, options: options);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetAsync_IPBasedUri_Success_MemberData))]
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
         {
@@ -266,7 +266,7 @@ namespace System.Net.Http.Functional.Tests
             where PlatformDetection.IsNotBrowser || !useSsl
             select new object[] { address, useSsl };
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)

@@ -597,7 +597,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public static void NameConstraintViolation_ExcludedTree_Upn()
         {
             if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
@@ -746,7 +746,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public static void NameConstraintAllowed_ExcludedTree_Upn()
         {
             if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)

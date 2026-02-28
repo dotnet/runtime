@@ -4911,7 +4911,7 @@ namespace System.Tests
         static readonly GCMemoryInfo memoryInfo = GC.GetGCMemoryInfo();
 
         [OuterLoop] // Allocates large array
-        [ConditionalFact]
+        [Fact]
         public static void Copy_LargeMultiDimensionalArray()
         {
             // If this test is run in a 32-bit process, the large allocation will fail.
@@ -4937,7 +4937,7 @@ namespace System.Tests
         }
 
         [OuterLoop] // Allocates large array
-        [ConditionalFact]
+        [Fact]
         public static void Clear_LargeMultiDimensionalArray()
         {
             // If this test is run in a 32-bit process, the large allocation will fail.

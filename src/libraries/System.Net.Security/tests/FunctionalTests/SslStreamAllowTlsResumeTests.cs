@@ -31,7 +31,7 @@ namespace System.Net.Security.Tests
             return (bool)info.GetType().GetProperty("TlsResumed").GetValue(info);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/103449", TestPlatforms.Windows)]

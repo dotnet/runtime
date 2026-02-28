@@ -1387,7 +1387,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Takes several minutes on .NET Framework")]
         [OuterLoop("Takes several seconds")]
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_VaryingLengthStrings_Huge(RegexEngine engine)
         {
@@ -2528,7 +2528,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [OuterLoop("Can take over a minute")]
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(StressTestDeepNestingOfConcat_TestData))]
         public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, string anchor, string input, int pattern_repetition, int input_repetition)
         {

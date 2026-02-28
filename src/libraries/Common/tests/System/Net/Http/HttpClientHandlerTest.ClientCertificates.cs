@@ -76,7 +76,7 @@ namespace System.Net.Http.Functional.Tests
             return CreateHttpClient(handler);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(1, true)]
         [InlineData(2, true)]
         [InlineData(3, false)]

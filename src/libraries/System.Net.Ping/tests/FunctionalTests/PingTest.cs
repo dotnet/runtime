@@ -810,12 +810,12 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(IPStatus.TimedOut, reply.Status);
         }
 
-        [ConditionalFact]
+        [Fact]
         [OuterLoop]
         public Task Ping_TimedOut_Sync_Success()
             => Ping_TimedOut_Core((sender, address) => Task.Run(() => sender.Send(address)));
 
-        [ConditionalFact]
+        [Fact]
         [OuterLoop]
         public Task Ping_TimedOut_EAP_Success()
             => Ping_TimedOut_Core(async (sender, address) =>
@@ -845,7 +845,7 @@ namespace System.Net.NetworkInformation.Tests
                 return reply;
             });
 
-        [ConditionalFact]
+        [Fact]
         [OuterLoop]
         public Task Ping_TimedOut_TAP_Success()
             => Ping_TimedOut_Core((sender, address) => sender.SendPingAsync(address));

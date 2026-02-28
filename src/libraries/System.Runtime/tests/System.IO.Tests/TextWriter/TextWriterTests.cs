@@ -685,7 +685,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetStringBuilderTestData))]
         public async Task WriteAsyncStringBuilderTest(bool isSynchronized, TestStringBuilderKind testStringBuilderKind)
         {
@@ -705,7 +705,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetStringBuilderTestData))]
         public async Task WriteLineAsyncStringBuilderTest(bool isSynchronized, TestStringBuilderKind testStringBuilderKind)
         {

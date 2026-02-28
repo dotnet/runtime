@@ -51,7 +51,7 @@ namespace System.Net.Security.Tests
             _certificates = setup;
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Linux)] // This only applies where OpenSsl is used.
         public async Task SslStream_SendReceiveOverNetworkStream_AuthenticationException()
         {
@@ -747,7 +747,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SslStream_ServerUntrustedCaWithCustomTrust_OK(bool usePartialChain)
