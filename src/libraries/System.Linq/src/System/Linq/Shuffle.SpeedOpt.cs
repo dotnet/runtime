@@ -289,7 +289,11 @@ namespace System.Linq
                 // If we can easily get the number of elements in the source, and the take count is larger,
                 // then we can ignore the shuffle and just check whether the item is in the source.
                 // Otherwise, count how many elements are in the source and how many of those elements match.
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                if (_source is IReadOnlyList<TSource> list)
+#else
                 if (_source is IList<TSource> list)
+#endif
                 {
                     if (list.Count <= _takeCount)
                     {

@@ -46,7 +46,7 @@ namespace System.Diagnostics
                     return false;
                 }
 
-#if NET10_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 10+
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
                 if (tagsCol is IReadOnlyList<KeyValuePair<string, object?>> secondList)
 #else
                 if (tagsCol is IList<KeyValuePair<string, object?>> secondList)

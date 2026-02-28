@@ -103,7 +103,13 @@ namespace System.Reflection.TypeLoading.Ecma
         /// Converts a list of System.Reflection.Metadata CustomAttributeTypedArgument&lt;&gt; into a freshly allocated CustomAttributeTypedArgument
         /// list suitable for direct return from the CustomAttributes api.
         /// </summary>
-        public static IList<CustomAttributeTypedArgument> ToApiForm(this IList<CustomAttributeTypedArgument<RoType>> catgs)
+        public static IList<CustomAttributeTypedArgument> ToApiForm(this
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            IReadOnlyList<CustomAttributeTypedArgument<RoType>>
+#else
+            IList<CustomAttributeTypedArgument<RoType>>
+#endif
+            catgs)
         {
             int count = catgs.Count;
             CustomAttributeTypedArgument[] cats = count != 0 ? new CustomAttributeTypedArgument[count] : Array.Empty<CustomAttributeTypedArgument>();
@@ -122,7 +128,13 @@ namespace System.Reflection.TypeLoading.Ecma
 
         private static CustomAttributeTypedArgument ToApiForm(Type type, object? value)
         {
-            if (!(value is IList<CustomAttributeTypedArgument<RoType>> catgs))
+            if (!(value is
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<CustomAttributeTypedArgument<RoType>>
+#else
+                IList<CustomAttributeTypedArgument<RoType>>
+#endif
+                catgs))
             {
                 return new CustomAttributeTypedArgument(type, value);
             }
@@ -134,7 +146,13 @@ namespace System.Reflection.TypeLoading.Ecma
         /// Converts a list of System.Reflection.Metadata CustomAttributeNamedArgument&lt;&gt; into a freshly allocated CustomAttributeNamedArgument
         /// list suitable for direct return from the CustomAttributes api.
         /// </summary>
-        public static IList<CustomAttributeNamedArgument> ToApiForm(this IList<CustomAttributeNamedArgument<RoType>> cangs, Type attributeType)
+        public static IList<CustomAttributeNamedArgument> ToApiForm(this
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            IReadOnlyList<CustomAttributeNamedArgument<RoType>>
+#else
+            IList<CustomAttributeNamedArgument<RoType>>
+#endif
+            cangs, Type attributeType)
         {
             int count = cangs.Count;
             CustomAttributeNamedArgument[] cans = count != 0 ? new CustomAttributeNamedArgument[count] : Array.Empty<CustomAttributeNamedArgument>();

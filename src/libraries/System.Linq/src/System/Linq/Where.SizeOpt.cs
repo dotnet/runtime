@@ -10,11 +10,21 @@ namespace System.Linq
     {
         private sealed partial class SizeOptIListWhereIterator<TSource> : Iterator<TSource>
         {
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            private readonly IReadOnlyList<TSource> _source;
+#else
             private readonly IList<TSource> _source;
+#endif
             private readonly Func<TSource, bool> _predicate;
             private IEnumerator<TSource>? _enumerator;
 
-            public SizeOptIListWhereIterator(IList<TSource> source, Func<TSource, bool> predicate)
+            public SizeOptIListWhereIterator(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<TSource> source,
+#else
+                IList<TSource> source,
+#endif
+                Func<TSource, bool> predicate)
             {
                 Debug.Assert(source is not null);
                 Debug.Assert(predicate is not null);

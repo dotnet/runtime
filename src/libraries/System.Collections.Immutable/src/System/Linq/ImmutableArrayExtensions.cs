@@ -187,7 +187,11 @@ namespace System.Linq
         /// <typeparam name="TBase">The type of element contained by the collection.</typeparam>
         public static bool SequenceEqual<TDerived, TBase>(this ImmutableArray<TBase> immutableArray, IEnumerable<TDerived> items, IEqualityComparer<TBase>? comparer = null) where TDerived : TBase
         {
+#if NET11_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 11+
+            if (items is IReadOnlyCollection<TBase> itemsCol)
+#else
             if (items is ICollection<TBase> itemsCol)
+#endif
             {
                 immutableArray.ThrowNullRefIfNotInitialized();
                 return Enumerable.SequenceEqual(immutableArray.array, itemsCol, comparer);

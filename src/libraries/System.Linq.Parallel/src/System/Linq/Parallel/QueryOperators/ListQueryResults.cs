@@ -17,11 +17,22 @@ namespace System.Linq.Parallel
     /// <typeparam name="T"></typeparam>
     internal sealed class ListQueryResults<T> : QueryResults<T>
     {
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+        private readonly IReadOnlyList<T> _source;
+#else
         private readonly IList<T> _source;
+#endif
         private readonly int _partitionCount;
         private readonly bool _useStriping;
 
-        internal ListQueryResults(IList<T> source, int partitionCount, bool useStriping)
+        internal ListQueryResults(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            IReadOnlyList<T> source,
+#else
+            IList<T> source,
+#endif
+            int partitionCount,
+            bool useStriping)
         {
             _source = source;
             _partitionCount = partitionCount;

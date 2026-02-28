@@ -15,7 +15,11 @@ namespace System.Linq
 
             return
                 source is Iterator<TSource> iterator ? (iterator.Take(count) ?? Empty<TSource>()) :
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                source is IReadOnlyList<TSource> sourceList ? new IListSkipTakeIterator<TSource>(sourceList, 0, count - 1) :
+#else
                 source is IList<TSource> sourceList ? new IListSkipTakeIterator<TSource>(sourceList, 0, count - 1) :
+#endif
                 new IEnumerableSkipTakeIterator<TSource>(source, 0, count - 1);
         }
 
@@ -26,7 +30,11 @@ namespace System.Linq
 
             return
                 source is Iterator<TSource> iterator ? TakeIteratorRange(iterator, startIndex, endIndex) :
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                source is IReadOnlyList<TSource> sourceList ? new IListSkipTakeIterator<TSource>(sourceList, startIndex, endIndex - 1) :
+#else
                 source is IList<TSource> sourceList ? new IListSkipTakeIterator<TSource>(sourceList, startIndex, endIndex - 1) :
+#endif
                 new IEnumerableSkipTakeIterator<TSource>(source, startIndex, endIndex - 1);
 
             static IEnumerable<TSource> TakeIteratorRange(Iterator<TSource> iterator, int startIndex, int endIndex)

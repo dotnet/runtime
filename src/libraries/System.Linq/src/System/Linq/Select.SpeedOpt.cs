@@ -526,7 +526,11 @@ namespace System.Linq
 
             public override List<TResult> ToList()
             {
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<TSource> source = _source;
+#else
                 IList<TSource> source = _source;
+#endif
                 int count = _source.Count;
 
                 var results = new List<TResult>(count);
@@ -535,7 +539,14 @@ namespace System.Linq
                 return results;
             }
 
-            private static void Fill(IList<TSource> source, Span<TResult> results, Func<TSource, TResult> func)
+            private static void Fill(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<TSource> source,
+#else
+                IList<TSource> source,
+#endif
+                Span<TResult> results,
+                Func<TSource, TResult> func)
             {
                 for (int i = 0; i < results.Length; i++)
                 {
@@ -845,12 +856,24 @@ namespace System.Linq
         [DebuggerDisplay("Count = {Count}")]
         private sealed class IListSkipTakeSelectIterator<TSource, TResult> : Iterator<TResult>
         {
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            private readonly IReadOnlyList<TSource> _source;
+#else
             private readonly IList<TSource> _source;
+#endif
             private readonly Func<TSource, TResult> _selector;
             private readonly int _minIndexInclusive;
             private readonly int _maxIndexInclusive;
 
-            public IListSkipTakeSelectIterator(IList<TSource> source, Func<TSource, TResult> selector, int minIndexInclusive, int maxIndexInclusive)
+            public IListSkipTakeSelectIterator(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<TSource> source,
+#else
+                IList<TSource> source,
+#endif
+                Func<TSource, TResult> selector,
+                int minIndexInclusive,
+                int maxIndexInclusive)
             {
                 Debug.Assert(source is not null);
                 Debug.Assert(selector is not null);
@@ -978,7 +1001,15 @@ namespace System.Linq
                 return list;
             }
 
-            private static void Fill(IList<TSource> source, Span<TResult> destination, Func<TSource, TResult> func, int sourceIndex)
+            private static void Fill(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<TSource> source,
+#else
+                IList<TSource> source,
+#endif
+                Span<TResult> destination,
+                Func<TSource, TResult> func,
+                int sourceIndex)
             {
                 for (int i = 0; i < destination.Length; i++, sourceIndex++)
                 {

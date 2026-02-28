@@ -9,8 +9,13 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private sealed class SizeOptIListSelectIterator<TSource, TResult>(IList<TSource> _source, Func<TSource, TResult> _selector)
-            : Iterator<TResult>
+        private sealed class SizeOptIListSelectIterator<TSource, TResult>(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            IReadOnlyList<TSource> _source,
+#else
+            IList<TSource> _source,
+#endif
+            Func<TSource, TResult> _selector) : Iterator<TResult>
         {
             private IEnumerator<TSource>? _enumerator;
 

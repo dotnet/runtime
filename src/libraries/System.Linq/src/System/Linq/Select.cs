@@ -32,7 +32,11 @@ namespace System.Linq
                 // don't need more code, just more data structures describing the new types).
                 if (IsSizeOptimized && typeof(TResult).IsValueType)
                 {
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                    return source is IReadOnlyList<TSource> il
+#else
                     return source is IList<TSource> il
+#endif
                         ? new SizeOptIListSelectIterator<TSource, TResult>(il, selector)
                         : new IEnumerableSelectIterator<TSource, TResult>(iterator, selector);
                 }
@@ -42,7 +46,11 @@ namespace System.Linq
                 }
             }
 
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            if (source is IReadOnlyList<TSource> ilist)
+#else
             if (source is IList<TSource> ilist)
+#endif
             {
                 if (IsSizeOptimized)
                 {
@@ -265,11 +273,21 @@ namespace System.Linq
         [DebuggerDisplay("Count = {CountForDebugger}")]
         private sealed partial class IListSelectIterator<TSource, TResult> : Iterator<TResult>
         {
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            private readonly IReadOnlyList<TSource> _source;
+#else
             private readonly IList<TSource> _source;
+#endif
             private readonly Func<TSource, TResult> _selector;
             private IEnumerator<TSource>? _enumerator;
 
-            public IListSelectIterator(IList<TSource> source, Func<TSource, TResult> selector)
+            public IListSelectIterator(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<TSource> source,
+#else
+                IList<TSource> source,
+#endif
+                Func<TSource, TResult> selector)
             {
                 Debug.Assert(source is not null);
                 Debug.Assert(selector is not null);

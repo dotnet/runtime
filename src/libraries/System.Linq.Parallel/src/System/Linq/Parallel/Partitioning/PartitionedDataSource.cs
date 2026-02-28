@@ -53,7 +53,12 @@ namespace System.Linq.Parallel
             : base(
                 partitionCount,
                 Util.GetDefaultComparer<int>(),
-                source is IList<T> ? OrdinalIndexState.Indexable : OrdinalIndexState.Correct)
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                source is IReadOnlyList<T> ? OrdinalIndexState.Indexable : OrdinalIndexState.Correct
+#else
+                source is IList<T> ? OrdinalIndexState.Indexable : OrdinalIndexState.Correct
+#endif
+            )
         {
             InitializePartitions(source, partitionCount, useStriping);
         }
@@ -82,7 +87,11 @@ namespace System.Linq.Parallel
             }
 
             // Check whether we have an indexable data source.
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            if (source is IReadOnlyList<T> sourceAsList)
+#else
             if (source is IList<T> sourceAsList)
+#endif
             {
                 QueryOperatorEnumerator<T, int>[] partitions = new QueryOperatorEnumerator<T, int>[partitionCount];
 
@@ -382,7 +391,11 @@ namespace System.Linq.Parallel
         // the IList<T> interface for element retrieval.
         internal sealed class ListIndexRangeEnumerator : QueryOperatorEnumerator<T, int>
         {
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            private readonly IReadOnlyList<T> _data; // The elements to iterate over.
+#else
             private readonly IList<T> _data; // The elements to iterate over.
+#endif
             private readonly int _elementCount; // The number of elements to iterate over.
             private readonly int _partitionCount; // The number of partitions.
             private readonly int _partitionIndex; // The index of the current partition.
@@ -404,7 +417,15 @@ namespace System.Linq.Parallel
                 internal int _currentChunkOffset; // The offset of the current chunk from the beginning of the range.
             }
 
-            internal ListIndexRangeEnumerator(IList<T> data, int partitionCount, int partitionIndex, int maxChunkSize)
+            internal ListIndexRangeEnumerator(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<T> data,
+#else
+                IList<T> data,
+#endif
+                int partitionCount,
+                int partitionIndex,
+                int maxChunkSize)
             {
                 Debug.Assert(data != null, "data must not be null");
                 Debug.Assert(partitionCount > 0, "partitionCount must be positive");
@@ -501,12 +522,24 @@ namespace System.Linq.Parallel
         // the IList<T> interface for element retrieval.
         internal sealed class ListContiguousIndexRangeEnumerator : QueryOperatorEnumerator<T, int>
         {
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            private readonly IReadOnlyList<T> _data; // The elements to iterate over.
+#else
             private readonly IList<T> _data; // The elements to iterate over.
+#endif
             private readonly int _startIndex; // Where to begin iterating.
             private readonly int _maximumIndex; // The maximum index to iterate over.
             private Shared<int>? _currentIndex; // The current index (lazily allocated).
 
-            internal ListContiguousIndexRangeEnumerator(IList<T> data, int partitionCount, int partitionIndex)
+            internal ListContiguousIndexRangeEnumerator(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<T> data,
+#else
+                IList<T> data,
+#endif
+                int partitionCount,
+                int partitionIndex
+            )
             {
                 Debug.Assert(data != null, "data must not be null");
                 Debug.Assert(partitionCount > 0, "partitionCount must be positive");

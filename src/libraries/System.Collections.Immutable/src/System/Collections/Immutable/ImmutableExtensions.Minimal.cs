@@ -105,7 +105,11 @@ namespace System.Collections.Immutable
             Debug.Assert(arrayIndex >= 0 && arrayIndex <= array.Length);
 
             // IList is the GCD of what the following types implement.
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            if (sequence is IReadOnlyList<T>)
+#else
             if (sequence is IList<T>)
+#endif
             {
                 if (sequence is List<T> list)
                 {

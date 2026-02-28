@@ -85,7 +85,11 @@ namespace System.ServiceModel.Syndication
             _links = FeedUtils.CloneLinks(source._links);
             Title = FeedUtils.CloneTextContent(source.Title);
             BaseUri = source.BaseUri;
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            if (source._items is IReadOnlyList<SyndicationItem> srcList)
+#else
             if (source._items is IList<SyndicationItem> srcList)
+#endif
             {
                 Collection<SyndicationItem> tmp = new NullNotAllowedCollection<SyndicationItem>();
                 for (int i = 0; i < srcList.Count; ++i)

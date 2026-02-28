@@ -112,7 +112,11 @@ namespace System.Net.Http.Headers
             // It's relatively common to only add a single value with this overload, especially when copying
             // between HttpHeaders collections. Avoid boxing the enumerator and possibly a HeaderStoreItemInfo
             // allocation by deferring to the overload for a single value instead.
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            if (values is IReadOnlyList<string?> { Count: 1 } valuesList)
+#else
             if (values is IList<string?> { Count: 1 } valuesList)
+#endif
             {
                 Add(descriptor, valuesList[0]);
                 return;

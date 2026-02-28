@@ -163,7 +163,8 @@ namespace System.Linq
                     return new Concat2Iterator<TSource>(this, next);
                 }
 
-                bool hasOnlyCollections = _hasOnlyCollections && next is ICollection<TSource>;
+                bool hasOnlyCollections = _hasOnlyCollections &&
+                    next is ICollection<TSource>;
                 return new ConcatNIterator<TSource>(this, next, _headIndex + 1, hasOnlyCollections);
             }
 

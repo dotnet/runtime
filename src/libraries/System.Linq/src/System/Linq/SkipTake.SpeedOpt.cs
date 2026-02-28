@@ -15,11 +15,22 @@ namespace System.Linq
         [DebuggerDisplay("Count = {Count}")]
         private sealed class IListSkipTakeIterator<TSource> : Iterator<TSource>, IList<TSource>, IReadOnlyList<TSource>
         {
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            private readonly IReadOnlyList<TSource> _source;
+#else
             private readonly IList<TSource> _source;
+#endif
             private readonly int _minIndexInclusive;
             private readonly int _maxIndexInclusive;
 
-            public IListSkipTakeIterator(IList<TSource> source, int minIndexInclusive, int maxIndexInclusive)
+            public IListSkipTakeIterator(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<TSource> source,
+#else
+                IList<TSource> source,
+#endif
+                int minIndexInclusive,
+                int maxIndexInclusive)
             {
                 Debug.Assert(source is not null);
                 Debug.Assert(minIndexInclusive >= 0);
@@ -144,7 +155,14 @@ namespace System.Linq
             public void CopyTo(TSource[] array, int arrayIndex) =>
                 Fill(_source, array.AsSpan(arrayIndex, Count), _minIndexInclusive);
 
-            private static void Fill(IList<TSource> source, Span<TSource> destination, int sourceIndex)
+            private static void Fill(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<TSource> source,
+#else
+                IList<TSource> source,
+#endif
+                Span<TSource> destination,
+                int sourceIndex)
             {
                 if (source.TryGetSpan(out ReadOnlySpan<TSource> sourceSpan))
                 {
@@ -166,7 +184,11 @@ namespace System.Linq
 
             public int IndexOf(TSource item)
             {
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<TSource> source = _source;
+#else
                 IList<TSource> source = _source;
+#endif
 
                 if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
                 {
@@ -229,7 +251,11 @@ namespace System.Linq
             internal IEnumerableSkipTakeIterator(IEnumerable<TSource> source, int minIndexInclusive, int maxIndexInclusive)
             {
                 Debug.Assert(source is not null);
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                Debug.Assert(!(source is IReadOnlyList<TSource>), $"The caller needs to check for {nameof(IReadOnlyList<TSource>)}.");
+#else
                 Debug.Assert(!(source is IList<TSource>), $"The caller needs to check for {nameof(IList<TSource>)}.");
+#endif
                 Debug.Assert(minIndexInclusive >= 0);
                 Debug.Assert(maxIndexInclusive >= -1);
                 // Note that although maxIndexInclusive can't grow, it can still be int.MaxValue.

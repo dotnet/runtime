@@ -26,7 +26,13 @@ namespace System.Reflection.TypeLoading
         /// <summary>
         /// Clones a cached CustomAttributeTypedArgument list into a freshly allocated one suitable for direct return through an api.
         /// </summary>
-        public static ReadOnlyCollection<CustomAttributeTypedArgument> CloneForApiReturn(this IList<CustomAttributeTypedArgument> cats)
+        public static ReadOnlyCollection<CustomAttributeTypedArgument> CloneForApiReturn(this
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            IReadOnlyList<CustomAttributeTypedArgument>
+#else
+            IList<CustomAttributeTypedArgument>
+#endif
+            cats)
         {
             int count = cats.Count;
             CustomAttributeTypedArgument[] clones = count != 0 ? new CustomAttributeTypedArgument[count] : Array.Empty<CustomAttributeTypedArgument>();
@@ -40,7 +46,13 @@ namespace System.Reflection.TypeLoading
         /// <summary>
         /// Clones a cached CustomAttributeNamedArgument list into a freshly allocated one suitable for direct return through an api.
         /// </summary>
-        public static ReadOnlyCollection<CustomAttributeNamedArgument> CloneForApiReturn(this IList<CustomAttributeNamedArgument> cans)
+        public static ReadOnlyCollection<CustomAttributeNamedArgument> CloneForApiReturn(this
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            IReadOnlyList<CustomAttributeNamedArgument>
+#else
+            IList<CustomAttributeNamedArgument>
+#endif
+            cans)
         {
             int count = cans.Count;
             CustomAttributeNamedArgument[] clones = count != 0 ? new CustomAttributeNamedArgument[count] : Array.Empty<CustomAttributeNamedArgument>();
@@ -59,7 +71,13 @@ namespace System.Reflection.TypeLoading
             Type type = cat.ArgumentType;
             object? value = cat.Value;
 
-            if (!(value is IList<CustomAttributeTypedArgument> cats))
+            if (!(value is
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                IReadOnlyList<CustomAttributeTypedArgument>
+#else
+                IList<CustomAttributeTypedArgument>
+#endif
+                cats))
                 return cat;
 
             int count = cats.Count;

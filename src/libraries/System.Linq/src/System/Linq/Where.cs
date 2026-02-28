@@ -27,7 +27,13 @@ namespace System.Linq
             }
 
             // Only use IList when size-optimizing (no array or List specializations).
-            if (IsSizeOptimized && source is IList<TSource> sourceList)
+            if (IsSizeOptimized &&
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                source is IReadOnlyList<TSource> sourceList
+#else
+                source is IList<TSource> sourceList
+#endif
+            )
             {
                 return new SizeOptIListWhereIterator<TSource>(sourceList, predicate);
             }

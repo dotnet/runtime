@@ -58,7 +58,11 @@ namespace System.Linq.Parallel
         {
             Debug.Assert(settings.DegreeOfParallelism.HasValue);
 
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            if (_data is IReadOnlyList<TElement> dataAsList)
+#else
             if (_data is IList<TElement> dataAsList)
+#endif
             {
                 return new ListQueryResults<TElement>(dataAsList, settings.DegreeOfParallelism.GetValueOrDefault(), preferStriping);
             }
@@ -97,7 +101,11 @@ namespace System.Linq.Parallel
         {
             get
             {
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+                return _data is IReadOnlyList<TElement>
+#else
                 return _data is IList<TElement>
+#endif
                     ? OrdinalIndexState.Indexable
                     : OrdinalIndexState.Correct;
             }

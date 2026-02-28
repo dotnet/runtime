@@ -1656,7 +1656,11 @@ namespace System.Threading.Tasks
 
             // If we can index into the list, we can use a faster code-path that doesn't result in
             // contention for the single, shared enumerator object.
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            if (source is IReadOnlyList<TSource> sourceAsList)
+#else
             if (source is IList<TSource> sourceAsList)
+#endif
             {
                 return ForEachWorker<TSource, TLocal>(
                     sourceAsList, parallelOptions, body, bodyWithState, bodyWithStateAndIndex, bodyWithStateAndLocal,
@@ -1745,7 +1749,11 @@ namespace System.Threading.Tasks
         /// <param name="localFinally">A cleanup function to destroy thread local state.</param>
         /// <returns>A <see cref="System.Threading.Tasks.ParallelLoopResult"/> structure.</returns>
         private static ParallelLoopResult ForEachWorker<TSource, TLocal>(
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            IReadOnlyList<TSource> list,
+#else
             IList<TSource> list,
+#endif
             ParallelOptions parallelOptions,
             Action<TSource>? body,
             Action<TSource, ParallelLoopState>? bodyWithState,

@@ -43,9 +43,15 @@ namespace Microsoft.Extensions.Configuration
         internal static bool TryGetConfiguration(this IConfigurationRoot root, string key, out string? value)
         {
             // common cases Providers is IList<IConfigurationProvider> in ConfigurationRoot
+#if NET11_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 11+
+            IReadOnlyList<IConfigurationProvider> providers = root.Providers is IReadOnlyList<IConfigurationProvider> list
+                ? list
+                : root.Providers.ToList();
+#else
             IList<IConfigurationProvider> providers = root.Providers is IList<IConfigurationProvider> list
                 ? list
                 : root.Providers.ToList();
+#endif
 
             // ensure looping in the reverse order
             for (int i = providers.Count - 1; i >= 0; i--)
