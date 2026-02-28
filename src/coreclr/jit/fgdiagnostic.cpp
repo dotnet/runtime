@@ -2314,9 +2314,8 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
     // Calculate the field width allocated for the block target. The field width is allocated to allow for two blocks
     // for BBJ_COND. It does not include any extra space for variable-sized BBJ_EHFINALLYRET and BBJ_SWITCH.
     // "-> "(3) + "BB"(2) + blockNum + likelihoods + comma(1) + "BB"(2) + blockNum + likelihoods + space(1) + kind(8)
-    int blockTargetFieldWidth = 3 + 2 + maxBlockNumWidth + edgeLikelihoodsWidth + 1 +
-                                2 + maxBlockNumWidth + edgeLikelihoodsWidth + 1 +
-                                8; // kind: "(xxxxxx)"
+    int blockTargetFieldWidth = 3 + 2 + maxBlockNumWidth + edgeLikelihoodsWidth + 1 + 2 + maxBlockNumWidth +
+                                edgeLikelihoodsWidth + 1 + 8; // kind: "(xxxxxx)"
 
     // clang-format off
 
