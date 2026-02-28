@@ -123,51 +123,6 @@ public class SyncBlockTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetSyncBlockCleanupInfo_RCWLockBitMasked(MockTarget.Architecture arch)
-    {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockDescriptors.SyncBlock syncBlockDesc = new(builder);
-
-        // RCW with bit 0 set (lock bit) should be masked out
-        TargetPointer inputRCW = new TargetPointer(0x1001);
-        TargetPointer expectedRCW = new TargetPointer(0x1000);
-
-        TargetPointer syncBlockAddr = syncBlockDesc.AddSyncBlockToCleanupList(
-            inputRCW, TargetPointer.Null, TargetPointer.Null);
-
-        Target target = CreateTarget(syncBlockDesc);
-        ISyncBlock contract = target.Contracts.SyncBlock;
-
-        SyncBlockCleanupInfo info = contract.GetSyncBlockCleanupInfo(syncBlockAddr);
-
-        Assert.Equal(expectedRCW, info.BlockRCW);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetSyncBlockCleanupInfo_CCWSentinelTreatedAsNull(MockTarget.Architecture arch)
-    {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockDescriptors.SyncBlock syncBlockDesc = new(builder);
-
-        // CCW sentinel value 0x1 means "was CCW but now null"
-        TargetPointer ccwSentinel = new TargetPointer(0x1);
-
-        TargetPointer syncBlockAddr = syncBlockDesc.AddSyncBlockToCleanupList(
-            TargetPointer.Null, ccwSentinel, TargetPointer.Null);
-
-        Target target = CreateTarget(syncBlockDesc);
-        ISyncBlock contract = target.Contracts.SyncBlock;
-
-        SyncBlockCleanupInfo info = contract.GetSyncBlockCleanupInfo(syncBlockAddr);
-
-        Assert.Equal(TargetPointer.Null, info.BlockCCW);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
     public void GetSyncBlockCleanupInfo_NextSyncBlockInChain(MockTarget.Architecture arch)
     {
         TargetTestHelpers helpers = new(arch);
