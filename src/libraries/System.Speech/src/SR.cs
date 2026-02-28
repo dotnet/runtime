@@ -10,12 +10,12 @@ namespace System.Speech
     {
         private static readonly ResourceManager s_resourceManager = new("ExceptionStringTable", typeof(SR).Assembly);
 
-        internal static string Get(SRID id, params object[] args)
+        internal static string Get(SRID id, params object?[]? args)
         {
-            string text = s_resourceManager.GetString(id.ToString());
+            string? text = s_resourceManager.GetString(id.ToString());
             if (string.IsNullOrEmpty(text))
             {
-                text = s_resourceManager.GetString("Unavailable");
+                text = s_resourceManager.GetString("Unavailable")!;
             }
             else if (args != null && args.Length != 0)
             {

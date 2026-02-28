@@ -9,7 +9,7 @@ namespace System.Speech.Recognition
     {
         #region Constructors
 
-        internal EmulateRecognizeCompletedEventArgs(RecognitionResult result, Exception error, bool cancelled, object userState)
+        internal EmulateRecognizeCompletedEventArgs(RecognitionResult? result, Exception? error, bool cancelled, object? userState)
             : base(error, cancelled, userState)
         {
             _result = result;
@@ -18,7 +18,7 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Properties
-        public RecognitionResult Result
+        public RecognitionResult? Result
         {
             get { return _result; }
         }
@@ -27,7 +27,7 @@ namespace System.Speech.Recognition
 
         #region Private Fields
 
-        private RecognitionResult _result;
+        private RecognitionResult? _result;
 
         #endregion
     }

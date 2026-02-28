@@ -18,7 +18,7 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Create an instance of AudioFileOut.
         /// </summary>
-        internal AudioFileOut(Stream stream, SpeechAudioFormatInfo formatInfo, bool headerInfo, IAsyncDispatch asyncDispatch)
+        internal AudioFileOut(Stream stream, SpeechAudioFormatInfo? formatInfo, bool headerInfo, IAsyncDispatch asyncDispatch)
         {
             _asyncDispatch = asyncDispatch;
             _stream = stream;

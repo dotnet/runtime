@@ -38,8 +38,13 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region IComparable<State> Interface implementation
 
-        int IComparable<State>.CompareTo(State state2)
+        int IComparable<State>.CompareTo(State? state2)
         {
+            if (state2 is null)
+            {
+                return 1;
+            }
+
             return Compare(this, state2);
         }
 
@@ -50,7 +55,7 @@ namespace System.Speech.Internal.SrgsCompiler
             // The arcs must be sorted before being written to disk.
             List<Arc> outArcs = _outArcs.ToList();
             outArcs.Sort();
-            Arc lastArc = outArcs.Count > 0 ? outArcs[outArcs.Count - 1] : null;
+            Arc? lastArc = outArcs.Count > 0 ? outArcs[outArcs.Count - 1] : null;
 
             IEnumerator<Arc> enumArcs = ((IEnumerable<Arc>)outArcs).GetEnumerator();
             enumArcs.MoveNext();
@@ -163,7 +168,7 @@ namespace System.Speech.Internal.SrgsCompiler
             _next = _prev = null;
         }
 
-        internal State Next
+        internal State? Next
         {
             get
             {
@@ -171,7 +176,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
         }
 
-        internal State Prev
+        internal State? Prev
         {
             get
             {
@@ -398,8 +403,8 @@ namespace System.Speech.Internal.SrgsCompiler
                 else
                 {
                     // First returns null on empty collections
-                    Arc arc1 = state1._outArcs != null && !state1._outArcs.IsEmpty ? state1._outArcs.First : null;
-                    Arc arc2 = state2._outArcs != null && !state2._outArcs.IsEmpty ? state2._outArcs.First : null;
+                    Arc? arc1 = state1._outArcs != null && !state1._outArcs.IsEmpty ? state1._outArcs.First : null;
+                    Arc? arc2 = state2._outArcs != null && !state2._outArcs.IsEmpty ? state2._outArcs.First : null;
 
                     int diff = (arc1 != null ? (arc1.RuleRef != null ? 0x1000000 : 0) + arc1.WordId : state1._iSerialize) - (arc2 != null ? (arc2.RuleRef != null ? 0x1000000 : 0) + arc2.WordId : state2._iSerialize);
 
@@ -481,8 +486,8 @@ namespace System.Speech.Internal.SrgsCompiler
 
         private Rule _rule;
 
-        private State _next;
-        private State _prev;
+        private State? _next;
+        private State? _prev;
 
         // Flags used for recursive validation methods
         internal enum RecurFlag : uint

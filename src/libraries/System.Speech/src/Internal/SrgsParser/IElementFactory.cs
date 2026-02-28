@@ -12,12 +12,12 @@ namespace System.Speech.Internal.SrgsParser
         void RemoveAllRules();
 
         IElementText CreateText(IElement parent, string value);
-        IToken CreateToken(IElement parent, string content, string pronumciation, string display, float reqConfidence);
+        IToken CreateToken(IElement parent, string content, string? pronunciation, string? display, float reqConfidence);
         IPropertyTag CreatePropertyTag(IElement parent);
         ISemanticTag CreateSemanticTag(IElement parent);
-        IItem CreateItem(IElement parent, IRule rule, int minRepeat, int maxRepeat, float repeatProbability, float weight);
+        IItem CreateItem(IElement? parent, IRule rule, int minRepeat, int maxRepeat, float repeatProbability, float weight);
         IRuleRef CreateRuleRef(IElement parent, Uri srgsUri);
-        IRuleRef CreateRuleRef(IElement parent, Uri srgsUri, string semanticKey, string parameters);
+        IRuleRef CreateRuleRef(IElement parent, Uri srgsUri, string? semanticKey, string? parameters);
         void InitSpecialRuleRef(IElement parent, IRuleRef special);
         IOneOf CreateOneOf(IElement parent, IRule rule);
         ISubset CreateSubset(IElement parent, string text, MatchMode matchMode);
@@ -28,8 +28,8 @@ namespace System.Speech.Internal.SrgsParser
         IRuleRef Void { get; }
         IRuleRef Garbage { get; }
 
-        string AddScript(IGrammar grammar, string rule, string code, string filename, int line);
-        void AddScript(IGrammar grammar, string script, string filename, int line);
+        string AddScript(IGrammar grammar, string rule, string code, string? filename, int line);
+        void AddScript(IGrammar grammar, string script, string? filename, int line);
         void AddScript(IGrammar grammar, string rule, string code);
 
         void AddItem(IOneOf oneOf, IItem value);

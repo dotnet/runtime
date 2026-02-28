@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Speech.Internal.SrgsParser;
 using System.Speech.Recognition;
 using System.Text;
@@ -22,10 +23,9 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            BuilderElements refObj = obj as BuilderElements;
-            if (refObj == null)
+            if (obj is not BuilderElements refObj)
             {
                 return false;
             }
@@ -61,7 +61,7 @@ namespace System.Speech.Internal.GrammarBuilding
         protected void Optimize(Collection<RuleElement> newRules)
         {
             // Create an dictionary of [Count of elements, list of elements]
-            SortedDictionary<int, Collection<BuilderElements>> dict = new();
+            SortedDictionary<int, Collection<BuilderElements?>> dict = new();
             GetDictionaryElements(dict);
 
             // The dictionary is sorted from the smallest buckets to the largest.
@@ -77,22 +77,23 @@ namespace System.Speech.Internal.GrammarBuilding
             // Look for each bucket from the largest to the smallest
             for (int i = 0; i < keys.Length && keys[i] >= 3; i++)
             {
-                Collection<BuilderElements> gb = dict[keys[i]];
+                Collection<BuilderElements?> gb = dict[keys[i]];
                 for (int j = 0; j < gb.Count; j++)
                 {
-                    RuleElement newRule = null;
-                    RuleRefElement ruleRef = null;
+                    RuleElement? newRule = null;
+                    RuleRefElement? ruleRef = null;
+                    BuilderElements? thisOne = gb[j];
                     for (int k = j + 1; k < gb.Count; k++)
                     {
-                        if (gb[j] != null && gb[j].Equals(gb[k]))
+                        BuilderElements? current = gb[k];
+                        if (thisOne != null && thisOne.Equals(current))
                         {
-                            BuilderElements current = gb[k];
-                            BuilderElements parent = current.Parent;
+                            BuilderElements parent = current.Parent!;
                             if (current is SemanticKeyElement)
                             // if current is already a ruleref. There is no need to create a new one
                             {
                                 // Simply set the ruleref of the current element to the ruleref of the org element.
-                                parent.Items[parent.Items.IndexOf(current)] = gb[j];
+                                parent.Items[parent.Items.IndexOf(current)] = thisOne;
                             }
                             else
                             {
@@ -107,9 +108,9 @@ namespace System.Speech.Internal.GrammarBuilding
                                 if (ruleRef == null)
                                 {
                                     ruleRef = new RuleRefElement(newRule);
-                                    gb[j].Parent.Items[gb[j].Parent.Items.IndexOf(gb[j])] = ruleRef;
+                                    thisOne.Parent!.Items[thisOne.Parent.Items.IndexOf(thisOne)] = ruleRef;
                                 }
-                                parent.Items[current.Parent.Items.IndexOf(current)] = ruleRef;
+                                parent.Items[current.Parent!.Items.IndexOf(current)] = ruleRef;
                             }
                             //
                             current.RemoveDictionaryElements(dict);
@@ -154,7 +155,7 @@ namespace System.Speech.Internal.GrammarBuilding
         {
             foreach (GrammarBuilderBase builder in Items)
             {
-                IElement element = builder.CreateElement(elementFactory, parent, parent, ruleIds);
+                IElement? element = builder.CreateElement(elementFactory, parent, parent, ruleIds);
                 if (element != null)
                 {
                     element.PostParse(parent);
@@ -167,7 +168,7 @@ namespace System.Speech.Internal.GrammarBuilding
         {
             foreach (GrammarBuilderBase builder in Items)
             {
-                IElement element = builder.CreateElement(elementFactory, parent, rule, ruleIds);
+                IElement? element = builder.CreateElement(elementFactory, parent, rule, ruleIds);
                 if (element != null)
                 {
                     element.PostParse(parent);
@@ -176,7 +177,7 @@ namespace System.Speech.Internal.GrammarBuilding
             }
         }
 
-        internal override int CalcCount(BuilderElements parent)
+        internal override int CalcCount(BuilderElements? parent)
         {
             base.CalcCount(parent);
             int c = 1;
@@ -223,19 +224,19 @@ namespace System.Speech.Internal.GrammarBuilding
 
         #region Private Method
 
-        private void GetDictionaryElements(SortedDictionary<int, Collection<BuilderElements>> dict)
+        private void GetDictionaryElements(SortedDictionary<int, Collection<BuilderElements?>> dict)
         {
             // Recursive search from a matching subtree
             foreach (GrammarBuilderBase item in Items)
             {
-                BuilderElements current = item as BuilderElements;
+                BuilderElements? current = item as BuilderElements;
 
                 // Go deeper if the number of children is greater the element to compare against.
                 if (current != null)
                 {
-                    if (!dict.TryGetValue(current.Count, out Collection<BuilderElements> builderElements))
+                    if (!dict.TryGetValue(current.Count, out Collection<BuilderElements?>? builderElements))
                     {
-                        builderElements = new Collection<BuilderElements>();
+                        builderElements = new Collection<BuilderElements?>();
                         dict.Add(current.Count, builderElements);
                     }
 
@@ -246,12 +247,12 @@ namespace System.Speech.Internal.GrammarBuilding
             }
         }
 
-        private void RemoveDictionaryElements(SortedDictionary<int, Collection<BuilderElements>> dict)
+        private void RemoveDictionaryElements(SortedDictionary<int, Collection<BuilderElements?>> dict)
         {
             // Recursive search from a matching subtree
             foreach (GrammarBuilderBase item in Items)
             {
-                BuilderElements current = item as BuilderElements;
+                BuilderElements? current = item as BuilderElements;
 
                 // Go deeper if the number of children is greater the element to compare against.
                 if (current != null)

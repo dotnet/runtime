@@ -6,7 +6,7 @@ namespace System.Speech.Synthesis
     public class BookmarkReachedEventArgs : PromptEventArgs
     {
         #region Constructors
-        internal BookmarkReachedEventArgs(Prompt prompt, string bookmark, TimeSpan audioPosition)
+        internal BookmarkReachedEventArgs(Prompt prompt, string? bookmark, TimeSpan audioPosition)
             : base(prompt)
         {
             _bookmark = bookmark;
@@ -16,7 +16,7 @@ namespace System.Speech.Synthesis
         #endregion
 
         #region public Properties
-        public string Bookmark
+        public string? Bookmark
         {
             get
             {
@@ -35,7 +35,7 @@ namespace System.Speech.Synthesis
 
         #region Private Fields
 
-        private string _bookmark;
+        private string? _bookmark;
 
         // Audio and stream position
         private TimeSpan _audioPosition;
