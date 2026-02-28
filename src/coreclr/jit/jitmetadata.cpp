@@ -61,8 +61,6 @@ void JitMetrics::mergeToRoot(Compiler* inlineeComp)
 #include "jitmetadatalist.h"
 }
 
-#ifdef DEBUG
-
 //------------------------------------------------------------------------
 // printMetric: Print a double metric value to jitstdout.
 //
