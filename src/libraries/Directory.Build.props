@@ -27,6 +27,9 @@
   <PropertyGroup>
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <StrongNameKeyId>Open</StrongNameKeyId>
+    <FullAssemblySigningSupported Condition="'$(FullAssemblySigningSupported)' == '' and '$(OS)' != 'Windows_NT'">false</FullAssemblySigningSupported>
+    <SignAssembly Condition="'$(FullAssemblySigningSupported)' == 'false' and '$(MSBuildProjectExtension)' == '.fsproj'">false</SignAssembly>
+    <PublicSign Condition="'$(FullAssemblySigningSupported)' == 'false' and '$(MSBuildProjectExtension)' == '.fsproj'">false</PublicSign>
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
     <!-- We can't generate an apphost without restoring the targeting pack. -->
