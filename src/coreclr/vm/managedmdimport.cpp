@@ -12,7 +12,7 @@
 //
 extern BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pInfo, PCCOR_SIGNATURE pvNativeType, ULONG cbNativeType);
 
-FCIMPL14(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
+extern "C" BOOL QCALLTYPE MetadataImport_GetMarshalAs(
     BYTE*   pvNativeType,
     ULONG   cbNativeType,
     INT32*  unmanagedType,
@@ -28,7 +28,13 @@ FCIMPL14(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
     INT32*  marshalCookieLength,
     INT32*  iidParamIndex)
 {
-    FCALL_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     NativeTypeParamInfo info{};
 
@@ -40,7 +46,7 @@ FCIMPL14(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
     ZeroMemory(&info, sizeof(info));
     if (!ParseNativeTypeInfo(&info, pvNativeType, cbNativeType))
     {
-        FC_RETURN_BOOL(FALSE);
+        return FALSE;
     }
 
     *unmanagedType = info.m_NativeType;
@@ -70,9 +76,8 @@ FCIMPL14(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
     *marshalCookie = info.m_strCMCookie;
     *marshalCookieLength = info.m_cCMCookieStrBytes;
 
-    FC_RETURN_BOOL(TRUE);
+    return TRUE;
 }
-FCIMPLEND
 
 FCIMPL1(IMDInternalImport*, MetaDataImport::GetMetadataImport, ReflectModuleBaseObject * pModuleUNSAFE)
 {

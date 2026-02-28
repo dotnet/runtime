@@ -227,8 +227,9 @@ namespace System.Reflection
         #endregion
 
         #region Static Members
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool GetMarshalAs(
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_GetMarshalAs")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static unsafe partial bool GetMarshalAs(
             IntPtr pNativeType,
             int cNativeType,
             out int unmanagedType,

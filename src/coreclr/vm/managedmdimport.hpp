@@ -54,23 +54,23 @@ public:
     static FCDECL3(HRESULT, GetSigOfMethodDef, IMDInternalImport* pScope, mdToken tk, ConstArray* pMarshalInfo);
     static FCDECL3(HRESULT, GetFieldMarshal, IMDInternalImport* pScope, mdToken tk, ConstArray* pMarshalInfo);
     static FCDECL2(FC_BOOL_RET, IsValidToken, IMDInternalImport* pScope, mdToken tk);
-
-    static FCDECL14(FC_BOOL_RET, GetMarshalAs,
-        BYTE*   pvNativeType,
-        ULONG   cbNativeType,
-        INT32*  unmanagedType,
-        INT32*  safeArraySubType,
-        LPUTF8* safeArrayUserDefinedSubType,
-        INT32*  safeArrayUserDefinedSubTypeLength,
-        INT32*  arraySubType,
-        INT32*  sizeParamIndex,
-        INT32*  sizeConst,
-        LPUTF8* marshalType,
-        INT32*  marshalTypeLength,
-        LPUTF8* marshalCookie,
-        INT32*  marshalCookieLength,
-        INT32*  iidParamIndex);
 };
+
+extern "C" BOOL QCALLTYPE MetadataImport_GetMarshalAs(
+    BYTE*   pvNativeType,
+    ULONG   cbNativeType,
+    INT32*  unmanagedType,
+    INT32*  safeArraySubType,
+    LPUTF8* safeArrayUserDefinedSubType,
+    INT32*  safeArrayUserDefinedSubTypeLength,
+    INT32*  arraySubType,
+    INT32*  sizeParamIndex,
+    INT32*  sizeConst,
+    LPUTF8* marshalType,
+    INT32*  marshalTypeLength,
+    LPUTF8* marshalCookie,
+    INT32*  marshalCookieLength,
+    INT32*  iidParamIndex);
 
 extern "C" void QCALLTYPE MetadataImport_Enum(
     IMDInternalImport* pScope,
