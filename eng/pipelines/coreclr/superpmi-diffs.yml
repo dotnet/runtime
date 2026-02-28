@@ -135,6 +135,6 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
             condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
-            diffType: memorydiff
+            diffType: metricdiff
             baseJitOptions: ${{ parameters.spmi_jitoptions_base }}
             diffJitOptions: ${{ parameters.spmi_jitoptions_diff }}

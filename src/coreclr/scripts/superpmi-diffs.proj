@@ -79,8 +79,8 @@
       <Timeout>$(WorkItemTimeout)</Timeout>
       <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='asmdiffs' ">superpmi_download_%(Identity).log;superpmi_asmdiffs_%(Identity).log;superpmi_asmdiffs_summary_%(Identity).json;Asmdiffs_%(Identity).zip</DownloadFilesFromResults>
       <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='tpdiff' "  >superpmi_download_%(Identity).log;superpmi_tpdiff_%(Identity).log;superpmi_tpdiff_summary_%(Identity).json</DownloadFilesFromResults>
-      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='memorydiff' ">superpmi_download_%(Identity).log;superpmi_memorydiff_%(Identity).log;superpmi_memorydiff_summary_%(Identity).json</DownloadFilesFromResults>
-      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='all' "     >superpmi_download_%(Identity).log;superpmi_asmdiffs_%(Identity).log;superpmi_asmdiffs_summary_%(Identity).json;Asmdiffs_%(Identity).zip;superpmi_tpdiff_%(Identity).log;superpmi_tpdiff_summary_%(Identity).json;superpmi_memorydiff_%(Identity).log;superpmi_memorydiff_summary_%(Identity).json</DownloadFilesFromResults>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='metricdiff' ">superpmi_download_%(Identity).log;superpmi_metricdiff_%(Identity).log;superpmi_metricdiff_summary_%(Identity).json</DownloadFilesFromResults>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='all' "     >superpmi_download_%(Identity).log;superpmi_asmdiffs_%(Identity).log;superpmi_asmdiffs_summary_%(Identity).json;Asmdiffs_%(Identity).zip;superpmi_tpdiff_%(Identity).log;superpmi_tpdiff_summary_%(Identity).json;superpmi_metricdiff_%(Identity).log;superpmi_metricdiff_summary_%(Identity).json</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
   </Project>

@@ -103,7 +103,7 @@ throughput_description = """\
 Measure throughput using PIN on one or more collections.
 """
 
-memorydiff_description = """\
+metricdiff_description = """\
 Measure JIT memory allocation differences on one or more collections.
 """
 
@@ -135,7 +135,7 @@ summarize_description = """\
 Summarize multiple .json summaries created by --summary_as_json into a single .md file.
 """
 
-summary_type_help = "Type of summaries: asmdiffs, tpdiff, or memorydiff"
+summary_type_help = "Type of summaries: asmdiffs, tpdiff, or metricdiff"
 
 summaries_help = "List of .json files to summarize"
 
@@ -380,9 +380,9 @@ asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a 
 throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help)
 
-# subparser for memorydiff
-memorydiff_parser = subparsers.add_parser("memorydiff", description=memorydiff_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
-add_core_root_arguments(memorydiff_parser, "Release", throughput_build_type_help)
+# subparser for metricdiff
+metricdiff_parser = subparsers.add_parser("metricdiff", description=metricdiff_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
+add_core_root_arguments(metricdiff_parser, "Release", throughput_build_type_help)
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -3297,7 +3297,7 @@ def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_
 ################################################################################
 
 
-class SuperPMIReplayMemoryDiff:
+class SuperPMIReplayMetricDiff:
     """ SuperPMI Replay memory diff class
 
     Notes:
@@ -3416,9 +3416,10 @@ class SuperPMIReplayMemoryDiff:
                         logging.warning("Details info file '%s' not found; skipping memory diff aggregation", details_info_file)
                 except Exception as ex:
                     logging.warning("Failed to aggregate memory diff metrics from '%s': %s", details_info_file, ex)
-                print_superpmi_success_result(return_code, base_metrics, diff_metrics)
 
                 if base_metrics is not None and diff_metrics is not None:
+                    print_superpmi_success_result(return_code, base_metrics, diff_metrics)
+
                     base_bytes = base_metrics["Overall"]["Diffed BytesAllocated"]
                     diff_bytes = diff_metrics["Overall"]["Diffed BytesAllocated"]
 
@@ -3435,7 +3436,7 @@ class SuperPMIReplayMemoryDiff:
 
             ################################################################################################ end of for mch_file in self.mch_files
 
-        # Report the overall results summary of the memorydiff run
+        # Report the overall results summary of the metricdiff run
 
         logging.info("Memory diff summary:")
 
@@ -3447,7 +3448,7 @@ class SuperPMIReplayMemoryDiff:
 
             (base_jit_options, diff_jit_options) = get_base_diff_jit_options(self.coreclr_args)
 
-            overall_json_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_summary", "json")
+            overall_json_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "metricdiff_summary", "json")
             if os.path.isfile(overall_json_summary_file):
                 os.remove(overall_json_summary_file)
 
@@ -3466,22 +3467,22 @@ class SuperPMIReplayMemoryDiff:
 
             (base_jit_options, diff_jit_options) = get_base_diff_jit_options(self.coreclr_args)
 
-            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_summary", "md")
+            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "metricdiff_summary", "md")
 
             if os.path.isfile(overall_md_summary_file):
                 os.remove(overall_md_summary_file)
 
             with open(overall_md_summary_file, "w") as write_fh:
-                write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, True)
+                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, True)
                 logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-            short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_short_summary", "md")
+            short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "metricdiff_short_summary", "md")
 
             if os.path.isfile(short_md_summary_file):
                 os.remove(short_md_summary_file)
 
             with open(short_md_summary_file, "w") as write_fh:
-                write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, False)
+                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, False)
                 logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
         return True
         ################################################################################################ end of replay_with_memory_diff()
@@ -3575,7 +3576,7 @@ def aggregate_memory_diff_metrics(details_file):
             {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts})
 
 
-def write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, include_details):
+def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, include_details):
 
     def is_significant_pct(base, diff):
         if base == 0:
@@ -4594,7 +4595,7 @@ def summarize_json_summaries(coreclr_args):
 
     summary_type_to_prefix = {
         "asmdiffs": "diff",
-        "memorydiff": "memorydiff",
+        "metricdiff": "metricdiff",
         "tpdiff": "tpdiff",
     }
 
@@ -4638,25 +4639,28 @@ def summarize_json_summaries(coreclr_args):
         with open(short_md_summary_file, "w") as write_fh:
             write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, False)
             logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
-    elif coreclr_args.summary_type == "memorydiff":
+    elif coreclr_args.summary_type == "metricdiff":
         base_jit_options = []
         diff_jit_options = []
         summarizable_memory_diffs = []
 
         for json_file in coreclr_args.summaries:
             with open(json_file, "r") as fh:
-                (base_jit_options, diff_jit_options, memory_diffs) = json.load(fh)
+                data = json.load(fh)
+                if isinstance(data, str):
+                    continue
+                (base_jit_options, diff_jit_options, memory_diffs) = data
                 summarizable_memory_diffs.extend(memory_diffs)
 
         # Sort by collection name
         summarizable_memory_diffs.sort(key=lambda t: t[0])
 
         with open(overall_md_summary_file, "w") as write_fh:
-            write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_memory_diffs, True)
+            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_memory_diffs, True)
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
         with open(short_md_summary_file, "w") as write_fh:
-            write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_memory_diffs, False)
+            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_memory_diffs, False)
             logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
     else:
         base_jit_build_string_decoded = ""
@@ -5664,7 +5668,7 @@ def setup_args(args):
         process_base_jit_path_arg(coreclr_args)
         download_clrjit_pintool(coreclr_args)
 
-    elif coreclr_args.mode == "memorydiff":
+    elif coreclr_args.mode == "metricdiff":
 
         verify_target_args()
         verify_superpmi_common_args()
@@ -5783,7 +5787,7 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set output_long_summary_path")
 
-    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "memorydiff" or coreclr_args.mode == "download":
+    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "metricdiff" or coreclr_args.mode == "download":
         if hasattr(coreclr_args, "private_store") and coreclr_args.private_store is not None:
             logging.info("Using private stores:")
             for path in coreclr_args.private_store:
@@ -5932,7 +5936,7 @@ def main(args):
         logging.debug("Finish time: %s", end_time.strftime("%H:%M:%S"))
         logging.debug("Elapsed time: %s", elapsed_time)
 
-    elif coreclr_args.mode == "memorydiff":
+    elif coreclr_args.mode == "metricdiff":
         local_mch_paths = process_mch_files_arg(coreclr_args)
         mch_files = get_mch_files_for_replay(local_mch_paths, coreclr_args.filter)
         if mch_files is None:
@@ -5954,7 +5958,7 @@ def main(args):
         for mch_file in mch_files:
             logging.info("  %s", mch_file)
 
-        memory_diff = SuperPMIReplayMemoryDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
+        memory_diff = SuperPMIReplayMetricDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
         success = memory_diff.replay_with_memory_diff()
 
         end_time = datetime.datetime.now()
