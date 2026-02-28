@@ -8,10 +8,10 @@ namespace System.Text
 {
     internal static partial class EncodingTable
     {
-        private static readonly ConcurrentDictionary<string, int> s_nameToCodePageCache = new ConcurrentDictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private static readonly ConcurrentDictionary<int, string> s_codePageToWebNameCache = new ConcurrentDictionary<int, string>();
-        private static readonly ConcurrentDictionary<int, string> s_codePageToEnglishNameCache = new ConcurrentDictionary<int, string>();
-        private static readonly ConcurrentDictionary<int, (ushort FamilyCodePage, byte CodePageFlags)> s_codePageToItemCache = new ConcurrentDictionary<int, (ushort FamilyCodePage, byte CodePageFlags)>();
+        private static readonly ConcurrentDictionary<string, int> s_nameToCodePageCache = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly ConcurrentDictionary<int, string> s_codePageToWebNameCache = new();
+        private static readonly ConcurrentDictionary<int, string> s_codePageToEnglishNameCache = new();
+        private static readonly ConcurrentDictionary<int, (ushort FamilyCodePage, byte CodePageFlags)> s_codePageToItemCache = new();
 
         internal static (ushort FamilyCodePage, byte CodePageFlags) GetCodePageItem(int codePage)
         {
@@ -35,14 +35,20 @@ namespace System.Text
         internal static int GetCodePageFromName(string name)
         {
             if (name is null)
+            {
                 return 0;
+            }
 
             if (s_nameToCodePageCache.TryGetValue(name, out int codePage))
+            {
                 return codePage;
+            }
 
             codePage = InternalGetCodePageFromName(name);
             if (codePage != 0)
+            {
                 s_nameToCodePageCache.TryAdd(name, codePage);
+            }
 
             return codePage;
         }
@@ -132,14 +138,20 @@ namespace System.Text
             Debug.Assert(indices[indices.Length - 1] == names.Length);
 
             if ((uint)codePage > ushort.MaxValue)
+            {
                 return null;
+            }
 
             if (cache.TryGetValue(codePage, out string? cachedName))
+            {
                 return cachedName;
+            }
 
             int i = MappedCodePages.IndexOf((ushort)codePage);
             if (i < 0)
+            {
                 return null;
+            }
 
             Debug.Assert(i < indices.Length - 1);
 
