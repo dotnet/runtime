@@ -98,7 +98,7 @@ enum class ReadyToRunSectionType : uint32_t
     ImportSections              = 101,
     RuntimeFunctions            = 102,
     MethodDefEntryPoints        = 103,
-    ExceptionInfo               = 104,
+    ExceptionInfo               = 104, // [cDAC] [ExecutionManager] : Contract depends on this value.
     DebugInfo                   = 105,
     DelayLoadMethodCallThunks   = 106,
     // 107 used by an older format of AvailableTypes

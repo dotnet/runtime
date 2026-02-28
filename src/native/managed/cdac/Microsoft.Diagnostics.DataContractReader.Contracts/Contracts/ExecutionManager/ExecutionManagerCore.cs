@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -64,6 +66,14 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         TYPE_INTERPRETER = 3
     };
 
+    private enum ExceptionClauseFlags_1 : uint
+    {
+        Filter = 0x1,
+        Finally = 0x2,
+        Fault = 0x4,
+        CachedClass = 0x10000000,
+    }
+
     private abstract class JitManager
     {
         public Target Target { get; }
@@ -83,6 +93,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         public abstract TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
         public abstract TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte);
         public abstract void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion);
+        public abstract void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
     }
 
     private sealed class RangeSection
@@ -339,5 +350,79 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeInfoHandle.Address.Value);
         return range;
+    }
+
+    private static ExceptionClauseInfo.ExceptionClauseFlags GetExceptionClauseFlags(uint flags)
+    {
+        if ((flags & (uint)ExceptionClauseFlags_1.Fault) != 0) return ExceptionClauseInfo.ExceptionClauseFlags.Fault;
+        if ((flags & (uint)ExceptionClauseFlags_1.Finally) != 0) return ExceptionClauseInfo.ExceptionClauseFlags.Finally;
+        if ((flags & (uint)ExceptionClauseFlags_1.Filter) != 0) return ExceptionClauseInfo.ExceptionClauseFlags.Filter;
+        return ExceptionClauseInfo.ExceptionClauseFlags.Typed;
+    }
+
+    private static bool IsFilterHandler(ExceptionClauseInfo.ExceptionClauseFlags flags) => flags == ExceptionClauseInfo.ExceptionClauseFlags.Filter;
+    private static bool IsFaultOrFinally(ExceptionClauseInfo.ExceptionClauseFlags flags) => flags == ExceptionClauseInfo.ExceptionClauseFlags.Fault || flags == ExceptionClauseInfo.ExceptionClauseFlags.Finally;
+    private static bool IsTypedHandler(ExceptionClauseInfo.ExceptionClauseFlags flags) => flags == ExceptionClauseInfo.ExceptionClauseFlags.Typed;
+    private static bool HasCachedTypeHandle(IExceptionClauseData clause) => (clause.Flags & (uint)ExceptionClauseFlags_1.CachedClass) != 0;
+
+    List<ExceptionClauseInfo> IExecutionManager.GetExceptionClauses(CodeBlockHandle codeInfoHandle)
+    {
+        RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
+        if (range.Data == null)
+            return new List<ExceptionClauseInfo>();
+
+        JitManager jitManager = GetJitManager(range.Data);
+        jitManager.GetExceptionClauses(range, codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr);
+        bool isR2R = jitManager is ReadyToRunJitManager;
+        DataType clauseType = isR2R ? DataType.R2RExceptionClause : DataType.EEExceptionClause;
+        uint clauseSize = _target.GetTypeInfo(clauseType).Size!.Value;
+
+        List<ExceptionClauseInfo> exceptionClauses = new List<ExceptionClauseInfo>();
+        for (TargetPointer addr = startAddr; addr < endAddr; addr += clauseSize)
+        {
+            IExceptionClauseData entry = isR2R
+                ? _target.ProcessedData.GetOrAdd<R2RExceptionClause>(addr)
+                : _target.ProcessedData.GetOrAdd<EEExceptionClause>(addr);
+
+            ExceptionClauseInfo.ExceptionClauseFlags flags = GetExceptionClauseFlags(entry.Flags);
+            TargetPointer? filterOffset = IsFilterHandler(flags) ? entry.FilterOffset : null;
+            TargetPointer? typeHandle = null;
+            bool? isCatchAllHandler = null;
+            TargetPointer? moduleAddr = null;
+            TargetPointer? classToken = null;
+            if (HasCachedTypeHandle(entry))
+            {
+                typeHandle = ((EEExceptionClause)entry).TypeHandle.Value;
+            }
+            else if (!IsFaultOrFinally(flags))
+            {
+                if (IsTypedHandler(flags))
+                {
+                    isCatchAllHandler = entry.ClassToken == (uint)((ulong)TableIndex.TypeRef << 24);
+                }
+                TargetPointer methodDescPtr = ((IExecutionManager)this).GetMethodDesc(codeInfoHandle);
+                IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+                MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
+                TargetPointer mtPtr = rts.GetMethodTable(mdHandle);
+                TypeHandle th = rts.GetTypeHandle(mtPtr);
+                moduleAddr = rts.GetModule(th);
+                classToken = entry.ClassToken;
+            }
+
+            exceptionClauses.Add(new ExceptionClauseInfo
+            {
+                ClauseType = flags,
+                IsCatchAllHandler = isCatchAllHandler,
+                TryStartPC = entry.TryStartPC,
+                TryEndPC = entry.TryEndPC,
+                HandlerStartPC = entry.HandlerStartPC,
+                HandlerEndPC = entry.HandlerEndPC,
+                FilterOffset = filterOffset,
+                ClassToken = classToken,
+                TypeHandle = typeHandle,
+                ModuleAddr = moduleAddr,
+            });
+        }
+        return exceptionClauses;
     }
 }
