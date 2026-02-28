@@ -725,14 +725,16 @@ void Compiler::optAssertionInit(bool isLocalProp)
         optLocalAssertionProp           = false;
         optCrossBlockLocalAssertionProp = false;
 
-        // Heuristic for sizing the assertion table.
+        // Use a function countFunc to determine a proper maximum assertion count for the
+        // method being compiled. The function is linear to the IL size for small and
+        // moderate methods. For large methods, considering throughput impact, we track no
+        // more than 64 assertions.
+        // Note this tracks at most only 256 assertions.
         //
-        // The weighting of basicBlocks vs locals reflects their relative contribution observed empirically.
-        // Validated against 1,115,046 compiled methods:
-        //   - 94.6% of methods stay at the floor of 64 (only 1.9% actually need more).
-        //   - Underpredicts for 481 methods (0.043%), with a worst-case deficit of 127.
-        //   - Only 0.4% of methods hit the 256 cap.
-        optMaxAssertionCount = (AssertionIndex)max(64, min(256, (int)(lvaTrackedCount + 3 * fgBBcount + 48) >> 2));
+        static const AssertionIndex countFunc[] = {64, 128, 256, 128, 64};
+        static const unsigned       upperBound  = ArrLen(countFunc) - 1;
+        const unsigned              codeSize    = info.compILCodeSize / 512;
+        optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
 
         optComplementaryAssertionMap = new (this, CMK_AssertionProp)
             AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
@@ -1350,8 +1352,6 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
  */
 AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
 {
-    bool canAddNewAssertions = optAssertionCount < optMaxAssertionCount;
-
     // See if we already have this assertion in the table.
     //
     // For local assertion prop we can speed things up by checking the dep vector.
@@ -1378,40 +1378,21 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
     }
     else
     {
-        bool mayHaveDuplicates =
-            optAssertionHasAssertionsForVN(newAssertion.GetOp1().GetVN(), /* addIfNotFound */ canAddNewAssertions);
-        // We need to register op2.vn too, even if we know for sure there are no duplicates
-        if (newAssertion.GetOp2().KindIs(O2K_CHECKED_BOUND_ADD_CNS))
+        // For global prop we search the entire table.
+        //
+        // Check if exists already, so we can skip adding new one. Search backwards.
+        for (AssertionIndex index = optAssertionCount; index >= 1; index--)
         {
-            mayHaveDuplicates |= optAssertionHasAssertionsForVN(newAssertion.GetOp2().GetCheckedBound(),
-                                                                /* addIfNotFound */ canAddNewAssertions);
-
-            // Additionally, check for the pattern of "VN + const == checkedBndVN" and register "VN" as well.
-            ValueNum addOpVN;
-            if (vnStore->IsVNBinFuncWithConst<int>(newAssertion.GetOp1().GetVN(), VNF_ADD, &addOpVN, nullptr))
+            const AssertionDsc& curAssertion = optGetAssertion(index);
+            if (curAssertion.Equals(newAssertion, /* vnBased */ true))
             {
-                mayHaveDuplicates |= optAssertionHasAssertionsForVN(addOpVN, /* addIfNotFound */ canAddNewAssertions);
-            }
-        }
-
-        if (mayHaveDuplicates)
-        {
-            // For global prop we search the entire table.
-            //
-            // Check if exists already, so we can skip adding new one. Search backwards.
-            for (AssertionIndex index = optAssertionCount; index >= 1; index--)
-            {
-                const AssertionDsc& curAssertion = optGetAssertion(index);
-                if (curAssertion.Equals(newAssertion, /* vnBased */ true))
-                {
-                    return index;
-                }
+                return index;
             }
         }
     }
 
     // Check if we are within max count.
-    if (!canAddNewAssertions)
+    if (optAssertionCount >= optMaxAssertionCount)
     {
         optAssertionOverflow++;
         return NO_ASSERTION_INDEX;
@@ -1456,49 +1437,6 @@ AssertionIndex Compiler::optAddAssertion(const AssertionDsc& newAssertion)
     optDebugCheckAssertions(optAssertionCount);
 #endif
     return optAssertionCount;
-}
-
-//------------------------------------------------------------------------
-// optAssertionHasAssertionsForVN: Check if we already have assertions for the given VN.
-//    If "addIfNotFound" is true, add the VN to the map if it's not already there.
-//
-// Arguments:
-//    vn            - the VN to check for
-//    addIfNotFound - whether to add the VN to the map if it's not found
-//
-// Return Value:
-//    true if we already have assertions for the given VN, false otherwise.
-//
-bool Compiler::optAssertionHasAssertionsForVN(ValueNum vn, bool addIfNotFound)
-{
-    assert(!optLocalAssertionProp);
-    if (vn == ValueNumStore::NoVN)
-    {
-        assert(!addIfNotFound);
-        return false;
-    }
-
-    if (addIfNotFound)
-    {
-        // Lazy initialize the map when we first need to add to it
-        if (optAssertionVNsMap == nullptr)
-        {
-            optAssertionVNsMap = new (this, CMK_AssertionProp) VNSet(getAllocator(CMK_AssertionProp));
-        }
-
-        // Avoid double lookup by using the return value of LookupPointerOrAdd to
-        // determine whether the VN was already in the map.
-        bool* pValue = optAssertionVNsMap->LookupPointerOrAdd(vn, false);
-        if (!*pValue)
-        {
-            *pValue = true;
-            return false;
-        }
-        return true;
-    }
-
-    // Otherwise just do a normal lookup
-    return (optAssertionVNsMap != nullptr) && optAssertionVNsMap->Lookup(vn);
 }
 
 #ifdef DEBUG
@@ -3423,17 +3361,11 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
     // For local assertion prop we can filter the assertion set down.
     //
     const unsigned lclNum = tree->GetLclNum();
-    ValueNum       treeVN = optConservativeNormalVN(tree);
 
     ASSERT_TP filteredAssertions = assertions;
     if (optLocalAssertionProp)
     {
         filteredAssertions = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), filteredAssertions);
-    }
-    else if (!optAssertionHasAssertionsForVN(treeVN))
-    {
-        // There are no assertions for this VN
-        return nullptr;
     }
 
     BitVecOps::Iter iter(apTraits, filteredAssertions);
@@ -3496,7 +3428,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
         else
         {
             // Check VN in Global Assertion Prop
-            if (curAssertion.GetOp1().GetVN() == treeVN)
+            if (curAssertion.GetOp1().GetVN() == vnStore->VNConservativeNormalValue(tree->gtVNPair))
             {
                 return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
             }
@@ -4810,7 +4742,7 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
         return true;
     }
 
-    if (!BitVecOps::MayBeUninit(assertions) && optAssertionHasAssertionsForVN(vn))
+    if (!BitVecOps::MayBeUninit(assertions))
     {
         BitVecOps::Iter iter(apTraits, assertions);
         unsigned        index = 0;

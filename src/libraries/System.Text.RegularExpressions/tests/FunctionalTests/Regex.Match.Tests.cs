@@ -849,6 +849,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
                 yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.None, 0, input.Length, false, "");
             }
+            // Alternation prefix extraction with IgnoreCase: correctness after single-node branch handling
+            yield return (@"(?:http|https)://foo", "HTTP://FOO", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 10, true, "HTTP://FOO");
+            yield return (@"(?:http|https)://foo", "HTTPS://FOO", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 11, true, "HTTPS://FOO");
+            yield return (@"(?:http|https)://foo", "ftp://foo", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, false, "");
+
             yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
             yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
 
@@ -2328,7 +2333,7 @@ namespace System.Text.RegularExpressions.Tests
 
         private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
 
-        [ConditionalTheory(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
+        [ConditionalTheory(typeof(RegexMatchTests), nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", ~RuntimeConfiguration.Release)]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeTestModes.JitMinOpts)]
@@ -2630,6 +2635,105 @@ namespace System.Text.RegularExpressions.Tests
             {
                 await func(engine.ToString(), fullpattern, fullinput);
             }
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix is not available on .NET Framework")]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task CharClassSubtraction_DeepNesting_DoesNotStackOverflow(RegexEngine engine)
+        {
+            // Build a pattern with deeply nested character class subtractions: [a-[a-[a-[...[a]...]]]]
+            // This previously caused a StackOverflowException due to unbounded recursion in the parser.
+            // Use a reduced depth for SourceGenerated to avoid overwhelming Roslyn compilation.
+            int depth = engine == RegexEngine.SourceGenerated ? 1_000 : 10_000;
+            var sb = new System.Text.StringBuilder();
+            sb.Append('[');
+            for (int i = 0; i < depth; i++)
+            {
+                sb.Append("a-[");
+            }
+            sb.Append('a');
+            sb.Append(']', depth + 1);
+
+            Regex r = await RegexHelpers.GetRegexAsync(engine, sb.ToString());
+            Assert.True(r.IsMatch("a"));
+            Assert.False(r.IsMatch("b"));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task CharClassSubtraction_Correctness(RegexEngine engine)
+        {
+            // [a-z-[d-w]] should match a-c and x-z
+            Regex r1 = await RegexHelpers.GetRegexAsync(engine, "[a-z-[d-w]]");
+            Assert.True(r1.IsMatch("a"));
+            Assert.True(r1.IsMatch("c"));
+            Assert.True(r1.IsMatch("x"));
+            Assert.True(r1.IsMatch("z"));
+            Assert.False(r1.IsMatch("d"));
+            Assert.False(r1.IsMatch("m"));
+            Assert.False(r1.IsMatch("w"));
+
+            // [a-z-[d-w-[m]]] should match a-c, m, and x-z
+            Regex r2 = await RegexHelpers.GetRegexAsync(engine, "[a-z-[d-w-[m]]]");
+            Assert.True(r2.IsMatch("a"));
+            Assert.True(r2.IsMatch("m"));
+            Assert.True(r2.IsMatch("z"));
+            Assert.False(r2.IsMatch("d"));
+            Assert.False(r2.IsMatch("l"));
+            Assert.False(r2.IsMatch("n"));
+            Assert.False(r2.IsMatch("w"));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task CharClassSubtraction_CaseInsensitive(RegexEngine engine)
+        {
+            // [a-z-[D-W]] with IgnoreCase should behave like [a-z-[d-w]], matching a-c and x-z.
+            Regex r = await RegexHelpers.GetRegexAsync(engine, "[a-z-[D-W]]", RegexOptions.IgnoreCase);
+            Assert.True(r.IsMatch("a"));
+            Assert.True(r.IsMatch("c"));
+            Assert.True(r.IsMatch("x"));
+            Assert.True(r.IsMatch("z"));
+            Assert.False(r.IsMatch("d"));
+            Assert.False(r.IsMatch("D"));
+            Assert.False(r.IsMatch("m"));
+            Assert.False(r.IsMatch("w"));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task CharClassSubtraction_NegatedOuter(RegexEngine engine)
+        {
+            // [^a-z-[m-p]] = (NOT a-z) minus m-p. Since m-p is a subset of a-z,
+            // the subtraction has no effect: matches anything outside a-z.
+            Regex r = await RegexHelpers.GetRegexAsync(engine, "[^a-z-[m-p]]");
+            Assert.True(r.IsMatch("A"));
+            Assert.True(r.IsMatch("5"));
+            Assert.False(r.IsMatch("a"));
+            Assert.False(r.IsMatch("m"));
+            Assert.False(r.IsMatch("z"));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task CharClassSubtraction_FourLevels(RegexEngine engine)
+        {
+            // [a-z-[b-y-[c-x-[d-w]]]]
+            // Level 0: a-z
+            // Level 1: subtract b-y  => a, z
+            // Level 2: subtract c-x from b-y => add back c-x => a, c-x, z
+            // Level 3: subtract d-w from c-x => remove d-w again => a, c, x, z
+            Regex r = await RegexHelpers.GetRegexAsync(engine, "[a-z-[b-y-[c-x-[d-w]]]]");
+            Assert.True(r.IsMatch("a"));
+            Assert.True(r.IsMatch("c"));
+            Assert.True(r.IsMatch("x"));
+            Assert.True(r.IsMatch("z"));
+            Assert.False(r.IsMatch("b"));
+            Assert.False(r.IsMatch("d"));
+            Assert.False(r.IsMatch("m"));
+            Assert.False(r.IsMatch("w"));
+            Assert.False(r.IsMatch("y"));
         }
 
         public static IEnumerable<object[]> StressTestNfaMode_TestData()

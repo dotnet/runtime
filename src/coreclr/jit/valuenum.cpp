@@ -13788,7 +13788,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
                 curArg = curArg->GetNext();
                 assert(nArgs == 3); // Our current maximum.
-                assert(curArg == nullptr);
+                assert((curArg == nullptr) || (curArg->GetWellKnownArg() == WellKnownArg::WasmPortableEntryPoint));
                 if (generateUniqueVN)
                 {
                     call->gtVNPair = vnStore->VNPairForFunc(call->TypeGet(), vnf, vnp0, vnp1, vnp2, vnpUniq);

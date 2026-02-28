@@ -4,8 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.TypeSystem;
-using ILCompiler.ObjectWriter;
 
 namespace Internal.JitInterface
 {
@@ -74,6 +74,11 @@ namespace Internal.JitInterface
             WasmValueType pointerType = (type.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
 
             TypeDesc abiType = LowerToAbiType(type);
+
+            if (abiType == null)
+            {
+                return pointerType;
+            }
 
             switch (abiType.UnderlyingType.Category)
             {

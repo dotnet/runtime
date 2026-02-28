@@ -4,8 +4,6 @@
 #include "jitpch.h"
 #include "jitmetadata.h"
 
-#ifdef DEBUG
-
 //------------------------------------------------------------------------
 // JitMetadata::report: Report metadata back to the EE.
 //
@@ -45,6 +43,9 @@ void JitMetrics::report(Compiler* comp)
 #define JITMETADATAMETRIC(name, type, flags) reportValue(comp, #name, name);
 #include "jitmetadatalist.h"
 }
+
+#ifdef DEBUG
+// The remaining functions are only used in debug builds.
 
 //------------------------------------------------------------------------
 // JitMetrics::mergeToRoot: Merge inlinee compiler metrics to root compiler instance
