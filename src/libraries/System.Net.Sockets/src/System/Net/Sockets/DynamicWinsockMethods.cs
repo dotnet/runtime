@@ -13,7 +13,7 @@ namespace System.Net.Sockets
         // In practice there will rarely be more than four of these, so it's not worth a complicated
         // hash table structure. Store them in an array and search through it. The array is replaced
         // copy-on-write under s_methodTableLock, so reads always see a consistent, immutable snapshot.
-        private static volatile DynamicWinsockMethods[] s_methodTable = [];
+        private static DynamicWinsockMethods[] s_methodTable = [];
         private static readonly Lock s_methodTableLock = new();
 
         private bool Matches(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType) =>
@@ -46,10 +46,7 @@ namespace System.Net.Sockets
                 }
 
                 var newMethods = new DynamicWinsockMethods(addressFamily, socketType, protocolType);
-                var newTable = new DynamicWinsockMethods[methodTable.Length + 1];
-                Array.Copy(methodTable, newTable, methodTable.Length);
-                newTable[methodTable.Length] = newMethods;
-                s_methodTable = newTable;
+                s_methodTable = [.. methodTable, newMethods];
 
                 return newMethods;
             }
