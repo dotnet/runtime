@@ -42,7 +42,7 @@ The script handles: batched GraphQL, Build Analysis extraction, review/thread pa
 |-----------|-------------|
 | "triage area-CodeGen-coreclr" | `-Label "area-CodeGen-coreclr"` |
 | "triage all open PRs" | (no -Label) `-Limit 300` |
-| "top 20 PRs" | `-Limit 20` |
+| "top 20 PRs" | `-Top 20` |
 
 ### Step 2 — Estimate and Run the Script
 
@@ -222,7 +222,7 @@ Map the user's request to these flags. Combine as needed.
 | `-Label` | (none) | Area label filter | "triage area-System.Net PRs" |
 | `-Author` | (none) | Filter to specific PR author | "show PRs by @stephentoub" |
 | `-Assignee` | (none) | Filter to specific assignee | "PRs assigned to me" |
-| `-Limit` | 100 | Max PRs from `gh pr list` | "scan all PRs" → `-Limit 300` |
+| `-Limit` | 500 | Max PRs from `gh pr list` | "scan all PRs" → `-Limit 500` |
 | `-Repo` | `dotnet/runtime` | Repository | (rarely changed) |
 
 ### Inclusion/exclusion toggles

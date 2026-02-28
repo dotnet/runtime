@@ -448,9 +448,9 @@ most dimensions don't apply until it's marked ready for review."*
 
 ### Bot PRs
 
-`dotnet-maestro[bot]` (codeflow) and `copilot-swe-agent` have different
-criteria. Exclude from batch by default; if included, note the bot authorship
-and that standard review expectations may differ.
+`dotnet-maestro[bot]` (codeflow) PRs are excluded from batch by default.
+`copilot-swe-agent` PRs are **included by default** — they are maintainer-initiated
+and follow normal review workflows. Use `-ExcludeCopilot` to exclude them.
 
 ### Flow PRs
 

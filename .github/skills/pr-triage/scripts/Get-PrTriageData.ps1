@@ -7,7 +7,7 @@
 .PARAMETER Label
     Area label to filter by (e.g., "area-CodeGen-coreclr")
 .PARAMETER Limit
-    Maximum PRs to return from gh pr list (default 100)
+    Maximum PRs to return from gh pr list (default 500)
 .PARAMETER Repo
     Repository (default "dotnet/runtime")
 .EXAMPLE
