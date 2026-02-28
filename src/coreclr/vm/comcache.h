@@ -18,6 +18,7 @@
 typedef HRESULT ( __stdcall __RPC_FAR *PFNCTXCALLBACK)(void __RPC_FAR *pParam);
 
 #include <ctxtcall.h>
+#include "cdacdata.h"
 
 //================================================================
 // Forward declarations.
@@ -48,6 +49,7 @@ class CtxEntry
     friend void Delete<CtxEntry>(CtxEntry *);
 #pragma warning(pop)		// restore original warning levels
 
+    friend struct ::cdac_data<CtxEntry>;
 
 private:
     // Disallow creation and deletion of the CtxEntries.
@@ -92,6 +94,12 @@ private:
     Thread*         m_pSTAThread;           // STA thread associated with the context, if any
 };
 
+template<>
+struct cdac_data<CtxEntry>
+{
+    static constexpr size_t STAThread = offsetof(CtxEntry, m_pSTAThread);
+};
+
 //==============================================================
 // IUnkEntry: represent a single COM component
 struct IUnkEntry
@@ -100,6 +108,8 @@ struct IUnkEntry
     friend CtxEntry;
     // RCW need to access IUnkEntry
     friend RCW;
+    // cdac_data<RCW> needs access to private fields of IUnkEntry
+    friend struct ::cdac_data<RCW>;
 
 #ifdef _DEBUG
     // Does not throw if m_pUnknown is no longer valid, debug only.

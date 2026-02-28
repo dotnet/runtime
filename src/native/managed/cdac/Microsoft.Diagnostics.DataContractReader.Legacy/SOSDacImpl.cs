@@ -3806,8 +3806,65 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, void* pCallback, void* token)
-        => _legacyImpl is not null ? _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, pCallback, token) : HResults.E_NOTIMPL;
+#if DEBUG
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    private static Interop.BOOL TraverseRCWCleanupListCallback(ulong rcwAddr, ulong ctx, ulong staThread, Interop.BOOL isFreeThreaded, void* expectedElements)
+    {
+        var expectedElementsDict = (Dictionary<ulong, ulong>)GCHandle.FromIntPtr((nint)expectedElements).Target!;
+        if (expectedElementsDict.TryGetValue(rcwAddr, out ulong expectedCtx) && expectedCtx == ctx)
+        {
+            expectedElementsDict[default]++; // Increment the count for verification
+        }
+        else
+        {
+            Debug.Assert(false, $"Unexpected RCW address {rcwAddr:x} or context {ctx:x}");
+        }
+        return Interop.BOOL.TRUE;
+    }
+#endif
+    int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token)
+    {
+        int hr = HResults.S_OK;
+        IEnumerable<Contracts.RCWCleanupInfo> cleanupInfos = Enumerable.Empty<Contracts.RCWCleanupInfo>();
+        try
+        {
+            if (pCallback is null)
+                throw new ArgumentException();
+
+            Contracts.IBuiltInCOM contract = _target.Contracts.BuiltInCOM;
+            TargetPointer listPtr = cleanupListPtr.ToTargetPointer(_target);
+
+            cleanupInfos = contract.GetRCWCleanupList(listPtr);
+            foreach (Contracts.RCWCleanupInfo info in cleanupInfos)
+            {
+                pCallback(
+                    info.RCW.ToClrDataAddress(_target).Value,
+                    info.Context.ToClrDataAddress(_target).Value,
+                    info.STAThread.ToClrDataAddress(_target).Value,
+                    info.IsFreeThreaded ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                    token);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Dictionary<ulong, ulong> expectedElements = cleanupInfos.ToDictionary(info => info.RCW.ToClrDataAddress(_target).Value, info => info.Context.ToClrDataAddress(_target).Value);
+            expectedElements.Add(default, 0);
+            void* tokenDebug = GCHandle.ToIntPtr(GCHandle.Alloc(expectedElements)).ToPointer();
+            delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> callbackDebugPtr = &TraverseRCWCleanupListCallback;
+
+            int hrLocal = _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, callbackDebugPtr, tokenDebug);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(expectedElements[default] == (ulong)cleanupInfos.Count(), $"cDAC: {cleanupInfos.Count()} elements, DAC: {expectedElements[default]} elements");
+            GCHandle.FromIntPtr((nint)tokenDebug).Free();
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, int heaptype, void* pCallback)
         => _legacyImpl is not null ? _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, pCallback) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface
