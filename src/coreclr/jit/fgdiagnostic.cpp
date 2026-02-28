@@ -54,11 +54,11 @@ void Compiler::fgPrintEdgeWeights()
 }
 #endif // DEBUG
 
+#ifdef DEBUG
+
 //------------------------------------------------------------------------
 // fgDebugCheckUpdate: Check that the flow graph is really updated.
 //
-#ifdef DEBUG
-
 void Compiler::fgDebugCheckUpdate()
 {
     // We check for these conditions:
