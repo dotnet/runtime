@@ -15,3 +15,18 @@ path_classifiers:
     # files are generated as part of build-time checks in CMake and are not compiled
     # or linked into any product binaries.
     - artifacts/obj/**/CMakeFiles/**/CheckFunctionExists.c
+queries:
+  #
+  # REPO-WIDE RULE EXCLUSIONS
+  #
+  - exclude:
+      queryid:
+        # [Serializable] doesn't imply that a type is *safe* to [de]serialize; only that it is
+        # *possible* to do so. The rules below incorrectly assume we're trying to make a safety
+        # guarantee.
+        - "cs/dangerous-deserialization-routine"
+        - "cs/deserialization-of-pointer-type"
+        # We already have CodeQL + Roslyn rules running to detect usage of dangerous deserialization
+        # APIs. Those call sites are well-reviewed and don't benefit from extra alerts regarding
+        # the possibility of loading malicious code.
+        - "cs/deserialization-unexpected-subtypes"
