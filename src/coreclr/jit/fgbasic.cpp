@@ -110,9 +110,7 @@ void Compiler::fgCreateNewInitBB()
     JITDUMP("New init " FMT_BB "\n", block->bbNum);
 }
 
-/*
-    Removes a block from the return block list
-*/
+// Removes a block from the return block list
 void Compiler::fgRemoveReturnBlock(BasicBlock* block)
 {
     if (fgReturnBlocks == nullptr)
@@ -191,14 +189,12 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
     }
 }
 
-/*****************************************************************************
- * fgChangeSwitchBlock:
- *
- * We have a BBJ_SWITCH jump at 'oldSwitchBlock' and we want to move this
- * switch jump over to 'newSwitchBlock'.  All of the blocks that are jumped
- * to from jumpTab[] need to have their predecessor lists updated by removing
- * the 'oldSwitchBlock' and adding 'newSwitchBlock'.
- */
+// fgChangeSwitchBlock:
+//
+// We have a BBJ_SWITCH jump at 'oldSwitchBlock' and we want to move this
+// switch jump over to 'newSwitchBlock'.  All of the blocks that are jumped
+// to from jumpTab[] need to have their predecessor lists updated by removing
+// the 'oldSwitchBlock' and adding 'newSwitchBlock'.
 
 void Compiler::fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSwitchBlock)
 {
@@ -565,10 +561,8 @@ void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
     assert(target->checkPredListOrder());
 }
 
-/*****************************************************************************
- *  For a block that is in a handler region, find the first block of the most-nested
- *  handler containing the block.
- */
+//  For a block that is in a handler region, find the first block of the most-nested
+//  handler containing the block.
 BasicBlock* Compiler::fgFirstBlockOfHandler(BasicBlock* block)
 {
     assert(block->hasHndIndex());
@@ -586,20 +580,17 @@ void Compiler::fgInvalidateBBLookup()
 }
 #endif // DEBUG
 
-/*****************************************************************************
- *
- *  The following helps find a basic block given its PC offset.
- */
+//  The following helps find a basic block given its PC offset.
 
 void Compiler::fgInitBBLookup()
 {
     BasicBlock** dscBBptr;
 
-    /* Allocate the basic block table */
+    // Allocate the basic block table
 
     dscBBptr = fgBBs = new (this, CMK_BasicBlock) BasicBlock*[fgBBcount];
 
-    /* Walk all the basic blocks, filling in the table */
+    // Walk all the basic blocks, filling in the table
 
     for (BasicBlock* const block : Blocks())
     {
@@ -614,7 +605,7 @@ BasicBlock* Compiler::fgLookupBB(unsigned addr)
     unsigned lo;
     unsigned hi;
 
-    /* Do a binary search */
+    // Do a binary search
 
     for (lo = 0, hi = fgBBcount - 1;;)
     {
@@ -1821,7 +1812,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     (opcode == CEE_LEAVE || opcode == CEE_LEAVE_S || opcode == CEE_BR || opcode == CEE_BR_S) &&
                     opts.DoEarlyBlockMerging())
                 {
-                    break; /* NOP */
+                    break; // NOP
                 }
 
                 unsigned jmpAddr = (IL_OFFSET)(codeAddr - codeBegp) + sz + jmpDist;
@@ -2885,7 +2876,7 @@ void Compiler::fgLinkBasicBlocks()
 
                 curBBdesc->GetSwitchTargets()->SetSuccs(succs, numUnique);
 
-                /* Default case of CEE_SWITCH (next block), is at end of cases[] */
+                // Default case of CEE_SWITCH (next block), is at end of cases[]
 
                 noway_assert(curBBdesc->NextIs(cases[numCases - 1]->getDestinationBlock()));
                 break;
@@ -2947,10 +2938,10 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
         // Ignore scopes beginning at offset 0
         while (compGetNextEnterScope(0))
-        { /* do nothing */
+        { // do nothing
         }
         while (compGetNextExitScope(0))
-        { /* do nothing */
+        { // do nothing
         }
     }
 
@@ -2966,7 +2957,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
     DECODE_OPCODE:
 
-        /* Get the size of additional parameters */
+        // Get the size of additional parameters
 
         noway_assert((unsigned)opcode < CEE_COUNT);
 
@@ -2987,7 +2978,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
-                /* Check to see if we have a jump/return opcode */
+                // Check to see if we have a jump/return opcode
 
             case CEE_BRFALSE:
             case CEE_BRFALSE_S:
@@ -3032,13 +3023,13 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
             JMP:
 
-                /* Compute the target address of the jump */
+                // Compute the target address of the jump
 
                 jmpDist = (sz == 1) ? getI1LittleEndian(codeAddr) : getI4LittleEndian(codeAddr);
 
                 if ((jmpDist == 0) && (opcode == CEE_BR || opcode == CEE_BR_S) && opts.DoEarlyBlockMerging())
                 {
-                    continue; /* NOP */
+                    continue; // NOP
                 }
 
                 jmpAddr = (IL_OFFSET)(codeAddr - codeBegp) + sz + jmpDist;
@@ -3046,21 +3037,21 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
             case CEE_SWITCH:
             {
-                /* Read the number of entries in the table */
+                // Read the number of entries in the table
 
                 const unsigned jmpCnt = getU4LittleEndian(codeAddr); // # of switch cases (excluding default)
                 codeAddr += 4;
 
-                /* Compute  the base offset for the opcode */
+                // Compute  the base offset for the opcode
 
                 const unsigned jmpBase = (IL_OFFSET)((codeAddr - codeBegp) + jmpCnt * sizeof(DWORD));
 
-                /* Allocate the jump table, ensuring there's space for all cases, the default case, and unique succs */
+                // Allocate the jump table, ensuring there's space for all cases, the default case, and unique succs
 
                 FlowEdge** const jmpTab = new (this, CMK_FlowEdge) FlowEdge*[(jmpCnt + 1) * 2];
                 FlowEdge** const cases  = jmpTab + (jmpCnt + 1);
 
-                /* Fill in the jump table */
+                // Fill in the jump table
 
                 for (unsigned i = 0; i < jmpCnt; i++)
                 {
@@ -3071,19 +3062,19 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     cases[i] = (FlowEdge*)(size_t)(jmpBase + jmpDist);
                 }
 
-                /* Append the default label to the target table */
+                // Append the default label to the target table
 
                 cases[jmpCnt] = (FlowEdge*)(size_t)jmpBase;
 
-                /* Compute the size of the switch opcode operands */
+                // Compute the size of the switch opcode operands
 
                 sz = sizeof(DWORD) + jmpCnt * sizeof(DWORD);
 
-                /* Allocate the switch descriptor; we will initialize the unique successors in fgLinkBasicBlocks */
+                // Allocate the switch descriptor; we will initialize the unique successors in fgLinkBasicBlocks
 
                 swtDsc = new (this, CMK_BasicBlock) BBswtDesc(nullptr, 0, cases, jmpCnt + 1, true);
 
-                /* This is definitely a jump */
+                // This is definitely a jump
 
                 jmpKind     = BBJ_SWITCH;
                 fgHasSwitch = true;
@@ -3204,23 +3195,22 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 }
             }
 
-                /* For tail call, we just call CORINFO_HELP_TAILCALL, and it jumps to the
-                   target. So we don't need an epilog - just like CORINFO_HELP_THROW.
-                   Make the block BBJ_RETURN, but we will change it to BBJ_THROW
-                   if the tailness of the call is satisfied.
-                   NOTE : The next instruction is guaranteed to be a CEE_RET
-                   and it will create another BasicBlock. But there may be an
-                   jump directly to that CEE_RET. If we want to avoid creating
-                   an unnecessary block, we need to check if the CEE_RETURN is
-                   the target of a jump.
-                 */
+                // For tail call, we just call CORINFO_HELP_TAILCALL, and it jumps to the
+                // target. So we don't need an epilog - just like CORINFO_HELP_THROW.
+                // Make the block BBJ_RETURN, but we will change it to BBJ_THROW
+                // if the tailness of the call is satisfied.
+                // NOTE : The next instruction is guaranteed to be a CEE_RET
+                // and it will create another BasicBlock. But there may be an
+                // jump directly to that CEE_RET. If we want to avoid creating
+                // an unnecessary block, we need to check if the CEE_RETURN is
+                // the target of a jump.
 
                 FALLTHROUGH;
 
             case CEE_JMP:
-            /* These are equivalent to a return from the current method
-               But instead of directly returning to the caller we jump and
-               execute something else in between */
+            // These are equivalent to a return from the current method
+            // But instead of directly returning to the caller we jump and
+            // execute something else in between
             case CEE_RET:
                 retBlocks++;
                 jmpKind = BBJ_RETURN;
@@ -3280,7 +3270,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 #endif // !DEBUG
         }
 
-        /* Jump over the operand */
+        // Jump over the operand
 
         codeAddr += sz;
 
@@ -3288,7 +3278,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
         tailCall = (opcode == CEE_TAILCALL);
 
-        /* Make sure a jump target isn't in the middle of our opcode */
+        // Make sure a jump target isn't in the middle of our opcode
 
         if (sz)
         {
@@ -3303,7 +3293,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             }
         }
 
-        /* Compute the offset of the next opcode */
+        // Compute the offset of the next opcode
 
         nxtBBoffs = (IL_OFFSET)(codeAddr - codeBegp);
 
@@ -3321,18 +3311,18 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             }
         }
 
-        /* Do we have a jump? */
+        // Do we have a jump?
 
         if (jmpKind == BBJ_COUNT)
         {
-            /* No jump; make sure we don't fall off the end of the function */
+            // No jump; make sure we don't fall off the end of the function
 
             if (codeAddr == codeEndp)
             {
                 BADCODE3("missing return opcode", " at offset %04X", (IL_OFFSET)(codeAddr - codeBegp));
             }
 
-            /* If a label follows this opcode, we'll have to make a new BB */
+            // If a label follows this opcode, we'll have to make a new BB
 
             bool makeBlock = jumpTarget->bitVectTest(nxtBBoffs);
 
@@ -3359,7 +3349,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
         assert(jmpKind != BBJ_COUNT);
 
-        /* We need to create a new basic block */
+        // We need to create a new basic block
 
         switch (jmpKind)
         {
@@ -3385,7 +3375,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         curBBdesc->bbCodeOffs    = curBBoffs;
         curBBdesc->bbCodeOffsEnd = nxtBBoffs;
 
-        /* Append the block to the end of the global basic block list */
+        // Append the block to the end of the global basic block list
 
         if (fgFirstBB)
         {
@@ -3401,14 +3391,14 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
         DBEXEC(verbose, curBBdesc->dspBlockHeader(false, false, false));
 
-        /* Remember where the next BB will start */
+        // Remember where the next BB will start
 
         curBBoffs = nxtBBoffs;
     } while (codeAddr < codeEndp);
 
     noway_assert(codeAddr == codeEndp);
 
-    /* Finally link up the targets of the blocks together */
+    // Finally link up the targets of the blocks together
 
     fgLinkBasicBlocks();
 
@@ -3416,10 +3406,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     fgThrowCount  = throwBlocks;
 }
 
-/*****************************************************************************
- *
- *  Main entry point to discover the basic blocks for the current function.
- */
+//  Main entry point to discover the basic blocks for the current function.
 
 void Compiler::fgFindBasicBlocks()
 {
@@ -3513,7 +3500,7 @@ void Compiler::fgFindBasicBlocks()
                 BADCODE("try block length <=0");
             }
 
-            /* Mark the 'try' block extent and the handler itself */
+            // Mark the 'try' block extent and the handler itself
 
             if (clause.TryOffset > info.compILCodeSize)
             {
@@ -3571,7 +3558,7 @@ void Compiler::fgFindBasicBlocks()
     }
 #endif // DEBUG
 
-    /* Now create the basic blocks */
+    // Now create the basic blocks
 
     fgMakeBasicBlocks(info.compCode, info.compILCodeSize, jumpTarget);
 
@@ -3648,7 +3635,7 @@ void Compiler::fgFindBasicBlocks()
         }
     }
 
-    /* Mark all blocks within 'try' blocks as such */
+    // Mark all blocks within 'try' blocks as such
 
     if (info.compXcptnsCount == 0)
     {
@@ -3660,14 +3647,13 @@ void Compiler::fgFindBasicBlocks()
         IMPL_LIMITATION("too many exception clauses");
     }
 
-    /* Allocate the exception handler table */
+    // Allocate the exception handler table
 
     fgAllocEHTable();
 
-    /* Assume we don't need to sort the EH table (such that nested try/catch
-     * appear before their try or handler parent). The EH verifier will notice
-     * when we do need to sort it.
-     */
+    // Assume we don't need to sort the EH table (such that nested try/catch
+    // appear before their try or handler parent). The EH verifier will notice
+    // when we do need to sort it.
 
     fgNeedToSortEHTable = false;
 
@@ -3720,7 +3706,7 @@ void Compiler::fgFindBasicBlocks()
         HBtab->ebdHndBegOffset    = hndBegOff;
         HBtab->ebdHndEndOffset    = hndEndOff;
 
-        /* Convert the various addresses to basic blocks */
+        // Convert the various addresses to basic blocks
 
         BasicBlock* tryBegBB = fgLookupBB(tryBegOff);
         BasicBlock* tryEndBB =
@@ -3818,8 +3804,8 @@ void Compiler::fgFindBasicBlocks()
             }
         }
 
-        /*  Prevent future optimizations of removing the first block   */
-        /*  of a TRY block and the first block of an exception handler */
+        // Prevent future optimizations of removing the first block
+        // of a TRY block and the first block of an exception handler
 
         tryBegBB->SetFlags(BBF_DONT_REMOVE);
         hndBegBB->SetFlags(BBF_DONT_REMOVE);
@@ -3870,7 +3856,7 @@ void Compiler::fgFindBasicBlocks()
 
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
-        /* Mark all blocks in the finally/fault or catch clause */
+        // Mark all blocks in the finally/fault or catch clause
 
         BasicBlock* tryBegBB = HBtab->ebdTryBeg;
         BasicBlock* hndBegBB = HBtab->ebdHndBeg;
@@ -3904,11 +3890,11 @@ void Compiler::fgFindBasicBlocks()
             }
         }
 
-        /* Mark all blocks within the covered range of the try */
+        // Mark all blocks within the covered range of the try
 
         for (block = tryBegBB; block && (block->bbCodeOffs < tryEndOff); block = block->Next())
         {
-            /* Mark this BB as belonging to a 'try' block */
+            // Mark this BB as belonging to a 'try' block
 
             if (!block->hasTryIndex())
             {
@@ -3916,7 +3902,7 @@ void Compiler::fgFindBasicBlocks()
             }
 
 #ifdef DEBUG
-            /* Note: the BB can't span the 'try' block */
+            // Note: the BB can't span the 'try' block
 
             if (!block->HasFlag(BBF_INTERNAL))
             {
@@ -3926,11 +3912,10 @@ void Compiler::fgFindBasicBlocks()
 #endif
         }
 
-        /*  Init ebdHandlerNestingLevel of current clause, and bump up value for all
-         *  enclosed clauses (which have to be before it in the table).
-         *  Innermost try-finally blocks must precede outermost
-         *  try-finally blocks.
-         */
+        // Init ebdHandlerNestingLevel of current clause, and bump up value for all
+        //  enclosed clauses (which have to be before it in the table).
+        //  Innermost try-finally blocks must precede outermost
+        //  try-finally blocks.
 
         HBtab->ebdEnclosingTryIndex = EHblkDsc::NO_ENCLOSING_INDEX;
         HBtab->ebdEnclosingHndIndex = EHblkDsc::NO_ENCLOSING_INDEX;
@@ -3940,12 +3925,11 @@ void Compiler::fgFindBasicBlocks()
 
         for (EHblkDsc* xtab = compHndBBtab; xtab < HBtab; xtab++)
         {
-            /* If we haven't recorded an enclosing try index for xtab then see
-             *  if this EH region should be recorded.  We check if the
-             *  first offset in the xtab lies within our region.  If so,
-             *  the last offset also must lie within the region, due to
-             *  nesting rules. verInsertEhNode(), below, will check for proper nesting.
-             */
+            // If we haven't recorded an enclosing try index for xtab then see
+            //  if this EH region should be recorded.  We check if the
+            //  first offset in the xtab lies within our region.  If so,
+            //  the last offset also must lie within the region, due to
+            //  nesting rules. verInsertEhNode(), below, will check for proper nesting.
             if (xtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
             {
                 bool begBetween = jitIsBetween(xtab->ebdTryBegOffs(), tryBegOff, tryEndOff);
@@ -3956,8 +3940,7 @@ void Compiler::fgFindBasicBlocks()
                 }
             }
 
-            /* Do the same for the enclosing handler index.
-             */
+            // Do the same for the enclosing handler index.
             if (xtab->ebdEnclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX)
             {
                 bool begBetween = jitIsBetween(xtab->ebdTryBegOffs(), hndBegOff, hndEndOff);
@@ -4105,10 +4088,8 @@ void Compiler::fgFixEntryFlowForOSR()
     }
 }
 
-/*****************************************************************************
- * Check control flow constraints for well formed IL. Bail if any of the constraints
- * are violated.
- */
+// Check control flow constraints for well formed IL. Bail if any of the constraints
+// are violated.
 
 void Compiler::fgCheckBasicBlockControlFlow()
 {
@@ -4193,8 +4174,8 @@ void Compiler::fgCheckBasicBlockControlFlow()
                 break;
 
             case BBJ_THROW: // block ends with 'throw'
-                /* throw is permitted from every BB, so nothing to check */
-                /* importer makes sure that rethrow is done from a catch */
+                // throw is permitted from every BB, so nothing to check
+                // importer makes sure that rethrow is done from a catch
                 break;
 
             case BBJ_LEAVE: // block always jumps to the target, maybe out of guarded
@@ -4219,10 +4200,8 @@ void Compiler::fgCheckBasicBlockControlFlow()
     }
 }
 
-/****************************************************************************
- * Check that the leave from the block is legal.
- * Consider removing this check here if we  can do it cheaply during importing
- */
+// Check that the leave from the block is legal.
+// Consider removing this check here if we  can do it cheaply during importing
 
 void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, bool isLeave)
 {
@@ -4238,20 +4217,20 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, b
     srcHndTab = ehInitHndRange(blkSrc, &srcHndBeg, &srcHndEnd, &srcInFilter);
     ehInitHndRange(blkDest, &destHndBeg, &destHndEnd, &destInFilter);
 
-    /* Impose the rules for leaving or jumping from handler blocks */
+    // Impose the rules for leaving or jumping from handler blocks
 
     if (blkSrc->hasHndIndex())
     {
         srcInCatch = srcHndTab->HasCatchHandler() && srcHndTab->InHndRegionILRange(blkSrc);
 
-        /* Are we jumping within the same handler index? */
+        // Are we jumping within the same handler index?
         if (BasicBlock::sameHndRegion(blkSrc, blkDest))
         {
-            /* Do we have a filter clause? */
+            // Do we have a filter clause?
             if (srcHndTab->HasFilter())
             {
-                /* filters and catch handlers share same eh index  */
-                /* we need to check for control flow between them. */
+                // filters and catch handlers share same eh index
+                // we need to check for control flow between them.
                 if (srcInFilter != destInFilter)
                 {
                     if (!jitIsBetween(blkDest->bbCodeOffs, srcHndBeg, srcHndEnd))
@@ -4264,10 +4243,10 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, b
         }
         else
         {
-            /* The handler indexes of blkSrc and blkDest are different */
+            // The handler indexes of blkSrc and blkDest are different
             if (isLeave)
             {
-                /* Any leave instructions must not enter the dest handler from outside*/
+                // Any leave instructions must not enter the dest handler from outside
                 if (!jitIsBetween(srcHndBeg, destHndBeg, destHndEnd))
                 {
                     BADCODE3("Illegal use of leave to enter handler", ". Before offset %04X", blkSrc->bbCodeOffsEnd);
@@ -4275,28 +4254,28 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, b
             }
             else
             {
-                /* We must use a leave to exit a handler */
+                // We must use a leave to exit a handler
                 BADCODE3("Illegal control flow out of a handler", ". Before offset %04X", blkSrc->bbCodeOffsEnd);
             }
 
-            /* Do we have a filter clause? */
+            // Do we have a filter clause?
             if (srcHndTab->HasFilter())
             {
-                /* It is ok to leave from the handler block of a filter, */
-                /* but not from the filter block of a filter             */
+                // It is ok to leave from the handler block of a filter,
+                // but not from the filter block of a filter
                 if (srcInFilter != destInFilter)
                 {
                     BADCODE3("Illegal to leave a filter handler", ". Before offset %04X", blkSrc->bbCodeOffsEnd);
                 }
             }
 
-            /* We should never leave a finally handler */
+            // We should never leave a finally handler
             if (srcHndTab->HasFinallyHandler())
             {
                 BADCODE3("Illegal to leave a finally handler", ". Before offset %04X", blkSrc->bbCodeOffsEnd);
             }
 
-            /* We should never leave a fault handler */
+            // We should never leave a fault handler
             if (srcHndTab->HasFaultHandler())
             {
                 BADCODE3("Illegal to leave a fault handler", ". Before offset %04X", blkSrc->bbCodeOffsEnd);
@@ -4305,12 +4284,12 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, b
     }
     else if (blkDest->hasHndIndex())
     {
-        /* blkSrc was not inside a handler, but blkDst is inside a handler */
+        // blkSrc was not inside a handler, but blkDst is inside a handler
         BADCODE3("Illegal control flow into a handler", ". Before offset %04X", blkSrc->bbCodeOffsEnd);
     }
 
-    /* Are we jumping from a catch handler into the corresponding try? */
-    /* VB uses this for "on error goto "                               */
+    // Are we jumping from a catch handler into the corresponding try?
+    // VB uses this for "on error goto "
 
     if (isLeave && srcInCatch)
     {
@@ -4368,9 +4347,9 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, b
                         //
                         // Note: The leave is allowed also from catches nested inside the catch shown above.
 
-                        /* The common case where leave is to the corresponding try */
+                        // The common case where leave is to the corresponding try
                         if (ehDsc->ebdIsSameTry(this, blkDest->getTryIndex()) ||
-                            /* Also allowed is a leave to the start of a try which starts in the handler's try */
+                            // Also allowed is a leave to the start of a try which starts in the handler's try
                             fgFlowToFirstBlockOfInnerTry(ehDsc->ebdTryBeg, blkDest, false))
                         {
                             bValidJumpToTry = true;
@@ -4427,7 +4406,7 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, b
         }
     }
 
-    /* Check all the try block rules */
+    // Check all the try block rules
 
     IL_OFFSET srcTryBeg;
     IL_OFFSET srcTryEnd;
@@ -4437,7 +4416,7 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, b
     ehInitTryRange(blkSrc, &srcTryBeg, &srcTryEnd);
     ehInitTryRange(blkDest, &destTryBeg, &destTryEnd);
 
-    /* Are we jumping between try indexes? */
+    // Are we jumping between try indexes?
     if (!BasicBlock::sameTryRegion(blkSrc, blkDest))
     {
         // Are we exiting from an inner to outer try?
@@ -4474,10 +4453,8 @@ void Compiler::fgControlFlowPermitted(BasicBlock* blkSrc, BasicBlock* blkDest, b
     }
 }
 
-/*****************************************************************************
- *  Check that blkDest is the first block of an inner try or a sibling
- *    with no intervening trys in between
- */
+//  Check that blkDest is the first block of an inner try or a sibling
+//    with no intervening trys in between
 
 bool Compiler::fgFlowToFirstBlockOfInnerTry(BasicBlock* blkSrc, BasicBlock* blkDest, bool sibling)
 {
@@ -4533,11 +4510,9 @@ bool Compiler::fgFlowToFirstBlockOfInnerTry(BasicBlock* blkSrc, BasicBlock* blkD
     return true;
 }
 
-/*****************************************************************************
- *  Returns the handler nesting level of the block.
- *  *pFinallyNesting is set to the nesting level of the inner-most
- *  finally-protected try the block is in.
- */
+//  Returns the handler nesting level of the block.
+//  *pFinallyNesting is set to the nesting level of the inner-most
+//  finally-protected try the block is in.
 
 unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNesting)
 {
@@ -4546,8 +4521,8 @@ unsigned Compiler::fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNestin
     unsigned  XTnum;
     EHblkDsc* HBtab;
 
-    /* We find the block's handler nesting level by walking over the
-       complete exception table and find enclosing clauses. */
+    // We find the block's handler nesting level by walking over the
+    // complete exception table and find enclosing clauses.
 
     for (XTnum = 0, HBtab = compHndBBtab; XTnum < compHndBBtabCount; XTnum++, HBtab++)
     {
@@ -5018,12 +4993,9 @@ void Compiler::fgUnlinkBlockForRemoval(BasicBlock* block)
     fgBBcount--;
 }
 
-/*****************************************************************************************************
- *
- *  Function called to unlink basic block range [bBeg .. bEnd] from the basic block list.
- *
- *  'bBeg' can't be the first block.
- */
+//  Function called to unlink basic block range [bBeg .. bEnd] from the basic block list.
+//
+//  'bBeg' can't be the first block.
 
 void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
 {
@@ -5036,7 +5008,7 @@ void Compiler::fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd)
     BasicBlock* bPrev = bBeg->Prev();
     assert(bPrev != nullptr); // Can't unlink a range starting with the first block
 
-    /* If we removed the last block in the method then update fgLastBB */
+    // If we removed the last block in the method then update fgLastBB
     if (fgLastBB == bEnd)
     {
         fgLastBB = bPrev;
@@ -5119,10 +5091,10 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             fgRemoveReturnBlock(block);
         }
 
-        /* Unlink this block from the bbNext chain */
+        // Unlink this block from the bbNext chain
         fgUnlinkBlockForRemoval(block);
 
-        /* At this point the bbPreds and bbRefs had better be zero */
+        // At this point the bbPreds and bbRefs had better be zero
         noway_assert((block->bbRefs == 0) && (block->bbPreds == nullptr));
     }
     else // block is empty
@@ -5138,10 +5110,10 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             printf("Removing empty " FMT_BB "\n", block->bbNum);
         }
 
-        /* Some extra checks for the empty case */
+        // Some extra checks for the empty case
         assert(block->KindIs(BBJ_ALWAYS));
 
-        /* Do not remove a block that jumps to itself - used for while (true){} */
+        // Do not remove a block that jumps to itself - used for while (true){}
         assert(!block->TargetIs(block));
 #endif // DEBUG
 
@@ -5161,29 +5133,28 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             succBlock->bbCodeOffs = block->bbCodeOffs;
         }
 
-        /* Remove the block */
+        // Remove the block
 
         if (bPrev == nullptr)
         {
-            /* special case if this is the first BB */
+            // special case if this is the first BB
 
             noway_assert(block == fgFirstBB);
 
-            /* old block no longer gets the extra ref count for being the first block */
+            // old block no longer gets the extra ref count for being the first block
             block->bbRefs--;
             succBlock->bbRefs++;
         }
 
-        /* Update bbRefs and bbPreds.
-         * All blocks jumping to 'block' will jump to 'succBlock'.
-         * First, remove 'block' from the predecessor list of succBlock.
-         */
+        // Update bbRefs and bbPreds.
+        // All blocks jumping to 'block' will jump to 'succBlock'.
+        // First, remove 'block' from the predecessor list of succBlock.
 
         fgRemoveRefPred(block->GetTargetEdge());
 
         for (BasicBlock* const predBlock : block->PredBlocksEditing())
         {
-            /* change all jumps/refs to the removed block */
+            // change all jumps/refs to the removed block
             fgReplaceJumpTarget(predBlock, block, succBlock);
         }
 
@@ -5205,7 +5176,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 assert(!bPrev->TrueTargetIs(block));
                 assert(!bPrev->FalseTargetIs(block));
 
-                /* Check if both sides of the BBJ_COND now jump to the same block */
+                // Check if both sides of the BBJ_COND now jump to the same block
                 if (bPrev->TrueEdgeIs(bPrev->GetFalseEdge()))
                 {
                     fgRemoveConditionalJump(bPrev);
@@ -5260,16 +5231,13 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
     block->SetKind(BBJ_ALWAYS);
 }
 
-/*****************************************************************************
- *
- *  Function called to move the range of blocks [bStart .. bEnd].
- *  The blocks are placed immediately after the insertAfterBlk.
- *  fgFirstFuncletBB is not updated; that is the responsibility of the caller, if necessary.
- */
+//  Function called to move the range of blocks [bStart .. bEnd].
+//  The blocks are placed immediately after the insertAfterBlk.
+//  fgFirstFuncletBB is not updated; that is the responsibility of the caller, if necessary.
 
 void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBlock* insertAfterBlk)
 {
-    /* We have decided to insert the block(s) after 'insertAfterBlk' */
+    // We have decided to insert the block(s) after 'insertAfterBlk'
 
 #ifdef DEBUG
     if (verbose)
@@ -5280,9 +5248,9 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
     }
 #endif // DEBUG
 
-    /* relink [bStart .. bEnd] into the flow graph */
+    // relink [bStart .. bEnd] into the flow graph
 
-    /* If insertAfterBlk was fgLastBB then update fgLastBB */
+    // If insertAfterBlk was fgLastBB then update fgLastBB
     if (insertAfterBlk == fgLastBB)
     {
         fgLastBB = bEnd;
@@ -5296,18 +5264,13 @@ void Compiler::fgMoveBlocksAfter(BasicBlock* bStart, BasicBlock* bEnd, BasicBloc
     insertAfterBlk->SetNext(bStart);
 }
 
-/*****************************************************************************
- *
- *  Function called to relocate a single range to the end of the method.
- *  Only an entire consecutive region can be moved and it will be kept together.
- *  Except for the first block, the range cannot have any blocks that jump into or out of the region.
- *  When successful we return the bLast block which is the last block that we relocated.
- *  When unsuccessful we return NULL.
-
-    =============================================================
-    NOTE: This function can invalidate all pointers into the EH table, as well as change the size of the EH table!
-    =============================================================
- */
+//  Function called to relocate a single range to the end of the method.
+//  Only an entire consecutive region can be moved and it will be kept together.
+//  Except for the first block, the range cannot have any blocks that jump into or out of the region.
+//  When successful we return the bLast block which is the last block that we relocated.
+//  When unsuccessful we return NULL.
+//
+// NOTE: This function can invalidate all pointers into the EH table, as well as change the size of the EH table!
 
 BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE relocateType)
 {
@@ -5414,7 +5377,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     BasicBlock* bNext;
     bNext = bLast->Next();
 
-    /* Temporarily unlink [bStart .. bLast] from the flow graph */
+    // Temporarily unlink [bStart .. bLast] from the flow graph
     fgUnlinkRange(bStart, bLast);
 
     BasicBlock* insertAfterBlk;
@@ -5542,10 +5505,7 @@ DONE:
     return bLast;
 }
 
-/*****************************************************************************
- *
- * Insert a BasicBlock before the given block.
- */
+// Insert a BasicBlock before the given block.
 
 BasicBlock* Compiler::fgNewBBbefore(BBKinds jumpKind, BasicBlock* block, bool extendRegion)
 {
@@ -5576,10 +5536,7 @@ BasicBlock* Compiler::fgNewBBbefore(BBKinds jumpKind, BasicBlock* block, bool ex
     return newBlk;
 }
 
-/*****************************************************************************
- *
- * Insert a BasicBlock after the given block.
- */
+// Insert a BasicBlock after the given block.
 
 BasicBlock* Compiler::fgNewBBafter(BBKinds jumpKind, BasicBlock* block, bool extendRegion)
 {
@@ -5644,13 +5601,11 @@ BasicBlock* Compiler::fgNewBBFromTreeAfter(
     return newBlock;
 }
 
-/*****************************************************************************
- *  Inserts basic block before existing basic block.
- *
- *  If insertBeforeBlk is in the funclet region, then newBlk will be in the funclet region.
- *  (If insertBeforeBlk is the first block of the funclet region, then 'newBlk' will be the
- *  new first block of the funclet region.)
- */
+//  Inserts basic block before existing basic block.
+//
+//  If insertBeforeBlk is in the funclet region, then newBlk will be in the funclet region.
+//  (If insertBeforeBlk is the first block of the funclet region, then 'newBlk' will be the
+//  new first block of the funclet region.)
 void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
 {
     if (insertBeforeBlk == fgFirstBB)
@@ -5671,12 +5626,10 @@ void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
     }
 }
 
-/*****************************************************************************
- *  Inserts basic block after existing basic block.
- *
- *  If insertBeforeBlk is in the funclet region, then newBlk will be in the funclet region.
- *  (It can't be used to insert a block as the first block of the funclet region).
- */
+//  Inserts basic block after existing basic block.
+//
+//  If insertBeforeBlk is in the funclet region, then newBlk will be in the funclet region.
+//  (It can't be used to insert a block as the first block of the funclet region).
 void Compiler::fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk)
 {
     if (fgLastBB == insertAfterBlk)
@@ -6067,7 +6020,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
     assert(tryIndex <= compHndBBtabCount);
     assert(hndIndex <= compHndBBtabCount);
 
-    /* afterBlk is the block which will precede the newBB */
+    // afterBlk is the block which will precede the newBB
     BasicBlock* afterBlk;
 
     // start and end limit for inserting the block
@@ -6086,7 +6039,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
 
         if (insertAtEnd || (nearBlk == nullptr))
         {
-            /* We'll just insert the block at the end of the method, before the funclets */
+            // We'll just insert the block at the end of the method, before the funclets
 
             afterBlk = fgLastBBInMainFunction();
             goto _FoundAfterBlk;
@@ -6177,7 +6130,7 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
 
 _FoundAfterBlk:;
 
-    /* We have decided to insert the block after 'afterBlk'. */
+    // We have decided to insert the block after 'afterBlk'.
     noway_assert(afterBlk != nullptr);
 
     JITDUMP("fgNewBBinRegion(jumpKind=%s, tryIndex=%u, hndIndex=%u, putInFilter=%s, runRarely=%s, insertAtEnd=%s): "
@@ -6267,7 +6220,7 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
                                             unsigned    regionIndex,
                                             bool        putInTryRegion)
 {
-    /* Insert the new block */
+    // Insert the new block
     BasicBlock* afterBlkNext = afterBlk->Next();
     (void)afterBlkNext; // prevent "unused variable" error from GCC
     BasicBlock* newBlk = fgNewBBafter(jumpKind, afterBlk, false);
@@ -6319,7 +6272,7 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
                 //          ...
                 //          try { // 2
                 //          ...
-                //      } /* 2 */ } /* 1 */
+                //      } /* 2 */ } // 1
                 // This example is meant to indicate that both try regions 1 and 2 end at
                 // the same block, and we're extending 2. Thus, we must also extend 1. If we
                 // only extended 2, we would break proper nesting. (Dev11 bug 137967)
@@ -6359,7 +6312,7 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBKinds     jumpKind,
                 //          ...
                 //          catch { // 2
                 //          ...
-                //      } /* 2 */ } /* 1 */
+                //      } /* 2 */ } // 1
                 // This example is meant to indicate that both handler regions 1 and 2 end at
                 // the same block, and we're extending 2. Thus, we must also extend 1. If we
                 // only extended 2, we would break proper nesting. (Dev11 bug 372051)

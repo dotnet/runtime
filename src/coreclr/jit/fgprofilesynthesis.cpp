@@ -20,7 +20,8 @@
 // Returns:
 //   Suitable phase status
 //
-/* static */ PhaseStatus ProfileSynthesis::AdjustThrowEdgeLikelihoods(Compiler* compiler)
+// static
+PhaseStatus ProfileSynthesis::AdjustThrowEdgeLikelihoods(Compiler* compiler)
 {
     const FlowGraphDfsTree* dfsTree = compiler->m_dfsTree;
     assert(dfsTree != nullptr);

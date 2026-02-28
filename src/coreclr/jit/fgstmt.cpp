@@ -13,7 +13,7 @@
 // Check to see if block contains a statement but don't spend more than a certain
 // budget doing this per method compiled.
 // If the budget is exceeded, return 'answerOnBoundExceeded' as the answer.
-/* static */
+// static
 bool Compiler::fgBlockContainsStatementBounded(BasicBlock* block,
                                                Statement*  stmt,
                                                bool        answerOnBoundExceeded /*= true*/)
@@ -382,10 +382,7 @@ Statement* Compiler::fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAft
     return stmtLast;
 }
 
-/*****************************************************************************
- *
- *  Create a new statement from tree and wire the links up.
- */
+//  Create a new statement from tree and wire the links up.
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di)
 {
     Statement* stmt = gtNewStmt(tree, di);
@@ -468,8 +465,8 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
 
     if (opts.compDbgCode && stmt->GetPrevStmt() != stmt && stmt->GetDebugInfo().IsValid())
     {
-        /* TODO: For debuggable code, should we remove significant
-           statement boundaries. Or should we leave a GT_NO_OP in its place? */
+        // TODO: For debuggable code, should we remove significant
+        // statement boundaries. Or should we leave a GT_NO_OP in its place?
     }
 
     Statement* firstStmt = block->firstStmt();
@@ -479,7 +476,7 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
         {
             assert(firstStmt == block->lastStmt());
 
-            /* this is the only statement - basic block becomes empty */
+            // this is the only statement - basic block becomes empty
             block->bbStmtList = nullptr;
         }
         else
@@ -518,7 +515,7 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
 #endif // DEBUG
 }
 
-/******************************************************************************/
+////////////////////////////////////////////////////////////////////////////////
 // Returns true if the operator is involved in control-flow.
 // TODO-Cleanup: Make this a GenTreeOperKind.
 //
@@ -547,10 +544,8 @@ inline bool OperIsControlFlow(genTreeOps oper)
     }
 }
 
-/******************************************************************************
- *  Tries to throw away a stmt. The statement can be anywhere in block->bbStmtList.
- *  Returns true if it did remove the statement.
- */
+//  Tries to throw away a stmt. The statement can be anywhere in block->bbStmtList.
+//  Returns true if it did remove the statement.
 
 bool Compiler::fgCheckRemoveStmt(BasicBlock* block, Statement* stmt)
 {

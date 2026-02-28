@@ -50,34 +50,31 @@ void Compiler::fgPrintEdgeWeights()
 }
 #endif // DEBUG
 
-/*****************************************************************************
- *  Check that the flow graph is really updated
- */
+//  Check that the flow graph is really updated
 
 #ifdef DEBUG
 
 void Compiler::fgDebugCheckUpdate()
 {
-    /* We check for these conditions:
-     * no unreachable blocks  -> no blocks have countOfInEdges() = 0
-     * no empty blocks        -> !block->isEmpty(), unless non-removable or multiple in-edges
-     * no un-imported blocks  -> no blocks have BBF_IMPORTED not set (this is
-     *                           kind of redundant with the above, but to make sure)
-     * no un-compacted blocks -> BBJ_ALWAYS with jump to block with no other jumps to it (countOfInEdges() = 1)
-     */
+    // We check for these conditions:
+    // no unreachable blocks  -> no blocks have countOfInEdges() = 0
+    // no empty blocks        -> !block->isEmpty(), unless non-removable or multiple in-edges
+    // no un-imported blocks  -> no blocks have BBF_IMPORTED not set (this is
+    //                           kind of redundant with the above, but to make sure)
+    // no un-compacted blocks -> BBJ_ALWAYS with jump to block with no other jumps to it (countOfInEdges() = 1)
 
     BasicBlock* prev;
     BasicBlock* block;
     for (prev = nullptr, block = fgFirstBB; block != nullptr; prev = block, block = block->Next())
     {
-        /* no unreachable blocks */
+        // no unreachable blocks
 
         if ((block->countOfInEdges() == 0) && !block->HasFlag(BBF_DONT_REMOVE))
         {
             noway_assert(!"Unreachable block not removed!");
         }
 
-        /* no empty blocks */
+        // no empty blocks
 
         if (block->isEmpty() && !block->HasFlag(BBF_DONT_REMOVE))
         {
@@ -88,15 +85,15 @@ void Compiler::fgDebugCheckUpdate()
                 case BBJ_EHFAULTRET:
                 case BBJ_EHFILTERRET:
                 case BBJ_RETURN:
-                /* for BBJ_ALWAYS is probably just a GOTO, but will have to be treated */
+                // for BBJ_ALWAYS is probably just a GOTO, but will have to be treated
                 case BBJ_ALWAYS:
                 case BBJ_EHCATCHRET:
-                    /* These jump kinds are allowed to have empty tree lists */
+                    // These jump kinds are allowed to have empty tree lists
                     break;
 
                 default:
-                    /* it may be the case that the block had more than one reference to it
-                     * so we couldn't remove it */
+                    // it may be the case that the block had more than one reference to it
+                    // so we couldn't remove it
 
                     if (block->countOfInEdges() == 0)
                     {
@@ -106,11 +103,11 @@ void Compiler::fgDebugCheckUpdate()
             }
         }
 
-        /* no un-imported blocks */
+        // no un-imported blocks
 
         if (!block->HasFlag(BBF_IMPORTED))
         {
-            /* internal blocks do not count */
+            // internal blocks do not count
 
             if (!block->HasFlag(BBF_INTERNAL))
             {
@@ -132,7 +129,7 @@ void Compiler::fgDebugCheckUpdate()
             assert(block->HasFlag(BBF_RETLESS_CALL) || block->isBBCallFinallyPair());
         }
 
-        /* no un-compacted blocks */
+        // no un-compacted blocks
 
         if (fgCanCompactBlock(block))
         {
@@ -523,7 +520,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 #define FILENAME_PATTERN             "%s-%s-%s-%s.%s"
 #define FILENAME_PATTERN_WITH_NUMBER "%s-%s-%s-%s~%d.%s"
 
-        const size_t MaxFileNameLength = MAX_PATH_FNAME - 20 /* give us some extra buffer */;
+        const size_t MaxFileNameLength = MAX_PATH_FNAME - 20; // give us some extra buffer
 
         escapedString           = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
         size_t escapedStringLen = strlen(escapedString);
@@ -1750,7 +1747,7 @@ void Compiler::fgDumpFlowGraphLoops(FILE* file)
 
 #endif // DUMP_FLOWGRAPHS
 
-/*****************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
 #ifdef DEBUG
 
 void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
@@ -1931,19 +1928,19 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
         switch (block->GetKind())
         {
             case BBJ_COND:
-                printedBlockWidth = 3 /* "-> " */ + 1 /* comma */ + 9 /* kind */;
+                printedBlockWidth = 3 + 1 + 9; // "-> " + comma + kind
                 printf("-> %s,%s", dspBlockNum(block->GetTrueEdgeRaw()), dspBlockNum(block->GetFalseEdgeRaw()));
                 printf("%*s ( cond )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_CALLFINALLY:
-                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printedBlockWidth = 3 + 9; // "-> " + kind
                 printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s (callf )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_CALLFINALLYRET:
-                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printedBlockWidth = 3 + 9; // "-> " + kind
                 printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s (callfr)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
@@ -1951,13 +1948,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
             case BBJ_ALWAYS:
                 const char* label;
                 label             = (flags & BBF_KEEP_BBJ_ALWAYS) ? "ALWAYS" : "always";
-                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printedBlockWidth = 3 + 9; // "-> " + kind
                 printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s (%s)", blockTargetFieldWidth - printedBlockWidth, "", label);
                 break;
 
             case BBJ_LEAVE:
-                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printedBlockWidth = 3 + 9; // "-> " + kind
                 printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s (leave )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
@@ -1965,7 +1962,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
             case BBJ_EHFINALLYRET:
             {
                 printf("->");
-                printedBlockWidth = 2 + 9 /* kind */;
+                printedBlockWidth = 2 + 9; // kind
 
                 const BBJumpTable* const ehfDesc = block->GetEhfTargets();
                 if (ehfDesc == nullptr)
@@ -1979,7 +1976,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
 
                     for (unsigned i = 0; i < ehfDesc->GetSuccCount(); i++)
                     {
-                        printedBlockWidth += 1 /* space/comma */;
+                        printedBlockWidth += 1; // space/comma
                         printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(ehfDesc->GetSucc(i)));
                     }
                 }
@@ -1994,36 +1991,36 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
             }
 
             case BBJ_EHFAULTRET:
-                printedBlockWidth = 9 /* kind */;
+                printedBlockWidth = 9; // kind
                 printf("%*s (falret)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_EHFILTERRET:
-                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printedBlockWidth = 3 + 9; // "-> " + kind
                 printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s (fltret)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_EHCATCHRET:
-                printedBlockWidth = 3 /* "-> " */ + 9 /* kind */;
+                printedBlockWidth = 3 + 9; // "-> " + kind
                 printf("-> %s", dspBlockNum(block->GetTargetEdgeRaw()));
                 printf("%*s ( cret )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_THROW:
-                printedBlockWidth = 9 /* kind */;
+                printedBlockWidth = 9; // kind
                 printf("%*s (throw )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_RETURN:
-                printedBlockWidth = 9 /* kind */;
+                printedBlockWidth = 9; // kind
                 printf("%*s (return)", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
 
             case BBJ_SWITCH:
             {
                 printf("->");
-                printedBlockWidth = 2 + 9 /* kind */;
+                printedBlockWidth = 2 + 9; // kind
 
                 const BBswtDesc* const jumpSwt = block->GetSwitchTargets();
                 const unsigned         jumpCnt = jumpSwt->GetCaseCount();
@@ -2031,7 +2028,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
 
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
-                    printedBlockWidth += 1 /* space/comma */;
+                    printedBlockWidth += 1; // space/comma
                     printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
 
                     const bool isDefault = jumpSwt->HasDefaultCase() && (i == jumpCnt - 1);
@@ -2060,7 +2057,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
 
             default:
                 // Bad Kind
-                printedBlockWidth = 9 /* kind */;
+                printedBlockWidth = 9; // kind
                 printf("%*s (ERROR )", blockTargetFieldWidth - printedBlockWidth, "");
                 break;
         }
@@ -2122,7 +2119,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
     {
         cnt += 2;
         printf("{ ");
-        /* brace matching editor workaround to compensate for the preceding line: } */
+        // brace matching editor workaround to compensate for the preceding line: }
     }
 
     if (bbIsTryBeg(block))
@@ -2135,7 +2132,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
             {
                 cnt += 6;
                 printf("try { ");
-                /* brace matching editor workaround to compensate for the preceding line: } */
+                // brace matching editor workaround to compensate for the preceding line: }
             }
         }
     }
@@ -2145,19 +2142,19 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
         if (HBtab->ebdTryLast == block)
         {
             cnt += 2;
-            /* brace matching editor workaround to compensate for the following line: { */
+            // brace matching editor workaround to compensate for the following line: {
             printf("} ");
         }
         if (HBtab->ebdHndLast == block)
         {
             cnt += 2;
-            /* brace matching editor workaround to compensate for the following line: { */
+            // brace matching editor workaround to compensate for the following line: {
             printf("} ");
         }
         if (HBtab->HasFilter() && block->NextIs(HBtab->ebdHndBeg))
         {
             cnt += 2;
-            /* brace matching editor workaround to compensate for the following line: { */
+            // brace matching editor workaround to compensate for the following line: {
             printf("} ");
         }
     }
@@ -2197,9 +2194,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
     printf("\n");
 }
 
-/****************************************************************************
-    Dump blocks from firstBlock to lastBlock.
-*/
+// Dump blocks from firstBlock to lastBlock.
 
 void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, bool dumpTrees)
 {
@@ -2280,9 +2275,10 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 
     // Calculate the field width allocated for the block target. The field width is allocated to allow for two blocks
     // for BBJ_COND. It does not include any extra space for variable-sized BBJ_EHFINALLYRET and BBJ_SWITCH.
-    int blockTargetFieldWidth = 3 /* "-> " */ + 2 /* BB */ + maxBlockNumWidth + edgeLikelihoodsWidth + 1 /* comma */ +
-                                2 /* BB */ + maxBlockNumWidth + edgeLikelihoodsWidth + 1 /* space */ +
-                                8 /* kind: "(xxxxxx)" */;
+    // "-> "(3) + "BB"(2) + blockNum + likelihoods + comma(1) + "BB"(2) + blockNum + likelihoods + space(1) + kind(8)
+    int blockTargetFieldWidth = 3 + 2 + maxBlockNumWidth + edgeLikelihoodsWidth + 1 +
+                                2 + maxBlockNumWidth + edgeLikelihoodsWidth + 1 +
+                                8; // kind: "(xxxxxx)"
 
     // clang-format off
 
@@ -2374,7 +2370,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
     }
 }
 
-/*****************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
 
 void Compiler::fgDispBasicBlocks(bool dumpTrees)
 {
@@ -2528,12 +2524,10 @@ void Compiler::fgDumpBlockMemorySsaOut(BasicBlock* block)
     }
 }
 
-/*****************************************************************************
- * Try to create as many candidates for GTF_MUL_64RSLT as possible.
- * We convert 'intOp1*intOp2' into 'int(long(nop(intOp1))*long(intOp2))'.
- */
+// Try to create as many candidates for GTF_MUL_64RSLT as possible.
+// We convert 'intOp1*intOp2' into 'int(long(nop(intOp1))*long(intOp2))'.
 
-/* static */
+// static
 Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree*  tree  = *pTree;
@@ -2894,12 +2888,8 @@ void Compiler::fgDebugCheckBBNumIncreasing()
 // postponed a *long* time.
 static volatile int bbTraverseLabel = 1;
 
-/*****************************************************************************
- *
- * A DEBUG routine to check the consistency of the flowgraph,
- * i.e. bbNum, bbRefs, bbPreds have to be up to date.
- *
- *****************************************************************************/
+// A DEBUG routine to check the consistency of the flowgraph,
+// i.e. bbNum, bbRefs, bbPreds have to be up to date.
 
 void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRefs /* = true  */)
 {
@@ -2939,7 +2929,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
     }
 
-    /* Check bbNum, bbRefs and bbPreds */
+    // Check bbNum, bbRefs and bbPreds
     // First, pick a traversal stamp, and label all the blocks with it.
     unsigned curTraversalStamp = unsigned(InterlockedIncrement((LONG*)&bbTraverseLabel));
     for (BasicBlock* const block : Blocks())
@@ -3044,7 +3034,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             blockRefs += fgEntryBBExtraRefs;
         }
 
-        /* Check the bbRefs */
+        // Check the bbRefs
         if (checkBBRefs)
         {
             if (block->bbRefs != blockRefs)
@@ -3067,7 +3057,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(block->bbRefs == blockRefs);
         }
 
-        /* Check that BBF_HAS_HANDLER is valid bbTryIndex */
+        // Check that BBF_HAS_HANDLER is valid bbTryIndex
         if (block->hasTryIndex())
         {
             assert(block->getTryIndex() < compHndBBtabCount);
@@ -3591,7 +3581,7 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
             noway_assert(tree == stmt->GetRootNode());
         }
 
-        /* Cross-check gtPrev,gtNext with GetOp() for simple trees */
+        // Cross-check gtPrev,gtNext with GetOp() for simple trees
 
         GenTree* expectedPrevTree = nullptr;
 
@@ -3789,12 +3779,8 @@ void Compiler::fgDebugCheckLinkedLocals()
     }
 }
 
-/*****************************************************************************
- *
- * A DEBUG routine to check the correctness of the links between statements
- * and ordinary nodes within a statement.
- *
- ****************************************************************************/
+// A DEBUG routine to check the correctness of the links between statements
+// and ordinary nodes within a statement.
 
 void Compiler::fgDebugCheckLinks(bool morphTrees)
 {
@@ -3865,7 +3851,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
             noway_assert(block->lastStmt() == stmt);
         }
 
-        /* For each statement check that the exception flags are properly set */
+        // For each statement check that the exception flags are properly set
 
         noway_assert(stmt->GetRootNode());
 
@@ -4776,5 +4762,5 @@ void Compiler::fgDebugCheckFlowGraphAnnotations()
     assert((m_reachabilitySets == nullptr) || (m_reachabilitySets->GetDfsTree() == m_dfsTree));
 }
 
-/*****************************************************************************/
+///////////////////////////////////////////////////////////////////////////////
 #endif // DEBUG
