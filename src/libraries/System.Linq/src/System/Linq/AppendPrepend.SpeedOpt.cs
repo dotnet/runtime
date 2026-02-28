@@ -127,7 +127,7 @@ namespace System.Linq
                     return count == -1 ? -1 : checked(count + 1);
                 }
 
-                return !onlyIfCheap || _source is ICollection<TSource> ? checked(_source.Count() + 1) : -1;
+                return !onlyIfCheap || _source is IReadOnlyCollection<TSource> ? checked(_source.Count() + 1) : -1;
             }
 
             public override TSource? TryGetFirst(out bool found)
@@ -280,7 +280,7 @@ namespace System.Linq
                     return count == -1 ? -1 : checked(count + _appendCount + _prependCount);
                 }
 
-                return !onlyIfCheap || _source is ICollection<TSource> ? checked(_source.Count() + _appendCount + _prependCount) : -1;
+                return !onlyIfCheap || _source is IReadOnlyCollection<TSource> ? checked(_source.Count() + _appendCount + _prependCount) : -1;
             }
 
             public override bool Contains(TSource value)

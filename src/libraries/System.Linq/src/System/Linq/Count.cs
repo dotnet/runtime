@@ -15,7 +15,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is ICollection<TSource> collectionoft)
+            if (source is IReadOnlyCollection<TSource> collectionoft)
             {
                 return collectionoft.Count;
             }
@@ -107,7 +107,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is ICollection<TSource> collectionoft)
+            if (source is IReadOnlyCollection<TSource> collectionoft)
             {
                 count = collectionoft.Count;
                 return true;
