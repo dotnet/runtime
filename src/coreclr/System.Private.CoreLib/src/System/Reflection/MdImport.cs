@@ -265,13 +265,13 @@ namespace System.Reflection
                 throw new BadImageFormatException();
             }
 
-            string? safeArrayUserDefinedTypeName = safeArrayUserDefinedSubTypeRaw == null || safeArrayUserDefinedSubTypeLength == 0
+            string? safeArrayUserDefinedTypeName = safeArrayUserDefinedSubTypeRaw == null
                 ? null
                 : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(safeArrayUserDefinedSubTypeRaw, safeArrayUserDefinedSubTypeLength));
-            string? marshalTypeName = marshalTypeRaw == null || marshalTypeLength == 0
+            string? marshalTypeName = marshalTypeRaw == null
                 ? null
                 : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(marshalTypeRaw, marshalTypeLength));
-            string? marshalCookie = marshalCookieRaw == null || marshalCookieLength == 0
+            string? marshalCookie = marshalCookieRaw == null
                 ? null
                 : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(marshalCookieRaw, marshalCookieLength));
 
