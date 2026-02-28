@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -71,17 +72,18 @@ namespace System.IO.Ports
         {
             set
             {
-                if (value <= 0 || (value > _commProp.dwMaxBaud && _commProp.dwMaxBaud > 0))
+                int maxBaud = ConvertMaxBaudBitMaskToBaudRate(_commProp.dwMaxBaud);
+                if (value <= 0 || (value > maxBaud && maxBaud > 0))
                 {
                     // if no upper bound on baud rate imposed by serial driver, note that argument must be positive
-                    if (_commProp.dwMaxBaud == 0)
+                    if (maxBaud == 0)
                     {
                         throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.ArgumentOutOfRange_NeedPosNum);
                     }
                     else
                     {
                         // otherwise, we can present the bounds on the baud rate for this driver
-                        throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, _commProp.dwMaxBaud));
+                        throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, maxBaud));
                     }
                 }
                 // Set only if it's different.  Rollback to previous values if setting fails.
@@ -623,8 +625,9 @@ namespace System.IO.Ports
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode, string.Empty);
                 }
 
-                if (_commProp.dwMaxBaud != 0 && baudRate > _commProp.dwMaxBaud)
-                    throw new ArgumentOutOfRangeException(nameof(baudRate), SR.Format(SR.Max_Baud, _commProp.dwMaxBaud));
+                int maxBaud = ConvertMaxBaudBitMaskToBaudRate(_commProp.dwMaxBaud);
+                if (maxBaud != 0 && baudRate > maxBaud)
+                    throw new ArgumentOutOfRangeException(nameof(baudRate), SR.Format(SR.Max_Baud, maxBaud));
 
                 _comStat = default;
                 // create internal DCB structure, initialize according to Platform SDK
@@ -1299,6 +1302,43 @@ namespace System.IO.Ports
 
             // set the region
             _dcb.Flags |= ((uint)setting);
+        }
+
+        // Convert BAUD_XXX Win32 enum bit value to baudrate. Returns 0 if no limitation is present.
+        private static int ConvertMaxBaudBitMaskToBaudRate(int baudBitMask)
+        {
+            const uint BAUD_USER = 0x10000000;
+            if (baudBitMask <= 0 || baudBitMask == BAUD_USER)
+            {
+                return 0;
+            }
+
+            // Windows passes value obtained from driver. According to docs, it should be single
+            // bit corresponding to supported max baudrate (bits up to baud 128K are defined) or
+            // BAUD_USER if device support arbitrary baudrate. But some device drivers (for example,
+            // Silicon Labs USB to UART convertors) provides maximum baudrate value as decimal
+            // value instead. Because no common baudrate is power of 2, we assume that when we get
+            // single bit (power of two) it is bitmask, and if we get more bits set it is baudrate
+            // encoded as decimal.
+            if (BitOperations.PopCount((uint)baudBitMask) != 1)
+            {
+                return baudBitMask;
+            }
+
+            // https://learn.microsoft.com/windows/win32/api/winbase/ns-winbase-commprop
+            // i-th value correspond to (1 << i) bitmask
+            ReadOnlySpan<int> bauds = [75, 110, 135, 150, 300, 600, 1200, 1800, 2400, 4800, 7200, 9600, 14400, 19200, 38400, 56000, 128000, 115200, 57600];
+
+            int index = BitOperations.TrailingZeroCount((uint)baudBitMask);
+
+            // Bit for which no macro is defined. Rather than restricting usage of such a device,
+            // enforce no limitation and give it a try.
+            if (index >= bauds.Length)
+            {
+                return 0;
+            }
+
+            return bauds[index];
         }
 
         // ----SUBSECTION: internal methods supporting public read/write methods-------*
