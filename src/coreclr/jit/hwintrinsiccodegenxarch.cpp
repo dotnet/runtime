@@ -2489,6 +2489,40 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     switch (intrinsicId)
     {
+        case NI_X86Base_X64_BigMul:
+        {
+            assert(node->GetOperandCount() == 2);
+            assert(instOptions == INS_OPTS_NONE);
+            assert(!node->Op(1)->isContained());
+
+            // SIMD base type is from signature and can distinguish signed and unsigned
+            var_types   targetType = node->GetSimdBaseType();
+            GenTree*    regOp      = node->Op(1);
+            GenTree*    rmOp       = node->Op(2);
+            instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, m_compiler);
+
+            emitAttr attr = emitTypeSize(targetType);
+            emitter* emit = GetEmitter();
+
+            // If rmOp is already in EAX, use that as implicit operand
+            if (rmOp->isUsedFromReg() && rmOp->GetRegNum() == REG_EAX)
+            {
+                std::swap(rmOp, regOp);
+            }
+
+            // op1: EAX, op2: reg/mem
+            emit->emitIns_Mov(INS_mov, attr, REG_EAX, regOp->GetRegNum(), /* canSkip */ true);
+
+            // emit the MUL/IMUL instruction
+            emit->emitInsBinary(ins, attr, node, rmOp);
+
+            // verify target registers are as expected
+            assert(node->GetRegByIndex(0) == REG_EAX);
+            assert(node->GetRegByIndex(1) == REG_EDX);
+
+            break;
+        }
+
         case NI_X86Base_BitScanForward:
         case NI_X86Base_BitScanReverse:
         case NI_X86Base_X64_BitScanForward:
