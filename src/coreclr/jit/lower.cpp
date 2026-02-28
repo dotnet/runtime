@@ -2562,7 +2562,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
     {
         ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
         JITDUMP("Size=%ld.. ", (LONG)cnsSize);
-        // TODO-CQ: drop the whole thing in case of 0
+        // The case of 0 has been handled earlier with VN
         if (cnsSize > 0)
         {
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();

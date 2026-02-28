@@ -12193,12 +12193,13 @@ bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
 // Arguments:
 //    address - tree node representing the address
 //    size    - size of the value to read
-//    pValue  - [out] resulting value
+//    alloc   - allocator to use
+//    ppValue - [out] resulting value
 //
 // Return Value:
 //    true if the value was successfully obtained, false otherwise
 //
-bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, uint8_t* pValue)
+bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, CompAllocator alloc, uint8_t** ppValue)
 {
     assert(vnStore != nullptr);
 
@@ -12210,15 +12211,24 @@ bool Compiler::GetImmutableDataFromAddress(GenTree* address, int size, uint8_t* 
     if (GetObjectHandleAndOffset(address, &byteOffset, &obj) && ((size_t)byteOffset <= INT32_MAX))
     {
         assert(obj != NO_OBJECT_HANDLE);
-        return info.compCompHnd->isObjectImmutable(obj) &&
-               info.compCompHnd->getObjectContent(obj, pValue, size, (int)byteOffset);
+        if (!info.compCompHnd->isObjectImmutable(obj))
+        {
+            return false;
+        }
+        *ppValue = new (alloc) uint8_t[(size_t)size];
+        return info.compCompHnd->getObjectContent(obj, *ppValue, size, (int)byteOffset);
     }
 
     // See if 'src' is some static read-only field (including RVA)
     if (fgGetStaticFieldSeqAndAddress(vnStore, address, &byteOffset, &fieldSeq) && ((size_t)byteOffset <= INT32_MAX))
     {
         CORINFO_FIELD_HANDLE fld = fieldSeq->GetFieldHandle();
-        return (fld != nullptr) && info.compCompHnd->getStaticFieldContent(fld, pValue, size, (int)byteOffset);
+        if (fld == nullptr)
+        {
+            return false;
+        }
+        *ppValue = new (alloc) uint8_t[(size_t)size];
+        return info.compCompHnd->getStaticFieldContent(fld, *ppValue, size, (int)byteOffset);
     }
 
     return false;
