@@ -44,6 +44,9 @@ void JitMetrics::report(Compiler* comp)
 #include "jitmetadatalist.h"
 }
 
+#ifdef DEBUG
+// The remaining functions are only used in debug builds.
+
 //------------------------------------------------------------------------
 // JitMetrics::mergeToRoot: Merge inlinee compiler metrics to root compiler instance
 //

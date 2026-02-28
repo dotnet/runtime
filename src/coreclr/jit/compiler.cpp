@@ -6340,7 +6340,10 @@ void Compiler::compCompileFinish()
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
-    Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
+    }
 
 #if LOOP_HOIST_STATS
     AddLoopHoistStats();
@@ -6545,6 +6548,10 @@ void Compiler::compCompileFinish()
     }
 
     JITDUMP("Final metrics:\n");
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.report(this);
+    }
     DBEXEC(verbose, Metrics.dump());
 
     if (verbose)
