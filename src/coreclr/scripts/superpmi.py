@@ -3407,7 +3407,15 @@ class SuperPMIReplayMemoryDiff:
 
                 print_superpmi_error_result(return_code, self.coreclr_args)
 
-                (base_metrics, diff_metrics) = aggregate_memory_diff_metrics(details_info_file)
+                base_metrics = None
+                diff_metrics = None
+                try:
+                    if os.path.isfile(details_info_file):
+                        (base_metrics, diff_metrics) = aggregate_memory_diff_metrics(details_info_file)
+                    else:
+                        logging.warning("Details info file '%s' not found; skipping memory diff aggregation", details_info_file)
+                except Exception as ex:
+                    logging.warning("Failed to aggregate memory diff metrics from '%s': %s", details_info_file, ex)
                 print_superpmi_success_result(return_code, base_metrics, diff_metrics)
 
                 if base_metrics is not None and diff_metrics is not None:
@@ -3431,47 +3439,50 @@ class SuperPMIReplayMemoryDiff:
 
         logging.info("Memory diff summary:")
 
-        # Construct an overall Markdown summary file.
+        # Construct overall summary files.
 
-        if len(memory_diffs) > 0:
+        if self.coreclr_args.summary_as_json:
             if not os.path.isdir(self.coreclr_args.spmi_location):
                 os.makedirs(self.coreclr_args.spmi_location)
 
             (base_jit_options, diff_jit_options) = get_base_diff_jit_options(self.coreclr_args)
 
-            if self.coreclr_args.summary_as_json:
-                overall_json_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_summary", "json")
-                if os.path.isfile(overall_json_summary_file):
-                    os.remove(overall_json_summary_file)
+            overall_json_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_summary", "json")
+            if os.path.isfile(overall_json_summary_file):
+                os.remove(overall_json_summary_file)
 
-                with open(overall_json_summary_file, "w") as write_fh:
-                    # Strip Per-context ratios lists to avoid bloating the JSON file
-                    json_memory_diffs = []
-                    for (mch_file, base_m, diff_m) in memory_diffs:
-                        json_base = {k: {mk: mv for mk, mv in v.items() if mk != "Per-context ratios"} for k, v in base_m.items()}
-                        json_diff = {k: {mk: mv for mk, mv in v.items() if mk != "Per-context ratios"} for k, v in diff_m.items()}
-                        json_memory_diffs.append((mch_file, json_base, json_diff))
-                    json.dump((base_jit_options, diff_jit_options, json_memory_diffs), write_fh)
-                    logging.info("  Summary JSON file: %s", overall_json_summary_file)
-            else:
-                overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_summary", "md")
+            with open(overall_json_summary_file, "w") as write_fh:
+                # Strip Per-context ratios lists to avoid bloating the JSON file
+                json_memory_diffs = []
+                for (mch_file, base_m, diff_m) in memory_diffs:
+                    json_base = {k: {mk: mv for mk, mv in v.items() if mk != "Per-context ratios"} for k, v in base_m.items()}
+                    json_diff = {k: {mk: mv for mk, mv in v.items() if mk != "Per-context ratios"} for k, v in diff_m.items()}
+                    json_memory_diffs.append((mch_file, json_base, json_diff))
+                json.dump((base_jit_options, diff_jit_options, json_memory_diffs), write_fh)
+                logging.info("  Summary JSON file: %s", overall_json_summary_file)
+        elif len(memory_diffs) > 0:
+            if not os.path.isdir(self.coreclr_args.spmi_location):
+                os.makedirs(self.coreclr_args.spmi_location)
 
-                if os.path.isfile(overall_md_summary_file):
-                    os.remove(overall_md_summary_file)
+            (base_jit_options, diff_jit_options) = get_base_diff_jit_options(self.coreclr_args)
 
-                with open(overall_md_summary_file, "w") as write_fh:
-                    write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, True)
-                    logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_summary", "md")
 
-                short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_short_summary", "md")
+            if os.path.isfile(overall_md_summary_file):
+                os.remove(overall_md_summary_file)
 
-                if os.path.isfile(short_md_summary_file):
-                    os.remove(short_md_summary_file)
+            with open(overall_md_summary_file, "w") as write_fh:
+                write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, True)
+                logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-                with open(short_md_summary_file, "w") as write_fh:
-                    write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, False)
-                    logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
+            short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "memorydiff_short_summary", "md")
 
+            if os.path.isfile(short_md_summary_file):
+                os.remove(short_md_summary_file)
+
+            with open(short_md_summary_file, "w") as write_fh:
+                write_memorydiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, False)
+                logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
         return True
         ################################################################################################ end of replay_with_memory_diff()
 
@@ -4581,8 +4592,21 @@ def summarize_json_summaries(coreclr_args):
     for file in coreclr_args.summaries:
         logging.info("  {}".format(file))
 
-    file_name_prefix = "diff" if coreclr_args.summary_type == "asmdiffs" else ("memorydiff" if coreclr_args.summary_type == "memorydiff" else "tpdiff")
+    summary_type_to_prefix = {
+        "asmdiffs": "diff",
+        "memorydiff": "memorydiff",
+        "tpdiff": "tpdiff",
+    }
 
+    if coreclr_args.summary_type not in summary_type_to_prefix:
+        logging.error(
+            "Invalid summary_type '%s'. Valid values are: %s",
+            coreclr_args.summary_type,
+            ", ".join(sorted(summary_type_to_prefix.keys())),
+        )
+        raise ValueError(f"Invalid summary_type: {coreclr_args.summary_type}")
+
+    file_name_prefix = summary_type_to_prefix[coreclr_args.summary_type]
     if coreclr_args.output_long_summary_path:
         overall_md_summary_file = coreclr_args.output_long_summary_path
     else:
