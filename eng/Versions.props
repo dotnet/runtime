@@ -88,12 +88,12 @@
     <!-- Maintenance-Packages dependencies -->
     <MicrosoftBclHashCodeVersion>6.0.0</MicrosoftBclHashCodeVersion>
     <SystemBuffersVersion>4.6.1</SystemBuffersVersion>
-    <SystemDataSqlClientVersion>4.9.0</SystemDataSqlClientVersion>
+    <SystemDataSqlClientVersion>4.9.1</SystemDataSqlClientVersion>
     <SystemMemoryVersion>4.6.3</SystemMemoryVersion>
     <SystemNumericsVectorsVersion>4.6.1</SystemNumericsVectorsVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.1.2</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingTasksExtensionsVersion>4.6.3</SystemThreadingTasksExtensionsVersion>
-    <SystemValueTupleVersion>4.6.1</SystemValueTupleVersion>
+    <SystemValueTupleVersion>4.6.2</SystemValueTupleVersion>
     <!-- Libraries dependencies -->
     <MicrosoftBclAsyncInterfacesVersion>6.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftWin32RegistryVersion>5.0.0</MicrosoftWin32RegistryVersion>
