@@ -222,6 +222,7 @@ DEFINE_METASIG(SM(Obj_Int_RetVoid, j i,v))
 DEFINE_METASIG(SM(PtrVoid_Obj_RetObj, P(v) j, j))
 DEFINE_METASIG_T(SM(ICustomMarshaler_RefObj_PtrIntPtr_RetVoid, C(ICUSTOM_MARSHALER) r(j) P(I), v))
 DEFINE_METASIG_T(SM(PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid, P(C(ICUSTOM_MARSHALER)) P(j) P(I) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrVoid_PtrByte_Int_PtrObj_PtrException_RetVoid, P(v) P(b) i P(j) P(C(EXCEPTION)), v))
 
 DEFINE_METASIG(SM(Long_Long_RetLong, l l, l))
 DEFINE_METASIG(SM(ULong_ULong_RetULong, L L, L))
@@ -291,7 +292,6 @@ DEFINE_METASIG_T(IM(RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid, g(RT_TYPE_HANDL
 
 
 DEFINE_METASIG(SM(Str_RetInt, s, i))
-DEFINE_METASIG_T(SM(Str_RetICustomMarshaler, s, C(ICUSTOM_MARSHALER)))
 DEFINE_METASIG(SM(Int_Str_RetIntPtr, i s, I))
 DEFINE_METASIG(SM(Int_Str_IntPtr_RetIntPtr, i s I, I))
 DEFINE_METASIG(SM(Int_Str_IntPtr_Int_RetVoid, i s I i, v))
@@ -435,10 +435,6 @@ DEFINE_METASIG_T(SM(PtrResolver_Int_PtrStr_PtrException_RetVoid, P(C(RESOLVER)) 
 
 DEFINE_METASIG_T(IM(Dec_RetVoid, g(DECIMAL), v))
 DEFINE_METASIG_T(IM(Currency_RetVoid, g(CURRENCY), v))
-
-
-DEFINE_METASIG_T(SM(Task_RetVoid, C(TASK), v))
-DEFINE_METASIG_T(SM(TaskOfInt_RetInt, GI(C(TASK_1), 1, i), i))
 
 DEFINE_METASIG_T(GM(Exception_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, C(EXCEPTION), GI(C(TASK_1), 1, M(0))))
 DEFINE_METASIG_T(GM(T_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, M(0), GI(C(TASK_1), 1, M(0))))

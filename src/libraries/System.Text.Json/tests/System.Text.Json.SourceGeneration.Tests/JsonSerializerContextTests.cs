@@ -692,7 +692,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             var value = new ClassWithCustomConverterFactoryProperty { MyEnum = SourceGenSampleEnum.MinZero };
             string json = JsonSerializer.Serialize(value, SingleClassWithCustomConverterFactoryPropertyContext.Default.ClassWithCustomConverterFactoryProperty);
-            Assert.Equal(@"{""MyEnum"":""MinZero""}", json);
+            Assert.Equal("""{"MyEnum":"MinZero"}""", json);
         }
 
         public class ParentClass
@@ -711,7 +711,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             // Regression test for https://github.com/dotnet/runtime/issues/61860
             var value = new List<TestEnum> { TestEnum.Cee };
             string json = JsonSerializer.Serialize(value, GenericParameterWithCustomConverterFactoryContext.Default.ListTestEnum);
-            Assert.Equal(@"[""Cee""]", json);
+            Assert.Equal("""["Cee"]""", json);
         }
 
         [Fact]

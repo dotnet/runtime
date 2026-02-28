@@ -18,7 +18,7 @@ namespace System.IO.Ports.Tests
 
         private static readonly TimeSpan s_testDuration = TCSupport.RunShortStressTests ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(20);
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(Write_char_int_int_stress01), nameof(HasNullModem))]
         public void WriteChars()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())

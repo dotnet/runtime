@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -934,6 +935,40 @@ namespace System.StubHelpers
             }
 
             marshaler.CleanUpManagedData(pManagedHome);
+        }
+
+        [UnmanagedCallersOnly]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Custom marshaler GetInstance method is preserved by ILLink (see MarkCustomMarshalerGetInstance).")]
+        internal static void GetCustomMarshalerInstance(void* pMT, byte* pCookie, int cCookieBytes, object* pResult, Exception* pException)
+        {
+            try
+            {
+                RuntimeType marshalerType = RuntimeTypeHandle.GetRuntimeType((MethodTable*)pMT);
+
+                MethodInfo? method = marshalerType.GetMethod(
+                    "GetInstance",
+                    Reflection.BindingFlags.Static | Reflection.BindingFlags.Public | Reflection.BindingFlags.NonPublic,
+                    [typeof(string)]);
+
+                if (method is null || typeof(ICustomMarshaler) != method.ReturnType)
+                {
+                    throw new ApplicationException(SR.Format(SR.CustomMarshaler_NoGetInstanceMethod, marshalerType.FullName));
+                }
+
+                var getInstance = method.CreateDelegate<Func<string, ICustomMarshaler>>();
+                string cookie = Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(pCookie, cCookieBytes));
+                object? result = getInstance(cookie);
+                if (result is null)
+                {
+                    throw new ApplicationException(SR.Format(SR.CustomMarshaler_NullReturnForGetInstance, marshalerType.FullName));
+                }
+
+                *pResult = result;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }  // class MngdRefCustomMarshaler
 
