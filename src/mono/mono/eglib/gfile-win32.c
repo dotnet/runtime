@@ -93,12 +93,16 @@ gboolean
 g_file_test (const gchar *filename, GFileTest test)
 {
 	gunichar2* utf16_filename = NULL;
+	gchar *filename_with_prefix = NULL;
 	DWORD attr;
 
 	if (filename == NULL || test == 0)
 		return FALSE;
 
-	utf16_filename = u8to16 (filename);
+	filename_with_prefix = g_path_make_long_compatible (filename);
+	utf16_filename = u8to16 (filename_with_prefix);
+	g_free (filename_with_prefix);
+	
 	attr = GetFileAttributesW (utf16_filename);
 	g_free (utf16_filename);
 
