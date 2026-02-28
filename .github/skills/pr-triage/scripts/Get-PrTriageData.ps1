@@ -293,7 +293,8 @@ foreach ($pr in $candidates) {
     $ciScore = switch ($baConclusion) { "SUCCESS" { 1.0 } "ABSENT" { 0.5 } "IN_PROGRESS" { 0.5 } default { 0.0 } }
     $stalenessScore = if ($daysSinceUpdate -le 3) { 1.0 } elseif ($daysSinceUpdate -le 14) { 0.5 } else { 0.0 }
     $maintScore = if ($hasOwnerApproval) { 1.0 } elseif ($hasTriagerApproval) { 0.75 } elseif ($hasAnyReview) { 0.5 } else { 0.0 }
-    $feedbackScore = if ($unresolvedThreads -eq 0) { 1.0 } else { 0.5 }
+    $hasNeedsAuthorAction = $labelNames -contains "needs-author-action"
+    $feedbackScore = if ($hasNeedsAuthorAction) { 0.0 } elseif ($unresolvedThreads -eq 0) { 1.0 } else { 0.5 }
     $conflictScore = switch ($pr.mergeable) { "MERGEABLE" { 1.0 } "UNKNOWN" { 0.5 } "CONFLICTING" { 0.0 } default { 0.5 } }
     $alignScore = if ($isUntriaged -or -not $hasAreaLabel) { 0.0 } else { 1.0 }
     $freshScore = if ($daysSinceUpdate -le 14) { 1.0 } elseif ($daysSinceUpdate -le 30) { 0.5 } else { 0.0 }
@@ -331,6 +332,14 @@ foreach ($pr in $candidates) {
         $prNextAction = "Author: resolve conflicts"
         $who = @($pr.author.login)
     }
+    elseif ($baConclusion -eq "FAILURE") {
+        $prNextAction = "Author: fix CI failures"
+        $who = @($pr.author.login)
+    }
+    elseif ($hasNeedsAuthorAction) {
+        $prNextAction = "Author: address feedback (needs-author-action)"
+        $who = @($pr.author.login)
+    }
     elseif ($unresolvedThreads -gt 0) {
         $prNextAction = "Author: respond to $unresolvedThreads thread(s)"
         $who = @($pr.author.login)
@@ -348,10 +357,6 @@ foreach ($pr in $candidates) {
         } else {
             $who = @("area owner")
         }
-    }
-    elseif ($baConclusion -eq "FAILURE") {
-        $prNextAction = "Author: fix CI failures"
-        $who = @($pr.author.login)
     }
     elseif ($daysSinceUpdate -gt 14) {
         $prNextAction = "Author: merge main (stale $([int]$daysSinceUpdate)d)"
@@ -397,6 +402,7 @@ foreach ($pr in $candidates) {
     if ($baConclusion -eq "IN_PROGRESS") { $blockers += "CI running" }
     if ($baConclusion -eq "ABSENT") { $blockers += "No CI" }
     if ($unresolvedThreads -gt 0) { $blockers += "$unresolvedThreads threads" }
+    if ($hasNeedsAuthorAction) { $blockers += "needs-author-action" }
     if (-not $hasAnyReview) { $blockers += "No review" }
     elseif (-not $hasOwnerApproval -and -not $hasTriagerApproval) { $blockers += "No owner approval" }
     if ($daysSinceUpdate -gt 14) { $blockers += "Stale $([int]$daysSinceUpdate)d" }
