@@ -57,7 +57,7 @@ use. Tests are `[ConditionalTheory]` methods parameterized by `TestConfiguration
 | EcmaMetadataDumpTests | EcmaMetadata | MultiModule |
 | PInvokeStubDumpTests | StackWalk + RTS | PInvokeStub |
 | VarargPInvokeDumpTests | StackWalk + RTS | VarargPInvoke |
-| SyncBlockDumpTests | SyncBlock (+ Object built-in COM data) | SyncBlock |
+| SyncBlockDumpTests | SyncBlock | SyncBlock |
 
 ### Runtime Versions
 
