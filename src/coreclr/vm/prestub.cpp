@@ -2387,6 +2387,13 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         _ASSERTE(!MayHaveEntryPointSlotsToBackpatch()); // This path doesn't lock the MethodDescBackpatchTracker as it should only
                                                         // happen for jump-stampable or non-versionable methods
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        if (pMT->IsDelegate())
+        {
+            return pCode;
+        }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
         SetCodeEntryPoint(pCode);
     }
     else
