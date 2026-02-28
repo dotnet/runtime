@@ -25,6 +25,8 @@ namespace System.Text.RegularExpressions.Generator
         private const string HelpersTypeName = "Utilities";
         /// <summary>Namespace containing all the generated code.</summary>
         private const string GeneratedNamespace = "System.Text.RegularExpressions.Generated";
+        /// <summary>Tracking name for the source generation step, used by incremental generation tests.</summary>
+        public const string SourceGenerationTrackingName = "SourceGenerationStep";
         /// <summary>Code for a [GeneratedCode] attribute to put on the top-level generated members.</summary>
         private static readonly string s_generatedCodeAttribute = $"GeneratedCodeAttribute(\"{typeof(RegexGenerator).Assembly.GetName().Name}\", \"{typeof(RegexGenerator).Assembly.GetName().Version}\")";
         /// <summary>Header comments and usings to include at the top of every generated file.</summary>
@@ -128,7 +130,8 @@ namespace System.Text.RegularExpressions.Generator
                 .Select(static (t, _) => t.Model!)
                 .Where(static m => m is not null)
                 .Collect()
-                .WithComparer(new ObjectImmutableArraySequenceEqualityComparer());
+                .WithComparer(new ObjectImmutableArraySequenceEqualityComparer())
+                .WithTrackingName(SourceGenerationTrackingName);
 
             // Pipeline 1: Source generation only.
             // Source generation is fully incremental and only re-fires on structural model changes.
