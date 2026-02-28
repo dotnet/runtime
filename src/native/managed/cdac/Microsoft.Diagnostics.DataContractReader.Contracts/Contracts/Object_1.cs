@@ -15,21 +15,6 @@ internal readonly struct Object_1 : IObject
     private readonly TargetPointer _stringMethodTable;
     private readonly TargetPointer _syncTableEntries;
 
-    private static class SyncBlockValue
-    {
-        [Flags]
-        public enum Bits
-        {
-            // Value represents either the hash code or sync block index (bits 0-25)
-            // - IsHashCodeOrSyncBlockIndex and IsHashCode are set: rest of the value is the hash code.
-            // - IsHashCodeOrSyncBlockIndex set, IsHashCode not set: rest of the value is the sync block index
-            IsHashCodeOrSyncBlockIndex = 0x08000000,
-            IsHashCode = 0x04000000,
-        }
-
-        public const uint SyncBlockIndexMask = (1 << 26) - 1;
-    }
-
     internal Object_1(Target target, ulong methodTableOffset, byte objectToMethodTableUnmask, TargetPointer stringMethodTable, TargetPointer syncTableEntries)
     {
         _target = target;
@@ -110,10 +95,11 @@ internal readonly struct Object_1 : IObject
         uint syncBlockValue = _target.Read<uint>(address - _target.ReadGlobal<ushort>(Constants.Globals.SyncBlockValueToObjectOffset));
 
         // Check if the sync block value represents a sync block index
-        if ((syncBlockValue & (uint)(SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex | SyncBlockValue.Bits.IsHashCode)) != (uint)SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex)
+        if ((syncBlockValue & (_target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashCode) | _target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex)))
+                != _target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex))
             return false;
 
-        uint index = syncBlockValue & SyncBlockValue.SyncBlockIndexMask;
+        uint index = syncBlockValue & _target.ReadGlobal<uint>(Constants.Globals.SyncBlockIndexMask);
         ulong offsetInSyncTableEntries = index * (ulong)_target.GetTypeInfo(DataType.SyncTableEntry).Size!;
         Data.SyncTableEntry entry = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + offsetInSyncTableEntries);
         if (entry.SyncBlock is not Data.SyncBlock syncBlock)

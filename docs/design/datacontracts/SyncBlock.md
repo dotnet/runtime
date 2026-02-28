@@ -13,9 +13,6 @@ bool TryGetLockInfo(TargetPointer syncBlock, out uint owningThreadId, out uint r
 uint GetAdditionalThreadCount(TargetPointer syncBlock);
 TargetPointer GetSyncBlockFromCleanupList();
 TargetPointer GetNextSyncBlock(TargetPointer syncBlock);
-
-// Get built-in COM interop data directly from a sync block. Returns false if the sync block has no
-// interop info or all COM pointers are null.
 bool GetBuiltInComData(TargetPointer syncBlock, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
 ```
 
@@ -154,8 +151,6 @@ uint GetAdditionalThreadCount(TargetPointer syncBlock)
 }
 
 // Returns the first sync block in the cleanup list, or TargetPointer.Null if the list is empty.
-// SyncBlockCache.CleanupBlockList points to SyncBlock.m_Link (i.e. SLink.m_pNext inside the SyncBlock).
-// Subtract the LinkNext field offset to recover the SyncBlock base address.
 TargetPointer GetSyncBlockFromCleanupList()
 {
     TargetPointer syncBlockCache = target.ReadPointer(target.ReadGlobalPointer("SyncBlockCache"));

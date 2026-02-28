@@ -38,6 +38,9 @@ Global variables used:
 | `StringMethodTable` | TargetPointer | The method table for System.String |
 | `SyncTableEntries` | TargetPointer | The `SyncTableEntry` list |
 | `SyncBlockValueToObjectOffset` | uint16 | Offset from the sync block value (in the object header) to the object itself |
+| `SyncBlockIsHashOrSyncBlockIndex` | uint32 | Check bit for sync block index field. IsHashCodeOrSyncBlockIndex and IsHashCode are set: rest of the value is the hash code. IsHashCodeOrSyncBlockIndex set, IsHashCode not set: rest of the value is the sync block index. |
+| `SyncBlockIsHashCode` | uint32 | Check bit for sync block index field. IsHashCodeOrSyncBlockIndex and IsHashCode are set: rest of the value is the hash code. IsHashCodeOrSyncBlockIndex set, IsHashCode not set: rest of the value is the sync block index. |
+| `SyncBlockIndexMask` | uint32 | The mask for sync block index field. |
 
 Contracts used:
 | Contract Name |
@@ -95,11 +98,11 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
     {
         // Single-dimensional, zero-based - doesn't have bounds
         boundsStart = address + /* Array::m_NumComponents offset */;
-        lowerBounds = _target.ReadGlobalPointer("ArrayBoundsZero");
+        lowerBounds = target.ReadGlobalPointer("ArrayBoundsZero");
     }
 
     // Sync block is before `this` pointer, so substract the object header size
-    ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - _target.ReadGlobal<uint>("ObjectHeaderSize");
+    ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - target.ReadGlobal<uint>("ObjectHeaderSize");
     return address + dataOffset;
 }
 
@@ -112,10 +115,11 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
     uint syncBlockValue = target.Read<uint>(address - target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
 
     // Check if the sync block value represents a sync block index
-    if ((syncBlockValue & (IsHashCodeOrSyncBlockIndex | IsHashCode)) != IsHashCodeOrSyncBlockIndex)
+    if ((syncBlockValue & (target.ReadGlobal<uint>("SyncBlockIsHashCode") | target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex")))
+            != target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex"))
         return false;
 
-    uint index = syncBlockValue & SyncBlockIndexMask;
+    uint index = syncBlockValue & target.ReadGlobal<uint>("SyncBlockIndexMask");;
     ulong offsetInSyncTableEntries = index * /* SyncTableEntry size */;
 
     TargetPointer syncBlockPtr = target.ReadPointer(_syncTableEntries + offsetInSyncTableEntries + /* SyncTableEntry::SyncBlock offset */);

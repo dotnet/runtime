@@ -3419,12 +3419,11 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetSyncBlockCleanupData(ClrDataAddress addr, DacpSyncBlockCleanupData* data)
     {
-        if (data == null)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (data == null)
+                throw new ArgumentException();
             *data = default;
 
             ISyncBlock syncBlockContract = _target.Contracts.SyncBlock;
@@ -3450,12 +3449,12 @@ public sealed unsafe partial class SOSDacImpl
                 }
             }
         }
-        catch (global::System.Exception ex)
+        catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
 #if DEBUG
-        if (_legacyImpl is not null && addr != 0)
+        if (_legacyImpl is not null)
         {
             DacpSyncBlockCleanupData dataLocal;
             int hrLocal = _legacyImpl.GetSyncBlockCleanupData(addr, &dataLocal);
