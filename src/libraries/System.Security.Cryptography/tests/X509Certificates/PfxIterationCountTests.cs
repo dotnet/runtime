@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -27,15 +26,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [MemberData(nameof(GetCertsWith_IterationCountNotExceedingDefaultLimit_AndNullOrEmptyPassword_MemberData))]
         public void Import_IterationCounLimitNotExceeded_Succeeds(string name, bool usesPbes2, byte[] blob, long iterationCount, bool usesRC2)
         {
-            if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
-            {
-                throw SkipException.ForSkip(name + " uses PBES2, which is not supported on this version.");
-            }
+            Assert.SkipWhen(usesPbes2 && !PfxTests.Pkcs12PBES2Supported, name + " uses PBES2, which is not supported on this version.");
 
-            if (usesRC2 && !PlatformSupport.IsRC2Supported)
-            {
-                throw SkipException.ForSkip(name + " uses RC2, which is not supported on this platform.");
-            }
+            Assert.SkipWhen(usesRC2 && !PlatformSupport.IsRC2Supported, name + " uses RC2, which is not supported on this platform.");
 
             if (PfxTests.IsPkcs12IterationCountAllowed(iterationCount, PfxTests.DefaultIterations))
             {
@@ -51,15 +44,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             _ = password;
             _ = iterationCount;
 
-            if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
-            {
-                throw SkipException.ForSkip(name + " uses PBES2, which is not supported on this version.");
-            }
+            Assert.SkipWhen(usesPbes2 && !PfxTests.Pkcs12PBES2Supported, name + " uses PBES2, which is not supported on this version.");
 
-            if (usesRC2 && !PlatformSupport.IsRC2Supported)
-            {
-                throw SkipException.ForSkip(name + " uses RC2, which is not supported on this platform.");
-            }
+            Assert.SkipWhen(usesRC2 && !PlatformSupport.IsRC2Supported, name + " uses RC2, which is not supported on this platform.");
 
             CryptographicException ce = Assert.Throws<CryptographicException>(() => Import(blob));
             Assert.Contains(FwlinkId, ce.Message);
@@ -72,15 +59,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             _ = iterationCount;
 
-            if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
-            {
-                throw SkipException.ForSkip(name + " uses PBES2, which is not supported on this version.");
-            }
+            Assert.SkipWhen(usesPbes2 && !PfxTests.Pkcs12PBES2Supported, name + " uses PBES2, which is not supported on this version.");
 
-            if (usesRC2 && !PlatformSupport.IsRC2Supported)
-            {
-                throw SkipException.ForSkip(name + " uses RC2, which is not supported on this platform.");
-            }
+            Assert.SkipWhen(usesRC2 && !PlatformSupport.IsRC2Supported, name + " uses RC2, which is not supported on this platform.");
 
             using (TempFileHolder tempFile = new TempFileHolder(blob))
             {
@@ -119,15 +100,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [MemberData(nameof(GetCertsWith_NonNullOrEmptyPassword_MemberData))]
         public void Import_NonNullOrEmptyPasswordExpected_Throws(string name, string password, bool usesPbes2, byte[] blob, long iterationCount, bool usesRC2)
         {
-            if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
-            {
-                throw SkipException.ForSkip(name + " uses PBES2, which is not supported on this version.");
-            }
+            Assert.SkipWhen(usesPbes2 && !PfxTests.Pkcs12PBES2Supported, name + " uses PBES2, which is not supported on this version.");
 
-            if (usesRC2 && !PlatformSupport.IsRC2Supported)
-            {
-                throw SkipException.ForSkip(name + " uses RC2, which is not supported on this platform.");
-            }
+            Assert.SkipWhen(usesRC2 && !PlatformSupport.IsRC2Supported, name + " uses RC2, which is not supported on this platform.");
 
             CryptographicException ce = Assert.ThrowsAny<CryptographicException>(() => Import(blob));
 

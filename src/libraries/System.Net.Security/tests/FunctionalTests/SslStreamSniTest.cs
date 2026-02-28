@@ -11,7 +11,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Sdk;
 using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Security.Tests
@@ -105,8 +104,7 @@ namespace System.Net.Security.Tests
         [MemberData(nameof(HostNameData))]
         public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
-            if (PlatformDetection.IsAndroid && hostName.ToCharArray().Any(c => !char.IsAscii(c)))
-                throw SkipException.ForSkip("Android does not support non-ASCII host names");
+            Assert.SkipWhen(PlatformDetection.IsAndroid && hostName.ToCharArray().Any(c => !char.IsAscii(c)), "Android does not support non-ASCII host names");
 
             using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
@@ -282,10 +280,7 @@ namespace System.Net.Security.Tests
         [SkipOnPlatform(TestPlatforms.Android, "Safe invalid IDN hostnames are not supported on Android")]
         public async Task SslStream_SafeInvalidIdn_Success(string name)
         {
-            if (PlatformDetection.IsNetworkFrameworkEnabled())
-            {
-                throw SkipException.ForSkip("Safe invalid IDN hostnames are not supported on Network.framework");
-            }
+            Assert.SkipWhen(PlatformDetection.IsNetworkFrameworkEnabled(), "Safe invalid IDN hostnames are not supported on Network.framework");
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
             using (client)

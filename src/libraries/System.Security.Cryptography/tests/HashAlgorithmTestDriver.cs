@@ -9,7 +9,6 @@ using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -20,14 +19,12 @@ namespace System.Security.Cryptography.Tests
 
         private static void CheckIsSupported()
         {
-            if (!IsSupported)
-                throw SkipException.ForSkip(nameof(IsSupported));
+            Assert.SkipUnless(IsSupported, nameof(IsSupported));
         }
 
         private static void CheckIsNotSupported()
         {
-            if (!IsNotSupported)
-                throw SkipException.ForSkip(nameof(IsNotSupported));
+            Assert.SkipUnless(IsNotSupported, nameof(IsNotSupported));
         }
 
         protected HashAlgorithm Create() => THashTrait.Create();
@@ -988,10 +985,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void HashAlgorithm_ComputeHash_ConcurrentUseDoesNotCrashProcess()
         {
-            if (!IsSupported)
-            {
-                throw SkipException.ForSkip("Algorithm is not supported on this platform.");
-            }
+            Assert.SkipUnless(IsSupported, "Algorithm is not supported on this platform.");
 
             static void Update(object obj)
             {
@@ -1030,10 +1024,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void HashAlgorithm_TransformBlock_ConcurrentUseDoesNotCrashProcess()
         {
-            if (!IsSupported)
-            {
-                throw SkipException.ForSkip("Algorithm is not supported on this platform.");
-            }
+            Assert.SkipUnless(IsSupported, "Algorithm is not supported on this platform.");
 
             static void Update(object obj)
             {
@@ -1072,10 +1063,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void HashAlgorithm_TransformFinalBlock_ConcurrentUseDoesNotCrashProcess()
         {
-            if (!IsSupported)
-            {
-                throw SkipException.ForSkip("Algorithm is not supported on this platform.");
-            }
+            Assert.SkipUnless(IsSupported, "Algorithm is not supported on this platform.");
 
             static void Update(object obj)
             {
@@ -1114,10 +1102,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void HashAlgorithm_TransformBlockAndInitialize_ConcurrentUseDoesNotCrashProcess()
         {
-            if (!IsSupported)
-            {
-                throw SkipException.ForSkip("Algorithm is not supported on this platform.");
-            }
+            Assert.SkipUnless(IsSupported, "Algorithm is not supported on this platform.");
 
             static void Update(object obj)
             {
@@ -1158,10 +1143,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void HashAlgorithm_TransformBlockAndDispose_ConcurrentUseDoesNotCrashProcess()
         {
-            if (!IsSupported)
-            {
-                throw SkipException.ForSkip("Algorithm is not supported on this platform.");
-            }
+            Assert.SkipUnless(IsSupported, "Algorithm is not supported on this platform.");
 
             static void Update(object obj)
             {

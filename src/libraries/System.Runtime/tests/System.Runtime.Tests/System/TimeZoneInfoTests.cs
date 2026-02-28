@@ -13,7 +13,6 @@ using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 using System.Reflection;
 
 namespace System.Tests
@@ -2360,10 +2359,7 @@ namespace System.Tests
             const string tzId = "America/Monterrey";
             const string tzPath = "/usr/share/zoneinfo/" + tzId;
 
-            if (!File.Exists(tzPath))
-            {
-                throw SkipException.ForSkip($"The file {tzPath} does not exist.");
-            }
+            Assert.SkipUnless(File.Exists(tzPath), $"The file {tzPath} does not exist.");
 
             string tmp = Path.GetTempPath() + Path.GetRandomFileName();
             File.WriteAllBytes(tmp, File.ReadAllBytes(tzPath));
@@ -2771,10 +2767,7 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117731", TestPlatforms.Android)]
         public static void NoBackwardTimeZones()
         {
-            if (OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(26))
-            {
-                throw SkipException.ForSkip("This test won't work on API level < 26");
-            }
+            Assert.SkipWhen(OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(26), "This test won't work on API level < 26");
 
             // Clear cached data to always ensure predictable results
             TimeZoneInfo.ClearCachedData();

@@ -12,7 +12,6 @@ using System.Security.Cryptography.X509Certificates.Asn1;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -601,10 +600,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void NameConstraintViolation_ExcludedTree_Upn()
         {
-            if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
-            {
-                throw SkipException.ForSkip("Platform does not handle excludedSubtrees correctly.");
-            }
+            Assert.SkipWhen(PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling, "Platform does not handle excludedSubtrees correctly.");
 
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
             builder.AddUserPrincipalName("v@example.com");
@@ -750,10 +746,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void NameConstraintAllowed_ExcludedTree_Upn()
         {
-            if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
-            {
-                throw SkipException.ForSkip("Platform does not handle excludedSubtrees correctly.");
-            }
+            Assert.SkipWhen(PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling, "Platform does not handle excludedSubtrees correctly.");
 
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
             builder.AddUserPrincipalName("v@example.com");

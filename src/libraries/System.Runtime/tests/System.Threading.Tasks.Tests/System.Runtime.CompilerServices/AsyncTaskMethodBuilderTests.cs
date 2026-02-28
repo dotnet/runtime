@@ -11,7 +11,6 @@ using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Threading.Tasks.Tests
 {
@@ -577,10 +576,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void DroppedIncompleteStateMachine_RaisesIncompleteAsyncMethodEvent()
         {
-            if (!PlatformDetection.IsPreciseGcSupported)
-            {
-                throw SkipException.ForSkip("Test requires precise GC");
-            }
+            Assert.SkipUnless(PlatformDetection.IsPreciseGcSupported, "Test requires precise GC");
 
             RemoteExecutor.Invoke(() =>
             {

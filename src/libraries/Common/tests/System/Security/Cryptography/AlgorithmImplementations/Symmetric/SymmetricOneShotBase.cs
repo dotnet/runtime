@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -425,10 +424,7 @@ namespace System.Security.Cryptography.Tests
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
             {
-                if (alg is RC2)
-                {
-                    throw SkipException.ForSkip("RC2 does not support CFB.");
-                }
+                Assert.SkipWhen(alg is RC2, "RC2 does not support CFB.");
 
                 alg.Key = Key;
 
@@ -510,10 +506,7 @@ namespace System.Security.Cryptography.Tests
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
             {
-                if (alg is RC2)
-                {
-                    throw SkipException.ForSkip("RC2 does not support CFB.");
-                }
+                Assert.SkipWhen(alg is RC2, "RC2 does not support CFB.");
 
                 alg.Key = Key;
                 int size = ciphertextSize > 0 ? ciphertextSize : alg.BlockSize / 8;
@@ -562,10 +555,7 @@ namespace System.Security.Cryptography.Tests
         {
             using (SymmetricAlgorithm alg = CreateAlgorithm())
             {
-                if (alg is RC2)
-                {
-                    throw SkipException.ForSkip("RC2 does not support CFB.");
-                }
+                Assert.SkipWhen(alg is RC2, "RC2 does not support CFB.");
 
                 alg.Key = Key;
                 int size = 2048;

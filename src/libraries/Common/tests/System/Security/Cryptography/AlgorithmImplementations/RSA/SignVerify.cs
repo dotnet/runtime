@@ -7,7 +7,6 @@ using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Test.IO.Streams;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
@@ -1439,10 +1438,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [InlineData(false)]
         public void SignHash_NullSignature_Fails(bool usePss)
         {
-            if (!SupportsPss)
-            {
-                throw SkipException.ForSkip("Platform does not support PSS");
-            }
+            Assert.SkipUnless(SupportsPss, "Platform does not support PSS");
 
             RSASignaturePadding padding = usePss ? RSASignaturePadding.Pss : RSASignaturePadding.Pkcs1;
 
@@ -1470,10 +1466,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [InlineData(false)]
         public void SignData_NullSignature_Fails(bool usePss)
         {
-            if (!SupportsPss)
-            {
-                throw SkipException.ForSkip("Platform does not support PSS");
-            }
+            Assert.SkipUnless(SupportsPss, "Platform does not support PSS");
 
             RSASignaturePadding padding = usePss ? RSASignaturePadding.Pss : RSASignaturePadding.Pkcs1;
 

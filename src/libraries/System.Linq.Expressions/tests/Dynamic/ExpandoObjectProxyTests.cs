@@ -7,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Dynamic.Tests
 {
@@ -87,10 +86,7 @@ namespace System.Dynamic.Tests
         public void ItemsAreRootHidden(object eo)
         {
             object view = GetDebugViewObject(eo);
-            if (view == null)
-            {
-                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {eo}.");
-            }
+            Assert.SkipWhen(view == null, $"Didn't find DebuggerTypeProxyAttribute on {eo}.");
             PropertyInfo itemsProp = view.GetType().GetProperty("Items");
             var browsable = (DebuggerBrowsableAttribute)itemsProp.GetCustomAttribute(typeof(DebuggerBrowsableAttribute));
             Assert.Equal(DebuggerBrowsableState.RootHidden, browsable.State);
@@ -100,10 +96,7 @@ namespace System.Dynamic.Tests
         public void KeyCollectionCorrectlyViewed(ICollection<string> keys)
         {
             object view = GetDebugViewObject(keys);
-            if (view == null)
-            {
-                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {keys}.");
-            }
+            Assert.SkipWhen(view == null, $"Didn't find DebuggerTypeProxyAttribute on {keys}.");
             PropertyInfo itemsProp = view.GetType().GetProperty("Items");
             string[] items = (string[])itemsProp.GetValue(view);
             AssertSameCollectionIgnoreOrder(keys, items);
@@ -113,10 +106,7 @@ namespace System.Dynamic.Tests
         public void ValueCollectionCorrectlyViewed(ICollection<object> keys)
         {
             object view = GetDebugViewObject(keys);
-            if (view == null)
-            {
-                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {keys}.");
-            }
+            Assert.SkipWhen(view == null, $"Didn't find DebuggerTypeProxyAttribute on {keys}.");
             PropertyInfo itemsProp = view.GetType().GetProperty("Items");
             object[] items = (object[])itemsProp.GetValue(view);
             AssertSameCollectionIgnoreOrder(keys, items);
@@ -126,10 +116,7 @@ namespace System.Dynamic.Tests
         public void ViewTypeThrowsOnNull(object collection)
         {
             Type debugViewType = GetDebugViewType(collection.GetType());
-            if (debugViewType == null)
-            {
-                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {collection.GetType()}.");
-            }
+            Assert.SkipWhen(debugViewType == null, $"Didn't find DebuggerTypeProxyAttribute on {collection.GetType()}.");
             ConstructorInfo constructor = debugViewType.GetConstructors().Single();
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(new object[] {null}));
             var ane = (ArgumentNullException)tie.InnerException;

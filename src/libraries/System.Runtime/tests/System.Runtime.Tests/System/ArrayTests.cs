@@ -4916,10 +4916,7 @@ namespace System.Tests
         public static void Copy_LargeMultiDimensionalArray()
         {
             // If this test is run in a 32-bit process, the large allocation will fail.
-            if (IntPtr.Size != sizeof(long))
-            {
-                throw SkipException.ForSkip("Unable to allocate enough memory");
-            }
+            Assert.SkipWhen(IntPtr.Size != sizeof(long), "Unable to allocate enough memory");
 
             if (memoryInfo.TotalAvailableMemoryBytes < 4_000_000_000 )
             {
@@ -4942,10 +4939,7 @@ namespace System.Tests
         public static void Clear_LargeMultiDimensionalArray()
         {
             // If this test is run in a 32-bit process, the large allocation will fail.
-            if (IntPtr.Size != sizeof(long))
-            {
-                throw SkipException.ForSkip("Unable to allocate enough memory");
-            }
+            Assert.SkipWhen(IntPtr.Size != sizeof(long), "Unable to allocate enough memory");
 
             if (memoryInfo.TotalAvailableMemoryBytes < 4_000_000_000 )
             {

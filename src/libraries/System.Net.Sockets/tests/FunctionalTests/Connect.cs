@@ -306,10 +306,7 @@ namespace System.Net.Sockets.Tests
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task Connect_ExposeHandle_FirstAttemptSucceeds(string connectMode)
         {
-            if (UsesEap && connectMode is "multi")
-            {
-                throw SkipException.ForSkip("EAP does not support IPAddress[] connect");
-            }
+            Assert.SkipWhen(UsesEap && connectMode is "multi", "EAP does not support IPAddress[] connect");
 
             IPAddress address = (await Dns.GetHostAddressesAsync("localhost"))[0];
 
@@ -343,20 +340,14 @@ namespace System.Net.Sockets.Tests
         [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task MultiConnect_ExposeHandle_TerminatesAtFirstFailure(bool dnsConnect)
         {
-            if (UsesEap && !dnsConnect)
-            {
-                throw SkipException.ForSkip("EAP does not support IPAddress[] connect");
-            }
+            Assert.SkipWhen(UsesEap && !dnsConnect, "EAP does not support IPAddress[] connect");
 
             IPAddress[] addresses = await Dns.GetHostAddressesAsync("localhost");
             
             // While most Unix environments are configured to resolve 'localhost' only to the ipv4 loopback address,
             // on some CI machines it resolves to both ::1 and 127.0.0.1. This test is valid in those environments only.
             bool testFailingConnect = addresses.Length > 1;
-            if (!testFailingConnect)
-            {
-                throw SkipException.ForSkip("'localhost' should resolve to both IPv6 and IPv4 for this test to be valid.");
-            }
+            Assert.SkipUnless(testFailingConnect, "'localhost' should resolve to both IPv6 and IPv4 for this test to be valid.");
 
             // PortBlocker's "shadow socket" will be the one addresses[0] is pointing to. The test will fail to connect to that socket.
             IPAddress successAddress = addresses[1];
@@ -444,10 +435,7 @@ namespace System.Net.Sockets.Tests
 
         private async Task MultiConnectTestImpl(bool dnsConnect, Action<Socket> setupSocket, Action<Socket> validateSocket)
         {
-            if (UsesEap && !dnsConnect)
-            {
-                throw SkipException.ForSkip("EAP does not support IPAddress[] connect");
-            }
+            Assert.SkipWhen(UsesEap && !dnsConnect, "EAP does not support IPAddress[] connect");
 
             IPAddress[] addresses = await Dns.GetHostAddressesAsync("localhost");
             Assert.NotEmpty(addresses);

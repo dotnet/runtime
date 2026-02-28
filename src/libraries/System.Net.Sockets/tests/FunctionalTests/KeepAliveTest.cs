@@ -4,7 +4,6 @@
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -147,10 +146,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(new byte[3] { 0, 0, 0 })]
         public void Socket_Get_KeepAlive_Time_AsByteArray_BufferNullOrTooSmall_Failure(byte[]? buffer)
         {
-            if (PlatformDetection.IsQemuLinux && (buffer == null || buffer.Length == 0))
-            {
-                throw SkipException.ForSkip("Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104545)]");
-            }
+            Assert.SkipWhen(PlatformDetection.IsQemuLinux && (buffer == null || buffer.Length == 0), "Skip on Qemu due to [ActiveIssue(https://github.com/dotnet/runtime/issues/104545)]");
 
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {

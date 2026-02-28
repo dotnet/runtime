@@ -56,10 +56,7 @@ namespace System.Net.WebSockets.Client.Tests
         [MemberData(nameof(UseSsl))]
         public async Task ConnectAsync_Http11WithRequestVersionOrHigher_Loopback_DowngradeSuccess(bool useSsl)
         {
-            if (UseSharedHandler)
-            {
-                throw SkipException.ForSkip("HTTP/2 is not supported with SharedHandler");
-            }
+            Assert.SkipWhen(UseSharedHandler, "HTTP/2 is not supported with SharedHandler");
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {

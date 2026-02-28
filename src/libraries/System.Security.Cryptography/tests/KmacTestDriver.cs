@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -132,14 +131,12 @@ namespace System.Security.Cryptography.Tests
 
         private static void CheckIsSupported()
         {
-            if (!IsSupported)
-                throw SkipException.ForSkip(nameof(IsSupported));
+            Assert.SkipUnless(IsSupported, nameof(IsSupported));
         }
 
         private static void CheckIsNotSupported()
         {
-            if (!IsNotSupported)
-                throw SkipException.ForSkip(nameof(IsNotSupported));
+            Assert.SkipUnless(IsNotSupported, nameof(IsNotSupported));
         }
 
         public static KeySizes? PlatformKeySizeRequirements { get; } =
@@ -1881,10 +1878,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void IsSupported_InitializesCrypto()
         {
-            if (!IsSupported)
-            {
-                throw SkipException.ForSkip("Algorithm is not supported on current platform.");
-            }
+            Assert.SkipUnless(IsSupported, "Algorithm is not supported on current platform.");
 
             // This ensures that KMAC is the first cryptographic algorithm touched in the process, which kicks off
             // the initialization of the crypto layer on some platforms. Running in a remote executor ensures no other

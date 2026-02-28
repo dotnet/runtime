@@ -9,7 +9,6 @@ using System.Linq;
 using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Text.Json.Tests
 {
@@ -1654,10 +1653,7 @@ namespace System.Text.Json.Tests
         [InlineData(512)]
         public static void TestDepth(int depth)
         {
-            if (PlatformDetection.IsInterpreter && depth >= 256)
-            {
-                throw SkipException.ForSkip("Takes very long to run on interpreter.");
-            }
+            Assert.SkipWhen(PlatformDetection.IsInterpreter && depth >= 256, "Takes very long to run on interpreter.");
 
             foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
             {

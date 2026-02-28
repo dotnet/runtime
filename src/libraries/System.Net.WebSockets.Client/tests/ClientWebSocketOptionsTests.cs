@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 namespace System.Net.WebSockets.Client.Tests
 {
     public class ClientWebSocketOptionsTests(ITestOutputHelper output) : ClientWebSocketTestBase(output)
@@ -67,10 +66,7 @@ namespace System.Net.WebSockets.Client.Tests
         public async Task Proxy_ConnectThruProxy_Success(Uri server)
         {
             string proxyServerUri = System.Net.Test.Common.Configuration.WebSockets.ProxyServerUri;
-            if (string.IsNullOrEmpty(proxyServerUri))
-            {
-                throw SkipException.ForSkip("No proxy server defined.");
-            }
+            Assert.SkipWhen(string.IsNullOrEmpty(proxyServerUri), "No proxy server defined.");
 
             _output.WriteLine($"ProxyServer: {proxyServerUri}");
 

@@ -4,7 +4,6 @@
 using System.Runtime.CompilerServices;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -17,10 +16,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false, false)]
         public void VerifyPreserveKeyName(bool preserveName, bool machineKey)
         {
-            if (machineKey && !PlatformDetection.IsPrivilegedProcess)
-            {
-                throw SkipException.ForSkip("Test requires administrator privileges.");
-            }
+            Assert.SkipWhen(machineKey && !PlatformDetection.IsPrivilegedProcess, "Test requires administrator privileges.");
 
             Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
             {
@@ -65,10 +61,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false, false)]
         public void VerifyPreserveAlias(bool preserveAlias, bool machineKey)
         {
-            if (machineKey && !PlatformDetection.IsPrivilegedProcess)
-            {
-                throw SkipException.ForSkip("Test requires administrator privileges.");
-            }
+            Assert.SkipWhen(machineKey && !PlatformDetection.IsPrivilegedProcess, "Test requires administrator privileges.");
 
             Pkcs12LoaderLimits loaderLimits = new Pkcs12LoaderLimits
             {
@@ -118,10 +111,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false, false, false)]
         public void VerifyPreserveProvider(bool preserveProvider, bool preserveName, bool machineKey)
         {
-            if (machineKey && !PlatformDetection.IsPrivilegedProcess)
-            {
-                throw SkipException.ForSkip("Test requires administrator privileges.");
-            }
+            Assert.SkipWhen(machineKey && !PlatformDetection.IsPrivilegedProcess, "Test requires administrator privileges.");
 
             // This test forces a key creation with CAPI, and verifies that
             // PreserveStorageProvider keeps the key in CAPI.  Additionally,
@@ -180,10 +170,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(true)]
         public void VerifyNamesWithDuplicateAttributes(bool noLimits)
         {
-            if (!PlatformDetection.IsPrivilegedProcess)
-            {
-                throw SkipException.ForSkip("Test requires administrator privileges.");
-            }
+            Assert.SkipUnless(PlatformDetection.IsPrivilegedProcess, "Test requires administrator privileges.");
 
             // This test mainly shows that when duplicate attributes are present contents
             // processed by our filter and processed directly by PFXImportCertStore come up

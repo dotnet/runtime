@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Threading;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Linq.Parallel.Tests
 {
@@ -93,10 +92,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Default(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
-            if (partitions > 1 && !PlatformDetection.IsMultithreadingSupported)
-            {
-                throw SkipException.ForSkip(nameof(PlatformDetection.IsMultithreadingSupported));
-            }
+            Assert.SkipWhen(partitions > 1 && !PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
 
             _ = count;
             int seen = 0;
@@ -118,10 +114,7 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Striped(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
-            if (partitions > 1 && !PlatformDetection.IsMultithreadingSupported)
-            {
-                throw SkipException.ForSkip(nameof(PlatformDetection.IsMultithreadingSupported));
-            }
+            Assert.SkipWhen(partitions > 1 && !PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
 
             int seen = 0;
             foreach (int i in labeled.Item.WithDegreeOfParallelism(partitions).Take(count).Select(i => i))

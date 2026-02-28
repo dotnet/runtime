@@ -6,7 +6,6 @@ using System.Net.Test.Common;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 namespace System.Net.NetworkInformation.Tests
 {
     public class NetworkInterfaceBasicTest
@@ -281,10 +280,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(true)]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)
         {
-            if (ipv6 && !Socket.OSSupportsIPv6)
-            {
-                throw SkipException.ForSkip("IPv6 is not supported");
-            }
+            Assert.SkipWhen(ipv6 && !Socket.OSSupportsIPv6, "IPv6 is not supported");
 
             using (var client = new Socket(SocketType.Dgram, ProtocolType.Udp))
             using (var server = new Socket(SocketType.Dgram, ProtocolType.Udp))
@@ -323,10 +319,7 @@ namespace System.Net.NetworkInformation.Tests
                 }
             }
 
-            if (!foundLla)
-            {
-                throw SkipException.ForSkip("Did not find any LLA");
-            }
+            Assert.SkipUnless(foundLla, "Did not find any LLA");
         }
     }
 }

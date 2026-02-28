@@ -8,7 +8,6 @@ using System.Security.Cryptography.X509Certificates;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Pkcs.Tests
 {
@@ -679,10 +678,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void AddCounterSigner_DSA()
         {
-            if (!PlatformSupport.IsDSASupported)
-            {
-                throw SkipException.ForSkip("Platform does not support DSA.");
-            }
+            Assert.SkipUnless(PlatformSupport.IsDSASupported, "Platform does not support DSA.");
 
             AssertAddCounterSigner(
                 SubjectIdentifierType.IssuerAndSerialNumber,

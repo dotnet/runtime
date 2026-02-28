@@ -3,7 +3,6 @@
 
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Runtime.Tests
 {
@@ -31,10 +30,7 @@ namespace System.Runtime.Tests
         [PlatformSpecific(TestPlatforms.Windows)] //https://github.com/dotnet/runtime/issues/6879
         public void Ctor_LargeSizeInMegabytes_ThrowsInsufficientMemoryException()
         {
-            if (PlatformDetection.IsArmProcess)
-            {
-                throw SkipException.ForSkip("[ActiveIssue: https://github.com/dotnet/runtime/issues/35805]");
-            }
+            Assert.SkipWhen(PlatformDetection.IsArmProcess, "[ActiveIssue: https://github.com/dotnet/runtime/issues/35805]");
 
             Assert.Throws<InsufficientMemoryException>(() => new MemoryFailPoint(int.MaxValue));
         }

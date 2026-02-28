@@ -4,7 +4,6 @@
 using System.IO;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Formats.Tar.Tests;
 
@@ -58,10 +57,7 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
     public void Add_Non_Symlink_ReparsePoint_Throws(TarEntryFormat format)
     {
         string? appExecLinkPath = MountHelper.GetAppExecLinkPath();
-        if (appExecLinkPath is null)
-        {
-            throw SkipException.ForSkip("Could not find an appexeclink in this machine.");
-        }
+        Assert.SkipWhen(appExecLinkPath is null, "Could not find an appexeclink in this machine.");
 
         using MemoryStream archive = new MemoryStream();
         using TarWriter writer = new TarWriter(archive, format);

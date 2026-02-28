@@ -106,10 +106,7 @@ public abstract class DumpTestBase : IDisposable
     /// </summary>
     private void EvaluateSkipAttributes(TestConfiguration config, string callerName)
     {
-        if (config.RuntimeVersion is "net10.0" && DumpType == "heap")
-        {
-            throw SkipException.ForSkip($"[net10.0] Skipping heap dump tests due to outdated dump generation.");
-        }
+        Assert.SkipWhen(config.RuntimeVersion is "net10.0" && DumpType == "heap", $"[net10.0] Skipping heap dump tests due to outdated dump generation.");
 
         MethodInfo? method = GetType().GetMethod(callerName, BindingFlags.Public | BindingFlags.Instance);
         if (method is null)
@@ -117,8 +114,7 @@ public abstract class DumpTestBase : IDisposable
 
         foreach (SkipOnVersionAttribute attr in method.GetCustomAttributes<SkipOnVersionAttribute>())
         {
-            if (string.Equals(attr.Version, config.RuntimeVersion, StringComparison.OrdinalIgnoreCase))
-                throw SkipException.ForSkip($"[{config.RuntimeVersion}] {attr.Reason}");
+            Assert.SkipWhen(string.Equals(attr.Version, config.RuntimeVersion, StringComparison.OrdinalIgnoreCase), $"[{config.RuntimeVersion}] {attr.Reason}");
         }
 
         if (_dumpInfo is not null)
@@ -127,13 +123,11 @@ public abstract class DumpTestBase : IDisposable
             {
                 if (attr.IncludeOnly is not null)
                 {
-                    if (!string.Equals(attr.IncludeOnly, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase))
-                        throw SkipException.ForSkip($"[{_dumpInfo.Os}] {attr.Reason}");
+                    Assert.SkipUnless(string.Equals(attr.IncludeOnly, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase), $"[{_dumpInfo.Os}] {attr.Reason}");
                 }
                 else if (attr.Os is not null)
                 {
-                    if (string.Equals(attr.Os, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase))
-                        throw SkipException.ForSkip($"[{_dumpInfo.Os}] {attr.Reason}");
+                    Assert.SkipWhen(string.Equals(attr.Os, _dumpInfo.Os, StringComparison.OrdinalIgnoreCase), $"[{_dumpInfo.Os}] {attr.Reason}");
                 }
             }
         }

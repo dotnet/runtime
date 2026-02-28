@@ -6,7 +6,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Net.Http.Tests
 {
@@ -63,10 +62,7 @@ namespace System.Net.Http.Tests
         public void GetHeaderValue_RoundTrips_ReplacesDangerousCharacters(string input, string? encodingName)
         {
             bool isUnicode = input.Any(c => c > 255);
-            if (isUnicode && encodingName == null)
-            {
-                throw SkipException.ForSkip("The test case is invalid for the default encoding.");
-            }
+            Assert.SkipWhen(isUnicode && encodingName == null, "The test case is invalid for the default encoding.");
 
             Encoding encoding = encodingName == null ? null : Encoding.GetEncoding(encodingName);
             byte[] encoded = (encoding ?? Encoding.Latin1).GetBytes(input);

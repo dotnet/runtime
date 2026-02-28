@@ -854,10 +854,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
         public async Task GetAsync_TrailingHeadersReceived(bool emptyContent, bool includeContentLength)
         {
-            if (UseVersion.Major == 1 && includeContentLength)
-            {
-                throw SkipException.ForSkip("HTTP/1.1 trailers are only supported with chunked encoding.");
-            }
+            Assert.SkipWhen(UseVersion.Major == 1 && includeContentLength, "HTTP/1.1 trailers are only supported with chunked encoding.");
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
@@ -891,10 +888,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         public async Task GetAsync_UseResponseHeadersReadOption_TrailingHeadersReceived(bool includeContentLength)
         {
-            if (UseVersion.Major == 1 && includeContentLength)
-            {
-                throw SkipException.ForSkip("HTTP/1.1 trailers are only supported with chunked encoding.");
-            }
+            Assert.SkipWhen(UseVersion.Major == 1 && includeContentLength, "HTTP/1.1 trailers are only supported with chunked encoding.");
 
             SemaphoreSlim sendDataAgain = new SemaphoreSlim(0);
 
@@ -2896,10 +2890,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
-            if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
-            {
-                throw SkipException.ForSkip("Currently this test is failing on Android API 29 (used on Android-x64 and Android-x86 emulators)");
-            }
+            Assert.SkipWhen(PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process), "Currently this test is failing on Android API 29 (used on Android-x64 and Android-x86 emulators)");
 
             const int MaxConcurrentStreams = 2;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();

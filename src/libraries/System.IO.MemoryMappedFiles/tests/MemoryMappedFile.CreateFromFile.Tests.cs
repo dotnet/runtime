@@ -5,7 +5,6 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 using System.IO.Pipes;
 using System.Threading.Tasks;
 
@@ -1119,10 +1118,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void OpenCharacterDeviceAsStream(MemoryMappedFileAccess access)
         {
             const string device = "/dev/zero";
-            if (!File.Exists(device))
-            {
-                throw SkipException.ForSkip($"'{device}' is not available.");
-            }
+            Assert.SkipUnless(File.Exists(device), $"'{device}' is not available.");
 
             long viewCapacity = 0xFF;
 
@@ -1149,10 +1145,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void OpenCharacterDeviceAsFile(MemoryMappedFileAccess access)
         {
             const string device = "/dev/zero";
-            if (!File.Exists(device))
-            {
-                throw SkipException.ForSkip($"'{device}' is not available.");
-            }
+            Assert.SkipUnless(File.Exists(device), $"'{device}' is not available.");
 
             long viewCapacity = 0xFF;
 

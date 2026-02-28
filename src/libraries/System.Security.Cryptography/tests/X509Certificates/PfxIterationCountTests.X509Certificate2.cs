@@ -4,7 +4,6 @@
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -36,10 +35,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             const int AllottedTime = 10_000;
 
-            if (!PfxTests.Pkcs12PBES2Supported)
-            {
-                throw SkipException.ForSkip("Pkcs12NoPassword100MRounds uses PBES2, which is not supported on this version.");
-            }
+            Assert.SkipUnless(PfxTests.Pkcs12PBES2Supported, "Pkcs12NoPassword100MRounds uses PBES2, which is not supported on this version.");
 
             RemoteInvokeOptions options = new()
             {

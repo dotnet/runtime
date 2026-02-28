@@ -3,7 +3,6 @@
 
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Management.Tests
 {
@@ -14,10 +13,7 @@ namespace System.Management.Tests
         public void DateTime_RoundTrip()
         {
             // Additional skip if the testing platform does not support ActiveIssue
-            if (PlatformDetection.IsNetFramework)
-            {
-                throw SkipException.ForSkip("Incorrect logic for corefx implementation");
-            }
+            Assert.SkipWhen(PlatformDetection.IsNetFramework, "Incorrect logic for corefx implementation");
 
             var date = new DateTime(2002, 4, 8, 14, 18, 35, 978, DateTimeKind.Utc).AddMinutes(150);
             var dmtfDate = "20020408141835.978000-150";

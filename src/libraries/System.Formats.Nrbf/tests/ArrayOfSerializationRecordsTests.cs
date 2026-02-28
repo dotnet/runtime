@@ -8,7 +8,6 @@ using System.Linq;
 using System.Runtime.Serialization;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Formats.Nrbf.Tests
 {
@@ -107,10 +106,7 @@ namespace System.Formats.Nrbf.Tests
         [InlineData(ElementType.Generic)]
         public void CanReadArrayThatContainsMemberPrimitiveTypedRecord_SZ(ElementType elementType)
         {
-            if (elementType != ElementType.Object && !IsPatched)
-            {
-                throw SkipException.ForSkip("Current machine has not been patched with the most recent BinaryFormatter fix.");
-            }
+            Assert.SkipWhen(elementType != ElementType.Object && !IsPatched, "Current machine has not been patched with the most recent BinaryFormatter fix.");
 
             const int Integer = 123;
             Array input = elementType switch
@@ -135,10 +131,7 @@ namespace System.Formats.Nrbf.Tests
         [InlineData(ElementType.Generic)]
         public void CanReadArrayThatContainsMemberPrimitiveTypedRecord_MD(ElementType elementType)
         {
-            if (elementType != ElementType.Object && !IsPatched)
-            {
-                throw SkipException.ForSkip("Current machine has not been patched with the most recent BinaryFormatter fix.");
-            }
+            Assert.SkipWhen(elementType != ElementType.Object && !IsPatched, "Current machine has not been patched with the most recent BinaryFormatter fix.");
 
             const int Integer = 123;
             Array input = elementType switch
@@ -164,10 +157,7 @@ namespace System.Formats.Nrbf.Tests
         [InlineData(ElementType.Generic)]
         public void CanReadArrayThatContainsMemberPrimitiveTypedRecord_Jagged(ElementType elementType)
         {
-            if (elementType != ElementType.Object && !IsPatched)
-            {
-                throw SkipException.ForSkip("Current machine has not been patched with the most recent BinaryFormatter fix.");
-            }
+            Assert.SkipWhen(elementType != ElementType.Object && !IsPatched, "Current machine has not been patched with the most recent BinaryFormatter fix.");
 
             const int Integer = 123;
             Array input = elementType switch

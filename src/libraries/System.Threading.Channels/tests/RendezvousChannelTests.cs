@@ -4,7 +4,6 @@
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Threading.Channels.Tests
 {
@@ -297,10 +296,7 @@ namespace System.Threading.Channels.Tests
         [InlineData(true)]
         public void AllowSynchronousContinuations_CompletionTask_ContinuationsInvokedAccordingToSetting(bool allowSynchronousContinuations)
         {
-            if (!allowSynchronousContinuations && !PlatformDetection.IsMultithreadingSupported)
-            {
-                throw SkipException.ForSkip(nameof(PlatformDetection.IsMultithreadingSupported));
-            }
+            Assert.SkipUnless(allowSynchronousContinuations && !PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
 
             var c = Channel.CreateBounded<int>(new BoundedChannelOptions(0) { AllowSynchronousContinuations = allowSynchronousContinuations });
 

@@ -8,7 +8,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Linq;
 using Xunit;
-using Xunit.Sdk;
 using Microsoft.DotNet.XUnitExtensions;
 
 using System.Net.Test.Common;
@@ -70,10 +69,7 @@ namespace System.Net.Security.Tests
                     server.AuthenticateAsServerAsync(serverOptions));
 
             //Assert.True(CheckResumeFlag(client));
-            if (!CheckResumeFlag(client))
-            {
-                throw SkipException.ForSkip("Unable to resume test session");
-            }
+            Assert.SkipUnless(CheckResumeFlag(client), "Unable to resume test session");
             Assert.True(CheckResumeFlag(server));
             await client.ShutdownAsync();
             await server.ShutdownAsync();

@@ -282,10 +282,7 @@ namespace System.IO.Tests
         [InlineData(true)]
         public async Task CopyToTest_RequiresFlushingOfWrites(bool copyAsynchronously)
         {
-            if (copyAsynchronously && !PlatformDetection.IsMultithreadingSupported)
-            {
-                throw SkipException.ForSkip(nameof(PlatformDetection.IsMultithreadingSupported));
-            }
+            Assert.SkipWhen(copyAsynchronously && !PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
 
             byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)(i % 256)).ToArray();
 

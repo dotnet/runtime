@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Linq.Expressions.Tests
 {
@@ -82,10 +81,7 @@ namespace System.Linq.Expressions.Tests
         {
             Type type = obj.GetType();
             Type viewType = GetDebugViewType(type);
-            if (viewType == null)
-            {
-                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {type}.");
-            }
+            Assert.SkipWhen(viewType == null, $"Didn't find DebuggerTypeProxyAttribute on {type}.");
             object view = viewType.GetConstructors().Single().Invoke(new[] {obj});
             IEnumerable<PropertyInfo> properties =
                 type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.FlattenHierarchy)
@@ -169,10 +165,7 @@ namespace System.Linq.Expressions.Tests
         {
             Type type = sourceObject.GetType();
             Type viewType = GetDebugViewType(type);
-            if (viewType == null)
-            {
-                throw SkipException.ForSkip($"Didn't find DebuggerTypeProxyAttribute on {type}.");
-            }
+            Assert.SkipWhen(viewType == null, $"Didn't find DebuggerTypeProxyAttribute on {type}.");
             ConstructorInfo ctor = viewType.GetConstructors().Single();
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] { null }));
             ArgumentNullException ane = (ArgumentNullException)tie.InnerException;

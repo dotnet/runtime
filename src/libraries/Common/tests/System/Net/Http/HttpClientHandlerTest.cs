@@ -16,7 +16,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 
 namespace System.Net.Http.Functional.Tests
@@ -174,10 +173,7 @@ namespace System.Net.Http.Functional.Tests
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = Configuration.Sockets.LinkLocalAddress };
-            if (options.Address == null)
-            {
-                throw SkipException.ForSkip("Unable to find valid IPv6 LL address.");
-            }
+            Assert.SkipWhen(options.Address == null, "Unable to find valid IPv6 LL address.");
 
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {

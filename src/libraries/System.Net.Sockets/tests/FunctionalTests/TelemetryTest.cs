@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 namespace System.Net.Sockets.Tests
 {
     public class TelemetryTest
@@ -289,10 +288,7 @@ namespace System.Net.Sockets.Tests
         [MemberData(nameof(SocketMethods_WithBools_MemberData))]
         public async Task EventSource_SocketConnectsRemote_LogsConnectStartStop(string connectMethod, bool useDnsEndPoint)
         {
-            if (!await s_remoteServerIsReachable.Value)
-            {
-                throw SkipException.ForSkip("The remote server is not reachable");
-            }
+            Assert.SkipUnless(await s_remoteServerIsReachable.Value, "The remote server is not reachable");
 
             await RemoteExecutor.Invoke(async (connectMethod, useDnsEndPointString) =>
             {

@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 using static System.Text.Tests.StringBuilderTests;
 
 #pragma warning disable xUnit2009 // these are the tests for String and so should be using the explicit methods on String
@@ -2945,10 +2944,7 @@ namespace System.Tests
             // This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
             // For desired behavior, use ordinal comparison instead of linguistic comparison.
             // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
-            if (target == '\0' && PlatformDetection.IsIcuGlobalization)
-            {
-                throw SkipException.ForSkip("Target \\0 is not supported in ICU");
-            }
+            Assert.SkipWhen(target == '\0' && PlatformDetection.IsIcuGlobalization, "Target \\0 is not supported in ICU");
 
             bool safeForCurrentCulture =
                 IsSafeForCurrentCultureComparisons(s)

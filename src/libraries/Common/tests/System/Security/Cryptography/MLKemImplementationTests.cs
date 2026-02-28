@@ -4,7 +4,6 @@
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -34,10 +33,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void IsSupported_InitializesCrypto()
         {
-            if (!MLKem.IsSupported)
-            {
-                throw SkipException.ForSkip("Algorithm is not supported on current platform.");
-            }
+            Assert.SkipUnless(MLKem.IsSupported, "Algorithm is not supported on current platform.");
 
             // This ensures that ML-KEM is the first cryptographic algorithm touched in the process, which kicks off
             // the initialization of the crypto layer on some platforms. Running in a remote executor ensures no other
