@@ -305,7 +305,10 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         const bool inHnd     = add->acdHndIndex > 0;
         const bool inTry     = add->acdTryIndex > 0;
         const bool inThisHnd = inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum);
-        const bool inThisFlt = inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum);
+
+        // Filters are tracked via the handler index, so inThisFlt == inThisHnd;
+        // the filter vs handler distinction is made by acdKeyDsg.
+        const bool inThisFlt = inThisHnd;
         const bool inThisTry = inTry && ((unsigned)(add->acdTryIndex - 1) == XTnum);
 
         // If this ACD is in the filter of this region, it is no longer needed
@@ -389,7 +392,7 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         bool const removed = map->Remove(oldKey);
         assert(removed);
 
-        // Compute the new key an see if there's an existing
+        // Compute the new key and see if there's an existing
         // ACD with that key.
         //
         AddCodeDscKey newKey(add);
@@ -860,7 +863,7 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatchOrTryFault()
 
         JITDUMP("EH#%u try has no statements that can throw\n", XTnum);
 
-        // Since there are no tested trys, XTnum should be the try index of
+        // Since there are no nested tries, XTnum should be the try index of
         // all blocks in the try region.
         //
         assert(firstTryBlock->getTryIndex() == XTnum);
@@ -1655,8 +1658,8 @@ PhaseStatus Compiler::fgCloneFinally()
 // pass through the finally. This checker attempts to verify that by
 // looking at the control flow graph.
 //
-// Each path that exits the try of a try-finally (including try-faults
-// that were optimized into try-finallys by fgCloneFinally) should
+// Each path that exits the try of a try-finally (including try-finallys
+// that were optimized into try-faults by fgCloneFinally) should
 // thus either execute a callfinally to the associated finally or else
 // jump to a block with the BBF_CLONED_FINALLY_BEGIN flag set.
 //
@@ -2334,7 +2337,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 //         Map will be modified to contain keys and for the blocks cloned
 //         Visited will include bits for each newly cloned block
 //         m_ehRegionShift will describe number of EH regions added
-//      insertAfter will point at the lexcially last block cloned
+//      insertAfter will point at the lexically last block cloned
 //
 // Notes:
 //   * if insertAfter is non null, map must also be non null
@@ -2604,7 +2607,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     }
 
     // Once we call fgTryAddEHTableEntries with deferCloning = false,
-    // all the EH indicies at or above insertBeforeIndex will shift,
+    // all the EH indices at or above insertBeforeIndex will shift,
     // and the EH table may reallocate.
     //
     // This addition may also fail, if the table would become too large...
@@ -2684,7 +2687,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     assert(clonedOutermostRegionIndex > outermostTryIndex);
     unsigned const indexShift = clonedOutermostRegionIndex - outermostTryIndex;
 
-    // Copy over the EH table entries and adjust their enclosing indicies.
+    // Copy over the EH table entries and adjust their enclosing indices.
     // We will adjust the block references below.
     //
     unsigned const clonedLowestRegionIndex = clonedOutermostRegionIndex - regionCount + 1;
@@ -2755,7 +2758,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
 
     // Update the cloned block regions and impacted EH clauses
     //
-    // Here we are assuming that the cloned try is always placed lexically *after* thge
+    // Here we are assuming that the cloned try is always placed lexically *after* the
     // original, so that if the original try ended at the same point as an enclosing try,
     // the new end point of the enclosing try is in the cloned try.
     //
@@ -2883,7 +2886,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     //
     if (fgHasAddCodeDscMap())
     {
-        AddCodeDscMap* const    map = fgGetAddCodeDscMap();
+        AddCodeDscMap* const    acdMap = fgGetAddCodeDscMap();
         ArrayStack<AddCodeDsc*> cloned(getAllocator(CMK_TryRegionClone));
 
         assert(clonedLowestRegionIndex >= indexShift);
@@ -2892,7 +2895,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         unsigned const originalLowestRegionIndex    = clonedLowestRegionIndex - indexShift;
         unsigned const originalOutermostRegionIndex = clonedOutermostRegionIndex - indexShift;
 
-        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
+        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(acdMap))
         {
             bool needsCloningForTry = false;
             bool needsCloningForHnd = false;
@@ -2975,7 +2978,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         {
             AddCodeDsc* const clone = cloned.Pop();
             AddCodeDscKey     key(clone);
-            map->Set(key, clone);
+            acdMap->Set(key, clone);
             JITDUMP("Added clone: ");
             JITDUMPEXEC(clone->Dump());
         }

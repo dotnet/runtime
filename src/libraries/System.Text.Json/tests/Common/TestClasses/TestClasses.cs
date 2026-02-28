@@ -2127,9 +2127,11 @@ namespace System.Text.Json.Serialization.Tests
             Number = JsonElement.Parse(@"1");
             True = JsonElement.Parse(@"true");
             False = JsonElement.Parse(@"false");
-            String = JsonElement.Parse(@"""Hello""");
-            Array = JsonElement.Parse(@"[2, false, true, ""Goodbye""]");
-            Object = JsonElement.Parse(@"{}");
+            String = JsonElement.Parse("""
+                "Hello"
+                """);
+            Array = JsonElement.Parse("""[2, false, true, "Goodbye"]""");
+            Object = JsonElement.Parse("{}");
             Null = JsonElement.Parse(@"null");
         }
 
@@ -2185,7 +2187,9 @@ namespace System.Text.Json.Serialization.Tests
                 JsonElement.Parse(@"1"),
                 JsonElement.Parse(@"true"),
                 JsonElement.Parse(@"false"),
-                JsonElement.Parse(@"""Hello""")
+                JsonElement.Parse("""
+                    "Hello"
+                    """)
             };
         }
 
