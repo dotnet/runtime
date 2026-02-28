@@ -34,7 +34,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         {
             var diagnosticContext = new DiagnosticContext(Operation.Syntax.GetLocation(), reportDiagnostic);
             // For now, feature check validation is enabled only when trim analysis is enabled.
-            if (!context.EnableTrimAnalyzer)
+            if (context.TrimAnalyzer is null)
                 return;
 
             if (!OwningSymbol.IsStatic || OwningSymbol.Type.SpecialType != SpecialType.System_Boolean || OwningSymbol.SetMethod != null)

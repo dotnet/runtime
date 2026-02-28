@@ -2162,7 +2162,6 @@ namespace Mono.Linker.Steps
                 handleMarkType(type);
 
             MarkType(type.BaseType, new DependencyInfo(DependencyKind.BaseType, type), typeOrigin);
-            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in typeOrigin, this, Context, type.BaseType);
 
             // The DynamicallyAccessedMembers hierarchy processing must be done after the base type was marked
             // (to avoid inconsistencies in the cache), but before anything else as work done below
@@ -2926,23 +2925,16 @@ namespace Mono.Linker.Steps
         {
             var arguments = instance.GenericArguments;
 
-            IGenericParameterProvider? generic_element = GetGenericProviderFromInstance(instance);
-            Collection<GenericParameter>? parameters = generic_element?.GenericParameters;
-
             for (int i = 0; i < arguments.Count; i++)
             {
                 var argument = arguments[i];
-                var parameter = parameters?[i];
 
                 var argumentTypeDef = MarkType(argument, new DependencyInfo(DependencyKind.GenericArgumentType, instance), origin);
                 if (argumentTypeDef == null)
                     continue;
 
                 MarkRelevantToVariantCasting(argumentTypeDef);
-
-                if (parameter?.HasDefaultConstructorConstraint == true)
-                    MarkDefaultConstructor(argumentTypeDef, new DependencyInfo(DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance), origin);
-            }
+           }
         }
 
         IGenericParameterProvider? GetGenericProviderFromInstance(IGenericInstance instance)
