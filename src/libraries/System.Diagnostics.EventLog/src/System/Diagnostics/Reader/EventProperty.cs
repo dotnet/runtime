@@ -5,11 +5,11 @@ namespace System.Diagnostics.Eventing.Reader
 {
     public sealed class EventProperty
     {
-        internal EventProperty(object value)
+        internal EventProperty(object? value)
         {
             Value = value;
         }
 
-        public object Value { get; }
+        public object? Value { get; }
     }
 }

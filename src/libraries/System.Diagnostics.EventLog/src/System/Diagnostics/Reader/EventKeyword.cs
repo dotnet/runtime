@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics.Eventing.Reader
 {
@@ -11,10 +12,11 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     public sealed class EventKeyword
     {
-        private string _name;
-        private string _displayName;
-        private bool _dataReady;
-        private readonly ProviderMetadata _pmReference;
+        private string? _name;
+        private string? _displayName;
+        [MemberNotNullWhen(false, nameof(_pmReference))]
+        private bool DataReady { get; set; }
+        private readonly ProviderMetadata? _pmReference;
         private readonly object _syncObject;
 
         internal EventKeyword(long value, ProviderMetadata pmReference)
@@ -24,30 +26,30 @@ namespace System.Diagnostics.Eventing.Reader
             _syncObject = new object();
         }
 
-        internal EventKeyword(string name, long value, string displayName)
+        internal EventKeyword(string? name, long value, string? displayName)
         {
             Value = value;
             _name = name;
             _displayName = displayName;
-            _dataReady = true;
+            DataReady = true;
             _syncObject = new object();
         }
 
         internal void PrepareData()
         {
-            if (_dataReady)
+            if (DataReady)
                 return;
 
             lock (_syncObject)
             {
-                if (_dataReady)
+                if (DataReady)
                     return;
 
                 IEnumerable<EventKeyword> result = _pmReference.Keywords;
 
                 _name = null;
                 _displayName = null;
-                _dataReady = true;
+                DataReady = true;
 
                 foreach (EventKeyword key in result)
                 {
@@ -61,7 +63,7 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        public string Name
+        public string? Name
         {
             get
             {
@@ -72,7 +74,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public long Value { get; }
 
-        public string DisplayName
+        public string? DisplayName
         {
             get
             {
