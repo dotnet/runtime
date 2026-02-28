@@ -65,7 +65,6 @@
 #include "excep.h"
 #include "comcache.h"
 #include "threads.h"
-#include "comcache.h"
 #include "cdacdata.h"
 
 class Object;
