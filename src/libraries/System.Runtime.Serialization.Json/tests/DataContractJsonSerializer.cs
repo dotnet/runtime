@@ -3123,4 +3123,45 @@ public static partial class DataContractJsonSerializerTests
     {
         return ((CultureInfo)dateTimeFormat.FormatProvider).DateTimeFormat.AMDesignator;
     }
+
+    // Test for the fix to ensure DataContractJsonSerializer passes ISerializationSurrogateProvider to internal XML serializer
+    [Fact]
+    public static void DCJS_SerializationSurrogateProvider_PassedToInternalSerializer()
+    {
+        // Setup: Create a test surrogate that transforms NonSerializablePerson
+        var surrogateProvider = new MyPersonSurrogateProvider();
+        
+        // Create the serializer and set the surrogate provider
+        var serializer = new DataContractJsonSerializer(typeof(NonSerializablePerson));
+        serializer.SetSerializationSurrogateProvider(surrogateProvider);
+        
+        var testObj = new NonSerializablePerson("John", 30);
+        
+        // Act: Serialize the object
+        byte[] serializedData;
+        using (var ms = new MemoryStream())
+        {
+            serializer.WriteObject(ms, testObj);
+            serializedData = ms.ToArray();
+        }
+        
+        // The surrogate should have been called during serialization
+        Assert.True(surrogateProvider.GetSurrogateTypeWasCalled, "GetSurrogateType should have been called during WriteObject");
+        Assert.True(surrogateProvider.GetObjectToSerializeWasCalled, "GetObjectToSerialize should have been called during WriteObject");
+        
+        // Act: Deserialize the object
+        NonSerializablePerson deserializedObj;
+        using (var ms = new MemoryStream(serializedData))
+        {
+            deserializedObj = (NonSerializablePerson)serializer.ReadObject(ms);
+        }
+        
+        // The surrogate should have been called during deserialization
+        Assert.True(surrogateProvider.GetDeserializedObjectWasCalled, "GetDeserializedObject should have been called during ReadObject");
+        
+        // Verify the object was properly deserialized
+        Assert.Equal("John", deserializedObj.Name);
+        Assert.Equal(30, deserializedObj.Age);
+    }
+
 }
