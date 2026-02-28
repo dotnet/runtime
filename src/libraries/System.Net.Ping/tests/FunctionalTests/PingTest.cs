@@ -459,7 +459,7 @@ namespace System.Net.NetworkInformation.Tests
                 });
         }
 
-        [ConditionalFact(nameof(DoesNotUsePingUtility))]
+        [ConditionalFact(typeof(PingTest), nameof(DoesNotUsePingUtility))]
         public async Task SendPingWithIPAddressAndBigSize()
         {
             IPAddress localIpAddress = TestSettings.GetLocalIPAddress();
@@ -854,7 +854,7 @@ namespace System.Net.NetworkInformation.Tests
         private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(PingTest), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         [OuterLoop("Requires sudo access")]
@@ -949,7 +949,7 @@ namespace System.Net.NetworkInformation.Tests
             }, localIpAddress.ToString(), new RemoteInvokeOptions { StartInfo = remoteInvokeStartInfo }).DisposeAsync();
         }
 
-        [ConditionalFact(nameof(UsesPingUtility))]
+        [ConditionalFact(typeof(PingTest), nameof(UsesPingUtility))]
         public void SendPing_CustomPayload_InsufficientPrivileges_Throws()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();
@@ -959,7 +959,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Throws<PlatformNotSupportedException>(() => ping.Send(TestSettings.LocalHost, TestSettings.PingTimeout, buffer));
         }
 
-        [ConditionalFact(nameof(UsesPingUtility))]
+        [ConditionalFact(typeof(PingTest), nameof(UsesPingUtility))]
         public async Task SendPingAsync_CustomPayload_InsufficientPrivileges_Throws()
         {
             IPAddress[] localIpAddresses = TestSettings.GetLocalIPAddresses();

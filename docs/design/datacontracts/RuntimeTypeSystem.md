@@ -372,6 +372,7 @@ The contract depends on the following globals
 | --- | --- |
 | `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
+| `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
 
 The contract additionally depends on these data descriptors
 
@@ -403,7 +404,6 @@ The contract additionally depends on these data descriptors
 | `EEClass` | `NumStaticFields` | Count of static fields of the EEClass |
 | `EEClass` | `NumThreadStaticFields` | Count of threadstatic fields of the EEClass |
 | `EEClass` | `FieldDescList` | A list of fields in the type |
-| `ArrayClass` | `Rank` | Rank of the associated array MethodTable |
 | `TypeDesc` | `TypeAndFlags` | The lower 8 bits are the CorElementType of the `TypeDesc`, the upper 24 bits are reserved for flags |
 | `ParamTypeDesc` | `TypeArg` | Associated type argument |
 | `TypeVarTypeDesc` | `Module` | Pointer to module which defines the type variable |
@@ -695,8 +695,9 @@ Contracts used:
             switch (typeHandle.Flags.GetFlag(WFLAGS_HIGH.Category_Mask))
             {
                 case WFLAGS_HIGH.Category_Array:
-                    TargetPointer clsPtr = GetClassPointer(typeHandle);
-                    rank = // Read Rank field from ArrayClass contract using address clsPtr
+                    // Multidim array: BaseSize = ArrayBaseSize + Rank * sizeof(uint) * 2
+                    uint arrayBaseSize = target.ReadGlobal<uint>("ArrayBaseSize");
+                    rank = (typeHandle.Flags.BaseSize - arrayBaseSize) / (sizeof(uint) * 2);
                     return true;
 
                 case WFLAGS_HIGH.Category_Array | WFLAGS_HIGH.Category_IfArrayThenSzArray:
@@ -910,7 +911,6 @@ The version 1 `MethodDesc` APIs depend on the following globals:
 | --- | --- |
 | `MethodDescAlignment` | `MethodDescChunk` trailing data is allocated in multiples of this constant.  The size (in bytes) of each `MethodDesc` (or subclass) instance is a multiple of this constant. |
 | `MethodDescTokenRemainderBitCount` | Number of bits in the token remainder in `MethodDesc` |
-| `MethodDescSizeTable` | A pointer to the MethodDesc size table. The MethodDesc flags are used as an offset into this table to lookup the MethodDesc size. |
 
 
 In the runtime a `MethodDesc` implicitly belongs to a single `MethodDescChunk` and some common data is shared between method descriptors that belong to the same chunk.  A single method table
@@ -941,6 +941,24 @@ We depend on the following data descriptors:
 | `StoredSigMethodDesc` | `ExtendedFlags` | Flags field for the `StoredSigMethodDesc` |
 | `DynamicMethodDesc` | `MethodName` | Pointer to Null-terminated UTF8 string describing the Method desc |
 | `GCCoverageInfo` | `SavedCode` | Pointer to the GCCover saved code copy, if supported |
+
+The following data descriptor types are used only for their sizes when computing the total size of a `MethodDesc` instance.
+The size of a `MethodDesc` is the base size of its classification subtype plus the sizes of any optional trailing slots indicated by its flags:
+
+| Data Descriptor Name | Meaning |
+| --- | --- |
+| `MethodDesc` | Base size for `mcIL` classification |
+| `FCallMethodDesc` | Base size for `mcFCall` classification |
+| `PInvokeMethodDesc` | Base size for `mcPInvoke` classification |
+| `EEImplMethodDesc` | Base size for `mcEEImpl` classification |
+| `ArrayMethodDesc` | Base size for `mcArray` classification |
+| `InstantiatedMethodDesc` | Base size for `mcInstantiated` classification |
+| `CLRToCOMCallMethodDesc` | Base size for `mcComInterOp` classification |
+| `DynamicMethodDesc` | Base size for `mcDynamic` classification |
+| `NonVtableSlot` | Size of the non-vtable slot, added when `HasNonVtableSlot` flag is set |
+| `MethodImpl` | Size of the MethodImpl data, added when `HasMethodImpl` flag is set |
+| `NativeCodeSlot` | Size of the native code slot, added when `HasNativeCodeSlot` flag is set |
+| `AsyncMethodData` | Size of the async method data, added when `HasAsyncMethodData` flag is set |
 
 
 The contract depends on the following other contracts
@@ -1181,17 +1199,32 @@ And the various apis are implemented with the following algorithms
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
-        // the runtime generates a table to lookup the size of a MethodDesc based on the flags
-        // read the location of the table and index into it using certain bits of MethodDesc.Flags
-        TargetPointer methodDescSizeTable = target.ReadGlobalPointer(Constants.Globals.MethodDescSizeTable);
+        // Compute the size from data descriptor type sizes.
+        // The base size comes from the classification subtype, and optional slot
+        // sizes are added based on the MethodDesc flags.
+        MethodClassification classification = (MethodClassification)(methodDesc.Flags & MethodDescFlags.ClassificationMask);
+        uint size = classification switch
+        {
+            MethodClassification.IL => target.GetTypeInfo(DataType.MethodDesc).Size,
+            MethodClassification.FCall => target.GetTypeInfo(DataType.FCallMethodDesc).Size,
+            MethodClassification.PInvoke => target.GetTypeInfo(DataType.PInvokeMethodDesc).Size,
+            MethodClassification.EEImpl => target.GetTypeInfo(DataType.EEImplMethodDesc).Size,
+            MethodClassification.Array => target.GetTypeInfo(DataType.ArrayMethodDesc).Size,
+            MethodClassification.Instantiated => target.GetTypeInfo(DataType.InstantiatedMethodDesc).Size,
+            MethodClassification.ComInterop => target.GetTypeInfo(DataType.CLRToCOMCallMethodDesc).Size,
+            MethodClassification.Dynamic => target.GetTypeInfo(DataType.DynamicMethodDesc).Size,
+        };
 
-        ushort arrayOffset = (ushort)(methodDesc.Flags & (ushort)(
-            MethodDescFlags.ClassificationMask |
-            MethodDescFlags.HasNonVtableSlot |
-            MethodDescFlags.HasMethodImpl |
-            MethodDescFlags.HasNativeCodeSlot |
-            MethodDescFlags.HasAsyncMethodData));
-        return target.Read<byte>(methodDescSizeTable + arrayOffset);
+        if (HasFlag(methodDesc, MethodDescFlags.HasNonVtableSlot))
+            size += target.GetTypeInfo(DataType.NonVtableSlot).Size;
+        if (HasFlag(methodDesc, MethodDescFlags.HasMethodImpl))
+            size += target.GetTypeInfo(DataType.MethodImpl).Size;
+        if (HasFlag(methodDesc, MethodDescFlags.HasNativeCodeSlot))
+            size += target.GetTypeInfo(DataType.NativeCodeSlot).Size;
+        if (HasFlag(methodDesc, MethodDescFlags.HasAsyncMethodData))
+            size += target.GetTypeInfo(DataType.AsyncMethodData).Size;
+
+        return size;
     }
 
     public bool IsArrayMethod(MethodDescHandle methodDescHandle, out ArrayFunctionType functionType)

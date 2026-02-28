@@ -26,52 +26,52 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void ASCIIEncoding()
         {
             Debug.WriteLine("Verifying read with bytes encoded with ASCIIEncoding");
             VerifyRead(new ASCIIEncoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void UTF8Encoding()
         {
             Debug.WriteLine("Verifying read with bytes encoded with UTF8Encoding");
             VerifyRead(new UTF8Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void UTF32Encoding()
         {
             Debug.WriteLine("Verifying read with bytes encoded with UTF32Encoding");
             VerifyRead(new UTF32Encoding());
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_ReadBufferedData()
         {
             VerifyRead(Encoding.ASCII, ReadDataFromEnum.Buffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_IterativeReadBufferedData()
         {
             VerifyRead(Encoding.ASCII, ReadDataFromEnum.Buffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_ReadBufferedAndNonBufferedData()
         {
             VerifyRead(Encoding.ASCII, ReadDataFromEnum.BufferedAndNonBuffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_IterativeReadBufferedAndNonBufferedData()
         {
             VerifyRead(Encoding.ASCII, ReadDataFromEnum.BufferedAndNonBuffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Zero_ResizeBuffer()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -125,7 +125,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_NonZero_ResizeBuffer()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -179,7 +179,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void GreedyRead()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -228,14 +228,14 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void LargeInputBuffer()
         {
             Debug.WriteLine("Verifying read with large input buffer");
             VerifyRead(Encoding.ASCII, largeNumRndBytesToRead);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Zero_Bytes()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -283,7 +283,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void Read_DataReceivedBeforeTimeout()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -339,7 +339,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void Read_Timeout()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -406,7 +406,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadChar), nameof(HasLoopbackOrNullModem))]
         public void Read_Surrogate()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
