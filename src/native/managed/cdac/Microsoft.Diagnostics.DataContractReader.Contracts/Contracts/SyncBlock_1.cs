@@ -118,26 +118,18 @@ internal readonly struct SyncBlock_1 : ISyncBlock
         return new TargetPointer(cleanupBlockList.Value - _syncBlockLinkOffset);
     }
 
-    public SyncBlockCleanupInfo GetSyncBlockCleanupInfo(TargetPointer syncBlock)
+    public TargetPointer GetNextSyncBlock(TargetPointer syncBlock)
     {
         Data.SyncBlock sb = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlock);
+        if (sb.LinkNext == TargetPointer.Null)
+            return TargetPointer.Null;
+        return new TargetPointer(sb.LinkNext.Value - _syncBlockLinkOffset);
+    }
 
-        TargetPointer nextSyncBlock = TargetPointer.Null;
-        if (sb.LinkNext != TargetPointer.Null)
-            nextSyncBlock = new TargetPointer(sb.LinkNext.Value - _syncBlockLinkOffset);
-
-        TargetPointer blockRCW = TargetPointer.Null;
-        TargetPointer blockClassFactory = TargetPointer.Null;
-        TargetPointer blockCCW = TargetPointer.Null;
-        if (sb.InteropInfo is Data.InteropSyncBlockInfo interopInfo)
-        {
-            blockRCW = interopInfo.RCW & ~1ul;
-            // CCW and CCF use sentinel value 0x1 to mean "was set but is now null"
-            blockCCW = interopInfo.CCW == 1 ? TargetPointer.Null : interopInfo.CCW;
-            blockClassFactory = interopInfo.CCF == 1 ? TargetPointer.Null : interopInfo.CCF;
-        }
-
-        return new SyncBlockCleanupInfo(nextSyncBlock, blockRCW, blockClassFactory, blockCCW);
+    public TargetPointer GetSyncBlockObject(TargetPointer syncBlock)
+    {
+        Data.SyncBlock sb = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlock);
+        return GetSyncBlockObject(sb.SyncIndex);
     }
 
     private uint ReadUintField(TypeHandle enclosingType, string fieldName, IRuntimeTypeSystem rts, MetadataReader mdReader, TargetPointer dataAddr)

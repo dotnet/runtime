@@ -130,6 +130,7 @@ internal partial class MockDescriptors
             new(nameof(Data.SyncBlock.Lock), DataType.pointer),
             new(nameof(Data.SyncBlock.ThinLock), DataType.uint32),
             new(nameof(Data.SyncBlock.LinkNext), DataType.pointer),
+            new(nameof(Data.SyncBlock.SyncIndex), DataType.uint32),
         ]
     };
 

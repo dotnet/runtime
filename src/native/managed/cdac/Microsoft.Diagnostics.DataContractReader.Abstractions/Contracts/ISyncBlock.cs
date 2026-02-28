@@ -14,23 +14,8 @@ public interface ISyncBlock : IContract
     bool TryGetLockInfo(TargetPointer syncBlock, out uint owningThreadId, out uint recursion) => throw new NotImplementedException();
     uint GetAdditionalThreadCount(TargetPointer syncBlock) => throw new NotImplementedException();
     TargetPointer GetSyncBlockFromCleanupList() => throw new NotImplementedException();
-    SyncBlockCleanupInfo GetSyncBlockCleanupInfo(TargetPointer syncBlock) => throw new NotImplementedException();
-}
-
-public readonly struct SyncBlockCleanupInfo
-{
-    public SyncBlockCleanupInfo(TargetPointer nextSyncBlock, TargetPointer blockRCW, TargetPointer blockClassFactory, TargetPointer blockCCW)
-    {
-        NextSyncBlock = nextSyncBlock;
-        BlockRCW = blockRCW;
-        BlockClassFactory = blockClassFactory;
-        BlockCCW = blockCCW;
-    }
-
-    public TargetPointer NextSyncBlock { get; }
-    public TargetPointer BlockRCW { get; }
-    public TargetPointer BlockClassFactory { get; }
-    public TargetPointer BlockCCW { get; }
+    TargetPointer GetNextSyncBlock(TargetPointer syncBlock) => throw new NotImplementedException();
+    TargetPointer GetSyncBlockObject(TargetPointer syncBlock) => throw new NotImplementedException();
 }
 
 public readonly struct SyncBlock : ISyncBlock

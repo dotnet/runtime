@@ -3427,11 +3427,11 @@ public sealed unsafe partial class SOSDacImpl
         {
             *data = default;
 
-            ISyncBlock syncBlock = _target.Contracts.SyncBlock;
+            ISyncBlock syncBlockContract = _target.Contracts.SyncBlock;
             TargetPointer syncBlockPtr;
             if (addr == 0)
             {
-                syncBlockPtr = syncBlock.GetSyncBlockFromCleanupList();
+                syncBlockPtr = syncBlockContract.GetSyncBlockFromCleanupList();
             }
             else
             {
@@ -3441,11 +3441,18 @@ public sealed unsafe partial class SOSDacImpl
             if (syncBlockPtr != TargetPointer.Null)
             {
                 data->SyncBlockPointer = syncBlockPtr.ToClrDataAddress(_target);
-                SyncBlockCleanupInfo cleanupInfo = syncBlock.GetSyncBlockCleanupInfo(syncBlockPtr);
-                data->nextSyncBlock = cleanupInfo.NextSyncBlock.ToClrDataAddress(_target);
-                data->blockRCW = cleanupInfo.BlockRCW.ToClrDataAddress(_target);
-                data->blockClassFactory = cleanupInfo.BlockClassFactory.ToClrDataAddress(_target);
-                data->blockCCW = cleanupInfo.BlockCCW.ToClrDataAddress(_target);
+                data->nextSyncBlock = syncBlockContract.GetNextSyncBlock(syncBlockPtr).ToClrDataAddress(_target);
+                TargetPointer obj = syncBlockContract.GetSyncBlockObject(syncBlockPtr);
+                if (obj != TargetPointer.Null)
+                {
+                    IObject objContract = _target.Contracts.Object;
+                    if (objContract.GetBuiltInComData(obj, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf))
+                    {
+                        data->blockRCW = rcw.ToClrDataAddress(_target);
+                        data->blockClassFactory = ccf.ToClrDataAddress(_target);
+                        data->blockCCW = ccw.ToClrDataAddress(_target);
+                    }
+                }
             }
         }
         catch (global::System.Exception ex)

@@ -22,6 +22,8 @@ internal sealed class SyncBlock : IData<SyncBlock>
 
         ThinLock = target.Read<uint>(address + (ulong)type.Fields[nameof(ThinLock)].Offset);
         LinkNext = target.ReadPointer(address + (ulong)type.Fields[nameof(LinkNext)].Offset);
+        // Mask the SyncBlockPrecious flag bit (0x80000000) to get the actual sync table index
+        SyncIndex = target.Read<uint>(address + (ulong)type.Fields[nameof(SyncIndex)].Offset) & ~0x80000000u;
     }
 
     public TargetPointer Address { get; init; }
@@ -29,4 +31,5 @@ internal sealed class SyncBlock : IData<SyncBlock>
     public ObjectHandle? Lock { get; init; }
     public uint ThinLock { get; init; }
     public TargetPointer LinkNext { get; init; }
+    public uint SyncIndex { get; init; }
 }

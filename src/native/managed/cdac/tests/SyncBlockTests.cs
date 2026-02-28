@@ -61,53 +61,7 @@ public class SyncBlockTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetSyncBlockCleanupInfo_NoInteropInfo(MockTarget.Architecture arch)
-    {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockDescriptors.SyncBlock syncBlockDesc = new(builder);
-
-        TargetPointer syncBlockAddr = syncBlockDesc.AddSyncBlockToCleanupList(
-            TargetPointer.Null, TargetPointer.Null, TargetPointer.Null, hasInteropInfo: false);
-
-        Target target = CreateTarget(syncBlockDesc);
-        ISyncBlock contract = target.Contracts.SyncBlock;
-
-        SyncBlockCleanupInfo info = contract.GetSyncBlockCleanupInfo(syncBlockAddr);
-
-        Assert.Equal(TargetPointer.Null, info.NextSyncBlock);
-        Assert.Equal(TargetPointer.Null, info.BlockRCW);
-        Assert.Equal(TargetPointer.Null, info.BlockClassFactory);
-        Assert.Equal(TargetPointer.Null, info.BlockCCW);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetSyncBlockCleanupInfo_InteropData(MockTarget.Architecture arch)
-    {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockDescriptors.SyncBlock syncBlockDesc = new(builder);
-
-        TargetPointer expectedRCW = new TargetPointer(0x1000);
-        TargetPointer expectedCCW = new TargetPointer(0x2000);
-        TargetPointer expectedCCF = new TargetPointer(0x3000);
-
-        TargetPointer syncBlockAddr = syncBlockDesc.AddSyncBlockToCleanupList(expectedRCW, expectedCCW, expectedCCF);
-
-        Target target = CreateTarget(syncBlockDesc);
-        ISyncBlock contract = target.Contracts.SyncBlock;
-
-        SyncBlockCleanupInfo info = contract.GetSyncBlockCleanupInfo(syncBlockAddr);
-
-        Assert.Equal(expectedRCW, info.BlockRCW);
-        Assert.Equal(expectedCCW, info.BlockCCW);
-        Assert.Equal(expectedCCF, info.BlockClassFactory);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetSyncBlockCleanupInfo_NextSyncBlockInChain(MockTarget.Architecture arch)
+    public void GetNextSyncBlock_ReturnsNextInChain(MockTarget.Architecture arch)
     {
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
@@ -122,10 +76,28 @@ public class SyncBlockTests
         Target target = CreateTarget(syncBlockDesc);
         ISyncBlock contract = target.Contracts.SyncBlock;
 
-        // Head of list is secondAdded; its NextSyncBlock should be firstAdded
-        SyncBlockCleanupInfo info = contract.GetSyncBlockCleanupInfo(secondAdded);
+        // Head of list is secondAdded; its next should be firstAdded
+        TargetPointer next = contract.GetNextSyncBlock(secondAdded);
 
-        Assert.Equal(firstAdded, info.NextSyncBlock);
-        Assert.Equal(TargetPointer.Null, info.BlockRCW);
+        Assert.Equal(firstAdded, next);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNextSyncBlock_LastItemReturnsNull(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.SyncBlock syncBlockDesc = new(builder);
+
+        TargetPointer syncBlockAddr = syncBlockDesc.AddSyncBlockToCleanupList(
+            TargetPointer.Null, TargetPointer.Null, TargetPointer.Null);
+
+        Target target = CreateTarget(syncBlockDesc);
+        ISyncBlock contract = target.Contracts.SyncBlock;
+
+        TargetPointer next = contract.GetNextSyncBlock(syncBlockAddr);
+
+        Assert.Equal(TargetPointer.Null, next);
     }
 }
