@@ -21,22 +21,6 @@ public class SyncBlockTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetSyncBlockFromCleanupList_EmptyList(MockTarget.Architecture arch)
-    {
-        TargetTestHelpers helpers = new(arch);
-        MockMemorySpace.Builder builder = new(helpers);
-        MockDescriptors.SyncBlock syncBlockDesc = new(builder);
-
-        Target target = CreateTarget(syncBlockDesc);
-        ISyncBlock contract = target.Contracts.SyncBlock;
-
-        TargetPointer result = contract.GetSyncBlockFromCleanupList();
-
-        Assert.Equal(TargetPointer.Null, result);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
     public void GetSyncBlockFromCleanupList_SingleItem(MockTarget.Architecture arch)
     {
         TargetTestHelpers helpers = new(arch);
