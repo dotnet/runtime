@@ -373,7 +373,7 @@ enum Masks
     enum_InterfaceTypeMask              = 0x00000003,
     enum_ClassInterfaceTypeMask         = 0x00000003,
     enum_ClassVtableMask                = 0x00000004,
-    enum_LayoutComplete                 = 0x00000010,
+    enum_LayoutComplete                 = 0x00000010, // [cDAC] [BuiltInCOM]: Contract depends on this value
     enum_ComVisible                     = 0x00000040,
     // enum_unused                      = 0x00000080,
     // enum_unused                      = 0x00000100,
