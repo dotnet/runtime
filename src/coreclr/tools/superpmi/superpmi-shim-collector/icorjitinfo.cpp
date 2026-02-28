@@ -263,6 +263,19 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(CORINFO_METHOD_HAND
     return result;
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk)
+{
+    mc->cr->AddCall("getAsyncOtherVariant");
+    bool                  localVariantIsThunk = false;
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAsyncOtherVariant(ftn, &localVariantIsThunk);
+    mc->recGetAsyncOtherVariant(ftn, &localVariantIsThunk, result);
+    if (variantIsThunk != nullptr)
+    {
+        *variantIsThunk = localVariantIsThunk;
+    }
+    return result;
+}
+
 // Given T, return the type of the default Comparer<T>.
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(CORINFO_CLASS_HANDLE cls)
