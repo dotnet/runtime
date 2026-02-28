@@ -2287,24 +2287,20 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe void GetRawEHInfo(Resolver* pResolver, byte[]* ppResult, Exception* pException)
+        internal static unsafe void GetEHInfo(Resolver* pResolver, int EHNumber, byte[]* ppRawEHInfo, void* parsedEHInfo, Exception* pException)
         {
             try
             {
-                *ppResult = pResolver->GetRawEHInfo();
-            }
-            catch (Exception ex)
-            {
-                *pException = ex;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe void GetEHInfo(Resolver* pResolver, int EHNumber, void* exception, Exception* pException)
-        {
-            try
-            {
-                pResolver->GetEHInfo(EHNumber, exception);
+                byte[]? rawEHInfo = pResolver->GetRawEHInfo();
+                if (rawEHInfo != null)
+                {
+                    *ppRawEHInfo = rawEHInfo;
+                }
+                else
+                {
+                    *ppRawEHInfo = null;
+                    pResolver->GetEHInfo(EHNumber, parsedEHInfo);
+                }
             }
             catch (Exception ex)
             {

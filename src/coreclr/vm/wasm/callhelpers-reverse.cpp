@@ -248,19 +248,6 @@ static void Call_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid);
 }
 
-static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_RetVoid = nullptr;
-static void Call_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_RetVoid(void * arg0, int32_t arg1, void * arg2, void * arg3)
-{
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
-    // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_RetVoid)
-    {
-        LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "GetEHInfo", &MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_RetVoid);
-    }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_RetVoid);
-}
-
 static MethodDesc* MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32 = nullptr;
 static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32(void * arg0, void * arg1, void * arg2, void * arg3, void * arg4, void * arg5)
 {
@@ -319,19 +306,6 @@ static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_Intero
 extern "C" void SystemInteropJS_GetManagedStackTrace(void * arg0)
 {
     Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid(arg0);
-}
-
-static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetRawEHInfo_I32_I32_I32_RetVoid = nullptr;
-static void Call_System_Private_CoreLib_System_Resolver_GetRawEHInfo_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
-{
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
-    // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_System_Resolver_GetRawEHInfo_I32_I32_I32_RetVoid)
-    {
-        LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "GetRawEHInfo", &MD_System_Private_CoreLib_System_Resolver_GetRawEHInfo_I32_I32_I32_RetVoid);
-    }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetRawEHInfo_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetRawEHInfo_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid = nullptr;
@@ -654,12 +628,10 @@ extern const ReverseThunkMapEntry g_ReverseThunks[] =
     { 2644325558, 1196551088, { &MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid } } /* alternate key source: EnumCalendarInfoCallback#2:System.Private.CoreLib:System.Globalization:CalendarData */,
     { 2644360761, 2613312799, { &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_GetClassFactoryForTypeInternal_I32_RetI32, (void*)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_GetClassFactoryForTypeInternal_I32_RetI32 } } /* alternate key source: GetClassFactoryForTypeInternal#1:System.Private.CoreLib:Internal.Runtime.InteropServices:ComActivator */,
     { 2644318622, 2605868264, { &MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid } } /* alternate key source: GetCodeInfo#6:System.Private.CoreLib:System:Resolver */,
-    { 2644318258, 3509777290, { &MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_RetVoid } } /* alternate key source: GetEHInfo#4:System.Private.CoreLib:System:Resolver */,
     { 2644360771, 993231473, { &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32 } } /* alternate key source: GetFunctionPointer#6:System.Private.CoreLib:Internal.Runtime.InteropServices:ComponentActivator */,
     { 2644318625, 4101188193, { &MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid } } /* alternate key source: GetJitContext#4:System.Private.CoreLib:System:Resolver */,
     { 2644318623, 2512220404, { &MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid } } /* alternate key source: GetLocalsSignature#3:System.Private.CoreLib:System:Resolver */,
     { 3685902051, 1081971317, { &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid, (void*)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid } } /* alternate key source: GetManagedStackTrace#1:System.Runtime.InteropServices.JavaScript:System.Runtime.InteropServices.JavaScript:JavaScriptExports */,
-    { 2644318261, 2774706601, { &MD_System_Private_CoreLib_System_Resolver_GetRawEHInfo_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Resolver_GetRawEHInfo_I32_I32_I32_RetVoid } } /* alternate key source: GetRawEHInfo#3:System.Private.CoreLib:System:Resolver */,
     { 2644318620, 831291767, { &MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid } } /* alternate key source: GetStringLiteral#4:System.Private.CoreLib:System:Resolver */,
     { 2644348538, 513042204, { &MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid } } /* alternate key source: InitializeDefaultEventSources#1:System.Private.CoreLib:System.Diagnostics.Tracing:EventSource */,
     { 2644360772, 3422156547, { &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32 } } /* alternate key source: LoadAssembly#3:System.Private.CoreLib:Internal.Runtime.InteropServices:ComponentActivator */,
