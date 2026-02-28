@@ -1237,7 +1237,7 @@ namespace System.Text.RegularExpressions
             // For ASCII, lazily initialize. For non-ASCII, just compute the value.
             return ch < 128 ?
                 InitializeValue(ch, set, ref asciiLazyCache) :
-                CharInClassRecursive(ch, set, 0);
+                CharInClassIterative(ch, set, 0);
 
             static bool InitializeValue(char ch, string set, ref uint[]? asciiLazyCache)
             {
@@ -1269,9 +1269,9 @@ namespace System.Text.RegularExpressions
         /// Determines a character's membership in a character class (via the string representation of the class).
         /// </summary>
         public static bool CharInClass(char ch, string set) =>
-            CharInClassRecursive(ch, set, 0);
+            CharInClassIterative(ch, set, 0);
 
-        private static bool CharInClassRecursive(char ch, string set, int start)
+        private static bool CharInClassIterative(char ch, string set, int start)
         {
             bool inClass = false;
 
@@ -1438,14 +1438,12 @@ namespace System.Text.RegularExpressions
             return result;
         }
 
-        public static RegexCharClass Parse(string charClass) => ParseRecursive(charClass, 0);
-
-        private static RegexCharClass ParseRecursive(string charClass, int start)
+        public static RegexCharClass Parse(string charClass)
         {
             RegexCharClass? outermost = null;
             RegexCharClass? current = null;
 
-            int pos = start;
+            int pos = 0;
             while (true)
             {
                 int setLength = charClass[pos + SetLengthIndex];
@@ -1620,12 +1618,7 @@ namespace System.Text.RegularExpressions
         public string ToStringClass()
         {
             var vsb = new ValueStringBuilder(stackalloc char[256]);
-            ToStringClass(ref vsb);
-            return vsb.ToString();
-        }
 
-        private void ToStringClass(ref ValueStringBuilder vsb)
-        {
             RegexCharClass? current = this;
             do
             {
@@ -1669,6 +1662,8 @@ namespace System.Text.RegularExpressions
                 current = current._subtractor;
             }
             while (current is not null);
+
+            return vsb.ToString();
         }
 
         /// <summary>
