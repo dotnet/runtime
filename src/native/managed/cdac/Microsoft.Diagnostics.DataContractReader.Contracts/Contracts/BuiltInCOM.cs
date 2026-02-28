@@ -16,7 +16,6 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     }
 
     // Mirrors enum Masks in src/coreclr/vm/comcallablewrapper.h
-    // [cDAC] [BuiltInCOM]: Contract depends on this value
     private enum ComMethodTableFlags : ulong
     {
         LayoutComplete = 0x10,
