@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Microsoft.Diagnostics.Runtime;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -20,7 +19,33 @@ public class BuiltInCOMDumpTests : DumpTestBase
     protected override string DebuggeeName => "CCWInterfaces";
     protected override string DumpType => "full";
 
-    private const string ComObjectTypeName = "ComObject";
+    /// <summary>
+    /// Enumerates all strong GC handles from the dump, dereferences each one to get
+    /// the managed object address, then uses the Object contract to find objects that
+    /// have an active CCW. Returns a list of CCW pointers.
+    /// </summary>
+    private List<TargetPointer> GetCCWPointersFromHandles()
+    {
+        IGC gcContract = Target.Contracts.GC;
+        IObject objectContract = Target.Contracts.Object;
+
+        List<HandleData> strongHandles = gcContract.GetHandles([HandleType.Strong]);
+        List<TargetPointer> ccwPtrs = new();
+
+        foreach (HandleData handleData in strongHandles)
+        {
+            // Dereference the handle slot to get the object address.
+            TargetPointer objPtr = Target.ReadPointer(handleData.Handle);
+            if (objPtr == TargetPointer.Null)
+                continue;
+
+            bool hasCOM = objectContract.GetBuiltInComData(objPtr, out _, out TargetPointer ccwPtr);
+            if (hasCOM && ccwPtr != TargetPointer.Null)
+                ccwPtrs.Add(ccwPtr);
+        }
+
+        return ccwPtrs;
+    }
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
@@ -29,24 +54,12 @@ public class BuiltInCOMDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
-        IObject objectContract = Target.Contracts.Object;
 
-        using ClrRuntime runtime = CreateClrRuntime();
-        List<ClrObject> comObjects = runtime.Heap
-            .EnumerateObjects()
-            .Where(static o => o.Type?.Name == ComObjectTypeName)
-            .ToList();
+        List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
+        Assert.True(ccwPtrs.Count > 0, "Expected at least one object with an active CCW from strong handles");
 
-        Assert.True(comObjects.Count > 0, "Expected at least one ComObject instance in the heap");
-
-        bool foundCCW = false;
-        foreach (ClrObject clrObj in comObjects)
+        foreach (TargetPointer ccwPtr in ccwPtrs)
         {
-            bool hasCOM = objectContract.GetBuiltInComData(new TargetPointer(clrObj.Address), out _, out TargetPointer ccwPtr);
-            if (!hasCOM || ccwPtr == TargetPointer.Null)
-                continue;
-
-            foundCCW = true;
             List<COMInterfacePointerData> interfaces = builtInCOM.GetCCWInterfaces(ccwPtr).ToList();
 
             Assert.True(interfaces.Count > 0,
@@ -55,8 +68,6 @@ public class BuiltInCOMDumpTests : DumpTestBase
             // Non-slot-0 entries (from IComTestInterface) should have a valid MethodTable.
             Assert.Contains(interfaces, static i => i.MethodTable != TargetPointer.Null);
         }
-
-        Assert.True(foundCCW, "Expected at least one ComObject with an active CCW in the dump");
     }
 
     [ConditionalTheory]
@@ -66,18 +77,12 @@ public class BuiltInCOMDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
-        IObject objectContract = Target.Contracts.Object;
 
-        using ClrRuntime runtime = CreateClrRuntime();
-        bool foundCCW = false;
+        List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
+        Assert.True(ccwPtrs.Count > 0, "Expected at least one object with an active CCW from strong handles");
 
-        foreach (ClrObject clrObj in runtime.Heap.EnumerateObjects().Where(static o => o.Type?.Name == ComObjectTypeName))
+        foreach (TargetPointer ccwPtr in ccwPtrs)
         {
-            bool hasCOM = objectContract.GetBuiltInComData(new TargetPointer(clrObj.Address), out _, out TargetPointer ccwPtr);
-            if (!hasCOM || ccwPtr == TargetPointer.Null)
-                continue;
-
-            foundCCW = true;
             List<COMInterfacePointerData> interfaces = builtInCOM.GetCCWInterfaces(ccwPtr).ToList();
             Assert.True(interfaces.Count > 0, $"Expected at least one interface for CCW at 0x{ccwPtr:X}");
 
@@ -85,8 +90,6 @@ public class BuiltInCOMDumpTests : DumpTestBase
             // it always yields a null MethodTable to match the legacy DAC behavior.
             Assert.Equal(TargetPointer.Null, interfaces[0].MethodTable);
         }
-
-        Assert.True(foundCCW, "Expected at least one ComObject with an active CCW in the dump");
     }
 
     [ConditionalTheory]
@@ -96,23 +99,15 @@ public class BuiltInCOMDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
-        IObject objectContract = Target.Contracts.Object;
 
-        using ClrRuntime runtime = CreateClrRuntime();
-        bool foundCCW = false;
+        List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
+        Assert.True(ccwPtrs.Count > 0, "Expected at least one object with an active CCW from strong handles");
 
-        foreach (ClrObject clrObj in runtime.Heap.EnumerateObjects().Where(static o => o.Type?.Name == ComObjectTypeName))
+        foreach (TargetPointer ccwPtr in ccwPtrs)
         {
-            bool hasCOM = objectContract.GetBuiltInComData(new TargetPointer(clrObj.Address), out _, out TargetPointer ccwPtr);
-            if (!hasCOM || ccwPtr == TargetPointer.Null)
-                continue;
-
-            foundCCW = true;
             ulong refCount = builtInCOM.GetRefCount(ccwPtr);
             Assert.True(refCount > 0,
                 $"Expected positive ref count for CCW at 0x{ccwPtr:X}, got {refCount}");
         }
-
-        Assert.True(foundCCW, "Expected at least one ComObject with an active CCW in the dump");
     }
 }

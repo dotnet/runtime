@@ -18,6 +18,10 @@ internal static class Program
     // until the process crashes, so they are visible in the dump.
     private static readonly IntPtr[] s_comPointers = new IntPtr[ObjectCount];
 
+    // Strong GC handles so tests can discover the objects via handle enumeration
+    // using the GC contract instead of a heap scan.
+    private static readonly GCHandle[] s_gcHandles = new GCHandle[ObjectCount];
+
     private static void Main()
     {
         if (OperatingSystem.IsWindows())
@@ -25,6 +29,7 @@ internal static class Program
             for (int i = 0; i < ObjectCount; i++)
             {
                 var obj = new ComObject();
+                s_gcHandles[i] = GCHandle.Alloc(obj, GCHandleType.Normal);
                 s_comPointers[i] = Marshal.GetIUnknownForObject(obj);
             }
 
