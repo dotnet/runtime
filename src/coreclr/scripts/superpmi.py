@@ -3531,6 +3531,7 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
     write_jit_options(base_jit_options, diff_jit_options, write_fh)
 
     any_significant = False
+    metrics_with_diffs = set()
     for metric in METRIC_DIFF_METRICS:
         significant_diffs = [(mch, base, diff) for (mch, base, diff) in metric_diffs
                              if base[metric] != diff[metric]]
@@ -3538,6 +3539,7 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
             continue
 
         any_significant = True
+        metrics_with_diffs.add(metric)
         pcts = [compute_pct(base[metric], diff[metric]) for (_, base, diff) in significant_diffs
                 if base[metric] != 0]
         if pcts:
@@ -3564,6 +3566,8 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
 
     if include_details:
         for metric in METRIC_DIFF_METRICS:
+            if metric in metrics_with_diffs:
+                continue
             rows = [(mch, base[metric], diff[metric]) for (mch, base, diff) in metric_diffs
                     if base[metric] != 0 or diff[metric] != 0]
             if not rows:
