@@ -477,7 +477,7 @@ public class ComputeWasmPublishAssets : Task
             // Normalize to .dll when webcil is enabled since assetsToUpdateByFileName
             // keys are normalized to .dll (above) but RelatedAsset paths use .wasm.
             var relatedAssetFileName = Path.GetFileName(relatedAsset);
-            if (IsWebCilEnabled)
+            if (IsWebcilEnabled)
                 relatedAssetFileName = Path.ChangeExtension(relatedAssetFileName, ".dll");
             if (!assetsToUpdate.ContainsKey(relatedAsset)
                 && assetsToUpdateByFileName.TryGetValue(relatedAssetFileName, out var matchedKey))
@@ -543,7 +543,7 @@ public class ComputeWasmPublishAssets : Task
                 default:
                     // Satellite assembliess and compressed assets
                     TaskItem newAsset = CreatePromotedAsset(asset);
-                    UpdateRelatedAssetProperty(asset, newAsset, updatedAssetsMap, IsWebCilEnabled);
+                    UpdateRelatedAssetProperty(asset, newAsset, updatedAssetsMap, IsWebcilEnabled);
                     Log.LogMessage(MessageImportance.Low, "Promoting asset '{0}' to Publish asset.", asset.ItemSpec);
 
                     promotedAssets.Add(newAsset);
@@ -596,7 +596,7 @@ public class ComputeWasmPublishAssets : Task
         return runtimeAssetsToUpdate;
     }
 
-    private static void UpdateRelatedAssetProperty(ITaskItem asset, TaskItem newAsset, Dictionary<string, ITaskItem> updatedAssetsMap, bool isWebCilEnabled)
+    private static void UpdateRelatedAssetProperty(ITaskItem asset, TaskItem newAsset, Dictionary<string, ITaskItem> updatedAssetsMap, bool isWebcilEnabled)
     {
         var relatedAsset = asset.GetMetadata("RelatedAsset");
         if (!updatedAssetsMap.TryGetValue(relatedAsset, out var updatedRelatedAsset))
@@ -606,12 +606,12 @@ public class ComputeWasmPublishAssets : Task
             // Match by full filename (with extension) to avoid ambiguity between .dll/.pdb etc.
             // Normalize .wasm → .dll when webcil is enabled since keys use .dll extensions.
             var relatedFileName = Path.GetFileName(relatedAsset);
-            if (isWebCilEnabled)
+            if (isWebcilEnabled)
                 relatedFileName = Path.ChangeExtension(relatedFileName, ".dll");
             foreach (var kvp in updatedAssetsMap)
             {
                 var candidateFileName = Path.GetFileName(kvp.Key);
-                if (isWebCilEnabled)
+                if (isWebcilEnabled)
                     candidateFileName = Path.ChangeExtension(candidateFileName, ".dll");
                 if (string.Equals(candidateFileName, relatedFileName, StringComparison.OrdinalIgnoreCase))
                 {
