@@ -282,6 +282,13 @@ foreach ($pr in $candidates) {
     $failed = @($checks | Where-Object { $_.conclusion -eq "FAILURE" }).Count
     $running = @($checks | Where-Object { $_.status -eq "IN_PROGRESS" -or $_.status -eq "QUEUED" }).Count
 
+    # No Build Analysis check (non-runtime repos): infer CI from overall check results
+    if ($baConclusion -eq "ABSENT" -and $checks.Count -gt 0) {
+        if ($failed -gt 0) { $baConclusion = "FAILURE" }
+        elseif ($running -gt 0) { $baConclusion = "IN_PROGRESS" }
+        elseif ($passed -gt 0) { $baConclusion = "SUCCESS" }
+    }
+
     # --- DIMENSION SCORING ---
     $ciScore = switch ($baConclusion) { "SUCCESS" { 1.0 } "ABSENT" { 0.5 } "IN_PROGRESS" { 0.5 } default { 0.0 } }
     $stalenessScore = if ($daysSinceUpdate -le 3) { 1.0 } elseif ($daysSinceUpdate -le 14) { 0.5 } else { 0.0 }
@@ -397,27 +404,27 @@ foreach ($pr in $candidates) {
 
     # Why
     $why = @()
-    $why += if ($ciScore -eq 1) { "CI:pass" } elseif ($ciScore -eq 0) { "CI:fail" } else { "CI:pending" }
-    if ($conflictScore -eq 0) { $why += "Conflicts" }
-    if ($hasOwnerApproval) { $why += "OwnerApproved" }
-    elseif ($hasTriagerApproval) { $why += "TriagerApproved" }
-    elseif ($hasAnyApproval) { $why += "CommunityApproved" }
-    elseif ($hasAnyReview) { $why += "Reviewed(noAppr)" }
-    else { $why += "NoReview" }
-    if ($unresolvedThreads -gt 0) { $why += "${unresolvedThreads}unresolved" }
-    if ($totalThreads -gt 15) { $why += "Heavy discussion(${totalThreads}threads/${distinctCommenters}people)" }
-    elseif ($totalThreads -gt 5) { $why += "Moderate discussion(${totalThreads}threads)" }
-    if ($isCommunity) { $why += "Community" }
-    if ($sizeScore -eq 1) { $why += "Small" }
-    elseif ($sizeScore -eq 0) { $why += "Large($($pr.changedFiles)f/$($totalLines)L)" }
-    if ($daysSinceUpdate -gt 14) { $why += "Stale($([int]$daysSinceUpdate)d)" }
-    if ($ageInDays -gt 90) { $why += "Old($([int]$ageInDays)d)" }
-    $whyStr = $why -join ", "
+    $why += if ($ciScore -eq 1) { "✅ CI passed" } elseif ($ciScore -eq 0) { "❌ CI failing" } else { "🟡 CI pending" }
+    if ($conflictScore -eq 0) { $why += "⚠️ has conflicts" }
+    if ($hasOwnerApproval) { $why += "👍 owner approved" }
+    elseif ($hasTriagerApproval) { $why += "👍 triager approved" }
+    elseif ($hasAnyApproval) { $why += "👍 approved (non-owner)" }
+    elseif ($hasAnyReview) { $why += "👀 reviewed, not approved" }
+    else { $why += "🔍 no review yet" }
+    if ($unresolvedThreads -gt 0) { $why += "💬 $unresolvedThreads unresolved" }
+    if ($totalThreads -gt 15) { $why += "🗨️ busy ($totalThreads threads, $distinctCommenters people)" }
+    elseif ($totalThreads -gt 5) { $why += "🗨️ active ($totalThreads threads)" }
+    if ($isCommunity) { $why += "🌐 community" }
+    if ($sizeScore -eq 1) { $why += "📦 small change" }
+    elseif ($sizeScore -eq 0) { $why += "📦 large ($($pr.changedFiles) files, $($totalLines) lines)" }
+    if ($daysSinceUpdate -gt 14) { $why += "⏳ stale ($([int]$daysSinceUpdate)d)" }
+    if ($ageInDays -gt 90) { $why += "🕰️ old ($([int]$ageInDays)d)" }
+    $whyStr = $why -join " · "
 
     $results += [PSCustomObject]@{
         number = $n
         title = $pr.title.Substring(0, [Math]::Min(70, $pr.title.Length))
-        author = $pr.author.login
+        author = if ($isCommunity) { "🌐$($pr.author.login)" } else { $pr.author.login }
         score = $composite
         ci = $baConclusion
         ci_detail = "$passed/$failed/$running"
