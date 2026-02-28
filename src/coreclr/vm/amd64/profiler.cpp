@@ -324,7 +324,19 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
     _ASSERTE(regStructOfs < ARGUMENTREGISTERS_SIZE);
 
     _ASSERTE(IS_ALIGNED(regStructOfs, sizeof(SLOT)));
-    if (argType == ELEMENT_TYPE_R4 || argType == ELEMENT_TYPE_R8)
+
+    bool isFloatArg = (argType == ELEMENT_TYPE_R4 || argType == ELEMENT_TYPE_R8);
+#ifdef TARGET_XARCH
+    if (!isFloatArg && argType == ELEMENT_TYPE_VALUETYPE)
+    {
+        TypeHandle argTypeHandle;
+        m_argIterator.GetArgType(&argTypeHandle);
+        if (argTypeHandle.IsNativeHalfType())
+            isFloatArg = true;
+    }
+#endif // TARGET_XARCH
+
+    if (isFloatArg)
     {
         return (LPBYTE)&pData->flt0 + regStructOfs;
     }
@@ -498,7 +510,13 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
     }
 #endif // UNIX_AMD64_ABI
 
-    if (ELEMENT_TYPE_R4 == t || ELEMENT_TYPE_R8 == t)
+    bool isFloatReturn = (ELEMENT_TYPE_R4 == t || ELEMENT_TYPE_R8 == t);
+#ifdef TARGET_XARCH
+    if (!isFloatReturn && ELEMENT_TYPE_VALUETYPE == t && thReturnType.IsNativeHalfType())
+        isFloatReturn = true;
+#endif // TARGET_XARCH
+
+    if (isFloatReturn)
     {
         pData->rax = pData->flt0;
     }

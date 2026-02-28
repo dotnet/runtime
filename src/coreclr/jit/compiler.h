@@ -4725,6 +4725,11 @@ protected:
 
     NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+
+    NamedIntrinsic lookupHalfIntrinsic(NamedIntrinsic ni);
+    NamedIntrinsic lookupHalfConversionIntrinsic(var_types fromType, var_types toType);
+    int lookupHalfRoundingMode(NamedIntrinsic ni);
+
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -5925,6 +5930,7 @@ public:
     // Returns true if the provided type should be treated as a primitive type
     // for the unmanaged calling conventions.
     bool isNativePrimitiveStructType(CORINFO_CLASS_HANDLE clsHnd);
+    bool isNativeHalfStructType(CORINFO_CLASS_HANDLE clsHnd);
 
     enum structPassingKind
     {
@@ -9965,8 +9971,11 @@ public:
 
     // Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many
     // structs will fit the criteria.
-    bool structSizeMightRepresentSIMDType(size_t structSize)
+    bool structSizeMightRepresentAcceleratedType(size_t structSize)
     {
+        if (structSize == 2)
+            return true;
+
 #ifdef FEATURE_SIMD
         return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
 #else

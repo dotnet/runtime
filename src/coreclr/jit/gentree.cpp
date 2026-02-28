@@ -8218,6 +8218,7 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
             return gtNewLconNode(0);
         }
 
+        case TYP_HALF:
         case TYP_FLOAT:
         case TYP_DOUBLE:
         {
@@ -23245,6 +23246,17 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types type,
                 break;
             }
 
+            case TYP_HALF:
+            {
+                float16_t cnsVal = FloatingPointUtils::convertDoubleToFloat16(op1->AsDblCon()->DconValue());
+
+                for (unsigned i = 0; i < (simdSize / 2); i++)
+                {
+                    vecCon->gtSimdVal.f16[i] = cnsVal;
+                }
+                break;
+            }
+
             case TYP_FLOAT:
             {
                 float cnsVal = static_cast<float>(op1->AsDblCon()->DconValue());
@@ -27422,12 +27434,12 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(
 //
 GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize)
 {
-    assert(varTypeIsArithmetic(type));
+    assert(varTypeIsArithmetic(type) || TypeGet(type) == TYP_HALF);
 
     assert(op1 != nullptr);
     assert(varTypeIsSIMD(op1));
 
-    assert(varTypeIsArithmetic(simdBaseType));
+    assert(varTypeIsArithmetic(simdBaseType) || TypeGet(simdBaseType) == TYP_HALF);
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
@@ -28776,6 +28788,7 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_FusedMultiplySubtractNegated:
         case NI_AVX512_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512_FusedMultiplySubtractScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
         {
             return numArgs == 4;
         }
@@ -28793,6 +28806,13 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_X64_ConvertScalarToVector128Double:
         case NI_AVX512_X64_ConvertScalarToVector128Single:
 #endif // TARGET_AMD64
+        case NI_AVX10v1_AddScalar:
+        case NI_AVX10v1_DivideScalar:
+        case NI_AVX10v1_MultiplyScalar:
+        case NI_AVX10v1_SubtractScalar:
+        case NI_AVX10v1_ConvertScalarToVector128Half:
+        case NI_AVX10v1_ConvertScalarToVector128Single:
+        case NI_AVX10v1_ConvertScalarToVector128Double:
         {
             return numArgs == 3;
         }
@@ -28809,9 +28829,13 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512_ConvertToVector512UInt32:
         case NI_AVX512_ConvertToVector512UInt64:
         case NI_AVX512_Sqrt:
+        case NI_AVX10v1_ConvertToInt32:
+        case NI_AVX10v1_ConvertToUInt32:
 #if defined(TARGET_AMD64)
         case NI_AVX512_X64_ConvertToInt64:
         case NI_AVX512_X64_ConvertToUInt64:
+        case NI_AVX10v1_ConvertToInt64:
+        case NI_AVX10v1_ConvertToUInt64:
 #endif // TARGET_AMD64
         case NI_AVX10v2_ConvertToSByteWithSaturationAndZeroExtendToInt32:
         case NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32:

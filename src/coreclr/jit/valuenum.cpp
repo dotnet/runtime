@@ -437,6 +437,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_handleMap(nullptr)
     , m_embeddedToCompileTimeHandleMap(alloc)
     , m_fieldAddressToFieldSeqMap(alloc)
+    , m_halfCnsMap(nullptr)
     , m_floatCnsMap(nullptr)
     , m_doubleCnsMap(nullptr)
     , m_byrefCnsMap(nullptr)
@@ -1679,6 +1680,9 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                 case TYP_INT:
                     m_defs = new (alloc) Alloc<TYP_INT>::Type[ChunkSize];
                     break;
+                case TYP_HALF:
+                    m_defs = new (alloc) Alloc<TYP_HALF>::Type[ChunkSize];
+                    break;
                 case TYP_FLOAT:
                     m_defs = new (alloc) Alloc<TYP_FLOAT>::Type[ChunkSize];
                     break;
@@ -1860,6 +1864,11 @@ ValueNum ValueNumStore::VNForIntPtrCon(ssize_t cnsVal)
 ValueNum ValueNumStore::VNForLongCon(INT64 cnsVal)
 {
     return VnForConst(cnsVal, GetLongCnsMap(), TYP_LONG);
+}
+
+ValueNum ValueNumStore::VNForHalfCon(float16_t cnsVal)
+{
+    return VnForConst(cnsVal, GetHalfCnsMap(), TYP_HALF);
 }
 
 ValueNum ValueNumStore::VNForFloatCon(float cnsVal)
@@ -2135,6 +2144,8 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         case TYP_LONG:
         case TYP_ULONG:
             return VNForLongCon(0);
+        case TYP_HALF:
+            return VNForHalfCon(static_cast<float16_t>(0));
         case TYP_FLOAT:
             return VNForFloatCon(0.0f);
         case TYP_DOUBLE:
@@ -3848,7 +3859,7 @@ ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_ty
         structSize = m_compiler->info.compCompHnd->getClassSize(structHnd);
 
         // We have to normalize here since there is no CorInfoType for vectors...
-        if (m_compiler->structSizeMightRepresentSIMDType(structSize))
+        if (m_compiler->structSizeMightRepresentAcceleratedType(structSize))
         {
             fieldType = m_compiler->impNormStructType(structHnd);
         }
