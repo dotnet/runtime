@@ -708,12 +708,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [nameof(TOuter),
                 "Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
                 "TMethods",
-                "Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields, TMethods>()"], Tool.Analyzer, "")]
+                "Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields, TMethods>()"], Tool.Analyzer, "https://github.com/dotnet/runtime/issues/95121")]
             [ExpectedWarning("IL2091",
                 ["'TOuter'",
                 "Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter",
                 "'TMethods'",
-                "Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams"], Tool.Trimmer | Tool.NativeAot, "")]
+                "Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams"], Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
             public static void StaticPartialInstantiationUnrecognized()
             {
                 StaticRequiresMultipleGenericParams<TestType, TOuter>();
@@ -840,13 +840,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             rucType.VirtualMethodRequiresPublicMethods<T>();
         }
 
-        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
         static void TestInstanceMethodOnValueType<T>()
         {
             default(RequiresParameterlessCtor<T>).Do();
         }
 
-        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
         static void TestValueTypeBox<T>()
         {
             if (default(RequiresParameterlessCtor<T>) is IRequireParameterlessCtor<T> i)
@@ -855,7 +855,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
-        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
         static void TestMkrefAny<T>()
         {
             RequiresParameterlessCtor<T> val = default;
@@ -863,7 +863,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // This is a potential box operation, e.g. TypedReference.ToObject(tr);
         }
 
-        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2091", "RequiresParameterlessCtor", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95121")]
         static void TestInArray<T>()
         {
             var arr = new RequiresParameterlessCtor<T>[1];

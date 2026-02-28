@@ -464,7 +464,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         class InvalidFeatureGuards
         {
-            [ExpectedWarning("IL4001", Tool.Analyzer, "")]
+            [ExpectedWarning("IL4001", Tool.Analyzer, "Analyzer limitation with feature guards")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static int NonBooleanProperty => 0;
 
@@ -475,7 +475,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4001", Tool.Analyzer, "")]
+            [ExpectedWarning("IL4001", Tool.Analyzer, "Analyzer limitation with feature guards")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             bool NonStaticProperty => true;
 
@@ -497,7 +497,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     RequiresUnreferencedCode();
             }
 
-            [ExpectedWarning("IL4001", Tool.Analyzer, "")]
+            [ExpectedWarning("IL4001", Tool.Analyzer, "Analyzer limitation with feature guards")]
             [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
             static bool GetAndSetProperty { get => true; set => throw null; }
 

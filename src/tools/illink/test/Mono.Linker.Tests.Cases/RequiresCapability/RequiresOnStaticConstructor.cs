@@ -70,8 +70,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
         class StaticCtorForRunClassConstructorWithRequires
         {
             [ExpectedWarning("IL2116")]
-            [ExpectedWarning("IL3004", Tool.Analyzer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3056", Tool.Analyzer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL3004", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3056", Tool.Analyzer | Tool.NativeAot, "NativeAOT specific warning")]
             [RequiresUnreferencedCode("Message for --StaticCtorOnTypeWithRequires--")]
             [RequiresAssemblyFiles("Message for --StaticCtorOnTypeWithRequires--")]
             [RequiresDynamicCode("Message for --StaticCtorOnTypeWithRequires--")]
@@ -146,9 +146,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
         class TypeIsBeforeFieldInit
         {
-            [ExpectedWarning("IL2026", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", Tool.Analyzer, "")]
-            [ExpectedWarning("IL3002", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", Tool.Analyzer, "")]
-            [ExpectedWarning("IL3050", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", Tool.Analyzer, "")]
+            [ExpectedWarning("IL2026", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", Tool.Analyzer, "Analyzer does not support compiler-generated code warning suppression")]
+            [ExpectedWarning("IL3002", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", Tool.Analyzer, "Analyzer-specific behavior")]
+            [ExpectedWarning("IL3050", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", Tool.Analyzer, "Analyzer-specific behavior")]
             public static int field = AnnotatedMethod();
 
             [RequiresUnreferencedCode("Message from --TypeIsBeforeFieldInit.AnnotatedMethod--")]

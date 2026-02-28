@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
     [LogContains("Duplicate preserve of 'Mono.Linker.Tests.Cases.LinkXml.LinkXmlErrorCases.TypeWithEverything.Property.set'", ProducedBy = Tool.Trimmer)]
     // NativeAOT doesn't support wildcard * and will skip usages of it, including if they would warn
     // https://github.com/dotnet/runtime/issues/80466
-    [ExpectedWarning("IL2100", Tool.Trimmer, "", FileName = "LinkXmlErrorCases.xml", SourceLine = 50, SourceColumn = 4)]
+    [ExpectedWarning("IL2100", Tool.Trimmer, "Trimmer-specific XML processing", FileName = "LinkXmlErrorCases.xml", SourceLine = 50, SourceColumn = 4)]
     class LinkXmlErrorCases
     {
         public static void Main()

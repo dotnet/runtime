@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
             }
 
-            [ExpectedWarning("IL3050", Tool.Analyzer, "")]
+            [ExpectedWarning("IL3050", Tool.Analyzer, "Analyzer-specific behavior")]
             [ExpectedWarning("IL2091", "'T'")]
             public static void Test<T>()
             {

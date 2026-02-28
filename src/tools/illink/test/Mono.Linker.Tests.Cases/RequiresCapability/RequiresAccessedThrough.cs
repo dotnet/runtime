@@ -60,8 +60,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--GenericType.RequiresOnlyThroughReflection--")]
-            [ExpectedWarning("IL3002", "--GenericType.RequiresOnlyThroughReflection--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--GenericType.RequiresOnlyThroughReflection--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--GenericType.RequiresOnlyThroughReflection--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--GenericType.RequiresOnlyThroughReflection--", Tool.NativeAot, "NativeAOT specific warning")]
             public static void Test()
             {
                 typeof(AccessedThroughReflectionOnGenericType<T>)
@@ -105,7 +105,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             static extern PInvokeReturnType PInvokeReturnsType();
 
             // Analyzer doesn't support IL2050 yet
-            [ExpectedWarning("IL2050", Tool.Trimmer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL2050", Tool.Trimmer | Tool.NativeAot, "ldtoken pattern not tracked by Trimmer/NativeAOT")]
             public static void Test()
             {
                 PInvokeReturnsType();
@@ -222,11 +222,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL2026", "--PropertyWithLdToken.get--")]
-            [ExpectedWarning("IL2026", "--PropertyWithLdToken.get--", Tool.Trimmer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL2026", "--PropertyWithLdToken.get--", Tool.Trimmer | Tool.NativeAot, "ldtoken pattern not tracked by Trimmer/NativeAOT")]
             [ExpectedWarning("IL3002", "--PropertyWithLdToken.get--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
-            [ExpectedWarning("IL3002", "--PropertyWithLdToken.get--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3002", "--PropertyWithLdToken.get--", Tool.NativeAot, "NativeAOT specific warning")]
             [ExpectedWarning("IL3050", "--PropertyWithLdToken.get--", Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
-            [ExpectedWarning("IL3050", "--PropertyWithLdToken.get--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3050", "--PropertyWithLdToken.get--", Tool.NativeAot, "NativeAOT specific warning")]
             static void TestPropertyLdToken()
             {
                 Expression<Func<bool>> getter = () => PropertyWithLdToken;
@@ -340,15 +340,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 private static void MethodRequires() { }
             }
 
-            [ExpectedWarning("IL2026", "--Target.MethodRequires--", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3002", "--Target.MethodRequires--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--Target.MethodRequires--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL2026", "--Target.MethodRequires--", Tool.Trimmer | Tool.NativeAot, "ldtoken pattern not tracked by Trimmer/NativeAOT")]
+            [ExpectedWarning("IL3002", "--Target.MethodRequires--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--Target.MethodRequires--", Tool.NativeAot, "NativeAOT specific warning")]
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
             extern static void MethodRequires(Target target);
 
-            [ExpectedWarning("IL2026", "--Target..ctor--", Tool.Trimmer | Tool.NativeAot, "")]
-            [ExpectedWarning("IL3002", "--Target..ctor--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "--Target..ctor--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL2026", "--Target..ctor--", Tool.Trimmer | Tool.NativeAot, "ldtoken pattern not tracked by Trimmer/NativeAOT")]
+            [ExpectedWarning("IL3002", "--Target..ctor--", Tool.NativeAot, "NativeAOT specific warning")]
+            [ExpectedWarning("IL3050", "--Target..ctor--", Tool.NativeAot, "NativeAOT specific warning")]
             [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
             extern static Target Constructor(int i);
 
@@ -366,22 +366,22 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 private int InstanceField;
             }
 
-            [ExpectedWarning("IL2026", "--TargetWitRequires--", Tool.Trimmer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL2026", "--TargetWitRequires--", Tool.Trimmer | Tool.NativeAot, "ldtoken pattern not tracked by Trimmer/NativeAOT")]
             [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
             extern static TargetWithRequires TargetRequiresConstructor();
 
-            [ExpectedWarning("IL2026", "--TargetWitRequires--", Tool.Trimmer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL2026", "--TargetWitRequires--", Tool.Trimmer | Tool.NativeAot, "ldtoken pattern not tracked by Trimmer/NativeAOT")]
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "StaticMethod")]
             extern static void TargetRequiresStaticMethod(TargetWithRequires target);
 
             // For trimmer this is a reflection access to an instance method - and as such it must warn (since it's in theory possible
             // to invoke the method via reflection on a null instance)
             // For NativeAOT this is a direct call to an instance method (there's no reflection involved) and as such it doesn't need to warn
-            [ExpectedWarning("IL2026", "--TargetWitRequires--", Tool.Trimmer, "")]
+            [ExpectedWarning("IL2026", "--TargetWitRequires--", Tool.Trimmer, "ldtoken pattern not tracked by Trimmer")]
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "InstanceMethod")]
             extern static void TargetRequiresInstanceMethod(TargetWithRequires target);
 
-            [ExpectedWarning("IL2026", "--TargetWitRequires--", Tool.Trimmer | Tool.NativeAot, "")]
+            [ExpectedWarning("IL2026", "--TargetWitRequires--", Tool.Trimmer | Tool.NativeAot, "ldtoken pattern not tracked by Trimmer/NativeAOT")]
             [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "StaticField")]
             extern static ref int TargetRequiresStaticField(TargetWithRequires target);
 
