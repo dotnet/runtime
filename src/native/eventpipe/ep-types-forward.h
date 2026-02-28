@@ -10,6 +10,8 @@
 typedef struct _EventData EventData;
 typedef struct _EventFilterDescriptor EventFilterDescriptor;
 typedef struct _EventPipeBuffer EventPipeBuffer;
+typedef struct _EventPipeBufferHeaderGuard EventPipeBufferHeaderGuard;
+typedef struct _EventPipeBufferFooterGuard EventPipeBufferFooterGuard;
 typedef struct _EventPipeBufferList EventPipeBufferList;
 typedef struct _EventPipeBufferManager EventPipeBufferManager;
 typedef struct _EventPipeBlock EventPipeBlock;
@@ -77,6 +79,19 @@ typedef enum {
 	EP_BUFFER_STATE_WRITABLE = 0,
 	EP_BUFFER_STATE_READ_ONLY = 1
 } EventPipeBufferState;
+
+typedef enum {
+	EP_BUFFER_GUARD_LEVEL_NONE = 0,
+	EP_BUFFER_GUARD_LEVEL_PROTECT_ON_READONLY = 1,
+	EP_BUFFER_GUARD_LEVEL_PROTECT_OUTSIDE_WRITES = 2,
+	EP_BUFFER_GUARD_LEVEL_MAX = EP_BUFFER_GUARD_LEVEL_PROTECT_OUTSIDE_WRITES
+} EventPipeBufferGuardLevel;
+
+// Follows inc/pal.h
+typedef enum {
+	EP_PAGE_PROTECTION_READONLY = 2,
+	EP_PAGE_PROTECTION_READWRITE = 4
+} EventPipePageProtection;
 
 typedef enum {
 	EP_EVENT_LEVEL_LOGALWAYS,

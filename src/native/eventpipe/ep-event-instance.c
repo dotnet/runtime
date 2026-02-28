@@ -132,7 +132,7 @@ ep_event_instance_get_aligned_total_size (
 	if (format == EP_SERIALIZATION_FORMAT_NETPERF_V3) {
 		payload_len =
 			// Metadata ID
-			sizeof (ep_event_instance->metadata_id) +
+			sizeof (uint32_t) +
 			// Thread ID
 			sizeof (uint32_t) +
 			// TimeStamp
@@ -152,7 +152,7 @@ ep_event_instance_get_aligned_total_size (
 	} else if (format == EP_SERIALIZATION_FORMAT_NETTRACE_V4) {
 		payload_len =
 			// Metadata ID
-			sizeof (ep_event_instance->metadata_id) +
+			sizeof (uint32_t) +
 			// Sequence number (implied by the buffer containing the event instance)
 			sizeof (uint32_t) +
 			// Thread ID
