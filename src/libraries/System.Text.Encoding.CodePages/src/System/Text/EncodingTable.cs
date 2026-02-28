@@ -37,7 +37,6 @@ namespace System.Text
             if (name is null)
                 return 0;
 
-            // ConcurrentDictionary provides a lock-free fast read path.
             if (s_nameToCodePageCache.TryGetValue(name, out int codePage))
                 return codePage;
 
@@ -135,7 +134,6 @@ namespace System.Text
             if ((uint)codePage > ushort.MaxValue)
                 return null;
 
-            // ConcurrentDictionary provides a lock-free fast read path.
             if (cache.TryGetValue(codePage, out string? cachedName))
                 return cachedName;
 
