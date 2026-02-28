@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
@@ -71,11 +72,9 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, guid.Length));
             if (guidLength > guid.Length - offset)
                 throw new ArgumentException(SR.Format(SR.XmlArrayTooSmallInput, guidLength), nameof(guid));
-            fixed (byte* pb = &guid[offset])
-            {
-                _idLow = UnsafeGetInt64(pb);
-                _idHigh = UnsafeGetInt64(&pb[8]);
-            }
+
+            _idHigh = BinaryPrimitives.ReadInt64LittleEndian(guid.AsSpan(offset + 8, 8));
+            _idLow = BinaryPrimitives.ReadInt64LittleEndian(guid.AsSpan(offset, 8));
         }
 
         public unsafe UniqueId(string value)
@@ -155,7 +154,7 @@ namespace System.Xml
                 return;
             }
 
-            byte* bytes = stackalloc byte[guidLength];
+            Span<byte> bytes = stackalloc byte[guidLength];
 
             int i = 0;
             int j = 0;
@@ -190,8 +189,8 @@ namespace System.Xml
                 if (j >= 0x100)
                     return;
 
-                _idLow = UnsafeGetInt64(bytes);
-                _idHigh = UnsafeGetInt64(&bytes[8]);
+                _idLow = BinaryPrimitives.ReadInt64LittleEndian(bytes);
+                _idHigh = BinaryPrimitives.ReadInt64LittleEndian(bytes.Slice(8, 8));
             }
         }
 
@@ -220,22 +219,15 @@ namespace System.Xml
             }
             else
             {
-                byte* bytes = stackalloc byte[guidLength];
-                UnsafeSetInt64(_idLow, bytes);
-                UnsafeSetInt64(_idHigh, &bytes[8]);
+                Span<byte> bytes = stackalloc byte[guidLength];
+                BinaryPrimitives.WriteInt64LittleEndian(bytes, _idLow);
+                BinaryPrimitives.WriteInt64LittleEndian(bytes.Slice(8, 8), _idHigh);
+                "urn:uuid:".CopyTo(chars);
 
                 fixed (char* _pch = &chars[0])
                 {
                     char* pch = _pch;
-                    pch[0] = 'u';
-                    pch[1] = 'r';
-                    pch[2] = 'n';
-                    pch[3] = ':';
-                    pch[4] = 'u';
-                    pch[5] = 'u';
-                    pch[6] = 'i';
-                    pch[7] = 'd';
-                    pch[8] = ':';
+
                     pch[17] = '-';
                     pch[22] = '-';
                     pch[27] = '-';
@@ -288,12 +280,8 @@ namespace System.Xml
             if (guidLength > buffer.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(buffer), SR.Format(SR.XmlArrayTooSmallOutput, guidLength));
 
-            fixed (byte* pb = &buffer[offset])
-            {
-                UnsafeSetInt64(_idLow, pb);
-                UnsafeSetInt64(_idHigh, &pb[8]);
-            }
-
+            BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(offset + 8, 8), _idHigh);
+            BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(offset, 8), _idLow);
             return true;
         }
 
@@ -337,42 +325,6 @@ namespace System.Xml
             {
                 return ToString().GetHashCode();
             }
-        }
-
-        private unsafe long UnsafeGetInt64(byte* pb)
-        {
-            int idLow = UnsafeGetInt32(pb);
-            int idHigh = UnsafeGetInt32(&pb[4]);
-            return (((long)idHigh) << 32) | ((uint)idLow);
-        }
-
-        private unsafe int UnsafeGetInt32(byte* pb)
-        {
-            int value = pb[3];
-            value <<= 8;
-            value |= pb[2];
-            value <<= 8;
-            value |= pb[1];
-            value <<= 8;
-            value |= pb[0];
-            return value;
-        }
-
-        private unsafe void UnsafeSetInt64(long value, byte* pb)
-        {
-            UnsafeSetInt32((int)value, pb);
-            UnsafeSetInt32((int)(value >> 32), &pb[4]);
-        }
-
-        private unsafe void UnsafeSetInt32(int value, byte* pb)
-        {
-            pb[0] = (byte)value;
-            value >>= 8;
-            pb[1] = (byte)value;
-            value >>= 8;
-            pb[2] = (byte)value;
-            value >>= 8;
-            pb[3] = (byte)value;
         }
     }
 }
