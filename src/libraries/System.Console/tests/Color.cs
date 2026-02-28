@@ -51,31 +51,33 @@ public class Color
         Assert.Throws<PlatformNotSupportedException>(() => Console.BackgroundColor = ConsoleColor.Red);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void RedirectedOutputDoesNotUseAnsiSequences()
     {
-        // Make sure that redirecting to a memory stream causes Console not to write out the ANSI sequences
-
-        Helpers.RunInRedirectedOutput((data) =>
+        // Run in a child process with redirected stdout so that no in-process
+        // test framework output (e.g. xunit skip messages) can pollute the stream.
+        var startInfo = new ProcessStartInfo { RedirectStandardOutput = true };
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
         {
-            Console.Write('1');
+            Console.Write("1");
             Console.ForegroundColor = ConsoleColor.Blue;
-            Console.Write('2');
+            Console.Write("2");
             Console.BackgroundColor = ConsoleColor.Red;
-            Console.Write('3');
+            Console.Write("3");
             Console.ResetColor();
-            Console.Write('4');
+            Console.Write("4");
+        }, new RemoteInvokeOptions { StartInfo = startInfo });
 
-            Assert.Equal(0, Encoding.UTF8.GetString(data.ToArray()).ToCharArray().Count(c => c == Esc));
-            Assert.Equal("1234", Encoding.UTF8.GetString(data.ToArray()));
-        });
+        string capturedOutput = handle.Process.StandardOutput.ReadToEnd();
+        Assert.DoesNotContain(Esc.ToString(), capturedOutput);
+        Assert.Equal("1234", capturedOutput);
     }
 
     public static bool TermIsSetAndRemoteExecutorIsSupported
         => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TERM")) && RemoteExecutor.IsSupported;
 
-    [ConditionalTheory(nameof(TermIsSetAndRemoteExecutorIsSupported))]
+    [ConditionalTheory(typeof(Color), nameof(TermIsSetAndRemoteExecutorIsSupported))]
     [PlatformSpecific(TestPlatforms.AnyUnix)]
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "1", null, null, true)]
