@@ -1,8 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.IO;
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,9 +13,13 @@ namespace System.Diagnostics.Tests
     [PlatformSpecific(TestPlatforms.Windows)]
     public partial class SafeProcessHandleTests
     {
-        private static ProcessStartOptions CreateTenSecondSleep() => PlatformDetection.IsWindowsNanoServer
+        // On Windows:
+        // - timeout utility requires non-redirected STD IN (to handle Ctrl+C). We can't use it in CI.
+        // - powershell is not available on Nano. We can't always use it.
+        // - ping seems to be a workaround, but it's simple and work everywhere. The arguments are set to make it sleep for approximately 10 seconds.
+        private static ProcessStartOptions CreateTenSecondSleep() => OperatingSystem.IsWindows()
             ? new("ping") { Arguments = { "127.0.0.1", "-n", "11" } }
-            : new("powershell") { Arguments = { "-InputFormat", "None", "-Command", "Start-Sleep 10" } };
+            : new("sleep") { Arguments = { "10" } };
 
         [Fact]
         public static void Start_WithNoArguments_Succeeds()
@@ -301,6 +304,112 @@ namespace System.Diagnostics.Tests
             using SafeProcessHandle handle = SafeProcessHandle.Open(currentPid);
 
             Assert.False(handle.IsInvalid);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(PosixSignal.SIGINT)]
+        [InlineData(PosixSignal.SIGQUIT)]
+        public void Signal_TerminatesProcessInNewProcessGroup(PosixSignal signal)
+        {
+            ProcessStartOptions options = CreateTenSecondSleep();
+            options.CreateNewProcessGroup = true;
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+
+            bool hasExited = processHandle.TryWaitForExit(TimeSpan.Zero, out _);
+            Assert.False(hasExited, "Process should still be running before signal is sent");
+
+            processHandle.Signal(signal);
+
+            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(3000));
+
+            Assert.NotEqual(0, exitStatus.ExitCode);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Signal_UnsupportedSignal_ThrowsArgumentException()
+        {
+            ProcessStartOptions options = CreateTenSecondSleep();
+            options.CreateNewProcessGroup = true;
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+
+            try
+            {
+                Assert.Throws<ArgumentException>(() => processHandle.Signal(PosixSignal.SIGTERM));
+            }
+            finally
+            {
+                processHandle.Kill();
+                processHandle.WaitForExit();
+            }
+        }
+
+        [Fact]
+        public void CreateNewProcessGroup_CanBeSetToTrue()
+        {
+            ProcessStartOptions options = new("cmd.exe")
+            {
+                Arguments = { "/c", "echo test" },
+                CreateNewProcessGroup = true
+            };
+
+            Assert.True(options.CreateNewProcessGroup);
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(5));
+            Assert.Equal(0, exitStatus.ExitCode);
+        }
+
+        [ConditionalTheory]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task WaitForExitOrKill_KillsProcessGroup_WhenAvailable(bool createNewProcessGroup, bool useAsync)
+        {
+            // Start a shell (child) that spawns long-running process (grandchild).
+            // The grandchild will inherit the file handle and keep it open.
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe")
+                {
+                    Arguments = { "/c", "ping", "127.0.0.1", "-n", "11" },
+                }
+                : new("sh")
+                {
+                    Arguments = { "-c", "sleep 10 & wait" },
+                };
+
+            options.CreateNewProcessGroup = createNewProcessGroup;
+
+            // Create a pipe that will be inherited by the child process.
+            using AnonymousPipeServerStream server = new(PipeDirection.In);
+            options.InheritedHandles.Add(server.ClientSafePipeHandle);
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+            server.ClientSafePipeHandle.Dispose(); // close the parent copy
+
+            // The pipe is currently opened by the child and grand child process.
+            Task<int> readTask = server.ReadAsync(new byte[1], 0, 1);
+            Assert.False(readTask.IsCompleted);
+
+            TimeSpan timeout = TimeSpan.FromMilliseconds(300);
+            using CancellationTokenSource cts = new(timeout);
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            ProcessExitStatus exitStatus = useAsync
+                ? await processHandle.WaitForExitOrKillOnCancellationAsync(cts.Token)
+                : processHandle.WaitForExitOrKillOnTimeout(timeout);
+
+            Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(250), TimeSpan.FromMilliseconds(2000));
+            Assert.NotEqual(0, exitStatus.ExitCode);
+
+            // If process group was used, entire process tree was killed,
+            // the last handle to the pipe was closed and EOF was reported.
+            Task finishedTask = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromMilliseconds(300))); // give some time for the pipe to be closed
+            Assert.Equal(createNewProcessGroup, finishedTask == readTask);
+            Assert.Equal(createNewProcessGroup, readTask.IsCompleted);
         }
     }
 }
