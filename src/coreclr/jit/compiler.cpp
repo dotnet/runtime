@@ -6546,6 +6546,7 @@ void Compiler::compCompileFinish()
         printf(" %s\n", eeGetMethodFullName(info.compMethodHnd));
         printf(""); // in our logic this causes a flush
     }
+#endif // DEBUG
 
     JITDUMP("Final metrics:\n");
     if (JitConfig.JitReportMetrics())
@@ -6554,6 +6555,7 @@ void Compiler::compCompileFinish()
     }
     DBEXEC(verbose, Metrics.dump());
 
+#if defined(DEBUG)
     if (verbose)
     {
         printf("\n****** DONE compiling %s\n", info.compFullName);
