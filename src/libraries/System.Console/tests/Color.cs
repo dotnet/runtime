@@ -67,17 +67,15 @@ public class Color
             Console.ResetColor();
             Console.Write('4');
 
-            Console.Out.Flush();
-            string outputText = Encoding.UTF8.GetString(data.ToArray());
-            Assert.Equal(0, outputText.Count(c => c == Esc));
-            Assert.Equal("1234", outputText);
+            Assert.Equal(0, Encoding.UTF8.GetString(data.ToArray()).ToCharArray().Count(c => c == Esc));
+            Assert.Equal("1234", Encoding.UTF8.GetString(data.ToArray()));
         });
     }
 
     public static bool TermIsSetAndRemoteExecutorIsSupported
         => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("TERM")) && RemoteExecutor.IsSupported;
 
-    [ConditionalTheory(typeof(Color), nameof(TermIsSetAndRemoteExecutorIsSupported))]
+    [ConditionalTheory(nameof(TermIsSetAndRemoteExecutorIsSupported))]
     [PlatformSpecific(TestPlatforms.AnyUnix)]
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "1", null, null, true)]
