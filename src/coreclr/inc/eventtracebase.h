@@ -67,11 +67,12 @@ enum EtwThreadFlags
 
 enum EtwGCSettingFlags
 {
-    kEtwGCFlagConcurrent =      0x00000001,
-    kEtwGCFlagLargePages =      0x00000002,
-    kEtwGCFlagFrozenSegs =      0x00000004,
-    kEtwGCFlagHardLimitConfig = 0x00000008,
-    kEtwGCFlagNoAffinitize =    0x00000010,
+    kEtwGCFlagConcurrent       = 0x00000001,
+    kEtwGCFlagLargePages       = 0x00000002,
+    kEtwGCFlagFrozenSegs       = 0x00000004,
+    kEtwGCFlagHardLimitConfig  = 0x00000008,
+    kEtwGCFlagNoAffinitize     = 0x00000010,
+    kEtwGCFlagDynamicHeapCount = 0x00000020,
 };
 
 #ifndef FEATURE_NATIVEAOT
