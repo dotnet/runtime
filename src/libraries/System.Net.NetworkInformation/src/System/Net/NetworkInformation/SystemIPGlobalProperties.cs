@@ -85,8 +85,7 @@ namespace System.Net.NetworkInformation
             return list.ToArray();
         }
 
-        ///
-        /// Gets the active TCP connections. Uses the native GetTcpTable API.
+        /// Gets the active TCP connections. Uses the native GetExtendedTcpTable API.
         private static unsafe void GetAllTcpConnections(List<TcpConnectionInformation>? connections, List<IPEndPoint>? listening)
         {
             uint size = 0;
@@ -123,7 +122,7 @@ namespace System.Net.NetworkInformation
                                     }
                                     else
                                     {
-                                        connections!.Add(new SystemTcpConnectionInformation(in entry));
+                                        connections?.Add(new SystemTcpConnectionInformation(in entry));
                                     }
                                 }
                             }
@@ -173,7 +172,7 @@ namespace System.Net.NetworkInformation
                                     }
                                     else
                                     {
-                                        connections!.Add(new SystemTcpConnectionInformation(in entry));
+                                        connections?.Add(new SystemTcpConnectionInformation(in entry));
                                     }
                                 }
                             }
@@ -193,7 +192,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        /// Gets the active UDP listeners. Uses the native GetUdpTable API.
+        /// Gets the active UDP listeners. Uses the native GetExtendedUdpTable API.
         public override unsafe IPEndPoint[] GetActiveUdpListeners()
         {
             uint size = 0;
