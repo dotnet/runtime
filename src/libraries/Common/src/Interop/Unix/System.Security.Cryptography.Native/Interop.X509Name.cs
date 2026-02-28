@@ -18,7 +18,7 @@ internal static partial class Interop
             int loc);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
-        private static partial int GetX509NameRawBytes(SafeSharedX509NameHandle x509Name, byte[]? buf, int cBuf);
+        private static partial int GetX509NameRawBytes(SafeSharedX509NameHandle x509Name, [Out] byte[]? buf, int cBuf);
 
         internal static X500DistinguishedName LoadX500Name(SafeSharedX509NameHandle namePtr)
         {

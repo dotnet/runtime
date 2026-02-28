@@ -15,8 +15,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         internal static partial int CreateWellKnownSid(
             int sidType,
-            byte[]? domainSid,
-            byte[] resultSid,
+            [In] byte[]? domainSid,
+            [Out] byte[] resultSid,
             ref uint resultSidLength);
 
         [LibraryImport(Libraries.Advapi32, SetLastError = true)]

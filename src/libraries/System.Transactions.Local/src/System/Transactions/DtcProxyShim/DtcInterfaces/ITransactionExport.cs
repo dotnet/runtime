@@ -15,6 +15,6 @@ internal partial interface ITransactionExport
     void GetTransactionCookie(
         [MarshalAs(UnmanagedType.Interface)] ITransaction pITransaction,
         uint cbTransactionCookie,
-        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] rgbTransactionCookie,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), Out] byte[] rgbTransactionCookie,
         out uint pcbUsed);
 }

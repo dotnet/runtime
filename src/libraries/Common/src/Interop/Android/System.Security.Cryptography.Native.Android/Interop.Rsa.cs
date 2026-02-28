@@ -176,21 +176,21 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetRsaParameters(
             SafeRsaHandle key,
-            byte[]? n,
+            [In] byte[]? n,
             int nLength,
-            byte[]? e,
+            [In] byte[]? e,
             int eLength,
-            byte[]? d,
+            [In] byte[]? d,
             int dLength,
-            byte[]? p,
+            [In] byte[]? p,
             int pLength,
-            byte[]? dmp1,
+            [In] byte[]? dmp1,
             int dmp1Length,
-            byte[]? q,
+            [In] byte[]? q,
             int qLength,
-            byte[]? dmq1,
+            [In] byte[]? dmq1,
             int dmq1Length,
-            byte[]? iqmp,
+            [In] byte[]? iqmp,
             int iqmpLength);
 
         internal enum RsaPadding : int

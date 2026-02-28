@@ -34,7 +34,7 @@ internal static partial class Interop
         internal static partial int GetPkcs7DerSize(SafePkcs7Handle p7);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodePkcs7")]
-        internal static partial int EncodePkcs7(SafePkcs7Handle p7, byte[] buf);
+        internal static partial int EncodePkcs7(SafePkcs7Handle p7, [Out] byte[] buf);
 
         internal static SafeSharedX509StackHandle GetPkcs7Certificates(SafePkcs7Handle p7)
         {

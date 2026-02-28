@@ -874,6 +874,7 @@ public unsafe partial interface ISOSDacInterface8
 [Guid("4eca42d8-7e7b-4c8a-a116-7bfbf6929267")]
 public partial interface ISOSDacInterface9
 {
+    [PreserveSig]
     int GetBreakingChangeVersion();
 }
 

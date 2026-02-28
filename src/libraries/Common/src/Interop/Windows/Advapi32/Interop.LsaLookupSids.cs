@@ -13,7 +13,7 @@ internal static partial class Interop
         internal static partial uint LsaLookupSids(
             SafeLsaPolicyHandle handle,
             int count,
-            IntPtr[] sids,
+            [In] IntPtr[] sids,
             out SafeLsaMemoryHandle referencedDomains,
             out SafeLsaMemoryHandle names
         );

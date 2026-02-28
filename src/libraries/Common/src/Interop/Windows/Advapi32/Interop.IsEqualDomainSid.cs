@@ -10,8 +10,8 @@ internal static partial class Interop
     {
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "EqualDomainSid", SetLastError = true)]
         internal static partial int IsEqualDomainSid(
-            byte[] sid1,
-            byte[] sid2,
+            [In] byte[] sid1,
+            [In] byte[] sid2,
             [MarshalAs(UnmanagedType.Bool)] out bool result);
     }
 }

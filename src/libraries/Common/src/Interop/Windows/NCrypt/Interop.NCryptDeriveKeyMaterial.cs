@@ -20,7 +20,7 @@ internal static partial class Interop
             SafeNCryptSecretHandle hSharedSecret,
             string pwszKDF,
             ref NCryptBufferDesc pParameterList,
-            [MarshalAs(UnmanagedType.LPArray)] byte[]? pbDerivedKey,
+            [MarshalAs(UnmanagedType.LPArray), Out] byte[]? pbDerivedKey,
             int cbDerivedKey,
             out int pcbResult,
             SecretAgreementFlags dwFlags);

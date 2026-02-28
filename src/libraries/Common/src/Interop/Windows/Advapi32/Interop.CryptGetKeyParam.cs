@@ -22,7 +22,7 @@ internal static partial class Interop
         public static partial bool CryptGetKeyParam(
             SafeCapiKeyHandle hKey,
             CryptGetKeyParamFlags dwParam,
-            byte[]? pbData,
+            [Out] byte[]? pbData,
             ref int pdwDataLen,
             int dwFlags);
     }

@@ -18,7 +18,7 @@ internal partial interface IResourceManager
         [MarshalAs(UnmanagedType.Interface)] out ITransactionEnlistmentAsync ppEnlist);
 
     internal void Reenlist(
-        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] pPrepInfo,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1), In] byte[] pPrepInfo,
         uint cbPrepInfom,
         uint lTimeout,
         out OletxXactStat pXactStat);

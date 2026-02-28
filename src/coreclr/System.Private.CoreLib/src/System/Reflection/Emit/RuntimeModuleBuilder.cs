@@ -113,7 +113,7 @@ namespace System.Reflection.Emit
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleBuilder_GetMemberRefFromSignature", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial int GetMemberRefFromSignature(QCallModule module, int tr, string methodName, byte[] signature, int length);
+        private static partial int GetMemberRefFromSignature(QCallModule module, int tr, string methodName, [In] byte[] signature, int length);
 
         private int GetMemberRefFromSignature(int tr, string methodName, byte[] signature, int length)
         {
@@ -156,7 +156,7 @@ namespace System.Reflection.Emit
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleBuilder_GetTokenFromTypeSpec")]
-        private static partial int GetTokenFromTypeSpec(QCallModule pModule, byte[] signature, int length);
+        private static partial int GetTokenFromTypeSpec(QCallModule pModule, [In] byte[] signature, int length);
 
         private int GetTokenFromTypeSpec(byte[] signature, int length)
         {
@@ -165,13 +165,13 @@ namespace System.Reflection.Emit
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleBuilder_GetArrayMethodToken", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial int GetArrayMethodToken(QCallModule module, int tkTypeSpec, string methodName, byte[] signature, int sigLength);
+        private static partial int GetArrayMethodToken(QCallModule module, int tkTypeSpec, string methodName, [In] byte[] signature, int sigLength);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleBuilder_GetStringConstant", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int GetStringConstant(QCallModule module, string str, int length);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ModuleBuilder_SetFieldRVAContent")]
-        internal static partial void SetFieldRVAContent(QCallModule module, int fdToken, byte[]? data, int length);
+        internal static partial void SetFieldRVAContent(QCallModule module, int fdToken, [In] byte[]? data, int length);
 
         #endregion
 

@@ -12,7 +12,7 @@ internal static partial class Interop
         internal static unsafe partial bool CryptDecodeObjectPointer(
             CertEncodingType dwCertEncodingType,
             [MarshalAs(UnmanagedType.LPStr)] string lpszStructType,
-            byte[] pbEncoded, int cbEncoded,
+            [In] byte[] pbEncoded, int cbEncoded,
             CryptDecodeObjectFlags dwFlags,
             void* pvStructInfo,
             ref int pcbStructInfo);

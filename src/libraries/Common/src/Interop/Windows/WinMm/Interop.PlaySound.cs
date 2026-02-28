@@ -23,6 +23,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.WinMM, EntryPoint = "PlaySoundW")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool PlaySound(byte[]? soundName, IntPtr hmod, int soundFlags);
+        internal static partial bool PlaySound([In] byte[]? soundName, IntPtr hmod, int soundFlags);
     }
 }

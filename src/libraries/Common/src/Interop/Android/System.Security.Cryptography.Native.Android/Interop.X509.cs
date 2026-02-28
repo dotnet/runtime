@@ -17,7 +17,7 @@ internal static partial class Interop
         internal static partial SafeX509Handle X509Decode(ref byte buf, int len);
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509Encode")]
-        private static partial int X509Encode(SafeX509Handle x, byte[]? buf, ref int len);
+        private static partial int X509Encode(SafeX509Handle x, [Out] byte[]? buf, ref int len);
         internal static byte[] X509Encode(SafeX509Handle x)
         {
             int len = 0;
@@ -59,7 +59,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509DecodeCollection")]
-        private static partial int X509DecodeCollection(ref byte buf, int bufLen, IntPtr[]? ptrs, ref int handlesLen);
+        private static partial int X509DecodeCollection(ref byte buf, int bufLen, [Out] IntPtr[]? ptrs, ref int handlesLen);
         internal static SafeX509Handle[] X509DecodeCollection(ReadOnlySpan<byte> data)
         {
             ref byte buf = ref MemoryMarshal.GetReference(data);
@@ -98,7 +98,7 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509ExportPkcs7")]
-        private static partial int X509ExportPkcs7(IntPtr[] certs, int certsLen, byte[]? buf, ref int len);
+        private static partial int X509ExportPkcs7([In] IntPtr[] certs, int certsLen, [Out] byte[]? buf, ref int len);
         internal static byte[] X509ExportPkcs7(IntPtr[] certHandles)
         {
             int len = 0;

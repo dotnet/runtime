@@ -14,6 +14,6 @@ internal partial interface ITransactionImportWhereabouts
 
     internal void GetWhereabouts(
         uint cbWhereabouts,
-        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] byte[] rgbWhereabouts,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0), Out] byte[] rgbWhereabouts,
         out uint pcbUsed);
 }
