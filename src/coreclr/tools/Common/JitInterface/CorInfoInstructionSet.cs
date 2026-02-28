@@ -35,6 +35,11 @@ namespace Internal.JitInterface
         ARM64_Rcpc2 = InstructionSet_ARM64.Rcpc2,
         ARM64_Sve = InstructionSet_ARM64.Sve,
         ARM64_Sve2 = InstructionSet_ARM64.Sve2,
+        ARM64_Sha3 = InstructionSet_ARM64.Sha3,
+        ARM64_Sm4 = InstructionSet_ARM64.Sm4,
+        ARM64_SveAes = InstructionSet_ARM64.SveAes,
+        ARM64_SveSha3 = InstructionSet_ARM64.SveSha3,
+        ARM64_SveSm4 = InstructionSet_ARM64.SveSm4,
         ARM64_ArmBase_Arm64 = InstructionSet_ARM64.ArmBase_Arm64,
         ARM64_AdvSimd_Arm64 = InstructionSet_ARM64.AdvSimd_Arm64,
         ARM64_Aes_Arm64 = InstructionSet_ARM64.Aes_Arm64,
@@ -45,6 +50,11 @@ namespace Internal.JitInterface
         ARM64_Sha256_Arm64 = InstructionSet_ARM64.Sha256_Arm64,
         ARM64_Sve_Arm64 = InstructionSet_ARM64.Sve_Arm64,
         ARM64_Sve2_Arm64 = InstructionSet_ARM64.Sve2_Arm64,
+        ARM64_Sha3_Arm64 = InstructionSet_ARM64.Sha3_Arm64,
+        ARM64_Sm4_Arm64 = InstructionSet_ARM64.Sm4_Arm64,
+        ARM64_SveAes_Arm64 = InstructionSet_ARM64.SveAes_Arm64,
+        ARM64_SveSha3_Arm64 = InstructionSet_ARM64.SveSha3_Arm64,
+        ARM64_SveSm4_Arm64 = InstructionSet_ARM64.SveSm4_Arm64,
         RiscV64_RiscV64Base = InstructionSet_RiscV64.RiscV64Base,
         RiscV64_Zba = InstructionSet_RiscV64.Zba,
         RiscV64_Zbb = InstructionSet_RiscV64.Zbb,
@@ -162,16 +172,26 @@ namespace Internal.JitInterface
         Rcpc2 = 16,
         Sve = 17,
         Sve2 = 18,
-        ArmBase_Arm64 = 19,
-        AdvSimd_Arm64 = 20,
-        Aes_Arm64 = 21,
-        Crc32_Arm64 = 22,
-        Dp_Arm64 = 23,
-        Rdm_Arm64 = 24,
-        Sha1_Arm64 = 25,
-        Sha256_Arm64 = 26,
-        Sve_Arm64 = 27,
-        Sve2_Arm64 = 28,
+        Sha3 = 19,
+        Sm4 = 20,
+        SveAes = 21,
+        SveSha3 = 22,
+        SveSm4 = 23,
+        ArmBase_Arm64 = 24,
+        AdvSimd_Arm64 = 25,
+        Aes_Arm64 = 26,
+        Crc32_Arm64 = 27,
+        Dp_Arm64 = 28,
+        Rdm_Arm64 = 29,
+        Sha1_Arm64 = 30,
+        Sha256_Arm64 = 31,
+        Sve_Arm64 = 32,
+        Sve2_Arm64 = 33,
+        Sha3_Arm64 = 34,
+        Sm4_Arm64 = 35,
+        SveAes_Arm64 = 36,
+        SveSha3_Arm64 = 37,
+        SveSm4_Arm64 = 38,
     }
 
     public enum InstructionSet_RiscV64
@@ -485,6 +505,26 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2_Arm64);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2_Arm64))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3_Arm64);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4_Arm64);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes_Arm64);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3_Arm64);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4_Arm64);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes))
@@ -511,6 +551,22 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
                     break;
 
                 case TargetArchitecture.RiscV64:
@@ -757,6 +813,16 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2_Arm64))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4_Arm64))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
@@ -783,6 +849,22 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
                     break;
 
                 case TargetArchitecture.RiscV64:
@@ -1025,6 +1107,11 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("rcpc2", "", InstructionSet.ARM64_Rcpc2, true);
                     yield return new InstructionSetInfo("sve", "Sve", InstructionSet.ARM64_Sve, true);
                     yield return new InstructionSetInfo("sve2", "Sve2", InstructionSet.ARM64_Sve2, true);
+                    yield return new InstructionSetInfo("sha3", "Sha3", InstructionSet.ARM64_Sha3, true);
+                    yield return new InstructionSetInfo("sm4", "Sm4", InstructionSet.ARM64_Sm4, true);
+                    yield return new InstructionSetInfo("sve_aes", "SveAes", InstructionSet.ARM64_SveAes, true);
+                    yield return new InstructionSetInfo("sve_sha3", "SveSha3", InstructionSet.ARM64_SveSha3, true);
+                    yield return new InstructionSetInfo("sve_sm4", "SveSm4", InstructionSet.ARM64_SveSm4, true);
                     break;
 
                 case TargetArchitecture.RiscV64:
@@ -1208,6 +1295,16 @@ namespace Internal.JitInterface
                         AddInstructionSet(InstructionSet.ARM64_Sve_Arm64);
                     if (HasInstructionSet(InstructionSet.ARM64_Sve2))
                         AddInstructionSet(InstructionSet.ARM64_Sve2_Arm64);
+                    if (HasInstructionSet(InstructionSet.ARM64_Sha3))
+                        AddInstructionSet(InstructionSet.ARM64_Sha3_Arm64);
+                    if (HasInstructionSet(InstructionSet.ARM64_Sm4))
+                        AddInstructionSet(InstructionSet.ARM64_Sm4_Arm64);
+                    if (HasInstructionSet(InstructionSet.ARM64_SveAes))
+                        AddInstructionSet(InstructionSet.ARM64_SveAes_Arm64);
+                    if (HasInstructionSet(InstructionSet.ARM64_SveSha3))
+                        AddInstructionSet(InstructionSet.ARM64_SveSha3_Arm64);
+                    if (HasInstructionSet(InstructionSet.ARM64_SveSm4))
+                        AddInstructionSet(InstructionSet.ARM64_SveSm4_Arm64);
                     break;
 
                 case TargetArchitecture.RiscV64:
@@ -1269,6 +1366,11 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.ARM64_Sha256_Arm64);
                     AddInstructionSet(InstructionSet.ARM64_Sve_Arm64);
                     AddInstructionSet(InstructionSet.ARM64_Sve2_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_Sha3_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_Sm4_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_SveAes_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_SveSha3_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_SveSm4_Arm64);
                     break;
 
                 case TargetArchitecture.RiscV64:
@@ -1423,6 +1525,36 @@ namespace Internal.JitInterface
                         { return InstructionSet.ARM64_Sve2_Arm64; }
                         else
                         { return InstructionSet.ARM64_Sve2; }
+
+                    case "Sha3":
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_Sha3_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_Sha3; }
+
+                    case "Sm4":
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_Sm4_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_Sm4; }
+
+                    case "SveAes":
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_SveAes_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_SveAes; }
+
+                    case "SveSha3":
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_SveSha3_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_SveSha3; }
+
+                    case "SveSm4":
+                        if (nestedTypeName == "Arm64")
+                        { return InstructionSet.ARM64_SveSm4_Arm64; }
+                        else
+                        { return InstructionSet.ARM64_SveSm4; }
 
                     default:
                         return InstructionSet.ILLEGAL;
@@ -1998,6 +2130,101 @@ namespace Internal.JitInterface
                     {
                         yield return type;
                         if (instructionSet == InstructionSet.ARM64_Sve2_Arm64)
+                        {
+                            var nestedType = type.GetNestedType("Arm64"u8);
+                            if (nestedType != null)
+                            {
+                                yield return nestedType;
+                            }
+                        }
+                    }
+                }
+                break;
+
+                case (InstructionSet.ARM64_Sha3, TargetArchitecture.ARM64):
+                case (InstructionSet.ARM64_Sha3_Arm64, TargetArchitecture.ARM64):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "Sha3"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                        if (instructionSet == InstructionSet.ARM64_Sha3_Arm64)
+                        {
+                            var nestedType = type.GetNestedType("Arm64"u8);
+                            if (nestedType != null)
+                            {
+                                yield return nestedType;
+                            }
+                        }
+                    }
+                }
+                break;
+
+                case (InstructionSet.ARM64_Sm4, TargetArchitecture.ARM64):
+                case (InstructionSet.ARM64_Sm4_Arm64, TargetArchitecture.ARM64):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "Sm4"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                        if (instructionSet == InstructionSet.ARM64_Sm4_Arm64)
+                        {
+                            var nestedType = type.GetNestedType("Arm64"u8);
+                            if (nestedType != null)
+                            {
+                                yield return nestedType;
+                            }
+                        }
+                    }
+                }
+                break;
+
+                case (InstructionSet.ARM64_SveAes, TargetArchitecture.ARM64):
+                case (InstructionSet.ARM64_SveAes_Arm64, TargetArchitecture.ARM64):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "SveAes"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                        if (instructionSet == InstructionSet.ARM64_SveAes_Arm64)
+                        {
+                            var nestedType = type.GetNestedType("Arm64"u8);
+                            if (nestedType != null)
+                            {
+                                yield return nestedType;
+                            }
+                        }
+                    }
+                }
+                break;
+
+                case (InstructionSet.ARM64_SveSha3, TargetArchitecture.ARM64):
+                case (InstructionSet.ARM64_SveSha3_Arm64, TargetArchitecture.ARM64):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "SveSha3"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                        if (instructionSet == InstructionSet.ARM64_SveSha3_Arm64)
+                        {
+                            var nestedType = type.GetNestedType("Arm64"u8);
+                            if (nestedType != null)
+                            {
+                                yield return nestedType;
+                            }
+                        }
+                    }
+                }
+                break;
+
+                case (InstructionSet.ARM64_SveSm4, TargetArchitecture.ARM64):
+                case (InstructionSet.ARM64_SveSm4_Arm64, TargetArchitecture.ARM64):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "SveSm4"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                        if (instructionSet == InstructionSet.ARM64_SveSm4_Arm64)
                         {
                             var nestedType = type.GetNestedType("Arm64"u8);
                             if (nestedType != null)
