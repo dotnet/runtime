@@ -102,7 +102,7 @@ This pattern scales to any number of builds — launch N subagents for N builds,
 ```
 Extract the target branch HEAD from AzDO build {BUILD_ID}.
 
-Fetch the checkout task log (typically log ID 5, around line 500+)
+Fetch the checkout task log (typically LOG ID 5, starting around LINE 500+ to skip git-fetch output)
 
 Search for: "HEAD is now at {mergeCommit} Merge {prSourceSha} into {targetBranchHead}"
 

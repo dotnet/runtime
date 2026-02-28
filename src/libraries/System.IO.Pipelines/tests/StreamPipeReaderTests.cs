@@ -67,7 +67,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task CanReadMultipleTimes(bool useZeroByteReads)
@@ -278,7 +278,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReadCanBeCancelledViaProvidedCancellationToken()
         {
             var stream = new CancelledReadsStream();
@@ -299,7 +299,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadAsync(bool useZeroByteReads)
@@ -318,7 +318,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadAtLeastAsync(bool useZeroByteReads)
@@ -568,6 +568,22 @@ namespace System.IO.Pipelines.Tests
             pipe.Writer.Complete();
 
             reader.Complete();
+        }
+
+        [Fact]
+        public async Task AdvanceWithPositionFromDifferentReaderThrows()
+        {
+            PipeReader reader1 = PipeReader.Create(new MemoryStream(new byte[10]));
+            PipeReader reader2 = PipeReader.Create(new MemoryStream(new byte[1000]));
+
+            _ = await reader1.ReadAsync();
+            ReadResult result2 = await reader2.ReadAsync();
+
+            SequencePosition posFrom2 = result2.Buffer.End;
+            Assert.Throws<InvalidOperationException>(() => reader1.AdvanceTo(posFrom2));
+
+            reader1.Complete();
+            reader2.Complete();
         }
 
         [Fact]

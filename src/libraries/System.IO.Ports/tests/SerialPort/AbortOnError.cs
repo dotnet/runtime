@@ -31,7 +31,7 @@ namespace System.IO.Ports.Tests
         // This test requires access, via reflection, to internal type SerialStream and respective methods GetDcbFlag and
         // SetDcbFlag, however, that requires either changes to the public type (increasing its size) or to the test itself.
         [PlatformSpecific(TestPlatforms.Windows)] // depends on Windows implementation detail
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(AbortOnError), nameof(HasOneSerialPort))]
         public void AbortOnErrorShouldBeClearedOnOpen()
         {
             // Open the port, set the fAbortOnError flag and then close the port

@@ -48,6 +48,7 @@ INST(drop,        "drop",        0, IF_OPCODE,  0x1A)
 
 INST(local_get,    "local.get",    0, IF_ULEB128, 0x20)
 INST(local_set,    "local.set",    0, IF_ULEB128, 0x21)
+INST(local_tee,    "local.tee",    0, IF_ULEB128, 0x22)
 INST(i32_load,     "i32.load",     0, IF_MEMARG,  0x28)
 INST(i64_load,     "i64.load",     0, IF_MEMARG,  0x29)
 INST(f32_load,     "f32.load",     0, IF_MEMARG,  0x2A)
@@ -226,6 +227,9 @@ INST(i64_trunc_sat_f32_s, "i64.trunc_sat_f32_s", 0, IF_OPCODE,  0x04FC)
 INST(i64_trunc_sat_f32_u, "i64.trunc_sat_f32_u", 0, IF_OPCODE,  0x05FC)
 INST(i64_trunc_sat_f64_s, "i64.trunc_sat_f64_s", 0, IF_OPCODE,  0x06FC)
 INST(i64_trunc_sat_f64_u, "i64.trunc_sat_f64_u", 0, IF_OPCODE,  0x07FC)
+
+INST(memory_copy,         "memory.copy",         0, IF_MEMIDX_MEMIDX, 0x0AFC)
+INST(memory_fill,         "memory.fill",         0, IF_ULEB128,       0x0BFC)
 
 // clang-format on
 

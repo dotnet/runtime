@@ -30,7 +30,7 @@ namespace System.Tests
             VerifyPointer(i, i);
         }
 
-        [ConditionalFact(nameof(Is64Bit))]
+        [ConditionalFact(typeof(UIntPtrTests), nameof(Is64Bit))]
         public static void Ctor_ULong()
         {
             ulong l = 0x0fffffffffffffff;
@@ -38,7 +38,7 @@ namespace System.Tests
             VerifyPointer((nuint)l, l);
         }
 
-        [ConditionalFact(nameof(Is64Bit))]
+        [ConditionalFact(typeof(UIntPtrTests), nameof(Is64Bit))]
         public static unsafe void TestCtor_VoidPointer_ToPointer()
         {
             void* pv = new nuint(42).ToPointer();
@@ -47,7 +47,7 @@ namespace System.Tests
             VerifyPointer((nuint)pv, 42);
         }
 
-        [ConditionalFact(nameof(Is64Bit))]
+        [ConditionalFact(typeof(UIntPtrTests), nameof(Is64Bit))]
         public static unsafe void TestSize()
         {
             Assert.Equal(sizeof(void*), nuint.Size);
@@ -62,7 +62,7 @@ namespace System.Tests
             yield return new object[] { unchecked((nuint)0xffffffffffffffff), 5, unchecked(0x0000000000000004) }; /// Add should not throw an OverflowException
         }
 
-        [ConditionalTheory(nameof(Is64Bit))]
+        [ConditionalTheory(typeof(UIntPtrTests), nameof(Is64Bit))]
         [MemberData(nameof(Add_TestData))]
         public static void Add(nuint value, int offset, ulong expected)
         {
@@ -84,7 +84,7 @@ namespace System.Tests
             yield return new object[] { (nuint)38, -2, (ulong)40 };
         }
 
-        [ConditionalTheory(nameof(Is64Bit))]
+        [ConditionalTheory(typeof(UIntPtrTests), nameof(Is64Bit))]
         [MemberData(nameof(Subtract_TestData))]
         public static void Subtract(nuint value, int offset, ulong expected)
         {
@@ -124,7 +124,7 @@ namespace System.Tests
             Assert.Equal(value.GetHashCode(), value.GetHashCode());
         }
 
-        [ConditionalFact(nameof(Is64Bit))]
+        [ConditionalFact(typeof(UIntPtrTests), nameof(Is64Bit))]
         public static unsafe void TestExplicitCast()
         {
             nuint value = 42u;
@@ -164,7 +164,7 @@ namespace System.Tests
             Assert.IsType<OverflowException>(ex);
         }
 
-        [ConditionalFact(nameof(Is64Bit))]
+        [ConditionalFact(typeof(UIntPtrTests), nameof(Is64Bit))]
         public static void GetHashCodeRespectAllBits()
         {
             var value = unchecked((nuint)0x123456FFFFFFFF);
@@ -610,7 +610,7 @@ namespace System.Tests
         public static void TryFormat(nuint i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
 
-        [ConditionalTheory(nameof(Is32Bit))]
+        [ConditionalTheory(typeof(UIntPtrTests), nameof(Is32Bit))]
         [InlineData(0U, 0U, "0000000000000000")]
         [InlineData(0U, 1U, "0000000000000000")]
         [InlineData(1U, 0U, "0000000000000000")]
@@ -626,7 +626,7 @@ namespace System.Tests
             Assert.Equal(result, $"{upper:X8}{lower:X8}");
         }
 
-        [ConditionalTheory(nameof(Is64Bit))]
+        [ConditionalTheory(typeof(UIntPtrTests), nameof(Is64Bit))]
         [InlineData(0U, 0U, "00000000000000000000000000000000")]
         [InlineData(0U, 1U, "00000000000000000000000000000000")]
         [InlineData(1U, 0U, "00000000000000000000000000000000")]

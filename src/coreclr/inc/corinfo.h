@@ -417,8 +417,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_FIELD_ACCESS_EXCEPTION,
     CORINFO_HELP_CLASS_ACCESS_EXCEPTION,
 
-    CORINFO_HELP_ENDCATCH,          // call back into the EE at the end of a catch block
-
     /* Synchronization */
 
     CORINFO_HELP_MON_ENTER,
@@ -1176,11 +1174,6 @@ struct CORINFO_LOOKUP_KIND
 {
     bool                        needsRuntimeLookup;
     CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
-
-    // The 'runtimeLookupFlags' and 'runtimeLookupArgs' fields
-    // are just for internal VM / ZAP communication, not to be used by the JIT.
-    uint16_t                    runtimeLookupFlags;
-    void *                      runtimeLookupArgs;
 } ;
 
 
@@ -1201,11 +1194,12 @@ struct CORINFO_RUNTIME_LOOKUP
     // This is signature you must pass back to the runtime lookup helper
     void*                   signature;
 
-    // Here is the helper you must call. It is one of CORINFO_HELP_RUNTIMEHANDLE_* helpers.
+    // Here is the helper to call.
     CorInfoHelpFunc         helper;
 
     // Number of indirections to get there
-    // CORINFO_USEHELPER = don't know how to get it, so use helper function at run-time instead
+    // CORINFO_USEHELPER = don't know how to get it, so use helper function at run-time instead.
+    //                     For AOT the entry point of the helper is stored in helperEntryPoint.
     // CORINFO_USENULL = the context should be null because the callee doesn't actually use it
     // 0 = use the this pointer itself (e.g. token is C<!0> inside code in sealed class C)
     //     or method desc itself (e.g. token is method void M::mymeth<!!0>() inside code in M::mymeth)
@@ -1231,7 +1225,11 @@ struct CORINFO_RUNTIME_LOOKUP
     // 1 means that value stored at second offset (offsets[1]) from pointer is offset2, and the next pointer is
     // stored at pointer+offsets[1]+offset2.
     bool                indirectSecondOffset;
-} ;
+
+    // Used for the helper call's entry point when indirections ==
+    // CORINFO_USEHELPER and this is an AOT compilation
+    CORINFO_CONST_LOOKUP helperEntryPoint;
+};
 
 // Result of calling embedGenericHandle
 struct CORINFO_LOOKUP
@@ -1487,7 +1485,6 @@ enum CorInfoTokenKind
 
     // token comes from runtime async awaiting pattern
     CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
-    CORINFO_TOKENKIND_AwaitVirtual = 0x4000 | CORINFO_TOKENKIND_Method,
 };
 
 struct CORINFO_RESOLVED_TOKEN
@@ -2290,6 +2287,15 @@ public:
         CORINFO_CLASS_HANDLE* classArg
         ) = 0;
 
+    // Get the other variant of an async method, if possible.
+    // If this is a method with async calling convention: returns the corresponding task-returning method.
+    // If this is a task-returning method: returns the corresponding method with async calling convention.
+    // Otherwise returns null.
+    virtual CORINFO_METHOD_HANDLE getAsyncOtherVariant(
+        CORINFO_METHOD_HANDLE ftn,
+        bool*                 variantIsThunk
+        ) = 0;
+
     // Given T, return the type of the default Comparer<T>.
     // Returns null if the type can't be determined exactly.
     virtual CORINFO_CLASS_HANDLE getDefaultComparerClass(
@@ -2730,7 +2736,6 @@ public:
 
     virtual bool getReadyToRunHelper(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-            CORINFO_LOOKUP_KIND *           pGenericLookupKind,
             CorInfoHelpFunc                 id,
             CORINFO_METHOD_HANDLE           callerHandle,
             CORINFO_CONST_LOOKUP *          pLookup
@@ -3197,6 +3202,10 @@ public:
     // Returns lowering info for fields of a RISC-V/LoongArch struct passed in registers according to
     // hardware floating-point calling convention.
     virtual void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering) = 0;
+
+    // Returns the primitive type for passing/returning a Wasm struct by value,
+    // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
+    virtual CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) = 0;
 };
 
 /*****************************************************************************

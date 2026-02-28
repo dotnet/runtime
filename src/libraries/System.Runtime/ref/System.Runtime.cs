@@ -14158,6 +14158,10 @@ namespace System.Runtime.CompilerServices
         public static bool IsDynamicCodeCompiled { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
         public static bool IsDynamicCodeSupported { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported")]
+        [Runtime.Versioning.UnsupportedOSPlatformGuard("browser")]
+        [Runtime.Versioning.UnsupportedOSPlatformGuard("wasi")]
+        public static bool IsMultithreadingSupported { get { throw null; } }
         public static bool IsSupported(string feature) { throw null; }
     }
     public static partial class RuntimeHelpers
@@ -14201,25 +14205,15 @@ namespace System.Runtime.CompilerServices
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class AsyncHelpers
     {
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void Await(System.Threading.Tasks.Task task) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void Await(System.Threading.Tasks.ValueTask task) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static T Await<T>(System.Threading.Tasks.ValueTask<T> task) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable configuredAwaitable) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static void Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable configuredAwaitable) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw null; }
         public static void HandleAsyncEntryPoint(System.Threading.Tasks.Task task) { }
         public static int HandleAsyncEntryPoint(System.Threading.Tasks.Task<int> task) { throw null; }

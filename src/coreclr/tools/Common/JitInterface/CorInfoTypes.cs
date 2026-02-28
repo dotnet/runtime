@@ -208,11 +208,6 @@ namespace Internal.JitInterface
         private byte _needsRuntimeLookup;
         public bool needsRuntimeLookup { get { return _needsRuntimeLookup != 0; } set { _needsRuntimeLookup = value ? (byte)1 : (byte)0; } }
         public CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
-
-        // The 'runtimeLookupFlags' and 'runtimeLookupArgs' fields
-        // are just for internal VM / ZAP communication, not to be used by the JIT.
-        public ushort runtimeLookupFlags;
-        public void* runtimeLookupArgs;
     }
 
     // CORINFO_RUNTIME_LOOKUP indicates the details of the runtime lookup
@@ -250,6 +245,7 @@ namespace Internal.JitInterface
         public byte _indirectSecondOffset;
         public bool indirectSecondOffset { get { return _indirectSecondOffset != 0; } set { _indirectSecondOffset = value ? (byte)1 : (byte)0; } }
 
+        public CORINFO_CONST_LOOKUP helperEntryPoint;
     }
 
     // Result of calling embedGenericHandle
@@ -1480,7 +1476,6 @@ namespace Internal.JitInterface
 
         // token comes from runtime async awaiting pattern
         CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
-        CORINFO_TOKENKIND_AwaitVirtual = 0x4000 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod

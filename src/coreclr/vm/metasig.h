@@ -187,7 +187,7 @@ DEFINE_METASIG_T(SM(IntPtr_CreateObjectFlags_RetObj, I g(CREATEOBJECTFLAGS), j))
 DEFINE_METASIG_T(SM(ManagedObjectWrapperHolder_RefGuid_RefIntPtr_RetInt, C(MANAGED_OBJECT_WRAPPER_HOLDER) r(g(GUID)) r(I), i))
 #endif // FEATURE_COMWRAPPERS
 #ifdef FEATURE_OBJCMARSHAL
-DEFINE_METASIG_T(SM(Exception_Obj_RefIntPtr_RetVoidPtr, C(EXCEPTION) j r(I), P(v)))
+DEFINE_METASIG_T(SM(PtrException_IntPtr_PtrIntPtr_PtrException_RetVoidPtr, P(C(EXCEPTION)) I P(I) P(C(EXCEPTION)), P(v)))
 #endif // FEATURE_OBJCMARSHAL
 DEFINE_METASIG(SM(Int_RetVoid, i, v))
 DEFINE_METASIG(SM(Int_RetObj, i, j))
@@ -200,7 +200,6 @@ DEFINE_METASIG_T(SM(Obj_Array_RetVoid, j C(ARRAY), v))
 DEFINE_METASIG(SM(Obj_IntPtr_Obj_RetVoid, j I j, v))
 DEFINE_METASIG(SM(RetIntPtr, _, I))
 DEFINE_METASIG(SM(RetUInt, _, K))
-DEFINE_METASIG(SM(RetBool, _, F))
 DEFINE_METASIG(SM(IntPtr_RetStr, I, s))
 DEFINE_METASIG(SM(Char_Bool_Bool_RetByte, u F F, b))
 DEFINE_METASIG(SM(Byte_RetChar, b, u))
@@ -223,6 +222,7 @@ DEFINE_METASIG(SM(Obj_Int_RetVoid, j i,v))
 DEFINE_METASIG(SM(PtrVoid_Obj_RetObj, P(v) j, j))
 DEFINE_METASIG_T(SM(ICustomMarshaler_RefObj_PtrIntPtr_RetVoid, C(ICUSTOM_MARSHALER) r(j) P(I), v))
 DEFINE_METASIG_T(SM(PtrICustomMarshaler_PtrObj_PtrIntPtr_PtrException_RetVoid, P(C(ICUSTOM_MARSHALER)) P(j) P(I) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrVoid_PtrByte_Int_PtrObj_PtrException_RetVoid, P(v) P(b) i P(j) P(C(EXCEPTION)), v))
 
 DEFINE_METASIG(SM(Long_Long_RetLong, l l, l))
 DEFINE_METASIG(SM(ULong_ULong_RetULong, L L, L))
@@ -292,7 +292,6 @@ DEFINE_METASIG_T(IM(RuntimeTypeHandle_RefBool_RefIntPtr_RetVoid, g(RT_TYPE_HANDL
 
 
 DEFINE_METASIG(SM(Str_RetInt, s, i))
-DEFINE_METASIG_T(SM(Str_RetICustomMarshaler, s, C(ICUSTOM_MARSHALER)))
 DEFINE_METASIG(SM(Int_Str_RetIntPtr, i s, I))
 DEFINE_METASIG(SM(Int_Str_IntPtr_RetIntPtr, i s I, I))
 DEFINE_METASIG(SM(Int_Str_IntPtr_Int_RetVoid, i s I i, v))
@@ -420,6 +419,14 @@ DEFINE_METASIG_T(SM(PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(C(EXCEPTI
 DEFINE_METASIG_T(SM(PtrAssembly_PtrByte_PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(b) P(C(ASSEMBLY)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrAssembly_PtrChar_PtrAssembly_PtrException_RetVoid, P(C(ASSEMBLY)) P(u) P(C(ASSEMBLY)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid, I P(C(ASSEMBLY_NAME)) P(C(ASSEMBLYBASE)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrException_RetVoid, P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrChar_PtrException_RetVoid, P(u) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(Int_PtrObj_PtrException_RetVoid, i P(j) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrObj_PtrInt_PtrException_RetVoid, P(j) P(i) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrResolver_PtrInt_PtrClass_PtrException_RetVoid, P(C(RESOLVER)) P(i) P(C(CLASS)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrResolver_PtrInt_PtrInt_PtrInt_PtrArrByte_PtrException_RetVoid, P(C(RESOLVER)) P(i) P(i) P(i) P(a(b)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrResolver_PtrArrByte_PtrException_RetVoid, P(C(RESOLVER)) P(a(b)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrResolver_Int_PtrStr_PtrException_RetVoid, P(C(RESOLVER)) i P(s) P(C(EXCEPTION)), v))
 
 // fields - e.g.:
 // DEFINE_METASIG(Fld(PtrVoid, P(v)))
@@ -428,10 +435,6 @@ DEFINE_METASIG_T(SM(IntPtr_PtrAssemblyName_PtrAssemblyBase_PtrException_RetVoid,
 
 DEFINE_METASIG_T(IM(Dec_RetVoid, g(DECIMAL), v))
 DEFINE_METASIG_T(IM(Currency_RetVoid, g(CURRENCY), v))
-
-
-DEFINE_METASIG_T(SM(Task_RetVoid, C(TASK), v))
-DEFINE_METASIG_T(SM(TaskOfInt_RetInt, GI(C(TASK_1), 1, i), i))
 
 DEFINE_METASIG_T(GM(Exception_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, C(EXCEPTION), GI(C(TASK_1), 1, M(0))))
 DEFINE_METASIG_T(GM(T_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, M(0), GI(C(TASK_1), 1, M(0))))

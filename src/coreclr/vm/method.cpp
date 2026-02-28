@@ -3144,7 +3144,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot_Locked(
     backpatchTracker->AddSlotAndPatch_Locked(this, slotLoaderAllocator, slot, slotType, currentEntryPoint);
 }
 
-FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
+bool MethodDesc::TryBackpatchEntryPointSlots(
     PCODE entryPoint,
     bool isPrestubEntryPoint,
     bool onlyFromPrestubEntryPoint)

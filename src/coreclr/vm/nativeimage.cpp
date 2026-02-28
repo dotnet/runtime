@@ -63,6 +63,8 @@ NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, ReadyToRunLoadedImage 
 
 void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
 {
+    STANDARD_VM_CONTRACT;
+
     LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
 
     m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, pLoaderAllocator, pHeader, this, m_pImageLayout, pamTracker);
