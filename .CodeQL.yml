@@ -15,6 +15,7 @@ path_classifiers:
     # files are generated as part of build-time checks in CMake and are not compiled
     # or linked into any product binaries.
     - artifacts/obj/**/CMakeFiles/**/CheckFunctionExists.c
+
 queries:
   #
   # REPO-WIDE RULE EXCLUSIONS
