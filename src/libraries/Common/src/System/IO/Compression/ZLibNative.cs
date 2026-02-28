@@ -109,6 +109,41 @@ namespace System.IO.Compression
         public const int GZip_DefaultWindowBits = 31;
 
         /// <summary>
+        /// The minimum value for the base-2 logarithm of the history buffer (window) size.
+        /// A value of 8 corresponds to a 256-byte window.
+        /// </summary>
+        public const int MinWindowLog = 8;
+
+        /// <summary>
+        /// The maximum value for the base-2 logarithm of the history buffer (window) size.
+        /// A value of 15 corresponds to a 32KB window, which provides the best compression ratio.
+        /// </summary>
+        public const int MaxWindowLog = 15;
+
+        /// <summary>
+        /// The default value for the base-2 logarithm of the history buffer (window) size.
+        /// Defaults to <see cref="MaxWindowLog"/> (15) for optimal compression.
+        /// </summary>
+        public const int DefaultWindowLog = MaxWindowLog;
+
+        /// <summary>
+        /// The minimum compression quality level. A value of 0 means no compression (store only).
+        /// </summary>
+        public const int MinQuality = 0;
+
+        /// <summary>
+        /// The maximum compression quality level. A value of 9 provides the best compression ratio
+        /// but is the slowest.
+        /// </summary>
+        public const int MaxQuality = 9;
+
+        /// <summary>
+        /// The default compression quality level. A value of 6 provides a good balance between
+        /// compression ratio and speed.
+        /// </summary>
+        public const int DefaultQuality = 6;
+
+        /// <summary>
         /// <para><strong>From the ZLib manual:</strong><br />
         /// The <c>memLevel</c> parameter specifies how much memory should be allocated for the internal compression state.
         /// <c>memLevel</c> = 1 uses minimum memory but is slow and reduces compression ratio; <c>memLevel</c> = 9 uses maximum

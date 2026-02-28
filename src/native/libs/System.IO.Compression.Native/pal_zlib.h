@@ -140,3 +140,12 @@ updated CRC-32.
 Returns the updated CRC-32.
 */
 FUNCTIONEXPORT uint32_t FUNCTIONCALLINGCONVENTION CompressionNative_Crc32(uint32_t crc, uint8_t* buffer, int32_t len);
+
+/*
+Calculates and returns an upper bound on the compressed size after deflate compressing sourceLen bytes.
+This is a worst-case estimate that accounts for incompressible data and zlib wrapper overhead.
+The actual compressed size will typically be smaller.
+
+Returns the maximum number of bytes the compressed output could require.
+*/
+FUNCTIONEXPORT uint32_t FUNCTIONCALLINGCONVENTION CompressionNative_CompressBound(uint32_t sourceLen);

@@ -53,8 +53,15 @@ namespace System.IO.Compression
         /// <param name="compressionOptions">The options for fine tuning the compression stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="DeflateStream"/> object; otherwise, <see langword="false" /></param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="compressionOptions"/> is <see langword="null" />.</exception>
-        public DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen = false) : this(stream, compressionOptions, leaveOpen, ZLibNative.Deflate_DefaultWindowBits)
+        public DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen = false)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(compressionOptions);
+
+            // Compute windowBits for raw deflate format: negative windowLog
+            int windowBits = compressionOptions.WindowLog == -1 ? ZLibNative.Deflate_DefaultWindowBits : -compressionOptions.WindowLog;
+
+            InitializeDeflater(stream, (ZLibNative.CompressionLevel)compressionOptions.CompressionLevel, (CompressionStrategy)compressionOptions.CompressionStrategy, leaveOpen, windowBits);
         }
 
         internal DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen, int windowBits)

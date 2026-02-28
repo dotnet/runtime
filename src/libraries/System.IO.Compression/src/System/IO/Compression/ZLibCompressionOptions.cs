@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.IO.Compression
@@ -10,13 +10,14 @@ namespace System.IO.Compression
     {
         private int _compressionLevel = -1;
         private ZLibCompressionStrategy _strategy;
+        private int _windowLog = -1;
 
         /// <summary>
         /// Gets or sets the compression level for a compression stream.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">The value is less than -1 or greater than 9.</exception>
         /// <remarks>
-        /// Can accept any value between -1 and 9 (inclusive), 0 gives no compression,  1 gives best speed, 9 gives best compression.
+        /// Can accept any value between -1 and 9 (inclusive), 0 gives no compression, 1 gives best speed, 9 gives best compression.
         /// and -1 requests the default compression level which is currently equivalent to 6. The default value is -1.
         /// </remarks>
         public int CompressionLevel
@@ -24,12 +25,16 @@ namespace System.IO.Compression
             get => _compressionLevel;
             set
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 9);
+                if (value != -1)
+                {
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZLibNative.MinQuality);
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZLibNative.MaxQuality);
+                }
 
                 _compressionLevel = value;
             }
         }
+
         /// <summary>
         /// Gets or sets the compression algorithm for a compression stream.
         /// </summary>
@@ -45,10 +50,33 @@ namespace System.IO.Compression
                 _strategy = value;
             }
         }
+
+        /// <summary>
+        /// Gets or sets the base-2 logarithm of the window size for a compression stream.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">The value is less than -1 or greater than 15, or between 0 and 7.</exception>
+        /// <remarks>
+        /// Can accept -1 or any value between 8 and 15 (inclusive). Larger values result in better compression at the expense of memory usage.
+        /// -1 requests the default window log which is currently equivalent to 15 (32KB window). The default value is -1.
+        /// </remarks>
+        public int WindowLog
+        {
+            get => _windowLog;
+            set
+            {
+                if (value != -1)
+                {
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZLibNative.MinWindowLog);
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZLibNative.MaxWindowLog);
+                }
+
+                _windowLog = value;
+            }
+        }
     }
 
     /// <summary>
-    /// Defines  the compression algorithms that can be used for <see cref="DeflateStream"/>, <see cref="GZipStream"/> or <see cref="ZLibStream"/>.
+    /// Defines the compression algorithms that can be used for <see cref="DeflateStream"/>, <see cref="GZipStream"/> or <see cref="ZLibStream"/>.
     /// </summary>
     public enum ZLibCompressionStrategy
     {
