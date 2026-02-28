@@ -2,7 +2,7 @@
 
 ## Overview
 
-dotnet/runtime has ~437 open PRs (252 human non-draft). The PowerShell script
+dotnet/runtime typically has several hundred open PRs. The PowerShell script
 `Get-PrTriageData.ps1` handles all batch analysis in a single run:
 
 1. Fetches PR list via `gh pr list` (1 REST call)
