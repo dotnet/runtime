@@ -18,6 +18,7 @@
 typedef HRESULT ( __stdcall __RPC_FAR *PFNCTXCALLBACK)(void __RPC_FAR *pParam);
 
 #include <ctxtcall.h>
+#include "cdacdata.h"
 
 //================================================================
 // Forward declarations.
@@ -252,6 +253,15 @@ struct InterfaceEntry
     // will not try and optimize reads and writes to them.
     Volatile<IE_METHODTABLE_PTR> m_pMT;                  // Interface asked for
     Volatile<IUnknown*>          m_pUnknown;             // Result of query
+
+    friend struct ::cdac_data<InterfaceEntry>;
+};
+
+template<>
+struct cdac_data<InterfaceEntry>
+{
+    static constexpr size_t MethodTable = offsetof(InterfaceEntry, m_pMT);
+    static constexpr size_t Unknown = offsetof(InterfaceEntry, m_pUnknown);
 };
 
 class CtxEntryCacheTraits : public DefaultSHashTraits<CtxEntry *>

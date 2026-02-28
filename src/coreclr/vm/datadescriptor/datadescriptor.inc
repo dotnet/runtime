@@ -1053,6 +1053,17 @@ CDAC_TYPE_INDETERMINATE(SimpleComCallWrapper)
 CDAC_TYPE_FIELD(SimpleComCallWrapper, /*int64*/, RefCount, cdac_data<SimpleComCallWrapper>::RefCount)
 CDAC_TYPE_FIELD(SimpleComCallWrapper, /*uint32*/, Flags, cdac_data<SimpleComCallWrapper>::Flags)
 CDAC_TYPE_END(SimpleComCallWrapper)
+
+CDAC_TYPE_BEGIN(RCW)
+CDAC_TYPE_INDETERMINATE(RCW)
+CDAC_TYPE_FIELD(RCW, /*inline array*/, InterfaceEntries, cdac_data<RCW>::InterfaceEntries)
+CDAC_TYPE_END(RCW)
+
+CDAC_TYPE_BEGIN(InterfaceEntry)
+CDAC_TYPE_SIZE(sizeof(InterfaceEntry))
+CDAC_TYPE_FIELD(InterfaceEntry, /*pointer*/, MethodTable, cdac_data<InterfaceEntry>::MethodTable)
+CDAC_TYPE_FIELD(InterfaceEntry, /*pointer*/, Unknown, cdac_data<InterfaceEntry>::Unknown)
+CDAC_TYPE_END(InterfaceEntry)
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
@@ -1215,6 +1226,7 @@ CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(ComRefcountMask, int64, SimpleComCallWrapper::COM_REFCOUNT_MASK)
+CDAC_GLOBAL(RCWInterfaceCacheSize, uint32, INTERFACE_ENTRY_CACHE_SIZE)
 #endif // FEATURE_COMINTEROP
 
 // It is important for the subdescriptor pointers to be the last pointers in the global structure.
