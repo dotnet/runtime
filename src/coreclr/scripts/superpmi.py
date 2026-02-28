@@ -3293,12 +3293,12 @@ def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_
                 write_fh.write("\n")
 
 ################################################################################
-# SuperPMI Memory Diff
+# SuperPMI Metric Diff
 ################################################################################
 
 
 class SuperPMIReplayMetricDiff:
-    """ SuperPMI Replay memory diff class
+    """ SuperPMI Replay metric diff class
 
     Notes:
         The object is responsible for replaying the mch files given to the
@@ -3328,7 +3328,7 @@ class SuperPMIReplayMetricDiff:
     # Instance Methods
     ############################################################################
 
-    def replay_with_memory_diff(self):
+    def replay_with_metric_diff(self):
         """ Replay SuperPMI collections measuring memory allocation differences.
 
         Returns:
@@ -3364,7 +3364,7 @@ class SuperPMIReplayMetricDiff:
 
             for mch_file in self.mch_files:
 
-                logging.info("Running memory diff of %s", mch_file)
+                logging.info("Running metric diff of %s", mch_file)
 
                 if self.coreclr_args.details:
                     details_info_file = self.coreclr_args.details
@@ -3489,7 +3489,7 @@ class SuperPMIReplayMetricDiff:
                 write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, memory_diffs, False)
                 logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
         return True
-        ################################################################################################ end of replay_with_memory_diff()
+        ################################################################################################ end of replay_with_metric_diff()
 
 
 def discover_metrics_from_csv(details_file):
@@ -3515,18 +3515,26 @@ def aggregate_metric_diff_metrics(details_file):
     metrics_list = discover_metrics_from_csv(details_file)
     base_totals = {m: 0 for m in metrics_list}
     diff_totals = {m: 0 for m in metrics_list}
-    compile_stats = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0}
+    base_compile_stats = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0}
+    diff_compile_stats = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0}
 
     for row in read_csv(details_file):
         base_result = row["Base result"]
         diff_result = row["Diff result"]
 
         if base_result == "Success":
-            compile_stats["Successful compiles"] += 1
+            base_compile_stats["Successful compiles"] += 1
         elif base_result == "Miss":
-            compile_stats["Missing compiles"] += 1
+            base_compile_stats["Missing compiles"] += 1
         else:
-            compile_stats["Failing compiles"] += 1
+            base_compile_stats["Failing compiles"] += 1
+
+        if diff_result == "Success":
+            diff_compile_stats["Successful compiles"] += 1
+        elif diff_result == "Miss":
+            diff_compile_stats["Missing compiles"] += 1
+        else:
+            diff_compile_stats["Failing compiles"] += 1
 
         if base_result == "Success" and diff_result == "Success":
             for metric in metrics_list:
@@ -3535,8 +3543,8 @@ def aggregate_metric_diff_metrics(details_file):
                 base_totals[metric] += float(base_val) if '.' in base_val else int(base_val)
                 diff_totals[metric] += float(diff_val) if '.' in diff_val else int(diff_val)
 
-    base_totals.update(compile_stats)
-    diff_totals.update(compile_stats)
+    base_totals.update(base_compile_stats)
+    diff_totals.update(diff_compile_stats)
 
     return (metrics_list, base_totals, diff_totals)
 
@@ -5915,7 +5923,7 @@ def main(args):
 
         begin_time = datetime.datetime.now()
 
-        logging.info("SuperPMI memory diff")
+        logging.info("SuperPMI metric diff")
         logging.debug("------------------------------------------------------------")
         logging.debug("Start time: %s", begin_time.strftime("%H:%M:%S"))
 
@@ -5929,8 +5937,8 @@ def main(args):
         for mch_file in mch_files:
             logging.info("  %s", mch_file)
 
-        memory_diff = SuperPMIReplayMetricDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
-        success = memory_diff.replay_with_memory_diff()
+        metric_diff = SuperPMIReplayMetricDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
+        success = metric_diff.replay_with_metric_diff()
 
         end_time = datetime.datetime.now()
         elapsed_time = end_time - begin_time
