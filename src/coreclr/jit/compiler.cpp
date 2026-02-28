@@ -6591,8 +6591,6 @@ void Compiler::compCompileFinish()
         }
     }
 #endif // DEBUG
-
-    Metrics.report(this);
 }
 
 #ifdef PSEUDORANDOM_NOP_INSERTION
