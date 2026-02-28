@@ -27,7 +27,7 @@ All data fetching and scoring is done by a PowerShell script. Your job as the AI
 3. **Format** the JSON output as a readable table
 4. **Annotate** with any additional context the user asked for
 
-The script handles: batched GraphQL, Build Analysis extraction, review/thread parsing, 11-dimension scoring, next-action determination, and "Who" identification — all in ~15 seconds for 50 PRs.
+The script handles: batched GraphQL, Build Analysis extraction, review/thread parsing, 12-dimension scoring, next-action determination, and "Who" identification — all in ~15 seconds for 50 PRs.
 
 ## When to Use This Skill
 
@@ -73,18 +73,20 @@ The script outputs JSON with this structure:
 {
   "timestamp": "...",
   "repo": "dotnet/runtime",
-  "label": "area-CodeGen-coreclr",
+  "filters": { "label": "area-CodeGen-coreclr", "author": null, "top": 0, "..." : "..." },
   "scanned": 58,
   "analyzed": 46,
-  "screened_out": { "drafts": [...], "bots": [...], "needs_author_action": [...], "stale": [...] },
+  "returned": 46,
+  "screened_out": { "drafts_count": 12, "drafts": ["...first 10..."], "bots": [...], "needs_author_action": [...], "stale": [...] },
   "quick_actions": { "ready_to_merge": 1, "needs_maintainer_review": 10, "needs_author_action": 35, "blocked_conflicts": 9 },
   "prs": [
     {
       "number": 123546, "title": "...", "author": "jonathandavies-arm",
       "score": 8.2, "ci": "SUCCESS", "ci_detail": "91/2/0",
-      "unresolved_threads": 0, "mergeable": "MERGEABLE",
+      "unresolved_threads": 0, "total_threads": 1, "total_comments": 3, "distinct_commenters": 2,
+      "mergeable": "MERGEABLE",
       "approval_count": 1, "is_community": true,
-      "age_days": 35, "days_since_update": 2,
+      "age_days": 35, "days_since_update": 2, "changed_files": 3, "lines_changed": 45,
       "next_action": "Ready to merge",
       "who": "@EgorBo",
       "blockers": "—",
@@ -141,8 +143,6 @@ Scanned 58 → 46 analyzed (12 drafts excluded)
 - Note patterns (one author with many stale PRs, cluster of PRs needing same reviewer)
 - **For community PRs**: note that they may need more shepherding and may not align with current investment. Frame feedback constructively — even a quick "not right now" respects the contributor's time
 - Don't repeat what's already visible in the table
-
-CI emoji mapping: SUCCESS→✅, FAILURE→❌, IN_PROGRESS→⏳, ABSENT→⚠️
 
 ### Step 4 — Cache Results for Follow-up Queries
 
@@ -287,7 +287,7 @@ Map the user's request to these flags. Combine as needed.
 
 ## Score Dimensions (0-10 scale)
 
-The script scores 11 dimensions with weighted composite (see [rubric](references/merge-readiness-rubric.md)):
+The script scores 12 dimensions with weighted composite (see [rubric](references/merge-readiness-rubric.md)):
 
 | Weight | Dimension | What it measures |
 |--------|-----------|-----------------|
@@ -297,6 +297,7 @@ The script scores 11 dimensions with weighted composite (see [rubric](references
 | 2.0 | Feedback | Unresolved review threads |
 | 2.0 | Approval Strength | Who approved: area owner > triager > community |
 | 1.5 | Staleness | Days since last update |
+| 1.5 | Discussion Complexity | Thread count and distinct commenters |
 | 1.0 | Alignment | Has area label, not untriaged |
 | 1.0 | Freshness | Recent activity |
 | 1.0 | Size | Smaller = easier to review |

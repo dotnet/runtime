@@ -158,16 +158,17 @@ gh pr view {PR} --repo dotnet/runtime --json mergeable
 gh pr view {PR} --repo dotnet/runtime --json labels
 ```
 
-Check for `area-*` label and absence of `untriaged`. Also query linked issues
-via GraphQL `closingIssuesReferences`.
+Check for `area-*` label and absence of `untriaged`.
 
-**Scoring**
+**Scoring (batch mode)**
 
 | Score | Condition |
 |-------|-----------|
-| ✅ 1 | Has area label + linked issue or milestone |
-| ⚠️ 0.5 | Has area label but no linked issue |
+| ✅ 1 | Has area label, not untriaged |
 | ❌ 0 | `untriaged` label or no area label |
+
+**Single-PR mode**: Can additionally check linked issues via GraphQL
+`closingIssuesReferences` for a richer signal.
 
 ---
 
@@ -400,7 +401,12 @@ gh pr view {PR} --repo dotnet/runtime --json files,labels
 For batch-mode ranking, compute a weighted score per PR. Multiply each
 dimension's point value (0, 0.5, or 1) by its weight and sum.
 
-### Weight Table
+### Weight Table (as implemented in the script)
+
+The script computes 12 dimensions. Dimensions 8 (Context Drift), 11 (Linked Issue
+Priority), 14 (Author Familiarity), 15 (Perf-Sensitive Area), and 16 (Breaking
+Change Risk) are documented above for single-PR deep dives but are **not included**
+in the batch composite score.
 
 | # | Dimension | Weight | Rationale |
 |---|-----------|--------|-----------|
@@ -409,21 +415,15 @@ dimension's point value (0, 0.5, or 1) by its weight and sum.
 | 3 | Maintainer Review | 3 | Required for merge |
 | 4 | Feedback Addressed | 2 | Blocks merge if outstanding |
 | 12 | Approval Strength | 2 | Stronger approvals = closer to merge |
-| 2 | Build Staleness | 1.5 | Stale builds need refresh |
+| 2 | Staleness | 1.5 | Days since last update |
+| — | Discussion Complexity | 1.5 | Thread count and distinct commenters |
 | 6 | Alignment | 1 | Organizational signal |
 | 7 | Freshness | 1 | Stale PRs less likely to merge soon |
-| 8 | Context Drift | 1 | Risk signal |
 | 9 | PR Size / Complexity | 1 | Ease of review |
 | 10 | Community Contribution Flag | 0.5 | Flags community PRs — typically more expensive to drive |
-| 11 | Linked Issue Priority | 0.5 | Urgency signal |
 | 13 | Review Velocity | 0.5 | Momentum signal |
-| 14 | Author Familiarity | 0.5 | Confidence signal |
 
-**Max possible score**: 21.5 (all dimensions score ✅ 1.0).
-
-Dimensions 15 (Perf-Sensitive Area) and 16 (Breaking Change Risk) are expensive
-and single-PR only — they are excluded from the batch composite score but
-reported as annotations when evaluated.
+**Max possible raw score**: 20.5. Normalized to a 0–10 scale: `(rawScore / 20.5) × 10`.
 
 ### Formula
 

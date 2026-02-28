@@ -13,7 +13,7 @@ Runtime-specific signals, labels, area ownership, and automation behavior for PR
 | `untriaged` | PR hasn't been categorized by area yet | Auto on creation | ❌ Missing area routing |
 | `no-recent-activity` | No activity for 14 days | Auto (resourceManagement.yml) | ⚠️ Will auto-close in 14 more days |
 | `backlog-cleanup-candidate` | Issue inactive for 1644 days | Auto | Ignore for PR triage |
-| `community-contribution` | PR from external contributor | Maintainers | Boost priority — retain contributors |
+| `community-contribution` | PR from external contributor | Maintainers | Flagged for visibility so maintainers can prioritize |
 | `area-*` (e.g., `area-System.Net`) | Component area label | Maintainers/auto | Used to find area owners |
 | `api-ready-for-review` | Public API changes pending review | Author/maintainers | ⚠️ Needs API review before merge |
 | `api-approved` | API review completed | API review board | ✅ API review done |
@@ -34,26 +34,14 @@ The file `docs/area-owners.md` contains a table mapping area labels to leads and
 ### How to look up owners for a PR
 
 1. Get the PR's area label(s) from `gh pr view --json labels`
-2. Parse the area-owners.md table (or use the embedded knowledge below)
+2. Parse the area-owners.md table (the script does this automatically at startup)
 3. Match the area label to find the Lead and Owners columns
 4. These are the people whose APPROVED review counts as "maintainer review"
 
+**Note**: The script parses `docs/area-owners.md` dynamically at startup to get
+the full owner table (~138 areas). Do not rely on hardcoded owner lists.
+
 **Fallback**: If the PR has no area label, use `.github/CODEOWNERS` to match file paths to reviewers.
-
-### Key area owners (most common areas for PRs)
-
-- `area-System.Net.*` — @dotnet/ncl
-- `area-CodeGen-coreclr` — @JulieLeeMSFT, @dotnet/jit-contrib
-- `area-System.Collections` — @dotnet/area-system-collections
-- `area-System.Text.Json` — @dotnet/area-system-text-json
-- `area-System.Threading` — @dotnet/area-system-threading
-- `area-System.IO` — @dotnet/area-system-io
-- `area-System.Linq` — @dotnet/area-system-linq
-- `area-GC-coreclr` — @Maoni0
-- `area-Interop-coreclr` — @AaronRobinsonMSFT
-- `arch-wasm` — @lewing, @pavelsavara
-
-> See full table in `docs/area-owners.md` — the skill should parse it dynamically for accuracy.
 
 ---
 
@@ -108,12 +96,12 @@ The `.github/policies/resourceManagement.yml` file defines automated label manag
 
 ## Community Contributions
 
-PRs with `community-contribution` label need special handling:
+PRs with `community-contribution` label are flagged for visibility so maintainers can prioritize:
 
-- **Boost priority** in ranking — external contributors may lose interest if PRs languish
-- **Note mentoring needs** — first-time contributors may need guidance on conventions, testing, CI
+- **Note in output** — the `is_community` flag lets maintainers filter and prioritize as they see fit
 - **Be patient** with response times — community contributors have other commitments
 - **Check author familiarity** — returning community contributors vs first-time contributors have different needs
+- Timely feedback — even a quick "not right now" — respects contributors' time
 
 ---
 

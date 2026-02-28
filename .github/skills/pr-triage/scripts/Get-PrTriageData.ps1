@@ -80,7 +80,6 @@ $prsRaw = & gh @listArgs | ConvertFrom-Json
 # --- Step 2: Quick-screen ---
 $drafts = @($prsRaw | Where-Object { $_.isDraft })
 $bots = @($prsRaw | Where-Object { -not $_.isDraft -and $_.author.login -match "^(app/)?dotnet-maestro|^(app/)?github-actions" })
-$copilotAgent = @($prsRaw | Where-Object { -not $_.isDraft -and $_.author.login -match "copilot-swe-agent" })
 $needsAuthor = @($prsRaw | Where-Object { -not $_.isDraft -and ($_.labels.name -contains "needs-author-action") })
 $stale = @($prsRaw | Where-Object { -not $_.isDraft -and ($_.labels.name -contains "no-recent-activity") })
 $candidates = @($prsRaw | Where-Object {
@@ -194,7 +193,7 @@ foreach ($pr in $candidates) {
 
     # For bot-authored PRs, find the human who triggered it (non-Copilot assignee)
     $botTrigger = $null
-    if ($pr.author.login -match "copilot-swe-agent|copilot") {
+    if ($pr.author.login -match "^(app/)?copilot-swe-agent$") {
         $botTrigger = $pr.assignees | Where-Object { $_.login -ne "Copilot" -and $_.login -ne "app/copilot-swe-agent" } |
             Select-Object -First 1 -ExpandProperty login -ErrorAction SilentlyContinue
     }
@@ -240,7 +239,10 @@ foreach ($pr in $candidates) {
             $_.comments.nodes | ForEach-Object { $_.author.login }
         } | Where-Object { $_ } | Select-Object -Unique)
     }
-    $totalComments = $prCommentCount + ($gql.reviewThreads.nodes | ForEach-Object { $_.comments.nodes.Count } | Measure-Object -Sum).Sum
+    $threadCommentSum = if ($gql -and $gql.reviewThreads.nodes) {
+        ($gql.reviewThreads.nodes | ForEach-Object { $_.comments.nodes.Count } | Measure-Object -Sum).Sum
+    } else { 0 }
+    $totalComments = $prCommentCount + $threadCommentSum
     $distinctCommenters = $allCommenters.Count
 
     # Classify reviewers
@@ -286,7 +288,7 @@ foreach ($pr in $candidates) {
     $maintScore = if ($hasOwnerApproval) { 1.0 } elseif ($hasTriagerApproval) { 0.75 } elseif ($hasAnyReview) { 0.5 } else { 0.0 }
     $feedbackScore = if ($unresolvedThreads -eq 0) { 1.0 } else { 0.5 }
     $conflictScore = switch ($pr.mergeable) { "MERGEABLE" { 1.0 } "UNKNOWN" { 0.5 } "CONFLICTING" { 0.0 } default { 0.5 } }
-    $alignScore = if ($isUntriaged -or -not $hasAreaLabel) { 0.0 } else { 0.5 }
+    $alignScore = if ($isUntriaged -or -not $hasAreaLabel) { 0.0 } else { 1.0 }
     $freshScore = if ($daysSinceUpdate -le 14) { 1.0 } elseif ($daysSinceUpdate -le 30) { 0.5 } else { 0.0 }
     $totalLines = $pr.additions + $pr.deletions
     $sizeScore = if ($pr.changedFiles -le 5 -and $totalLines -le 200) { 1.0 } elseif ($pr.changedFiles -le 20 -and $totalLines -le 500) { 0.5 } else { 0.0 }
@@ -305,7 +307,7 @@ foreach ($pr in $candidates) {
                        else { 0.0 }
 
     # Composite: weighted sum normalized to 0-10 scale
-    $rawMax = 20.0
+    $rawMax = 20.5
     $rawScore = ($ciScore * 3) + ($conflictScore * 3) + ($maintScore * 3) +
         ($feedbackScore * 2) + ($approvalScore * 2) + ($stalenessScore * 1.5) +
         ($discussionScore * 1.5) +
@@ -324,14 +326,12 @@ foreach ($pr in $candidates) {
     }
     elseif ($unresolvedThreads -gt 0) {
         $prNextAction = "Author: respond to $unresolvedThreads thread(s)"
-        # Who left the threads? That's who's waiting.
         $who = @($pr.author.login)
-        # But note who's waiting on them (thread authors)
+        # Note who's waiting on them (thread authors)
         $waitingOn = @($threadAuthors | Where-Object { $_ -ne $pr.author.login }) | Select-Object -First 2
         if ($waitingOn.Count -gt 0) {
             $prNextAction += " from @$($waitingOn -join ', @')"
         }
-        $who = @($pr.author.login)
     }
     elseif (-not $hasAnyReview) {
         $prNextAction = "Maintainer: review needed"
@@ -355,7 +355,7 @@ foreach ($pr in $candidates) {
         # Who should click merge? The approving owner or area lead
         if ($approverLogins.Count -gt 0) {
             $who = @($approverLogins | Where-Object { $prOwners -contains $_ } | Select-Object -First 1)
-            if ($who.Count -eq 0) { $who = @($approverLogins | Select-Object -First 1) }
+            if (-not $who -or $who.Count -eq 0) { $who = @($approverLogins | Select-Object -First 1) }
         } elseif ($prOwners.Count -gt 0) {
             $who = @($prOwners | Select-Object -First 1)
         }
@@ -497,7 +497,8 @@ $output = @{
     returned = $results.Count
     total_after_filters = $totalResults
     screened_out = @{
-        drafts = @($drafts | ForEach-Object { @{ number = $_.number; author = $_.author.login; title = $_.title.Substring(0, [Math]::Min(60, $_.title.Length)) } })
+        drafts_count = $drafts.Count
+        drafts = @($drafts | Select-Object -First 10 | ForEach-Object { @{ number = $_.number; author = $_.author.login; title = $_.title.Substring(0, [Math]::Min(60, $_.title.Length)) } })
         bots = @($bots | ForEach-Object { @{ number = $_.number; author = $_.author.login } })
         needs_author_action = @($needsAuthor | ForEach-Object { @{ number = $_.number; author = $_.author.login } })
         stale = @($stale | ForEach-Object { @{ number = $_.number; author = $_.author.login } })
@@ -514,11 +515,11 @@ $output = @{
 
 if ($OutputCsv) {
     # Tab-separated output for easy SQL/spreadsheet import
-    $header = "number`ttitle`tauthor`tscore`tci`tci_detail`tunresolved_threads`ttotal_threads`tdistinct_commenters`tmergeable`tapproval_count`tis_community`tage_days`tdays_since_update`tchanged_files`tlines_changed`tnext_action`twho`tblockers`twhy"
+    $header = "number`ttitle`tauthor`tscore`tci`tci_detail`tunresolved_threads`ttotal_threads`ttotal_comments`tdistinct_commenters`tmergeable`tapproval_count`tis_community`tage_days`tdays_since_update`tchanged_files`tlines_changed`tnext_action`twho`tblockers`twhy"
     $lines = @($header)
     foreach ($r in $results) {
         $t = ($r.title -replace "`t"," ").Substring(0, [Math]::Min(70, $r.title.Length))
-        $lines += "$($r.number)`t$t`t$($r.author)`t$($r.score)`t$($r.ci)`t$($r.ci_detail)`t$($r.unresolved_threads)`t$($r.total_threads)`t$($r.distinct_commenters)`t$($r.mergeable)`t$($r.approval_count)`t$(if ($r.is_community) {1} else {0})`t$($r.age_days)`t$($r.days_since_update)`t$($r.changed_files)`t$($r.lines_changed)`t$($r.next_action)`t$($r.who)`t$($r.blockers)`t$($r.why)"
+        $lines += "$($r.number)`t$t`t$($r.author)`t$($r.score)`t$($r.ci)`t$($r.ci_detail)`t$($r.unresolved_threads)`t$($r.total_threads)`t$($r.total_comments)`t$($r.distinct_commenters)`t$($r.mergeable)`t$($r.approval_count)`t$(if ($r.is_community) {1} else {0})`t$($r.age_days)`t$($r.days_since_update)`t$($r.changed_files)`t$($r.lines_changed)`t$($r.next_action)`t$($r.who)`t$($r.blockers)`t$($r.why)"
     }
     $lines -join "`n"
 } else {
