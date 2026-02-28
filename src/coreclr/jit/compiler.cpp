@@ -6590,7 +6590,7 @@ void Compiler::compCompileFinish()
 #endif
         }
     }
-#else // DEBUG
+#else  // DEBUG
     if (JitConfig.JitReportMetrics())
     {
         Metrics.report(this);
