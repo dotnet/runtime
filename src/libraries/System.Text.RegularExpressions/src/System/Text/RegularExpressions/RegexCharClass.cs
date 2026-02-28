@@ -1281,14 +1281,7 @@ namespace System.Text.RegularExpressions
                 int categoryLength = set[start + CategoryLengthIndex];
                 int endPosition = start + SetStartIndex + setLength + categoryLength;
 
-                bool inThisLevel = CharInClassInternal(ch, set, start, setLength, categoryLength);
-
-                if (IsNegated(set, start))
-                {
-                    inThisLevel = !inThisLevel;
-                }
-
-                if (!inThisLevel)
+                if (CharInClassInternal(ch, set, start, setLength, categoryLength) == IsNegated(set, start))
                 {
                     break;
                 }
