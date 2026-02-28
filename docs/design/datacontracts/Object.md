@@ -38,8 +38,8 @@ Global variables used:
 | `StringMethodTable` | TargetPointer | The method table for System.String |
 | `SyncTableEntries` | TargetPointer | The `SyncTableEntry` list |
 | `SyncBlockValueToObjectOffset` | uint16 | Offset from the sync block value (in the object header) to the object itself |
-| `SyncBlockIsHashOrSyncBlockIndex` | uint32 | Check bit for sync block index field. IsHashCodeOrSyncBlockIndex and IsHashCode are set: rest of the value is the hash code. IsHashCodeOrSyncBlockIndex set, IsHashCode not set: rest of the value is the sync block index. |
-| `SyncBlockIsHashCode` | uint32 | Check bit for sync block index field. IsHashCodeOrSyncBlockIndex and IsHashCode are set: rest of the value is the hash code. IsHashCodeOrSyncBlockIndex set, IsHashCode not set: rest of the value is the sync block index. |
+| `SyncBlockIsHashOrSyncBlockIndex` | uint32 | Check bit indicating that the sync block value represents either a hash code or a sync block index rather than a thin-lock state. |
+| `SyncBlockIsHashCode` | uint32 | Check bit that, when `SyncBlockIsHashOrSyncBlockIndex` is set, specifies that the remaining bits hold the hash code; when clear, the remaining bits hold the sync block index. |
 | `SyncBlockIndexMask` | uint32 | The mask for sync block index field. |
 
 Contracts used:
@@ -119,7 +119,7 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
             != target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex"))
         return false;
 
-    uint index = syncBlockValue & target.ReadGlobal<uint>("SyncBlockIndexMask");;
+    uint index = syncBlockValue & target.ReadGlobal<uint>("SyncBlockIndexMask");
     ulong offsetInSyncTableEntries = index * /* SyncTableEntry size */;
 
     TargetPointer syncBlockPtr = target.ReadPointer(_syncTableEntries + offsetInSyncTableEntries + /* SyncTableEntry::SyncBlock offset */);
