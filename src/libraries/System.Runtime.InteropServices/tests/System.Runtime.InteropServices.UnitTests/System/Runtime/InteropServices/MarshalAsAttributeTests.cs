@@ -65,11 +65,10 @@ namespace System.Runtime.InteropServices.Tests
         /// <summary>
         /// Creates a PE whose parameter has a FieldMarshal blob that
         /// reproduces the native bug: NATIVE_TYPE_SAFEARRAY (0x1D),
-        /// VT_DISPATCH (0x09), zero-length user-defined type name (0x00).
-        /// This matches what tlbimp generates for SafeArray parameters
-        /// without a user-defined sub type. Without the native fix, the
-        /// FCALL returns a non-null pointer with a zero byte count,
-        /// causing CreateReadOnlySpanFromNullTerminated to read garbage.
+        /// VT_DISPATCH (0x09), zero-length string (0x00), followed by
+        /// poison byte 'X' (0x58) and null terminator (0x00).
+        /// Without the native fix the FCALL returns a dangling pointer
+        /// into the poison byte region causing TypeLoadException.
         /// </summary>
         private static byte[] BuildPEWithSafeArrayMarshalBlob()
         {
@@ -95,14 +94,17 @@ namespace System.Runtime.InteropServices.Tests
             // emits parameters in definition order deterministically.
             const int paramRowNumber = 1;
 
-            // Blob bytes matching what tlbimp produces for SafeArray
-            // parameters without a user-defined sub type:
+            // Blob bytes:
             //   0x1D  NATIVE_TYPE_SAFEARRAY
             //   0x09  VT_DISPATCH
-            //   0x00  compressed string length 0 (empty user-defined type name)
+            //   0x00  compressed string length 0
+            //   0x58  'X' poison (not consumed by parser)
+            //   0x00  null terminator
             BlobBuilder marshalBlob = new();
             marshalBlob.WriteByte(0x1D);
             marshalBlob.WriteByte(0x09);
+            marshalBlob.WriteByte(0x00);
+            marshalBlob.WriteByte(0x58);
             marshalBlob.WriteByte(0x00);
             mdb.AddMarshallingDescriptor(
                 MetadataTokens.ParameterHandle(paramRowNumber),

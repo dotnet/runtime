@@ -207,7 +207,6 @@ BOOL ParseNativeTypeInfo(NativeTypeParamInfo* pParamInfo,
 
                 pParamInfo->m_strSafeArrayUserDefTypeName = (LPUTF8)pvNativeType;
                 pParamInfo->m_cSafeArrayUserDefTypeNameBytes = strLen;
-                _ASSERTE((ULONG)(pvNativeType + strLen - pvNativeTypeStart) == cbNativeType);
             }
             break;
 
