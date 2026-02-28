@@ -127,7 +127,7 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
         return false;
 
     TargetPointer rcw1 = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::RCW offset */);
-    rcw = (rcw1 == 1) ? TargetPointer.Null : rcw1;
+    rcw = rcw1 & ~1ul;
     TargetPointer ccw1 = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::CCW offset */);
     ccw = (ccw1 == 1) ? TargetPointer.Null : ccw1;
     TargetPointer ccf1 = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::CCF offset */);
