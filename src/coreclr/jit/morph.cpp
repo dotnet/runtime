@@ -8634,6 +8634,19 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 
         var_types castToType = cast->CastToType();
 
+        // For small-int casts fed by a widening int->long, remove the widening so we truncate directly
+        // from the original int value.
+        if (varTypeIsSmall(castToType) && src->OperIs(GT_CAST) && !src->gtOverflow())
+        {
+            GenTreeCast* widening = src->AsCast();
+            if (varTypeIsLong(widening->CastToType()) && (genActualType(widening->CastFromType()) == TYP_INT))
+            {
+                cast->CastOp() = widening->CastOp();
+                DEBUG_DESTROY_NODE(widening);
+                src = cast->CastOp();
+            }
+        }
+
         // For indir-like nodes, we may be able to change their type to satisfy (and discard) the cast.
         if (varTypeIsSmall(castToType) && (genTypeSize(castToType) == genTypeSize(src)) &&
             src->OperIs(GT_IND, GT_LCL_FLD))
