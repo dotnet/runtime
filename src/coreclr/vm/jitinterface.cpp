@@ -12424,8 +12424,17 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
     bool forceInterpreter    = (s_ForceInterpreter.val(CLRConfig::INTERNAL_ForceInterpreter) != 0);
 #if defined(TARGET_S390X) || defined(TARGET_POWERPC64)
-    interpreterFallback = false;
+    MethodDesc* ftnDesc = GetMethod(info->ftn);
+    const char* ftnName = ftnDesc->GetName();
+
     forceInterpreter = true;
+    if (!strcmp(ftnName, "ppc64leHelloWorld"))
+    {
+	printf ("Function name is %s\n", ftnName);
+	interpreterFallback = true;
+    }
+    else
+        interpreterFallback = false;
 #endif
 
     if (interpreterFallback == false)
@@ -12452,12 +12461,20 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 
     if (FAILED(ret) && jitMgr->m_jit)
     {
-        ret = CompileMethodWithEtwWrapper(jitMgr,
+	EX_TRY
+	{
+            ret = CompileMethodWithEtwWrapper(jitMgr,
                                           comp,
                                           info,
                                           CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                           nativeEntry,
                                           nativeSizeOfCode);
+	}
+	EX_CATCH
+	{
+	    interpreterFallback = false;
+	}
+	EX_END_CATCH(SwallowAllExceptions)
     }
 
     if (interpreterFallback == true)
@@ -12467,7 +12484,15 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         if (FAILED(ret) &&
             (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
-            if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
+	    // FIXME: GenerateInterpreterStub holds on to the method info longer than
+
+	    // its life time (in particular in dynamic modules). Allocate a new copy.
+	    MethodDesc *pMD = reinterpret_cast<MethodDesc*>(info->ftn);
+	    CEEInfo *jitInfo = new CEEInfo(pMD, true);
+
+	    CORINFO_METHOD_INFO methInfo;
+            jitInfo->getMethodInfo(CORINFO_METHOD_HANDLE(pMD), &methInfo, NULL);
+            if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, &methInfo, nativeEntry, nativeSizeOfCode)))
             {
                 isInterpreterStub = true;
             }
@@ -12820,7 +12845,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     timer.Start();
 
     EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
-#if !defined(TARGET_S390X) && !defined(TARGET_POWERPC64)
+//#if !defined(TARGET_S390X) && !defined(TARGET_POWERPC64)
     if (!jitMgr->LoadJIT())
     {
 #ifdef ALLOW_SXS_JIT
@@ -12839,7 +12864,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load JIT compiler"));
 #endif // ALLOW_SXS_JIT
     }
-#endif
+//#endif
 
 #ifdef _DEBUG
     // This is here so we can see the name and class easily in the debugger

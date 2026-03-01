@@ -25,6 +25,364 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "sideeffects.h"
 #include "lower.h"
 
-// TODO POWERPC64
+//------------------------------------------------------------------------
+// getNextConsecutiveRefPosition: Get the next subsequent RefPosition.
+//
+// Arguments:
+//    refPosition   - The RefPosition for which we need to find the next RefPosition.
+//
+// Return Value:
+//    The next RefPosition or nullptr if there is not one.
+//
+RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
+{
+	    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+// assignConsecutiveRegisters: For subsequent RefPositions, set the register
+//   requirement to be the consecutive register(s) of the register that is assigned to
+//   the firstRefPosition.
+//   If one of the subsequent RefPosition is RefTypeUpperVectorRestore, sets the
+//   registerAssignment to not include any of the consecutive registers that are being
+//   assigned to the RefTypeUse RefPositions.
+//
+// Arguments:
+//    firstRefPosition  - First RefPosition of the series of consecutive registers.
+//    firstRegAssigned  - Register assigned to the first RefPosition.
+//
+//  Note:
+//      This method will set the registerAssignment of subsequent RefPositions with consecutive registers.
+//      Some of the registers could be busy, and they will be spilled. We would end up with busy registers if
+//      we did not find free consecutive registers.
+//
+void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned)
+{
+	    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+// canAssignNextConsecutiveRegisters: Starting with `firstRegAssigned`, check if next
+//   consecutive registers are free or are already assigned to the subsequent RefPositions.
+//
+// Arguments:
+//    firstRefPosition  - First RefPosition of the series of consecutive registers.
+//    firstRegAssigned  - Register assigned to the first RefPosition.
+//
+//  Returns:
+//      True if all the consecutive registers starting from `firstRegAssigned` are assignable.
+//      Even if one of them is busy, returns false.
+//
+bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned)
+{
+	    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+// filterConsecutiveCandidates: Given `candidates`, check if `registersNeeded` consecutive
+//   registers are available in it, and if yes, returns first bit set of every possible series.
+//
+// Arguments:
+//    candidates                - Set of available candidates.
+//    registersNeeded           - Number of consecutive registers needed.
+//    allConsecutiveCandidates  - Mask returned containing all bits set for possible consecutive register candidates.
+//
+//  Returns:
+//      From `candidates`, the mask of series of consecutive registers of `registersNeeded` size with just the first-bit
+//      set.
+//
+SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  floatCandidates,
+		                                                         unsigned int      registersNeeded,
+									                                                          SingleTypeRegSet* allConsecutiveCandidates)
+{
+	    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+// filterConsecutiveCandidatesForSpill: Amoung the selected consecutiveCandidates,
+//   check if there are any ranges that would require fewer registers to spill
+//   and returns such mask. The return result would always be a subset of
+//   consecutiveCandidates.
+//
+// Arguments:
+//    consecutiveCandidates   - Consecutive candidates to filter  on.
+//    registersNeeded         - Number of registers needed.
+//
+//  Returns:
+//      Filtered candidates that needs fewer spilling.
+//
+SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSet consecutiveCandidates,
+		                                                                 unsigned int     registersNeeded)
+{
+	    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+// getConsecutiveCandidates: Returns the mask of all the consecutive candidates
+//   for given RefPosition. For first RefPosition of a series of RefPositions that needs
+//   consecutive registers, then returns only the mask such that it satisfies the need
+//   of having free consecutive registers. If free consecutive registers are not available
+//   it finds such a series that needs fewer registers spilling.
+//
+// Arguments:
+//    allCandidates   - Register assigned to the first RefPosition.
+//    refPosition     - Number of registers to check.
+//    busyCandidates  - Register mask of free/busy registers.
+//
+//  Returns:
+//      Register mask of free consecutive registers. If there are not enough free registers,
+//      or the free registers are not consecutive, then return RBM_NONE. In that case,
+//      `busyCandidates` will contain the register mask that can be assigned and will include
+//      both free and busy registers.
+//
+//  Notes:
+//      The consecutive registers mask includes just the bits of first registers or
+//      (n - k) registers. For example, if we need 3 consecutive registers and
+//      allCandidates = 0x1C080D0F00000000, the consecutive register mask returned
+//      will be 0x400000300000000.
+//
+SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandidates,
+		                                                      RefPosition*      refPosition,
+								                                                            SingleTypeRegSet* busyCandidates)
+{
+	    _ASSERTE(!"NYI");
+}
+//------------------------------------------------------------------------
+// BuildPutArgSplit: Set the NodeInfo for a GT_PUTARG_SPLIT node
+//
+// Arguments:
+//    argNode - a GT_PUTARG_SPLIT node
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+// Notes:
+//    Set the child node(s) to be contained
+//
+int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
+{
+	    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+// BuildCast: Set the NodeInfo for a GT_CAST.
+//  
+// Arguments:
+//    cast - The GT_CAST node
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildCast(GenTreeCast* cast)
+{
+    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+// BuildPutArgStk: Set the NodeInfo for a GT_PUTARG_STK node
+//
+// Arguments:
+//    argNode - a GT_PUTARG_STK node
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+// Notes:
+//    Set the child node(s) to be contained when we have a multireg arg
+//
+int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
+{
+    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+/// BuildIndir: Specify register requirements for address expression
+//                       of an indirection operation.
+//      
+// Arguments:
+//    indirTree - GT_IND, GT_STOREIND or block GenTree node
+//  
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildIndir(GenTreeIndir* indirTree)
+{       
+	    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+// BuildCall: Set the NodeInfo for a call.
+//
+// Arguments:
+//    call - The call node of interest
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildCall(GenTreeCall* call)
+{
+	    _ASSERTE(!"NYI");
+}
+                                            
+//------------------------------------------------------------------------
+// BuildSelect: Build RefPositions for a GT_SELECT node.
+//
+// Arguments:
+//    select - The GT_SELECT node
+//      
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildSelect(GenTreeOp* select)
+{   
+	    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+// BuildBlockStore: Build the RefPositions for a block store node.
+//
+// Arguments:
+//    blkNode - The block store node of interest
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
+{
+	    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+// BuildNode: Build the RefPositions for a node
+//
+// Arguments:
+//    treeNode - the node of interest
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+// Notes:
+// Preconditions:
+//    LSRA Has been initialized.
+//
+// Postconditions:
+//    RefPositions have been built for all the register defs and uses required
+//    for this node.
+//
+int LinearScan::BuildNode(GenTree* tree)
+{
+	    _ASSERTE(!"NYI");
+}
+
+#ifdef FEATURE_HW_INTRINSICS
+
+#include "hwintrinsic.h"
+
+//------------------------------------------------------------------------
+// BuildHWIntrinsic: Set the NodeInfo for a GT_HWINTRINSIC tree.
+//
+// Arguments:
+//    tree       - The GT_HWINTRINSIC node of interest
+//    pDstCount  - OUT parameter - the number of registers defined for the given node
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount)
+{
+	    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+//  BuildConsecutiveRegistersForUse: Build ref position(s) for `treeNode` that has a
+//  requirement of allocating consecutive registers. It will create the RefTypeUse
+//  RefPositions for as many consecutive registers are needed for `treeNode` and in
+//  between, it might contain RefTypeUpperVectorRestore RefPositions.
+//
+//  For the first RefPosition of the series, it sets the `regCount` field equal to
+//  the number of subsequent RefPositions (including the first one) involved for this
+//  treeNode. For the subsequent RefPositions, it sets the `regCount` to 0. For all
+//  the RefPositions created, it sets the `needsConsecutive` flag so it can be used to
+//  identify these RefPositions during allocation.
+//
+//  It also populates a `RefPositionMap` to access the subsequent RefPositions from
+//  a given RefPosition. This was preferred rather than adding a field in RefPosition
+//  for this purpose.
+//
+// Arguments:
+//    treeNode       - The GT_HWINTRINSIC node of interest
+//    rmwNode        - Read-modify-write node.
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode)
+{
+	    _ASSERTE(!"NYI");
+}
+
+//------------------------------------------------------------------------
+//  BuildConsecutiveRegistersForDef: Build RefTypeDef ref position(s) for
+//  `treeNode` that produces `registerCount` consecutive registers.
+//
+//  For the first RefPosition of the series, it sets the `regCount` field equal to
+//  the total number of RefPositions (including the first one) involved for this
+//  treeNode. For the subsequent RefPositions, it sets the `regCount` to 0. For all
+//  the RefPositions created, it sets the `needsConsecutive` flag so it can be used to
+//  identify these RefPositions during allocation.
+//
+//  It also populates a `RefPositionMap` to access the subsequent RefPositions from
+//  a given RefPosition. This was preferred rather than adding a field in RefPosition
+//  for this purpose.
+//
+// Arguments:
+//    treeNode       - The GT_HWINTRINSIC node of interest
+//    registerCount  - Number of registers the treeNode produces
+//
+void LinearScan::BuildConsecutiveRegistersForDef(GenTree* treeNode, int registerCount)
+{
+	    _ASSERTE(!"NYI");
+}
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// isLiveAtConsecutiveRegistersLoc: Check if the refPosition is live at the location
+//    where consecutive registers are needed. This is used during JitStressRegs to
+//    not constrain the register requirements for such refpositions, because a lot
+//    of registers will be busy. For RefTypeUse, it will just see if the nodeLocation
+//    matches with the tracking `consecutiveRegistersLocation`. For Def, it will check
+//    the underlying `GenTree*` to see if the tree that produced it had consecutive
+//    registers requirement.
+//
+//
+// Arguments:
+//    consecutiveRegistersLocation - The most recent location where consecutive
+//     registers were needed.
+//
+// Returns: If the refposition is live at same location which has the requirement of
+//    consecutive registers.
+//
+bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation)
+{
+	    _ASSERTE(!"NYI");
+}
+#endif // DEBUG
+
+//------------------------------------------------------------------------
+// getLowVectorOperandAndCandidates: Instructions for certain intrinsics operate on low vector registers
+//      depending on the size of the element. The method returns the candidates based on that size and
+//      the operand number of the intrinsics that has the restriction.
+//
+// Arguments:
+//    intrin - Intrinsics
+//    operandNum (out) - The operand number having the low vector register restriction
+//    candidates (out) - The restricted low vector registers
+//
+void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, SingleTypeRegSet* candidates)
+{
+	    _ASSERTE(!"NYI");
+}
+
+#endif // FEATURE_HW_INTRINSICS
 
 #endif //TARGET_POWERPC64

@@ -8404,14 +8404,8 @@ public:
             reg     = REG_T5;
             regMask = RBM_T5;
 #elif defined(TARGET_POWERPC64)
-	    if (isNativeAOT)
-	    {
-		_ASSERTE(!"NYI POWERPC64");
-	    }
-	    else
-	    {
-		_ASSERTE(!"NYI POWERPC64");
-	    }
+            reg     = REG_R12; // TODO POWERPC64
+            regMask = RBM_R12;
 #else
 #error Unsupported or unset target architecture
 #endif

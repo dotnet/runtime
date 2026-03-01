@@ -293,38 +293,36 @@
   #define RBM_ARG_6                RBM_R9
   #define RBM_ARG_7                RBM_R10
 
-  #define REG_FLTARG_0             REG_F0
-  #define REG_FLTARG_1             REG_F1
-  #define REG_FLTARG_2             REG_F2
-  #define REG_FLTARG_3             REG_F3
-  #define REG_FLTARG_4             REG_F4
-  #define REG_FLTARG_5             REG_F5
-  #define REG_FLTARG_6             REG_F6
-  #define REG_FLTARG_7             REG_F7
-  #define REG_FLTARG_8             REG_F8
-  #define REG_FLTARG_9             REG_F9
-  #define REG_FLTARG_10            REG_F10
-  #define REG_FLTARG_11            REG_F11
-  #define REG_FLTARG_12            REG_F12
-  #define REG_FLTARG_13            REG_F13
+  #define REG_FLTARG_0             REG_F1
+  #define REG_FLTARG_1             REG_F2
+  #define REG_FLTARG_2             REG_F3
+  #define REG_FLTARG_3             REG_F4
+  #define REG_FLTARG_4             REG_F5
+  #define REG_FLTARG_5             REG_F6
+  #define REG_FLTARG_6             REG_F7
+  #define REG_FLTARG_7             REG_F8
+  #define REG_FLTARG_8             REG_F9
+  #define REG_FLTARG_9             REG_F10
+  #define REG_FLTARG_10            REG_F11
+  #define REG_FLTARG_11            REG_F12
+  #define REG_FLTARG_12            REG_F13
 
-  #define RBM_FLTARG_0             RBM_F0
-  #define RBM_FLTARG_1             RBM_F1
-  #define RBM_FLTARG_2             RBM_F2
-  #define RBM_FLTARG_3             RBM_F3
-  #define RBM_FLTARG_4             RBM_F4
-  #define RBM_FLTARG_5             RBM_F5
-  #define RBM_FLTARG_6             RBM_F6
-  #define RBM_FLTARG_7             RBM_F7
-  #define RBM_FLTARG_8             RBM_F8
-  #define RBM_FLTARG_9             RBM_F9
-  #define RBM_FLTARG_10            RBM_F10
-  #define RBM_FLTARG_11            RBM_F11
-  #define RBM_FLTARG_12            RBM_F12
-  #define RBM_FLTARG_13            RBM_F13
+  #define RBM_FLTARG_0             RBM_F1
+  #define RBM_FLTARG_1             RBM_F2
+  #define RBM_FLTARG_2             RBM_F3
+  #define RBM_FLTARG_3             RBM_F4
+  #define RBM_FLTARG_4             RBM_F5
+  #define RBM_FLTARG_5             RBM_F6
+  #define RBM_FLTARG_6             RBM_F7
+  #define RBM_FLTARG_7             RBM_F8
+  #define RBM_FLTARG_8             RBM_F9
+  #define RBM_FLTARG_9             RBM_F10
+  #define RBM_FLTARG_10            RBM_F11
+  #define RBM_FLTARG_11            RBM_F12
+  #define RBM_FLTARG_12            RBM_F13
 
   #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1|RBM_ARG_2|RBM_ARG_3|RBM_ARG_4|RBM_ARG_5|RBM_ARG_6|RBM_ARG_7)
-  #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3|RBM_FLTARG_4|RBM_FLTARG_5|RBM_FLTARG_6|RBM_FLTARG_7|RBM_FLTARG_8|RBM_FLTARG_9|RBM_FLTARG_10|RBM_FLTARG_11|RBM_FLTARG_12|RBM_FLTARG_13)
+  #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3|RBM_FLTARG_4|RBM_FLTARG_5|RBM_FLTARG_6|RBM_FLTARG_7|RBM_FLTARG_8|RBM_FLTARG_9|RBM_FLTARG_10|RBM_FLTARG_11|RBM_FLTARG_12)
 
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
   extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];

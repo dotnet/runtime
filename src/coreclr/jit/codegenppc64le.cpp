@@ -25,4 +25,1212 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 // TODO POWERPC64
 
+
+//------------------------------------------------------------------------
+// genStackPointerConstantAdjustment: add a specified constant value to the stack pointer.
+// No probe is done.
+//
+// Arguments:
+//    spDelta                 - the value to add to SP. Must be negative or zero.
+//    regTmp                  - an available temporary register that is used if 'spDelta' cannot be encoded by
+//                              'sub sp, sp, #spDelta' instruction.
+//                              Can be REG_NA if the caller knows for certain that 'spDelta' fits into the immediate
+//                              value range.
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTmp)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genStackPointerConstantAdjustmentWithProbe: add a specified constant value to the stack pointer,
+// and probe the stack as appropriate. Should only be called as a helper for
+// genStackPointerConstantAdjustmentLoopWithProbe.
+//
+// Arguments:
+//    spDelta                 - the value to add to SP. Must be negative or zero. If zero, the probe happens,
+//                              but the stack pointer doesn't move.
+//    regTmp                  - temporary register to use as target for probe load instruction
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genStackPointerConstantAdjustmentLoopWithProbe: Add a specified constant value to the stack pointer,
+// and probe the stack as appropriate. Generates one probe per page, up to the total amount required.
+// This will generate a sequence of probes in-line.
+//
+// Arguments:
+//    spDelta                 - the value to add to SP. Must be negative.
+//    regTmp                  - temporary register to use as target for probe load instruction
+//
+// Return Value:
+//    Offset in bytes from SP to last probed address.
+//
+target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t spDelta, regNumber regTmp)
+{
+    _ASSERTE("!NYI");
+}
+
+
+//------------------------------------------------------------------------
+// genCodeForTreeNode Generate code for a single node in the tree.
+//
+// Preconditions:
+//    All operands have been evaluated.
+//
+void CodeGen::genCodeForTreeNode(GenTree* treeNode)
+{
+    _ASSERTE("!NYI");
+}
+
+//---------------------------------------------------------------------
+// genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.
+//
+// Arguments:
+//     initReg        - register to use as a scratch register
+//     pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
+//                      this call sets 'initReg' to a non-zero value.
+//
+// Return Value:
+//     None
+//
+void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genEmitGSCookieCheck: Generate code to check that the GS cookie
+// wasn't thrashed by a buffer overrun.
+//
+void CodeGen::genEmitGSCookieCheck(bool pushReg)
+{
+    _ASSERTE("!NYI");
+}
+
+//---------------------------------------------------------------------
+// genIntrinsic - generate code for a given intrinsic
+//
+// Arguments
+//    treeNode - the GT_INTRINSIC node
+//
+// Return value:
+//    None
+//
+void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
+{
+    _ASSERTE("!NYI");
+}
+
+//---------------------------------------------------------------------
+// genPutArgStk - generate code for a GT_PUTARG_STK node
+//
+// Arguments
+//    treeNode - the GT_PUTARG_STK node
+//
+// Return value:
+//    None
+//
+void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
+{
+    _ASSERTE("!NYI");
+}
+
+//---------------------------------------------------------------------
+// genPutArgReg - generate code for a GT_PUTARG_REG node
+//
+// Arguments
+//    tree - the GT_PUTARG_REG node
+//
+// Return value:
+//    None
+//
+void CodeGen::genPutArgReg(GenTreeOp* tree)
+{
+    _ASSERTE("!NYI");
+}
+
+//---------------------------------------------------------------------
+// genPutArgSplit - generate code for a GT_PUTARG_SPLIT node
+//
+// Arguments
+//    tree - the GT_PUTARG_SPLIT node
+//
+// Return value:
+//    None
+//
+void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
+{
+    _ASSERTE("!NYI");
+}
+
+#ifdef FEATURE_SIMD
+//----------------------------------------------------------------------------------
+// genMultiRegStoreToSIMDLocal: store multi-reg value to a single-reg SIMD local
+//
+// Arguments:
+//    lclNode  -  GentreeLclVar of GT_STORE_LCL_VAR
+//
+// Return Value:
+//    None
+//
+void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
+{
+
+    _ASSERTE("!NYI");
+}
+
+#endif // FEATURE_SIMD
+
+//------------------------------------------------------------------------
+// genCreateAndStoreGCInfo: Create and record GC Info for the function.
+//
+void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
+                                      unsigned            prologSize,
+				      unsigned epilogSize DEBUGARG(void* codePtr))
+{
+    _ASSERTE("!NYI");
+}
+
+
+//------------------------------------------------------------------------
+// genRangeCheck: generate code for GT_BOUNDS_CHECK node.
+//
+void CodeGen::genRangeCheck(GenTree* oper)
+{
+    _ASSERTE("!NYI");
+}
+
+//---------------------------------------------------------------------
+// genCodeForPhysReg - generate code for a GT_PHYSREG node
+//
+// Arguments
+//    tree - the GT_PHYSREG node
+//
+// Return value:
+//    None
+//
+void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
+{
+    _ASSERTE("!NYI");
+}
+
+//---------------------------------------------------------------------
+// genCodeForNullCheck - generate code for a GT_NULLCHECK node
+//
+// Arguments
+//    tree - the GT_NULLCHECK node
+//
+// Return value:
+//    None
+//
+void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genCodeForShift: Generates the code sequence for a GenTree node that
+// represents a bit shift or rotate operation (<<, >>, >>>, rol, ror).
+//
+// Arguments:
+//    tree - the bit shift node (that specifies the type of bit shift to perform).
+//
+// Assumptions:
+//    a) All GenTrees are register allocated.
+//
+void CodeGen::genCodeForShift(GenTree* tree)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genCodeForLclAddr: Generates the code for GT_LCL_ADDR.
+//
+// Arguments:
+//    lclAddrNode - the node.
+//
+void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
+{
+    _ASSERTE("!NYI");
+}
+
+//----------------------------------------------------------------------------------
+// genCodeForInitBlkUnroll: Generate unrolled block initialization code.
+//
+// Arguments:
+//    node - the GT_STORE_BLK node to generate code for
+//
+void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
+{
+}
+//------------------------------------------------------------------------
+// inst_SETCC: Generate code to set a register to 0 or 1 based on a condition.
+//
+// Arguments:
+//   condition - The condition
+//   type      - The type of the value to be produced
+//   dstReg    - The destination register to be set to 1 or 0
+//
+void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstReg)
+{
+    _ASSERTE("!NYI");
+}
+
+
+//------------------------------------------------------------------------
+// inst_JMP: Generate a jump instruction.
+//
+void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
+{
+    _ASSERTE("!NYI");
+}
+
+
+//------------------------------------------------------------------------
+// genCodeForStoreBlk: Produce code for a GT_STORE_BLK node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
+{
+    _ASSERTE("!NYI");
+}
+
+
+//------------------------------------------------------------------------
+// genCodeForLclFld: Produce code for a GT_LCL_FLD node.
+//
+// Arguments:
+//    tree - the GT_LCL_FLD node
+//
+void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genCodeForIndexAddr: Produce code for a GT_INDEX_ADDR node.
+//
+// Arguments:
+//    tree - the GT_INDEX_ADDR node
+//
+void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genCall: Produce code for a GT_CALL node
+//
+void CodeGen::genCall(GenTreeCall* call)
+{
+    _ASSERTE("!NYI");
+}
+    
+//------------------------------------------------------------------------
+// genCallInstruction - Generate instructions necessary to transfer control to the call.
+//
+// Arguments:
+//    call - the GT_CALL node
+//
+// Remaks:
+//   For tailcalls this function will generate a jump.
+//
+void CodeGen::genCallInstruction(GenTreeCall* call)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genJmpPlaceVarArgs:
+//   Generate code to place all varargs correctly for a JMP.
+//
+void CodeGen::genJmpPlaceVarArgs()
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genGetVolatileLdStIns: Determine the most efficient instruction to perform a
+//    volatile load or store and whether an explicit barrier is required or not.
+//
+// Arguments:
+//    currentIns   - the current instruction to perform load/store
+//    targetReg    - the target register
+//    indir        - the indirection node representing the volatile load/store
+//    needsBarrier - OUT parameter. Set to true if an explicit memory barrier is required.
+//
+// Return Value:
+//    instruction to perform the volatile load/store with.
+//
+instruction CodeGen::genGetVolatileLdStIns(instruction   currentIns,
+					regNumber     targetReg,
+					GenTreeIndir* indir,
+					bool*         needsBarrier)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genCodeForIndir: Produce code for a GT_IND node.
+//
+// Arguments:
+//    tree - the GT_IND node
+//
+void CodeGen::genCodeForIndir(GenTreeIndir* tree)
+{
+    _ASSERTE("!NYI");
+}
+
+
+void CodeGen::genEHCatchRet(BasicBlock* block)
+{
+    _ASSERTE("!NYI");
+}
+
+// The following classes
+//   - InitBlockUnrollHelper
+//   - CopyBlockUnrollHelper
+// encapsulate algorithms that produce instruction sequences for inlined equivalents of memset() and memcpy() functions.
+//
+// Each class has a private template function that accepts an "InstructionStream" as a template class argument:
+//   - InitBlockUnrollHelper::UnrollInitBlock<InstructionStream>(startDstOffset, byteCount, initValue)
+//   - CopyBlockUnrollHelper::UnrollCopyBlock<InstructionStream>(startSrcOffset, startDstOffset, byteCount)
+//
+// The design goal is to separate optimization approaches implemented by the algorithms
+// from the target platform specific details.
+//
+// InstructionStream is a "stream" of load/store instructions (i.e. ldr/ldp/str/stp) that represents an instruction
+// sequence that will initialize a memory region with some value or copy values from one memory region to another.
+//
+// As far as UnrollInitBlock and UnrollCopyBlock concerned, InstructionStream implements the following class member
+// functions:
+//   - LoadPairRegs(offset, regSizeBytes)
+//   - StorePairRegs(offset, regSizeBytes)
+//   - LoadReg(offset, regSizeBytes)
+//   - StoreReg(offset, regSizeBytes)
+//
+// There are three implementations of InstructionStream:
+//   - CountingStream that counts how many instructions were pushed out of the stream
+//   - VerifyingStream that validates that all the instructions in the stream are encodable on Arm64
+//   - ProducingStream that maps the function to corresponding emitter functions
+//
+// The idea behind the design is that decision regarding what instruction sequence to emit
+// (scalar instructions vs. SIMD instructions) is made by execution an algorithm producing an instruction sequence
+// while counting the number of produced instructions and verifying that all the instructions are encodable.
+//
+// For example, using SIMD instructions might produce a shorter sequence but require "spilling" a value of a starting
+// address
+// to an integer register (due to stricter offset alignment rules for 16-byte wide SIMD instructions).
+// This the CodeGen can take this fact into account before emitting an instruction sequence.
+//
+// Alternative design might have had VerifyingStream and ProducingStream fused into one class
+// that would allow to undo an instruction if the sequence is not fully encodable.
+
+#if 0
+class CountingStream
+{
+public:
+    CountingStream()
+    {
+	instrCount = 0;
+    }
+
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
+    {
+	instrCount++;
+    }
+
+    void StorePairRegs(int offset, unsigned regSizeBytes)
+    {
+	instrCount++;
+    }
+
+    void LoadReg(int offset, unsigned regSizeBytes)
+    {
+	instrCount++;
+    }
+
+    void StoreReg(int offset, unsigned regSizeBytes)
+    {
+	instrCount++;
+    }
+
+    unsigned InstructionCount() const
+    {
+	return instrCount;
+    }
+
+private:
+    unsigned instrCount;
+};
+
+class VerifyingStream
+{
+public:
+    VerifyingStream()
+    {
+	canEncodeAllLoads  = true;
+	canEncodeAllStores = true;
+    }
+
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
+    {
+	canEncodeAllLoads = canEncodeAllLoads && emitter::canEncodeLoadOrStorePairOffset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    void StorePairRegs(int offset, unsigned regSizeBytes)
+    {
+	canEncodeAllStores =
+	canEncodeAllStores && emitter::canEncodeLoadOrStorePairOffset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    void LoadReg(int offset, unsigned regSizeBytes)
+    {
+	canEncodeAllLoads =
+	canEncodeAllLoads && emitter::emitIns_valid_imm_for_ldst_offset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    void StoreReg(int offset, unsigned regSizeBytes)
+    {
+	canEncodeAllStores =
+	canEncodeAllStores && emitter::emitIns_valid_imm_for_ldst_offset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    bool CanEncodeAllLoads() const
+    {
+	return canEncodeAllLoads;
+    }
+
+    bool CanEncodeAllStores() const
+    {
+	return canEncodeAllStores;
+    }
+
+private:
+    bool canEncodeAllLoads;
+    bool canEncodeAllStores;
+};
+
+#endif
+
+//----------------------------------------------------------------------------------
+// genCodeForCpBlkUnroll: Generate unrolled block copy code.
+//
+// Arguments:
+//    node - the GT_STORE_BLK node to generate code for
+//
+void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
+{
+    _ASSERTE("!NYI");
+}
+
+
+//------------------------------------------------------------------------
+// genCodeForMemmove: Perform an unrolled memmove. The idea that we can
+//    ignore the fact that src and dst might overlap if we save the whole
+//    src to temp regs in advance, e.g. for memmove(dst: x1, src: x0, len: 30):
+//
+//       ldr   q16, [x0]
+//       ldr   q17, [x0, #0x0E]
+//       str   q16, [x1]
+//       str   q17, [x1, #0x0E]
+//
+// Arguments:
+//    tree - GenTreeBlk node
+//
+void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
+{
+    _ASSERTE("!NYI");
+}
+    
+
+// clang-format off
+const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
+{
+};
+// clang-format on
+
+/*****************************************************************************
+ *
+ *  Generates code for a function epilog.
+ *
+ *  Please consult the "debugger team notification" comment in genFnProlog().
+ */
+
+void CodeGen::genFnEpilog(BasicBlock* block)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genPushCalleeSavedRegisters: Push any callee-saved registers we have used.
+//
+// Arguments (arm64):
+//    initReg        - A scratch register (that gets set to zero on some platforms).
+//    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
+//                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
+//
+void CodeGen::genPushCalleeSavedRegisters()
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genInstrWithConstant:   we will typically generate one instruction
+//
+//    ins  reg1, reg2, imm
+//
+// However the imm might not fit as a directly encodable immediate,
+// when it doesn't fit we generate extra instruction(s) that sets up
+// the 'regTmp' with the proper immediate value.
+//
+//     mov  regTmp, imm
+//     ins  reg1, reg2, regTmp
+//
+// Arguments:
+//    ins                 - instruction
+//    attr                - operation size and GC attribute
+//    reg1, reg2          - first and second register operands
+//    imm                 - immediate value (third operand when it fits)
+//    tmpReg              - temp register to use when the 'imm' doesn't fit. Can be REG_NA
+//                          if caller knows for certain the constant will fit.
+//    inUnwindRegion      - true if we are in a prolog/epilog region with unwind codes.
+//                          Default: false.
+//
+// Return Value:
+//    returns true if the immediate was small enough to be encoded inside instruction. If not,
+//    returns false meaning the immediate was too large and tmpReg was used and modified.
+//
+bool CodeGen::genInstrWithConstant(instruction ins,
+				   emitAttr    attr,
+				   regNumber   reg1,
+				   regNumber   reg2,
+				   ssize_t     imm,
+				   regNumber   tmpReg,
+				   bool        inUnwindRegion /* = false */)
+{
+    _ASSERTE("!NYI");
+}
+
+//---------------------------------------------------------------------
+// genCallerSPtoFPdelta - return the offset from Caller-SP to the frame pointer.
+// This number is going to be negative, since the Caller-SP is at a higher
+// address than the frame pointer.
+//
+// There must be a frame pointer to call this function!
+//
+int CodeGenInterface::genCallerSPtoFPdelta() const
+{
+    _ASSERTE("!NYI");
+}
+
+//---------------------------------------------------------------------
+// genCallerSPtoInitialSPdelta - return the offset from Caller-SP to Initial SP.
+//
+// This number will be negative.
+
+int CodeGenInterface::genCallerSPtoInitialSPdelta() const
+{
+    _ASSERTE("!NYI");
+}
+
+//---------------------------------------------------------------------
+// genSPtoFPdelta - return offset from the stack pointer (Initial-SP) to the frame pointer. The frame pointer
+// will point to the saved frame pointer slot (i.e., there will be frame pointer chaining).
+//
+int CodeGenInterface::genSPtoFPdelta() const
+{
+    _ASSERTE("!NYI");
+}
+
+//---------------------------------------------------------------------
+// genTotalFrameSize - return the total size of the stack frame, including local size,
+// callee-saved register size, etc.
+///
+// Return value:
+//    Total frame size
+//
+
+int CodeGenInterface::genTotalFrameSize() const
+{
+    _ASSERTE("!NYI");
+}
+
+//-----------------------------------------------------------------------------------
+// genProfilingLeaveCallback: Generate the profiling function leave or tailcall callback.
+// Technically, this is not part of the epilog; it is called when we are generating code for a GT_RETURN node.
+//
+// Arguments:
+//     helper - which helper to call. Either CORINFO_HELP_PROF_FCN_LEAVE or CORINFO_HELP_PROF_FCN_TAILCALL
+//
+// Return Value:
+//     None
+//
+void CodeGen::genProfilingLeaveCallback(unsigned helper)
+{
+    _ASSERTE("!NYI");
+}
+
+//  move an immediate value into an integer register
+void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
+                                     regNumber      reg,                                     ssize_t        imm,
+                                     insFlags flags DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
+{
+    _ASSERTE("!NYI");
+}
+
+//-----------------------------------------------------------------------------------
+// genProfilingEnterCallback: Generate the profiling function enter callback.
+//
+// Arguments:
+//     initReg        - register to use as scratch register
+//     pInitRegZeroed - OUT parameter. *pInitRegZeroed set to 'false' if 'initReg' is
+//                      set to non-zero value after this call.
+//
+// Return Value:
+//     None
+//
+void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
+{
+    _ASSERTE("!NYI");
+}
+
+/*****************************************************************************
+ *  Emit a call to a helper function.
+ *
+ */
+
+void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTargetReg /*= REG_NA */)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genAllocLclFrame: Probe the stack.
+//
+// Notes:
+//      This only does the probing; allocating the frame is done when callee-saved registers are saved.
+//      This is done before anything has been pushed. The previous frame might have a large outgoing argument
+//      space that has been allocated, but the lowest addresses have not been touched. Our frame setup might
+//      not touch up to the first 504 bytes. This means we could miss a guard page. On Windows, however,
+//      there are always three guard pages, so we will not miss them all. On Linux, there is only one guard
+//      page by default, so we need to be more careful. We do an extra probe if we might not have probed
+//      recently enough. That is, if a call and prolog establishment might lead to missing a page. We do this
+//      on Windows as well just to be consistent, even though it should not be necessary.
+//  
+// Arguments:
+//      frameSize         - the size of the stack frame being allocated.
+//      initReg           - register to use as a scratch register.
+//      pInitRegZeroed    - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
+//                          this call sets 'initReg' to a non-zero value. Otherwise, it is unchanged.
+//      maskArgRegsLiveIn - incoming argument registers that are currently live.
+//
+// Return value:
+//      None
+//
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+{
+    _ASSERTE("!NYI");
+}
+
+
+//------------------------------------------------------------------------
+// genIntToFloatCast: Generate code to cast an int/long to float/double
+//
+// Arguments:
+//    treeNode - The GT_CAST node
+//
+// Return Value:
+//    None.
+//
+// Assumptions:
+//    Cast is a non-overflow conversion.
+//    The treeNode must have an assigned register.
+//    SrcType= int32/uint32/int64/uint64 and DstType=float/double.
+//
+void CodeGen::genIntToFloatCast(GenTree* treeNode)
+{
+    _ASSERTE("!NYI");
+}
+
+//-----------------------------------------------------------------------------
+// genZeroInitFrameUsingBlockInit: architecture-specific helper for genZeroInitFrame in the case
+// `genUseBlockInit` is set.
+//
+// Arguments:
+//    untrLclHi      - (Untracked locals High-Offset)  The upper bound offset at which the zero init
+//                                                     code will end initializing memory (not inclusive).
+//    untrLclLo      - (Untracked locals Low-Offset)   The lower bound at which the zero init code will
+//                                                     start zero initializing memory.
+//    initReg        - A scratch register (that gets set to zero on some platforms).
+//    pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'true' if this method sets initReg register to zero,
+//                     'false' if initReg was set to a non-zero value, and left unchanged if initReg was not touched.
+//
+void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+{
+    _ASSERTE("!NYI");
+}
+
+
+// clang-format off
+/*****************************************************************************
+ *
+ *  Generates code for an EH funclet prolog.
+ *
+ *  Funclets have the following incoming arguments:
+ *
+ *      catch:          x0 = the exception object that was caught (see GT_CATCH_ARG)
+ *      filter:         x0 = the exception object to filter (see GT_CATCH_ARG), x1 = CallerSP of the containing function
+ *      finally/fault:  none
+ *
+ *  Funclets set the following registers on exit:
+ *
+ *      catch:          x0 = the address at which execution should resume (see BBJ_EHCATCHRET)
+ *      filter:         x0 = non-zero if the handler should handle the exception, zero otherwise (see GT_RETFILT)
+ *      finally/fault:  none
+ *
+ *  The ARM64 funclet prolog sequence is one of the following (Note: #framesz is total funclet frame size,
+ *  including everything; #outsz is outgoing argument space. #framesz must be a multiple of 16):
+ *
+ *  Frame type 1:
+ *     For #outsz == 0 and #framesz <= 512:
+ *     stp fp,lr,[sp,-#framesz]!    ; establish the frame (predecrement by #framesz), save FP/LR
+ *     stp x19,x20,[sp,#xxx]        ; save callee-saved registers, as necessary
+ *
+ *  The funclet frame is thus:
+ *
+ *      |                       |
+ *      |-----------------------|
+ *      |  incoming arguments   |
+ *      +=======================+ <---- Caller's SP
+ *      |      OSR padding      | // If required
+ *      |-----------------------|
+ *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
+ *      |-----------------------|
+ *      |Callee saved registers | // multiple of 8 bytes
+ *      |-----------------------|
+ *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
+ *      |-----------------------|
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
+ *      |-----------------------|
+ *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
+ *      |-----------------------|
+ *      |      Saved FP, LR     | // 16 bytes
+ *      |-----------------------| <---- Ambient SP
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
+ *              V
+ *
+ *  Frame type 2:
+ *     For #outsz != 0 and #framesz <= 512:
+ *     sub sp,sp,#framesz           ; establish the frame
+ *     stp fp,lr,[sp,#outsz]        ; save FP/LR.
+ *     stp x19,x20,[sp,#xxx]        ; save callee-saved registers, as necessary
+ *
+ *  The funclet frame is thus:
+ *
+ *      |                       |
+ *      |-----------------------|
+ *      |  incoming arguments   |
+ *      +=======================+ <---- Caller's SP
+ *      |      OSR padding      | // If required
+ *      |-----------------------|
+ *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
+ *      |-----------------------|
+ *      |Callee saved registers | // multiple of 8 bytes
+ *      |-----------------------|
+ *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
+ *      |-----------------------|
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
+ *      |-----------------------|
+ *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
+ *      |-----------------------|
+ *      |      Saved FP, LR     | // 16 bytes
+ *      |-----------------------|
+ *      |   Outgoing arg space  | // multiple of 8 bytes
+ *      |-----------------------| <---- Ambient SP
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
+ *              V
+ *
+ *  Frame type 3:
+ *     For #framesz > 512:
+ *     stp fp,lr,[sp,- (#framesz - #outsz)]!    ; establish the frame, save FP/LR
+ *                                              ; note that it is guaranteed here that (#framesz - #outsz) <= 240
+ *     stp x19,x20,[sp,#xxx]                    ; save callee-saved registers, as necessary
+ *     sub sp,sp,#outsz                         ; create space for outgoing argument space
+ *
+ *  The funclet frame is thus:
+ *
+ *      |                       |
+ *      |-----------------------|
+ *      |  incoming arguments   |
+ *      +=======================+ <---- Caller's SP
+ *      |      OSR padding      | // If required
+ *      |-----------------------|
+ *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
+ *      |-----------------------|
+ *      |Callee saved registers | // multiple of 8 bytes
+ *      |-----------------------|
+ *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
+ *      |-----------------------|
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
+ *      |-----------------------|
+ *      ~  alignment padding    ~ // To make the first SP subtraction 16 byte aligned
+ *      |-----------------------|
+ *      |      Saved FP, LR     | // 16 bytes <-- SP after first adjustment (points at saved FP)
+ *      |-----------------------|
+ *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned (specifically, to 16-byte align the outgoing argument space).
+ *      |-----------------------|
+ *      |   Outgoing arg space  | // multiple of 8 bytes
+ *      |-----------------------| <---- Ambient SP (SP after second adjustment)
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
+ *              V
+ *
+ * Both #1 and #2 only change SP once. That means that there will be a maximum of one alignment slot needed. For the general case, #3,
+ * it is possible that we will need to add alignment to both changes to SP, leading to 16 bytes of alignment. Remember that the stack
+ * pointer needs to be 16 byte aligned at all times. The size of the PSP slot plus callee-saved registers space is a maximum of 240 bytes:
+ *
+ *     FP,LR registers
+ *     10 int callee-saved register x19-x28
+ *     8 float callee-saved registers v8-v15
+ *     8 saved integer argument registers x0-x7, if varargs function
+ *     1 PSP slot
+ *     1 alignment slot or monitor acquired slot
+ *     == 30 slots * 8 bytes = 240 bytes.
+ *
+ * The outgoing argument size, however, can be very large, if we call a function that takes a large number of
+ * arguments (note that we currently use the same outgoing argument space size in the funclet as for the main
+ * function, even if the funclet doesn't have any calls, or has a much smaller, or larger, maximum number of
+ * outgoing arguments for any call). In that case, we need to 16-byte align the initial change to SP, before
+ * saving off the callee-saved registers and establishing the PSPsym, so we can use the limited immediate offset
+ * encodings we have available, before doing another 16-byte aligned SP adjustment to create the outgoing argument
+ * space. Both changes to SP might need to add alignment padding.
+ *
+ * In addition to the above "standard" frames, we also need to support a frame where the saved FP/LR are at the
+ * highest addresses. This is to match the frame layout (specifically, callee-saved registers including FP/LR
+ * and the PSPSym) that is used in the main function when a GS cookie is required due to the use of localloc.
+ * (Note that localloc cannot be used in a funclet.) In these variants, not only has the position of FP/LR
+ * changed, but where the alignment padding is placed has also changed.
+ *
+ *  Frame type 4 (variant of frame types 1 and 2):
+ *     For #framesz <= 512:
+ *     sub sp,sp,#framesz           ; establish the frame
+ *     stp x19,x20,[sp,#xxx]        ; save callee-saved registers, as necessary
+ *     stp fp,lr,[sp,#yyy]          ; save FP/LR.
+ *     ; write PSPSym
+ *
+ *  The "#framesz <= 512" condition ensures that after we've established the frame, we can use "stp" with its
+ *  maximum allowed offset (504) to save the callee-saved register at the highest address.
+ *
+ *  We use "sub" instead of folding it into the next instruction as a predecrement, as we need to write PSPSym
+ *  at the bottom of the stack, and there might also be an alignment padding slot.
+ *
+ *  The funclet frame is thus:
+ *
+ *      |                       |
+ *      |-----------------------|
+ *      |  incoming arguments   |
+ *      +=======================+ <---- Caller's SP
+ *      |      OSR padding      | // If required
+ *      |-----------------------|
+ *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
+ *      |-----------------------|
+ *      |      Saved LR         | // 8 bytes
+ *      |-----------------------|
+ *      |      Saved FP         | // 8 bytes
+ *      |-----------------------|
+ *      |Callee saved registers | // multiple of 8 bytes
+ *      |-----------------------|
+ *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
+ *      |-----------------------|
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
+ *      |-----------------------|
+ *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
+ *      |-----------------------|
+ *      |   Outgoing arg space  | // multiple of 8 bytes (optional; if #outsz > 0)
+ *      |-----------------------| <---- Ambient SP
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
+ *              V
+ *
+ *  Frame type 5 (variant of frame type 3):
+ *     For #framesz > 512:
+ *     sub sp,sp,(#framesz - #outsz) ; establish part of the frame. Note that it is guaranteed here that (#framesz - #outsz) <= 240
+ *     stp x19,x20,[sp,#xxx]        ; save callee-saved registers, as necessary
+ *     stp fp,lr,[sp,#yyy]          ; save FP/LR.
+ *     sub sp,sp,#outsz             ; create space for outgoing argument space
+ *     ; write PSPSym
+ *
+ *  For large frames with "#framesz > 512", we must do one SP adjustment first, after which we can save callee-saved
+ *  registers with up to the maximum "stp" offset of 504. Then, we can establish the rest of the frame (namely, the
+ *  space for the outgoing argument space).
+ *
+ *  The funclet frame is thus:
+ *
+ *      |                       |
+ *      |-----------------------|
+ *      |  incoming arguments   |
+ *      +=======================+ <---- Caller's SP
+ *      |      OSR padding      | // If required
+ *      |-----------------------|
+ *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
+ *      |-----------------------|
+ *      |      Saved LR         | // 8 bytes
+ *      |-----------------------|
+ *      |      Saved FP         | // 8 bytes
+ *      |-----------------------|
+ *      |Callee saved registers | // multiple of 8 bytes
+ *      |-----------------------|
+ *      |    MonitorAcquired    | // 8 bytes; for synchronized methods
+ *      |-----------------------|
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
+ *      |-----------------------|
+ *      ~  alignment padding    ~ // To make the first SP subtraction 16 byte aligned <-- SP after first adjustment (points at alignment padding or PSP slot)
+ *      |-----------------------|
+ *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned (specifically, to 16-byte align the outgoing argument space).
+ *      |-----------------------|
+ *      |   Outgoing arg space  | // multiple of 8 bytes
+ *      |-----------------------| <---- Ambient SP (SP after second adjustment)
+ *      |       |               |
+ *      ~       | Stack grows   ~
+ *      |       | downward      |
+ *              V
+ *
+ * Note that in this case we might have 16 bytes of alignment that is adjacent. This is because we are doing 2 SP
+ * subtractions, and each one must be aligned up to 16 bytes.
+ *
+ * Note that in all cases, the PSPSym is in exactly the same position with respect to Caller-SP, and that location is the same relative to Caller-SP
+ * as in the main function.
+ *
+ * Funclets do not have varargs arguments. However, because the PSPSym must exist at the same offset from Caller-SP as in the main function, we
+ * must add buffer space for the saved varargs argument registers here, if the main function did the same.
+ *
+ *     ; After this header, fill the PSP slot, for use by the VM (it gets reported with the GC info), or by code generation of nested filters.
+ *     ; This is not part of the "OS prolog"; it has no associated unwind data, and is not reversed in the funclet epilog.
+ *
+ *     if (this is a filter funclet)
+ *     {
+ *          // x1 on entry to a filter funclet is CallerSP of the containing function:
+ *          // either the main function, or the funclet for a handler that this filter is dynamically nested within.
+ *          // Note that a filter can be dynamically nested within a funclet even if it is not statically within
+ *          // a funclet. Consider:
+ *          //
+ *          //    try {
+ *          //        try {
+ *          //            throw new Exception();
+ *          //        } catch(Exception) {
+ *          //            throw new Exception();     // The exception thrown here ...
+ *          //        }
+ *          //    } filter {                         // ... will be processed here, while the "catch" funclet frame is still on the stack
+ *          //    } filter-handler {
+ *          //    }
+ *          //
+ *          // Because of this, we need a PSP in the main function anytime a filter funclet doesn't know whether the enclosing frame will
+ *          // be a funclet or main function. We won't know any time there is a filter protecting nested EH. To simplify, we just always
+ *          // create a main function PSP for any function with a filter.
+ *
+ *          ldr x1, [x1, #CallerSP_to_PSP_slot_delta]  ; Load the CallerSP of the main function (stored in the PSP of the dynamically containing funclet or function)
+ *          str x1, [sp, #SP_to_PSP_slot_delta]        ; store the PSP
+ *          add fp, x1, #Function_CallerSP_to_FP_delta ; re-establish the frame pointer
+ *     }
+ *     else
+ *     {
+ *          // This is NOT a filter funclet. The VM re-establishes the frame pointer on entry.
+ *          // TODO-ARM64-CQ: if VM set x1 to CallerSP on entry, like for filters, we could save an instruction.
+ *
+ *          add x3, fp, #Function_FP_to_CallerSP_delta  ; compute the CallerSP, given the frame pointer. x3 is scratch.
+ *          str x3, [sp, #SP_to_PSP_slot_delta]         ; store the PSP
+ *     }
+ *
+ *  An example epilog sequence is then:
+ *
+ *     add sp,sp,#outsz             ; if any outgoing argument space
+ *     ...                          ; restore callee-saved registers
+ *     ldp x19,x20,[sp,#xxx]
+ *     ldp fp,lr,[sp],#framesz
+ *     ret lr
+ *
+ * See CodeGen::genPushCalleeSavedRegisters() for a description of the main function frame layout.
+ * See Compiler::lvaAssignVirtualFrameOffsetsToLocals() for calculation of main frame local variable offsets.
+ */
+// clang-format on
+
+void CodeGen::genFuncletProlog(BasicBlock* block)
+{
+    _ASSERTE("!NYI");
+}
+
+/*****************************************************************************
+ *
+ *  Generates code for an EH funclet epilog.
+ *
+ *  See the description of frame shapes at genFuncletProlog().
+ */
+
+void CodeGen::genFuncletEpilog()
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genFloatToIntCast: Generate code to cast float/double to int/long
+//
+// Arguments:
+//    treeNode - The GT_CAST node
+//
+// Return Value:
+//    None.
+//
+// Assumptions:
+//    Cast is a non-overflow conversion.
+//    The treeNode must have an assigned register.
+//    SrcType=float/double and DstType= int32/uint32/int64/uint64
+//
+void CodeGen::genFloatToIntCast(GenTree* treeNode)
+{
+    _ASSERTE("!NYI");
+}
+
+/*****************************************************************************
+ *
+ *  Capture the information used to generate the funclet prologs and epilogs.
+ *  Note that all funclet prologs are identical, and all funclet epilogs are
+ *  identical (per type: filters are identical, and non-filters are identical).
+ *  Thus, we compute the data used for these just once.
+ *
+ *  See genFuncletProlog() for more information about the prolog/epilog sequences.
+ */
+
+void CodeGen::genCaptureFuncletPrologEpilogInfo()
+{
+    _ASSERTE("!NYI");
+}
+
+void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
+{    
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genLeaInstruction: Produce code for a GT_LEA node.
+//
+// Arguments:
+//    lea - the node
+//
+void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
+{
+    _ASSERTE("!NYI");
+}
+
+#ifdef FEATURE_SIMD
+//------------------------------------------------------------------------
+// genSIMDSplitReturn: Generates code for returning a fixed-size SIMD type that lives
+//                     in a single register, but is returned in multiple registers.
+//
+// Arguments:
+//    src         - The source of the return
+//    retTypeDesc - The return type descriptor.
+//
+void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
+{
+    _ASSERTE("!NYI");
+}
+#endif // FEATURE_SIMD
+    
+
+//------------------------------------------------------------------------
+// genIntCastOverflowCheck: Generate overflow checking code for an integer cast.
+//
+// Arguments:
+//    cast - The GT_CAST node
+//    desc - The cast description
+//    reg  - The register containing the value to check
+//
+void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
+{
+    _ASSERTE("!NYI");
+}
+
+//------------------------------------------------------------------------
+// genIntToIntCast: Generate code for an integer cast, with or without overflow check.
+//
+// Arguments:
+//    cast - The GT_CAST node
+//
+// Assumptions:
+//    Neither the source nor target type can be a floating point type.
+//
+void CodeGen::genIntToIntCast(GenTreeCast* cast)
+{
+    _ASSERTE("!NYI");
+}
+ 
+//------------------------------------------------------------------------
+// genFloatToFloatCast: Generate code for a cast between float and double
+//
+// Arguments:
+//    treeNode - The GT_CAST node
+//
+// Return Value:
+//    None.
+//
+// Assumptions:
+//    Cast is a non-overflow conversion.
+//    The treeNode must have an assigned register.
+//    The cast is between float and double.
+//
+void CodeGen::genFloatToFloatCast(GenTree* treeNode)
+{
+    _ASSERTE("!NYI");
+}
+
+
+/*
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XX                                                                           XX
+XX                           End Prolog / Epilog                             XX
+XX                                                                           XX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+*/
+
+BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+{
+    _ASSERTE("!NYI");
+}
+
+
+
+
 #endif // TARGET_POWERPC64

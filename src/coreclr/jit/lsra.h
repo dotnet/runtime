@@ -1447,6 +1447,20 @@ private:
     void getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* operandNum, SingleTypeRegSet* candidates);
 #endif
 
+#ifdef TARGET_POWERPC64
+    FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
+    void             assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    bool             canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    SingleTypeRegSet filterConsecutiveCandidates(SingleTypeRegSet  candidates,
+    unsigned int      registersNeeded,
+    SingleTypeRegSet* allConsecutiveCandidates);
+    SingleTypeRegSet filterConsecutiveCandidatesForSpill(SingleTypeRegSet consecutiveCandidates,
+    unsigned int     registersNeeded);
+    SingleTypeRegSet getConsecutiveCandidates(SingleTypeRegSet  candidates,
+    RefPosition*      refPosition,
+    SingleTypeRegSet* busyCandidates);
+#endif
+
 #ifdef DEBUG
     void dumpVarToRegMap(VarToRegMap map);
     void dumpInVarToRegMap(BasicBlock* block);
