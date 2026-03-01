@@ -4493,9 +4493,20 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
         }
     }
 
-    bool removeCast = false;
     if (!optLocalAssertionProp)
     {
+        // We must not remove the normalization cast for NOL locals — VN-based range
+        // assertions prove the logical value is in range but do not guarantee
+        // the physical register bits are properly zero/sign-extended.
+        bool canDropCast = (genActualType(cast) == genActualType(lcl)) && !(lcl->OperIs(GT_LCL_VAR) &&
+                            lvaGetDesc(lcl->AsLclVar())->lvNormalizeOnLoad());
+
+        if (!canDropCast && !cast->gtOverflow())
+        {
+            // Nothing we can do for this cast.
+            return nullptr;
+        }
+
         // Get the non-overflowing input range for a cast. ForCastInput takes care of special cases like
         // small types and IsUnsigned flag for checked casts.
         IntegralRange castRng = IntegralRange::ForCastInput(cast);
@@ -4517,31 +4528,24 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions,
 
                 if (castOpRng.IsConstantRange() && (castFromLo >= castToLo) && (castFromHi <= castToHi))
                 {
-                    removeCast = true;
-                    if (!lcl->OperIs(GT_LCL_VAR))
+                    if (canDropCast)
                     {
-                        // We cannot remove the cast, but can we just remove the GTF_OVERFLOW flag?
-                        if (!cast->gtOverflow())
-                        {
-                            return nullptr;
-                        }
-
-                        // Just clear the overflow flag then.
-                        JITDUMP("Clearing overflow flag for cast %06u based on assertions.\n", dspTreeID(cast));
-                        cast->ClearOverflow();
-                        return optAssertionProp_Update(cast, cast, stmt);
+                        JITDUMP("Removing cast %06u as redundant based on VN assertions.\n", dspTreeID(cast));
+                        return optAssertionProp_Update(cast->CastOp(), cast, stmt);
                     }
+
+                    assert(cast->gtOverflow());
+                    JITDUMP("Clearing overflow flag for cast %06u based on VN assertions.\n", dspTreeID(cast));
+                    cast->ClearOverflow();
+                    return optAssertionProp_Update(cast, cast, stmt);
                 }
             }
         }
-    }
-    else
-    {
-        removeCast = lcl->OperIs(GT_LCL_VAR) &&
-                     optAssertionIsSubrange(lcl, IntegralRange::ForCastInput(cast), assertions) != NO_ASSERTION_INDEX;
+        return nullptr;
     }
 
-    if (removeCast)
+    if (lcl->OperIs(GT_LCL_VAR) &&
+        optAssertionIsSubrange(lcl, IntegralRange::ForCastInput(cast), assertions) != NO_ASSERTION_INDEX)
     {
         LclVarDsc* varDsc = lvaGetDesc(lcl->AsLclVarCommon());
 
