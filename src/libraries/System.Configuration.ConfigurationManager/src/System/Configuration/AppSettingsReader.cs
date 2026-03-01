@@ -84,7 +84,7 @@ namespace System.Configuration
                 {
                     count++;
                 }
-                if (count > 0 && string.Compare(NullString, 0, val, count, len - 2 * count, StringComparison.Ordinal) != 0)
+                if (count > 0 && !val.AsSpan(count, len - 2 * count).Equals(NullString, StringComparison.Ordinal))
                 {
                     // the stuff between the parens is not "None"
                     count = 0;
