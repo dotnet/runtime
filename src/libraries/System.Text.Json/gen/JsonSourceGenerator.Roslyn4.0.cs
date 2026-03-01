@@ -78,15 +78,7 @@ namespace System.Text.Json.SourceGeneration
             // This pipeline re-fires whenever diagnostics change (e.g. positional shifts)
             // without triggering expensive source regeneration.
             // See https://github.com/dotnet/runtime/issues/92509 for context.
-            context.RegisterSourceOutput(
-                contextGenerationSpecs,
-                static (context, tuple) =>
-                {
-                    foreach (Diagnostic diagnostic in tuple.Item2)
-                    {
-                        context.ReportDiagnostic(diagnostic);
-                    }
-                });
+            context.RegisterSourceOutput(contextGenerationSpecs, EmitDiagnostics);
         }
 
         private void EmitSource(SourceProductionContext sourceProductionContext, ContextGenerationSpec? contextGenerationSpec)
@@ -114,6 +106,14 @@ namespace System.Text.Json.SourceGeneration
                 CultureInfo.CurrentCulture = originalCulture;
             }
 #pragma warning restore RS1035
+        }
+
+        private static void EmitDiagnostics(SourceProductionContext context, (ContextGenerationSpec?, ImmutableArray<Diagnostic>) tuple)
+        {
+            foreach (Diagnostic diagnostic in tuple.Item2)
+            {
+                context.ReportDiagnostic(diagnostic);
+            }
         }
 
         /// <summary>

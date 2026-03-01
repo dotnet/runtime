@@ -77,15 +77,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             // This pipeline re-fires whenever diagnostics change (e.g. positional shifts)
             // without triggering expensive source regeneration.
             // See https://github.com/dotnet/runtime/issues/92509 for context.
-            context.RegisterSourceOutput(
-                genSpec,
-                static (context, tuple) =>
-                {
-                    foreach (Diagnostic diagnostic in tuple.Item2)
-                    {
-                        context.ReportDiagnostic(diagnostic);
-                    }
-                });
+            context.RegisterSourceOutput(genSpec, EmitDiagnostics);
 
             if (!s_hasInitializedInterceptorVersion)
             {
@@ -155,6 +147,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// Instrumentation helper for unit tests.
         /// </summary>
         public Action<SourceGenerationSpec>? OnSourceEmitting { get; init; }
+
+        private static void EmitDiagnostics(SourceProductionContext context, (SourceGenerationSpec?, ImmutableArray<Diagnostic>) tuple)
+        {
+            foreach (Diagnostic diagnostic in tuple.Item2)
+            {
+                context.ReportDiagnostic(diagnostic);
+            }
+        }
 
         private void EmitSource(SourceProductionContext sourceProductionContext, SourceGenerationSpec? spec)
         {

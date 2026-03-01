@@ -294,16 +294,18 @@ namespace System.Text.RegularExpressions.Generator
             // This pipeline re-fires whenever diagnostics change (e.g. positional shifts)
             // without triggering expensive source regeneration.
             // See https://github.com/dotnet/runtime/issues/92509 for context.
-            context.RegisterSourceOutput(pipeline.Collect(), static (context, items) =>
+            context.RegisterSourceOutput(pipeline.Collect(), EmitDiagnostics);
+        }
+
+        private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<(object? Model, Location? DiagnosticLocation, ImmutableArray<Diagnostic> Diagnostics)> items)
+        {
+            foreach (var item in items)
             {
-                foreach (var item in items)
+                foreach (Diagnostic diagnostic in item.Diagnostics)
                 {
-                    foreach (Diagnostic diagnostic in item.Diagnostics)
-                    {
-                        context.ReportDiagnostic(diagnostic);
-                    }
+                    context.ReportDiagnostic(diagnostic);
                 }
-            });
+            }
         }
 
         /// <summary>Determines whether the passed in node supports C# code generation.</summary>

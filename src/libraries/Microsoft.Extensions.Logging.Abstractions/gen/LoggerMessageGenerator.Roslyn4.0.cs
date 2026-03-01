@@ -110,24 +110,24 @@ namespace Microsoft.Extensions.Logging.Generators
             // This pipeline re-fires whenever diagnostics change (e.g. positional shifts)
             // without triggering expensive source regeneration.
             // See https://github.com/dotnet/runtime/issues/92509 for context.
-            context.RegisterSourceOutput(
-                loggerClasses.Collect(),
-                static (context, items) =>
+            context.RegisterSourceOutput(loggerClasses.Collect(), EmitDiagnostics);
+        }
+
+        private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<(LoggerClassSpec? LoggerClassSpec, ImmutableArray<Diagnostic> Diagnostics, bool HasStringCreate)> items)
+        {
+            // Use HashSet to deduplicate — each attributed method triggers parsing of entire class,
+            // producing duplicate diagnostics.
+            var reportedDiagnostics = new HashSet<(string Id, TextSpan? Span, string? FilePath)>();
+            foreach (var item in items)
+            {
+                foreach (Diagnostic diagnostic in item.Diagnostics)
                 {
-                    // Use HashSet to deduplicate — each attributed method triggers parsing of entire class,
-                    // producing duplicate diagnostics.
-                    var reportedDiagnostics = new HashSet<(string Id, TextSpan? Span, string? FilePath)>();
-                    foreach (var item in items)
+                    if (reportedDiagnostics.Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath)))
                     {
-                        foreach (Diagnostic diagnostic in item.Diagnostics)
-                        {
-                            if (reportedDiagnostics.Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath)))
-                            {
-                                context.ReportDiagnostic(diagnostic);
-                            }
-                        }
+                        context.ReportDiagnostic(diagnostic);
                     }
-                });
+                }
+            }
         }
 
         private static void EmitSource(ImmutableArray<(LoggerClassSpec? LoggerClassSpec, bool HasStringCreate)> items, SourceProductionContext context)
