@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -448,5 +449,40 @@ namespace System.Tests
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat(sbyte i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
+
+        public static IEnumerable<object[]> Parse_AllowTrailingInvalidCharacters_TestData()
+        {
+            yield return new object[] { "123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)123, 3 };
+            yield return new object[] { "12xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)12, 2 };
+            yield return new object[] { "-123abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)-123, 4 };
+            yield return new object[] { "+127xyz", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)127, 4 };
+            yield return new object[] { "-128abc", NumberStyles.Integer | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)-128, 4 };
+            yield return new object[] { "7Fxyz", NumberStyles.HexNumber | NumberStyles.AllowTrailingInvalidCharacters, null, (sbyte)0x7F, 2 };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_AllowTrailingInvalidCharacters_TestData))]
+        public static void Parse_AllowTrailingInvalidCharacters(string value, NumberStyles style, IFormatProvider provider, sbyte expectedValue, int expectedCharsConsumed)
+        {
+            sbyte result;
+            int charsConsumed;
+            
+            Assert.True(sbyte.TryParse(value, style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+            
+            Assert.True(sbyte.TryParse(value.AsSpan(), style, provider, out result, out charsConsumed));
+            Assert.Equal(expectedValue, result);
+            Assert.Equal(expectedCharsConsumed, charsConsumed);
+            
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(value);
+            int bytesConsumed;
+            Assert.True(sbyte.TryParse(utf8Bytes.AsSpan(), style, provider, out result, out bytesConsumed));
+            Assert.Equal(expectedValue, result);
+            if (value.All(c => c < 128))
+            {
+                Assert.Equal(expectedCharsConsumed, bytesConsumed);
+            }
+        }
     }
 }

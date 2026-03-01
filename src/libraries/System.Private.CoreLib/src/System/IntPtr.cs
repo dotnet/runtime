@@ -1376,6 +1376,27 @@ namespace System
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nint result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result), out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nint result, out int charsConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result), out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nint result, out int bytesConsumed)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(utf8Text, style, provider, out Unsafe.As<nint, nint_t>(ref result), out bytesConsumed);
+        }
+
         //
         // IShiftOperators
         //

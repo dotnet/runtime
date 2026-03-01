@@ -211,7 +211,7 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out TInteger result);
+            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out TInteger result, out _);
 
             if (status != ParsingStatus.OK)
             {
@@ -221,37 +221,37 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ParsingStatus TryParseBinaryInteger<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+        internal static ParsingStatus TryParseBinaryInteger<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TInteger result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             if ((styles & ~NumberStyles.Integer) == 0)
             {
                 // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseBinaryIntegerStyle(value, styles, info, out result);
+                return TryParseBinaryIntegerStyle(value, styles, info, out result, out elementsConsumed);
             }
 
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
             {
-                return TryParseBinaryIntegerHexNumberStyle(value, styles, out result);
+                return TryParseBinaryIntegerHexOrBinaryNumberStyle<TChar, TInteger, HexParser<TInteger>>(value, styles, out result, out elementsConsumed);
             }
 
             if ((styles & NumberStyles.AllowBinarySpecifier) != 0)
             {
-                return TryParseBinaryIntegerHexOrBinaryNumberStyle<TChar, TInteger, BinaryParser<TInteger>>(value, styles, out result);
+                return TryParseBinaryIntegerHexOrBinaryNumberStyle<TChar, TInteger, BinaryParser<TInteger>>(value, styles, out result, out elementsConsumed);
             }
 
-            return TryParseBinaryIntegerNumber(value, styles, info, out result);
+            return TryParseBinaryIntegerNumber(value, styles, info, out result, out elementsConsumed);
         }
 
-        private static ParsingStatus TryParseBinaryIntegerNumber<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+        private static ParsingStatus TryParseBinaryIntegerNumber<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TInteger result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             result = TInteger.Zero;
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[TInteger.MaxDigitCount + 1]);
 
-            if (!TryStringToNumber(value, styles, ref number, info))
+            if (!TryStringToNumber(value, styles, ref number, info, out elementsConsumed))
             {
                 return ParsingStatus.Failed;
             }
@@ -265,7 +265,7 @@ namespace System
         }
 
         /// <summary>Parses int limited to styles that make up NumberStyles.Integer.</summary>
-        internal static ParsingStatus TryParseBinaryIntegerStyle<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+        internal static ParsingStatus TryParseBinaryIntegerStyle<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TInteger result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
@@ -503,17 +503,36 @@ namespace System
                 result = isNegative ? -answer : answer;
             }
             ParsingStatus status = ParsingStatus.OK;
+            elementsConsumed = index;
 
         Exit:
             return status;
 
+        InvalidExit:
+            // For AllowTrailingInvalidCharacters, we want to stop at the first invalid character
+            // including trailing nulls (zeros). Otherwise, for compatibility we still need to
+            // process any trailing nulls that exist and report them as having been consumed.
+
+            if ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0)
+            {
+                goto DoneAtEndButPotentialOverflow;
+            }
+
+            if (TrailingZeros(value, index))
+            {
+                index = value.Length;
+                goto DoneAtEndButPotentialOverflow;
+            }
+
         FalseExit: // parsing failed
             result = TInteger.Zero;
+            elementsConsumed = 0;
             status = ParsingStatus.Failed;
             goto Exit;
 
         OverflowExit:
             result = TInteger.Zero;
+            elementsConsumed = 0;
             status = ParsingStatus.Overflow;
             goto Exit;
 
@@ -523,7 +542,7 @@ namespace System
             {
                 if ((styles & NumberStyles.AllowTrailingWhite) == 0)
                 {
-                    goto FalseExit;
+                    goto InvalidExit;
                 }
 
                 for (index++; index < value.Length; index++)
@@ -538,23 +557,10 @@ namespace System
                 if ((uint)index >= (uint)value.Length)
                     goto DoneAtEndButPotentialOverflow;
             }
-
-            if (!TrailingZeros(value, index))
-            {
-                goto FalseExit;
-            }
-            goto DoneAtEndButPotentialOverflow;
+            goto InvalidExit;
         }
 
-        /// <summary>Parses <typeparamref name="TInteger"/> limited to styles that make up NumberStyles.HexNumber.</summary>
-        internal static ParsingStatus TryParseBinaryIntegerHexNumberStyle<TChar, TInteger>(ReadOnlySpan<TChar> value, NumberStyles styles, out TInteger result)
-            where TChar : unmanaged, IUtfChar<TChar>
-            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
-        {
-            return TryParseBinaryIntegerHexOrBinaryNumberStyle<TChar, TInteger, HexParser<TInteger>>(value, styles, out result);
-        }
-
-        private interface IHexOrBinaryParser<TInteger>
+        internal interface IHexOrBinaryParser<TInteger>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             static abstract NumberStyles AllowedStyles { get; }
@@ -565,7 +571,7 @@ namespace System
             static abstract TInteger ShiftLeftForNextDigit(TInteger value);
         }
 
-        private readonly struct HexParser<TInteger> : IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
+        internal readonly struct HexParser<TInteger> : IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             public static NumberStyles AllowedStyles => NumberStyles.HexNumber;
             public static bool IsValidChar(uint ch) => HexConverter.IsHexChar((int)ch);
@@ -585,7 +591,7 @@ namespace System
             public static TInteger ShiftLeftForNextDigit(TInteger value) => value << 1;
         }
 
-        private static ParsingStatus TryParseBinaryIntegerHexOrBinaryNumberStyle<TChar, TInteger, TParser>(ReadOnlySpan<TChar> value, NumberStyles styles, out TInteger result)
+        internal static ParsingStatus TryParseBinaryIntegerHexOrBinaryNumberStyle<TChar, TInteger, TParser>(ReadOnlySpan<TChar> value, NumberStyles styles, out TInteger result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
             where TParser : struct, IHexOrBinaryParser<TInteger>
@@ -705,17 +711,36 @@ namespace System
         DoneAtEnd:
             result = answer;
             ParsingStatus status = ParsingStatus.OK;
+            elementsConsumed = index;
 
         Exit:
             return status;
 
+        InvalidExit:
+            // For AllowTrailingInvalidCharacters, we want to stop at the first invalid character
+            // including trailing nulls (zeros). Otherwise, for compatibility we still need to
+            // process any trailing nulls that exist and report them as having been consumed.
+
+            if ((styles & NumberStyles.AllowTrailingInvalidCharacters) != 0)
+            {
+                goto DoneAtEndButPotentialOverflow;
+            }
+
+            if (TrailingZeros(value, index))
+            {
+                index = value.Length;
+                goto DoneAtEndButPotentialOverflow;
+            }
+
         FalseExit: // parsing failed
             result = TInteger.Zero;
+            elementsConsumed = 0;
             status = ParsingStatus.Failed;
             goto Exit;
 
         OverflowExit:
             result = TInteger.Zero;
+            elementsConsumed = 0;
             status = ParsingStatus.Overflow;
             goto Exit;
 
@@ -725,7 +750,7 @@ namespace System
             {
                 if ((styles & NumberStyles.AllowTrailingWhite) == 0)
                 {
-                    goto FalseExit;
+                    goto InvalidExit;
                 }
 
                 for (index++; index < value.Length; index++)
@@ -743,18 +768,14 @@ namespace System
                     goto DoneAtEndButPotentialOverflow;
                 }
             }
-
-            if (!TrailingZeros(value, index))
-            {
-                goto FalseExit;
-            }
-            goto DoneAtEndButPotentialOverflow;
+            goto InvalidExit;
         }
 
         internal static decimal ParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            ParsingStatus status = TryParseDecimal(value, styles, info, out decimal result);
+            ParsingStatus status = TryParseDecimal(value, styles, info, out decimal result, out _);
+
             if (status != ParsingStatus.OK)
             {
                 if (status == ParsingStatus.Failed)
@@ -891,21 +912,21 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
-            if (!TryParseFloat(value, styles, info, out TFloat result))
+            if (!TryParseFloat(value, styles, info, out TFloat result, out _))
             {
                 ThrowFormatException(value);
             }
             return result;
         }
 
-        internal static ParsingStatus TryParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out decimal result)
+        internal static ParsingStatus TryParseDecimal<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out decimal result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[DecimalNumberBufferLength]);
 
             result = 0;
 
-            if (!TryStringToNumber(value, styles, ref number, info))
+            if (!TryStringToNumber(value, styles, ref number, info, out elementsConsumed))
             {
                 return ParsingStatus.Failed;
             }
@@ -979,13 +1000,13 @@ namespace System
             }
         }
 
-        internal static bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result)
+        internal static bool TryParseFloat<TChar, TFloat>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TFloat result, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
             where TFloat : unmanaged, IBinaryFloatParseAndFormatInfo<TFloat>
         {
             NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, stackalloc byte[TFloat.NumberBufferLength]);
 
-            if (!TryStringToNumber(value, styles, ref number, info))
+            if (!TryStringToNumber(value, styles, ref number, info, out elementsConsumed))
             {
                 ReadOnlySpan<TChar> valueTrim = SpanTrim(value);
 

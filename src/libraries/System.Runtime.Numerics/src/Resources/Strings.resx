@@ -66,8 +66,8 @@
   <data name="Argument_InvalidNumberStyles" xml:space="preserve">
     <value>An undefined NumberStyles value is being used.</value>
   </data>
-  <data name="Argument_InvalidHexStyle" xml:space="preserve">
-    <value>With the AllowHexSpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be a subset of those in HexNumber.</value>
+  <data name="Argument_InvalidHexBinaryStyle" xml:space="preserve">
+    <value>With the AllowHexSpecifier or AllowBinarySpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be AllowLeadingWhite, AllowTrailingWhite, and AllowTrailingInvalidCharacters.</value>
   </data>
   <data name="Argument_MinMaxValue" xml:space="preserve">
     <value>'{0}' cannot be greater than {1}.</value>

@@ -668,33 +668,33 @@ namespace System.Numerics
 
         public static BigInteger Parse(string value)
         {
-            return Parse(value, NumberStyles.Integer);
+            return Parse(value, NumberStyles.Integer, provider: null);
         }
 
         public static BigInteger Parse(string value, NumberStyles style)
         {
-            return Parse(value, style, NumberFormatInfo.CurrentInfo);
+            return Parse(value, style, provider: null);
         }
 
         public static BigInteger Parse(string value, IFormatProvider? provider)
         {
-            return Parse(value, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Parse(value, NumberStyles.Integer, provider);
         }
 
         public static BigInteger Parse(string value, NumberStyles style, IFormatProvider? provider)
         {
             ArgumentNullException.ThrowIfNull(value);
-            return Parse(value.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Parse(value.AsSpan(), style, provider);
         }
 
         public static bool TryParse([NotNullWhen(true)] string? value, out BigInteger result)
         {
-            return TryParse(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(value, NumberStyles.Integer, provider: null, out result);
         }
 
         public static bool TryParse([NotNullWhen(true)] string? value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return TryParse(value.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return TryParse(value.AsSpan(), style, provider, out result);
         }
 
         public static BigInteger Parse(ReadOnlySpan<char> value, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
@@ -709,22 +709,40 @@ namespace System.Numerics
 
         public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result)
         {
-            return TryParse(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(value, NumberStyles.Integer, provider: null, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(value), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(value), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, out BigInteger result)
         {
-            return TryParse(utf8Text, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(utf8Text, NumberStyles.Integer, provider: null, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result, out _) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
+        {
+            return TryParse(s.AsSpan(), style, provider, out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int bytesConsumed)
+        {
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed) == Number.ParsingStatus.OK;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out BigInteger result, out int charsConsumed)
+        {
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(s), style, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed) == Number.ParsingStatus.OK;
         }
 
         public static int Compare(BigInteger left, BigInteger right)
