@@ -928,18 +928,18 @@ CHECK WebcilDecoder::CheckResource(COUNT_T offset) const
     DWORD resourceSize = GET_UNALIGNED_VAL32((LPVOID)GetRvaData(rva));
 
     // Compute start and end of the resource using overflow-checked arithmetic
-    S_UINT32 dataStartRva = S_UINT32(rva) + sizeof(DWORD);
+    S_UINT32 dataStartRva = S_UINT32(rva) + S_UINT32(sizeof(DWORD));
     CHECK(!dataStartRva.IsOverflow());
 
-    S_UINT32 resourceEndRva = dataStartRva + resourceSize;
+    S_UINT32 resourceEndRva = dataStartRva + S_UINT32(resourceSize);
     CHECK(!resourceEndRva.IsOverflow());
 
     // Compute end of the resources directory using overflow-checked arithmetic
-    S_UINT32 resourcesEnd = S_UINT32(VAL32(pDir->VirtualAddress)) + VAL32(pDir->Size);
+    S_UINT32 resourcesEnd = S_UINT32(VAL32(pDir->VirtualAddress)) + S_UINT32(VAL32(pDir->Size));
     CHECK(!resourcesEnd.IsOverflow());
 
     // Check resource is within resource section
-    CHECK((UINT32)resourceEndRva <= (UINT32)resourcesEnd);
+    CHECK(resourceEndRva.Value() <= resourcesEnd.Value());
 
     CHECK_OK;
 }
