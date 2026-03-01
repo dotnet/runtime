@@ -323,6 +323,10 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 {
 }
 
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
+{
+}
+
 //------------------------------------------------------------------------
 // ContainCheckStoreIndir: determine whether the sources of a STOREIND node should be contained.
 //

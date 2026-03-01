@@ -5598,8 +5598,8 @@ void Compiler::generatePatchpointInfo()
     // offset.
 
 #if defined(TARGET_AMD64)
-    // We add +TARGET_POINTER_SIZE here is to account for the slot that Jit_Patchpoint
-    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
+    // We add +TARGET_POINTER_SIZE here is to account for the return address slot that the OSR method
+    // pushes on entry (the "pseudo return address" slot) to make the stack unaligned.
     // This is effectively a new slot at the bottom of the Tier0 frame.
     //
     const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
@@ -5610,6 +5610,7 @@ void Compiler::generatePatchpointInfo()
     //
     const int totalFrameSize = codeGen->genTotalFrameSize();
     const int offsetAdjust   = codeGen->genSPtoFPdelta() - totalFrameSize;
+    const int fpLrSaveOffset = codeGen->genSPtoFPdelta();
 #else
     NYI("patchpoint info generation");
     const int offsetAdjust   = 0;
@@ -5617,6 +5618,11 @@ void Compiler::generatePatchpointInfo()
 #endif
 
     patchpointInfo->Initialize(info.compLocalsCount, totalFrameSize);
+
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    patchpointInfo->SetFpLrSaveOffset(fpLrSaveOffset);
+    JITDUMP("--OSR--- FP/LR save offset is %d\n", fpLrSaveOffset);
+#endif
 
     JITDUMP("--OSR--- Total Frame Size %d, local offset adjust is %d\n", patchpointInfo->TotalFrameSize(),
             offsetAdjust);
@@ -5709,7 +5715,6 @@ void Compiler::generatePatchpointInfo()
 
 #if defined(TARGET_AMD64)
     // Record callee save registers.
-    // Currently only needed for x64.
     //
     regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FPBASE;
@@ -5717,6 +5722,41 @@ void Compiler::generatePatchpointInfo()
     JITDUMP("--OSR-- Tier0 callee saves: ");
     JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
     JITDUMP("\n");
+#elif defined(TARGET_ARM64)
+    // Record callee save registers and their location in the frame.
+    // OSR methods need to restore these when returning.
+    //
+    {
+        regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
+        rsPushRegs |= RBM_FP;
+        rsPushRegs |= RBM_LR;
+        patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+        patchpointInfo->SetCalleeSaveSpOffset(compFrameInfo.calleeSaveSpOffset);
+        patchpointInfo->SetCalleeSaveSpDelta(compFrameInfo.calleeSaveSpDelta);
+        patchpointInfo->SetFrameType(compFrameInfo.frameType);
+        JITDUMP("--OSR-- Tier0 callee saves: ");
+        JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+        JITDUMP("\n");
+        JITDUMP("--OSR-- Tier0 callee save SP offset: %d, SP delta: %d\n", patchpointInfo->CalleeSaveSpOffset(),
+                patchpointInfo->CalleeSaveSpDelta());
+        JITDUMP("--OSR-- Tier0 frame type: %d\n", patchpointInfo->FrameType());
+    }
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // Record callee save registers and their location in the frame.
+    // OSR methods need to restore these when returning.
+    // On LoongArch64/RISC-V, callee saves are stored at fpLrSaveOffset + 16 (above FP/RA).
+    //
+    {
+        regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
+        rsPushRegs |= RBM_FP;
+        rsPushRegs |= RBM_RA;
+        patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+        patchpointInfo->SetCalleeSaveSpOffset(fpLrSaveOffset + 2 * REGSIZE_BYTES);
+        JITDUMP("--OSR-- Tier0 callee saves: ");
+        JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
+        JITDUMP("\n");
+        JITDUMP("--OSR-- Tier0 callee save SP offset: %d\n", patchpointInfo->CalleeSaveSpOffset());
+    }
 #endif
 
     // Register this with the runtime.

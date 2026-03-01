@@ -5007,6 +5007,19 @@ void CodeGen::genFnProlog()
 
         // SP is tier0 method's SP.
         m_compiler->unwindAllocStack(tier0FrameSize);
+
+#if defined(TARGET_ARM64)
+        // Record where FP/LR were saved by Tier0.
+        // This is needed so the unwinder/GC can find them during stack walking.
+        // The unwindSaveRegPair encoding only supports offsets up to 504 bytes
+        // (63 * 8, where 63 is the max 6-bit encoded offset).
+        // For larger offsets, we rely on the frame pointer chain for unwinding.
+        const int fpLrSaveOffset = patchpointInfo->FpLrSaveOffset();
+        if (fpLrSaveOffset <= 504)
+        {
+            m_compiler->unwindSaveRegPair(REG_FP, REG_LR, fpLrSaveOffset);
+        }
+#endif
     }
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
@@ -5373,6 +5386,10 @@ void CodeGen::genFnProlog()
         // allocating the local frame.
         //
         extraFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES;
+
+        // Simulate a call address being pushed to get expected misalignment on entry.
+        GetEmitter()->emitIns_R(INS_push, EA_PTRSIZE, REG_EAX);
+        m_compiler->unwindAllocStack(REGSIZE_BYTES);
     }
 #endif // TARGET_AMD64
 

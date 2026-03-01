@@ -2146,7 +2146,7 @@ class ContinuationObject : public Object
     {
         LIMITED_METHOD_CONTRACT;
         PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + OFFSETOF__CORINFO_Continuation__data));
-        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ILOFFSET)
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ADDRESS)
         {
             dataAddress += sizeof(void*);
         }
@@ -2167,7 +2167,7 @@ class ContinuationObject : public Object
         _ASSERTE((GetFlags() & CORINFO_CONTINUATION_HAS_EXCEPTION));
 
         PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + OFFSETOF__CORINFO_Continuation__data));
-        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ILOFFSET)
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ADDRESS)
         {
             dataAddress += sizeof(void*);
         }

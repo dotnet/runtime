@@ -2277,6 +2277,60 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genFtnEntry: emits address of the current function being compiled
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+// Notes:
+//   Uses emitIns_R_L directly with the prolog instruction group. This is
+//   cleaner than using a pseudo field handle because the lea instruction is
+//   inherently a PC-relative label reference, fitting naturally with the
+//   existing emitIns_R_L mechanism.
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genNonLocalJmp: Generate code for a non-local jump (indirect branch)
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    genConsumeOperands(tree->AsOp());
+    regNumber targetReg = tree->gtGetOp1()->GetRegNum();
+    // jalr with rd=x0 is an indirect jump (no link)
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, targetReg, 0);
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpoint: Generate code for GT_PATCHPOINT node
+//
+void CodeGen::genCodeForPatchpoint(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT, 0, EA_UNKNOWN);
+    // Jump to the returned address (jalr x0, REG_INTRET, 0)
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpointForced: Generate code for GT_PATCHPOINT_FORCED node
+//
+void CodeGen::genCodeForPatchpointForced(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT_FORCED, 0, EA_UNKNOWN);
+    // Jump to the returned OSR method address (jalr x0, REG_INTRET, 0)
+    GetEmitter()->emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_INTRET, 0);
+}
+
+//------------------------------------------------------------------------
 // genLockedInstructions: Generate code for a GT_XADD, GT_XAND, GT_XORR or GT_XCHG node.
 //
 // Arguments:
@@ -4195,6 +4249,22 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_ASYNC_RESUME_INFO:
             genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
+        case GT_FTN_ENTRY:
+            genFtnEntry(treeNode);
+            break;
+
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
+            break;
+
+        case GT_PATCHPOINT:
+            genCodeForPatchpoint(treeNode->AsOp());
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            genCodeForPatchpointForced(treeNode->AsOp());
             break;
 
         case GT_STORE_BLK:
@@ -6608,11 +6678,35 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     }
     m_compiler->unwindAllocStack(remainingSPSize);
 
-    // For OSR, we must also adjust the SP to remove the Tier0 frame.
+    // For OSR, we must also restore Tier0's callee saves and adjust the SP to remove the Tier0 frame.
     if (m_compiler->opts.IsOSR())
     {
-        const int tier0FrameSize = m_compiler->info.compPatchpointInfo->TotalFrameSize();
-        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes\n", tier0FrameSize);
+        PatchpointInfo* const patchpointInfo     = m_compiler->info.compPatchpointInfo;
+        const int             tier0FrameSize     = patchpointInfo->TotalFrameSize();
+        const int             fpLrSaveOffset     = patchpointInfo->FpLrSaveOffset();
+        const int             calleeSaveSpOffset = patchpointInfo->CalleeSaveSpOffset();
+        regMaskTP             tier0CalleeSaves   = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
+
+        JITDUMP(
+            "Extra SP adjust for OSR to pop off Tier0 frame: %d bytes, FP/RA at offset %d, callee saves at offset %d\n",
+            tier0FrameSize, fpLrSaveOffset, calleeSaveSpOffset);
+        JITDUMP("    Tier0 callee saves: ");
+        JITDUMPEXEC(dspRegMask(tier0CalleeSaves));
+        JITDUMP("\n");
+
+        // Restore Tier0's callee-saved registers (excluding FP/RA which are restored separately).
+        // These are the registers that Tier0 saved and the OSR method must restore when returning.
+        //
+        regMaskTP regsToRestoreMask = tier0CalleeSaves & RBM_CALLEE_SAVED;
+        if (regsToRestoreMask != RBM_NONE)
+        {
+            genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset);
+        }
+
+        // Restore FP/RA from Tier0's frame since we jumped (not called) to OSR method.
+        // FP/RA are saved at fpLrSaveOffset from the current SP (top of Tier0's frame).
+        emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, fpLrSaveOffset);
+        emit->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, fpLrSaveOffset + REGSIZE_BYTES);
 
         if (emitter::isValidUimm11(tier0FrameSize))
         {

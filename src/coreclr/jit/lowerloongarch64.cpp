@@ -880,4 +880,15 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 }
 #endif // FEATURE_HW_INTRINSICS
 
+//------------------------------------------------------------------------
+// ContainCheckNonLocalJmp: Determine whether operands of a non-local jump should be contained.
+//
+// Arguments:
+//    node - the node we care about
+//
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
+{
+    // No containment for non-local jumps on LoongArch64
+}
+
 #endif // TARGET_LOONGARCH64

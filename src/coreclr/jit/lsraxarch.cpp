@@ -288,6 +288,20 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
+        case GT_PATCHPOINT:
+            // Patchpoint takes two args: counter addr (RDI/RCX) and IL offset (RSI/RDX)
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildOperandUses(tree->gtGetOp2(), RBM_ARG_1.GetIntRegSet());
+            srcCount++;
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            // Forced patchpoint takes one arg: IL offset (RDI/RCX)
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            break;
+
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
         case GT_ADD_HI:
