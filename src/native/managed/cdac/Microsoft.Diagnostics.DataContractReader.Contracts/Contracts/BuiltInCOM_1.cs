@@ -130,7 +130,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
                 TargetPointer slotAddr = wrapper.IPtr + (ulong)(i * pointerSize);
 
                 // Slot_Basic (index 0) of the first wrapper = IUnknown/IDispatch, no associated MethodTable
-                TargetPointer methodTable = (isFirst && i == ComWrapperFlags.Slot_Basic)
+                TargetPointer methodTable = (isFirst && i == (int)ComWrapperFlags.Slot_Basic)
                     ? TargetPointer.Null
                     : comMethodTable.MethodTable;
 
