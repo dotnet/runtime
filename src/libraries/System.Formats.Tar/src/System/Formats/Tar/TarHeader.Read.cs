@@ -98,16 +98,25 @@ namespace System.Formats.Tar
         // If any of the dictionary entries use the name of a standard attribute, that attribute's value gets replaced with the one from the dictionary.
         // Unlike the historic header, numeric values in extended attributes are stored using decimal, not octal.
         // Throws if any conversion from string to the expected data type fails.
-        internal void ReplaceNormalAttributesWithExtended(Dictionary<string, string>? dictionaryFromExtendedAttributesHeader)
+        internal void ReplaceNormalAttributesWithExtended(IEnumerable<KeyValuePair<string, string>>? extendedAttributes)
         {
-            if (dictionaryFromExtendedAttributesHeader == null || dictionaryFromExtendedAttributesHeader.Count == 0)
+            if (extendedAttributes == null)
             {
                 return;
             }
 
-            AddExtendedAttributes(dictionaryFromExtendedAttributesHeader);
+            AddExtendedAttributes(extendedAttributes);
 
-            // Find all the extended attributes with known names and save them in the expected standard attribute.
+            if (_ea == null || _ea.Count == 0)
+            {
+                return;
+            }
+
+            // Find all the extended attributes with known names and save them
+            // in the expected standard attribute.  If the value fits within the
+            // standard attribute's field length, then we remove it from the
+            // dictionary since it does not need to be stored as an extended
+            // attribute. See also CollectExtendedAttributesFromStandardFieldsIfNeeded()
 
             // The 'name' header field only fits 100 bytes, so we always store the full name text to the dictionary.
             if (ExtendedAttributes.TryGetValue(PaxEaName, out string? paxEaName))
@@ -116,7 +125,9 @@ namespace System.Formats.Tar
             }
 
             // The 'linkName' header field only fits 100 bytes, so we always store the full linkName text to the dictionary.
-            if (ExtendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
+            // Only apply to link entries to avoid setting _linkName on non-link entry types.
+            if (_typeFlag is TarEntryType.HardLink or TarEntryType.SymbolicLink &&
+                ExtendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
             {
                 _linkName = paxEaLinkName;
             }
@@ -137,42 +148,70 @@ namespace System.Formats.Tar
             if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaSize, out long size))
             {
                 _size = size;
+                if (_size <= Octal12ByteFieldMaxValue)
+                {
+                    ExtendedAttributes.Remove(PaxEaSize);
+                }
             }
 
             // The 'uid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
             if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaUid, out int uid))
             {
                 _uid = uid;
+                if (_uid <= Octal8ByteFieldMaxValue)
+                {
+                    ExtendedAttributes.Remove(PaxEaUid);
+                }
             }
 
             // The 'gid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
             if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaGid, out int gid))
             {
                 _gid = gid;
+                if (_gid <= Octal8ByteFieldMaxValue)
+                {
+                    ExtendedAttributes.Remove(PaxEaGid);
+                }
             }
 
             // The 'uname' header field only fits 32 bytes
             if (ExtendedAttributes.TryGetValue(PaxEaUName, out string? paxEaUName))
             {
                 _uName = paxEaUName;
+                if (GetUtf8TextLength(_uName) <= FieldLengths.UName)
+                {
+                    ExtendedAttributes.Remove(PaxEaUName);
+                }
             }
 
             // The 'gname' header field only fits 32 bytes
             if (ExtendedAttributes.TryGetValue(PaxEaGName, out string? paxEaGName))
             {
                 _gName = paxEaGName;
+                if (GetUtf8TextLength(_gName) <= FieldLengths.GName)
+                {
+                    ExtendedAttributes.Remove(PaxEaGName);
+                }
             }
 
             // The 'devmajor' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
             if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaDevMajor, out int devMajor))
             {
                 _devMajor = devMajor;
+                if (_devMajor <= Octal8ByteFieldMaxValue)
+                {
+                    ExtendedAttributes.Remove(PaxEaDevMajor);
+                }
             }
 
             // The 'devminor' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
             if (TarHelpers.TryGetStringAsBaseTenInteger(ExtendedAttributes, PaxEaDevMinor, out int devMinor))
             {
                 _devMinor = devMinor;
+                if (_devMinor <= Octal8ByteFieldMaxValue)
+                {
+                    ExtendedAttributes.Remove(PaxEaDevMinor);
+                }
             }
         }
 

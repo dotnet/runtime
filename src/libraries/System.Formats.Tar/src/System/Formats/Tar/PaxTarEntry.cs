@@ -68,7 +68,13 @@ namespace System.Formats.Tar
             ArgumentNullException.ThrowIfNull(extendedAttributes);
 
             _header._prefix = string.Empty;
-            _header.AddExtendedAttributes(extendedAttributes);
+            _header.ReplaceNormalAttributesWithExtended(extendedAttributes);
+
+            if (_header._name != entryName)
+            {
+                // extended attribute "path" conflicts with entryName parameter
+                throw new ArgumentException(SR.TarEntryNameExtendedAttributeConflict, nameof(extendedAttributes));
+            }
         }
 
         /// <summary>
@@ -90,7 +96,7 @@ namespace System.Formats.Tar
 
             if (other is PaxTarEntry paxOther)
             {
-                _header.AddExtendedAttributes(paxOther.ExtendedAttributes);
+                _header.ReplaceNormalAttributesWithExtended(paxOther.ExtendedAttributes);
             }
             else if (other is GnuTarEntry gnuOther)
             {
@@ -120,7 +126,7 @@ namespace System.Formats.Tar
         /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>.</item>
         /// </list>
         /// </remarks>
-        public IReadOnlyDictionary<string, string> ExtendedAttributes => field ??= _header.ExtendedAttributes.AsReadOnly();
+        public IReadOnlyDictionary<string, string> ExtendedAttributes => field ??= _header.GetPopulatedExtendedAttributes().AsReadOnly();
 
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.RegularFile;

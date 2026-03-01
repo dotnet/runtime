@@ -17,8 +17,8 @@ namespace System.Formats.Tar
     // Writes header attributes of a tar archive entry.
     internal sealed partial class TarHeader
     {
-        private const long Octal12ByteFieldMaxValue = (1L << (3 * 11)) - 1; // Max value of 11 octal digits.
-        private const int Octal8ByteFieldMaxValue = (1 << (3 * 7)) - 1;     // Max value of 7 octal digits.
+        internal const long Octal12ByteFieldMaxValue = (1L << (3 * 11)) - 1; // Max value of 11 octal digits.
+        internal const int Octal8ByteFieldMaxValue = (1 << (3 * 7)) - 1;     // Max value of 7 octal digits.
 
         private static ReadOnlySpan<byte> UstarMagicBytes => "ustar\0"u8;
         private static ReadOnlySpan<byte> UstarVersionBytes => "00"u8;
@@ -942,61 +942,66 @@ namespace System.Formats.Tar
         // extended attributes. They get collected and saved in that dictionary, with no restrictions.
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
         {
-            ExtendedAttributes[PaxEaName] = _name;
-            ExtendedAttributes[PaxEaMTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime);
+            CollectExtendedAttributesFromStandardFieldsIfNeeded(_ea ??= new Dictionary<string, string>());
+        }
 
-            TryAddStringField(ExtendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
-            TryAddStringField(ExtendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
+        private void CollectExtendedAttributesFromStandardFieldsIfNeeded(Dictionary<string, string> ea)
+        {
+            ea[PaxEaName] = _name;
+            ea[PaxEaMTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime);
+
+            TryAddStringField(ea, PaxEaGName, _gName, FieldLengths.GName);
+            TryAddStringField(ea, PaxEaUName, _uName, FieldLengths.UName);
 
             if (!string.IsNullOrEmpty(_linkName))
             {
                 Debug.Assert(_typeFlag is TarEntryType.SymbolicLink or TarEntryType.HardLink);
-                ExtendedAttributes[PaxEaLinkName] = _linkName;
+                ea[PaxEaLinkName] = _linkName;
             }
 
             if (_size > Octal12ByteFieldMaxValue)
             {
-                ExtendedAttributes[PaxEaSize] = _size.ToString();
+                ea[PaxEaSize] = _size.ToString();
             }
             else
             {
-                ExtendedAttributes.Remove(PaxEaSize);
+                ea.Remove(PaxEaSize);
             }
 
             if (_uid > Octal8ByteFieldMaxValue)
             {
-                ExtendedAttributes[PaxEaUid] = _uid.ToString();
+                ea[PaxEaUid] = _uid.ToString();
             }
             else
             {
-                ExtendedAttributes.Remove(PaxEaUid);
+                ea.Remove(PaxEaUid);
             }
 
             if (_gid > Octal8ByteFieldMaxValue)
             {
-                ExtendedAttributes[PaxEaGid] = _gid.ToString();
+                ea[PaxEaGid] = _gid.ToString();
             }
             else
             {
-                ExtendedAttributes.Remove(PaxEaGid);
+                ea.Remove(PaxEaGid);
             }
 
             if (_devMajor > Octal8ByteFieldMaxValue)
             {
-                ExtendedAttributes[PaxEaDevMajor] = _devMajor.ToString();
+                ea[PaxEaDevMajor] = _devMajor.ToString();
             }
             else
             {
-                ExtendedAttributes.Remove(PaxEaDevMajor);
+                ea.Remove(PaxEaDevMajor);
             }
 
             if (_devMinor > Octal8ByteFieldMaxValue)
             {
-                ExtendedAttributes[PaxEaDevMinor] = _devMinor.ToString();
+                ea[PaxEaDevMinor] = _devMinor.ToString();
             }
             else
             {
-                ExtendedAttributes.Remove(PaxEaDevMinor);
+                ea.Remove(PaxEaDevMinor);
             }
 
             // Sets the specified string to the dictionary if it's longer than the specified max byte length; otherwise, remove it.

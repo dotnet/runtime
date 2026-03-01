@@ -25,19 +25,19 @@ namespace System.Formats.Tar
         private const string GnuVersion = " \0";
 
         // Names of PAX extended attributes commonly found fields
-        private const string PaxEaName = "path";
-        private const string PaxEaLinkName = "linkpath";
-        private const string PaxEaMode = "mode";
-        private const string PaxEaGName = "gname";
-        private const string PaxEaUName = "uname";
-        private const string PaxEaGid = "gid";
-        private const string PaxEaUid = "uid";
+        internal const string PaxEaName = "path";
+        internal const string PaxEaLinkName = "linkpath";
+        internal const string PaxEaMode = "mode";
+        internal const string PaxEaGName = "gname";
+        internal const string PaxEaUName = "uname";
+        internal const string PaxEaGid = "gid";
+        internal const string PaxEaUid = "uid";
         internal const string PaxEaATime = "atime";
         internal const string PaxEaCTime = "ctime";
-        private const string PaxEaMTime = "mtime";
-        private const string PaxEaSize = "size";
-        private const string PaxEaDevMajor = "devmajor";
-        private const string PaxEaDevMinor = "devminor";
+        internal const string PaxEaMTime = "mtime";
+        internal const string PaxEaSize = "size";
+        internal const string PaxEaDevMajor = "devmajor";
+        internal const string PaxEaDevMinor = "devminor";
 
         internal Stream? _dataStream;
         internal long _dataOffset;
@@ -152,5 +152,57 @@ namespace System.Formats.Tar
         // if the archive stream is seekable. Otherwise, -1.
         private static void SetDataOffset(TarHeader header, Stream archiveStream) =>
             header._dataOffset = archiveStream.CanSeek ? archiveStream.Position : -1;
+
+        // Synchronizes the extended attributes dictionary with the value of a property.
+        // Only updates if the format is PAX and the ExtendedAttributes dictionary has been initialized.
+        internal void SyncStringExtendedAttribute(string key, string? value, int maxUtf8ByteLength = 0)
+        {
+            if (_format == TarEntryFormat.Pax && _ea is not null)
+            {
+                if (!string.IsNullOrEmpty(value) && GetUtf8TextLength(value) > maxUtf8ByteLength)
+                {
+                    _ea[key] = value;
+                }
+                else
+                {
+                    _ea.Remove(key);
+                }
+            }
+        }
+
+        // Synchronizes the extended attributes dictionary with a timestamp property.
+        // Only updates if the format is PAX and the ExtendedAttributes dictionary has been initialized.
+        internal void SyncTimestampExtendedAttribute(string key, DateTimeOffset value)
+        {
+            if (_format == TarEntryFormat.Pax && _ea is not null)
+            {
+                _ea[key] = TarHelpers.GetTimestampStringFromDateTimeOffset(value);
+            }
+        }
+
+        // Synchronizes the extended attributes dictionary with a numeric property.
+        // Only updates if the format is PAX and the ExtendedAttributes dictionary has been initialized.
+        // Uses the same logic as CollectExtendedAttributesFromStandardFieldsIfNeeded to determine
+        // whether to add or remove the attribute.
+        internal void SyncNumericExtendedAttribute(string key, int value, int maxNonextendedValue)
+        {
+            if (_format == TarEntryFormat.Pax && _ea is not null)
+            {
+                if (value > maxNonextendedValue)
+                {
+                    _ea[key] = value.ToString();
+                }
+                else
+                {
+                    _ea.Remove(key);
+                }
+            }
+        }
+
+        internal Dictionary<string, string> GetPopulatedExtendedAttributes()
+        {
+            CollectExtendedAttributesFromStandardFieldsIfNeeded(ExtendedAttributes);
+            return ExtendedAttributes;
+        }
     }
 }
