@@ -171,6 +171,7 @@ void Module::DoInit(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #endif
 }
+#endif //!DACCESS_COMPILE
 
 // Set the given bit on m_dwTransientFlags. Return true if we won the race to set the bit.
 BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
@@ -186,6 +187,22 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
             return TRUE;
     }
 }
+
+void Module::SetTransientFlagInterlockedWithMask(DWORD dwFlag, DWORD dwMask)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE((dwFlag & dwMask) == dwFlag);
+    for (;;)
+    {
+        DWORD dwTransientFlags = m_dwTransientFlags;
+        DWORD dwNewTransientFlags = (dwTransientFlags & ~dwMask) | dwFlag;
+        if ((DWORD)InterlockedCompareExchange((LONG*)&m_dwTransientFlags, dwNewTransientFlags, dwTransientFlags) == dwTransientFlags)
+            return;
+    }
+}
+
+#ifndef DACCESS_COMPILE
 
 #if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
 void Module::UpdateNewlyAddedTypes()
@@ -424,7 +441,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     _ASSERTE(m_path != NULL);
     m_baseAddress = m_pPEAssembly->HasLoadedPEImage() ? m_pPEAssembly->GetLoadedLayout()->GetBase() : NULL;
     if (m_pPEAssembly->IsReflectionEmit())
-        m_dwTransientFlags |= IS_REFLECTION_EMIT;
+        m_dwTransientFlags = m_dwTransientFlags | IS_REFLECTION_EMIT;
 
     m_Crst.Init(CrstModule);
     m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
@@ -432,17 +449,17 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_ISymUnmanagedReaderCrst.Init(CrstISymUnmanagedReader, CRST_DEBUGGER_THREAD);
 
     AllocateMaps();
-    m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
+    m_dwTransientFlags = m_dwTransientFlags & ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
 
     if (IsSystem())
-        m_dwPersistedFlags |= SKIP_TYPE_VALIDATION; // Skip type validation on System
+        m_dwPersistedFlags = m_dwPersistedFlags | SKIP_TYPE_VALIDATION; // Skip type validation on System
 
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
     if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
     {
         if (m_pReadyToRunInfo->SkipTypeValidation())
-            m_dwPersistedFlags |= SKIP_TYPE_VALIDATION; // Skip type validation on System
+            m_dwPersistedFlags = m_dwPersistedFlags | SKIP_TYPE_VALIDATION; // Skip type validation on System
 
         m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
         if (m_pNativeImage != NULL)
@@ -489,11 +506,11 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     // set profiler related JIT flags
     if (CORProfilerDisableInlining())
     {
-        m_dwTransientFlags |= PROF_DISABLE_INLINING;
+        m_dwTransientFlags = m_dwTransientFlags | PROF_DISABLE_INLINING;
     }
     if (CORProfilerDisableOptimizations())
     {
-        m_dwTransientFlags |= PROF_DISABLE_OPTIMIZATIONS;
+        m_dwTransientFlags = m_dwTransientFlags | PROF_DISABLE_OPTIMIZATIONS;
     }
 
     m_pJitInlinerTrackingMap = NULL;
@@ -517,8 +534,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
     _ASSERTE(((newBits << DEBUGGER_INFO_SHIFT_PRIV) &
               ~DEBUGGER_INFO_MASK_PRIV) == 0);
 
-    m_dwTransientFlags &= ~DEBUGGER_INFO_MASK_PRIV;
-    m_dwTransientFlags |= (newBits << DEBUGGER_INFO_SHIFT_PRIV);
+    SetTransientFlagInterlockedWithMask(newBits << DEBUGGER_INFO_SHIFT_PRIV, DEBUGGER_INFO_MASK_PRIV);
 
 #ifdef DEBUGGING_SUPPORTED
     if (IsEditAndContinueCapable())
