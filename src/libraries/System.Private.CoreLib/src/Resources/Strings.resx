@@ -406,6 +406,12 @@
   <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
     <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types.</value>
   </data>
+  <data name="Arg_BinaryStyleNotSupported" xml:space="preserve">
+    <value>The number style AllowBinarySpecifier is not supported on floating point data types.</value>
+  </data>
+  <data name="Arg_InvalidHexFloatStyle" xml:space="preserve">
+    <value>With the AllowHexSpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be AllowLeadingWhite, AllowTrailingWhite, AllowLeadingSign, and AllowDecimalPoint.</value>
+  </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>

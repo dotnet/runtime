@@ -824,7 +824,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> TestFormatterDouble_InvalidMemberData =>
             from value in new[] { double.Epsilon, double.MaxValue, Math.E, Math.PI, 0.0, 0.84551240822557006, 1.0, 1844674407370955.25 }
-            from format in new[] { "D", "D4", "D20", "X", "X4", "X20" }
+            from format in new[] { "D", "D4", "D20" }
             select new object[] { value, format };
 
         [Theory]
@@ -1644,7 +1644,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> TestFormatterSingle_InvalidMemberData =>
             from value in new[] { float.Epsilon, float.MaxValue, MathF.E, MathF.PI, 0.0, 0.845512390f, 1.0, 429496.72 }
-            from format in new[] { "D", "D4", "D20", "X", "X4", "X20" }
+            from format in new[] { "D", "D4", "D20" }
             select new object[] { value, format };
 
         [Theory]
