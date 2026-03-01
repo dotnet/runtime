@@ -57,6 +57,33 @@ struct OptTestInfo
     }
 };
 
+class IntBoolOpDsc
+{
+private:
+    IntBoolOpDsc(Compiler* comp)
+        : m_comp(comp)
+        , ctsArray(comp->getAllocator(CMK_ArrayStack))
+        , lclVarArr(comp->getAllocator(CMK_ArrayStack))
+        , start(nullptr)
+        , end(nullptr)
+    {
+    }
+
+private:
+    Compiler*                        m_comp;
+    ArrayStack<GenTreeIntConCommon*> ctsArray;
+    ArrayStack<GenTree*>             lclVarArr;
+    GenTree*                         start;
+    GenTree*                         end;
+
+public:
+    static IntBoolOpDsc GetNextIntBoolOp(GenTree* b3, Compiler* comp);
+    bool                TryOptimize();
+    bool                EndIsNull();
+    GenTree*            GetLclVarArrayFirst();
+    void                Reinit();
+};
+
 //-----------------------------------------------------------------------------
 // OptBoolsDsc:     Descriptor used for Boolean Optimization
 //
@@ -1439,6 +1466,402 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 }
 
 //-----------------------------------------------------------------------------
+// Reinit:   Procedure that reinitializes IntBoolOpDsc reference
+//
+void IntBoolOpDsc::Reinit()
+{
+    start = nullptr;
+    end   = nullptr;
+    ctsArray.Reset();
+    lclVarArr.Reset();
+}
+
+//-----------------------------------------------------------------------------
+// GetNextOrOp:   Function used for searching the next GT_OR node
+//
+// Arguments:
+//      b3    the tree to inspect
+//
+// Return:
+//      On success, return the next GT_OR node or nullptr if it fails
+//
+GenTree* GetNextOrOp(GenTree* b4)
+{
+    while (b4 != nullptr && !b4->OperIs(GT_OR))
+    {
+        b4 = b4->gtPrev;
+    }
+
+    return b4;
+}
+
+//-----------------------------------------------------------------------------
+// GetNextIntBoolOp:   Function used for searching constant INT OR operation that can be folded
+//
+// Arguments:
+//      b3    the tree to inspect
+//      compiler        compiler reference
+//
+// Return:
+//      On success, return the start and end offset of code to optimize and the variables and constants to be folded.
+//
+// Notes:
+//      We look for consecutive blocks that have GT_OR, GT_LCL_VAR, GT_CNS_INT nodes.
+IntBoolOpDsc IntBoolOpDsc::GetNextIntBoolOp(GenTree* b3, Compiler* comp)
+{
+    IntBoolOpDsc intBoolOpDsc = IntBoolOpDsc(comp);
+    int          orOpCount    = 2;
+
+    GenTree* b4 = GetNextOrOp(b3->gtPrev);
+
+    if (b4 != nullptr)
+    {
+        intBoolOpDsc.start = b4->gtNext;
+        b4                 = b4->gtPrev;
+    }
+
+    while (b4 != nullptr)
+    {
+        if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT, GT_CNS_LNG, GT_CAST) ||
+            (b4->OperIs(GT_CAST) &&
+             (!b4->AsCast()->CastOp()->OperIs(GT_LCL_VAR) || !b4->AsCast()->CastOp()->TypeIs(TYP_INT, TYP_LONG))) ||
+            !b4->TypeIs(TYP_INT, TYP_LONG))
+        {
+            if (intBoolOpDsc.ctsArray.Height() >= 2 && intBoolOpDsc.lclVarArr.Height() >= 2)
+            {
+                intBoolOpDsc.end = b4;
+                return intBoolOpDsc;
+            }
+            else
+            {
+                intBoolOpDsc.Reinit();
+                b4 = GetNextOrOp(b4);
+
+                if (b4 != nullptr)
+                {
+                    orOpCount          = 2;
+                    intBoolOpDsc.start = b4->gtNext;
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+
+        if (orOpCount <= 0)
+        {
+            if (intBoolOpDsc.ctsArray.Height() >= 2 && intBoolOpDsc.lclVarArr.Height() >= 2)
+            {
+                intBoolOpDsc.end = b4;
+                return intBoolOpDsc;
+            }
+
+            intBoolOpDsc.Reinit();
+
+            if (!b4->OperIs(GT_OR))
+            {
+                b4 = GetNextOrOp(b4);
+            }
+
+            if (b4 != nullptr)
+            {
+                orOpCount          = 2;
+                intBoolOpDsc.start = b4->gtNext;
+            }
+            else
+            {
+                break;
+            }
+        }
+        else
+        {
+            switch (b4->gtOper)
+            {
+                case GT_LCL_VAR:
+                {
+                    intBoolOpDsc.lclVarArr.Push(b4);
+                    orOpCount--;
+                    break;
+                }
+                case GT_CNS_INT:
+                case GT_CNS_LNG:
+                {
+                    intBoolOpDsc.ctsArray.Push(b4->AsIntConCommon());
+                    orOpCount--;
+                    break;
+                }
+                case GT_OR:
+                    orOpCount++;
+                    break;
+                case GT_CAST:
+                {
+                    intBoolOpDsc.lclVarArr.Push(b4);
+                    b4 = b4->gtPrev;
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+            }
+        }
+
+        b4 = b4->gtPrev;
+    }
+
+    return intBoolOpDsc;
+}
+
+//-----------------------------------------------------------------------------
+// TryOptimize:   Function that folds constant INT OR operations
+//
+// Return:
+//      True if it could optimize the operation and false elsewhere
+//
+// Notes:
+//      We recreate nodes so as to eliminate excessive constants
+bool IntBoolOpDsc::TryOptimize()
+{
+    int ctsArrayLength  = ctsArray.Height();
+    int lclVarArrLength = lclVarArr.Height();
+
+    if (ctsArrayLength < 2 || lclVarArrLength < 2)
+    {
+        return false;
+    }
+
+    GenTree*   firstLclVar  = lclVarArr.Bottom(0);
+    GenTree*   secondLclVar = lclVarArr.Bottom(1);
+    GenTreeOp* intVarTree =
+        m_comp->gtNewOperNode(GT_OR,
+                              firstLclVar->gtType == TYP_INT && secondLclVar->gtType == TYP_INT ? TYP_INT : TYP_LONG,
+                              firstLclVar, secondLclVar);
+    intVarTree->gtPrev   = secondLclVar;
+    secondLclVar->gtNext = intVarTree;
+
+    if (secondLclVar->OperIs(GT_LCL_VAR))
+    {
+        secondLclVar->gtPrev = firstLclVar;
+        firstLclVar->gtNext  = secondLclVar;
+    }
+    else
+    {
+        assert(secondLclVar->OperIs(GT_CAST));
+        GenTree* secondCastLclVar = secondLclVar->AsCast()->CastOp();
+        secondLclVar->gtPrev      = secondCastLclVar;
+        secondCastLclVar->gtNext  = secondLclVar;
+        secondCastLclVar->gtPrev  = firstLclVar;
+        firstLclVar->gtNext       = secondCastLclVar;
+    }
+
+    GenTree* lastLclVarLink = nullptr;
+    if (firstLclVar->OperIs(GT_LCL_VAR))
+    {
+        firstLclVar->gtPrev = end;
+        lastLclVarLink      = firstLclVar;
+    }
+    else
+    {
+        assert(firstLclVar->OperIs(GT_CAST));
+        GenTree* firstCastLclVar = firstLclVar->AsCast()->CastOp();
+        firstLclVar->gtPrev      = firstCastLclVar;
+        firstCastLclVar->gtNext  = firstLclVar;
+        firstCastLclVar->gtPrev  = end;
+        lastLclVarLink           = firstCastLclVar;
+    }
+
+    if (end != nullptr)
+    {
+        end->gtNext = lastLclVarLink;
+    }
+
+    GenTree* tempIntVatTree = intVarTree;
+
+    for (int i = 2; i < lclVarArrLength; i++)
+    {
+        GenTree*   ithLclVar = lclVarArr.Bottom(i);
+        GenTreeOp* newIntVarTree =
+            m_comp->gtNewOperNode(GT_OR,
+                                  tempIntVatTree->gtType == TYP_INT && ithLclVar->gtType == TYP_INT ? TYP_INT
+                                                                                                    : TYP_LONG,
+                                  tempIntVatTree, ithLclVar);
+        newIntVarTree->gtPrev = ithLclVar;
+        ithLclVar->gtNext     = newIntVarTree;
+
+        if (ithLclVar->OperIs(GT_LCL_VAR))
+        {
+            ithLclVar->gtPrev      = tempIntVatTree;
+            tempIntVatTree->gtNext = ithLclVar;
+        }
+        else
+        {
+            assert(ithLclVar->OperIs(GT_CAST));
+            GenTree* ithCastLclVar = ithLclVar->AsCast()->CastOp();
+            ithLclVar->gtPrev      = ithCastLclVar;
+            ithCastLclVar->gtNext  = ithLclVar;
+            ithCastLclVar->gtPrev  = tempIntVatTree;
+            tempIntVatTree->gtNext = ithCastLclVar;
+        }
+
+        tempIntVatTree = newIntVarTree;
+    }
+
+    INT64     optimizedCst     = 0;
+    var_types optimizedCstType = TYP_INT;
+    for (int i = 0; i < ctsArrayLength; i++)
+    {
+        GenTreeIntConCommon* ithCts = ctsArray.Bottom(i);
+
+        if (optimizedCstType == TYP_INT && ithCts->gtType == TYP_LONG)
+        {
+            optimizedCstType = TYP_LONG;
+        }
+
+        optimizedCst = optimizedCst | ithCts->IntegralValue();
+    }
+
+    GenTree*   optimizedCstTree = optimizedCstType == TYP_INT
+                                      ? m_comp->gtNewIconNode((ssize_t)optimizedCst, optimizedCstType)
+                                      : m_comp->gtNewLconNode(optimizedCst);
+    GenTreeOp* optimizedTree =
+        m_comp->gtNewOperNode(GT_OR,
+                              tempIntVatTree->gtType == TYP_INT && optimizedCstTree->gtType == TYP_INT ? TYP_INT
+                                                                                                       : TYP_LONG,
+                              tempIntVatTree, optimizedCstTree);
+    optimizedTree->gtPrev    = optimizedCstTree;
+    optimizedCstTree->gtNext = optimizedTree;
+    optimizedCstTree->gtPrev = tempIntVatTree;
+    tempIntVatTree->gtNext   = optimizedCstTree;
+    start->gtPrev            = optimizedTree;
+    optimizedTree->gtNext    = start;
+
+    if (start->OperIsUnary())
+    {
+        start->AsOp()->gtOp1 = optimizedTree;
+    }
+    else if (start->OperIsBinary())
+    {
+        start->AsOp()->gtOp2 = optimizedTree;
+    }
+    else if (start->gtNext != nullptr && start->gtNext->OperIsBinary())
+    {
+        start->gtNext->AsOp()->gtOp1 = optimizedTree;
+    }
+    else
+    {
+        GenTree* functionCallCandidate  = start;
+        bool     parameterAssigningDone = false;
+        while (functionCallCandidate != nullptr && !parameterAssigningDone)
+        {
+            if (functionCallCandidate->OperIs(GT_CALL))
+            {
+                GenTreeCall*                        call        = functionCallCandidate->AsCall();
+                IteratorPair<CallArgs::ArgIterator> args        = call->gtArgs.Args();
+                CallArgs::ArgIterator               nextArg     = args.begin();
+                CallArg*                            nextCallArg = nextArg.GetArg();
+
+                if (nextCallArg->GetNode()->gtNext == start)
+                {
+                    nextCallArg->SetLateNode(optimizedTree);
+                    parameterAssigningDone = true;
+                }
+                else
+                {
+                    nextArg     = nextArg.operator++();
+                    nextCallArg = nextArg.GetArg();
+                    while (nextCallArg != nullptr)
+                    {
+                        if (nextCallArg->GetNode()->gtNext == start)
+                        {
+                            nextCallArg->SetLateNode(optimizedTree);
+                            parameterAssigningDone = true;
+                            break;
+                        }
+
+                        nextArg     = nextArg.operator++();
+                        nextCallArg = nextArg.GetArg();
+                    }
+                }
+            }
+
+            functionCallCandidate = functionCallCandidate->gtNext;
+        }
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// EndIsNull:   Function that checks whether the end of operation is null
+//
+// Return:
+//      true if end is null and false elsewhere
+bool IntBoolOpDsc::EndIsNull()
+{
+    return end == nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// GetLclVarArrayFirst:   Function that returns the first lcl var of operation if it exists
+//
+// Return:
+//      first lcl var of operation if it exists and nullptr elsewhere
+GenTree* IntBoolOpDsc::GetLclVarArrayFirst()
+{
+    if (lclVarArr.Height() > 0)
+    {
+        GenTree* firstLclVar = lclVarArr.Bottom(0);
+
+        if (firstLclVar->OperIs(GT_LCL_VAR))
+        {
+            return firstLclVar;
+        }
+
+        assert(firstLclVar->OperIs(GT_CAST));
+        return firstLclVar->AsCast()->CastOp();
+    }
+
+    return nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// TryOptimizeIntBoolOp:   Procedure that looks for constant INT OR operations to fold and if found, folds them
+//
+// Arguments:
+//      b1              the block code to inspect for operations to fold
+//
+// Return:
+//      True if the block was folded and false elsewhere
+bool Compiler::TryOptimizeIntBoolOp(BasicBlock* b1)
+{
+    bool       folded = false;
+    Statement* b2     = b1->firstStmt();
+    if (b2 != nullptr)
+    {
+        GenTree* b3 = b2->GetRootNode();
+        if (b3 != nullptr && b3->OperIs(GT_RETURN))
+        {
+            IntBoolOpDsc intBoolOpDsc = IntBoolOpDsc::GetNextIntBoolOp(b3, this);
+
+            if (intBoolOpDsc.TryOptimize())
+            {
+                if (intBoolOpDsc.EndIsNull())
+                {
+                    b2->SetTreeList(intBoolOpDsc.GetLclVarArrayFirst());
+                }
+
+                folded = true;
+            }
+
+            intBoolOpDsc.Reinit();
+        }
+    }
+
+    return folded;
+}
+
+//-----------------------------------------------------------------------------
 // optOptimizeBools:    Folds boolean conditionals for GT_JTRUE/GT_RETURN/GT_SWIFT_ERROR_RET nodes
 //
 // Returns:
@@ -1561,6 +1984,14 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
 //             +--*  LCL_VAR    int     V00 arg0
 //             \--*  CNS_INT    int     0
 //
+//      Case 16:     ((x | 5) | (y | 2)) => ((x | y) | 7)
+//           *  RETURN    int    $VN.Void
+//           \--*  OR        int
+//              +--*  OR        int
+//              |  +--*  LCL_VAR   int    V01 arg1         u:1 (last use) $81
+//              |  \--*  LCL_VAR   int    V00 arg0         u:1 (last use) $80
+//              \--*  CNS_INT   int    7
+//
 //      Patterns that are not optimized include (x == 1 && y == 1), (x == 1 || y == 1),
 //      (x == 0 || y == 0) because currently their comptree is not marked as boolean expression.
 //      When m_foldOp == GT_AND or m_cmpOp == GT_NE, both compTrees must be boolean expression
@@ -1597,6 +2028,17 @@ PhaseStatus Compiler::optOptimizeBools()
             {
                 change = true;
                 numCond++;
+            }
+
+            if (b1->KindIs(BBJ_RETURN))
+            {
+                if (TryOptimizeIntBoolOp(b1))
+                {
+                    numCond++;
+                    retry = true;
+                }
+
+                continue;
             }
 
             // We're only interested in conditional jumps here
