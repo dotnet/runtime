@@ -413,6 +413,7 @@ static const Entry s_QCall[] =
     DllImportEntry(Monitor_TryEnter_Slowpath)
     DllImportEntry(Monitor_Exit_Slowpath)
     DllImportEntry(MetadataImport_Enum)
+    DllImportEntry(MetadataImport_GetMarshalAs)
     DllImportEntry(ReflectionInvocation_RunClassConstructor)
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)
     DllImportEntry(ReflectionInvocation_CompileMethod)
