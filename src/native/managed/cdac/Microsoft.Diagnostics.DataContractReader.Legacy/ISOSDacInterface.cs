@@ -680,7 +680,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetCCWData(ClrDataAddress ccw, /*struct DacpCCWData */ void* data);
     [PreserveSig]
-    int GetCCWInterfaces(ClrDataAddress ccw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
+    int GetCCWInterfaces(ClrDataAddress ccw, uint count, DacpCOMInterfacePointerData* interfaces, uint* pNeeded);
     [PreserveSig]
     int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ void* pCallback, void* token);
 
@@ -717,6 +717,13 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded);
 };
+
+public struct DacpCOMInterfacePointerData
+{
+    public ClrDataAddress methodTable;
+    public ClrDataAddress interfacePtr;
+    public ClrDataAddress comContext;
+}
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 public struct DacpExceptionObjectData

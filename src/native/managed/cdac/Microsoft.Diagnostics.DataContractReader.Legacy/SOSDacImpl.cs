@@ -576,8 +576,73 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetCCWData(ccw, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, void* interfaces, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetCCWInterfaces(ccw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, DacpCOMInterfacePointerData* interfaces, uint* pNeeded)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ccw == 0 || (interfaces == null && pNeeded == null))
+                throw new ArgumentException();
+
+            Contracts.IBuiltInCOM builtInCOMContract = _target.Contracts.BuiltInCOM;
+            IEnumerable<Contracts.COMInterfacePointerData> result =
+                builtInCOMContract.GetCCWInterfaces(ccw.ToTargetPointer(_target));
+
+            if (interfaces == null)
+            {
+                uint c = (uint)result.Count();
+                *pNeeded = c;
+            }
+            else
+            {
+                uint itemIndex = 0;
+                foreach (Contracts.COMInterfacePointerData item in result)
+                {
+                    if (itemIndex >= count)
+                        throw new ArgumentException();
+
+                    interfaces[itemIndex].methodTable = item.MethodTable.ToClrDataAddress(_target);
+                    interfaces[itemIndex].interfacePtr = item.InterfacePointer.ToClrDataAddress(_target);
+                    interfaces[itemIndex].comContext = 0;
+                    itemIndex++;
+                }
+
+                if (pNeeded is not null)
+                    *pNeeded = itemIndex;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpCOMInterfacePointerData[] interfacesLocal = new DacpCOMInterfacePointerData[(int)count];
+            uint neededLocal = 0;
+            int hrLocal;
+            fixed (DacpCOMInterfacePointerData* interfacesLocalPtr = interfacesLocal)
+            {
+                hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocalPtr, &neededLocal);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded is null || *pNeeded == neededLocal, $"cDAC count: {(pNeeded is null ? "null" : (*pNeeded).ToString())}, DAC count: {neededLocal}");
+                if (interfaces != null)
+                {
+                    for (uint i = 0; i < neededLocal; i++)
+                    {
+                        Debug.Assert(interfaces[i].methodTable == interfacesLocal![i].methodTable, $"cDAC methodTable[{i}]: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
+                        Debug.Assert(interfaces[i].interfacePtr == interfacesLocal![i].interfacePtr, $"cDAC interfacePtr[{i}]: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
+                        Debug.Assert(interfaces[i].comContext == interfacesLocal![i].comContext, $"cDAC comContext[{i}]: {interfaces[i].comContext:x}, DAC: {interfacesLocal[i].comContext:x}");
+                    }
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetClrWatsonBuckets(ClrDataAddress thread, void* pGenericModeBlock)
     {
         int hr = HResults.S_OK;

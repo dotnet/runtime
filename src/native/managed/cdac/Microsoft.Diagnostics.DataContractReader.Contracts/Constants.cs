@@ -82,6 +82,11 @@ public static class Constants
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
         public const string ComRefcountMask = nameof(ComRefcountMask);
+        public const string CCWNumInterfaces = nameof(CCWNumInterfaces);
+        public const string CCWThisMask = nameof(CCWThisMask);
+        public const string TearOffAddRef = nameof(TearOffAddRef);
+        public const string TearOffAddRefSimple = nameof(TearOffAddRefSimple);
+        public const string TearOffAddRefSimpleInner = nameof(TearOffAddRefSimpleInner);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);
