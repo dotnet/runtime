@@ -85,4 +85,103 @@ A digest with the most important guidelines are available in our [documentation]
 
 ## API Review Notes
 
-The API review notes are being published in [API Review repository](https://github.com/dotnet/apireviews).
+  /language:actionsWorkflow file for this run
+.github/workflows/test-pull-request.yml at ae6e6f9
+---
+###########################
+###########################
+## Pull request testing ##
+###########################
+###########################
+name: Latest Pull Request
+
+# Documentation:
+# - Workflow: https://help.github.com/en/articles/workflow-syntax-for-github-actions
+# - SuperLinter: https://github.com/github/super-linter
+# - Markdown linter: https://github.com/DavidAnson/markdownlint
+# - Link validation: https://github.com/remarkjs/remark-validate-links
+
+######################################################
+# Start the job on a pull request to the main branch #
+######################################################
+on:
+  pull_request:
+    branches: [main]
+
+###############
+# Set the Job #
+###############
+jobs:
+  validate:
+    # Set the agent to run on
+    runs-on: ubuntu-latest
+
+    ##################
+    # Load all steps #
+    ##################
+    steps:
+      ##########################
+      # Checkout the code base #
+      ##########################
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          # Full git history is needed to get a proper list of changed files
+          # within `super-linter`
+          fetch-depth: 0
+
+      ################################
+      # Run Linters against code base #
+      ################################
+      - name: Lint Code Base
+        #
+        # Use full version number to avoid cases when a next
+        # released version is buggy
+        # About slim image: https://github.com/github/super-linter#slim-image
+        uses: github/super-linter/slim@v4.9.4
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_GITHUB_ACTIONS: true
+          VALIDATE_GITLEAKS: true
+          #
+          # The Markdown rules are defined at
+          # .github/linters/.markdown-lint.yml
+          #
+          # Documentation on rules:
+          # https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+          VALIDATE_MARKDOWN: true
+          VALIDATE_YAML: true
+
+      - name: Setup Node v16 for Yarn v3
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.15.0' # Current LTS version
+
+      - name: Enable Corepack for Yarn v3
+        run: corepack enable
+
+      - name: Install Yarn v3
+        uses: borales/actions-yarn@v3
+        with:
+          cmd: set version stable
+
+      - name: Install dependencies
+        uses: borales/actions-yarn@v3
+        env:
+          YARN_ENABLE_IMMUTABLE_INSTALLS: false
+        with:
+          cmd: install
+
+      - name: Build site
+        if: ${{ success() }}
+        uses: borales/actions-yarn@v3
+        with:
+          cmd: build.  The API review notes are being published in [API Review repository](https://github.com/dotnet/apireviews).
+![1000107477](https://github.com/user-attachments/assets/c2bebef4-2aa2-4c37-a480-f1a9d1c36279)
+![1000107476](https://github.com/user-attachments/assets/70bf34d5-255a-4cdd-b180-92e730481745)
+
+![1000101407](https://github.com/user-attachments/assets/7aeb2260-7a66-4cf1-ad1f-fd78b8ca6ba9)
+![1000107413](https://github.com/user-attachments/assets/3ecace0c-54e7-4f29-8e06-6d2523c7ec9c)
+
