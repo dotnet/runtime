@@ -806,6 +806,329 @@ namespace System.Runtime.Intrinsics
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
         }
 
+        /// <summary>Computes the arc sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc sine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc sine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Asin(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinDouble<Vector128<double>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Asin(vector._lower),
+                    Vector64.Asin(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc sine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc sine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Asin(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.AsinSingle<Vector128<float>, Vector128<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AsinSingle<Vector128<float>, Vector128<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Asin(vector._lower),
+                    Vector64.Asin(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the inverse hyperbolic sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic sine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic sine of the corresponding elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Asinh(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinhDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Asinh(vector._lower),
+                    Vector64.Asinh(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the inverse hyperbolic sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic sine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic sine of the corresponding elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Asinh(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.AsinhSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AsinhSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Asinh(vector._lower),
+                    Vector64.Asinh(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Acos(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AcosDouble<Vector128<double>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Acos(vector._lower),
+                    Vector64.Acos(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Acos(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.AcosSingle<Vector128<float>, Vector128<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AcosSingle<Vector128<float>, Vector128<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Acos(vector._lower),
+                    Vector64.Acos(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the inverse hyperbolic cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The input should be greater than or equal to 1.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Acosh(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AcoshDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Acosh(vector._lower),
+                    Vector64.Acosh(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the inverse hyperbolic cosine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose inverse hyperbolic cosine is to be computed.</param>
+        /// <returns>A vector whose elements are the inverse hyperbolic cosine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The input should be greater than or equal to 1.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Acosh(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.AcoshSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AcoshSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Acosh(vector._lower),
+                    Vector64.Acosh(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc tangent of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc tangent is to be computed.</param>
+        /// <returns>A vector whose elements are the arc tangent of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Atan(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AtanDouble<Vector128<double>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Atan(vector._lower),
+                    Vector64.Atan(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc tangent of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc tangent is to be computed.</param>
+        /// <returns>A vector whose elements are the arc tangent of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Atan(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.AtanSingle<Vector128<float>, Vector128<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AtanSingle<Vector128<float>, Vector128<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Atan(vector._lower),
+                    Vector64.Atan(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc tangent for the quotient of two vectors.</summary>
+        /// <param name="y">The vector that will be divided by <paramref name="x" />.</param>
+        /// <param name="x">The vector that will divide <paramref name="y" />.</param>
+        /// <returns>A vector whose elements are the arc tangent of the quotient of the corresponding elements in <paramref name="y" /> and <paramref name="x" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Atan2(Vector128<double> y, Vector128<double> x)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Atan2Double<Vector128<double>>(y, x);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Atan2(y._lower, x._lower),
+                    Vector64.Atan2(y._upper, x._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc tangent for the quotient of two vectors.</summary>
+        /// <param name="y">The vector that will be divided by <paramref name="x" />.</param>
+        /// <param name="x">The vector that will divide <paramref name="y" />.</param>
+        /// <returns>A vector whose elements are the arc tangent of the quotient of the corresponding elements in <paramref name="y" /> and <paramref name="x" />.</returns>
+        /// <remarks>The angles are returned in radians.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Atan2(Vector128<float> y, Vector128<float> x)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.Atan2Single<Vector128<float>, Vector256<double>>(y, x);
+                }
+                else
+                {
+                    return VectorMath.Atan2Single<Vector128<float>, Vector128<double>>(y, x);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Atan2(y._lower, x._lower),
+                    Vector64.Atan2(y._upper, x._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Atanh(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Atanh(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AtanhDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Atanh(vector._lower),
+                    Vector64.Atanh(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Atanh(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Atanh(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.AtanhSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AtanhSingle<Vector128<float>, Vector128<int>, Vector128<uint>, Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Atanh(vector._lower),
+                    Vector64.Atanh(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector64.Cos(Vector64{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<double> Cos(Vector128<double> vector)

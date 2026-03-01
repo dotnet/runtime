@@ -457,15 +457,15 @@ namespace System.Numerics.Tensors.Tests
             // The current trigonometric algorithm depends on hardware FMA support for best precision.
             T? trigTolerance = IsFmaSupported ? null : Helpers.DetermineTolerance<T>(doubleTolerance: 1e-10, floatTolerance: 1e-4f);
 
-            yield return Create(TensorPrimitives.Acosh, T.Acosh);
-            yield return Create(TensorPrimitives.AcosPi, T.AcosPi);
-            yield return Create(TensorPrimitives.Acos, T.Acos);
-            yield return Create(TensorPrimitives.Asinh, T.Asinh);
-            yield return Create(TensorPrimitives.AsinPi, T.AsinPi);
-            yield return Create(TensorPrimitives.Asin, T.Asin);
-            yield return Create(TensorPrimitives.Atanh, T.Atanh);
-            yield return Create(TensorPrimitives.AtanPi, T.AtanPi);
-            yield return Create(TensorPrimitives.Atan, T.Atan);
+            yield return Create(TensorPrimitives.Acosh, T.Acosh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.AcosPi, T.AcosPi, Helpers.DetermineTolerance<T>(doubleTolerance: 2e-9, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Acos, T.Acos, Helpers.DetermineTolerance<T>(doubleTolerance: 2e-9, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Asinh, T.Asinh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.AsinPi, T.AsinPi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Asin, T.Asin, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Atanh, T.Atanh, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.AtanPi, T.AtanPi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Atan, T.Atan, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
             yield return Create(TensorPrimitives.BitDecrement, T.BitDecrement);
             yield return Create(TensorPrimitives.BitIncrement, T.BitIncrement);
             yield return Create(TensorPrimitives.Cbrt, T.Cbrt, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13));
@@ -624,8 +624,8 @@ namespace System.Numerics.Tensors.Tests
         #region Span,Span -> Destination
         public static IEnumerable<object[]> SpanSpanDestinationFunctionsToTest()
         {
-            yield return Create(TensorPrimitives.Atan2, T.Atan2);
-            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi);
+            yield return Create(TensorPrimitives.Atan2, T.Atan2, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
             yield return Create(TensorPrimitives.CopySign, T.CopySign);
             yield return Create(TensorPrimitives.Hypot, T.Hypot);
             yield return Create(TensorPrimitives.Ieee754Remainder, T.Ieee754Remainder);
@@ -763,8 +763,8 @@ namespace System.Numerics.Tensors.Tests
         #region Span,Scalar -> Destination
         public static IEnumerable<object[]> SpanScalarDestinationFunctionsToTest()
         {
-            yield return Create(TensorPrimitives.Atan2, T.Atan2);
-            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi);
+            yield return Create(TensorPrimitives.Atan2, T.Atan2, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
             yield return Create(TensorPrimitives.CopySign, T.CopySign);
             yield return Create(TensorPrimitives.Ieee754Remainder, T.Ieee754Remainder);
             yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-13, floatTolerance: 1e-5f));
@@ -873,8 +873,8 @@ namespace System.Numerics.Tensors.Tests
         #region Scalar,Span -> Destination
         public static IEnumerable<object[]> ScalarSpanFloatDestinationFunctionsToTest()
         {
-            yield return Create(TensorPrimitives.Atan2, T.Atan2);
-            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi);
+            yield return Create(TensorPrimitives.Atan2, T.Atan2, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
+            yield return Create(TensorPrimitives.Atan2Pi, T.Atan2Pi, Helpers.DetermineTolerance<T>(doubleTolerance: 1e-14, floatTolerance: 1e-6f));
             yield return Create(TensorPrimitives.Pow, T.Pow, Helpers.DetermineTolerance<T>(floatTolerance: 1e-5f));
             yield return Create(TensorPrimitives.Ieee754Remainder, T.Ieee754Remainder);
 
