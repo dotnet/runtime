@@ -790,7 +790,25 @@ namespace System.Collections.Immutable.Tests
                 (b, v) => b.IndexOf(v),
                 (b, v, i) => b.IndexOf(v, i),
                 (b, v, i, c) => b.IndexOf(v, i, c),
-                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq));
+                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq),
+                "startIndex");
+        }
+
+        [Fact]
+        public void IndexOfConsistentWithArray()
+        {
+            ImmutableArray<int> immutableArray = ImmutableArray.Create(1, 2, 3, 4);
+            int[] array = new[] { 1, 2, 3, 4 };
+
+            Assert.Equal(-1, immutableArray.IndexOf(2, immutableArray.Length, 0));
+            Assert.Equal(-1, Array.IndexOf(array, 2, array.Length, 0));
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                int immutableArrayResult = immutableArray.IndexOf(immutableArray[i], 0, immutableArray.Length);
+                int arrayResult = Array.IndexOf(array, array[i], 0, array.Length);
+                Assert.Equal(immutableArrayResult, arrayResult);
+            }
         }
 
         [Fact]
