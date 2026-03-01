@@ -676,6 +676,9 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatchForMethodDef(DebuggerContro
 
     //initialize the patch data structure.
     InitializePRD(&(patch->opcode));
+#ifdef FEATURE_INTERPRETER
+    patch->m_interpActivated = false;
+#endif // FEATURE_INTERPRETER
     patch->controller = controller;
     patch->key.module = module;
     patch->key.md = md;
@@ -782,6 +785,9 @@ DebuggerControllerPatch *DebuggerPatchTable::AddPatchForAddress(DebuggerControll
 
     // initialize the patch data structure
     InitializePRD(&(patch->opcode));
+#ifdef FEATURE_INTERPRETER
+    patch->m_interpActivated = false;
+#endif // FEATURE_INTERPRETER
     patch->controller = controller;
 
     if (fd == NULL)
@@ -1527,15 +1533,11 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
 
 #ifdef FEATURE_INTERPRETER
         EECodeInfo codeInfo((PCODE)patch->address);
-        if (codeInfo.IsValid())
+        if (codeInfo.IsInterpretedCode())
         {
-            IJitManager* pJitManager = codeInfo.GetJitManager();
-            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
-            {
-                IExecutionControl* pExecControl = pJitManager->GetExecutionControl();
-                _ASSERTE(pExecControl != NULL);
-                return pExecControl->ApplyPatch(patch);
-            }
+            IExecutionControl* pExecControl = codeInfo.GetJitManager()->GetExecutionControl();
+            _ASSERTE(pExecControl != NULL);
+            return pExecControl->ApplyPatch(patch);
         }
 #endif // FEATURE_INTERPRETER
 
@@ -1654,15 +1656,11 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
 
 #ifdef FEATURE_INTERPRETER
         EECodeInfo codeInfo((PCODE)patch->address);
-        if (codeInfo.IsValid())
+        if (codeInfo.IsInterpretedCode())
         {
-            IJitManager* pJitManager = codeInfo.GetJitManager();
-            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
-            {
-                IExecutionControl* pExecControl = pJitManager->GetExecutionControl();
-                _ASSERTE(pExecControl != NULL);
-                return pExecControl->UnapplyPatch(patch);
-            }
+            IExecutionControl* pExecControl = codeInfo.GetJitManager()->GetExecutionControl();
+            _ASSERTE(pExecControl != NULL);
+            return pExecControl->UnapplyPatch(patch);
         }
 #endif // FEATURE_INTERPRETER
 
@@ -1959,6 +1957,9 @@ void DebuggerController::DeactivatePatch(DebuggerControllerPatch *patch)
             p->LogInstance();
             fUnapply = false;
             InitializePRD(&(patch->opcode));
+#ifdef FEATURE_INTERPRETER
+            patch->m_interpActivated = false;
+#endif // FEATURE_INTERPRETER
             break;
         }
     }
@@ -2041,6 +2042,10 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
     _ASSERTE(primary->IsILPrimaryPatch());
     _ASSERTE(dji != NULL);
 
+    LOG((LF_CORDB, LL_INFO10000,
+        "DC::ABAI: Adding/binding/activating IL replica patch for primary patch %p in DJI %p\n",
+        primary, dji));
+
     BOOL result = FALSE;
     MethodDesc* pMD = dji->m_nativeCodeVersion.GetMethodDesc();
 
@@ -2049,9 +2054,25 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
         // Zero is the only native offset that we allow to bind across different jitted
         // code bodies.
         _ASSERTE(primary->offset == 0);
+
+        SIZE_T nativeOffset = 0;
+
+#ifdef FEATURE_INTERPRETER
+        // For interpreter code, native offset 0 is within the bytecode header area and cannot
+        // have a breakpoint. Use the first sequence map entry's native offset instead.
+        // FIXME: https://github.com/dotnet/runtime/issues/123998
+        EECodeInfo codeInfo((PCODE)dji->m_addrOfCode);
+        if (codeInfo.IsInterpretedCode())
+        {
+            // Every interpreted method must have at least one sequence point mapping.
+            _ASSERTE(dji->GetSequenceMapCount() > 0);
+            nativeOffset = dji->GetSequenceMap()[0].nativeStartOffset;
+        }
+#endif // FEATURE_INTERPRETER
+
         INDEBUG(BOOL fOk = )
             AddBindAndActivatePatchForMethodDesc(pMD, dji,
-                0, PATCH_KIND_IL_REPLICA,
+                nativeOffset, PATCH_KIND_IL_REPLICA,
                 LEAF_MOST_FRAME, m_pAppDomain);
         _ASSERTE(fOk);
         result = TRUE;
@@ -2750,6 +2771,23 @@ DebuggerPatchSkip *DebuggerController::ActivatePatchSkip(Thread *thread,
 
     if (patch != NULL && patch->IsNativePatch())
     {
+#ifdef FEATURE_INTERPRETER
+        // Interpreter patches don't need DebuggerPatchSkip - instead we set
+        // bypass on the interpreter context. When interpreter hits
+        // INTOP_BREAKPOINT, it checks these fields and executes the
+        // original opcode instead of notifying the debugger again.
+        EECodeInfo codeInfo((PCODE)PC);
+        if (codeInfo.IsInterpretedCode())
+        {
+            IExecutionControl* pExecControl = codeInfo.GetJitManager()->GetExecutionControl();
+            _ASSERTE(pExecControl != NULL);
+
+            pExecControl->BypassPatch(patch, thread);
+            LOG((LF_CORDB,LL_INFO10000, "DC::APS: Interpreter patch at PC=0x%p - bypass via ExecutionControl with opcode 0x%x\n", PC, patch->opcode));
+            return NULL;
+        }
+#endif // FEATURE_INTERPRETER
+
         //
         // We adjust the thread's PC to someplace where we write
         // the next instruction, then
@@ -2996,23 +3034,38 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
             p = pNext;
         }
 
-        UnapplyTraceFlag(thread);
-
-        //
-        // See if we have any steppers still active for this thread, if so
-        // re-apply the trace flag.
-        //
-
-        p = g_controllers;
-        while (p != NULL)
+#ifdef FEATURE_INTERPRETER
+        // Interpreter stepping uses breakpoints and does not support
+        // single stepping so we should not apply the trace flag.
+        bool fIsInterpretedCode = false;
         {
-            if (p->m_thread == thread && p->m_singleStep)
+            CONTEXT *ctx = GetManagedStoppedCtx(thread);
+            if (ctx != NULL)
             {
-                ApplyTraceFlag(thread);
-                break;
+                EECodeInfo codeInfo(GetIP(ctx));
+                fIsInterpretedCode = codeInfo.IsInterpretedCode();
             }
+        }
+        if (!fIsInterpretedCode)
+#endif // FEATURE_INTERPRETER
+        {
+            UnapplyTraceFlag(thread);
 
-            p = p->m_next;
+            //
+            // See if we have any steppers still active for this thread, if so
+            // re-apply the trace flag.
+            //
+            p = g_controllers;
+            while (p != NULL)
+            {
+                if (p->m_thread == thread && p->m_singleStep)
+                {
+                    ApplyTraceFlag(thread);
+                    break;
+                }
+
+                p = p->m_next;
+            }
         }
     }
 
@@ -3456,7 +3509,18 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
     CONSISTENCY_CHECK_MSGF(context != NULL, ("Can't apply ss flag to thread 0x%p b/c it's not in a safe place.\n", thread));
     _ASSERTE(context != NULL);
 
+#ifdef FEATURE_INTERPRETER
+    // Interpreter does not support single stepping, so we should never be
+    // trying to apply the trace flag for interpreter code.
+    PCODE ip = GetIP(context);
+    EECodeInfo codeInfo(ip);
+    if (codeInfo.IsInterpretedCode())
+    {
+        _ASSERTE(!"Interpreter doesn't support single stepping");
+    }
+#endif // FEATURE_INTERPRETER
 
+    // JIT/native code path: use hardware trace flag
     g_pEEInterface->MarkThreadForDebugStepping(thread, true);
     LOG((LF_CORDB,LL_INFO1000, "DC::ApplyTraceFlag marked thread for debug stepping\n"));
 
@@ -3472,7 +3536,6 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
 {
     LOG((LF_CORDB,LL_INFO1000, "DC::UnapplyTraceFlag thread:0x%p\n", thread));
 
-
     // Either this is the helper thread, or we're manipulating our own context.
     _ASSERTE(
         ThisIsHelperThreadWorker() ||
@@ -3480,6 +3543,20 @@ void DebuggerController::UnapplyTraceFlag(Thread *thread)
     );
 
     CONTEXT *context = GetManagedStoppedCtx(thread);
+
+#ifdef FEATURE_INTERPRETER
+    // Interpreter does not support single stepping, so we should never be
+    // trying to unapply the trace flag for interpreter code.
+    if (context != NULL)
+    {
+        PCODE ip = GetIP(context);
+        EECodeInfo codeInfo(ip);
+        if (codeInfo.IsInterpretedCode())
+        {
+            _ASSERTE(!"Interpreter doesn't support single stepping");
+        }
+    }
+#endif // FEATURE_INTERPRETER
 
     // If there's no context available, then the thread shouldn't have the single-step flag
     // enabled and there's nothing for us to do.
@@ -5197,6 +5274,255 @@ bool DebuggerBreakpoint::SendEvent(Thread *thread, bool fIpChanged)
     return false;
 }
 
+#ifdef FEATURE_INTERPRETER
+//* -------------------------------------------------------------------------
+// * InterpreterStepHelper routines
+// * -------------------------------------------------------------------------
+// Implements stepping through interpreter code using control flow prediction
+// and breakpoint patches.
+
+InterpreterStepHelper::InterpreterStepHelper(
+    DebuggerStepper* pStepper,
+    ControllerStackInfo* pInfo,
+    DebuggerJitInfo* pJitInfo)
+    : m_pStepper(pStepper),
+      m_pInfo(pInfo),
+      m_pJitInfo(pJitInfo),
+      m_currentPC(0),
+      m_pInterpMethod(NULL),
+      m_walkType(WALK_UNKNOWN)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    m_currentPC = GetControlPC(&pInfo->m_activeFrame.registers);
+
+    // Get InterpMethod for data items lookup (needed for resolving call targets)
+    MethodDesc* pMD = pInfo->m_activeFrame.md;
+    if (pMD != NULL)
+    {
+        PTR_InterpByteCodeStart pByteCodeStart = pMD->GetInterpreterCode();
+        if (pByteCodeStart != NULL)
+        {
+            m_pInterpMethod = pByteCodeStart->Method;
+        }
+    }
+}
+
+void InterpreterStepHelper::AddInterpreterPatch(const int32_t* pIP)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(m_pJitInfo != NULL);
+    _ASSERTE(pIP != NULL);
+    _ASSERTE((BYTE*)pIP >= (BYTE*)m_pJitInfo->m_addrOfCode);
+
+    SIZE_T offset = (SIZE_T)((BYTE*)pIP - (BYTE*)m_pJitInfo->m_addrOfCode);
+    _ASSERTE(offset < m_pJitInfo->m_sizeOfCode);
+
+    m_pStepper->AddBindAndActivateNativeManagedPatch(
+        m_pInfo->m_activeFrame.md,
+        m_pJitInfo,
+        offset,
+        m_pInfo->m_activeFrame.fp,
+        NULL);
+
+    LOG((LF_CORDB, LL_INFO10000, "ISH::AIP: Added interpreter patch at %p (offset 0x%zx)\n", pIP, offset));
+}
+
+InterpreterStepHelper::StepSetupResult InterpreterStepHelper::SetupStep(
+    bool stepIn)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (m_pJitInfo == NULL)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No JitInfo, cannot set up step\n"));
+        return SSR_Failed;
+    }
+
+    // Initialize the InterpreterWalker at the current IP
+    InterpreterWalker interpWalker;
+    interpWalker.Init((const int32_t*)m_currentPC, m_pInterpMethod);
+
+    m_walkType = interpWalker.GetOpcodeWalkType();
+    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Decoded opcode=0x%x, walkType=%d, stepIn=%d\n",
+         interpWalker.GetOpcode(), m_walkType, stepIn));
+
+    switch (m_walkType)
+    {
+        case WALK_RETURN:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_RETURN - caller should handle TrapStepOut\n"));
+            return SSR_NeedStepOut;
+        }
+
+        case WALK_THROW:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_THROW - caller should handle exception\n"));
+            return SSR_NeedStepOut;
+        }
+
+        case WALK_CALL:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_CALL\n"));
+
+            const int32_t* skipIP = interpWalker.GetSkipIP();
+
+            if (stepIn)
+            {
+                // For all call types (direct and indirect), use the JMC backstop.
+                // The interpreter's INTOP_DEBUG_METHOD_ENTER fires for all interpreted
+                // methods (not just JMC), so the backstop reliably catches entry into
+                // any interpreted target. We also place a step-over patch as fallback
+                // in case the call target doesn't trigger MethodEnter.
+                LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Step-in call, using MethodEnter backstop\n"));
+                if (skipIP != NULL)
+                {
+                    AddInterpreterPatch(skipIP);
+                }
+                else
+                {
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Call with no skip IP!\n"));
+                    return SSR_Failed;
+                }
+                return SSR_NeedStepIn; // Caller enables JMC backstop
+            }
+            else
+            {
+                // Step-over: patch at instruction after the call
+                if (skipIP != NULL)
+                {
+                    AddInterpreterPatch(skipIP);
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Step-over, patched at %p\n", skipIP));
+                    return SSR_Success;
+                }
+                else
+                {
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No skip IP for call instruction during step-over!\n"));
+                    return SSR_Failed;
+                }
+            }
+            break;
+        }
+
+        case WALK_BRANCH:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_BRANCH\n"));
+
+            const int32_t* nextIP = interpWalker.GetNextIP();
+            if (nextIP != NULL)
+            {
+                AddInterpreterPatch(nextIP);
+                return SSR_Success;
+            }
+            else
+            {
+                LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No next IP for branch instruction!\n"));
+                return SSR_Failed;
+            }
+            break;
+        }
+
+        case WALK_COND_BRANCH:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_COND_BRANCH\n"));
+
+            // Check if this is a switch instruction
+            if (interpWalker.GetOpcode() == INTOP_SWITCH)
+            {
+                int32_t caseCount = interpWalker.GetSwitchCaseCount();
+                LOG((LF_CORDB, LL_INFO10000, "ISH::SS: INTOP_SWITCH with %d cases\n", caseCount));
+
+                for (int32_t i = 0; i <= caseCount; i++)
+                {
+                    const int32_t* target = interpWalker.GetSwitchTarget(i);
+                    if (target != NULL)
+                    {
+                        AddInterpreterPatch(target);
+                    }
+                    else
+                    {
+                        LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No target IP for switch case %d!\n", i));
+                        return SSR_Failed;
+                    }
+                }
+                return SSR_Success;
+            }
+            else
+            {
+                // Conditional branch - patch both target and fallthrough
+                const int32_t* nextIP = interpWalker.GetNextIP();
+                const int32_t* skipIP = interpWalker.GetSkipIP();
+
+                if (nextIP != NULL)
+                {
+                    AddInterpreterPatch(nextIP);
+                }
+                else
+                {
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No next IP for conditional branch!\n"));
+                    return SSR_Failed;
+                }
+
+                if (skipIP != NULL && skipIP != nextIP)
+                {
+                    AddInterpreterPatch(skipIP);
+                }
+                else if (skipIP == nextIP)
+                {
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: skipIP == nextIP, only one patch needed\n"));
+                }
+                else
+                {                
+                    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No skip IP for conditional branch!\n"));
+                    return SSR_Failed;
+                }
+
+                return SSR_Success;
+            }
+        }
+
+        case WALK_BREAK:
+        case WALK_NEXT:
+        default:
+        {
+            LOG((LF_CORDB, LL_INFO10000, "ISH::SS: WALK_NEXT/default\n"));
+
+            const int32_t* skipIP = interpWalker.GetSkipIP();
+            if (skipIP != NULL)
+            {
+                AddInterpreterPatch(skipIP);
+                return SSR_Success;
+            }
+            else
+            {
+                LOG((LF_CORDB, LL_INFO10000, "ISH::SS: No skip IP for next instruction!\n"));
+                return SSR_Failed;
+            }
+            break;
+        }
+    }
+
+    LOG((LF_CORDB, LL_INFO10000, "ISH::SS: Failed to set up step\n"));
+    return SSR_Failed;
+}
+#endif // FEATURE_INTERPRETER
+
 //* -------------------------------------------------------------------------
 // * DebuggerStepper routines
 // * -------------------------------------------------------------------------
@@ -5903,6 +6229,48 @@ static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunct
     return retAddr == tailCallAwareRetAddr;
 }
 
+#ifdef FEATURE_INTERPRETER
+// bool DebuggerStepper::TrapInterpreterCodeStep()
+// Handles stepping for interpreter code using InterpreterStepHelper.
+// Returns true if patch was successfully placed, false if caller should invoke TrapStepOut.
+bool DebuggerStepper::TrapInterpreterCodeStep(ControllerStackInfo *info, bool in, DebuggerJitInfo *ji)
+{
+    PCODE currentPC = GetControlPC(&info->m_activeFrame.registers);
+    LOG((LF_CORDB,LL_INFO10000,"DS::TICS: In interpreter code at %p (in=%d)\n", currentPC, in));
+
+    InterpreterStepHelper helper(this, info, ji);
+
+    InterpreterStepHelper::StepSetupResult result = helper.SetupStep(in);
+
+    switch (result)
+    {
+        case InterpreterStepHelper::SSR_Success:
+            LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Patches placed successfully\n"));
+            return true;
+
+        case InterpreterStepHelper::SSR_NeedStepIn:
+            // All call types use JMC backstop — step-over patch already placed by SetupStep
+            // TODO: This will not work correctly if the call target is JIT/R2R compiled code.
+            // https://github.com/dotnet/runtime/issues/124547
+            LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Step-in call, enabling MethodEnter backstop\n"));
+            EnableJMCBackStop(info->m_activeFrame.md);
+            return true;
+
+        case InterpreterStepHelper::SSR_NeedStepOut:
+            // Return/throw - let caller invoke TrapStepOut
+            LOG((LF_CORDB,LL_INFO10000,"DS::TICS: Step-out handling needed\n"));
+            return false;
+
+        case InterpreterStepHelper::SSR_Failed:
+        default:
+            _ASSERTE(!"InterpreterStepHelper failed to set up step");
+            break;
+    }
+
+    return false;
+}
+#endif // FEATURE_INTERPRETER
+
 // bool DebuggerStepper::TrapStep()   TrapStep attepts to set a
 // patch at the next IL instruction to be executed.  If we're stepping in &
 // the next IL instruction is a call, then this'll set a breakpoint inside
@@ -6013,6 +6381,18 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
             "didn't get a DJI \n",
             (const BYTE*)(GetControlPC(&info->m_activeFrame.registers))));
     }
+
+#ifdef FEATURE_INTERPRETER
+    // Check if we're in interpreter code - delegate to TrapInterpreterCodeStep
+    {
+        PCODE currentPC = GetControlPC(&info->m_activeFrame.registers);
+        EECodeInfo codeInfo(currentPC);
+        if (codeInfo.IsInterpretedCode())
+        {
+            return TrapInterpreterCodeStep(info, in, ji);
+        }
+    }
+#endif // FEATURE_INTERPRETER
 
     //
     // We're in a normal managed frame - walk the code

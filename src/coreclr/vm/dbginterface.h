@@ -348,6 +348,10 @@ public:
     // and with whatever granularity (per-module, per-class, per-function, etc).
     virtual DWORD* GetJMCFlagAddr(Module * pModule) = 0;
 
+    // Returns true if any stepper/controller has enabled method-enter callbacks.
+    // Used by the interpreter to avoid calling OnMethodEnter when not stepping.
+    virtual bool IsMethodEnterEnabled() = 0;
+
     // notification for SQL fiber debugging support
     virtual void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName) = 0;
     virtual void DestroyConnection(CONNID dwConnectionId) = 0;

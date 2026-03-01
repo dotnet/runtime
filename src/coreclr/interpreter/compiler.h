@@ -1026,6 +1026,7 @@ private:
     // Passes
     int32_t* m_pMethodCode;
     int32_t m_methodCodeSize; // code size measured in int32_t slots, instead of bytes
+    int32_t* m_pDebugMethodEnterSeqPointSlot = nullptr; // fixup slot for first seq point offset in INTOP_DEBUG_METHOD_ENTER
 
     void AllocOffsets();
     int32_t ComputeCodeSize();
