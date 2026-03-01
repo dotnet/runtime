@@ -356,6 +356,42 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(abcd*?)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*?)+?e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
+
+            // Lazy loop inside loop body where the Atomic wrapper must not suppress within-body backtracking.
+            // Each variation tests a different kind of backtracking construct inside the loop body.
+            // Notonelazy (.*?): lazy . expands past first ) to find the correct closing delimiter.
+            yield return (@"\w+(\(.*?\))?,", @"Foo(one()?,two,three),", RegexOptions.None, 0, 22, true, @"Foo(one()?,two,three),");
+            yield return (@"\w+(<.*?>)?!", "foo<a>b>!", RegexOptions.None, 0, 9, true, "foo<a>b>!");
+            yield return (@"(\(.*?\))+;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            yield return (@"(a.*?b)+c", "axbbc", RegexOptions.None, 0, 5, true, "axbbc");
+            // Notoneloop (.+): greedy . overshoots past the right ), must back up to find an earlier one.
+            yield return (@"\w+(\(.+\))?,", "Foo(a),(b)x,", RegexOptions.None, 0, 12, true, "Foo(a),");
+            // Setlazy ([^,]+?): lazy char class expands past first ) to find the right one.
+            yield return (@"\w+(\([^,]+?\))?,", "Foo(one()three),", RegexOptions.None, 0, 16, true, "Foo(one()three),");
+            // Setloop ([^;]+): greedy char class overshoots past the right ), must back up to earlier one.
+            yield return (@"\w+(\([^;]+\))?,", "Foo(a),b)x,", RegexOptions.None, 0, 11, true, "Foo(a),");
+            // Onelazy ()+?): lazy single-char loop must expand to consume more )'s for , to follow.
+            yield return (@"\w+(\(\)+?\))?,", "Foo())),", RegexOptions.None, 0, 8, true, "Foo())),");
+            // Oneloop ()+): greedy single-char loop of the delimiter char itself.
+            yield return (@"\w+(\(\)+\))?,", "Foo())),", RegexOptions.None, 0, 8, true, "Foo())),");
+            // Alternate: short branch matches + \) succeeds, but , fails. Longer branch includes \) in it.
+            yield return (@"\w+(\((?:a|a\)b)\))?,", "Foo(a)b),", RegexOptions.None, 0, 9, true, "Foo(a)b),");
+            // Loop (general greedy multi-char body): 2 iters of \), overshoots, backing up to 1 iter works.
+            yield return (@"\w+(\((?:\),){1,3}\))?,", "Foo(),),)),", RegexOptions.None, 0, 11, true, "Foo(),),");
+            // Lazyloop (general lazy multi-char body): 1 iter of \)a, outer \) OK but , fails. Expand to 2.
+            yield return (@"\w+(\((?:\)a){1,3}?\))?,", "Foo()a)a),", RegexOptions.None, 0, 10, true, "Foo()a)a),");
+            // Same patterns with lazy outer loops (??, +?, *?) to ensure lazy expansion is not broken.
+            yield return (@"\w+(\(.*?\))??,", @"Foo(one()?,two,three),", RegexOptions.None, 0, 22, true, @"Foo(one()?,two,three),");
+            yield return (@"(\(.*?\))+?;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            yield return (@"(\(.*?\))*;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            yield return (@"(\(.*?\))*?;", "(a)b);", RegexOptions.None, 0, 6, true, "(a)b);");
+            // Non-backtracking body: optimization correctly applies. These verify bodies without backtracking
+            // inside the outer loop are still correctly matched after the outer loop is made atomic.
+            yield return (@"\w+(\(abc\))?,", "Foo(abc),", RegexOptions.None, 0, 9, true, "Foo(abc),");
+            yield return (@"\w+(\(abc\))??,", "Foo(abc),", RegexOptions.None, 0, 9, true, "Foo(abc),");
+            yield return (@"\w+(\(\w{3}\))?,", "Foo(abc),", RegexOptions.None, 0, 9, true, "Foo(abc),");
+            yield return (@"\w+(\(\w+!\))?,", "Foo(abc!),", RegexOptions.None, 0, 10, true, "Foo(abc!),");
+
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you m you", RegexOptions.None, 0, 9, true, "m");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you me you", RegexOptions.None, 0, 10, true, "me");
             yield return (@"(?:m(?:((e)?)??)|a)\b", "you a you", RegexOptions.None, 0, 9, true, "a");
@@ -813,6 +849,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
                 yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.None, 0, input.Length, false, "");
             }
+            // Alternation prefix extraction with IgnoreCase: correctness after single-node branch handling
+            yield return (@"(?:http|https)://foo", "HTTP://FOO", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 10, true, "HTTP://FOO");
+            yield return (@"(?:http|https)://foo", "HTTPS://FOO", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 11, true, "HTTPS://FOO");
+            yield return (@"(?:http|https)://foo", "ftp://foo", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, false, "");
+
             yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
             yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
 
@@ -1940,6 +1981,72 @@ namespace System.Text.RegularExpressions.Tests
                         }
                     };
 
+                    // Backreferences with RightToLeft
+                    // Note: For RTL, the pattern is processed right-to-left, so the group must come
+                    // AFTER the backreference in the pattern (i.e., to the right of \1)
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "aa", RegexOptions.RightToLeft, 2, 2,
+                        new CaptureData[]
+                        {
+                            new CaptureData("aa", 0, 2),
+                            new CaptureData("a", 1, 1),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w+)", "abcabc", RegexOptions.RightToLeft, 6, 6,
+                        new CaptureData[]
+                        {
+                            new CaptureData("abcabc", 0, 6),
+                            new CaptureData("abc", 3, 3),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "abba", RegexOptions.RightToLeft, 4, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("bb", 1, 2),
+                            new CaptureData("b", 2, 1),
+                        }
+                    };
+
+                    // Backreferences with RightToLeft and IgnoreCase
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "aA", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 2, 2,
+                        new CaptureData[]
+                        {
+                            new CaptureData("aA", 0, 2),
+                            new CaptureData("A", 1, 1),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w+)", "abcABC", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 6, 6,
+                        new CaptureData[]
+                        {
+                            new CaptureData("abcABC", 0, 6),
+                            new CaptureData("ABC", 3, 3),
+                        }
+                    };
+                    yield return new object[]
+                    {
+                        engine,
+                        @"\1(\w)", "aBBa", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 4, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("BB", 1, 2),
+                            new CaptureData("B", 2, 1),
+                        }
+                    };
+
                     // Actual - "(?<1>\\d+)abc(?(1)222|111)"
                     yield return new object[]
                     {
@@ -2226,7 +2333,7 @@ namespace System.Text.RegularExpressions.Tests
 
         private static bool IsNotArmProcessAndRemoteExecutorSupported => PlatformDetection.IsNotArmProcess && RemoteExecutor.IsSupported;
 
-        [ConditionalTheory(nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
+        [ConditionalTheory(typeof(RegexMatchTests), nameof(IsNotArmProcessAndRemoteExecutorSupported))] // times out on ARM
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/runtime/issues/24749")]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", ~RuntimeConfiguration.Release)]
         [SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/10680", RuntimeTestModes.JitMinOpts)]
@@ -2528,6 +2635,105 @@ namespace System.Text.RegularExpressions.Tests
             {
                 await func(engine.ToString(), fullpattern, fullinput);
             }
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix is not available on .NET Framework")]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task CharClassSubtraction_DeepNesting_DoesNotStackOverflow(RegexEngine engine)
+        {
+            // Build a pattern with deeply nested character class subtractions: [a-[a-[a-[...[a]...]]]]
+            // This previously caused a StackOverflowException due to unbounded recursion in the parser.
+            // Use a reduced depth for SourceGenerated to avoid overwhelming Roslyn compilation.
+            int depth = engine == RegexEngine.SourceGenerated ? 1_000 : 10_000;
+            var sb = new System.Text.StringBuilder();
+            sb.Append('[');
+            for (int i = 0; i < depth; i++)
+            {
+                sb.Append("a-[");
+            }
+            sb.Append('a');
+            sb.Append(']', depth + 1);
+
+            Regex r = await RegexHelpers.GetRegexAsync(engine, sb.ToString());
+            Assert.True(r.IsMatch("a"));
+            Assert.False(r.IsMatch("b"));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task CharClassSubtraction_Correctness(RegexEngine engine)
+        {
+            // [a-z-[d-w]] should match a-c and x-z
+            Regex r1 = await RegexHelpers.GetRegexAsync(engine, "[a-z-[d-w]]");
+            Assert.True(r1.IsMatch("a"));
+            Assert.True(r1.IsMatch("c"));
+            Assert.True(r1.IsMatch("x"));
+            Assert.True(r1.IsMatch("z"));
+            Assert.False(r1.IsMatch("d"));
+            Assert.False(r1.IsMatch("m"));
+            Assert.False(r1.IsMatch("w"));
+
+            // [a-z-[d-w-[m]]] should match a-c, m, and x-z
+            Regex r2 = await RegexHelpers.GetRegexAsync(engine, "[a-z-[d-w-[m]]]");
+            Assert.True(r2.IsMatch("a"));
+            Assert.True(r2.IsMatch("m"));
+            Assert.True(r2.IsMatch("z"));
+            Assert.False(r2.IsMatch("d"));
+            Assert.False(r2.IsMatch("l"));
+            Assert.False(r2.IsMatch("n"));
+            Assert.False(r2.IsMatch("w"));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task CharClassSubtraction_CaseInsensitive(RegexEngine engine)
+        {
+            // [a-z-[D-W]] with IgnoreCase should behave like [a-z-[d-w]], matching a-c and x-z.
+            Regex r = await RegexHelpers.GetRegexAsync(engine, "[a-z-[D-W]]", RegexOptions.IgnoreCase);
+            Assert.True(r.IsMatch("a"));
+            Assert.True(r.IsMatch("c"));
+            Assert.True(r.IsMatch("x"));
+            Assert.True(r.IsMatch("z"));
+            Assert.False(r.IsMatch("d"));
+            Assert.False(r.IsMatch("D"));
+            Assert.False(r.IsMatch("m"));
+            Assert.False(r.IsMatch("w"));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task CharClassSubtraction_NegatedOuter(RegexEngine engine)
+        {
+            // [^a-z-[m-p]] = (NOT a-z) minus m-p. Since m-p is a subset of a-z,
+            // the subtraction has no effect: matches anything outside a-z.
+            Regex r = await RegexHelpers.GetRegexAsync(engine, "[^a-z-[m-p]]");
+            Assert.True(r.IsMatch("A"));
+            Assert.True(r.IsMatch("5"));
+            Assert.False(r.IsMatch("a"));
+            Assert.False(r.IsMatch("m"));
+            Assert.False(r.IsMatch("z"));
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task CharClassSubtraction_FourLevels(RegexEngine engine)
+        {
+            // [a-z-[b-y-[c-x-[d-w]]]]
+            // Level 0: a-z
+            // Level 1: subtract b-y  => a, z
+            // Level 2: subtract c-x from b-y => add back c-x => a, c-x, z
+            // Level 3: subtract d-w from c-x => remove d-w again => a, c, x, z
+            Regex r = await RegexHelpers.GetRegexAsync(engine, "[a-z-[b-y-[c-x-[d-w]]]]");
+            Assert.True(r.IsMatch("a"));
+            Assert.True(r.IsMatch("c"));
+            Assert.True(r.IsMatch("x"));
+            Assert.True(r.IsMatch("z"));
+            Assert.False(r.IsMatch("b"));
+            Assert.False(r.IsMatch("d"));
+            Assert.False(r.IsMatch("m"));
+            Assert.False(r.IsMatch("w"));
+            Assert.False(r.IsMatch("y"));
         }
 
         public static IEnumerable<object[]> StressTestNfaMode_TestData()
@@ -2854,7 +3060,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop("Takes several seconds")]
         [MemberData(nameof(UseRegexConcurrently_ThreadSafe_Success_MemberData))]
         public async Task UseRegexConcurrently_ThreadSafe_Success(RegexEngine engine, TimeSpan timeout)

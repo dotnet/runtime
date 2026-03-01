@@ -108,8 +108,19 @@ public struct DacpThreadData
     public ClrDataAddress nextThread;
 }
 
+public struct DacpAllocData
+{
+    public ClrDataAddress allocBytes;
+    public ClrDataAddress allocBytesLoh;
+}
+
 public struct DacpModuleData
 {
+    public enum TransientFlags : uint
+    {
+        IsEditAndContinue = 0x00000208, // Flags for .NET Framework (0x00000200) and .NET Core (0x00000008)
+    };
+
     public ClrDataAddress Address;
     public ClrDataAddress PEAssembly; // Actually the module address in .NET 9+
     public ClrDataAddress ilBase;
@@ -390,6 +401,26 @@ public unsafe partial interface ISOSEnum
     int GetCount(uint* pCount);
 }
 
+public enum JitTypes
+{
+    TYPE_UNKNOWN = 0,
+    TYPE_JIT,
+    TYPE_PJIT,
+    TYPE_INTERPRETER
+}
+
+public struct DacpCodeHeaderData
+{
+    public ClrDataAddress GCInfo;
+    public JitTypes JITType;
+    public ClrDataAddress MethodDescPtr;
+    public ClrDataAddress MethodStart;
+    public uint MethodSize;
+    public ClrDataAddress ColdRegionStart;
+    public uint ColdRegionSize;
+    public uint HotRegionSize;
+}
+
 public struct DacpFieldDescData
 {
     public CorElementType Type;
@@ -405,6 +436,46 @@ public struct DacpFieldDescData
     public int bIsStatic;
     public ClrDataAddress NextField;
 };
+
+public struct DacpSyncBlockData
+{
+    public enum COMFlagsEnum : uint
+    {
+        HasCCW = 0x1,
+        HasRCW = 0x2,
+        HasCCF = 0x4
+    }
+    public ClrDataAddress Object;
+    public Interop.BOOL bFree;
+    public ClrDataAddress SyncBlockPointer;
+    public uint COMFlags;
+    public uint MonitorHeld;
+    public uint Recursion;
+    public ClrDataAddress HoldingThread;
+    public uint AdditionalThreadCount;
+    public ClrDataAddress appDomainPtr;
+    public uint SyncBlockCount;
+};
+
+public struct SOSHandleData
+{
+    public ClrDataAddress AppDomain;
+    public ClrDataAddress Handle;
+    public ClrDataAddress Secondary;
+    public uint Type;
+    public int StrongReference; // BOOL
+    public uint RefCount;
+    public uint JupiterRefCount;
+    public int IsPegged; // BOOL
+}
+
+[GeneratedComInterface]
+[Guid("3E269830-4A2B-4301-8EE2-D6805B29B2FA")]
+public unsafe partial interface ISOSHandleEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSHandleData[] handles, uint* pNeeded);
+}
 
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
@@ -473,7 +544,7 @@ public unsafe partial interface ISOSDacInterface
 
     // JIT Data
     [PreserveSig]
-    int GetCodeHeaderData(ClrDataAddress ip, /*struct DacpCodeHeaderData*/ void* data);
+    int GetCodeHeaderData(ClrDataAddress ip, DacpCodeHeaderData* data);
     [PreserveSig]
     int GetJitManagerList(uint count, /*struct DacpJitManagerInfo*/ void* managers, uint* pNeeded);
     [PreserveSig]
@@ -561,15 +632,15 @@ public unsafe partial interface ISOSDacInterface
 
     // SyncBlock
     [PreserveSig]
-    int GetSyncBlockData(uint number, /*struct DacpSyncBlockData */ void* data);
+    int GetSyncBlockData(uint number, DacpSyncBlockData* data);
     [PreserveSig]
     int GetSyncBlockCleanupData(ClrDataAddress addr, /*struct DacpSyncBlockCleanupData */ void* data);
 
     // Handles
     [PreserveSig]
-    int GetHandleEnum(/*ISOSHandleEnum*/ void** ppHandleEnum);
+    int GetHandleEnum(out ISOSHandleEnum? ppHandleEnum);
     [PreserveSig]
-    int GetHandleEnumForTypes([In, MarshalUsing(CountElementName = nameof(count))] uint[] types, uint count, /*ISOSHandleEnum*/ void** ppHandleEnum);
+    int GetHandleEnumForTypes([In, MarshalUsing(CountElementName = nameof(count))] uint[] types, uint count, out ISOSHandleEnum? ppHandleEnum);
     [PreserveSig]
     int GetHandleEnumForGC(uint gen, /*ISOSHandleEnum*/ void** ppHandleEnum);
 
@@ -624,7 +695,7 @@ public unsafe partial interface ISOSDacInterface
     int GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded);
 
     [PreserveSig]
-    int GetThreadAllocData(ClrDataAddress thread, /*struct DacpAllocData */ void* data);
+    int GetThreadAllocData(ClrDataAddress thread, DacpAllocData* data);
     [PreserveSig]
     int GetHeapAllocData(uint count, /*struct DacpGenerationAllocData */ void* data, uint* pNeeded);
 

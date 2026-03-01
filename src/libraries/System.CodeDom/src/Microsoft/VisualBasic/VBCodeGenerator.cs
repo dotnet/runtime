@@ -862,11 +862,7 @@ namespace Microsoft.VisualBasic
                 string typeName = GetTypeOutput(e.CreateType);
                 Output.Write(typeName);
 
-#if NET
                 if (!typeName.Contains('('))
-#else
-                if (typeName.IndexOf('(') == -1)
-#endif
                 {
                     Output.Write("()");
                 }

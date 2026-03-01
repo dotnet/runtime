@@ -147,6 +147,7 @@
     <Compile Include="XmlConvert\SqlXmlConvertTests3.cs" />
     <Compile Include="XmlConvert\ToTypeTests.cs" />
     <Compile Include="XmlConvert\VerifyNameTests1.cs" />
+    <Compile Include="XmlConvert\XmlConvertEndOfDayTests.cs" />
     <Compile Include="XmlConvert\VerifyNameTests2.cs" />
     <Compile Include="XmlConvert\VerifyNameTests3.cs" />
     <Compile Include="XmlConvert\VerifyNameTests4.cs" />

@@ -5,6 +5,7 @@ using System;
 
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -37,6 +38,7 @@ public class Program
 
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/5933", TestRuntimes.CoreCLR)]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -30,10 +30,10 @@ jobs:
     pool:
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
           name:  $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals Azure-Linux-3-Amd64-Public
+          demands: ImageOverride -equals build.azurelinux.3.amd64.open
       ${{ else }}:
           name: $(DncEngInternalBuildPool)
-          demands: ImageOverride -equals Azure-Linux-3-Amd64
+          demands: ImageOverride -equals build.azurelinux.3.amd64
           os: linux
 
     steps:

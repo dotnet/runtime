@@ -283,7 +283,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
             var dic = new Dictionary<string, string>

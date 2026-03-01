@@ -403,12 +403,6 @@
   <data name="Arg_GuidArrayCtor" xml:space="preserve">
     <value>Byte array for Guid must be exactly {0} bytes long.</value>
   </data>
-  <data name="Arg_HandleNotAsync" xml:space="preserve">
-    <value>Handle does not support asynchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened synchronously (that is, it was not opened for overlapped I/O).</value>
-  </data>
-  <data name="Arg_HandleNotSync" xml:space="preserve">
-    <value>Handle does not support synchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened asynchronously (that is, it was opened explicitly for overlapped I/O).</value>
-  </data>
   <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
     <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types.</value>
   </data>
@@ -2023,6 +2017,9 @@
   </data>
   <data name="BadImageFormat_BadILFormat" xml:space="preserve">
     <value>Bad IL format.</value>
+  </data>
+  <data name="BadImageFormat_EmptyAssembly" xml:space="preserve">
+    <value>Assembly image is empty. The stream or byte array must contain a valid PE file.</value>
   </data>
   <data name="BadImageFormat_InvalidType" xml:space="preserve">
     <value>Corrupt .resources file.  The specified type doesn't exist.</value>

@@ -4,6 +4,7 @@
 #include "corjit.h"
 
 #include "interpreter.h"
+#include "compiler.h"
 #include "eeinterp.h"
 
 #include <string.h>
@@ -23,6 +24,10 @@ extern "C" INTERP_API void jitStartup(ICorJitHost* jitHost)
 
     assert(!InterpConfig.IsInitialized());
     InterpConfig.Initialize(jitHost);
+
+#if MEASURE_MEM_ALLOC
+    InterpCompiler::initMemStats();
+#endif
 
     g_interpInitialized = true;
 }
@@ -49,6 +54,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 {
 
     bool doInterpret = false;
+    ArenaAllocatorWithDestructorT<InterpMemKindTraits> arenaAllocator;
 
     if ((g_interpModule != NULL) && (methodInfo->scope == g_interpModule))
         doInterpret = true;
@@ -85,7 +91,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                 break;
         }
 
-#if !defined(FEATURE_JIT)
+#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
         // interpret everything when we do not have a JIT
         doInterpret = true;
 #else
@@ -106,12 +112,12 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     try
     {
-        InterpreterRetryData retryData;
+        InterpreterRetryData retryData(&arenaAllocator);
 
         while (true)
         {
             retryData.StartCompilationAttempt();
-            InterpCompiler compiler(compHnd, methodInfo, &retryData);
+            InterpCompiler compiler(compHnd, methodInfo, &retryData, &arenaAllocator);
             InterpMethod *pMethod = compiler.CompileMethod();
             if (pMethod == NULL)
             {
@@ -150,6 +156,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
             // We can't do this until we've called allocMem
             compiler.BuildGCInfo(pMethod);
             compiler.BuildEHInfo();
+            compiler.dumpMethodMemStats();
             break;
         }
     }
@@ -163,6 +170,14 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
 void CILInterp::ProcessShutdownWork(ICorStaticInfo* statInfo)
 {
+#if MEASURE_MEM_ALLOC
+    if (InterpCompiler::s_dspMemStats)
+    {
+        InterpCompiler::dumpAggregateMemStats(stdout);
+        InterpCompiler::dumpMaxMemStats(stdout);
+        InterpCompiler::dumpMemStatsHistograms(stdout);
+    }
+#endif
     g_interpInitialized = false;
 }
 
@@ -190,7 +205,102 @@ INTERPRETER_NORETURN void BADCODE(const char* message)
     throw InterpException(message, CORJIT_BADCODE);
 }
 
+INTERPRETER_NORETURN void SKIPCODE(const char* message)
+{
+    if (IsInterpDumpActive())
+        printf("Skip during interpreter method compilation: %s\n", message ? message : "unknown error");
+    throw InterpException(message, CORJIT_SKIPPED);
+}
+
 INTERPRETER_NORETURN void NOMEM()
 {
     throw InterpException(NULL, CORJIT_OUTOFMEM);
+}
+
+/*****************************************************************************/
+// Define the static Names array for InterpMemKindTraits
+const char* const InterpMemKindTraits::Names[] = {
+#define InterpMemKindMacro(kind) #kind,
+#include "interpmemkind.h"
+};
+
+// The interpreter normally uses the host allocator (allocateSlab/freeSlab). In DEBUG
+// builds, when InterpDirectAlloc is enabled, allocations bypass the host allocator
+// and go directly to the OS, so this may return true.
+bool InterpMemKindTraits::bypassHostAllocator()
+{
+#if defined(DEBUG)
+    // When InterpDirectAlloc is set, interpreter allocation requests are forwarded
+    // directly to the OS. This allows taking advantage of pageheap and other gflag
+    // knobs for ensuring that we do not have buffer overruns in the interpreter.
+
+    return InterpConfig.InterpDirectAlloc() != 0;
+#else  // defined(DEBUG)
+    return false;
+#endif // !defined(DEBUG)
+}
+
+// The interpreter doesn't currently support fault injection.
+bool InterpMemKindTraits::shouldInjectFault()
+{
+#if defined(DEBUG)
+    return InterpConfig.ShouldInjectFault() != 0;
+#else
+    return false;
+#endif
+}
+
+// Allocates a block of memory using malloc.
+void* InterpMemKindTraits::allocateHostMemory(size_t size, size_t* pActualSize)
+{
+#if defined(DEBUG)
+    if (bypassHostAllocator())
+    {
+        *pActualSize = size;
+        if (size == 0)
+        {
+            size = 1;
+        }
+        void* p = malloc(size);
+        if (p == nullptr)
+        {
+            NOMEM();
+        }
+        return p;
+    }
+#endif // !defined(DEBUG)
+
+    return g_interpHost->allocateSlab(size, pActualSize);
+}
+
+// Frees a block of memory previously allocated by allocateHostMemory.
+void InterpMemKindTraits::freeHostMemory(void* block, size_t size)
+{
+#if defined(DEBUG)
+    if (bypassHostAllocator())
+    {
+        free(block);
+        return;
+    }
+#endif // !defined(DEBUG)
+
+    g_interpHost->freeSlab(block, size);
+}
+
+// Fills a memory block with an uninitialized pattern for DEBUG builds.
+void InterpMemKindTraits::fillWithUninitializedPattern(void* block, size_t size)
+{
+#if defined(DEBUG)
+    // Use 0xCD pattern (same as MSVC debug heap) to help catch use-before-init bugs
+    memset(block, 0xCD, size);
+#else
+    (void)block;
+    (void)size;
+#endif
+}
+
+// Called when the allocator runs out of memory.
+void InterpMemKindTraits::outOfMemory()
+{
+    NOMEM();
 }

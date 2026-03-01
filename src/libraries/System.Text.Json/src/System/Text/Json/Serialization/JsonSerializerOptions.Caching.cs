@@ -91,6 +91,37 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Gets the <see cref="JsonTypeInfo{T}"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
+        /// </summary>
+        /// <typeparam name="T">The type to resolve contract metadata for.</typeparam>
+        /// <returns>The contract metadata resolved for <typeparamref name="T"/>.</returns>
+        /// <exception cref="ArgumentException"><typeparamref name="T"/> is not valid for serialization.</exception>
+        /// <remarks>
+        /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
+        /// </remarks>
+        public JsonTypeInfo<T> GetTypeInfo<T>()
+        {
+            return (JsonTypeInfo<T>)GetTypeInfo(typeof(T));
+        }
+
+        /// <summary>
+        /// Tries to get the <see cref="JsonTypeInfo{T}"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
+        /// </summary>
+        /// <typeparam name="T">The type to resolve contract metadata for.</typeparam>
+        /// <param name="typeInfo">The resolved contract metadata, or <see langword="null" /> if no contract could be resolved.</param>
+        /// <returns><see langword="true"/> if a contract for <typeparamref name="T"/> was found, or <see langword="false"/> otherwise.</returns>
+        /// <exception cref="ArgumentException"><typeparamref name="T"/> is not valid for serialization.</exception>
+        /// <remarks>
+        /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
+        /// </remarks>
+        public bool TryGetTypeInfo<T>([NotNullWhen(true)] out JsonTypeInfo<T>? typeInfo)
+        {
+            bool success = TryGetTypeInfo(typeof(T), out JsonTypeInfo? nonGeneric);
+            typeInfo = (JsonTypeInfo<T>?)nonGeneric;
+            return success;
+        }
+
+        /// <summary>
         /// Same as GetTypeInfo but without validation and additional knobs.
         /// </summary>
         [return: NotNullIfNotNull(nameof(ensureNotNull))]

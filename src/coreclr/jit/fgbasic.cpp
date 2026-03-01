@@ -73,7 +73,7 @@ void Compiler::fgCreateNewInitBB()
         {
             // If the result is clearly nonsensical, just inherit
             //
-            JITDUMP("\fgCanonicalizeFirstBB: Profile data could not be locally repaired. Data %s inconsistent.\n",
+            JITDUMP("fgCanonicalizeFirstBB: Profile data could not be locally repaired. Data %s inconsistent.\n",
                     fgPgoConsistent ? "is now" : "was already");
 
             if (fgPgoConsistent)
@@ -1312,7 +1312,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                                         FgStack::FgSlot arg1 = pushedStack.Top(0);
 
-                                        isArg1Arg      = FgStack::IsArgument(arg0);
+                                        isArg1Arg      = FgStack::IsArgument(arg1);
                                         isArg1Const    = FgStack::IsConstant(arg1);
                                         isArg1ConstArg = FgStack::IsConstantOrConstArg(arg1, impInlineInfo);
                                     }
@@ -1337,7 +1337,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                     else if (isArg0Const && isArg1Const)
                                     {
                                         // both are constants so we still want to track this as foldable, unlike
-                                        // what is done for the regulary binary operator handling, since we have
+                                        // what is done for the regular binary operator handling, since we have
                                         // a CEE_CALL node and not something more primitive
                                         foldableIntrinsic = true;
                                     }
@@ -1395,7 +1395,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 else if (FgStack::IsConstant(arg))
                                 {
                                     // input is a constant so we still want to track this as foldable, unlike
-                                    // what is done for the regulary unary operator handling, since we have
+                                    // what is done for the regular unary operator handling, since we have
                                     // a CEE_CALL node and not something more primitive
                                     foldableIntrinsic = true;
                                 }
@@ -1419,7 +1419,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector64_AsUInt32:
                             case NI_Vector64_AsUInt64:
                             case NI_Vector64_op_UnaryPlus:
-#endif // TARGET_XARCH
+#endif // TARGET_ARM64
                             case NI_Vector128_As:
                             case NI_Vector128_AsByte:
                             case NI_Vector128_AsDouble:
@@ -2305,12 +2305,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     else
                     {
                         lvaTable[varNum].lvHasLdAddrOp = 1;
-                        if (!info.compIsStatic && (varNum == 0))
+                        if (!info.compIsStatic && (varNum == info.compThisArg))
                         {
                             // Addr taken on "this" pointer is significant,
                             // go ahead to mark it as permanently addr-exposed here.
                             // This may be conservative, but probably not very.
-                            lvaSetVarAddrExposed(0 DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
+                            lvaSetVarAddrExposed(info.compThisArg DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
                         }
                     }
                 } // isInlining
@@ -3455,7 +3455,7 @@ void Compiler::fgFindBasicBlocks()
 
     // Are there any exception handlers?
     //
-    if (info.compXcptnsCount > 0)
+    if (info.compXcptnsCount > 0 || ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0))
     {
         assert(!compIsForInlining() || opts.compInlineMethodsWithEH);
 
@@ -3464,7 +3464,14 @@ void Compiler::fgFindBasicBlocks()
             // Verify we can expand the EH table as needed to incorporate the callee's EH clauses.
             // Failing here should be extremely rare.
             //
-            EHblkDsc* const dsc = fgTryAddEHTableEntries(0, info.compXcptnsCount, /* deferAdding */ true);
+            unsigned numEHEntries = info.compXcptnsCount;
+            // We will introduce another EH clause before inlining finishes to restore async contexts
+            if ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)
+            {
+                numEHEntries++;
+            }
+
+            EHblkDsc* const dsc = fgTryAddEHTableEntries(0, numEHEntries, /* deferAdding */ true);
             if (dsc == nullptr)
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLSITE_EH_TABLE_FULL);
@@ -4159,7 +4166,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
                         BADCODE("Unexpected endfilter");
                     }
                 }
-                else if (blk->KindIs(BBJ_EHFILTERRET))
+                else if (blk->KindIs(BBJ_EHFINALLYRET))
                 {
                     // endfinally allowed only in a finally block
                     if (!HBtab->HasFinallyHandler())

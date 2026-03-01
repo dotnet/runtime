@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using ILCompiler.ObjectWriter;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -37,6 +38,17 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x81,   // ADRP
         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A = 0x82,   // ADD/ADDS (immediate) with zero shift, for page offset
         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L = 0x83,   // LDR (indexed, unsigned immediate), for page offset
+
+        // Wasm relocs
+        WASM_FUNCTION_INDEX_LEB    = 0x200,  // Wasm: a function index encoded as a 5-byte varuint32. Used for the immediate argument of a call instruction.
+        WASM_TABLE_INDEX_SLEB      = 0x201,  // Wasm: a function table index encoded as a 5-byte varint32. Used to refer to the immediate argument of a
+                                                       //  i32.const instruction, e.g. taking the address of a function.
+        WASM_MEMORY_ADDR_LEB       = 0x202,  // Wasm: a linear memory index encoded as a 5-byte varuint32. Used for the immediate argument of a load or store instruction,
+                                                       //  e.g. directly loading from or storing to a C++ global.
+        WASM_MEMORY_ADDR_SLEB      = 0x203,  // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
+                                                       //  e.g. taking the address of a C++ global.
+        WASM_TYPE_INDEX_LEB        = 0x204,  // Wasm: a type index encoded as a 5-byte varuint32, e.g. the type immediate in a call_indirect.
+        WASM_GLOBAL_INDEX_LEB      = 0x205,  // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
 
         //
         // Relocation operators related to TLS access
@@ -81,6 +93,9 @@ namespace ILCompiler.DependencyAnalysis
 
     public struct Relocation
     {
+        // NOTE: Keep in sync with emitwasm.cpp
+        private const int WASM_PADDED_RELOC_SIZE_32 = 5;
+
         public readonly RelocType RelocType;
         public readonly int Offset;
         public readonly ISymbolNode Target;
@@ -621,12 +636,28 @@ namespace ILCompiler.DependencyAnalysis
                     bool isStype = (relocType is RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S);
                     PutRiscV64AuipcCombo((uint*)location, value, isStype);
                     break;
+
+                case RelocType.WASM_TYPE_INDEX_LEB:
+                case RelocType.WASM_GLOBAL_INDEX_LEB:
+                case RelocType.WASM_FUNCTION_INDEX_LEB:
+                case RelocType.WASM_MEMORY_ADDR_LEB:
+                    DwarfHelper.WritePaddedULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
+                    return;
+
+                case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_MEMORY_ADDR_SLEB:
+                    DwarfHelper.WritePaddedSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
+                    return;
+
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     break;
             }
         }
 
+        public static readonly int MaxSize = 8;
+        // Note: Please update the above field if the max size
+        // changes when adding a new case to this method.
         public static int GetSize(RelocType relocType)
         {
             return relocType switch
@@ -650,6 +681,14 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT => 8,
                 RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I => 8,
                 RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S => 8,
+
+                RelocType.WASM_FUNCTION_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_TABLE_INDEX_SLEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_TYPE_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_GLOBAL_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_MEMORY_ADDR_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_MEMORY_ADDR_SLEB => WASM_PADDED_RELOC_SIZE_32,
+
                 _ => throw new NotSupportedException(),
             };
         }
@@ -709,6 +748,19 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
                     bool isStype = (relocType is RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S);
                     return GetRiscV64AuipcCombo((uint*)location, isStype);
+                case RelocType.WASM_FUNCTION_INDEX_LEB:
+                case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_TYPE_INDEX_LEB:
+                case RelocType.WASM_GLOBAL_INDEX_LEB:
+                    // These wasm relocs do not have offsets, just targets
+                    return 0;
+
+                case RelocType.WASM_MEMORY_ADDR_LEB:
+                    return checked((long)DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32)));
+
+                case RelocType.WASM_MEMORY_ADDR_SLEB:
+                    return DwarfHelper.ReadSLEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32));
+
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;

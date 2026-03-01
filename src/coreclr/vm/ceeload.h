@@ -444,7 +444,6 @@ class ModuleBase
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
-    friend class NativeImageDumper;
 #endif
 
     friend class DataImage;
@@ -603,7 +602,6 @@ class Module : public ModuleBase
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
-    friend class NativeImageDumper;
 #endif
 
     friend class DataImage;
@@ -620,6 +618,7 @@ private:
 
     enum {
         // These are the values set in m_dwTransientFlags.
+        // [cDAC] [Loader]: Contract depends on the values of MODULE_IS_TENURED, IS_EDIT_AND_CONTINUE, and IS_REFLECTION_EMIT.
 
         MODULE_IS_TENURED           = 0x00000001,   // Set once we know for sure the Module will not be freed until the appdomain itself exits
         // unused                   = 0x00000002,

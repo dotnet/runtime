@@ -184,17 +184,16 @@ namespace Server.Contract
         void Pass_Through_LCID(out int lcid);
     }
 
-    [ComVisible(true)]
-    [Guid("4242A2F9-995D-4302-A722-02058CF58158")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IInterface1
+    // This interface must not be an explicit COM interface to trigger
+    // the dynamic interface map codepath in ComObject.
+    public interface Interface0
     {
     }
 
     [ComVisible(true)]
-    [Guid("7AC820FE-E227-4C4D-A8B0-FCA68C459B43")]
+    [Guid("4242A2F9-995D-4302-A722-02058CF58158")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IInterface2 : IInterface1
+    public interface IInterface1 : Interface0
     {
     }
 
@@ -211,7 +210,7 @@ namespace Server.Contract
         void Marshal_ByRefVariant(ref object result, object value);
 
         [return: MarshalAs(UnmanagedType.Interface)]
-        IInterface2 Marshal_Interface([MarshalAs(UnmanagedType.Interface)] object inst);
+        IInterface1 Marshal_Interface([MarshalAs(UnmanagedType.Interface)] object inst);
     }
 
     public struct HResult
@@ -258,6 +257,21 @@ namespace Server.Contract
         public int Value;
     }
 
+    public sealed class CustomObjectMarshaler : ICustomMarshaler
+    {
+        public static ICustomMarshaler GetInstance(string cookie) => new CustomObjectMarshaler();
+
+        public void CleanUpManagedData(object ManagedObj) => Marshal.ReleaseComObject(ManagedObj);
+
+        public void CleanUpNativeData(IntPtr pNativeData) => Marshal.Release(pNativeData);
+
+        public int GetNativeDataSize() => IntPtr.Size;
+
+        public IntPtr MarshalManagedToNative(object ManagedObj) => Marshal.GetIUnknownForObject(ManagedObj);
+
+        public object MarshalNativeToManaged(IntPtr pNativeData) => Marshal.GetObjectForIUnknown(pNativeData);
+    }
+
     [ComVisible(true)]
     [Guid("a5e04c1c-474e-46d2-bbc0-769d04e12b54")]
     [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
@@ -282,6 +296,9 @@ namespace Server.Contract
         float Add_Float_ReturnAndUpdateByRef(float a, ref float b);
         double Add_Double_ReturnAndUpdateByRef(double a, ref double b);
         void TriggerException(IDispatchTesting_Exception excep, int errorCode);
+
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof(CustomObjectMarshaler))]
+        object TriggerCustomMarshaler([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof(CustomObjectMarshaler))] object objIn, [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof(CustomObjectMarshaler))] ref object objRef);
 
         // Special cases
         HFA_4 DoubleHVAValues(ref HFA_4 input);
