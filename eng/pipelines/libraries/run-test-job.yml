@@ -11,6 +11,7 @@ parameters:
   interpreter: ''
   timeoutInMinutes: 150
   pool: ''
+  hostedOs: ''
   runtimeVariant: ''
   testScope: ''
   helixQueues: []
@@ -91,7 +92,7 @@ jobs:
 
       - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
-      - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+      - ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), not(in(parameters.hostedOs, 'linux', 'windows'))) }}:
         - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
           displayName: Install Build Dependencies
 
