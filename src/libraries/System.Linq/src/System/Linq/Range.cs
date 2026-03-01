@@ -38,7 +38,7 @@ namespace System.Linq
 
             public RangeIterator(T start, T endExclusive)
             {
-                Debug.Assert(int.CreateChecked(endExclusive - start) >= 0);
+                Debug.Assert(endExclusive - start >= T.Zero);
                 _start = start;
                 _endExclusive = endExclusive;
             }
