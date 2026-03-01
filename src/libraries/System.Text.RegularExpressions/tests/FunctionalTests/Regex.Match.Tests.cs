@@ -3335,5 +3335,20 @@ namespace System.Text.RegularExpressions.Tests
                 }
             }
         }
+
+        [Fact]
+        public void Match_MultiLiteralResemblingCharClassEncoding()
+        {
+            // Regression test: a Multi literal string that happens to resemble a character class
+            // encoding could cause GetSetChars to throw IndexOutOfRangeException.
+            // The pattern below produces a Multi opcode whose literal string has:
+            //   [0]='\0' (looks like non-negated flag), [1]='\u0002' (even "set length"),
+            //   [2]='\0' (no categories), [3]='X' — but no [4], so the range enumeration
+            //   in GetSetChars would access past the end of the string.
+            // CreateSetSearchValues must validate the char-class encoding before calling GetSetChars.
+            string input = "\x00\x02\x00X";
+            var regex = new Regex(input);
+            Assert.True(regex.IsMatch(input));
+        }
     }
 }
