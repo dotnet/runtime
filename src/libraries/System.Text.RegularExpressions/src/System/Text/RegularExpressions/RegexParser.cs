@@ -21,6 +21,11 @@ namespace System.Text.RegularExpressions
         private const int MaxValueDiv10 = int.MaxValue / 10;
         private const int MaxValueMod10 = int.MaxValue % 10;
 
+        /// <summary>Character class for [\r\u0085\u2028\u2029] — CR plus Unicode newlines, used in $ and \Z lowering.</summary>
+        private const string CrUnicodeNewLineClass = "\x00\x06\x00\x0D\x0E\x85\x86\u2028\u202A";
+        /// <summary>Character class for [\n\u0085\u2028\u2029] — LF plus Unicode newlines, used in ^ lowering.</summary>
+        private const string NlUnicodeNewLineClass = "\x00\x06\x00\x0A\x0B\x85\x86\u2028\u202A";
+
         private RegexNode? _stack;
         private RegexNode? _group;
         private RegexNode? _alternation;
@@ -391,17 +396,40 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '^':
-                        _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Bol : RegexNodeKind.Beginning, _options);
+                        if ((_options & (RegexOptions.AnyNewLine | RegexOptions.Multiline)) == (RegexOptions.AnyNewLine | RegexOptions.Multiline))
+                        {
+                            _unit = AnyNewLineBolNode();
+                        }
+                        else
+                        {
+                            _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Bol : RegexNodeKind.Beginning, _options);
+                        }
                         break;
 
                     case '$':
-                        _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
+                        if ((_options & RegexOptions.AnyNewLine) != 0)
+                        {
+                            _unit = (_options & RegexOptions.Multiline) != 0 ? AnyNewLineEolNode() : AnyNewLineEndZNode();
+                        }
+                        else
+                        {
+                            _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
+                        }
                         break;
 
                     case '.':
-                        _unit = (_options & RegexOptions.Singleline) != 0 ?
-                            new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass) :
-                            new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
+                        if ((_options & RegexOptions.Singleline) != 0)
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass);
+                        }
+                        else if ((_options & RegexOptions.AnyNewLine) != 0)
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.NotNewLineOrCarriageReturnClass);
+                        }
+                        else
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
+                        }
                         break;
 
                     case '{':
@@ -1131,11 +1159,15 @@ namespace System.Text.RegularExpressions
                 case 'B':
                 case 'A':
                 case 'G':
-                case 'Z':
                 case 'z':
                     _pos++;
                     return scanOnly ? null :
                         new RegexNode(TypeFromCode(ch), _options);
+
+                case 'Z':
+                    _pos++;
+                    return scanOnly ? null :
+                        (_options & RegexOptions.AnyNewLine) != 0 ? AnyNewLineEndZNode() : new RegexNode(RegexNodeKind.EndZ, _options);
 
                 case 'w':
                     _pos++;
@@ -1694,6 +1726,146 @@ namespace System.Text.RegularExpressions
             }
 
             return capname;
+        }
+
+        /// <summary>
+        /// Builds a tree equivalent to $ or \Z with AnyNewLine (non-Multiline).
+        /// Matches at end of string, or before any newline at end of string,
+        /// but not between \r and \n.
+        /// Equivalent to: (?=\r\n\z|[\r\u0085\u2028\u2029]?\z)|(?&lt;!\r)(?=\n\z)
+        /// </summary>
+        private RegexNode AnyNewLineEndZNode()
+        {
+            RegexOptions opts = _options;
+            RegexOptions laOpts = opts & ~RegexOptions.RightToLeft;
+            RegexOptions lbOpts = opts | RegexOptions.RightToLeft;
+            RegexOptions laNoCase = laOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lbNoCase = lbOpts & ~RegexOptions.IgnoreCase;
+
+            // \r\n\z
+            var crlfEnd = new RegexNode(RegexNodeKind.Concatenate, laOpts);
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\r'));
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\n'));
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.End, laOpts));
+
+            // [\r\u0085\u2028\u2029]?\z — optional CR-or-Unicode-newline followed by end of string
+            var crUniOptEnd = new RegexNode(RegexNodeKind.Concatenate, laOpts);
+            crUniOptEnd.AddChild(new RegexNode(RegexNodeKind.Set, laNoCase, CrUnicodeNewLineClass).MakeQuantifier(false, 0, 1));
+            crUniOptEnd.AddChild(new RegexNode(RegexNodeKind.End, laOpts));
+
+            // (?=\r\n\z|[\r\u0085\u2028\u2029]?\z)
+            var innerAlt = new RegexNode(RegexNodeKind.Alternate, laOpts);
+            innerAlt.AddChild(crlfEnd);
+            innerAlt.AddChild(crUniOptEnd);
+            var lookahead1 = new RegexNode(RegexNodeKind.PositiveLookaround, laOpts);
+            lookahead1.AddChild(innerAlt);
+
+            // (?<!\r)
+            var negLookbehind = new RegexNode(RegexNodeKind.NegativeLookaround, lbOpts);
+            negLookbehind.AddChild(new RegexNode(RegexNodeKind.One, lbNoCase, '\r'));
+
+            // (?=\n\z)
+            var nEnd = new RegexNode(RegexNodeKind.Concatenate, laOpts);
+            nEnd.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\n'));
+            nEnd.AddChild(new RegexNode(RegexNodeKind.End, laOpts));
+            var lookahead2 = new RegexNode(RegexNodeKind.PositiveLookaround, laOpts);
+            lookahead2.AddChild(nEnd);
+
+            // (?<!\r)(?=\n\z)
+            var branch2 = new RegexNode(RegexNodeKind.Concatenate, opts);
+            branch2.AddChild(negLookbehind);
+            branch2.AddChild(lookahead2);
+
+            // (?=\r\n\z|[\r\u0085\u2028\u2029]?\z)|(?<!\r)(?=\n\z)
+            var result = new RegexNode(RegexNodeKind.Alternate, opts);
+            result.AddChild(lookahead1);
+            result.AddChild(branch2);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Builds a tree equivalent to $ with AnyNewLine and Multiline.
+        /// Matches before any newline or at end of string, but not between \r and \n.
+        /// Equivalent to: (?=[\r\u0085\u2028\u2029]|\z)|(?&lt;!\r)(?=\n)
+        /// </summary>
+        private RegexNode AnyNewLineEolNode()
+        {
+            RegexOptions opts = _options;
+            RegexOptions laOpts = opts & ~RegexOptions.RightToLeft;
+            RegexOptions lbOpts = opts | RegexOptions.RightToLeft;
+            RegexOptions laNoCase = laOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lbNoCase = lbOpts & ~RegexOptions.IgnoreCase;
+
+            // (?=[\r\u0085\u2028\u2029]|\z)
+            // \r covers both \r\n and bare \r (lookahead only checks the first char)
+            var innerAlt = new RegexNode(RegexNodeKind.Alternate, laOpts);
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, laNoCase, CrUnicodeNewLineClass));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.End, laOpts));
+            var lookahead1 = new RegexNode(RegexNodeKind.PositiveLookaround, laOpts);
+            lookahead1.AddChild(innerAlt);
+
+            // (?<!\r)
+            var negLookbehind = new RegexNode(RegexNodeKind.NegativeLookaround, lbOpts);
+            negLookbehind.AddChild(new RegexNode(RegexNodeKind.One, lbNoCase, '\r'));
+
+            // (?=\n)
+            var lookahead2 = new RegexNode(RegexNodeKind.PositiveLookaround, laOpts);
+            lookahead2.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\n'));
+
+            // (?<!\r)(?=\n)
+            var branch2 = new RegexNode(RegexNodeKind.Concatenate, opts);
+            branch2.AddChild(negLookbehind);
+            branch2.AddChild(lookahead2);
+
+            // (?=[\r\u0085\u2028\u2029]|\z)|(?<!\r)(?=\n)
+            var result = new RegexNode(RegexNodeKind.Alternate, opts);
+            result.AddChild(lookahead1);
+            result.AddChild(branch2);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Builds a tree equivalent to ^ with AnyNewLine and Multiline.
+        /// Matches after any newline or at start of string, but not between \r and \n.
+        /// Equivalent to: (?&lt;=[\n\u0085\u2028\u2029]|\A)|(?&lt;=\r)(?!\n)
+        /// </summary>
+        private RegexNode AnyNewLineBolNode()
+        {
+            RegexOptions opts = _options;
+            RegexOptions laOpts = opts & ~RegexOptions.RightToLeft;
+            RegexOptions lbOpts = opts | RegexOptions.RightToLeft;
+            RegexOptions laNoCase = laOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lbNoCase = lbOpts & ~RegexOptions.IgnoreCase;
+
+            // (?<=[\n\u0085\u2028\u2029]|\A)
+            // \n covers both \r\n and bare \n (lookbehind only checks the last char)
+            var innerAlt = new RegexNode(RegexNodeKind.Alternate, lbOpts);
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lbNoCase, NlUnicodeNewLineClass));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Beginning, lbOpts));
+            var lookbehind1 = new RegexNode(RegexNodeKind.PositiveLookaround, lbOpts);
+            lookbehind1.AddChild(innerAlt);
+
+            // (?<=\r)
+            var lookbehind2 = new RegexNode(RegexNodeKind.PositiveLookaround, lbOpts);
+            lookbehind2.AddChild(new RegexNode(RegexNodeKind.One, lbNoCase, '\r'));
+
+            // (?!\n)
+            var negLookahead = new RegexNode(RegexNodeKind.NegativeLookaround, laOpts);
+            negLookahead.AddChild(new RegexNode(RegexNodeKind.One, laNoCase, '\n'));
+
+            // (?<=\r)(?!\n)
+            var branch2 = new RegexNode(RegexNodeKind.Concatenate, opts);
+            branch2.AddChild(lookbehind2);
+            branch2.AddChild(negLookahead);
+
+            // (?<=[\n\u0085\u2028\u2029]|\A)|(?<=\r)(?!\n)
+            var result = new RegexNode(RegexNodeKind.Alternate, opts);
+            result.AddChild(lookbehind1);
+            result.AddChild(branch2);
+
+            return result;
         }
 
         /// <summary>Returns the node kind for zero-length assertions with a \ code.</summary>
