@@ -53,20 +53,6 @@ public:
         INDEBUG(m_version++);
     }
 
-    void Realloc()
-    {
-        // get a new chunk 2x the size of the old one
-        // and copy over
-        T* oldData = data;
-        noway_assert(maxIndex * 2 > maxIndex);
-        data = m_alloc.allocate<T>(maxIndex * 2);
-        for (int i = 0; i < maxIndex; i++)
-        {
-            data[i] = oldData[i];
-        }
-        maxIndex *= 2;
-    }
-
     T Pop()
     {
         assert(tosIndex > 0);
@@ -241,6 +227,20 @@ public:
     }
 
 private:
+    void Realloc()
+    {
+        // get a new chunk 2x the size of the old one
+        // and copy over
+        T* oldData = data;
+        noway_assert(maxIndex * 2 > maxIndex);
+        data = m_alloc.allocate<T>(maxIndex * 2);
+        for (int i = 0; i < maxIndex; i++)
+        {
+            data[i] = oldData[i];
+        }
+        maxIndex *= 2;
+    }
+
     CompAllocator m_alloc;
     int           tosIndex; // first free location
     int           maxIndex;
