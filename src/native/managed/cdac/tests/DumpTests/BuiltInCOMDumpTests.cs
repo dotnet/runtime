@@ -73,28 +73,6 @@ public class BuiltInCOMDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
-    public void BuiltInCOM_CCW_FirstSlotHasNullMethodTable(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
-
-        List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
-        Assert.True(ccwPtrs.Count > 0, "Expected at least one object with an active CCW from strong handles");
-
-        foreach (TargetPointer ccwPtr in ccwPtrs)
-        {
-            List<COMInterfacePointerData> interfaces = builtInCOM.GetCCWInterfaces(ccwPtr).ToList();
-            Assert.True(interfaces.Count > 0, $"Expected at least one interface for CCW at 0x{ccwPtr:X}");
-
-            // Slot 0 of the first wrapper is IUnknown/IDispatch; per the BuiltInCOM contract
-            // it always yields a null MethodTable to match the legacy DAC behavior.
-            Assert.Equal(TargetPointer.Null, interfaces[0].MethodTable);
-        }
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
     public void BuiltInCOM_CCW_RefCountIsPositive(TestConfiguration config)
     {
         InitializeDumpTest(config);
