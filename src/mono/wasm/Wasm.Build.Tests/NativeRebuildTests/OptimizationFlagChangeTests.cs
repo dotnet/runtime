@@ -12,6 +12,7 @@ using Xunit;
 
 namespace Wasm.Build.NativeRebuild.Tests;
 
+[TestCategory("native")]
 public class OptimizationFlagChangeTests : NativeRebuildTestsBase
 {
     public OptimizationFlagChangeTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

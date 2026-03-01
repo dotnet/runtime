@@ -40,11 +40,13 @@ public class IcuShardingTests : IcuTestsBase
 
     [Theory]
     [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { Configuration.Release })]
+    [TestCategory("native")]
     public async Task CustomIcuShard(Configuration config, bool aot, string customIcuPath, string customLocales, bool onlyPredefinedCultures) =>
         await TestIcuShards(config, Template.WasmBrowser, aot, customIcuPath, customLocales, GlobalizationMode.Custom, onlyPredefinedCultures);
 
     [Theory]
     [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { Configuration.Release })]
+    [TestCategory("native")]
     public async Task AutomaticShardSelectionDependingOnEnvLocale(Configuration config, bool aot, string environmentLocale, string testedLocales) =>
         await PublishAndRunIcuTest(config, Template.WasmBrowser, aot, testedLocales, GlobalizationMode.Sharded, locale: environmentLocale);
 }

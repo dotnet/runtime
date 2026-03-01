@@ -15,6 +15,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests.Blazor;
 
+[TestCategory("mono")]
 public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 {
     private static readonly string uploadPattern = "^[a-zA-Z0-9_]+\\.nettrace$";

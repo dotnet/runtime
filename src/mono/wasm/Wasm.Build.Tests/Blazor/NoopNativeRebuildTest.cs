@@ -9,6 +9,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests.Blazor
 {
+    [TestCategory("native")]
     public class NoopNativeRebuildTest : BlazorWasmTestBase
     {
         public NoopNativeRebuildTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

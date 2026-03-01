@@ -14,6 +14,7 @@ using Microsoft.Playwright;
 
 namespace Wasm.Build.Tests;
 
+[TestCategory("mono")]
 public class InterpPgoTests : WasmTemplateTestsBase
 {
     public InterpPgoTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

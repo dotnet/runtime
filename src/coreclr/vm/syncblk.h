@@ -966,9 +966,9 @@ class ObjHeader
         UseSlowPath = 2
     };
 
-    HeaderLockResult AcquireHeaderThinLock(DWORD tid);
+    HeaderLockResult AcquireHeaderThinLock(Thread* pCurThread);
 
-    HeaderLockResult ReleaseHeaderThinLock(DWORD tid);
+    HeaderLockResult ReleaseHeaderThinLock(Thread* pCurThread);
 
     friend struct ::cdac_data<ObjHeader>;
 };

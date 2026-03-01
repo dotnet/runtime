@@ -12,6 +12,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests.MT.Blazor;
 
+[TestCategory("mono")]
 public class SimpleMultiThreadedTests : BlazorWasmTestBase
 {
     public SimpleMultiThreadedTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

@@ -12,6 +12,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests;
 
+[TestCategory("mono")]
 public class DiagnosticsTests : WasmTemplateTestsBase
 {
     public DiagnosticsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

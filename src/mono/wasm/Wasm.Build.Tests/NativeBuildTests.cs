@@ -12,6 +12,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
+    [TestCategory("native")]
     public class NativeBuildTests : WasmTemplateTestsBase
     {
         public NativeBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

@@ -10,6 +10,7 @@ using Xunit;
 
 namespace Wasm.Build.NativeRebuild.Tests
 {
+    [TestCategory("native")]
     public class SimpleSourceChangeRebuildTest : NativeRebuildTestsBase
     {
         public SimpleSourceChangeRebuildTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

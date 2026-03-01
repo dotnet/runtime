@@ -22,6 +22,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Debug, aot: true)]
+        [TestCategory("native")]
         public void Wasm_CannotAOT_InDebug(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "no_aot_in_debug");
@@ -49,6 +50,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
+        [TestCategory("native")]
         public async Task BuildThenPublishWithAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "build_publish");

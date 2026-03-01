@@ -37,6 +37,7 @@ public class IcuShardingTests2 : IcuTestsBase
 
     [Theory]
     [MemberData(nameof(IcuExpectedAndMissingShardFromRuntimePackTestData), parameters: new object[] { Configuration.Release })]
+    [TestCategory("native")]
     public async Task DefaultAvailableIcuShardsFromRuntimePack(Configuration config, bool aot, string shardName, string testedLocales) =>
         await TestIcuShards(config, Template.WasmBrowser, aot, shardName, testedLocales, GlobalizationMode.Custom);
 }

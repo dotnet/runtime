@@ -12,6 +12,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests
 {
+    [TestCategory("native")]
     public class PInvokeTableGeneratorTests : PInvokeTableGeneratorTestsBase
     {
         public PInvokeTableGeneratorTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
