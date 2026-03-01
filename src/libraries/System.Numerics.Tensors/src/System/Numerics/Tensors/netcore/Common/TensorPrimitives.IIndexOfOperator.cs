@@ -53,6 +53,9 @@ namespace System.Numerics.Tensors
 
             if (sizeof(T) == 2)
             {
+                // For short/ushort types, use unsigned comparison for index ordering
+                // This allows indices up to 65535 to be compared correctly even when
+                // stored as signed short (which wraps negative for values > 32767)
                 // Compare 0,1,2,3 with 4,5,6,7
                 tmpResult = Vector128.Shuffle(result.AsInt16(), Vector128.Create(4, 5, 6, 7, 0, 1, 2, 3)).As<short, T>();
                 tmpIndex = Vector128.Shuffle(resultIndex.AsInt16(), Vector128.Create(4, 5, 6, 7, 0, 1, 2, 3)).As<short, T>();
@@ -68,8 +71,8 @@ namespace System.Numerics.Tensors
                 tmpIndex = Vector128.Shuffle(resultIndex.AsInt16(), Vector128.Create(1, 0, 2, 3, 4, 5, 6, 7)).As<short, T>();
                 TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
 
-                // Return 0
-                return resultIndex.As<T, short>().ToScalar();
+                // Return 0 - interpret as unsigned to handle overflow correctly
+                return (int)(ushort)resultIndex.As<T, short>().ToScalar();
             }
 
             Debug.Assert(sizeof(T) == 1);
@@ -94,8 +97,8 @@ namespace System.Numerics.Tensors
                 tmpIndex = Vector128.Shuffle(resultIndex.AsByte(), Vector128.Create((byte)1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>();
                 TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
 
-                // Return 0
-                return resultIndex.As<T, byte>().ToScalar();
+                // Return 0 - explicitly cast to int for consistency
+                return (int)resultIndex.As<T, byte>().ToScalar();
             }
         }
 
@@ -126,7 +129,7 @@ namespace System.Numerics.Tensors
         private static Vector128<T> IndexLessThan<T>(Vector128<T> indices1, Vector128<T> indices2) =>
             sizeof(T) == sizeof(long) ? Vector128.LessThan(indices1.AsInt64(), indices2.AsInt64()).As<long, T>() :
             sizeof(T) == sizeof(int) ? Vector128.LessThan(indices1.AsInt32(), indices2.AsInt32()).As<int, T>() :
-            sizeof(T) == sizeof(short) ? Vector128.LessThan(indices1.AsInt16(), indices2.AsInt16()).As<short, T>() :
+            sizeof(T) == sizeof(short) ? Vector128.LessThan(indices1.AsUInt16(), indices2.AsUInt16()).As<ushort, T>() :
             Vector128.LessThan(indices1.AsByte(), indices2.AsByte()).As<byte, T>();
     }
 }

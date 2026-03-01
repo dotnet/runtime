@@ -149,6 +149,16 @@ namespace System.Numerics.Tensors
             {
                 Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
 
+                // For byte and short types, check if the array is large enough to cause index overflow
+                // If so, fall back to scalar processing to avoid incorrect results
+                // byte/sbyte: max index 255, ushort: max index 65535, short: max index 32767
+                if ((sizeof(T) == 1 && x.Length >= 256) ||
+                    (typeof(T) == typeof(short) && x.Length >= 32768) ||
+                    (typeof(T) == typeof(ushort) && x.Length >= 65536))
+                {
+                    goto ScalarPath;
+                }
+
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 static Vector512<T> CreateVector512T(int i) =>
                     sizeof(T) == sizeof(long) ? Vector512.Create((long)i).As<long, T>() :
@@ -232,6 +242,16 @@ namespace System.Numerics.Tensors
             if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && x.Length >= Vector256<T>.Count)
             {
                 Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
+
+                // For byte and short types, check if the array is large enough to cause index overflow
+                // If so, fall back to scalar processing to avoid incorrect results
+                // byte/sbyte: max index 255, ushort: max index 65535, short: max index 32767
+                if ((sizeof(T) == 1 && x.Length >= 256) ||
+                    (typeof(T) == typeof(short) && x.Length >= 32768) ||
+                    (typeof(T) == typeof(ushort) && x.Length >= 65536))
+                {
+                    goto ScalarPath;
+                }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 static Vector256<T> CreateVector256T(int i) =>
@@ -317,6 +337,16 @@ namespace System.Numerics.Tensors
             {
                 Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
 
+                // For byte and short types, check if the array is large enough to cause index overflow
+                // If so, fall back to scalar processing to avoid incorrect results
+                // byte/sbyte: max index 255, ushort: max index 65535, short: max index 32767
+                if ((sizeof(T) == 1 && x.Length >= 256) ||
+                    (typeof(T) == typeof(short) && x.Length >= 32768) ||
+                    (typeof(T) == typeof(ushort) && x.Length >= 65536))
+                {
+                    goto ScalarPath;
+                }
+
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 static Vector128<T> CreateVector128T(int i) =>
                     sizeof(T) == sizeof(long) ? Vector128.Create((long)i).As<long, T>() :
@@ -397,6 +427,7 @@ namespace System.Numerics.Tensors
                 return IndexOfFinalAggregate<T, TIndexOfMinMax>(result, resultIndex);
             }
 
+        ScalarPath:
             // Scalar path used when either vectorization is not supported or the input is too small to vectorize.
             T curResult = x[0];
             int curIn = 0;
@@ -432,14 +463,14 @@ namespace System.Numerics.Tensors
         private static unsafe Vector256<T> IndexLessThan<T>(Vector256<T> indices1, Vector256<T> indices2) =>
             sizeof(T) == sizeof(long) ? Vector256.LessThan(indices1.AsInt64(), indices2.AsInt64()).As<long, T>() :
             sizeof(T) == sizeof(int) ? Vector256.LessThan(indices1.AsInt32(), indices2.AsInt32()).As<int, T>() :
-            sizeof(T) == sizeof(short) ? Vector256.LessThan(indices1.AsInt16(), indices2.AsInt16()).As<short, T>() :
+            sizeof(T) == sizeof(short) ? Vector256.LessThan(indices1.AsUInt16(), indices2.AsUInt16()).As<ushort, T>() :
             Vector256.LessThan(indices1.AsByte(), indices2.AsByte()).As<byte, T>();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe Vector512<T> IndexLessThan<T>(Vector512<T> indices1, Vector512<T> indices2) =>
             sizeof(T) == sizeof(long) ? Vector512.LessThan(indices1.AsInt64(), indices2.AsInt64()).As<long, T>() :
             sizeof(T) == sizeof(int) ? Vector512.LessThan(indices1.AsInt32(), indices2.AsInt32()).As<int, T>() :
-            sizeof(T) == sizeof(short) ? Vector512.LessThan(indices1.AsInt16(), indices2.AsInt16()).As<short, T>() :
+            sizeof(T) == sizeof(short) ? Vector512.LessThan(indices1.AsUInt16(), indices2.AsUInt16()).As<ushort, T>() :
             Vector512.LessThan(indices1.AsByte(), indices2.AsByte()).As<byte, T>();
 
         /// <summary>Gets whether the specified <see cref="float"/> is negative.</summary>
