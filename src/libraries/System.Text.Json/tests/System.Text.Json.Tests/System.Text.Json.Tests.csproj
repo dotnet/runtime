@@ -42,6 +42,7 @@
     <Compile Include="..\Common\CollectionTests\CollectionTests.Concurrent.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Concurrent.cs" />
     <Compile Include="..\Common\CollectionTests\CollectionTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.cs" />
     <Compile Include="..\Common\CollectionTests\CollectionTests.Dictionary.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Dictionary.cs" />
+    <Compile Include="..\Common\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Dictionary.KeyFilter.cs" />
     <Compile Include="..\Common\CollectionTests\CollectionTests.Dictionary.KeyPolicy.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Dictionary.KeyPolicy.cs" />
     <Compile Include="..\Common\CollectionTests\CollectionTests.Dictionary.NonStringKey.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Dictionary.NonStringKey.cs" />
     <Compile Include="..\Common\CollectionTests\CollectionTests.Generic.Read.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Generic.Read.cs" />
