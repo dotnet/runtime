@@ -358,7 +358,11 @@ namespace System.Net.NetworkInformation
             }
             else
             {
-                rtt = 0;
+                // For TTL expired / time exceeded responses, the reply still contains a valid
+                // round-trip time from the intermediate router that generated the ICMP error.
+                rtt = ipStatus == IPStatus.TtlExpired || ipStatus == IPStatus.TimeExceeded
+                    ? reply.roundTripTime
+                    : 0;
                 options = null;
                 buffer = Array.Empty<byte>();
             }
@@ -383,7 +387,11 @@ namespace System.Net.NetworkInformation
             }
             else
             {
-                rtt = 0;
+                // For TTL expired / time exceeded responses, the reply still contains a valid
+                // round-trip time from the intermediate router that generated the ICMP error.
+                rtt = ipStatus == IPStatus.TtlExpired || ipStatus == IPStatus.TimeExceeded
+                    ? reply.RoundTripTime
+                    : 0;
                 buffer = Array.Empty<byte>();
             }
 
