@@ -632,7 +632,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.MachineName);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Fact(Skip = "Not yet supported in xunit3 due to apphost")] //typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void TestMainModule()
         {

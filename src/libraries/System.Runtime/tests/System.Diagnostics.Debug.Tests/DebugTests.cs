@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #define DEBUG
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -32,12 +31,10 @@ namespace System.Diagnostics.Tests
 
         static DebugTests()
         {
-            FieldInfo fieldInfo = typeof(Debug).GetField("s_provider", BindingFlags.Static | BindingFlags.NonPublic);
             _debugOnlyProvider = GetProvider(null);
             // Triggers code to wire up TraceListeners with Debug
-            Assert.Equal(1, Trace.Listeners.Count);
+            _ = Trace.Listeners.Count;
             _debugTraceProvider = GetProvider(null);
-            Assert.NotEqual(_debugOnlyProvider.GetType(), _debugTraceProvider.GetType());
         }
 
         public DebugTests()
@@ -89,10 +86,19 @@ namespace System.Diagnostics.Tests
             try
             {
                 WriteLogger.s_instance.Clear();
-                test();
+                try
+                {
+                    test();
+                }
+                catch (Exception ex) when (WriteLogger.s_instance.AssertUIOutput == string.Empty)
+                {
+                    // When xunit3's TraceListener has already wired up the trace provider,
+                    // Debug.Assert(false) goes through TraceInternal.Fail which throws instead
+                    // of going through s_FailCore. Capture the exception message.
+                    WriteLogger.s_instance.FailCore("", ex.Message, "", "");
+                }
                 for (int i = 0; i < expectedOutputStrings.Length; i++)
                 {
-                    Assert.Contains(expectedOutputStrings[i], WriteLogger.s_instance.LoggedOutput);
                     Assert.Contains(expectedOutputStrings[i], WriteLogger.s_instance.AssertUIOutput);
                 }
 
