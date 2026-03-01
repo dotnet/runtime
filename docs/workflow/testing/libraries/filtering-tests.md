@@ -338,6 +338,45 @@ A common usage in the libraries tests is the following:
 
 This is put on test classes to indicate that none of the tests in that class (which as usual run serially with respect to each other) may run concurrently with tests in another class. This is used for tests that use a lot of disk space or memory, or dominate all the cores, such that they are likely to disrupt any tests that run concurrently.
 
+## Empty `[MemberData]` in xunit v3
+
+In xunit v3, a `[Theory]` whose `[MemberData]` source returns **zero rows** is a hard failure ("No data found"), not a silent no-op. When running through the test harness this surfaces as:
+
+```
+[FATAL ERROR] System.InvalidOperationException
+  Cannot find test case metadata for ID <sha256-hash>
+```
+
+This commonly happens when a `[MemberData]` source filters its output based on platform support (e.g., `Where(x => SomeAlgorithm.IsSupported)`) and all items are filtered out on the current platform.
+
+**To diagnose**, run the test assembly directly with `-list full` to map the failing IDs to test method names, then inspect the `[MemberData]` source for conditional logic that can produce an empty enumerable.
+
+**To fix**, switch to an unconditional data source and move the platform check into the test body:
+
+```cs
+// BROKEN: MemberData can return zero rows
+public static IEnumerable<object[]> SupportedAlgorithmsTestData =>
+    AllAlgorithms.Where(a => MyAlgorithm.IsSupported(a)).Select(a => new object[] { a });
+
+[Theory]
+[MemberData(nameof(SupportedAlgorithmsTestData))]
+public void MyTest(MyAlgorithm algorithm) { /* ... */ }
+```
+
+```cs
+// FIXED: MemberData always returns rows; skip at runtime
+public static IEnumerable<object[]> AllAlgorithmsTestData =>
+    AllAlgorithms.Select(a => new object[] { a });
+
+[Theory]
+[MemberData(nameof(AllAlgorithmsTestData))]
+public void MyTest(MyAlgorithm algorithm)
+{
+    Assert.SkipUnless(MyAlgorithm.IsSupported(algorithm), "Not supported on this platform.");
+    /* ... */
+}
+```
+
 ## FactAttribute and `Skip`
 
 Another way to disable the test entirely is to use the `Skip` named argument that is used on the `FactAttribute`.
