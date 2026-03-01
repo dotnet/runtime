@@ -95,7 +95,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadArrayInObjectArray()
         {
-            object[] array = JsonSerializer.Deserialize<object[]>("[[]]");
+            object[] array = JsonSerializer.Deserialize<object[]>(@"[[]]");
             Assert.Equal(1, array.Length);
             Assert.IsType<JsonElement>(array[0]);
             Assert.Equal(JsonValueKind.Array, ((JsonElement)array[0]).ValueKind);
@@ -104,7 +104,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadObjectInObjectArray()
         {
-            object[] array = JsonSerializer.Deserialize<object[]>("[{}]");
+            object[] array = JsonSerializer.Deserialize<object[]>(@"[{}]");
             Assert.Equal(1, array.Length);
             Assert.IsType<JsonElement>(array[0]);
             Assert.Equal(JsonValueKind.Object, ((JsonElement)array[0]).ValueKind);
@@ -118,7 +118,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonElement>(array[1]);
             Assert.Equal(JsonValueKind.False, ((JsonElement)array[1]).ValueKind);
 
-            array = JsonSerializer.Deserialize<object[]>("""[1, false, { "name" : "Person" }]""");
+            array = JsonSerializer.Deserialize<object[]>(@"[1, false, { ""name"" : ""Person"" }]");
             Assert.Equal(3, array.Length);
             Assert.IsType<JsonElement>(array[0]);
             Assert.Equal(JsonValueKind.Number, ((JsonElement)array[0]).ValueKind);
@@ -217,9 +217,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadObjectFail_ReferenceTypeMissingPublicParameterlessConstructor()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInternalParameterlessCtor>("""{"Name":"Name!"}"""));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithPrivateParameterlessCtor>("""{"Name":"Name!"}"""));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<CollectionWithoutPublicParameterlessCtor>("""["foo", 1, false]"""));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInternalParameterlessCtor>(@"{""Name"":""Name!""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithPrivateParameterlessCtor>(@"{""Name"":""Name!""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<CollectionWithoutPublicParameterlessCtor>(@"[""foo"", 1, false]"));
 
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericClassWithProtectedInternalCtor<string>>("{\"Result\":null}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ConcreteDerivedClassWithNoPublicDefaultCtor>("{\"ErrorString\":\"oops\"}"));
@@ -415,7 +415,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadObject_PublicIndexer()
         {
-            Indexer indexer = JsonSerializer.Deserialize<Indexer>("""{"NonIndexerProp":"Value"}""");
+            Indexer indexer = JsonSerializer.Deserialize<Indexer>(@"{""NonIndexerProp"":""Value""}");
             Assert.Equal("Value", indexer.NonIndexerProp);
             Assert.Equal(-1, indexer[0]);
         }
@@ -503,24 +503,20 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("""
-                {
-                                "SkippedChild": {},
-                                "ParsedChild": {"MyInt16":18},
-                                "UnmatchedProp": null,
-                                "AnotherSkippedChild": {"DrainProp1":{}, "DrainProp2":{"SubProp":0}},
-                                "AnotherSkippedChild": {},
-                                "AnotherParsedChild": {"MyInt16":20}}
-            """)]
-        [InlineData("""
-                {
-                                "SkippedChild": null,
-                                "ParsedChild": {"MyInt16":18},
-                                "UnmatchedProp": null,
-                                "AnotherSkippedChild": {"DrainProp1":{}, "DrainProp2":{"SubProp":0}},
-                                "AnotherSkippedChild": null,
-                                "AnotherParsedChild": {"MyInt16":20}}
-            """)]
+        [InlineData(@"{
+                ""SkippedChild"": {},
+                ""ParsedChild"": {""MyInt16"":18},
+                ""UnmatchedProp"": null,
+                ""AnotherSkippedChild"": {""DrainProp1"":{}, ""DrainProp2"":{""SubProp"":0}},
+                ""AnotherSkippedChild"": {},
+                ""AnotherParsedChild"": {""MyInt16"":20}}")]
+        [InlineData(@"{
+                ""SkippedChild"": null,
+                ""ParsedChild"": {""MyInt16"":18},
+                ""UnmatchedProp"": null,
+                ""AnotherSkippedChild"": {""DrainProp1"":{}, ""DrainProp2"":{""SubProp"":0}},
+                ""AnotherSkippedChild"": null,
+                ""AnotherParsedChild"": {""MyInt16"":20}}")]
         public static void ClassWithNoSetterAndValidProperty(string json)
         {
             ClassWithNoSetter parsedObject = JsonSerializer.Deserialize<ClassWithNoSetter>(json);
@@ -562,25 +558,23 @@ namespace System.Text.Json.Serialization.Tests
         public static void ClassWithMixingSkippedTypes()
         {
             // Tests that the parser picks back up after skipping/draining ignored elements. Complex version.
-            string json = """
-                    {
-                                    "SkippedDictionary": {},
-                                    "ParsedClass": {"MyInt16":18},
-                                    "SkippedList": [18,20],
-                                    "UnmatchedList": [{},{}],
-                                    "AnotherSkippedDictionary": {"Key":"Value"},
-                                    "SkippedClass": {"MyInt16":99},
-                                    "ParsedDictionary": {"Key1":18},
-                                    "UnmatchedProp": null,
-                                    "AnotherSkippedList": null,
-                                    "AnotherSkippedDictionary2": {"Key":"Value"},
-                                    "AnotherSkippedDictionary2": {"Key":"Dupe"},
-                                    "AnotherSkippedClass": {},
-                                    "ParsedList": [18,20],
-                                    "ParsedSubMixedTypeParsedClass": {"ParsedDictionary": {"Key1":18}},
-                                    "UnmatchedDictionary": {"DrainProp1":{}, "DrainProp2":{"SubProp":0}}                
-                                }
-                """;
+            string json = @"{
+                ""SkippedDictionary"": {},
+                ""ParsedClass"": {""MyInt16"":18},
+                ""SkippedList"": [18,20],
+                ""UnmatchedList"": [{},{}],
+                ""AnotherSkippedDictionary"": {""Key"":""Value""},
+                ""SkippedClass"": {""MyInt16"":99},
+                ""ParsedDictionary"": {""Key1"":18},
+                ""UnmatchedProp"": null,
+                ""AnotherSkippedList"": null,
+                ""AnotherSkippedDictionary2"": {""Key"":""Value""},
+                ""AnotherSkippedDictionary2"": {""Key"":""Dupe""},
+                ""AnotherSkippedClass"": {},
+                ""ParsedList"": [18,20],
+                ""ParsedSubMixedTypeParsedClass"": {""ParsedDictionary"": {""Key1"":18}},
+                ""UnmatchedDictionary"": {""DrainProp1"":{}, ""DrainProp2"":{""SubProp"":0}}                
+            }";
 
             ClassMixingSkippedTypes parsedObject = JsonSerializer.Deserialize<ClassMixingSkippedTypes>(json);
 
@@ -638,15 +632,11 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData("{")]
-        [InlineData("""
-            {"
-            """)]
-        [InlineData("""
-            {"a"
-            """)]
-        [InlineData("""{"a":""")]
-        [InlineData("""{"a":1""")]
-        [InlineData("""{"a":1,""")]
+        [InlineData(@"{""")]
+        [InlineData(@"{""a""")]
+        [InlineData(@"{""a"":")]
+        [InlineData(@"{""a"":1")]
+        [InlineData(@"{""a"":1,")]
         public static void TooLittleJsonFails(string json)
         {
             byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
@@ -679,7 +669,7 @@ namespace System.Text.Json.Serialization.Tests
                 UnknownTypeHandling = unknownTypeHandling
             };
 
-            object result = JsonSerializer.Deserialize<object>("""{ "key" : "42" }""", options);
+            object result = JsonSerializer.Deserialize<object>(@"{ ""key"" : ""42"" }", options);
             Assert.IsAssignableFrom(expectedType, result);
         }
 

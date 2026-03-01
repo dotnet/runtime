@@ -1151,7 +1151,7 @@ namespace System.Text.Json.Tests
         [InlineData("1", "1")]
         [InlineData("this is a string without escaping", "this is a string without escaping")]
         [InlineData(@"this is\t a string with escaping\n", "this is\t a string with escaping\n")]
-        [InlineData("""\n\r\"\\\/\t\b\f\u0061""", "\n\r\"\\/\t\b\fa")]
+        [InlineData(@"\n\r\""\\\/\t\b\f\u0061", "\n\r\"\\/\t\b\fa")]
         public static void CopyString_Utf8_SuccessPath(string jsonString, string expectedOutput)
         {
             string json = $"\"{jsonString}\"";
@@ -1173,7 +1173,7 @@ namespace System.Text.Json.Tests
         [InlineData("1", "1")]
         [InlineData("this is a string without escaping", "this is a string without escaping")]
         [InlineData(@"this is\t a string with escaping\n", "this is\t a string with escaping\n")]
-        [InlineData("""\n\r\"\\\/\t\b\f\u0061""", "\n\r\"\\/\t\b\fa")]
+        [InlineData(@"\n\r\""\\\/\t\b\f\u0061", "\n\r\"\\/\t\b\fa")]
         public static void CopyString_Utf16_SuccessPath(string jsonString, string expectedOutput)
         {
             string json = $"\"{jsonString}\"";
@@ -1219,7 +1219,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [InlineData("this is a string without escaping", "this is a string without escaping")]
         [InlineData(@"this is\t a string with escaping\n", "this is\t a string with escaping\n")]
-        [InlineData("""\n\r\"\\\/\t\b\f\u0061""", "\n\r\"\\/\t\b\fa")]
+        [InlineData(@"\n\r\""\\\/\t\b\f\u0061", "\n\r\"\\/\t\b\fa")]
         public static void CopyString_Utf8_DestinationTooShort_ThrowsArgumentException(string jsonString, string expectedOutput)
         {
             int expectedUtf8Size = Encoding.UTF8.GetByteCount(expectedOutput);
@@ -1244,7 +1244,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [InlineData("this is a string without escaping", "this is a string without escaping")]
         [InlineData(@"this is\t a string with escaping\n", "this is\t a string with escaping\n")]
-        [InlineData("""\n\r\"\\\/\t\b\f\u0061""", "\n\r\"\\/\t\b\fa")]
+        [InlineData(@"\n\r\""\\\/\t\b\f\u0061", "\n\r\"\\/\t\b\fa")]
         public static void CopyString_Utf16_DestinationTooShort_ThrowsArgumentException(string jsonString, string expectedOutput)
         {
             int expectedSize = expectedOutput.Length;

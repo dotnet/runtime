@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void MultipleConvertersInObjectArray()
         {
-            const string expectedJson = """["?",{"TypeDiscriminator":1,"CreditLimit":100,"Name":"C"},null]""";
+            const string expectedJson = @"[""?"",{""TypeDiscriminator"":1,""CreditLimit"":100,""Name"":""C""},null]";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new MyBoolEnumConverter());
@@ -40,9 +40,7 @@ namespace System.Text.Json.Serialization.Tests
             TestFactory factory = new TestFactory();
             JsonSerializerOptions options = new JsonSerializerOptions { Converters = { factory } };
             string json = JsonSerializer.Serialize("Test", options);
-            Assert.Equal("""
-                "Test"
-                """, json);
+            Assert.Equal(@"""Test""", json);
             Assert.Same(options, factory.Options);
         }
 

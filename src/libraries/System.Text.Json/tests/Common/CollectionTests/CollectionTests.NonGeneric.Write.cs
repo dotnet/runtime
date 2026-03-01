@@ -70,7 +70,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             {
                 StructWrapperForIList obj = new StructWrapperForIList() { 1, "Hello" };
-                Assert.Equal("""[1,"Hello"]""", await Serializer.SerializeWrapper(obj));
+                Assert.Equal(@"[1,""Hello""]", await Serializer.SerializeWrapper(obj));
             }
 
             {

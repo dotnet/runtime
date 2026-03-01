@@ -614,22 +614,20 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DynamicObject_LINQ_Convert()
         {
-            string json = """
-
-                    [
-                      {
-                        "Title": "TITLE.",
-                        "Author":
-                        {
-                          "Name": "NAME.",
-                          "Mail": "MAIL.",
-                          "Picture": "/PICTURE.png"
-                        },
-                        "Date": "2021-01-20T19:30:00",
-                        "BodyHtml": "Content."
-                      }
-                    ]
-                """;
+            string json = @"
+            [
+              {
+                ""Title"": ""TITLE."",
+                ""Author"":
+                {
+                  ""Name"": ""NAME."",
+                  ""Mail"": ""MAIL."",
+                  ""Picture"": ""/PICTURE.png""
+                },
+                ""Date"": ""2021-01-20T19:30:00"",
+                ""BodyHtml"": ""Content.""
+              }
+            ]";
 
             JsonArray arr = JsonSerializer.Deserialize<JsonArray>(json);
 
@@ -945,7 +943,7 @@ namespace System.Text.Json.Nodes.Tests
             var obj2 = new JsonObject(props, options);
 
             // Create method
-            using JsonDocument doc = JsonDocument.Parse("""{"Hello":"World"}""");
+            using JsonDocument doc = JsonDocument.Parse(@"{""Hello"":""World""}");
             var obj3 = JsonObject.Create(doc.RootElement, options);
 
             Test(obj1);

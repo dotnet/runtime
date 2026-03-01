@@ -283,7 +283,7 @@ public:
                                 VisitEdge      visitEdge,
                                 BitVec&        subgraph);
 
-    FlowGraphDfsTree* WasmDfs(bool& hasBlocksOnlyReachableViaEH);
+    FlowGraphDfsTree* WasmDfs(bool& hasBlocksOnlyReachableByEH);
 
     void WasmFindSccs(ArrayStack<Scc*>& sccs);
 

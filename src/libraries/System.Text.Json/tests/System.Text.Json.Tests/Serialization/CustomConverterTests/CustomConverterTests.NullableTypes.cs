@@ -82,12 +82,12 @@ namespace System.Text.Json.Serialization.Tests
         public static void NullableCustomValueTypeUsingAttributes()
         {
             {
-                TestStructClass myStructClass = JsonSerializer.Deserialize<TestStructClass>("""{"MyStruct":null}""");
+                TestStructClass myStructClass = JsonSerializer.Deserialize<TestStructClass>(@"{""MyStruct"":null}");
                 Assert.False(myStructClass.MyStruct.HasValue);
             }
 
             {
-                TestStructClass myStructClass = JsonSerializer.Deserialize<TestStructClass>("""{"MyStruct":1}""");
+                TestStructClass myStructClass = JsonSerializer.Deserialize<TestStructClass>(@"{""MyStruct"":1}");
                 Assert.True(myStructClass.MyStruct.HasValue);
                 Assert.Equal(1, myStructClass.MyStruct.Value.InnerValue);
             }
@@ -103,15 +103,15 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<TestStruct?>("1", options));
 
             // Chooses JsonTestStructConverter on attribute, which will not throw.
-            TestStructClass myStructClass = JsonSerializer.Deserialize<TestStructClass>("""{"MyStruct":null}""", options);
+            TestStructClass myStructClass = JsonSerializer.Deserialize<TestStructClass>(@"{""MyStruct"":null}", options);
             Assert.False(myStructClass.MyStruct.HasValue);
         }
 
         [Fact]
         public static void NullableCustomValueTypeNegativeTest()
         {
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<TestStructInvalidClass>("""{"MyInt":null}"""));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<TestStructInvalidClass>("""{"MyInt":1}"""));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<TestStructInvalidClass>(@"{""MyInt"":null}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<TestStructInvalidClass>(@"{""MyInt"":1}"));
         }
 
         [Fact]
@@ -270,16 +270,16 @@ namespace System.Text.Json.Serialization.Tests
 
                 PocoSingleInt poco = new PocoSingleInt();
                 json = JsonSerializer.Serialize<PocoSingleInt>(poco, options);
-                Assert.Equal("""{"MyInt":42}""", json);
+                Assert.Equal(@"{""MyInt"":42}", json);
             }
 
             {
                 string json = JsonSerializer.Serialize<PocoSingleInt[]>(new PocoSingleInt[] { null, null }, options);
-                Assert.Equal("[null,null]", json);
+                Assert.Equal(@"[null,null]", json);
 
                 PocoSingleInt poco = new PocoSingleInt();
                 json = JsonSerializer.Serialize<PocoSingleInt[]>(new PocoSingleInt[] { poco, poco }, options);
-                Assert.Equal("""[{"MyInt":42},{"MyInt":42}]""", json);
+                Assert.Equal(@"[{""MyInt"":42},{""MyInt"":42}]", json);
             }
         }
 
@@ -311,7 +311,7 @@ namespace System.Text.Json.Serialization.Tests
             // Converter cannot be applied directly to nullable type, so the serializer wraps the converter it with NullableConverter<T> as expected.
 
             string serialized = JsonSerializer.Serialize(new ClassWithNullableStruct_ConverterOnType { MyStruct = new TestStructWithConverter { InnerValue = 5 } });
-            Assert.Equal("""{"MyStruct":{"InnerValue":10}}""", serialized);
+            Assert.Equal(@"{""MyStruct"":{""InnerValue"":10}}", serialized);
 
             ClassWithNullableStruct_ConverterOnType obj = JsonSerializer.Deserialize<ClassWithNullableStruct_ConverterOnType>(serialized);
             Assert.Equal(15, obj.MyStruct?.InnerValue);
@@ -336,7 +336,7 @@ namespace System.Text.Json.Serialization.Tests
 
             TestStructWithConverter? obj = new TestStructWithConverter { InnerValue = 5 };
             string serialized = JsonSerializer.Serialize(obj);
-            Assert.Equal("""{"InnerValue":10}""", serialized);
+            Assert.Equal(@"{""InnerValue"":10}", serialized);
 
             obj = JsonSerializer.Deserialize<TestStructWithConverter?>(serialized);
             Assert.Equal(15, obj?.InnerValue);
@@ -436,13 +436,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NonNullableConverter_ReturnedByJsonConverterFactory_CanBeUsedAsFallback_ForNullableProperty()
         {
-            string json = """
-                {
-                "Property": {
-                "Item1":1,
-                "Item2":2
-                }}
-                """;
+            string json = @"{
+""Property"": {
+""Item1"":1,
+""Item2"":2
+}}";
             // Verify that below converters will be called -
             // serializer doesn't support ValueTuple unless field support is active.
             ClassWithValueTuple obj0 = JsonSerializer.Deserialize<ClassWithValueTuple>(json);

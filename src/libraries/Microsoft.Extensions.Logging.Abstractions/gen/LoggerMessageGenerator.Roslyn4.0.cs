@@ -259,15 +259,6 @@ namespace Microsoft.Extensions.Logging.Generators
                     lm.TemplateList.Add(template);
                 }
 
-                foreach (var typeParamSpec in methodSpec.TypeParameters)
-                {
-                    lm.TypeParameters.Add(new LoggerMethodTypeParameter
-                    {
-                        Name = typeParamSpec.Name,
-                        Constraints = typeParamSpec.Constraints
-                    });
-                }
-
                 lc.Methods.Add(lm);
             }
 

@@ -33,13 +33,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
-        <source>Argument '{0}' is using the unsupported 'out' parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported 'out' parameter modifier</target>
+        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
+        <target state="translated">인수 '{0}'이(가) 지원되지 않는 out 매개 변수 한정자를 사용하고 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
-        <source>Argument is using the unsupported 'out' parameter modifier</source>
-        <target state="new">Argument is using the unsupported 'out' parameter modifier</target>
+        <source>Argument is using the unsupported out parameter modifier</source>
+        <target state="translated">인수가 지원되지 않는 out 매개 변수 한정자를 사용하고 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -47,24 +47,24 @@
         <target state="translated">로깅 메서드에는 본문을 사용할 수 없음</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
-        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
-        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
+      <trans-unit id="LoggingMethodIsGenericMessage">
+        <source>Logging methods cannot be generic</source>
+        <target state="translated">로깅 메서드는 제네릭일 수 없음</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
-        <source>Logging methods must be 'partial'</source>
-        <target state="new">Logging methods must be 'partial'</target>
+        <source>Logging methods must be partial</source>
+        <target state="translated">로깅 메서드는 부분이어야 함</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
-        <source>Logging methods must return 'void'</source>
-        <target state="new">Logging methods must return 'void'</target>
+        <source>Logging methods must return void</source>
+        <target state="translated">로깅 메서드는 void를 반환해야 함</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
-        <source>Logging methods must be 'static'</source>
-        <target state="new">Logging methods must be 'static'</target>
+        <source>Logging methods must be static</source>
+        <target state="translated">로깅 메서드는 정적이어야 함</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
@@ -143,8 +143,8 @@
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
-        <source>Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="new">Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</target>
+        <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
+        <target state="translated">중복 한정자(정보:, 경고:, 오류: 등)가 지정된 로그 수준에서 암시적이기 때문에 로깅 메시지에서 제거합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
@@ -203,23 +203,23 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
-        <source>Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</target>
+        <source>Argument '{0}' is using the unsupported params or scoped parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported params or scoped parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
-        <source>Argument is using the unsupported 'params' or 'scoped' parameter modifier</source>
-        <target state="new">Argument is using the unsupported 'params' or 'scoped' parameter modifier</target>
+        <source>Argument is using the unsupported params or scoped parameter modifier</source>
+        <target state="new">Argument is using the unsupported params or scoped parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
-        <source>Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</source>
-        <target state="new">Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</target>
+        <source>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</source>
+        <target state="new">Parameter '{0}' is a ref struct, which is not supported by the logging source generator</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
-        <source>Logging method parameter is a 'ref struct'</source>
-        <target state="new">Logging method parameter is a 'ref struct'</target>
+        <source>Logging method parameter is a ref struct</source>
+        <target state="new">Logging method parameter is a ref struct</target>
         <note />
       </trans-unit>
     </body>

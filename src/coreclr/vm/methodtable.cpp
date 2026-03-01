@@ -1460,7 +1460,8 @@ BOOL MethodTable::ArrayIsInstanceOf(MethodTable* pTargetMT, TypeHandlePairList* 
         PRECONDITION(pTargetMT->IsArray());
     } CONTRACTL_END;
 
-    if (!pTargetMT->IsMultiDimArray())
+    // GetRank touches EEClass. Try to avoid it for SZArrays.
+    if (pTargetMT->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
     {
         if (this->IsMultiDimArray())
         {
@@ -7789,6 +7790,15 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
         if (pClass.IsValid())
         {
+            if (IsArray())
+            {
+                // This is kind of a workaround, in that ArrayClass is derived from EEClass, but
+                // it's not virtual, we only cast if the IsArray() predicate holds above.
+                // For minidumps, DAC will choke if we don't have the full size given
+                // by ArrayClass available. If ArrayClass becomes more complex, it
+                // should get it's own EnumMemoryRegions().
+                DacEnumMemoryRegion(dac_cast<TADDR>(pClass), sizeof(ArrayClass));
+            }
             pClass->EnumMemoryRegions(flags, this);
         }
         else

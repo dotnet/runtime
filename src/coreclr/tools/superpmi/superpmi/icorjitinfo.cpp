@@ -218,13 +218,6 @@ CORINFO_METHOD_HANDLE MyICJI::getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CO
     return result;
 }
 
-CORINFO_METHOD_HANDLE MyICJI::getAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk)
-{
-    jitInstance->mc->cr->AddCall("getAsyncOtherVariant");
-    CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetAsyncOtherVariant(ftn, variantIsThunk);
-    return result;
-}
-
 // Given T, return the type of the default Comparer<T>.
 // Returns null if the type can't be determined exactly.
 CORINFO_CLASS_HANDLE MyICJI::getDefaultComparerClass(CORINFO_CLASS_HANDLE cls)

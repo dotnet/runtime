@@ -269,7 +269,7 @@ namespace LibraryImportGenerator.UnitTests
                     .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Custom)}")
             ];
 
-            var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<DownlevelLibraryImportGenerator, Microsoft.Interop.Analyzers.DownlevelLibraryImportDiagnosticsAnalyzer>.Test(TestTargetFramework.Standard2_0)
+            var test = new Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<DownlevelLibraryImportGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>.Test(TestTargetFramework.Standard2_0)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck

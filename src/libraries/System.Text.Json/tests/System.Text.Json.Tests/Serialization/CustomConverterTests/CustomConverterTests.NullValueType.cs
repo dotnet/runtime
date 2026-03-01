@@ -106,18 +106,16 @@ namespace System.Text.Json.Serialization.Tests
         {
             ClassWithNullableAndJsonConverterAttribute obj;
 
-            const string BaselineJson = """{"NullableValue":"1989/01/01 11:22:33"}""";
+            const string BaselineJson = @"{""NullableValue"":""1989/01/01 11:22:33""}";
             obj = JsonSerializer.Deserialize<ClassWithNullableAndJsonConverterAttribute>(BaselineJson);
             Assert.NotNull(obj.NullableValue);
 
-            const string Json = """{"NullableValue":""}""";
+            const string Json = @"{""NullableValue"":""""}";
             obj = JsonSerializer.Deserialize<ClassWithNullableAndJsonConverterAttribute>(Json);
             Assert.Null(obj.NullableValue);
 
             string json = JsonSerializer.Serialize(obj);
-            Assert.Contains("""
-                "NullableValue":null
-                """, json);
+            Assert.Contains(@"""NullableValue"":null", json);
         }
 
         private class ClassWithNullableAndWithoutJsonConverterAttribute
@@ -129,7 +127,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ValueConverterForNullableWithoutJsonConverterAttribute()
         {
-            const string Json = """{"NullableValue":"", "NullableValues":[""]}""";
+            const string Json = @"{""NullableValue"":"""", ""NullableValues"":[""""]}";
             ClassWithNullableAndWithoutJsonConverterAttribute obj;
 
             // The json is not valid with the default converter.
@@ -143,12 +141,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(obj.NullableValues[0]);
 
             string json = JsonSerializer.Serialize(obj);
-            Assert.Contains("""
-                "NullableValue":null
-                """, json);
-            Assert.Contains("""
-                "NullableValues":[null]
-                """, json);
+            Assert.Contains(@"""NullableValue"":null", json);
+            Assert.Contains(@"""NullableValues"":[null]", json);
         }
 
         [JsonConverter(typeof(ClassThatCanBeNullDependingOnContentConverter))]
@@ -213,22 +207,18 @@ namespace System.Text.Json.Serialization.Tests
         {
             ClassThatCanBeNullDependingOnContent obj;
 
-            obj = JsonSerializer.Deserialize<ClassThatCanBeNullDependingOnContent>("""{"MyInt":5}""");
+            obj = JsonSerializer.Deserialize<ClassThatCanBeNullDependingOnContent>(@"{""MyInt"":5}");
             Assert.Equal(5, obj.MyInt);
 
             string json;
             json = JsonSerializer.Serialize(obj);
-            Assert.Contains("""
-                "MyInt":5
-                """, json);
+            Assert.Contains(@"""MyInt"":5", json);
 
             obj.MyInt = 0;
             json = JsonSerializer.Serialize(obj);
-            Assert.Contains("""
-                "MyInt":null
-                """, json);
+            Assert.Contains(@"""MyInt"":null", json);
 
-            obj = JsonSerializer.Deserialize<ClassThatCanBeNullDependingOnContent>("""{"MyInt":0}""");
+            obj = JsonSerializer.Deserialize<ClassThatCanBeNullDependingOnContent>(@"{""MyInt"":0}");
             Assert.Null(obj);
         }
     }

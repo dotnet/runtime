@@ -801,10 +801,8 @@ namespace System.Text.Json
         // This is needed due to the fact that git might normalize line endings when checking-out files
         public static string NormalizeLineEndings(this string value) => value.ReplaceLineEndings();
 #else
-        private const string CompiledNewline = """
-
-
-            """;
+        private const string CompiledNewline = @"
+";
 
         private static readonly bool s_replaceNewlines =
             !StringComparer.Ordinal.Equals(CompiledNewline, Environment.NewLine);

@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task JsonNameConflictOnCaseInsensitiveFail()
         {
-            string json = """{"myInt":1,"MyInt":2}""";
+            string json = @"{""myInt"":1,""MyInt"":2}";
 
             {
                 var options = new JsonSerializerOptions();

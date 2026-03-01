@@ -105,7 +105,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void IntStringKeyValuePairConverter()
         {
-            const string json = """[{"Key":1,"Value":"One"},{"Key":2,"Value":"Two"}]""";
+            const string json = @"[{""Key"":1,""Value"":""One""},{""Key"":2,""Value"":""Two""}]";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new DictionaryKeyValueConverter());
@@ -121,7 +121,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NestedDictionaryConversion()
         {
-            const string json = """[{"Key":1,"Value":[{"Key":10,"Value":11}]},{"Key":2,"Value":[{"Key":20,"Value":21}]}]""";
+            const string json = @"[{""Key"":1,""Value"":[{""Key"":10,""Value"":11}]},{""Key"":2,""Value"":[{""Key"":20,""Value"":21}]}]";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new DictionaryKeyValueConverter());
@@ -206,14 +206,14 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new JsonStringEnumConverter()); // Use string for Enum instead of int.
 
             // Baseline.
-            Dictionary<MyEnum, int> dictionary = JsonSerializer.Deserialize<Dictionary<MyEnum, int>>("""[{"Key":"One","Value":100}]""", options);
+            Dictionary<MyEnum, int> dictionary = JsonSerializer.Deserialize<Dictionary<MyEnum, int>>(@"[{""Key"":""One"",""Value"":100}]", options);
             Assert.Equal(100, dictionary[MyEnum.One]);
 
             // Invalid JSON.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<MyEnum, int>>("{x}", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<MyEnum, int>>(@"{x}", options));
 
             // Invalid enum value.
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<MyEnum, int>>("""[{"Key":"BAD","Value":100}]""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<MyEnum, int>>(@"[{""Key"":""BAD"",""Value"":100}]", options));
         }
     }
 }

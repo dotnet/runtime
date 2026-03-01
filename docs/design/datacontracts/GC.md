@@ -718,7 +718,7 @@ private HandleData CreateHandleData(TargetPointer handleAddress, byte uBlock, ui
     {
         IObject obj = target.Contracts.Object;
         TargetPointer handle = target.ReadPointer(handleAddress);
-        obj.GetBuiltInComData(handle, out _, out TargetPointer ccw, out _);
+        obj.GetBuiltInComData(handle, out _, out TargetPointer ccw);
         if (ccw != TargetPointer.Null)
         {
             IBuiltInCOM builtInCOM = target.Contracts.BuiltInCOM;

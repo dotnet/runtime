@@ -39,7 +39,6 @@ namespace Internal.JitInterface
                 s_callbacks.resolveVirtualMethod = &_resolveVirtualMethod;
                 s_callbacks.getUnboxedEntry = &_getUnboxedEntry;
                 s_callbacks.getInstantiatedEntry = &_getInstantiatedEntry;
-                s_callbacks.getAsyncOtherVariant = &_getAsyncOtherVariant;
                 s_callbacks.getDefaultComparerClass = &_getDefaultComparerClass;
                 s_callbacks.getDefaultEqualityComparerClass = &_getDefaultEqualityComparerClass;
                 s_callbacks.getSZArrayHelperEnumeratorClass = &_getSZArrayHelperEnumeratorClass;
@@ -221,7 +220,6 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_DEVIRTUALIZATION_INFO*, byte> resolveVirtualMethod;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, bool*, CORINFO_METHOD_STRUCT_*> getUnboxedEntry;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_**, CORINFO_CLASS_STRUCT_**, CORINFO_METHOD_STRUCT_*> getInstantiatedEntry;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, bool*, CORINFO_METHOD_STRUCT_*> getAsyncOtherVariant;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*> getDefaultComparerClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*> getDefaultEqualityComparerClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*> getSZArrayHelperEnumeratorClass;
@@ -659,21 +657,6 @@ namespace Internal.JitInterface
             try
             {
                 return _this.getInstantiatedEntry(ftn, methodArg, classArg);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-                return default;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static CORINFO_METHOD_STRUCT_* _getAsyncOtherVariant(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, bool* variantIsThunk)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                return _this.getAsyncOtherVariant(ftn, ref *variantIsThunk);
             }
             catch (Exception ex)
             {

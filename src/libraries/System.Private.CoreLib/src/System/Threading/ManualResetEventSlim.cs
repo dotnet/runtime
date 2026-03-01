@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace System.Threading
@@ -489,7 +488,7 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+            Thread.ThrowIfMultithreadingIsNotSupported();
 
             if (!IsSet)
             {

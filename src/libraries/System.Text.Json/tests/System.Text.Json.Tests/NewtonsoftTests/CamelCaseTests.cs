@@ -67,13 +67,11 @@ namespace System.Text.Json.Tests
 
             string json = JsonSerializer.Serialize(person, s_camelCaseAndIndentedOption);
 
-            Assert.Equal("""
-                {
-                  "name": "Name!",
-                  "birthDate": "2000-11-20T23:55:44Z",
-                  "lastModified": "2000-11-20T23:55:44Z"
-                }
-                """.NormalizeLineEndings(), json);
+            Assert.Equal(@"{
+  ""name"": ""Name!"",
+  ""birthDate"": ""2000-11-20T23:55:44Z"",
+  ""lastModified"": ""2000-11-20T23:55:44Z""
+}".NormalizeLineEndings(), json);
 
             Person deserializedPerson = JsonSerializer.Deserialize<Person>(json, s_camelCaseAndIndentedOption);
 
@@ -82,13 +80,11 @@ namespace System.Text.Json.Tests
             Assert.Equal(person.Name, deserializedPerson.Name);
 
             json = JsonSerializer.Serialize(person, new JsonSerializerOptions { WriteIndented = true });
-            Assert.Equal("""
-                {
-                  "Name": "Name!",
-                  "BirthDate": "2000-11-20T23:55:44Z",
-                  "LastModified": "2000-11-20T23:55:44Z"
-                }
-                """.NormalizeLineEndings(), json);
+            Assert.Equal(@"{
+  ""Name"": ""Name!"",
+  ""BirthDate"": ""2000-11-20T23:55:44Z"",
+  ""LastModified"": ""2000-11-20T23:55:44Z""
+}".NormalizeLineEndings(), json);
         }
 
         [Fact]
@@ -104,18 +100,16 @@ namespace System.Text.Json.Tests
 
             string json = JsonSerializer.Serialize(product, s_camelCaseAndIndentedOption);
 
-            Assert.Equal("""
-                {
-                  "name": "Widget",
-                  "expiryDate": "2010-12-20T18:01:00Z",
-                  "price": 9.99,
-                  "sizes": [
-                    "Small",
-                    "Medium",
-                    "Large"
-                  ]
-                }
-                """.NormalizeLineEndings(), json);
+            Assert.Equal(@"{
+  ""name"": ""Widget"",
+  ""expiryDate"": ""2010-12-20T18:01:00Z"",
+  ""price"": 9.99,
+  ""sizes"": [
+    ""Small"",
+    ""Medium"",
+    ""Large""
+  ]
+}".NormalizeLineEndings(), json);
         }
     }
 }

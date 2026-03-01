@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Parallel;
-using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -69,7 +68,11 @@ namespace System.Linq
 
         [SupportedOSPlatformGuard("browser")]
         [SupportedOSPlatformGuard("wasi")]
-        internal static bool SinglePartitionMode => !RuntimeFeature.IsMultithreadingSupported;
+#if FEATURE_SINGLE_THREADED
+        internal static bool SinglePartitionMode => true;
+#else
+        internal static bool SinglePartitionMode => false;
+#endif
 
         //-----------------------------------------------------------------------------------
         // Converts any IEnumerable<TSource> into something that can be the target of parallel

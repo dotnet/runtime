@@ -13,7 +13,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 
@@ -131,6 +130,15 @@ namespace System.Threading.Tasks
     /// </remarks>
     public static partial class Parallel
     {
+
+        [SupportedOSPlatformGuard("browser")]
+        [SupportedOSPlatformGuard("wasi")]
+#if FEATURE_SINGLE_THREADED
+        internal static bool IsMultithreadingSupported => false;
+#else
+        internal static bool IsMultithreadingSupported => true;
+#endif
+
         // static counter for generating unique Fork/Join Context IDs to be used in ETW events
         internal static int s_forkJoinContextID;
 
@@ -240,7 +248,7 @@ namespace System.Threading.Tasks
             {
                 // If we've gotten this far, it's time to process the actions.
 
-                if (!RuntimeFeature.IsMultithreadingSupported ||
+                if (!IsMultithreadingSupported ||
                     // This is more efficient for a large number of actions, or for enforcing MaxDegreeOfParallelism:
                     (actionsCopy.Length > SMALL_ACTIONCOUNT_LIMIT) ||
                     (parallelOptions.MaxDegreeOfParallelism != -1 && parallelOptions.MaxDegreeOfParallelism < actionsCopy.Length)
@@ -345,7 +353,9 @@ namespace System.Threading.Tasks
                     // threw an exception.  We let such exceptions go completely unhandled.
                     try
                     {
+#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44605
                         Task.WaitAll(tasks);
+#pragma warning restore CA1416
                     }
                     catch (AggregateException aggExp)
                     {

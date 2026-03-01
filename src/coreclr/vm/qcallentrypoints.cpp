@@ -535,7 +535,6 @@ static const Entry s_QCall[] =
     DllImportEntry(VersionResilientHashCode_TypeHashCode)
     DllImportEntry(TailCallHelp_AllocTailCallArgBufferInternal)
 #ifdef TARGET_BROWSER
-    DllImportEntry(SystemJS_MarkAsyncMain)
     DllImportEntry(SystemJS_ResolveMainPromise)
     DllImportEntry(SystemJS_RejectMainPromise)
     DllImportEntry(SystemJS_ScheduleTimer)

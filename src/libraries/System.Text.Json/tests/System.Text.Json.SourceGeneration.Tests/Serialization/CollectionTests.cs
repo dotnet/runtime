@@ -42,7 +42,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public async Task DeserializeAsyncEnumerable()
         {
-            using var stream = new Utf8MemoryStream("""[null, {}, { "Field1" : 42, "Field2" : "str", "Field3" : true }]""");
+            using var stream = new Utf8MemoryStream(@"[null, {}, { ""Field1"" : 42, ""Field2"" : ""str"", ""Field3"" : true }]");
             var expected = new AsyncEnumerableElement[] { null, new(default, default, default), new(42, "str", true) };
             List<AsyncEnumerableElement> actual = await JsonSerializer.DeserializeAsyncEnumerable(stream, CollectionTestsContext_Metadata.Default.AsyncEnumerableElement).ToListAsync();
             Assert.Equal(expected, actual);

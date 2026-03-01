@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void EnumAsStringFail()
         {
-            string json = """{ "MyEnum" : "Two" }""";
+            string json = @"{ ""MyEnum"" : ""Two"" }";
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(json));
         }
 

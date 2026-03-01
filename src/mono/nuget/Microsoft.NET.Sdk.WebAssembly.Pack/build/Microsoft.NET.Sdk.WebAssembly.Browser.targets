@@ -68,7 +68,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.GenerateWasmBootJson" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
-  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebcil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebCil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -243,9 +243,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup Condition="'$(StackTraceLineNumberSupport)' == 'false'">
       <RuntimeHostConfigurationOption Include="System.Diagnostics.StackTrace.IsLineNumberSupported" Value="false" Trim="true" />
     </ItemGroup>
-    <ItemGroup Condition="'$(WasmEnableThreads)' != 'true'">
-      <RuntimeHostConfigurationOption Include="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" Value="false" Trim="true" />
-    </ItemGroup>
     <Warning Text="Custom Blazor cache has been removed and setting 'BlazorCacheBootResources' has no effect." Condition="'$(_BlazorCacheBootResources)' != 'false' and '$(_TargetingNET100OrLater)' == 'true'" />
   </Target>
 
@@ -351,15 +348,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasmBuildWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebcilPath>
-      <_WasmBuildTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebcilPath>
+      <_WasmBuildWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebCilPath>
+      <_WasmBuildTmpWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebCilPath>
       <_WasmBuildOuputPath>$([MSBuild]::NormalizeDirectory('$(OutputPath)', 'wwwroot'))</_WasmBuildOuputPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
-      <Output TaskParameter="WebcilCandidates" ItemName="_WebcilAssetsCandidates" />
+    <ConvertDllsToWebCil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebCilPath)" OutputPath="$(_WasmBuildWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
+      <Output TaskParameter="WebCilCandidates" ItemName="_WebCilAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </ConvertDllsToWebcil>
+    </ConvertDllsToWebCil>
 
     <ItemGroup>
       <_WasmFingerprintPatterns Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
@@ -370,7 +367,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
 
     <DefineStaticWebAssets
-      CandidateAssets="@(_WebcilAssetsCandidates)"
+      CandidateAssets="@(_WebCilAssetsCandidates)"
       SourceId="$(PackageId)"
       SourceType="Computed"
       AssetKind="Build"
@@ -706,7 +703,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnableDiagnostics="$(_WasmEmitDiagnosticModulePublish)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
       EmitSymbolMap="$(WasmEmitSymbolMap)"
-      IsWebcilEnabled="$(_WasmEnableWebcil)"
+      IsWebCilEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
     >
       <Output TaskParameter="NewCandidates" ItemName="_NewWasmPublishStaticWebAssets" />
@@ -719,40 +716,40 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasmPublishWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil', 'publish'))</_WasmPublishWebcilPath>
-      <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
+      <_WasmPublishWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil', 'publish'))</_WasmPublishWebCilPath>
+      <_WasmPublishTmpWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebCilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
-      <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
+    <ConvertDllsToWebCil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebCilPath)" OutputPath="$(_WasmPublishWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
+      <Output TaskParameter="WebCilCandidates" ItemName="_NewWebCilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </ConvertDllsToWebcil>
+    </ConvertDllsToWebCil>
 
-    <!-- _NewWebcilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
+    <!-- _NewWebCilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
          Remove them and call DefineStaticWebAssets so that they can get re-computed appropriately.
     -->
     <ItemGroup>
-      <_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata
-        Include="@(_NewWebcilPublishStaticWebAssetsCandidates)"
+      <_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata
+        Include="@(_NewWebCilPublishStaticWebAssetsCandidates)"
         RemoveMetadata="Integrity;Fingerprint" />
     </ItemGroup>
 
-    <DefineStaticWebAssets CandidateAssets="@(_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata);@(_PromotedWasmPublishStaticWebAssets)">
-      <Output TaskParameter="Assets" ItemName="_NewWebcilPublishStaticWebAssets" />
+    <DefineStaticWebAssets CandidateAssets="@(_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata);@(_PromotedWasmPublishStaticWebAssets)">
+      <Output TaskParameter="Assets" ItemName="_NewWebCilPublishStaticWebAssets" />
     </DefineStaticWebAssets>
 
     <DefineStaticWebAssetEndpoints
-      CandidateAssets="@(_NewWebcilPublishStaticWebAssets)"
+      CandidateAssets="@(_NewWebCilPublishStaticWebAssets)"
       ExistingEndpoints="@(StaticWebAssetEndpoint)"
       ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
     >
-      <Output TaskParameter="Endpoints" ItemName="_NewWebcilPublishStaticWebAssetsEndpoint" />
+      <Output TaskParameter="Endpoints" ItemName="_NewWebCilPublishStaticWebAssetsEndpoint" />
     </DefineStaticWebAssetEndpoints>
 
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_PublishResolvedFilesToRemove)" />
-      <StaticWebAsset Include="@(_NewWebcilPublishStaticWebAssets)" />
-      <StaticWebAssetEndpoint Include="@(_NewWebcilPublishStaticWebAssetsEndpoint)" />
+      <StaticWebAsset Include="@(_NewWebCilPublishStaticWebAssets)" />
+      <StaticWebAssetEndpoint Include="@(_NewWebCilPublishStaticWebAssetsEndpoint)" />
 
       <!-- TODO: Probably doesn't do anything as of now, original https://github.com/dotnet/aspnetcore/pull/34798 -->
       <PublishBlazorBootStaticWebAsset

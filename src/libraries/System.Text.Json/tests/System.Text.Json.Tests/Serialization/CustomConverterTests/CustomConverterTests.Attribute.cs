@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomAttributeExtraInformation()
         {
-            const string json = """{"Point1":"1,2"}""";
+            const string json = @"{""Point1"":""1,2""}";
 
             ClassWithPointConverterAttribute obj = JsonSerializer.Deserialize<ClassWithPointConverterAttribute>(json);
             Assert.Equal(11, obj.Point1.X);
@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomAttributeOnProperty()
         {
-            const string json = """{"Point1":"1,2"}""";
+            const string json = @"{""Point1"":""1,2""}";
 
             ClassWithJsonConverterAttribute obj = JsonSerializer.Deserialize<ClassWithJsonConverterAttribute>(json);
             Assert.Equal(1, obj.Point1.X);
@@ -126,9 +126,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomAttributeOnType()
         {
-            const string json = """
-                "1,2"
-                """;
+            const string json = @"""1,2""";
 
             AttributedPoint point = JsonSerializer.Deserialize<AttributedPoint>(json);
             Assert.Equal(1, point.X);
@@ -167,7 +165,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomAttributeOnTypeAndProperty()
         {
-            const string json = """{"Point1":"1,2"}""";
+            const string json = @"{""Point1"":""1,2""}";
 
             ClassWithJsonConverterAttributeOverride point = JsonSerializer.Deserialize<ClassWithJsonConverterAttributeOverride>(json);
 
@@ -182,7 +180,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomAttributeOnPropertyAndRuntime()
         {
-            const string json = """{"Point1":"1,2"}""";
+            const string json = @"{""Point1"":""1,2""}";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new AttributedPointConverter(200));
@@ -200,9 +198,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomAttributeOnTypeAndRuntime()
         {
-            const string json = """
-                "1,2"
-                """;
+            const string json = @"""1,2""";
 
             // Baseline
             AttributedPoint point = JsonSerializer.Deserialize<AttributedPoint>(json);

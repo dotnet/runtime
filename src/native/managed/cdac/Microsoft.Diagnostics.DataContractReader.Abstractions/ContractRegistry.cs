@@ -95,10 +95,6 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
     /// <summary>
-    /// Gets an instance of the SyncBlock contract for the target.
-    /// </summary>
-    public virtual ISyncBlock SyncBlock => GetContract<ISyncBlock>();
-    /// <summary>
     /// Gets an instance of the BuiltInCOM contract for the target.
     /// </summary>
     public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();

@@ -47,14 +47,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public override async Task Honor_JsonSerializablePropertyAttribute_OnProperties()
         {
-            string json = """
-                {
-                    "MyInt":1,
-                    "MyString":"Hello",
-                    "MyFloat":2,
-                    "MyUri":"https://microsoft.com"
-                }
-                """;
+            string json = @"{
+                ""MyInt"":1,
+                ""MyString"":""Hello"",
+                ""MyFloat"":2,
+                ""MyUri"":""https://microsoft.com""
+            }";
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<MyClass_WithNonPublicAccessors_WithPropertyAttributes>(json));
 
@@ -75,17 +73,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             // Init-only properties can be serialized.
             object obj = Activator.CreateInstance(type);
             property.SetValue(obj, 1);
-            Assert.Equal("""{"MyInt":1}""", await Serializer.SerializeWrapper(obj, type));
+            Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj, type));
 
             // Deserializing JsonInclude is only supported for internal properties
             if (isDeserializationSupported)
             {
-                obj = await Serializer.DeserializeWrapper("""{"MyInt":1}""", type);
+                obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
                 Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
             }
             else
             {
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("""{"MyInt":1}""", type));
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type));
             }
         }
 
@@ -95,7 +93,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new JsonStringEnumConverter());
 
-            string json = """{"MyEnum":"AnotherValue","MyInt":2}""";
+            string json = @"{""MyEnum"":""AnotherValue"",""MyInt"":2}";
 
             // Deserialization baseline, without enum converter, we get JsonException. NB order of members in deserialized type is significant for this assertion to succeed.
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<StructWithPropertiesWithConverter>(json));
@@ -111,7 +109,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public override async Task Public_And_NonPublicPropertyAccessors_PropertyAttributes()
         {
-            string json = """{"W":1,"X":2,"Y":3,"Z":4}""";
+            string json = @"{""W"":1,""X"":2,""Y"":3,""Z"":4}";
 
             var obj = await Serializer.DeserializeWrapper<ClassWithMixedPropertyAccessors_PropertyAttributes>(json);
             Assert.Equal(1, obj.W);
@@ -125,7 +123,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public override async Task HonorJsonPropertyName_PrivateGetter()
         {
-            string json = """{"prop1":1}""";
+            string json = @"{""prop1"":1}";
 
             var obj = await Serializer.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateGetter>(json);
             Assert.Equal(MySmallEnum.AnotherValue, obj.GetProxy());
@@ -137,7 +135,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public override async Task HonorJsonPropertyName_PrivateSetter()
         {
-            string json = """{"prop2":2}""";
+            string json = @"{""prop2"":2}";
 
             // JsonInclude for private members not supported in source gen
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateSetter>(json));

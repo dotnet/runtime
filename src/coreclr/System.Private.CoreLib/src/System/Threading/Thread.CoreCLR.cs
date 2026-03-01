@@ -145,7 +145,7 @@ namespace System.Threading
         /// </summary>
         public static void SpinWait(int iterations)
         {
-            if (!RuntimeFeature.IsMultithreadingSupported) return;
+            if (!Thread.IsMultithreadingSupported) return;
 
             if (iterations < SpinWaitCoopThreshold)
             {

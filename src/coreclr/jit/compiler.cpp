@@ -6329,6 +6329,8 @@ void Compiler::compCompileFinish()
         JitMemStatsInfo::finishMemStats(compArenaAllocator);
         memAllocHist.record((unsigned)((compArenaAllocator->getTotalBytesAllocated() + 1023) / 1024));
         memUsedHist.record((unsigned)((compArenaAllocator->getTotalBytesUsed() + 1023) / 1024));
+
+        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
     }
 
 #ifdef DEBUG
@@ -6339,11 +6341,6 @@ void Compiler::compCompileFinish()
     }
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
-
-    if (JitConfig.JitReportMetrics())
-    {
-        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
-    }
 
 #if LOOP_HOIST_STATS
     AddLoopHoistStats();
@@ -6548,10 +6545,7 @@ void Compiler::compCompileFinish()
     }
 
     JITDUMP("Final metrics:\n");
-    if (JitConfig.JitReportMetrics())
-    {
-        Metrics.report(this);
-    }
+    Metrics.report(this);
     DBEXEC(verbose, Metrics.dump());
 
     if (verbose)

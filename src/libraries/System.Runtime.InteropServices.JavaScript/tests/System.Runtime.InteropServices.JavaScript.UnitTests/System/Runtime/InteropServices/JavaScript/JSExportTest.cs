@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     public class JSExportAsyncTest : JSInteropTestBase, IAsyncLifetime
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void SyncJsImportJsExportThrows()
         {
             var ex = Assert.Throws<JSException>(()=>JavaScriptTestHelper.invoke1_Boolean(true, nameof(JavaScriptTestHelper.EchoBoolean)));
@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
     public class JSExportTest : JSInteropTestBase, IAsyncLifetime
     {
         [Theory]
@@ -452,7 +452,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(value, rr);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsExportCallback_FunctionIntInt()
         {
             int called = -1;
@@ -468,7 +468,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsExportCallback_FunctionIntIntThrow()
         {
             int called = -1;
@@ -485,7 +485,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Same(expected, actual);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public async Task JsExportFunctionDateTimeDateTime()
         {
             DateTime input = DateTime.Now;
@@ -563,7 +563,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal("Error: Assert failed: Overflow: value +275760-09-13T00:00:00.000Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public async Task JsExportFuncOfDateTime_Argument_OverflowNETDateTime()
         {
             DateTime receivedArg = DateTime.MinValue;
@@ -574,7 +574,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(DateTime.MinValue, receivedArg); // delegate invoke failed, no change to arg
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsExportCallback_FunctionLongLong_OverflowInt52_JSSide()
         {
             long called = -1;
@@ -587,7 +587,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal("Error: Assert failed: Value is not an integer: 9007199254740992 (number)", ex.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsExportCallback_FunctionLongLong_OverflowInt52_NETSide()
         {
             long called = -1;

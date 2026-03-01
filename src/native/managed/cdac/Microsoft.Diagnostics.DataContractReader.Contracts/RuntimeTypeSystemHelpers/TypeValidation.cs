@@ -67,8 +67,6 @@ internal sealed class TypeValidation
                 }
             }
         }
-
-        internal readonly bool ValidateReadable() => ValidateDataReadable<MethodTable>(_target, Address);
     }
 
     internal struct NonValidatedEEClass
@@ -86,8 +84,6 @@ internal sealed class TypeValidation
         }
 
         internal TargetPointer MethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(MethodTable)].Offset);
-
-        internal readonly bool ValidateReadable() => ValidateDataReadable<EEClass>(_target, Address);
     }
 
     internal static NonValidatedMethodTable GetMethodTableData(Target target, TargetPointer methodTablePointer)
@@ -112,11 +108,6 @@ internal sealed class TypeValidation
     {
         try
         {
-            // Make sure that we can read the method table's data.
-            if (!umt.ValidateReadable())
-            {
-                return false;
-            }
             if (!ValidateThrowing(umt))
             {
                 return false;
@@ -155,10 +146,6 @@ internal sealed class TypeValidation
         if (eeClassPtr != TargetPointer.Null)
         {
             NonValidatedEEClass eeClass = GetEEClassData(_target, eeClassPtr);
-            if (!eeClass.ValidateReadable())
-            {
-                return false;
-            }
             TargetPointer methodTablePtrFromClass = eeClass.MethodTable;
             if (methodTable.Address == methodTablePtrFromClass)
             {
@@ -167,10 +154,6 @@ internal sealed class TypeValidation
             if (methodTable.Flags.HasInstantiation || methodTable.Flags.IsArray)
             {
                 NonValidatedMethodTable methodTableFromClass = GetMethodTableData(_target, methodTablePtrFromClass);
-                if (!methodTableFromClass.ValidateReadable())
-                {
-                    return false;
-                }
                 TargetPointer classFromMethodTable = GetClassThrowing(methodTableFromClass);
                 return classFromMethodTable == eeClassPtr;
             }
@@ -191,19 +174,6 @@ internal sealed class TypeValidation
         return true;
     }
 
-    private static bool ValidateDataReadable<T>(Target target, TargetPointer dataAddress) where T : IData<T>
-    {
-        try
-        {
-            T dataClass = T.Create(target, dataAddress);
-            return true;
-        }
-        catch (VirtualReadException)
-        {
-            return false;
-        }
-    }
-
     private TargetPointer GetClassThrowing(NonValidatedMethodTable methodTable)
     {
         TargetPointer eeClassOrCanonMT = methodTable.EEClassOrCanonMT;
@@ -216,10 +186,6 @@ internal sealed class TypeValidation
         {
             TargetPointer canonicalMethodTablePtr = methodTable.CanonMT;
             NonValidatedMethodTable umt = GetMethodTableData(_target, canonicalMethodTablePtr);
-            if (!umt.ValidateReadable())
-            {
-                throw new InvalidOperationException("canon MT is not readable");
-            }
             return umt.EEClass;
         }
     }

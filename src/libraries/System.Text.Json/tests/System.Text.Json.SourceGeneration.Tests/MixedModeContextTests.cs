@@ -182,7 +182,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public override void HandlesNestedTypes()
         {
-            string json = """{"MyInt":5}""";
+            string json = @"{""MyInt"":5}";
             MyNestedClass obj = JsonSerializer.Deserialize<MyNestedClass>(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).MyNestedClass);
             Assert.Equal(5, obj.MyInt);
             Assert.Equal(json, JsonSerializer.Serialize(obj, DefaultContext.MyNestedClass));

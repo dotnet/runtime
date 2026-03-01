@@ -81,10 +81,10 @@ namespace Microsoft.Extensions.Logging.Generators
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static DiagnosticDescriptor LoggingMethodHasAllowsRefStructConstraint { get; } = DiagnosticDescriptorHelper.Create(
+        public static DiagnosticDescriptor LoggingMethodIsGeneric { get; } = DiagnosticDescriptorHelper.Create(
             id: "SYSLIB1011",
-            title: new LocalizableResourceString(nameof(SR.LoggingMethodHasAllowsRefStructConstraintMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
-            messageFormat: new LocalizableResourceString(nameof(SR.LoggingMethodHasAllowsRefStructConstraintMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            title: new LocalizableResourceString(nameof(SR.LoggingMethodIsGenericMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            messageFormat: new LocalizableResourceString(nameof(SR.LoggingMethodIsGenericMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("[true,false]", await Serializer.SerializeWrapper(rooc));
 
             ReadOnlyDictionary<string, bool> rod = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool> { ["true"] = false });
-            Assert.Equal("""{"true":false}""", await Serializer.SerializeWrapper(rod));
+            Assert.Equal(@"{""true"":false}", await Serializer.SerializeWrapper(rod));
 
             MyKeyedCollection mkc = new MyKeyedCollection() { 1, 2, 3 };
             Assert.Equal("[1,2,3]", await Serializer.SerializeWrapper(mkc));

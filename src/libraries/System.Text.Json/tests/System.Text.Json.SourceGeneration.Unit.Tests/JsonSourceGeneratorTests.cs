@@ -20,39 +20,39 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void TypeDiscoveryPrimitivePOCO()
         {
             string source = """
-                    using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization;
 
-                    namespace HelloWorld
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(HelloWorld.MyType))]
+                    internal partial class JsonContext : JsonSerializerContext
                     {
-                        [JsonSerializable(typeof(HelloWorld.MyType))]
-                        internal partial class JsonContext : JsonSerializerContext
+                    }
+
+                    public class MyType
+                    {
+                        public int PublicPropertyInt { get; set; }
+                        public string PublicPropertyString { get; set; }
+                        private int PrivatePropertyInt { get; set; }
+                        private string PrivatePropertyString { get; set; }
+
+                        public double PublicDouble;
+                        public char PublicChar;
+                        private double PrivateDouble;
+                        private char PrivateChar;
+
+                        public void MyMethod() { }
+                        public void MySecondMethod() { }
+
+                        public void UsePrivates()
                         {
-                        }
-
-                        public class MyType
-                        {
-                            public int PublicPropertyInt { get; set; }
-                            public string PublicPropertyString { get; set; }
-                            private int PrivatePropertyInt { get; set; }
-                            private string PrivatePropertyString { get; set; }
-
-                            public double PublicDouble;
-                            public char PublicChar;
-                            private double PrivateDouble;
-                            private char PrivateChar;
-
-                            public void MyMethod() { }
-                            public void MySecondMethod() { }
-
-                            public void UsePrivates()
-                            {
-                                PrivateDouble = 0;
-                                PrivateChar = ' ';
-                                double d = PrivateDouble;
-                                char c = PrivateChar;
-                            }
+                            PrivateDouble = 0;
+                            PrivateChar = ' ';
+                            double d = PrivateDouble;
+                            char c = PrivateChar;
                         }
                     }
+                }
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
@@ -72,39 +72,39 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
 
             string source = """
-                    using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization;
 
-                    namespace HelloWorld
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(HelloWorld.MyType))]
+                    [JsonSerializable(typeof(ReferencedAssembly.Location))]
+                    internal partial class JsonContext : JsonSerializerContext
                     {
-                        [JsonSerializable(typeof(HelloWorld.MyType))]
-                        [JsonSerializable(typeof(ReferencedAssembly.Location))]
-                        internal partial class JsonContext : JsonSerializerContext
+                    }
+
+                    public class MyType
+                    {
+                        public int PublicPropertyInt { get; set; }
+                        public string PublicPropertyString { get; set; }
+                        private int PrivatePropertyInt { get; set; }
+                        private string PrivatePropertyString { get; set; }
+
+                        public double PublicDouble;
+                        public char PublicChar;
+                        private double PrivateDouble;
+                        private char PrivateChar;
+
+                        public void MyMethod() { }
+                        public void MySecondMethod() { }
+                        public void UsePrivates()
                         {
-                        }
-
-                        public class MyType
-                        {
-                            public int PublicPropertyInt { get; set; }
-                            public string PublicPropertyString { get; set; }
-                            private int PrivatePropertyInt { get; set; }
-                            private string PrivatePropertyString { get; set; }
-
-                            public double PublicDouble;
-                            public char PublicChar;
-                            private double PrivateDouble;
-                            private char PrivateChar;
-
-                            public void MyMethod() { }
-                            public void MySecondMethod() { }
-                            public void UsePrivates()
-                            {
-                                PrivateDouble = 0;
-                                PrivateChar = ' ';
-                                double x = PrivateDouble;
-                                string s = PrivateChar.ToString();
-                            }
+                            PrivateDouble = 0;
+                            PrivateChar = ' ';
+                            double x = PrivateDouble;
+                            string s = PrivateChar.ToString();
                         }
                     }
+                }
                 """;
 
             MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
@@ -129,44 +129,44 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
 
             string source = """
-                    using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization;
 
-                    using @JsonSerializable = System.Runtime.Serialization.CollectionDataContractAttribute ;
-                    using AliasedAttribute = System.Text.Json.Serialization.JsonSerializableAttribute;
+                using @JsonSerializable = System.Runtime.Serialization.CollectionDataContractAttribute ;
+                using AliasedAttribute = System.Text.Json.Serialization.JsonSerializableAttribute;
 
-                    namespace HelloWorld
+                namespace HelloWorld
+                {
+
+                    [AliasedAttribute(typeof(HelloWorld.MyType))]
+                    [AliasedAttribute(typeof(ReferencedAssembly.Location))]
+                    [@JsonSerializable]
+                    internal partial class JsonContext : JsonSerializerContext
                     {
+                    }
 
-                        [AliasedAttribute(typeof(HelloWorld.MyType))]
-                        [AliasedAttribute(typeof(ReferencedAssembly.Location))]
-                        [@JsonSerializable]
-                        internal partial class JsonContext : JsonSerializerContext
+                    public class MyType
+                    {
+                        public int PublicPropertyInt { get; set; }
+                        public string PublicPropertyString { get; set; }
+                        private int PrivatePropertyInt { get; set; }
+                        private string PrivatePropertyString { get; set; }
+
+                        public double PublicDouble;
+                        public char PublicChar;
+                        private double PrivateDouble;
+                        private char PrivateChar;
+
+                        public void MyMethod() { }
+                        public void MySecondMethod() { }
+                        public void UsePrivates()
                         {
-                        }
-
-                        public class MyType
-                        {
-                            public int PublicPropertyInt { get; set; }
-                            public string PublicPropertyString { get; set; }
-                            private int PrivatePropertyInt { get; set; }
-                            private string PrivatePropertyString { get; set; }
-
-                            public double PublicDouble;
-                            public char PublicChar;
-                            private double PrivateDouble;
-                            private char PrivateChar;
-
-                            public void MyMethod() { }
-                            public void MySecondMethod() { }
-                            public void UsePrivates()
-                            {
-                                PrivateDouble = 0;
-                                PrivateChar = ' ';
-                                double d = PrivateDouble;
-                                char c = PrivateChar;
-                            }
+                            PrivateDouble = 0;
+                            PrivateChar = ' ';
+                            double d = PrivateDouble;
+                            char c = PrivateChar;
                         }
                     }
+                }
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
@@ -642,38 +642,38 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
 
             string source = """
-                    using System;
-                    using System.Text.Json;
-                    using System.Text.Json.Serialization;
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
 
-                    namespace Test
+                namespace Test
+                {
+                    [JsonSourceGenerationOptions]
+                    [JsonSerializable(typeof(Sample))]
+                    public partial class SourceGenerationContext : JsonSerializerContext
                     {
-                        [JsonSourceGenerationOptions]
-                        [JsonSerializable(typeof(Sample))]
-                        public partial class SourceGenerationContext : JsonSerializerContext
+                    }
+                    public class Sample
+                    {
+                        [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
+                        public DateTimeOffset Start { get; set; }
+                        [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
+                        public DateTimeOffset? End { get; set; } // Without this property, this is fine
+                    }
+                    public class DateTimeOffsetToTimestampJsonConverter : JsonConverter<DateTimeOffset>
+                    {
+                        internal const long TicksPerMicroseconds = 10;
+                        public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
                         {
+                            var value = reader.GetInt64();
+                            return new DateTimeOffset(value * TicksPerMicroseconds, TimeSpan.Zero);
                         }
-                        public class Sample
+                        public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
                         {
-                            [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
-                            public DateTimeOffset Start { get; set; }
-                            [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
-                            public DateTimeOffset? End { get; set; } // Without this property, this is fine
-                        }
-                        public class DateTimeOffsetToTimestampJsonConverter : JsonConverter<DateTimeOffset>
-                        {
-                            internal const long TicksPerMicroseconds = 10;
-                            public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-                            {
-                                var value = reader.GetInt64();
-                                return new DateTimeOffset(value * TicksPerMicroseconds, TimeSpan.Zero);
-                            }
-                            public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
-                            {
-                                writer.WriteNumberValue(value.Ticks / TicksPerMicroseconds);
-                            }
+                            writer.WriteNumberValue(value.Ticks / TicksPerMicroseconds);
                         }
                     }
+                }
                 """;
 
             MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
@@ -780,27 +780,27 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void DoesNotWarnOnNullabilityMismatch()
         {
             string source = $$"""
-                    using System.Collections.Generic;
-                    using System.Text.Json;
-                    using System.Text.Json.Serialization;
-                    #nullable enable
+                using System.Collections.Generic;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+                #nullable enable
 
-                    namespace HelloWorld
+                namespace HelloWorld
+                {
+                    public static class MyClass
                     {
-                        public static class MyClass
+                        public static string Test()
                         {
-                            public static string Test()
-                            {
-                                Dictionary<int, string?> values = new();
-                                return JsonSerializer.Serialize(values, JsonContext.Default.DictionaryInt32String);
-                            }
-                        }
-
-                        [JsonSerializable(typeof(Dictionary<int, string>))]
-                        internal partial class JsonContext : JsonSerializerContext
-                        {
+                            Dictionary<int, string?> values = new();
+                            return JsonSerializer.Serialize(values, JsonContext.Default.DictionaryInt32String);
                         }
                     }
+
+                    [JsonSerializable(typeof(Dictionary<int, string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+                }
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);

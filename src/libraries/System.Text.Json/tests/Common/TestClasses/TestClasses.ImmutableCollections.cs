@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Tests
     {
         public ImmutableArray<string> MyStringImmutableArray { get; set; }
 
-        public static readonly string s_json = """{"MyStringImmutableArray":["Hello"]}""";
+        public static readonly string s_json = @"{""MyStringImmutableArray"":[""Hello""]}";
 
         public void Initialize()
         {
@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Tests
     {
         public object MyStringImmutableArray { get; set; }
 
-        public static readonly string s_json = """{"MyStringImmutableArray":["Hello"]}""";
+        public static readonly string s_json = @"{""MyStringImmutableArray"":[""Hello""]}";
 
         public void Initialize()
         {

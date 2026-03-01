@@ -195,7 +195,7 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext)
         {
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+            Thread.ThrowIfMultithreadingIsNotSupported();
 
             StartHelper? startHelper = _startHelper;
 
@@ -238,7 +238,7 @@ namespace System.Threading
 
         private void Start(bool captureContext)
         {
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+            Thread.ThrowIfMultithreadingIsNotSupported();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
@@ -429,7 +429,7 @@ namespace System.Threading
         internal void ResetThreadPoolThread()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!RuntimeFeature.IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
 
             if (_mayNeedResetForThreadPool)
             {
@@ -441,7 +441,7 @@ namespace System.Threading
         private void ResetThreadPoolThreadSlow()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!RuntimeFeature.IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
             Debug.Assert(_mayNeedResetForThreadPool);
 
             _mayNeedResetForThreadPool = false;
@@ -736,6 +736,27 @@ namespace System.Threading
         {
             return ProcessorIdCache.GetCurrentProcessorId();
         }
+
+        [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
+#if FEATURE_SINGLE_THREADED
+        internal static bool IsMultithreadingSupported => false;
+        [DoesNotReturn]
+        internal static void ThrowIfMultithreadingIsNotSupported()
+        {
+            throw new PlatformNotSupportedException();
+        }
+#else
+        internal static bool IsMultithreadingSupported => true;
+#if FEATURE_WASM_MANAGED_THREADS
+        internal static void ThrowIfMultithreadingIsNotSupported()
+        {
+            AssureBlockingPossible();
+        }
+#else
+        internal static void ThrowIfMultithreadingIsNotSupported() { }
+#endif
+#endif
 
 #if FEATURE_WASM_MANAGED_THREADS
         [ThreadStatic]

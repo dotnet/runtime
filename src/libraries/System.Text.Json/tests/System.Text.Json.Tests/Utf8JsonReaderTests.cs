@@ -457,15 +457,13 @@ namespace System.Text.Json.Tests
         public static void CurrentDepthArrayTest()
         {
             string jsonString =
-"""
+@"[
     [
-        [
-            1,
-            2,
-            3
-        ]
+        1,
+        2,
+        3
     ]
-    """;
+]";
 
             {
                 byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
@@ -518,16 +516,14 @@ namespace System.Text.Json.Tests
         public static void CurrentDepthObjectTest()
         {
             string jsonString =
-"""
-    {
-        "array": [
-            1,
-            2,
-            3,
-            {}
-        ]
-    }
-    """;
+@"{
+    ""array"": [
+        1,
+        2,
+        3,
+        {}
+    ]
+}";
 
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
             var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
@@ -1259,7 +1255,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void SkipTest()
         {
-            string jsonString = """{"propertyName": {"foo": "bar"},"nestedArray": {"numbers": [1,2,3]}}""";
+            string jsonString = @"{""propertyName"": {""foo"": ""bar""},""nestedArray"": {""numbers"": [1,2,3]}}";
 
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
@@ -1404,7 +1400,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void SkipTestEmpty()
         {
-            string jsonString = """{"nestedArray": {"empty": [],"empty": [{}]}}""";
+            string jsonString = @"{""nestedArray"": {""empty"": [],""empty"": [{}]}}";
 
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
@@ -3816,9 +3812,7 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData("""
-            \"
-            """)]
+        [InlineData(@"\""")]
         [InlineData(@"\n")]
         [InlineData(@"\r")]
         [InlineData(@"\\")]
@@ -3842,9 +3836,7 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData("""
-            \"
-            """)]
+        [InlineData(@"\""")]
         [InlineData(@"\n")]
         [InlineData(@"\r")]
         [InlineData(@"\\")]

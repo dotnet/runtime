@@ -444,6 +444,7 @@ class ModuleBase
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
+    friend class NativeImageDumper;
 #endif
 
     friend class DataImage;
@@ -602,6 +603,7 @@ class Module : public ModuleBase
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
+    friend class NativeImageDumper;
 #endif
 
     friend class DataImage;

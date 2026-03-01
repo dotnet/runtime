@@ -73,7 +73,7 @@ void Compiler::fgCreateNewInitBB()
         {
             // If the result is clearly nonsensical, just inherit
             //
-            JITDUMP("fgCanonicalizeFirstBB: Profile data could not be locally repaired. Data %s inconsistent.\n",
+            JITDUMP("\fgCanonicalizeFirstBB: Profile data could not be locally repaired. Data %s inconsistent.\n",
                     fgPgoConsistent ? "is now" : "was already");
 
             if (fgPgoConsistent)
@@ -1312,7 +1312,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                                         FgStack::FgSlot arg1 = pushedStack.Top(0);
 
-                                        isArg1Arg      = FgStack::IsArgument(arg1);
+                                        isArg1Arg      = FgStack::IsArgument(arg0);
                                         isArg1Const    = FgStack::IsConstant(arg1);
                                         isArg1ConstArg = FgStack::IsConstantOrConstArg(arg1, impInlineInfo);
                                     }
@@ -1337,7 +1337,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                     else if (isArg0Const && isArg1Const)
                                     {
                                         // both are constants so we still want to track this as foldable, unlike
-                                        // what is done for the regular binary operator handling, since we have
+                                        // what is done for the regulary binary operator handling, since we have
                                         // a CEE_CALL node and not something more primitive
                                         foldableIntrinsic = true;
                                     }
@@ -1395,7 +1395,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 else if (FgStack::IsConstant(arg))
                                 {
                                     // input is a constant so we still want to track this as foldable, unlike
-                                    // what is done for the regular unary operator handling, since we have
+                                    // what is done for the regulary unary operator handling, since we have
                                     // a CEE_CALL node and not something more primitive
                                     foldableIntrinsic = true;
                                 }
@@ -1419,7 +1419,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector64_AsUInt32:
                             case NI_Vector64_AsUInt64:
                             case NI_Vector64_op_UnaryPlus:
-#endif // TARGET_ARM64
+#endif // TARGET_XARCH
                             case NI_Vector128_As:
                             case NI_Vector128_AsByte:
                             case NI_Vector128_AsDouble:
@@ -4166,7 +4166,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
                         BADCODE("Unexpected endfilter");
                     }
                 }
-                else if (blk->KindIs(BBJ_EHFINALLYRET))
+                else if (blk->KindIs(BBJ_EHFILTERRET))
                 {
                     // endfinally allowed only in a finally block
                     if (!HBtab->HasFinallyHandler())

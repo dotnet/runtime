@@ -402,7 +402,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
         // branches we may end up importing the entire try even though
         // execution starts in the middle.
         //
-        // Note it is common in both cases for the ends of tries (and
+        // Note it is common in both cases for the ends of trys (and
         // associated handlers) to end up not getting imported, so if
         // the try region is not removed, we always check if we need
         // to trim the ends.
@@ -572,7 +572,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
     // add the appropriate step block logic.
     //
     unsigned addedBlocks = 0;
-    bool     addedTemps  = false;
+    bool     addedTemps  = 0;
 
     if (opts.IsOSR())
     {
@@ -1042,7 +1042,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     }
     else if (target->bbCodeOffs != BAD_IL_OFFSET)
     {
-        // They are both valid offsets; compare them.
+        // The are both valid offsets; compare them.
         if (block->bbCodeOffs > target->bbCodeOffs)
         {
             block->bbCodeOffs = target->bbCodeOffs;
@@ -1055,7 +1055,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     }
     else if (target->bbCodeOffsEnd != BAD_IL_OFFSET)
     {
-        // They are both valid offsets; compare them.
+        // The are both valid offsets; compare them.
         if (block->bbCodeOffsEnd < target->bbCodeOffsEnd)
         {
             block->bbCodeOffsEnd = target->bbCodeOffsEnd;
@@ -1153,6 +1153,12 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     assert(block->KindIs(target->GetKind()));
 
 #if DEBUG
+    if (verbose && 0)
+    {
+        printf("\nAfter compacting:\n");
+        fgDispBasicBlocks(false);
+    }
+
     if (JitConfig.JitSlowDebugChecksEnabled() != 0)
     {
         // Make sure that the predecessor lists are accurate
@@ -1892,7 +1898,8 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
         return false;
     }
 
-    Statement* const lastStmt = block->lastStmt();
+    Statement* const lastStmt  = block->lastStmt();
+    Statement* const firstStmt = block->FirstNonPhiDef();
 
     if (lastStmt == nullptr)
     {
@@ -2581,8 +2588,8 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     bool     rareDest           = bDest->isRunRarely();
     bool     rareNext           = trueTarget->isRunRarely();
 
-    // If we have profile data then we can adjust the duplication
-    // threshold based on relative weights of the blocks
+    // If we have profile data then we calculate the number of time
+    // the loop will iterate into loopIterations
     if (fgIsUsingProfileWeights())
     {
         // Only rely upon the profile weight when all three of these blocks
@@ -2923,6 +2930,8 @@ bool Compiler::fgExpandRarelyRunBlocks()
     {
         printf("\n*************** In fgExpandRarelyRunBlocks()\n");
     }
+
+    const char* reason = nullptr;
 #endif
 
     // Helper routine to figure out the lexically earliest predecessor

@@ -38,9 +38,13 @@ namespace System
         /// <summary>
         /// Gets whether the current machine has only a single processor.
         /// </summary>
-        internal static bool IsSingleProcessor => RuntimeFeature.IsMultithreadingSupported ? ProcessorCount == 1 : true;
-        public static int ProcessorCount { get; } = RuntimeFeature.IsMultithreadingSupported ? GetProcessorCount() : 1;
-
+#if FEATURE_SINGLE_THREADED
+        internal const bool IsSingleProcessor = true;
+        public static int ProcessorCount => 1;
+#else
+        internal static bool IsSingleProcessor => ProcessorCount == 1;
+        public static int ProcessorCount { get; } = GetProcessorCount();
+#endif
         private static volatile sbyte s_privilegedProcess;
 
         /// <summary>

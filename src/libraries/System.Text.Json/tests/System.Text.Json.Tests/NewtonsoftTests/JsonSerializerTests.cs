@@ -41,28 +41,28 @@ namespace System.Text.Json.Tests
         public void DeserializeBoolean_Null()
         {
             Assert.Throws<JsonException>(
-                () => JsonSerializer.Deserialize<IList<bool>>("[null]"));
+                () => JsonSerializer.Deserialize<IList<bool>>(@"[null]"));
         }
 
         [Fact]
         public void DeserializeBoolean_DateTime()
         {
             Assert.Throws<JsonException>(
-                () => JsonSerializer.Deserialize<IList<bool>>("['2000-12-20T10:55:55Z']"));
+                () => JsonSerializer.Deserialize<IList<bool>>(@"['2000-12-20T10:55:55Z']"));
         }
 
         [Fact]
         public void DeserializeBoolean_BadString()
         {
             Assert.Throws<JsonException>(
-                () => JsonSerializer.Deserialize<IList<bool>>("['pie']"));
+                () => JsonSerializer.Deserialize<IList<bool>>(@"['pie']"));
         }
 
         [Fact]
         public void DeserializeBoolean_EmptyString()
         {
             Assert.Throws<JsonException>(
-                () => JsonSerializer.Deserialize<IList<bool>>("['']"));
+                () => JsonSerializer.Deserialize<IList<bool>>(@"['']"));
         }
 
         [Fact]
@@ -90,28 +90,28 @@ namespace System.Text.Json.Tests
         [Fact]
         public void NewProperty()
         {
-            Assert.Equal("""{"IsTransient":true}""", JsonSerializer.Serialize(new ChildClass { IsTransient = true }));
+            Assert.Equal(@"{""IsTransient"":true}", JsonSerializer.Serialize(new ChildClass { IsTransient = true }));
 
-            ChildClass childClass = JsonSerializer.Deserialize<ChildClass>("""{"IsTransient":true}""");
+            ChildClass childClass = JsonSerializer.Deserialize<ChildClass>(@"{""IsTransient"":true}");
             Assert.True(childClass.IsTransient);
         }
 
         [Fact]
         public void NewPropertyVirtual()
         {
-            Assert.Equal("""{"IsTransient":true}""", JsonSerializer.Serialize(new ChildClassVirtual { IsTransient = true }));
+            Assert.Equal(@"{""IsTransient"":true}", JsonSerializer.Serialize(new ChildClassVirtual { IsTransient = true }));
 
-            ChildClassVirtual childClass = JsonSerializer.Deserialize<ChildClassVirtual>("""{"IsTransient":true}""");
+            ChildClassVirtual childClass = JsonSerializer.Deserialize<ChildClassVirtual>(@"{""IsTransient"":true}");
             Assert.True(childClass.IsTransient);
         }
 
         [Fact]
         public void DeserializeCommentTestObjectWithComments()
         {
-            CommentTestObject o = JsonSerializer.Deserialize<CommentTestObject>("{/* Test */}", new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip });
+            CommentTestObject o = JsonSerializer.Deserialize<CommentTestObject>(@"{/* Test */}", new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip });
             Assert.False(o.A);
 
-            o = JsonSerializer.Deserialize<CommentTestObject>("""{"A": true/* Test */}""", new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip });
+            o = JsonSerializer.Deserialize<CommentTestObject>(@"{""A"": true/* Test */}", new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip });
             Assert.True(o.A);
         }
 

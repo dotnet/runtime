@@ -607,7 +607,7 @@ namespace System.Buffers.Text
 
                 bool hasAnotherBlock;
 
-                if (decoder is Base64DecoderChar)
+                if (decoder is Base64DecoderByte)
                 {
                     hasAnotherBlock = source.Length >= BlockSize;
                 }

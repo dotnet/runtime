@@ -130,9 +130,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                string obj = JsonSerializer.Deserialize<string>("""
-                    "null"
-                    """);
+                string obj = JsonSerializer.Deserialize<string>(@"""null""");
                 Assert.Equal("null", obj);
             }
         }
@@ -204,22 +202,22 @@ namespace System.Text.Json.Serialization.Tests
         public static void DeserializeDictionaryWithNullValues()
         {
             {
-                Dictionary<string, string> dict = JsonSerializer.Deserialize<Dictionary<string, string>>("""{"key":null}""");
+                Dictionary<string, string> dict = JsonSerializer.Deserialize<Dictionary<string, string>>(@"{""key"":null}");
                 Assert.Null(dict["key"]);
             }
 
             {
-                Dictionary<string, object> dict = JsonSerializer.Deserialize<Dictionary<string, object>>("""{"key":null}""");
+                Dictionary<string, object> dict = JsonSerializer.Deserialize<Dictionary<string, object>>(@"{""key"":null}");
                 Assert.Null(dict["key"]);
             }
 
             {
-                Dictionary<string, Dictionary<string, string>> dict = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>("""{"key":null}""");
+                Dictionary<string, Dictionary<string, string>> dict = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(@"{""key"":null}");
                 Assert.Null(dict["key"]);
             }
 
             {
-                Dictionary<string, Dictionary<string, object>> dict = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object>>>("""{"key":null}""");
+                Dictionary<string, Dictionary<string, object>> dict = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object>>>(@"{""key"":null}");
                 Assert.Null(dict["key"]);
             }
         }

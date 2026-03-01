@@ -37,9 +37,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var input = new byte[] {};
             string json = JsonSerializer.Serialize(input);
-            Assert.Equal("""
-                ""
-                """, json);
+            Assert.Equal(@"""""", json);
         }
 
         [Theory]

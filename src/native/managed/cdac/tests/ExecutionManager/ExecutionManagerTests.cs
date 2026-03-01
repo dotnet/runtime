@@ -28,7 +28,7 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeBlockHandle_Null(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new (version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -41,7 +41,7 @@ public class ExecutionManagerTests
     [MemberData(nameof(StdArchAllVersions))]
     public void GetCodeBlockHandle_NoRangeSections(int version, MockTarget.Architecture arch)
     {
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
+        MockDescriptors.ExecutionManager emBuilder = new (version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
@@ -58,7 +58,7 @@ public class ExecutionManagerTests
         const uint codeRangeSize = 0xc000u; // arbitrary
         const uint methodSize = 0x450; // arbitrary
 
-        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+        TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
 
         TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
 
@@ -105,7 +105,7 @@ public class ExecutionManagerTests
         const ulong codeRangeStart = 0x0a0a_0000u; // arbitrary
         const uint codeRangeSize = 0xc000u; // arbitrary
 
-        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+        TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
 
         MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
@@ -142,7 +142,7 @@ public class ExecutionManagerTests
         const uint codeRangeSize = 0xc000u; // arbitrary
         const uint methodSize = 0x450; // arbitrary
 
-        TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
+        TargetPointer jitManagerAddress = new (0x000b_ff00); // arbitrary
 
         MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
@@ -255,12 +255,12 @@ public class ExecutionManagerTests
         const uint codeRangeSize = 0xc000u; // arbitrary
         TargetPointer jitManagerAddress = new(0x000b_ff00); // arbitrary
 
-        TargetPointer[] methodDescAddresses = [0x0101_aaa0, 0x0201_aaa0];
+        TargetPointer[] methodDescAddresses = [ 0x0101_aaa0, 0x0201_aaa0];
 
         MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
         var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
 
-        uint[] runtimeFunctions = [0x100, 0xc00];
+        uint[] runtimeFunctions = [ 0x100, 0xc00 ];
 
         TargetPointer r2rInfo = emBuilder.AddReadyToRunInfo(runtimeFunctions, []);
         MockDescriptors.HashMap hashMapBuilder = new(emBuilder.Builder);
@@ -396,61 +396,13 @@ public class ExecutionManagerTests
         Assert.Equal(new TargetPointer(codeRangeStart), actualBaseAddress);
     }
 
-    [Theory]
-    [MemberData(nameof(StdArchAllVersions))]
-    public void GetMethodDesc_CollectibleFragmentNext(int version, MockTarget.Architecture arch)
-    {
-        // Regression test: RangeSectionFragment.Next uses bit 0 as a collectible flag (see
-        // RangeSectionFragmentPointer in codeman.h). If the cDAC fails to strip this bit before
-        // following the pointer, it reads from a misaligned address and produces garbage data.
-        // This test creates a two-fragment chain where the head fragment (in the map) has an empty
-        // range and its Next pointer has the collectible tag bit set. The tail fragment (not in the
-        // map) covers the actual code range. The lookup must traverse the chain to find the method.
-        const ulong codeRangeStart = 0x0a0a_0000u;
-        const uint codeRangeSize = 0xc000u;
-        const uint methodSize = 0x450;
-
-        TargetPointer jitManagerAddress = new(0x000b_ff00);
-        TargetPointer expectedMethodDescAddress = new TargetPointer(0x0101_aaa0);
-
-        MockDescriptors.ExecutionManager emBuilder = new(version, arch, MockDescriptors.ExecutionManager.DefaultAllocationRange);
-        var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
-
-        TargetCodePointer methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress);
-
-        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
-        nibBuilder.AllocateCodeChunk(methodStart, methodSize);
-
-        TargetPointer codeHeapListNodeAddress = emBuilder.AddCodeHeapListNode(TargetPointer.Null, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
-        TargetPointer rangeSectionAddress = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNodeAddress);
-
-        // Tail fragment: covers the real code range but is NOT in the range section map.
-        // It is only reachable by following the head fragment's Next pointer.
-        TargetPointer tailFragmentAddress = emBuilder.AddUnmappedRangeSectionFragment(jittedCode, rangeSectionAddress);
-
-        // Head fragment: inserted into the map with an empty range (Contains always returns false)
-        // and Next = tailFragmentAddress | 1 (collectible tag bit set).
-        _ = emBuilder.AddRangeSectionFragmentWithCollectibleNext(jittedCode, rangeSectionAddress, tailFragmentAddress);
-
-        var target = CreateTarget(emBuilder);
-
-        var em = target.Contracts.ExecutionManager;
-        Assert.NotNull(em);
-
-        var eeInfo = em.GetCodeBlockHandle(methodStart);
-        Assert.NotNull(eeInfo);
-        TargetPointer actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
-        Assert.Equal(expectedMethodDescAddress, actualMethodDesc);
-    }
-
     public static IEnumerable<object[]> StdArchAllVersions()
     {
         const int highestVersion = 2;
-        foreach (object[] arr in new MockTarget.StdArch())
+        foreach(object[] arr in new MockTarget.StdArch())
         {
             MockTarget.Architecture arch = (MockTarget.Architecture)arr[0];
-            for (int version = 1; version <= highestVersion; version++)
-            {
+            for(int version = 1; version <= highestVersion; version++){
                 yield return new object[] { version, arch };
             }
         }

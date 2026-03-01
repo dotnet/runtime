@@ -385,6 +385,7 @@ public:
         JITDUMP("digraph SCC_%u {\n", m_num);
         BitVecOps::Iter iterator(m_traits, m_blocks);
         unsigned int    poNum;
+        bool            first = true;
         while (iterator.NextElem(&poNum))
         {
             BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
@@ -471,6 +472,7 @@ public:
             JITDUMP("digraph scc_%u_nested_subgraph%u {\n", m_num, nestedCount);
             BitVecOps::Iter iterator(m_traits, nestedBlocks);
             unsigned int    poNum;
+            bool            first = true;
             while (iterator.NextElem(&poNum))
             {
                 BasicBlock* const block = m_dfsTree->GetPostOrder(poNum);
@@ -544,7 +546,7 @@ public:
     //   * The switch in the dispatcher transfers control to the headers based on on the control var value.
     //
     //   ** if we have an edge pred->header such that pred has no other successors
-    //      we hoist the assignment into pred.
+    //      we hoist the assingnment into pred.
     //
     //   TODO: if the source of an edge to a header is dominated by that header,
     //   the edge can be left as is. (requires dominators)
@@ -619,7 +621,7 @@ public:
                     // is preferable; the assignment should be cheap.
                     //
                     // For now we just check if the pred has only this header as successor.
-                    // We also don't put code into BBJ_CALLFINALLYRET (note that restriction
+                    // We also don't putcode into BBJ_CALLFINALLYRET (note that restriction
                     // is perhaps no longer needed).
                     //
                     if (pred->HasTarget() && (pred->GetTarget() == header) && !pred->isBBCallFinallyPairTail())
@@ -1033,7 +1035,7 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 // not need a new interval for the branch. Because we're walking front to back, we will have already
 // recorded an interval that starts earlier.
 //
-// We then scan the intervals in non-decreasing start order, looking for earlier intervals that contain
+// We then scan the intervals in non-decreasing start order, lookin for earlier intervals that contain
 // the start of the current interval but not the end. When we find one, the start of the current interval
 // will need to decrease so the earlier interval can nest inside. That is, if we have a:[0, 4] and b:[2,6] we
 // will need to decrease the start of b to match a and then reorder, and emit them as b:[0,6], a[0,4].
@@ -1107,15 +1109,13 @@ PhaseStatus Compiler::fgWasmControlFlow()
     fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
     assert(numBlocks == dfsCount);
 
-    // Splice in a fake BB0. Heap-allocated because it is published
-    // in fgIndexToBlockMap and accessed during codegen.
+    // Splice in a fake BB0
     //
-    BasicBlock* bb0 = new (this, CMK_WasmCfgLowering) BasicBlock();
-    INDEBUG(bb0->bbNum = 0;);
-    bb0->SetFlagsRaw(BBF_EMPTY);
-    bb0->bbPreorderNum       = numBlocks;
-    bb0->bbPostorderNum      = dfsTree->GetPostOrderCount();
-    initialLayout[numBlocks] = bb0;
+    BasicBlock bb0;
+    INDEBUG(bb0.bbNum = 0;);
+    bb0.bbPreorderNum        = numBlocks;
+    bb0.bbPostorderNum       = dfsTree->GetPostOrderCount();
+    initialLayout[numBlocks] = &bb0;
 
     // -----------------------------------------------
     // (2) Build the intervals
@@ -1344,12 +1344,11 @@ PhaseStatus Compiler::fgWasmControlFlow()
             return false;
         }
 
-        // Tiebreaker: loops before blocks, but equal elements must return false
-        // to satisfy strict weak ordering.
+        // Tiebreaker
         //
-        if (i1->IsLoop() != i2->IsLoop())
+        if (i1->IsLoop())
         {
-            return i1->IsLoop();
+            return true;
         }
 
         return false;

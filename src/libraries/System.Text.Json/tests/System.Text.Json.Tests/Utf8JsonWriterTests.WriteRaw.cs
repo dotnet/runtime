@@ -77,12 +77,10 @@ namespace System.Text.Json.Tests
             yield return new object[] { " 1234.56789 "u8.ToArray(), validate };
 
             validate = (data) => Assert.Equal(@"Hello", JsonSerializer.Deserialize<string>(data));
-            yield return new object[] { Encoding.UTF8.GetBytes("""
-                "Hello"
-                """), validate };
+            yield return new object[] { Encoding.UTF8.GetBytes(@"""Hello"""), validate };
 
             validate = (data) => Assert.Equal(@"Hello", JsonSerializer.Deserialize<string>(data));
-            yield return new object[] { Encoding.UTF8.GetBytes("""  "Hello"  """), validate };
+            yield return new object[] { Encoding.UTF8.GetBytes(@"  ""Hello""  "), validate };
 
             validate = (data) => Assert.Equal(s_guid, JsonSerializer.Deserialize<Guid>(data));
             byte[] guidAsJson = WrapInQuotes(Encoding.UTF8.GetBytes(TestGuidAsStr));
@@ -138,7 +136,7 @@ namespace System.Text.Json.Tests
         {
             Action<byte[]> validate;
 
-            byte[] json = Encoding.UTF8.GetBytes("""{"Hello":"World"}"""); ;
+            byte[] json = Encoding.UTF8.GetBytes(@"{""Hello"":""World""}"); ;
             validate = (data) =>
             {
                 KeyValuePair<string, string> kvp = JsonSerializer.Deserialize<Dictionary<string, string>>(data).Single();
@@ -147,7 +145,7 @@ namespace System.Text.Json.Tests
             };
             yield return new object[] { json, validate };
 
-            json = Encoding.UTF8.GetBytes(""" {  "Hello"    :"World"  }   """); ;
+            json = Encoding.UTF8.GetBytes(@" {  ""Hello""    :""World""  }   "); ;
             validate = (data) =>
             {
                 KeyValuePair<string, string> kvp = JsonSerializer.Deserialize<Dictionary<string, string>>(data).Single();
@@ -193,10 +191,10 @@ namespace System.Text.Json.Tests
         [Theory]
         [InlineData(true, 0, "{}")]
         [InlineData(false, 0, "{}")]
-        [InlineData(true, 1, """{"int":1}""")]
-        [InlineData(false, 1, """{"int":1}""")]
-        [InlineData(true, 3, """{"int":1,"int":1,"int":1}""")]
-        [InlineData(false, 3, """{"int":1,"int":1,"int":1}""")]
+        [InlineData(true, 1, @"{""int"":1}")]
+        [InlineData(false, 1, @"{""int"":1}")]
+        [InlineData(true, 3, @"{""int"":1,""int"":1,""int"":1}")]
+        [InlineData(false, 3, @"{""int"":1,""int"":1,""int"":1}")]
         public static void WriteRawObjectProperty(bool skipInputValidation, int numElements, string expectedJson)
         {
             using MemoryStream ms = new();
@@ -222,9 +220,7 @@ namespace System.Text.Json.Tests
         [InlineData("xxx")]
         [InlineData("{hello:")]
         [InlineData("\\u007Bhello:")]
-        [InlineData("""
-            {"hello:""
-            """)]
+        [InlineData(@"{""hello:""""")]
         [InlineData(" ")]
         [InlineData("// This is a single line comment")]
         [InlineData("/* This is a multi-\nline comment*/")]
@@ -279,13 +275,13 @@ namespace System.Text.Json.Tests
 
                 if (skipValidation)
                 {
-                    writer.WriteRawValue("{}", skipInputValidation);
+                    writer.WriteRawValue(@"{}", skipInputValidation);
                     writer.Flush();
                     Assert.True(ms.ToArray().SequenceEqual(new byte[] { (byte)'{',  (byte)'{', (byte)'}' }));
                 }
                 else
                 {
-                    Assert.Throws<InvalidOperationException>(() => writer.WriteRawValue("{}", skipInputValidation));
+                    Assert.Throws<InvalidOperationException>(() => writer.WriteRawValue(@"{}", skipInputValidation));
                 }
             }
         }
@@ -327,9 +323,7 @@ namespace System.Text.Json.Tests
 
             for (int i = 0; i < depth - 1; i++)
             {
-                sb.Append("""
-                    "prop":{
-                    """);
+                sb.Append(@"""prop"":{");
             }
 
             for (int i = 0; i < depth - 1; i++)

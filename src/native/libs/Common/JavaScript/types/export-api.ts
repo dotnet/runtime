@@ -6,10 +6,6 @@ import type { EmscriptenModule } from "./emscripten";
 
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-declare global {
-    function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
-}
-
 export default createDotnetRuntime;
 
 export {

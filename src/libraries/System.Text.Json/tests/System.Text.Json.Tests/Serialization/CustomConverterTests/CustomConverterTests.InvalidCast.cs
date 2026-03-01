@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void CastDerivedWorks()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
-            var obj = JsonSerializer.Deserialize<ObjectWrapperDerived>("""{"DerivedProperty":"","DerivedField":""}""", options);
+            var obj = JsonSerializer.Deserialize<ObjectWrapperDerived>(@"{""DerivedProperty"":"""",""DerivedField"":""""}", options);
 
             Assert.IsType<Derived>(obj.DerivedField);
             Assert.IsType<Derived>(obj.DerivedProperty);
@@ -99,7 +99,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void CastBaseWorks()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
-            var obj = JsonSerializer.Deserialize<ObjectWrapperBase>("""{"BaseProperty":"","BaseField":""}""", options);
+            var obj = JsonSerializer.Deserialize<ObjectWrapperBase>(@"{""BaseProperty"":"""",""BaseField"":""""}", options);
 
             Assert.IsType<Derived>(obj.BaseField);
             Assert.IsType<Derived>(obj.BaseProperty);
@@ -109,14 +109,14 @@ namespace System.Text.Json.Serialization.Tests
         public static void CastBasePropertyFails()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
-            var ex = Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithProperty>("""{"DerivedProperty":""}""", options));
+            var ex = Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithProperty>(@"{""DerivedProperty"":""""}", options));
         }
 
         [Fact]
         public static void CastBaseFieldFails()
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
-            var ex = Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithField>("""{"DerivedField":""}""", options));
+            var ex = Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<ObjectWrapperDerivedWithField>(@"{""DerivedField"":""""}", options));
         }
 
         /// <summary>

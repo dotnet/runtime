@@ -56,9 +56,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomArrayConverterAsRoot()
         {
-            const string json = """
-                "1,2,3"
-                """;
+            const string json = @"""1,2,3""";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new LongArrayConverter());
@@ -94,7 +92,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomArrayConverterInProperty()
         {
-            const string json = """{"Array1":"1,2,3","Array2":"4,5"}""";
+            const string json = @"{""Array1"":""1,2,3"",""Array2"":""4,5""}";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new LongArrayConverter());

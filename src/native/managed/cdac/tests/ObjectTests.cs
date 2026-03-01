@@ -104,14 +104,14 @@ public unsafe class ObjectTests
                 }
                 {
                     TargetPointer data = contract.GetArrayData(MultiDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
-                    Assert.Equal(MultiDimensionArrayAddress + targetTestHelpers.ArrayBaseSize + (ulong)(multiDimension.Rank * sizeof(int) * 2), data.Value);
+                    Assert.Equal(MultiDimensionArrayAddress + targetTestHelpers.ArrayBaseBaseSize - targetTestHelpers.ObjHeaderSize, data.Value);
                     Assert.Equal((uint)multiDimension.Length, count);
                     Assert.Equal(MultiDimensionArrayAddress + targetTestHelpers.ArrayBaseSize, boundsStart.Value);
                     Assert.Equal(boundsStart.Value + (ulong)(multiDimension.Rank * sizeof(int)), lowerBounds.Value);
                 }
                 {
                     TargetPointer data = contract.GetArrayData(NonZeroLowerBoundArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
-                    Assert.Equal(NonZeroLowerBoundArrayAddress + targetTestHelpers.ArrayBaseSize + (ulong)(nonZeroLowerBound.Rank * sizeof(int) * 2), data.Value);
+                    Assert.Equal(NonZeroLowerBoundArrayAddress + targetTestHelpers.ArrayBaseBaseSize - targetTestHelpers.ObjHeaderSize, data.Value);
                     Assert.Equal((uint)nonZeroLowerBound.Length, count);
                     Assert.Equal(NonZeroLowerBoundArrayAddress + targetTestHelpers.ArrayBaseSize, boundsStart.Value);
                     Assert.Equal(boundsStart.Value + (ulong)(nonZeroLowerBound.Rank * sizeof(int)), lowerBounds.Value);
@@ -128,32 +128,29 @@ public unsafe class ObjectTests
 
         TargetPointer expectedRCW = 0xaaaa;
         TargetPointer expectedCCW = 0xbbbb;
-        TargetPointer expectedCCF = 0xcccc;
 
         ObjectContractHelper(arch,
             (objectBuilder) =>
             {
                 uint syncBlockIndex = 0;
-                TestComObjectAddress = objectBuilder.AddObjectWithSyncBlock(0, syncBlockIndex++, expectedRCW, expectedCCW, expectedCCF);
-                TestNonComObjectAddress = objectBuilder.AddObjectWithSyncBlock(0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null, TargetPointer.Null);
+                TestComObjectAddress = objectBuilder.AddObjectWithSyncBlock(0, syncBlockIndex++, expectedRCW, expectedCCW);
+                TestNonComObjectAddress = objectBuilder.AddObjectWithSyncBlock(0, syncBlockIndex++, TargetPointer.Null, TargetPointer.Null);
             },
             (target) =>
             {
                 Contracts.IObject contract = target.Contracts.Object;
                 Assert.NotNull(contract);
                 {
-                    bool res = contract.GetBuiltInComData(TestComObjectAddress, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
+                    bool res = contract.GetBuiltInComData(TestComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
                     Assert.True(res);
                     Assert.Equal(expectedRCW.Value, rcw.Value);
                     Assert.Equal(expectedCCW.Value, ccw.Value);
-                    Assert.Equal(expectedCCF.Value, ccf.Value);
                 }
                 {
-                    bool res = contract.GetBuiltInComData(TestNonComObjectAddress, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
+                    bool res = contract.GetBuiltInComData(TestNonComObjectAddress, out TargetPointer rcw, out TargetPointer ccw);
                     Assert.False(res);
                     Assert.Equal(TargetPointer.Null.Value, rcw.Value);
                     Assert.Equal(TargetPointer.Null.Value, ccw.Value);
-                    Assert.Equal(TargetPointer.Null.Value, ccf.Value);
                 }
             });
     }

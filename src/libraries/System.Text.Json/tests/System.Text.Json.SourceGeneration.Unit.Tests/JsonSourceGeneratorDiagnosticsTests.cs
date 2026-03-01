@@ -415,25 +415,25 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void SupportedLanguageVersions_SucceedCompilation(LanguageVersion langVersion)
         {
             string source = """
-                    using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization;
 
-                    namespace HelloWorld
+                namespace HelloWorld
+                {
+                    public class MyClass
                     {
-                        public class MyClass
+                        public MyClass(int value)
                         {
-                            public MyClass(int value)
-                            {
-                                Value = value;
-                            }
-
-                            public int Value { get; set; }
+                            Value = value;
                         }
 
-                        [JsonSerializable(typeof(MyClass))]
-                        public partial class MyJsonContext : JsonSerializerContext
-                        {
-                        }
+                        public int Value { get; set; }
                     }
+
+                    [JsonSerializable(typeof(MyClass))]
+                    public partial class MyJsonContext : JsonSerializerContext
+                    {
+                    }
+                }
                 """;
 
             CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions(langVersion);
@@ -455,36 +455,36 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void SupportedLanguageVersions_Memory_SucceedCompilation(LanguageVersion langVersion)
         {
             string source = """
-                    using System;
-                    using System.Text.Json.Serialization;
+                using System;
+                using System.Text.Json.Serialization;
 
-                    namespace HelloWorld
+                namespace HelloWorld
+                {
+                    public class MyClass<T>
                     {
-                        public class MyClass<T>
+                        public MyClass(
+                            Memory<T> memoryOfT,
+                            Memory<byte> memoryByte,
+                            ReadOnlyMemory<T> readOnlyMemoryOfT,
+                            ReadOnlyMemory<byte> readOnlyMemoryByte)
                         {
-                            public MyClass(
-                                Memory<T> memoryOfT,
-                                Memory<byte> memoryByte,
-                                ReadOnlyMemory<T> readOnlyMemoryOfT,
-                                ReadOnlyMemory<byte> readOnlyMemoryByte)
-                            {
-                                MemoryOfT = memoryOfT;
-                                MemoryByte = memoryByte;
-                                ReadOnlyMemoryOfT = readOnlyMemoryOfT;
-                                ReadOnlyMemoryByte = readOnlyMemoryByte;
-                            }
-
-                            public Memory<T> MemoryOfT { get; set; }
-                            public Memory<byte> MemoryByte { get; set; }
-                            public ReadOnlyMemory<T> ReadOnlyMemoryOfT { get; set; }
-                            public ReadOnlyMemory<byte> ReadOnlyMemoryByte { get; set; }
+                            MemoryOfT = memoryOfT;
+                            MemoryByte = memoryByte;
+                            ReadOnlyMemoryOfT = readOnlyMemoryOfT;
+                            ReadOnlyMemoryByte = readOnlyMemoryByte;
                         }
 
-                        [JsonSerializable(typeof(MyClass<int>))]
-                        public partial class MyJsonContext : JsonSerializerContext
-                        {
-                        }
+                        public Memory<T> MemoryOfT { get; set; }
+                        public Memory<byte> MemoryByte { get; set; }
+                        public ReadOnlyMemory<T> ReadOnlyMemoryOfT { get; set; }
+                        public ReadOnlyMemory<byte> ReadOnlyMemoryByte { get; set; }
                     }
+
+                    [JsonSerializable(typeof(MyClass<int>))]
+                    public partial class MyJsonContext : JsonSerializerContext
+                    {
+                    }
+                }
                 """;
 
             CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions(langVersion);
@@ -503,25 +503,25 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public void UnsupportedLanguageVersions_FailCompilation(LanguageVersion langVersion)
         {
             string source = """
-                    using System.Text.Json.Serialization;
+                using System.Text.Json.Serialization;
 
-                    namespace HelloWorld
+                namespace HelloWorld
+                {
+                    public class MyClass
                     {
-                        public class MyClass
+                        public MyClass(int value)
                         {
-                            public MyClass(int value)
-                            {
-                                Value = value;
-                            }
-
-                            public int Value { get; set; }
+                            Value = value;
                         }
 
-                        [JsonSerializable(typeof(MyClass))]
-                        public partial class MyJsonContext : JsonSerializerContext
-                        {
-                        }
+                        public int Value { get; set; }
                     }
+
+                    [JsonSerializable(typeof(MyClass))]
+                    public partial class MyJsonContext : JsonSerializerContext
+                    {
+                    }
+                }
                 """;
 
             CSharpParseOptions parseOptions = CompilationHelper.CreateParseOptions(langVersion);

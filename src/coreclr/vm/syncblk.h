@@ -381,7 +381,6 @@ struct cdac_data<InteropSyncBlockInfo>
 #ifdef FEATURE_COMINTEROP
     static constexpr size_t CCW = offsetof(InteropSyncBlockInfo, m_pCCW);
     static constexpr size_t RCW = offsetof(InteropSyncBlockInfo, m_pRCW);
-    static constexpr size_t CCF = offsetof(InteropSyncBlockInfo, m_pCCF);
 #endif // FEATURE_COMINTEROP
 };
 
@@ -602,10 +601,6 @@ template<>
 struct cdac_data<SyncBlock>
 {
     static constexpr size_t InteropInfo = offsetof(SyncBlock, m_pInteropInfo);
-    static constexpr size_t Lock = offsetof(SyncBlock, m_Lock);
-    static constexpr size_t ThinLock = offsetof(SyncBlock, m_thinLock);
-    static constexpr size_t LinkNext = offsetof(SyncBlock, m_Link) + offsetof(SLink, m_pNext);
-
 };
 
 class SyncTableEntry
@@ -764,13 +759,6 @@ class SyncBlockCache
 #ifdef VERIFY_HEAP
     void    VerifySyncTableEntry();
 #endif
-    friend struct ::cdac_data<SyncBlockCache>;
-};
-
-template<>
-struct cdac_data<SyncBlockCache>
-{
-    static constexpr size_t FreeSyncTableIndex = offsetof(SyncBlockCache, m_FreeSyncTableIndex);
 };
 
 // See code:#SyncBlockOverView for more
@@ -966,9 +954,9 @@ class ObjHeader
         UseSlowPath = 2
     };
 
-    HeaderLockResult AcquireHeaderThinLock(Thread* pCurThread);
+    HeaderLockResult AcquireHeaderThinLock(DWORD tid);
 
-    HeaderLockResult ReleaseHeaderThinLock(Thread* pCurThread);
+    HeaderLockResult ReleaseHeaderThinLock(DWORD tid);
 
     friend struct ::cdac_data<ObjHeader>;
 };

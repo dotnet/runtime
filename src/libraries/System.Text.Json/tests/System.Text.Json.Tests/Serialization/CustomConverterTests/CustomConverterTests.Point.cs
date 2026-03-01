@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomValueConverterFromArray()
         {
-            const string json = """["1,2","3,4"]""";
+            const string json = @"[""1,2"",""3,4""]";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new PointConverter());
@@ -83,9 +83,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomValueConverterFromRoot()
         {
-            const string json = """
-                "1,2"
-                """;
+            const string json = @"""1,2""";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new PointConverter());
@@ -101,9 +99,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomValueConverterFromRootAndOptions()
         {
-            const string json = """
-                "1,2"
-                """;
+            const string json = @"""1,2""";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new PointConverter(100));
@@ -132,9 +128,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void CustomValueConverterFromRootFail()
         {
             // Invalid JSON according to the converter.
-            const string json = """
-                "1"
-                """;
+            const string json = @"""1""";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new PointConverter());
@@ -145,9 +139,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomValueConverterStructFromRoot()
         {
-            const string json = """
-                "1,2"
-                """;
+            const string json = @"""1,2""";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new PointConverter());
@@ -220,7 +212,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomObjectConverterInArray()
         {
-            const string json = """[{"COORD":"1,2"},{"COORD":"3,4"}]""";
+            const string json = @"[{""COORD"":""1,2""},{""COORD"":""3,4""}]";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new PointObjectConverter());
@@ -239,7 +231,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void CustomObjectConverterFromRoot()
         {
-            const string json = """{"COORD":"1,2"}""";
+            const string json = @"{""COORD"":""1,2""}";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new PointObjectConverter());

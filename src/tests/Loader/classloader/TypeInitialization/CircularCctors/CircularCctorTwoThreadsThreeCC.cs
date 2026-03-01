@@ -130,7 +130,8 @@ public class Coordinator
         Console.WriteLine ($"{Thread.CurrentThread.ManagedThreadId}: {msg}");
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    [ActiveIssue("System.Threading.Thread.ThrowIfMultithreadingIsNotSupported: PlatformNotSupportedException", TestPlatforms.Browser)]
+    [Fact]
     public static void RunTestCase()
     {
         var c1 = CreateThread(xThenY: true, threadTag: SlotConstants.Thread1);

@@ -70,7 +70,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void VerifyDictionaryInt32StringKeyValueConverter()
         {
-            const string json = """[{"Key":1,"Value":"ValueOne"},{"Key":2,"Value":"ValueTwo"}]""";
+            const string json = @"[{""Key"":1,""Value"":""ValueOne""},{""Key"":2,""Value"":""ValueTwo""}]";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new DictionaryInt32StringKeyValueConverter(options));

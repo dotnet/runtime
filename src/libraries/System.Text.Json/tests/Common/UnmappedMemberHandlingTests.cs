@@ -143,7 +143,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private static IEnumerable<JsonInput> GetJsonInputs()
         {
-            yield return new("{}");
+            yield return new("""{}""");
             yield return new("""{"Id": 42}""", expectedId: 42);
             yield return new("""{"UnmappedProperty" : null}""", containsUnmappedMember: true);
             yield return new("""{"Id": 42, "UnmappedProperty" : null}""", containsUnmappedMember: true, expectedId: 42);

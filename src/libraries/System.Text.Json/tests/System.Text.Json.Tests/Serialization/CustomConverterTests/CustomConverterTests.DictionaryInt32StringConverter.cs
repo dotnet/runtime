@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void IntToStringDictionaryObjectConverter()
         {
-            const string json = """{"1":"ValueOne","2":"ValueTwo"}""";
+            const string json = @"{""1"":""ValueOne"",""2"":""ValueTwo""}";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new DictionaryInt32StringConverter());

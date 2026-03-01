@@ -292,7 +292,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ConverterReadTooLittle()
         {
-            const string json = """{"Level2":{"Level3s":[{"ReadWriteTooMuch":false}]}}""";
+            const string json = @"{""Level2"":{""Level3s"":[{""ReadWriteTooMuch"":false}]}}";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new Level3ConverterThatsBad());
@@ -312,7 +312,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ConverterReadTooMuch()
         {
-            const string json = """{"Level2":{"Level3s":[{"ReadWriteTooMuch":true}]}}""";
+            const string json = @"{""Level2"":{""Level3s"":[{""ReadWriteTooMuch"":true}]}}";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new Level3ConverterThatsBad ());
@@ -408,7 +408,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ConverterWithoutDefaultCtor()
         {
-            string json = """{"MyType":"ABC"}""";
+            string json = @"{""MyType"":""ABC""}";
 
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithConverterWithoutPublicEmptyCtor>(json));
             Assert.Contains("'System.Text.Json.Serialization.Tests.CustomConverterTests+ClassWithConverterWithoutPublicEmptyCtor'", ex.Message);
@@ -461,9 +461,9 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<double?>("3.14", options));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithGenericProperty<double?>>("""{"Property":3.14}""", options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithGenericProperty<double?>>(@"{""Property"":3.14}", options));
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<double?[]>("[3.14]", options));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<Dictionary<string, double?>>("""{"key":3.14}""", options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<Dictionary<string, double?>>(@"{""key"":3.14}", options));
         }
 
 
@@ -490,9 +490,9 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<double>("3.14", options));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithGenericProperty<double>>("""{"Property":3.14}""", options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PocoWithGenericProperty<double>>(@"{""Property"":3.14}", options));
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<double[]>("[3.14]", options));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<Dictionary<string, double>>("""{"key":3.14}""", options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<Dictionary<string, double>>(@"{""key"":3.14}", options));
         }
 
         private class PocoWithGenericProperty<T>

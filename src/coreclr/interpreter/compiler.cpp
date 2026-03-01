@@ -3256,13 +3256,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             m_pStackPointer--;
             AddIns(INTOP_RET_VOID);
             return true;
-        case NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait:
-            if ((m_methodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)
-            {
-                BADCODE("TailAwait is not supported in async methods that capture contexts");
-            }
-            m_nextAwaitIsTail = true;
-            return true;
+
         case NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation:
             if (m_methodInfo->args.isAsyncCall())
             {
@@ -4165,6 +4159,8 @@ void InterpCompiler::EmitCanAccessCallout(CORINFO_RESOLVED_TOKEN *pResolvedToken
 
 void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllowed, CORINFO_HELPER_DESC* calloutDesc)
 {
+// WASM-TODO: https://github.com/dotnet/runtime/issues/121955
+#ifndef TARGET_WASM
     if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
     {
         int32_t svars[CORINFO_ACCESS_ALLOWED_MAX_ARGS];
@@ -4235,6 +4231,7 @@ void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllo
         }
         m_pLastNewIns->data[0] = GetDataForHelperFtn(calloutDesc->helperNum);
     }
+#endif // !TARGET_WASM
 }
 
 static OpcodePeepElement peepRuntimeAsyncCall[] = {
@@ -4616,7 +4613,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     }
     else
     {
-        const uint8_t* origIP = m_ip;
         if (!newObj && m_methodInfo->args.isAsyncCall() && AsyncCallPeeps.FindAndApplyPeep(this))
         {
             resolvedCallToken = m_resolvedAsyncCallToken;
@@ -4642,34 +4638,14 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
 
-        if (continuationContextHandling != ContinuationContextHandling::None && !callInfo.sig.isAsyncCall())
-        {
-            BADCODE("We're trying to emit an async call, but the async resolved context didn't find one");
-        }
-
-        if (continuationContextHandling != ContinuationContextHandling::None && callInfo.kind == CORINFO_CALL)
-        {
-            bool isSyncCallThunk;
-            m_compHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
-            if (!isSyncCallThunk)
-            {
-                // The async variant that we got is a thunk. Switch back to the
-                // non-async task-returning call. There is no reason to create
-                // and go through the thunk.
-                ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedCallToken);
-
-                // Reset back to the IP after the original call instruction.
-                // FindAndApplyPeep above modified it to be after the "Await"
-                // call, but now we want to process the await separately.
-                m_ip = origIP + 5;
-                continuationContextHandling = ContinuationContextHandling::None;
-                m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
-            }
-        }
-
         if (callInfo.sig.isVarArg())
         {
             BADCODE("Vararg methods are not supported in interpreted code");
+        }
+
+        if (continuationContextHandling != ContinuationContextHandling::None && !callInfo.sig.isAsyncCall())
+        {
+            BADCODE("We're trying to emit an async call, but the async resolved context didn't find one");
         }
 
         if (isJmp)
@@ -4706,8 +4682,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation ||
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation ||
-                    ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend ||
-                    ni == NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait);
+                    ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
                 if (EmitNamedIntrinsicCall(ni, callInfo.kind == CORINFO_CALL, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
@@ -5503,15 +5478,8 @@ void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotOffset)
     gcRefMap.Set(slotIndex, true);
 }
 
-void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling continuationContextHandling)
+void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling ContinuationContextHandling)
 {
-    if (m_nextAwaitIsTail)
-    {
-        AddIns(INTOP_RET_EXISTING_CONTINUATION);
-        m_nextAwaitIsTail = false;
-        return;
-    }
-
     CORINFO_LOOKUP_KIND kindForAllocationContinuation;
     m_compHnd->getLocationOfThisType(m_methodHnd, &kindForAllocationContinuation);
 
@@ -5534,7 +5502,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     }
     bool needsEHHandling = m_pCBB->enclosingTryBlockCount > (m_isAsyncMethodWithContextSaveRestore ? 1 : 0);
 
-    bool captureContinuationContext = continuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext;
+    bool captureContinuationContext = ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext;
 
     // 1. For each IL var that is live across the await/continuation point. Add it to the list of live vars
     // 2. For each stack var that is live other than the return value from the call
@@ -5757,7 +5725,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
         flags |= CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT;
     }
 
-    if (continuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
+    if (ContinuationContextHandling == ContinuationContextHandling::ContinueOnThreadPool)
     {
         flags |= CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL;
     }
@@ -6834,7 +6802,9 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
 
 bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip)
 {
-    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
+    CorInfoTokenKind tokenKind =
+        ip[0] == CEE_CALL ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_AwaitVirtual;
+    ResolveToken(getU4LittleEndian(ip + 1), tokenKind, &m_resolvedAsyncCallToken);
     return m_resolvedAsyncCallToken.hMethod != NULL;
 }
 

@@ -409,16 +409,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ClassWithPrimitivesObjectConverter()
         {
-            string expected = """
-                {
-                "MyIntProperty":123,
-                "MyBoolProperty":true,
-                "MyStringProperty":"Hello",
-                "MyIntField":321,
-                "MyBoolField":true,
-                "MyStringField":"World"
-                }
-                """;
+            string expected = @"{
+""MyIntProperty"":123,
+""MyBoolProperty"":true,
+""MyStringProperty"":""Hello"",
+""MyIntField"":321,
+""MyBoolField"":true,
+""MyStringField"":""World""
+}";
 
             string json;
             var converter = new PrimitiveConverter();
@@ -473,16 +471,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ClassWithNullablePrimitivesObjectConverter()
         {
-            string expected = """
-                {
-                "MyIntProperty":123,
-                "MyBoolProperty":true,
-                "MyStringProperty":"Hello",
-                "MyIntField":321,
-                "MyBoolField":true,
-                "MyStringField":"World"
-                }
-                """;
+            string expected = @"{
+""MyIntProperty"":123,
+""MyBoolProperty"":true,
+""MyStringProperty"":""Hello"",
+""MyIntField"":321,
+""MyBoolField"":true,
+""MyStringField"":""World""
+}";
 
             string json;
             var converter = new PrimitiveConverter();
@@ -537,9 +533,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                const string Value = """
-                    "mystring"
-                    """;
+                const string Value = @"""mystring""";
 
                 object obj = JsonSerializer.Deserialize<object>(Value, options);
                 Assert.IsType<string>(obj);
@@ -599,9 +593,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                const string Value = """
-                    "2019-01-30T12:01:02Z"
-                    """;
+                const string Value = @"""2019-01-30T12:01:02Z""";
 
                 object obj = JsonSerializer.Deserialize<object>(Value, options);
                 Assert.IsType<DateTime>(obj);
@@ -613,9 +605,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                const string Value = """
-                    "2019-01-30T12:01:02+01:00"
-                    """;
+                const string Value = @"""2019-01-30T12:01:02+01:00""";
 
                 object obj = JsonSerializer.Deserialize<object>(Value, options);
                 Assert.IsType<DateTime>(obj);
@@ -665,9 +655,7 @@ namespace System.Text.Json.Serialization.Tests
                     const string Value = "mystring";
 
                     string json = JsonSerializer.Serialize<object>(Value, options);
-                    Assert.Equal("""
-                        "mystring"
-                        """, json);
+                    Assert.Equal(@"""mystring""", json);
 
                     string newtonsoftJson = Newtonsoft.Json.JsonConvert.SerializeObject(Value);
                     Assert.Equal(newtonsoftJson, json);
@@ -713,9 +701,7 @@ namespace System.Text.Json.Serialization.Tests
                     var value = new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc);
 
                     string json = JsonSerializer.Serialize<object>(value, options);
-                    Assert.Equal("""
-                        "2019-01-30T12:01:02Z"
-                        """, json);
+                    Assert.Equal(@"""2019-01-30T12:01:02Z""", json);
 
                     string newtonsoftJson = Newtonsoft.Json.JsonConvert.SerializeObject(value);
                     Assert.Equal(newtonsoftJson, json);
@@ -725,9 +711,7 @@ namespace System.Text.Json.Serialization.Tests
                     var value = new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0));
 
                     string json = JsonSerializer.Serialize<object>(value, options);
-                    Assert.Equal("""
-                        "2019-01-30T12:01:02+01:00"
-                        """, json);
+                    Assert.Equal(@"""2019-01-30T12:01:02+01:00""", json);
 
                     string newtonsoftJson = Newtonsoft.Json.JsonConvert.SerializeObject(value);
                     Assert.Equal(newtonsoftJson, json);

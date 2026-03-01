@@ -16,6 +16,8 @@ namespace System.Text.RegularExpressions.Tests
     {
         public const string DefaultMatchTimeout_ConfigKeyName = "REGEX_DEFAULT_MATCH_TIMEOUT";
 
+        public const int StressTestNestingDepth = 1000;
+
         /// <summary>RegexOptions.NonBacktracking.</summary>
         /// <remarks>Defined here to be able to reference the value by name even on .NET Framework test builds.</remarks>
         public const RegexOptions RegexOptionNonBacktracking = (RegexOptions)0x400;

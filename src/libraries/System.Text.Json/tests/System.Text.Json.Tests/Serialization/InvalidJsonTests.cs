@@ -22,12 +22,10 @@ namespace System.Text.Json.Serialization.Tests
 
         public static IEnumerable<string> InvalidJsonForIntValue()
         {
-            yield return """
-                "1"
-                """;
+            yield return @"""1""";
             yield return "[";
             yield return "}";
-            yield return """["1"]""";
+            yield return @"[""1""]";
             yield return "[true]";
         }
 
@@ -244,85 +242,77 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
-            yield return new object[] { typeof(int[]), """
-                "test"
-                """ };
+            yield return new object[] { typeof(int[]), @"""test""" };
             yield return new object[] { typeof(int[]), @"1" };
             yield return new object[] { typeof(int[]), @"false" };
-            yield return new object[] { typeof(int[]), "{}" };
-            yield return new object[] { typeof(int[]), """{"test": 1}""" };
-            yield return new object[] { typeof(int[]), """
-                ["test"
-                """ };
-            yield return new object[] { typeof(int[]), """["test"]""" };
-            yield return new object[] { typeof(int[]), "[true]" };
-            yield return new object[] { typeof(int[]), "[{}]" };
-            yield return new object[] { typeof(int[]), "[[]]" };
-            yield return new object[] { typeof(int[]), """[{"test": 1}]""" };
-            yield return new object[] { typeof(int[]), "[[true]]" };
-            yield return new object[] { typeof(Dictionary<string, int[]>), """{"test": {}}""" };
-            yield return new object[] { typeof(Dictionary<string, int[]>), """{"test": {"test": 1}}""" };
-            yield return new object[] { typeof(Dictionary<string, int[]>), """{"test": "test"}""" };
-            yield return new object[] { typeof(Dictionary<string, int[]>), """{"test": 1}""" };
-            yield return new object[] { typeof(Dictionary<string, int[]>), """{"test": true}""" };
-            yield return new object[] { typeof(Dictionary<string, int[]>), """{"test": ["test"}""" };
-            yield return new object[] { typeof(Dictionary<string, int[]>), """{"test": ["test"]}""" };
-            yield return new object[] { typeof(Dictionary<string, int[]>), """{"test": [[]]}""" };
-            yield return new object[] { typeof(Dictionary<string, int[]>), """{"test": [true]}""" };
-            yield return new object[] { typeof(Dictionary<string, int[]>), """{"test": [{}]}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": "test"}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": 1}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": false}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": {}}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": {"test": 1}}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": ["test"}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": ["test"]}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": [true]}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": [{}]}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": [[]]}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": [{"test": 1}]}""" };
-            yield return new object[] { typeof(ClassWithIntArray), """{"Obj": [[true]]}""" };
-            yield return new object[] { typeof(Dictionary<string, string>), """
-                "test"
-                """ };
+            yield return new object[] { typeof(int[]), @"{}" };
+            yield return new object[] { typeof(int[]), @"{""test"": 1}" };
+            yield return new object[] { typeof(int[]), @"[""test""" };
+            yield return new object[] { typeof(int[]), @"[""test""]" };
+            yield return new object[] { typeof(int[]), @"[true]" };
+            yield return new object[] { typeof(int[]), @"[{}]" };
+            yield return new object[] { typeof(int[]), @"[[]]" };
+            yield return new object[] { typeof(int[]), @"[{""test"": 1}]" };
+            yield return new object[] { typeof(int[]), @"[[true]]" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": {}}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": {""test"": 1}}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": ""test""}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": 1}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": true}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": [""test""}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": [""test""]}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": [[]]}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": [true]}" };
+            yield return new object[] { typeof(Dictionary<string, int[]>), @"{""test"": [{}]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": ""test""}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": 1}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": false}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": {}}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": {""test"": 1}}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [""test""}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [""test""]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [true]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [{}]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [[]]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [{""test"": 1}]}" };
+            yield return new object[] { typeof(ClassWithIntArray), @"{""Obj"": [[true]]}" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"""test""" };
             yield return new object[] { typeof(Dictionary<string, string>), @"1" };
             yield return new object[] { typeof(Dictionary<string, string>), @"false" };
-            yield return new object[] { typeof(Dictionary<string, string>), """{"": 1}""" };
-            yield return new object[] { typeof(Dictionary<string, string>), """{"": {}}""" };
-            yield return new object[] { typeof(Dictionary<string, string>), """{"": {"":""}}""" };
-            yield return new object[] { typeof(Dictionary<string, string>), """
-                ["test"
-                """ };
-            yield return new object[] { typeof(Dictionary<string, string>), """["test"]""" };
-            yield return new object[] { typeof(Dictionary<string, string>), "[true]" };
-            yield return new object[] { typeof(Dictionary<string, string>), "[{}]" };
-            yield return new object[] { typeof(Dictionary<string, string>), "[[]]" };
-            yield return new object[] { typeof(Dictionary<string, string>), """[{"test": 1}]""" };
-            yield return new object[] { typeof(Dictionary<string, string>), "[[true]]" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":"test"}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":1}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":false}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":{"": 1}}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":{"": {}}}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":{"": {"":""}}}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":["test"}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":["test"]}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":[true]}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":[{}]}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":[[]]}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":[{"test": 1}]}""" };
-            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), """{"Obj":[[true]]}""" };
-            yield return new object[] { typeof(Dictionary<string, Poco>), """{"key":[{"Id":3}]}""" };
-            yield return new object[] { typeof(Dictionary<string, Poco>), """{"key":["test"]}""" };
-            yield return new object[] { typeof(Dictionary<string, Poco>), """{"key":[1]}""" };
-            yield return new object[] { typeof(Dictionary<string, Poco>), """{"key":[false]}""" };
-            yield return new object[] { typeof(Dictionary<string, Poco>), """{"key":[]}""" };
-            yield return new object[] { typeof(Dictionary<string, Poco>), """{"key":1}""" };
-            yield return new object[] { typeof(Dictionary<string, List<Poco>>), """{"key":{"Id":3}}""" };
-            yield return new object[] { typeof(Dictionary<string, List<Poco>>), """{"key":{}}""" };
-            yield return new object[] { typeof(Dictionary<string, List<Poco>>), """{"key":[[]]}""" };
-            yield return new object[] { typeof(Dictionary<string, Dictionary<string, Poco>>), """{"key":[]}""" };
-            yield return new object[] { typeof(Dictionary<string, Dictionary<string, Poco>>), """{"key":1}""" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"{"""": 1}" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"{"""": {}}" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"{"""": {"""":""""}}" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[""test""" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[""test""]" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[true]" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[{}]" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[[]]" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[{""test"": 1}]" };
+            yield return new object[] { typeof(Dictionary<string, string>), @"[[true]]" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":""test""}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":1}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":false}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": 1}}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": {}}}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":{"""": {"""":""""}}}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[""test""}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[""test""]}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[true]}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[{}]}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[[]]}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[{""test"": 1}]}" };
+            yield return new object[] { typeof(ClassWithDictionaryOfIntArray), @"{""Obj"":[[true]]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":[{""Id"":3}]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":[""test""]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":[1]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":[false]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":[]}" };
+            yield return new object[] { typeof(Dictionary<string, Poco>), @"{""key"":1}" };
+            yield return new object[] { typeof(Dictionary<string, List<Poco>>), @"{""key"":{""Id"":3}}" };
+            yield return new object[] { typeof(Dictionary<string, List<Poco>>), @"{""key"":{}}" };
+            yield return new object[] { typeof(Dictionary<string, List<Poco>>), @"{""key"":[[]]}" };
+            yield return new object[] { typeof(Dictionary<string, Dictionary<string, Poco>>), @"{""key"":[]}" };
+            yield return new object[] { typeof(Dictionary<string, Dictionary<string, Poco>>), @"{""key"":1}" };
         }
 
         [Fact, OuterLoop]

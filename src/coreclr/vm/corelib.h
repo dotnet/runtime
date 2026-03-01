@@ -715,11 +715,15 @@ DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS,          CaptureContexts, No
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS,          RestoreContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS_ON_SUSPENSION, RestoreContextsOnSuspension, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      ASYNC_CALL_CONTINUATION,   AsyncCallContinuation, NoSig)
-DEFINE_METHOD(ASYNC_HELPERS,      TAIL_AWAIT,                TailAwait, NoSig)
 
 #ifdef FEATURE_INTERPRETER
 DEFINE_METHOD(ASYNC_HELPERS,      RESUME_INTERPRETER_CONTINUATION, ResumeInterpreterContinuation, NoSig)
 #endif
+
+#ifdef TARGET_BROWSER
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT, HandleAsyncEntryPoint, SM_TaskOfInt_RetInt)
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT_VOID, HandleAsyncEntryPoint, SM_Task_RetVoid)
+#endif // TARGET_BROWSER
 
 DEFINE_CLASS_U(CompilerServices, Continuation,          ContinuationObject)
 DEFINE_FIELD_U(Next,             ContinuationObject,    Next)

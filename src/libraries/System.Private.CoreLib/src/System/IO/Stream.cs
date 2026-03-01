@@ -219,7 +219,7 @@ namespace System.IO
 
             // The synchronous path is emulating legacy behavior.
             // Drop the emulation for !IsMultithreadingSupported to avoid throwing.
-            if (!RuntimeFeature.IsMultithreadingSupported || serializeAsynchronously)
+            if (!Thread.IsMultithreadingSupported || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync();
             }
@@ -494,13 +494,13 @@ namespace System.IO
 
             // The synchronous path is emulating legacy behavior.
             // Drop the emulation for !IsMultithreadingSupported to avoid throwing.
-            if (!RuntimeFeature.IsMultithreadingSupported || serializeAsynchronously)
+            if (!Thread.IsMultithreadingSupported || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync(); // kick off the asynchronous wait, but don't block
             }
             else
             {
-                semaphore.Wait();
+                semaphore.Wait(); // synchronously wait here
             }
 
             // Create the task to asynchronously do a Write.  This task serves both

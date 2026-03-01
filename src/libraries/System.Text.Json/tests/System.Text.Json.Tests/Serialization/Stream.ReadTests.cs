@@ -164,7 +164,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 static Stream CreateStream(int count)
                 {
-                    byte[] objBytes = """{"Test":{},"Test2":[],"Test3":{"Value":{}},"PersonType":0,"Id":2}"""u8.ToArray();
+                    byte[] objBytes = @"{""Test"":{},""Test2"":[],""Test3"":{""Value"":{}},""PersonType"":0,""Id"":2}"u8.ToArray();
 
                     byte[] utf8Bom = Encoding.UTF8.GetPreamble();
 

@@ -123,8 +123,6 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                     return NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
                 else if (!strcmp(methodName, "Await"))
                     return NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
-                else if (!strcmp(methodName, "TailAwait"))
-                    return NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait;
             }
         }
         else if (!strcmp(namespaceName, "System.Runtime.InteropServices"))

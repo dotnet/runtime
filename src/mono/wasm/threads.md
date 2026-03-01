@@ -32,8 +32,8 @@ assemblies.
 ### Implementation assemblies ###
 
 The implementation (in `System.Private.CoreLib`) we check
-`System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported` or call
-`System.Runtime.CompilerServices.RuntimeFeature.ThrowIfMultithreadingIsNotSupported()` to guard code paths that depends on
+`System.Threading.Thread.IsMultithreadingSupported` or call
+`System.Threading.Thread.ThrowIfMultithreadingIsNotSupported()` to guard code paths that depends on
 multi-threading.  The property is a boolean constant that will allow the IL trimmer or the
 JIT/interpreter/AOT to drop the multi-threaded implementation in the single-threaded CoreLib.
 

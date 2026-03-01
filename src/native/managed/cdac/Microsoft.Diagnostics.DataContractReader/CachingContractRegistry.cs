@@ -47,7 +47,6 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IGCInfo)] = new GCInfoFactory(),
             [typeof(INotifications)] = new NotificationsFactory(),
             [typeof(ISignatureDecoder)] = new SignatureDecoderFactory(),
-            [typeof(ISyncBlock)] = new SyncBlockFactory(),
             [typeof(IBuiltInCOM)] = new BuiltInCOMFactory(),
         };
 

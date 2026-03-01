@@ -385,7 +385,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
 //
 // Return Value:
 //    Opens a file to which a flowgraph can be dumped, whose name is based on the current
-//    config values.
+//    config vales.
 //
 FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, const char* type)
 {
@@ -708,8 +708,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
         return false;
     }
 
-    result = true;
-
     JITDUMP("Writing out flow graph %s phase %s\n", (pos == PhasePosition::PrePhase) ? "before" : "after",
             PhaseNames[phase]);
 
@@ -959,6 +957,10 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (block->HasFlag(BBF_HAS_NEWOBJ))
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
+            }
+            if (block->HasFlag(BBF_HAS_NEWARR))
+            {
+                fprintf(fgxFile, "\n            callsNewArr=\"true\"");
             }
 
             const char* rootTreeOpName = "n/a";
@@ -2275,7 +2277,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 
     const bool printEdgeLikelihoods = true; // TODO: parameterize?
 
-    // Edge likelihoods are printed as "(0.123)", so take 7 characters maximum.
+    // Edge likelihoods are printed as "(0.123)", so take 7 characters maxmimum.
     int edgeLikelihoodsWidth = printEdgeLikelihoods ? 7 : 0;
 
     // Calculate the field width allocated for the block target. The field width is allocated to allow for two blocks
@@ -2483,7 +2485,8 @@ void Compiler::fgDumpBlockMemorySsaIn(BasicBlock* block)
         else
         {
             printf(" = phi(");
-            const char* sep = "";
+            BasicBlock::MemoryPhiArg* phiArgs = block->bbMemorySsaPhiFunc[memoryKind];
+            const char*               sep     = "";
             for (BasicBlock::MemoryPhiArg* arg = block->bbMemorySsaPhiFunc[memoryKind]; arg != nullptr;
                  arg                           = arg->m_nextArg)
             {
@@ -3037,7 +3040,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
 
         // Under OSR, if we also are keeping the original method entry around
-        // via artificial ref counts, account for those.
+        // via artifical ref counts, account for those.
         //
         if (opts.IsOSR() && (block == fgEntryBB))
         {
@@ -3119,7 +3122,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
                 if (ehDsc->ebdTryBeg == succBlock)
                 {
-                    // The BBJ_CALLFINALLY is the first block of its `try` region. Don't check the predecessor.
+                    // The BBJ_CALLFINALLY is the first block of it's `try` region. Don't check the predecessor.
                     // Note that this case won't occur since the BBJ_CALLFINALLY in that case won't exist in the
                     // `try` region of the `finallyIndex`.
                 }
@@ -3825,7 +3828,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 }
 
 //------------------------------------------------------------------------------
-// fgDebugCheckStmtsList : Performs the set of checks:
+// fgDebugCheckStmtsList : Perfoms the set of checks:
 //    - all statements in the block are linked correctly
 //    - check statements flags
 //    - check nodes gtNext and gtPrev values, if the node list is threaded
@@ -3868,6 +3871,11 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         /* For each statement check that the exception flags are properly set */
 
         noway_assert(stmt->GetRootNode());
+
+        if (verbose && 0)
+        {
+            gtDispTree(stmt->GetRootNode());
+        }
 
         fgDebugCheckFlags(stmt->GetRootNode(), block);
         fgDebugCheckTypes(stmt->GetRootNode());
@@ -3950,7 +3958,7 @@ void Compiler::fgDebugCheckBlockLinks()
 }
 
 // UniquenessCheckWalker keeps data that is necessary to check
-// that each tree has its own unique id and they do not repeat.
+// that each tree has it is own unique id and they do not repeat.
 class UniquenessCheckWalker
 {
 public:
@@ -4046,7 +4054,7 @@ void Compiler::fgDebugCheckNodesUniqueness()
 // def seen in the trees via ProcessUses and ProcessDefs.
 //
 // We can spot certain errors during collection, if local occurrences either
-// unexpectedly lack or have SSA numbers.
+// unexpectedy lack or have SSA numbers.
 //
 // Once collection is done, DoChecks() verifies that the collected information
 // is soundly approximated by the data stored in the LclSsaVarDsc entries.

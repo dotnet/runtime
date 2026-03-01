@@ -179,7 +179,7 @@ inline /* static */ unsigned ArrayBase::GetLowerBoundsOffset(MethodTable* pMT)
     // Lower bounds info is after total bounds info
     // and total bounds info has rank elements
     return GetBoundsOffset(pMT) +
-        pMT->GetRank() *
+        dac_cast<PTR_ArrayClass>(pMT->GetClass())->GetRank() *
         sizeof(INT32);
 }
 

@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal("""[["1","2"],["3","4"]]""", json);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -86,7 +86,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal("""[["1","2"],["3","4"]]""", json);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -141,7 +141,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal("""[["1","2"],["3","4"]]""", json);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -224,7 +224,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal("""[["1","2"],["3","4"]]""", json);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -280,7 +280,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal("""[["1","2"],["3","4"]]""", json);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -335,7 +335,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal("""[["1","2"],["3","4"]]""", json);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -648,7 +648,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal("""[["4","3"],["2","1"]]""", json);
+            Assert.Equal(@"[[""4"",""3""],[""2"",""1""]]", json);
         }
 
         [Fact]
@@ -703,7 +703,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal("""[["1","2"],["3","4"]]""", json);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -844,7 +844,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal("""[["1","2"],["3","4"]]""", json);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -998,7 +998,7 @@ namespace System.Text.Json.Serialization.Tests
             IEnumerable<ValueA> valueAs = Enumerable.Range(0, 5).Select(x => new ValueA { Value = x }).ToList();
             IEnumerable<ValueB> valueBs = valueAs.Select(x => new ValueB { Value = x.Value });
 
-            string expectedJson = """[{"Value":0},{"Value":1},{"Value":2},{"Value":3},{"Value":4}]""";
+            string expectedJson = @"[{""Value"":0},{""Value"":1},{""Value"":2},{""Value"":3},{""Value"":4}]";
             Assert.Equal(expectedJson, await Serializer.SerializeWrapper<IEnumerable<ValueB>>(valueBs));
         }
 

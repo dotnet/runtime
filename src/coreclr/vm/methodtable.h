@@ -32,6 +32,7 @@
  * Forward Declarations
  */
 class    AppDomain;
+class    ArrayClass;
 class    ArrayMethodDesc;
 class ClassLoader;
 class FCallMethodDesc;
@@ -315,6 +316,9 @@ typedef DPTR(GenericsStaticsInfo) PTR_GenericsStaticsInfo;
 struct MethodTableAuxiliaryData
 {
     friend class MethodTable;
+#if defined(DACCESS_COMPILE)
+    friend class NativeImageDumper;
+#endif
 
     enum
     {
@@ -966,6 +970,9 @@ class MethodTable
     friend class EEClass;
     friend class MethodTableBuilder;
     friend class CheckAsmOffsets;
+#if defined(DACCESS_COMPILE)
+    friend class NativeImageDumper;
+#endif
 
 public:
     // Do some sanity checking to make sure it's a method table

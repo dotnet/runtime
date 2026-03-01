@@ -69,18 +69,18 @@ public sealed partial class WebcilReader : IDisposable
         }
         if (!BitConverter.IsLittleEndian)
         {
-            header.VersionMajor = BinaryPrimitives.ReverseEndianness(header.VersionMajor);
-            header.VersionMinor = BinaryPrimitives.ReverseEndianness(header.VersionMinor);
-            header.CoffSections = BinaryPrimitives.ReverseEndianness(header.CoffSections);
-            header.PeCliHeaderRva = BinaryPrimitives.ReverseEndianness(header.PeCliHeaderRva);
-            header.PeCliHeaderSize = BinaryPrimitives.ReverseEndianness(header.PeCliHeaderSize);
-            header.PeDebugRva = BinaryPrimitives.ReverseEndianness(header.PeDebugRva);
-            header.PeDebugSize = BinaryPrimitives.ReverseEndianness(header.PeDebugSize);
+            header.version_major = BinaryPrimitives.ReverseEndianness(header.version_major);
+            header.version_minor = BinaryPrimitives.ReverseEndianness(header.version_minor);
+            header.coff_sections = BinaryPrimitives.ReverseEndianness(header.coff_sections);
+            header.pe_cli_header_rva = BinaryPrimitives.ReverseEndianness(header.pe_cli_header_rva);
+            header.pe_cli_header_size = BinaryPrimitives.ReverseEndianness(header.pe_cli_header_size);
+            header.pe_debug_rva = BinaryPrimitives.ReverseEndianness(header.pe_debug_rva);
+            header.pe_debug_rva = BinaryPrimitives.ReverseEndianness(header.pe_debug_size);
         }
-        if (header.Id[0] != 'W' || header.Id[1] != 'b'
-            || header.Id[2] != 'I' || header.Id[3] != 'L'
-            || header.VersionMajor != Internal.Constants.WC_VERSION_MAJOR
-            || header.VersionMinor != Internal.Constants.WC_VERSION_MINOR)
+        if (header.id[0] != 'W' || header.id[1] != 'b'
+            || header.id[2] != 'I' || header.id[3] != 'L'
+            || header.version_major != Internal.Constants.WC_VERSION_MAJOR
+            || header.version_minor != Internal.Constants.WC_VERSION_MINOR)
         {
             return false;
         }
@@ -92,7 +92,7 @@ public sealed partial class WebcilReader : IDisposable
     {
         // we can't construct CorHeader because it's constructor is internal
         // but we don't care, really, we only want the metadata directory entry
-        var pos = TranslateRVA(_header.PeCliHeaderRva);
+        var pos = TranslateRVA(_header.pe_cli_header_rva);
         if (_stream.Seek(pos, SeekOrigin.Begin) != pos)
         {
             return false;
@@ -124,12 +124,12 @@ public sealed partial class WebcilReader : IDisposable
 
     public ImmutableArray<DebugDirectoryEntry> ReadDebugDirectory()
     {
-        var debugRVA = _header.PeDebugRva;
+        var debugRVA = _header.pe_debug_rva;
         if (debugRVA == 0)
         {
             return ImmutableArray<DebugDirectoryEntry>.Empty;
         }
-        var debugSize = _header.PeDebugSize;
+        var debugSize = _header.pe_debug_size;
         if (debugSize == 0)
         {
             return ImmutableArray<DebugDirectoryEntry>.Empty;
@@ -342,12 +342,7 @@ public sealed partial class WebcilReader : IDisposable
         {
             if (rva >= section.VirtualAddress && rva < section.VirtualAddress + section.VirtualSize)
             {
-                uint offset = (uint)(rva - section.VirtualAddress);
-                if (offset >= section.SizeOfRawData)
-                {
-                    throw new BadImageFormatException("RVA maps to an offset beyond the section's raw data", nameof(_stream));
-                }
-                return section.PointerToRawData + offset + _webcilInWasmOffset;
+                return section.PointerToRawData + (rva - section.VirtualAddress) + _webcilInWasmOffset;
             }
         }
         throw new BadImageFormatException("RVA not found in any section", nameof(_stream));
@@ -357,11 +352,11 @@ public sealed partial class WebcilReader : IDisposable
 
     private unsafe ImmutableArray<WebcilSectionHeader> ReadSections()
     {
-        WebcilSectionHeader sectionHeader;
-        var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(_header.CoffSections);
+        WebcilSectionHeader secheader;
+        var sections = ImmutableArray.CreateBuilder<WebcilSectionHeader>(_header.coff_sections);
         var buffer = new byte[Marshal.SizeOf<WebcilSectionHeader>()];
         _stream.Seek(SectionDirectoryOffset + _webcilInWasmOffset, SeekOrigin.Begin);
-        for (int i = 0; i < _header.CoffSections; i++)
+        for (int i = 0; i < _header.coff_sections; i++)
         {
             if (_stream.Read(buffer, 0, buffer.Length) != buffer.Length)
             {
@@ -369,7 +364,7 @@ public sealed partial class WebcilReader : IDisposable
             }
             fixed (byte* p = buffer)
             {
-                sectionHeader = (*(WebcilSectionHeader*)p);
+                secheader = (*(WebcilSectionHeader*)p);
             }
             if (!BitConverter.IsLittleEndian)
             {
@@ -377,16 +372,16 @@ public sealed partial class WebcilReader : IDisposable
                 (
                     new WebcilSectionHeader
                     (
-                        virtualSize: BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualSize),
-                        virtualAddress: BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualAddress),
-                        sizeOfRawData: BinaryPrimitives.ReverseEndianness(sectionHeader.SizeOfRawData),
-                        pointerToRawData: BinaryPrimitives.ReverseEndianness(sectionHeader.PointerToRawData)
+                        virtualSize: BinaryPrimitives.ReverseEndianness(secheader.VirtualSize),
+                        virtualAddress: BinaryPrimitives.ReverseEndianness(secheader.VirtualAddress),
+                        sizeOfRawData: BinaryPrimitives.ReverseEndianness(secheader.SizeOfRawData),
+                        pointerToRawData: BinaryPrimitives.ReverseEndianness(secheader.PointerToRawData)
                     )
                 );
             }
             else
             {
-                sections.Add(sectionHeader);
+                sections.Add(secheader);
             }
         }
         return sections.MoveToImmutable();

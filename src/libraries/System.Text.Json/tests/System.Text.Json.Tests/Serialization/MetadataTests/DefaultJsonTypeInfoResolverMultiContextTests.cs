@@ -115,11 +115,9 @@ namespace System.Text.Json.Serialization.Tests
 
         public static IEnumerable<object[]> JsonSerializerSerializeWithTypeInfoOfT_TestData()
         {
-            yield return new object[] { "value", """
-                "value"
-                """ };
+            yield return new object[] { "value", @"""value""" };
             yield return new object[] { 5, @"5" };
-            yield return new object[] { new SomeClass() { IntProp = 15, ObjProp = 17m }, """{"ObjProp":17,"IntProp":15}""" };
+            yield return new object[] { new SomeClass() { IntProp = 15, ObjProp = 17m }, @"{""ObjProp"":17,""IntProp"":15}" };
         }
 
         private class Poco

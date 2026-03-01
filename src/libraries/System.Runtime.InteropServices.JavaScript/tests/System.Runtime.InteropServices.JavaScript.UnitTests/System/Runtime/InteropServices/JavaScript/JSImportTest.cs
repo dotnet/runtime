@@ -127,7 +127,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject(null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public unsafe void OptimizedPaths()
         {
             JavaScriptTestHelper.optimizedReached = 0;
@@ -1102,7 +1102,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await JavaScriptTestHelper.sleep(100);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))] // slow
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // slow
         public async Task JsImportTaskTypes()
         {
             for (int i = 0; i < 100; i++)
@@ -1308,7 +1308,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #region Action
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_EchoAction()
         {
             bool called = false;
@@ -1323,7 +1323,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void JsImportCallback_EchoActionThrows_MT()
         {
             bool called = false;
@@ -1376,7 +1376,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_Action()
         {
             bool called = false;
@@ -1387,7 +1387,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportEcho_ActionAction()
         {
             bool called = false;
@@ -1400,7 +1400,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportEcho_ActionIntActionInt()
         {
             int calledA = -1;
@@ -1413,7 +1413,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, calledA);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionInt()
         {
             int called = -1;
@@ -1424,7 +1424,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_FunctionIntInt()
         {
             int called = -1;
@@ -1437,7 +1437,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, res);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportBackCallback_FunctionIntInt()
         {
             int called = -1;
@@ -1452,7 +1452,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(84, called);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportBackCallback_FunctionIntIntIntInt()
         {
             int calledA = -1;
@@ -1471,7 +1471,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(84, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionIntInt()
         {
             int calledA = -1;
@@ -1485,7 +1485,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionLongLong()
         {
             long calledA = -1;
@@ -1499,7 +1499,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionIntLong()
         {
             int calledA = -1;
@@ -1513,7 +1513,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionIntLongDouble()
         {
             int calledA = -1;
@@ -1530,7 +1530,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(44.5, calledC);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public void JsImportCallback_ActionIntThrow()
         {
             int called = -1;

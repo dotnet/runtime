@@ -202,16 +202,6 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getInstantiatedEntry(
     return temp;
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncOtherVariant(
-          CORINFO_METHOD_HANDLE ftn,
-          bool* variantIsThunk)
-{
-    API_ENTER(getAsyncOtherVariant);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getAsyncOtherVariant(ftn, variantIsThunk);
-    API_LEAVE(getAsyncOtherVariant);
-    return temp;
-}
-
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {

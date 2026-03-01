@@ -96,21 +96,19 @@ namespace System.Text.Json.Tests
             // Very weird whitespace is used here just to ensure that the
             // clone API isn't making any whitespace assumptions.
             CloneAtInner(
-                """
-                    {
-                      "this":
-                      [
-                        {
-                          "object": 0,
+                @"{
+  ""this"":
+  [
+    {
+      ""object"": 0,
 
 
 
 
-                          "has": [ "whitespace" ]
-                        }
-                      ]
-                    }
-                    """,
+      ""has"": [ ""whitespace"" ]
+    }
+  ]
+}",
                 JsonValueKind.Object);
         }
 
@@ -120,35 +118,33 @@ namespace System.Text.Json.Tests
             // Very weird whitespace is used here just to ensure that the
             // clone API isn't making any whitespace assumptions.
             CloneAtInner(
-                """
-                    [
-                    {
-                      "this":
-                      [
-                        {
-                          "object": 0,
+                @"[
+{
+  ""this"":
+  [
+    {
+      ""object"": 0,
 
 
 
 
-                          "has": [ "whitespace" ]
-                        }
-                      ]
-                    },
+      ""has"": [ ""whitespace"" ]
+    }
+  ]
+},
 
-                    5
+5
 
-                    ,
-
-
-
-                    false,
+,
 
 
 
-                    null
-                    ]
-                    """,
+false,
+
+
+
+null
+]",
                 JsonValueKind.Array);
         }
 

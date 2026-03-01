@@ -46,7 +46,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ConverterWithCallback()
         {
-            const string json = """{"Name":"MyName"}""";
+            const string json = @"{""Name"":""MyName""}";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new CustomerCallbackConverter());
@@ -121,7 +121,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ConverterWithReentryFail()
         {
-            const string Json = """{"Child":{"Child":{"InvalidProperty":{"NotSupported":[1]}}}}""";
+            const string Json = @"{""Child"":{""Child"":{""InvalidProperty"":{""NotSupported"":[1]}}}}";
 
             NotSupportedException ex;
 

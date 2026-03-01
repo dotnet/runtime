@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
@@ -677,7 +676,7 @@ namespace System.Threading.Tasks
             }
             else
             {
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+                Thread.ThrowIfMultithreadingIsNotSupported();
 
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44544
                 ThreadPool.RegisterWaitForSingleObject(

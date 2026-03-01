@@ -7,7 +7,6 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
-using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
@@ -96,7 +95,7 @@ public class VarargPInvokeDumpTests : DumpTestBase
             TargetPointer mt = rts.GetMethodTable(mdHandle);
             DacpMethodTableData mtData;
             int hr = sosDac.GetMethodTableData(new ClrDataAddress(mt), &mtData);
-            AssertHResult(HResults.S_OK, hr);
+            Assert.Equal(HResults.S_OK, hr);
 
             return;
         }
@@ -136,7 +135,7 @@ public class VarargPInvokeDumpTests : DumpTestBase
                 Target, mdHandle, TargetPointer.Null, legacyImpl: null);
             uint mapNeeded;
             int hr = methodInstance.GetILAddressMap(0, &mapNeeded, null);
-            AssertHResult(HResults.E_FAIL, hr);
+            Assert.Equal(HResults.E_FAIL, hr);
 
             return;
         }

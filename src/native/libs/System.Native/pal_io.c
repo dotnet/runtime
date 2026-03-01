@@ -743,18 +743,13 @@ int32_t SystemNative_FSync(intptr_t fd)
     int fileDescriptor = ToFileDescriptor(fd);
 
     int32_t result;
-#ifdef TARGET_OSX
-    while ((result = fcntl(fileDescriptor, F_FULLFSYNC)) < 0 && errno == EINTR);
-    if (result >= 0)
-    {
-        return result;
-    }
-
-    // F_FULLFSYNC is not supported on all file systems and handle types (e.g.,
-    // network file systems, read-only handles). Fall back to fsync.
-    // For genuine I/O errors (e.g., EIO), fsync will also fail and propagate the error.
+    while ((result =
+#if defined(TARGET_OSX) && HAVE_F_FULLFSYNC
+    fcntl(fileDescriptor, F_FULLFSYNC)
+#else
+    fsync(fileDescriptor)
 #endif
-    while ((result = fsync(fileDescriptor)) < 0 && errno == EINTR);
+    < 0) && errno == EINTR);
     return result;
 }
 
