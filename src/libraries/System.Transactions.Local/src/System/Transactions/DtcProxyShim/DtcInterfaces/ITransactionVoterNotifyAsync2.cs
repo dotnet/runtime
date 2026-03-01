@@ -23,7 +23,7 @@ internal partial interface ITransactionVoterNotifyAsync2
         uint hresult);
 
     void HeuristicDecision(
-        OletxTransactionHeuristic dwDecision,
+        Interop.Xolehlp.OletxTransactionHeuristic dwDecision,
         IntPtr pboidReason,
         uint hresult);
 
