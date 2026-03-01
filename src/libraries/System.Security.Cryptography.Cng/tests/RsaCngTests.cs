@@ -15,6 +15,9 @@ namespace System.Security.Cryptography.Cng.Tests
 {
     public static class RsaCngTests
     {
+        private static readonly Rsa.Tests.RSACngProvider s_provider = new Rsa.Tests.RSACngProvider();
+
+        public static bool SupportsSha1Signatures => s_provider.SupportsSha1Signatures;
         [Fact]
         public static void SignVerifyHashRoundTrip()
         {
@@ -93,14 +96,14 @@ namespace System.Security.Cryptography.Cng.Tests
             {
                 RSACng_Ctor_UnusualKeysize(ExpectedKeySize, keyBlob, expected);
 
-                Assert.True(Rsa.Tests.RSAFactory.Supports384PrivateKey, "RSAFactory.Supports384PrivateKey");
+                Assert.True(s_provider.Supports384PrivateKey, "s_provider.Supports384PrivateKey");
             }
             catch (CryptographicException)
             {
                 // If the provider is not known to fail loading a 384-bit key, let the exception be the
                 // test failure. (If it is known to fail loading that key, we've now suppressed the throw,
                 // and the test will pass.)
-                if (Rsa.Tests.RSAFactory.Supports384PrivateKey)
+                if (s_provider.Supports384PrivateKey)
                 {
                     throw;
                 }

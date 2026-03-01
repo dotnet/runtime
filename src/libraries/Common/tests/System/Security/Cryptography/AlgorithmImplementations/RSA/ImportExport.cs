@@ -8,8 +8,10 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public partial class ImportExport
+    public abstract partial class ImportExport<TProvider> where TProvider : IRSAProvider, new()
     {
+        private static readonly TProvider s_provider = new TProvider();
+
         public static bool Supports16384 { get; } = TestRsa16384();
 
         [Fact]
@@ -19,7 +21,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters publicParams;
             int keySize;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 keySize = rsa.KeySize;
 
@@ -58,7 +60,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters diminishedDPParameters = TestData.DiminishedDPParameters;
             RSAParameters exported;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(diminishedDPParameters);
                 exported = rsa.ExportParameters(true);
@@ -74,7 +76,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             RSAParameters imported = TestData.RSA16384Params;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 try
                 {
@@ -111,7 +113,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters unusualExponentParameters = TestData.UnusualExponentParameters;
             RSAParameters exported;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(unusualExponentParameters);
                 exported = rsa.ExportParameters(true);
@@ -129,7 +131,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters exported;
             RSAParameters exportedPublic;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(imported);
                 exported = rsa.ExportParameters(true);
@@ -146,7 +148,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void ImportReset()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 RSAParameters exported = rsa.ExportParameters(true);
                 RSAParameters imported;
@@ -178,7 +180,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             RSAParameters imported = TestData.RSA1024Params;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(imported);
 
@@ -196,7 +198,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             RSAParameters imported = TestData.RSA1024Params;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(imported);
 
@@ -231,7 +233,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Exponent = TestData.RSA1024Params.Exponent,
             };
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(imported);
                 Assert.ThrowsAny<CryptographicException>(() => rsa.ExportParameters(true));
@@ -246,7 +248,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Modulus = TestData.RSA1024Params.Modulus,
             };
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 if (rsa is RSACng && PlatformDetection.IsNetFramework)
                     AssertExtensions.Throws<ArgumentException>(null, () => rsa.ImportParameters(imported));
@@ -263,7 +265,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Exponent = TestData.RSA1024Params.Exponent,
             };
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 if (rsa is RSACng && PlatformDetection.IsNetFramework)
                     AssertExtensions.Throws<ArgumentException>(null, () => rsa.ImportParameters(imported));
@@ -283,7 +285,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters imported = TestData.RSA1024Params;
             imported.DP = null;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
             }
@@ -294,7 +296,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [InlineData(false)]
         public static void ExportAfterDispose(bool importKey)
         {
-            RSA rsa = importKey ? RSAFactory.Create(TestData.RSA2048Params) : RSAFactory.Create(1024);
+            RSA rsa = importKey ? CreateRSA(TestData.RSA2048Params) : s_provider.Create(1024);
 
             // Ensure that the key got created, and then Dispose it.
             using (rsa)
@@ -324,7 +326,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 zeroModulus = MakePublic(zeroModulus);
             }
 
-            Assert.ThrowsAny<CryptographicException>(() => RSAFactory.Create(zeroModulus));
+            Assert.ThrowsAny<CryptographicException>(() => CreateRSA(zeroModulus));
         }
 
         internal static void ValidateParameters(ref RSAParameters rsaParams)
@@ -365,11 +367,18 @@ namespace System.Security.Cryptography.Rsa.Tests
             };
         }
 
+        private static RSA CreateRSA(RSAParameters rsaParameters)
+        {
+            RSA rsa = s_provider.Create();
+            rsa.ImportParameters(rsaParameters);
+            return rsa;
+        }
+
         private static bool TestRsa16384()
         {
             try
             {
-                using (RSA rsa = RSAFactory.Create())
+                using (RSA rsa = s_provider.Create())
                 {
                     rsa.ImportParameters(TestData.RSA16384Params);
                 }

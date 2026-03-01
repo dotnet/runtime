@@ -8,8 +8,10 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class RSAKeyPemTests
+    public abstract class RSAKeyPemTests<TProvider> where TProvider : IRSAProvider, new()
     {
+        private static readonly TProvider s_provider = new TProvider();
+
         private const string AmbiguousExceptionMarker = "multiple keys";
         private const string EncryptedExceptionMarker = "encrypted key";
         private const string NoPemExceptionMarker = "No supported key";
@@ -17,7 +19,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void ImportFromPem_NoPem()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"these aren't the PEMs you're looking for";
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () => rsa.ImportFromPem(pem));
@@ -28,7 +30,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void ImportFromPem_RSAPrivateKey_Simple()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN RSA PRIVATE KEY-----
@@ -51,7 +53,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         [Fact]
         public static void ImportFromPem_Pkcs8UnEncrypted_Simple()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN PRIVATE KEY-----
@@ -75,7 +77,7 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         [Fact]
         public static void ImportFromPem_Pkcs8UnEncrypted_UnrelatedAlgorithmIsIgnored()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN EC PRIVATE KEY-----
@@ -104,7 +106,7 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         [Fact]
         public static void ImportFromPem_SubjectPublicKeyInfo_Simple()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN PUBLIC KEY-----
@@ -121,7 +123,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
         [Fact]
         public static void ImportFromPem_SubjectPublicKeyInfo_IgnoresUnrelatedAlgorithm()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN EC PRIVATE KEY-----
@@ -143,7 +145,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
         [Fact]
         public static void ImportFromPem_RSAPublicKey_Simple()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN RSA PUBLIC KEY-----
@@ -161,7 +163,7 @@ MEgCQQC3P1n17ovVXiS3/wKa0WqFQ8ltJT5UMZuTUyxBw8FHe4nbLS8z17modFhI
         [Fact]
         public static void ImportFromPem_RSAPrivateKey_PrecedingUnrelatedPem()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN CERTIFICATE-----
@@ -198,7 +200,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         [Fact]
         public static void ImportFromPem_RSAPrivateKey_PrecedingMalformedPem()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN CERTIFICATE-----
@@ -223,7 +225,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         [Fact]
         public static void ImportFromPem_RSAPrivateKey_IgnoresOtherAlgorithms()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN EC PRIVATE KEY-----
@@ -250,7 +252,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         [Fact]
         public static void ImportFromPem_RSAPrivateKey_AmbiguousKey_RSAPrivateKey()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN RSA PRIVATE KEY-----
@@ -273,7 +275,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         [Fact]
         public static void ImportFromPem_RSAPrivateKey_AmbiguousKey_SubjectPublicKeyInfo()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN PUBLIC KEY-----
@@ -296,7 +298,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         [Fact]
         public static void ImportFromPem_RSAPrivateKey_AmbiguousKey_RSAPublicKey()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN RSA PUBLIC KEY-----
@@ -319,7 +321,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         [Fact]
         public static void ImportFromPem_RSAPrivateKey_AmbiguousKey_EncryptedPkcs8()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
@@ -342,7 +344,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
         [Fact]
         public static void ImportFromPem_EncryptedPrivateKeyFails()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
@@ -365,7 +367,7 @@ pBORBb0=
         [Fact]
         public static void ImportFromPem_Pkcs8AlgorithmMismatch_Throws()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 The below PEM is a 1024-bit DSA key.
@@ -385,7 +387,7 @@ eDr38gQ/Hk0CgW3/RFrNWdbIpfMifs80vqCUNqDggcQixEmDVZ0gwq4+wz8EVyYG
         [Fact]
         public static void ImportFromEncryptedPem_Pkcs8Encrypted_Char_Simple()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
@@ -410,7 +412,7 @@ CA7ffFk=
         [Fact]
         public static void ImportFromEncryptedPem_Pkcs8Encrypted_Byte_Simple()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
@@ -435,7 +437,7 @@ raZNyk8KAsLs+FJq9T2tda0=
         [Fact]
         public static void ImportFromEncryptedPem_Pkcs8Encrypted_AmbiguousPem()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN ENCRYPTED PRIVATE KEY-----
@@ -471,7 +473,7 @@ CA7ffFk=
         [Fact]
         public static void ImportFromEncryptedPem_Pkcs8Encrypted_Byte_NoPem()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = "these aren't the PEMs we're looking for.";
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
@@ -483,7 +485,7 @@ CA7ffFk=
         [Fact]
         public static void ImportFromEncryptedPem_NoEncryptedPem()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = @"
 -----BEGIN PRIVATE KEY-----
@@ -505,7 +507,7 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
         [Fact]
         public static void ImportFromEncryptedPem_Pkcs8Encrypted_Char_NoPem()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 string pem = "go about your business";
                 string password = "test";
@@ -514,8 +516,11 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
                 Assert.Contains(NoPemExceptionMarker, ae.Message);
             }
         }
+    }
 
-        private static RSAParameters ToPublic(this RSAParameters rsaParams)
+    internal static class RSAParametersExtensions
+    {
+        internal static RSAParameters ToPublic(this RSAParameters rsaParams)
         {
             return new RSAParameters
             {

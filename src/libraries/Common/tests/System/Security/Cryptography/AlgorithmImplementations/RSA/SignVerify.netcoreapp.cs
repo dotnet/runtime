@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    public sealed class SignVerify_AllocatingSpan : SignVerify
+    public abstract class SignVerify_AllocatingSpan<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             rsa.SignData(new ReadOnlySpan<byte>(data), hashAlgorithm, padding);
@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             rsa.VerifyHash(new ReadOnlySpan<byte>(hash), (ReadOnlySpan<byte>)signature, hashAlgorithm, padding);
     }
 
-    public sealed class SignVerify_Span : SignVerify
+    public abstract class SignVerify_Span<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             WithOutputArray(dest => rsa.SignData(data, dest, hashAlgorithm, padding));
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
     }
 
-    public sealed class SignVerify_TrySpan : SignVerify
+    public abstract class SignVerify_TrySpan<TProvider> : SignVerify<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] SignData(RSA rsa, byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             TryWithOutputArray(dest => rsa.TrySignData(data, dest, hashAlgorithm, padding, out int bytesWritten) ? (true, bytesWritten) : (false, 0));
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void SignDefaultSpanHash()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 byte[] signature = new byte[2048 / 8];
 
@@ -100,14 +100,14 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void VerifyDefaultSpanHash()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 byte[] signature = new byte[2048 / 8];
 
                 Assert.False(
                     rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
 
-                if (RSAFactory.SupportsPss)
+                if (SupportsPss)
                 {
                     Assert.False(
                         rsa.VerifyHash(ReadOnlySpan<byte>.Empty, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));

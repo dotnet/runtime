@@ -10,6 +10,7 @@ namespace System.Security.Cryptography.Csp.Tests
 {
     public class RSACryptoServiceProviderBackCompat
     {
+        private static readonly RSACryptoServiceProviderProvider s_provider = new RSACryptoServiceProviderProvider();
         private static readonly byte[] s_dataToSign = { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
 
         [Theory]
@@ -156,14 +157,14 @@ namespace System.Security.Cryptography.Csp.Tests
 
         public static IEnumerable<object[]> AlgorithmIdentifiers()
         {
-            if (RSAFactory.SupportsMd5Signatures)
+            if (s_provider.SupportsMd5Signatures)
             {
                 yield return new object[] { "MD5", MD5.Create() };
                 yield return new object[] { "MD5", typeof(MD5) };
                 yield return new object[] { "MD5", "1.2.840.113549.2.5" };
             }
 
-            if (RSAFactory.SupportsSha1Signatures)
+            if (s_provider.SupportsSha1Signatures)
             {
                 yield return new object[] { "SHA1", SHA1.Create() };
                 yield return new object[] { "SHA1", typeof(SHA1) };

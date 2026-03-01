@@ -6,8 +6,9 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class KeyGeneration
+    public abstract class KeyGeneration<TProvider> where TProvider : IRSAProvider, new()
     {
+        private static readonly TProvider s_provider = new TProvider();
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotSymCryptOpenSsl))]
         public static void GenerateMinKey()
         {
@@ -47,19 +48,19 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             int keySize;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 keySize = getSize(rsa);
             }
 
-            using (RSA rsa = RSAFactory.Create(keySize))
+            using (RSA rsa = s_provider.Create(keySize))
             {
                 Assert.Equal(keySize, rsa.KeySize);
 
                 // Some providers may generate the key in the constructor, but
                 // all of them should have generated it before answering ExportParameters.
                 RSAParameters keyParameters = rsa.ExportParameters(false);
-                ImportExport.ValidateParameters(ref keyParameters);
+                ImportExport<TProvider>.ValidateParameters(ref keyParameters);
 
                 // KeySize should still be what we set it to originally.
                 Assert.Equal(keySize, rsa.KeySize);

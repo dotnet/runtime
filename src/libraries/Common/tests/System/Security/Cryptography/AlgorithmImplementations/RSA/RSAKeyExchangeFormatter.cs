@@ -8,12 +8,20 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public partial class RSAKeyExchangeFormatterTests
+    public abstract partial class RSAKeyExchangeFormatterTests<TProvider> where TProvider : IRSAProvider, new()
     {
+        private static readonly TProvider s_provider = new TProvider();
+
+        private static RSA CreateRSA(RSAParameters rsaParameters)
+        {
+            RSA rsa = s_provider.Create();
+            rsa.ImportParameters(rsaParameters);
+            return rsa;
+        }
         [Fact]
         public static void VerifyDecryptKeyExchangeOaep()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
 
@@ -26,7 +34,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void VerifyDecryptKeyExchangePkcs1()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
 
@@ -39,7 +47,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void TestKnownValueOaep()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA1024Params);
                 byte[] encrypted =
@@ -56,7 +64,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void TestKnownValuePkcs1()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA1024Params);
                 byte[] encrypted =
