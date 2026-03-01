@@ -14,10 +14,16 @@ struct StringToWasmSigThunk
 extern const StringToWasmSigThunk g_wasmThunks[];
 extern const size_t g_wasmThunksCount;
 
+extern const char* g_ReverseThunkMVIDs[];
+extern const size_t g_ReverseThunkMVIDsCount;
+
 struct ReverseThunkMapValue
 {
     MethodDesc** Target;
     void* EntryPoint;
+    mdMethodDef Token;
+    size_t MVIDIndex;
+    const char* FallbackSource;
 };
 
 struct ReverseThunkMapEntry
