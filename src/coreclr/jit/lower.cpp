@@ -12112,6 +12112,387 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     return true;
 }
 
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// TryLowerOrToBFI : Lower OR of 2 masking operations into a BFI node
+//   OR op1 can be a const var, AND, BFI or OR node
+//   OR op2 can be a LSH & AND or a BFIZ node
+//
+// Arguments:
+//    tree - pointer to the node
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerOrToBFI(GenTreeOp* tree, GenTree** next)
+{
+    assert(tree->OperIs(GT_OR));
+
+    if (!m_compiler->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    BfiPattern bfiPattern;
+    if (!TryMatchOrToBfiPattern(tree, &bfiPattern))
+    {
+        return false;
+    }
+
+    unsigned regBits = genTypeSize(tree) * BITS_PER_BYTE;
+    uint64_t regMask = (regBits == 64) ? UINT64_MAX : ((1ull << regBits) - 1);
+
+    uint64_t newMask       = (bfiPattern.lowMask << bfiPattern.offset) & regMask;
+    uint64_t baseMask      = 0;
+    bool     baseMaskKnown = false;
+
+    GenTree* node = bfiPattern.base;
+    for (int depth = 0; depth < 64 && (node != nullptr); depth++)
+    {
+        if (node->OperIs(GT_AND))
+        {
+            GenTree* andOp1 = node->gtGetOp1();
+            GenTree* andOp2 = node->gtGetOp2();
+
+            GenTree* valNode   = andOp1;
+            GenTree* constNode = andOp2;
+            if (!constNode->IsIntegralConst())
+            {
+                std::swap(valNode, constNode);
+                if (!constNode->IsIntegralConst())
+                {
+                    baseMaskKnown = false;
+                    break;
+                }
+            }
+
+            uint64_t c = (uint64_t)constNode->AsIntConCommon()->IntegralValue();
+            c &= regMask;
+            baseMask |= c;
+            baseMaskKnown = true;
+            break;
+        }
+        else if (node->IsIntegralConst())
+        {
+            uint64_t c = (uint64_t)node->AsIntConCommon()->IntegralValue();
+            c &= regMask;
+            baseMask |= c;
+            baseMaskKnown = true;
+            break;
+        }
+        else if (node->OperIs(GT_BFI))
+        {
+            GenTreeBfm* bfm = node->AsBfm();
+            uint64_t    m   = bfm->GetMask() & regMask;
+            baseMask |= m;
+            baseMaskKnown = true;
+
+            node = bfm->gtGetOp1();
+            continue;
+        }
+        else if (node->OperIs(GT_OR))
+        {
+            BfiPattern nested;
+            if (!TryMatchOrToBfiPattern(node->AsOp(), &nested))
+            {
+                baseMaskKnown = false;
+                break;
+            }
+
+            uint64_t subMask = (nested.lowMask << nested.offset) & regMask;
+            baseMask |= subMask;
+            baseMaskKnown = true;
+
+            node = nested.base;
+            continue;
+        }
+        else
+        {
+            baseMaskKnown = false;
+            break;
+        }
+    }
+
+    if (!baseMaskKnown || ((baseMask & newMask) != 0))
+    {
+        return false;
+    }
+
+    var_types   ty = genActualType(tree->TypeGet());
+    GenTreeBfm* bfm =
+        m_compiler->gtNewBfiNode(ty, bfiPattern.base, bfiPattern.value, static_cast<unsigned>(bfiPattern.offset),
+                                 static_cast<unsigned>(bfiPattern.width));
+    bfm->CopyCosts(tree);
+
+    ContainCheckNode(bfm);
+
+    BlockRange().InsertBefore(tree, bfm);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(tree, &use))
+    {
+        use.ReplaceWith(bfm);
+    }
+
+    // Remove old nodes depending on pattern kind
+    switch (bfiPattern.kind)
+    {
+        case BfiPatternKind::FromLshAndMask:
+            BlockRange().Remove(bfiPattern.shiftAnd);
+            BlockRange().Remove(bfiPattern.shiftAndConst);
+            BlockRange().Remove(bfiPattern.shiftConst);
+            BlockRange().Remove(bfiPattern.shiftNode);
+            break;
+
+        case BfiPatternKind::FromBfiz:
+            // Remove CAST first (it is op1 of BFIZ)
+            if (bfiPattern.castNode != nullptr)
+            {
+                BlockRange().Remove(bfiPattern.castNode);
+            }
+            if (bfiPattern.shiftConst != nullptr)
+            {
+                BlockRange().Remove(bfiPattern.shiftConst);
+            }
+            BlockRange().Remove(bfiPattern.shiftNode); // BFIZ node
+            break;
+
+        default:
+            return false;
+    }
+
+    BlockRange().Remove(tree);
+
+    *next = bfm->gtNext;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// TryMatchOrToBfiPattern : Check if the tree op2 matches the 2 valid
+// BFI patterns.
+// Case A: The op2 is a LSH node with a AND performing a constant mask
+// Case B: The op2 is a BFIZ node with a CAST node
+//
+// Arguments:
+//    tree   - pointer to the or node
+//    result - [out] BfiPattern struct containing pointers to nodes
+//             of the found pattern.
+//
+// Return Value:
+//    false if the or node doesn't match the required pattern
+//
+bool Lowering::TryMatchOrToBfiPattern(GenTreeOp* tree, BfiPattern* result)
+{
+    assert(tree->OperIs(GT_OR));
+
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    if (!op1->OperIs(GT_LSH, GT_BFIZ) && !op2->OperIs(GT_LSH, GT_BFIZ))
+    {
+        return false;
+    }
+
+    GenTree* orOp1 = op1->OperIs(GT_LSH, GT_BFIZ) ? op1 : op2;
+    GenTree* base  = (orOp1 == op1) ? op2 : op1;
+
+    unsigned regBits = genTypeSize(tree) * BITS_PER_BYTE;
+    uint64_t regMask = (regBits == 64) ? UINT64_MAX : ((1ull << regBits) - 1);
+
+    // Case A: OR(base, LSH(AND(value, lowMask), offset))
+    if (orOp1->OperIs(GT_LSH))
+    {
+        GenTree* shiftAnd   = orOp1->gtGetOp1();
+        GenTree* shiftConst = orOp1->gtGetOp2();
+
+        if (!shiftAnd->OperIs(GT_AND) || !shiftConst->IsIntegralConst())
+        {
+            return false;
+        }
+
+        // Allow const on either side of AND
+        GenTree* valueNode = shiftAnd->gtGetOp1();
+        GenTree* constNode = shiftAnd->gtGetOp2();
+
+        if (!constNode->IsIntegralConst())
+        {
+            std::swap(valueNode, constNode);
+            if (!constNode->IsIntegralConst())
+            {
+                return false;
+            }
+        }
+
+        ssize_t shiftVal = shiftConst->AsIntConCommon()->IntegralValue();
+        if (shiftVal < 0)
+        {
+            return false;
+        }
+
+        uint64_t lowMask = (uint64_t)constNode->AsIntConCommon()->IntegralValue();
+        lowMask &= regMask;
+
+        if (lowMask == 0)
+        {
+            return false;
+        }
+
+        // lowMask must be contiguous from LSB
+        if ((lowMask & (lowMask + 1)) != 0)
+        {
+            return false;
+        }
+
+        uint64_t width  = (uint64_t)BitOperations::PopCount(lowMask);
+        uint64_t offset = (uint64_t)shiftVal;
+
+        if (offset >= regBits || (offset + width) > regBits)
+        {
+            return false;
+        }
+
+        result->kind          = BfiPatternKind::FromLshAndMask;
+        result->base          = base;
+        result->value         = valueNode;
+        result->shiftNode     = orOp1;
+        result->shiftAnd      = shiftAnd;
+        result->shiftAndConst = constNode;
+        result->shiftConst    = shiftConst;
+        result->castNode      = nullptr;
+        result->lowMask       = lowMask;
+        result->offset        = offset;
+        result->width         = width;
+        return true;
+    }
+
+    // Case B: OR(base, BFIZ(CAST(...), shiftByConst))
+    assert(orOp1->OperIs(GT_BFIZ));
+
+    GenTree* shiftConst = orOp1->gtGetOp2();
+    if ((shiftConst == nullptr) || !shiftConst->IsIntegralConst())
+    {
+        return false;
+    }
+
+    ssize_t shiftVal = shiftConst->AsIntConCommon()->IntegralValue();
+    if (shiftVal < 0)
+    {
+        return false;
+    }
+
+    GenTree* bfizOp1 = orOp1->gtGetOp1();
+    if ((bfizOp1 == nullptr) || !bfizOp1->OperIs(GT_CAST))
+    {
+        return false;
+    }
+
+    GenTreeCast* cast   = bfizOp1->AsCast();
+    GenTree*     castOp = cast->CastOp();
+
+    uint64_t width = (uint64_t)varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                                  : genTypeSize(castOp) * BITS_PER_BYTE;
+    if ((width == 0) || (width > regBits))
+    {
+        return false;
+    }
+
+    uint64_t offset = ((uint64_t)shiftVal) & (regBits - 1);
+    if (offset >= regBits || (offset + width) > regBits)
+    {
+        return false;
+    }
+
+    uint64_t lowMask = (width == 64) ? UINT64_MAX : ((1ull << width) - 1);
+    lowMask &= regMask;
+
+    result->kind          = BfiPatternKind::FromBfiz;
+    result->base          = base;
+    result->value         = cast->CastOp();
+    result->shiftNode     = orOp1;
+    result->shiftConst    = shiftConst;
+    result->castNode      = bfizOp1;
+    result->shiftAnd      = nullptr;
+    result->shiftAndConst = nullptr;
+    result->lowMask       = lowMask;
+    result->offset        = offset;
+    result->width         = width;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// TryLowerOrToBFX : Lower AND of left shift and constant
+//
+// Arguments:
+//    tree - pointer to the node
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerOrToBFX(GenTreeOp* tree, GenTree** next)
+{
+    assert(tree->OperIs(GT_AND));
+
+    if (!m_compiler->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    GenTree* shift    = tree->gtGetOp1();
+    GenTree* andConst = tree->gtGetOp2();
+    if (!shift->OperIs(GT_RSH, GT_RSZ) || !andConst->IsIntegralConst())
+    {
+        return false;
+    }
+
+    GenTree* shiftVar   = shift->gtGetOp1();
+    GenTree* shiftConst = shift->gtGetOp2();
+    if (!shiftConst->IsIntegralConst())
+    {
+        return false;
+    }
+
+    uint64_t mask     = (uint64_t)andConst->AsIntConCommon()->IntegralValue();
+    uint64_t shiftVal = (uint64_t)shiftConst->AsIntConCommon()->IntegralValue();
+    if ((mask & (mask + 1)) != 0)
+    {
+        return false;
+    }
+
+    uint64_t  width    = (uint64_t)BitOperations::PopCount(mask);
+    uint64_t  offset   = (uint64_t)shiftVal;
+    var_types ty       = genActualType(tree->TypeGet());
+    uint64_t  bitWidth = genTypeSize(ty) * BITS_PER_BYTE;
+    if ((width > bitWidth) || (offset >= bitWidth) || ((offset + width) > bitWidth))
+    {
+        return false;
+    }
+
+    GenTreeBfm* bfm =
+        m_compiler->gtNewBfxNode(ty, shiftVar, static_cast<unsigned>(offset), static_cast<unsigned>(width));
+    bfm->CopyCosts(tree);
+
+    ContainCheckNode(bfm);
+
+    BlockRange().InsertBefore(tree, bfm);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(tree, &use))
+    {
+        use.ReplaceWith(bfm);
+    }
+
+    BlockRange().Remove(shiftConst);
+    BlockRange().Remove(shift);
+    BlockRange().Remove(andConst);
+    BlockRange().Remove(tree);
+
+    *next = bfm->gtNext;
+    return true;
+}
+#endif
+
 //------------------------------------------------------------------------
 // ContainCheckConditionalCompare: determine whether the source of a compare within a compare chain should be contained.
 //

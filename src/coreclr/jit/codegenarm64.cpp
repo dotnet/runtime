@@ -5842,6 +5842,38 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
 }
 
 //------------------------------------------------------------------------
+// genCodeForBfi: Generates the code sequence for a GenTree node that
+// represents a bitfield insert.
+//
+// Arguments:
+//    tree - the bitfield insert.
+//
+void CodeGen::genCodeForBfi(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_BFI));
+
+    GenTreeBfm* bfm = tree->AsBfm();
+
+    emitAttr size    = emitActualTypeSize(tree);
+    unsigned regBits = emitter::getBitWidth(size);
+
+    GenTree* base = tree->gtGetOp1();
+    GenTree* src  = tree->gtGetOp2();
+
+    genConsumeOperands(bfm);
+
+    unsigned offset = bfm->GetOffset();
+    unsigned width  = bfm->GetWidth();
+
+    assert(width >= 1 && width <= regBits);
+    assert(offset < regBits && (offset + width) <= regBits);
+
+    GetEmitter()->emitIns_R_R_I_I(INS_bfi, size, base->GetRegNum(), src->GetRegNum(), (int)offset, (int)width);
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForBfiz: Generates the code sequence for a GenTree node that
 // represents a bitfield insert in zero with sign/zero extension.
 //
@@ -5864,6 +5896,38 @@ void CodeGen::genCodeForBfiz(GenTreeOp* tree)
     const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
     GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(), castOp->GetRegNum(),
                                   (int)shiftByImm, (int)srcBits);
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForBfx: Generates the code sequence for a GenTree node that
+// represents a bitfield extract.
+//
+// Arguments:
+//    tree - the bitfield extract.
+//
+void CodeGen::genCodeForBfx(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_BFX));
+
+    GenTreeBfm* bfm  = tree->AsBfm();
+    emitAttr    size = emitActualTypeSize(tree);
+
+    GenTree* src = tree->gtGetOp1();
+
+    const unsigned bitWidth = emitter::getBitWidth(size);
+    const unsigned lsb      = bfm->GetOffset();
+    const unsigned width    = bfm->GetWidth();
+
+    assert((bitWidth == 32) || (bitWidth == 64));
+    assert(lsb < bitWidth);
+    assert(width > 0);
+    assert((lsb + width) <= bitWidth);
+
+    genConsumeRegs(src);
+
+    GetEmitter()->emitIns_R_R_I_I(INS_ubfx, size, tree->GetRegNum(), src->GetRegNum(), (int)lsb, (int)width);
 
     genProduceReg(tree);
 }
