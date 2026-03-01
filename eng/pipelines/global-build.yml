@@ -82,21 +82,43 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build Libraries (all TFMs) and create packages on a non Windows operating system.
+      # Build Libraries with all configurations including analyzers and linker
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
+          buildConfig: release
           platforms:
           - linux_x64_dev_innerloop
+          - windows_x64
+          - osx_arm64
           jobParameters:
-            nameSuffix: Libraries_WithPackages
-            buildArgs: -subset libs -pack
+            nameSuffix: Libraries_AnalyzersLinker
+            buildArgs: -subset libs -restore -build -pack -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
             timeoutInMinutes: 120
             condition:
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
+      # Build CoreCLR CoreLib and tools with analyzers and linker
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - linux_x64_dev_innerloop
+          jobParameters:
+            nameSuffix: CoreClr_Tools_AnalyzersLinker
+            buildArgs: -subset clr.corelib+tools -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
+            timeoutInMinutes: 120
+            condition:
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
