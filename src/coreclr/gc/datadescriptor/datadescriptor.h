@@ -9,6 +9,7 @@
 #include "gc.h"
 #include "gcscan.h"
 #include "gchandletableimpl.h"
+#include "handletablepriv.h"
 #include "gceventstatus.h"
 
 #ifdef SERVER_GC
