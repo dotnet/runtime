@@ -14,7 +14,7 @@ namespace System.IO
         public static void BasicTest(string data)
         {
             RowConfigReader rcr = new RowConfigReader(data);
-            Assert.Equal("stringVal", rcr.GetNextValue("stringKey"));
+            Assert.Equal("stringVal", rcr.GetNextValue("stringKey").ToString());
             Assert.Equal(int.MaxValue, rcr.GetNextValueAsInt32("intKey"));
             Assert.Equal(long.MaxValue, rcr.GetNextValueAsInt64("longKey"));
         }
@@ -25,10 +25,9 @@ namespace System.IO
         {
             // Default is Ordinal comparison. Keys with different case should not be found.
             RowConfigReader rcr = new RowConfigReader(data);
-            string unused;
-            Assert.False(rcr.TryGetNextValue("stringkey", out unused));
-            Assert.False(rcr.TryGetNextValue("intkey", out unused));
-            Assert.False(rcr.TryGetNextValue("longkey", out unused));
+            Assert.False(rcr.TryGetNextValue("stringkey", out _));
+            Assert.False(rcr.TryGetNextValue("intkey", out _));
+            Assert.False(rcr.TryGetNextValue("longkey", out _));
         }
 
         [MemberData(nameof(BasicTestData))]
@@ -37,7 +36,7 @@ namespace System.IO
         {
             // Use a case-insensitive comparer and use differently-cased keys.
             RowConfigReader rcr = new RowConfigReader(data, StringComparison.OrdinalIgnoreCase);
-            Assert.Equal("stringVal", rcr.GetNextValue("stringkey"));
+            Assert.Equal("stringVal", rcr.GetNextValue("stringkey").ToString());
             Assert.Equal(int.MaxValue, rcr.GetNextValueAsInt32("intkey"));
             Assert.Equal(long.MaxValue, rcr.GetNextValueAsInt64("longkey"));
         }
@@ -62,8 +61,7 @@ namespace System.IO
         public static void MalformedLine(string data)
         {
             RowConfigReader rcr = new RowConfigReader(data);
-            string unused;
-            Assert.False(rcr.TryGetNextValue("key", out unused));
+            Assert.False(rcr.TryGetNextValue("key", out _));
         }
 
         [Fact]
@@ -72,11 +70,10 @@ namespace System.IO
             string data = $"key value{Environment.NewLine} key2 value2";
             RowConfigReader rcr = new RowConfigReader(data);
 
-            string unused;
-            Assert.False(rcr.TryGetNextValue("key2", out unused));
+            Assert.False(rcr.TryGetNextValue("key2", out _));
 
             // Can retrieve value if key includes the preceding space.
-            Assert.Equal("value2", rcr.GetNextValue(" key2"));
+            Assert.Equal("value2", rcr.GetNextValue(" key2").ToString());
         }
 
         [Fact]
@@ -84,7 +81,7 @@ namespace System.IO
         {
             string data = $"first keyFirstValue{Environment.NewLine}key value";
             RowConfigReader rcr = new RowConfigReader(data);
-            Assert.Equal("value", rcr.GetNextValue("key"));
+            Assert.Equal("value", rcr.GetNextValue("key").ToString());
         }
 
         [MemberData(nameof(NewlineTestData))]
@@ -94,14 +91,13 @@ namespace System.IO
             // Test strings which have newlines mixed in between data pairs.
 
             RowConfigReader rcr = new RowConfigReader(data);
-            Assert.Equal("00", rcr.GetNextValue("value0"));
+            Assert.Equal("00", rcr.GetNextValue("value0").ToString());
             Assert.Equal(0, rcr.GetNextValueAsInt32("value0"));
             Assert.Equal(1, rcr.GetNextValueAsInt32("value1"));
-            Assert.Equal("2", rcr.GetNextValue("value2"));
-            Assert.Equal("3", rcr.GetNextValue("value3"));
+            Assert.Equal("2", rcr.GetNextValue("value2").ToString());
+            Assert.Equal("3", rcr.GetNextValue("value3").ToString());
 
-            string unused;
-            Assert.False(rcr.TryGetNextValue("Any", out unused));
+            Assert.False(rcr.TryGetNextValue("Any", out _));
         }
 
         public static IEnumerable<object[]> BasicTestData()
