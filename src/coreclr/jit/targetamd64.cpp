@@ -63,47 +63,74 @@ ABIPassingInformation SysVX64Classifier::Classify(Compiler*    comp,
                                                   ClassLayout* structLayout,
                                                   WellKnownArg wellKnownParam)
 {
-    bool                                                canEnreg = false;
+    bool                                                canEnreg           = false;
+    bool                                                handleAsSingleSimd = false;
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
-    if (varTypeIsStruct(type))
+
+    // SIMD vector types (Vector64, Vector128, Vector256, Vector512) correspond to
+    // native __m64/__m128/__m256/__m512 and should be passed in a single vector
+    // register (XMM/YMM/ZMM) when hardware supports it.
+    // Exclude SIMD12 (Vector3) and non-opaque SIMD types (Plane, Quaternion, etc.)
+    // which have decomposable fields and should use normal struct classification.
+    if (comp->isSingleRegisterSIMDType(type, structLayout))
     {
-        comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(structLayout->GetClassHandle(), &structDesc);
-
-        if (structDesc.passedInRegisters)
+        unsigned simdSize = genTypeSize(type);
+        if ((simdSize <= 16) || (simdSize == 32 && comp->canUseVexEncoding()) ||
+            (simdSize == 64 && comp->canUseEvexEncoding()))
         {
-            unsigned intRegCount   = 0;
-            unsigned floatRegCount = 0;
-
-            for (unsigned int i = 0; i < structDesc.eightByteCount; i++)
-            {
-                if (structDesc.IsIntegralSlot(i))
-                {
-                    intRegCount++;
-                }
-                else if (structDesc.IsSseSlot(i))
-                {
-                    floatRegCount++;
-                }
-                else
-                {
-                    assert(!"Invalid eightbyte classification type.");
-                    break;
-                }
-            }
-
-            canEnreg = (intRegCount <= m_intRegs.Count()) && (floatRegCount <= m_floatRegs.Count());
+            handleAsSingleSimd = true;
+            canEnreg           = (m_floatRegs.Count() > 0);
         }
     }
-    else
+
+    if (!handleAsSingleSimd)
     {
-        unsigned availRegs = varTypeUsesFloatArgReg(type) ? m_floatRegs.Count() : m_intRegs.Count();
-        canEnreg           = availRegs > 0;
+        if (varTypeIsStruct(type))
+        {
+            comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(structLayout->GetClassHandle(), &structDesc);
+
+            if (structDesc.passedInRegisters)
+            {
+                unsigned intRegCount   = 0;
+                unsigned floatRegCount = 0;
+
+                for (unsigned int i = 0; i < structDesc.eightByteCount; i++)
+                {
+                    if (structDesc.IsIntegralSlot(i))
+                    {
+                        intRegCount++;
+                    }
+                    else if (structDesc.IsSseSlot(i))
+                    {
+                        floatRegCount++;
+                    }
+                    else
+                    {
+                        assert(!"Invalid eightbyte classification type.");
+                        break;
+                    }
+                }
+
+                canEnreg = (intRegCount <= m_intRegs.Count()) && (floatRegCount <= m_floatRegs.Count());
+            }
+        }
+        else
+        {
+            unsigned availRegs = varTypeUsesFloatArgReg(type) ? m_floatRegs.Count() : m_intRegs.Count();
+            canEnreg           = availRegs > 0;
+        }
     }
 
     ABIPassingInformation info;
     if (canEnreg)
     {
-        if (varTypeIsStruct(type))
+        if (handleAsSingleSimd)
+        {
+            regNumber reg = m_floatRegs.Dequeue();
+            info          = ABIPassingInformation::FromSegmentByValue(comp,
+                                                                      ABIPassingSegment::InRegister(reg, 0, genTypeSize(type)));
+        }
+        else if (varTypeIsStruct(type))
         {
             info = ABIPassingInformation(comp, structDesc.eightByteCount);
 

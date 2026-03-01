@@ -6063,7 +6063,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 }
                 else
 #endif // TARGET_X86
-                    if (varTypeIsFloating(returnType))
+                    if (varTypeUsesFloatReg(returnType))
                     {
                         returnReg = REG_FLOATRET;
                     }
@@ -6158,7 +6158,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
         else
         {
-            assert(!varTypeIsStruct(call));
+            assert(!varTypeIsStruct(call) || varTypeIsSIMD(call));
 
             if (call->TypeIs(TYP_REF))
             {
@@ -6167,6 +6167,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             else if (call->TypeIs(TYP_BYREF))
             {
                 params.retSize = EA_BYREF;
+            }
+            else if (varTypeIsSIMD(call))
+            {
+                params.retSize = emitTypeSize(call->TypeGet());
             }
         }
     }
@@ -11488,7 +11492,12 @@ void CodeGen::genClearAvxStateInEpilog()
         //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
         //   register) and before any call to an unknown function.
 
-        instGen(INS_vzeroupper);
+        // Skip vzeroupper when the method returns a 256-bit or wider SIMD value in a register,
+        // as vzeroupper would destroy the upper bits of the return value.
+        if (genTypeSize(m_compiler->info.compRetNativeType) <= 16)
+        {
+            instGen(INS_vzeroupper);
+        }
     }
 }
 

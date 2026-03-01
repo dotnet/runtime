@@ -4297,13 +4297,13 @@ int LinearScan::BuildReturn(GenTree* tree)
             SingleTypeRegSet useCandidates = RBM_NONE;
 
 #if FEATURE_MULTIREG_RET
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
             if (varTypeIsSIMD(tree) && !op1->IsMultiRegLclVar())
             {
                 BuildUse(op1, RBM_DOUBLERET.GetFloatRegSet());
                 return 1;
             }
-#endif // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_AMD64
 
             if (varTypeIsStruct(tree))
             {

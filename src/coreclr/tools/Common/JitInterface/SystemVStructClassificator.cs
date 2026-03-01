@@ -214,17 +214,47 @@ namespace Internal.JitInterface
                 return true;
             }
 
-            // The SIMD and Int128 Intrinsic types are meant to be handled specially and should not be passed as struct registers
+            // SIMD Intrinsic types should be classified as SSE to pass in XMM registers.
+            // We must NOT fall through to normal field enumeration because the internal fields
+            // (e.g., Vector64<T>._00 is ulong) would classify as INTEGER instead of SSE.
             if (typeDesc.IsIntrinsic)
             {
                 InstantiatedType instantiatedType = typeDesc as InstantiatedType;
                 if (instantiatedType != null)
                 {
-                    if (VectorFieldLayoutAlgorithm.IsVectorType(instantiatedType) ||
-                        VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType) ||
-                        Int128FieldLayoutAlgorithm.IsIntegerType(instantiatedType))
+                    if (Int128FieldLayoutAlgorithm.IsIntegerType(instantiatedType))
                     {
                         return false;
+                    }
+
+                    if (VectorFieldLayoutAlgorithm.IsVectorType(instantiatedType) ||
+                        VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType))
+                    {
+                        int structSize = typeDesc.GetElementSize().AsInt;
+
+                        // The entry point (GetSystemVAmd64PassStructInRegisterDescriptor) already
+                        // filters out types > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS,
+                        // so only Vector64 (8B) and Vector128 (16B) can reach here. Vector256/512
+                        // are handled by the JIT's handleAsSingleSimd path and never consult this
+                        // classification.
+                        Debug.Assert(structSize <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS);
+
+                        // Directly classify each 8-byte chunk as SSE.
+                        for (int offset = 0; offset < structSize; offset += SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
+                        {
+                            int eightByteSize = Math.Min(SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES, structSize - offset);
+                            int normalizedOffset = offset + startOffsetOfStruct;
+
+                            helper.FieldClassifications[helper.CurrentUniqueOffsetField] = SystemVClassificationTypeSSE;
+                            helper.FieldSizes[helper.CurrentUniqueOffsetField] = eightByteSize;
+                            helper.FieldOffsets[helper.CurrentUniqueOffsetField] = normalizedOffset;
+                            helper.CurrentUniqueOffsetField++;
+                        }
+
+                        helper.LargestFieldOffset = startOffsetOfStruct + structSize - Math.Min(structSize, SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES);
+
+                        AssignClassifiedEightByteTypes(ref helper);
+                        return true;
                     }
                 }
             }

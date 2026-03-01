@@ -9545,6 +9545,14 @@ private:
     int getSIMDTypeAlignment(var_types simdType);
 
 public:
+    // Returns true if the given SIMD type should be passed in a single vector register
+    // for ABI purposes. True for opaque SIMD types like Vector64/128/256/512 but false
+    // for decomposable types like Plane, Quaternion, Vector2, Vector3, Vector4.
+    bool isSingleRegisterSIMDType(var_types type, ClassLayout* layout) const
+    {
+        return varTypeIsSIMD(type) && (type != TYP_SIMD12) && (layout != nullptr) && isOpaqueSIMDType(layout);
+    }
+
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
     uint32_t getVectorTByteLength()

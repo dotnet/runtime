@@ -377,6 +377,11 @@ GVAL_DECL(DWORD,            g_TlsIndex);
 GVAL_DECL(DWORD,            g_offsetOfCurrentThreadInfo);
 GVAL_DECL(DWORD,            g_gcNotificationFlags);
 
+#if defined(TARGET_AMD64) && defined(UNIX_AMD64_ABI)
+extern "C" uint8_t g_avxSupported;
+extern "C" uint8_t g_avx512Supported;
+#endif
+
 GPTR_DECL(MethodTable,      g_pEHClass);
 GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
