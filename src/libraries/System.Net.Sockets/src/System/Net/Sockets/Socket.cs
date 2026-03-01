@@ -152,7 +152,17 @@ namespace System.Net.Sockets
 
                     // Try to get the local end point.  That will in turn enable the remote
                     // end point to be retrieved on-demand when the property is accessed.
-                    switch (_addressFamily)
+                    
+                    // On some platforms (e.g., macOS/tvOS), GetSocketType cannot determine the address family,
+                    // so we extract it from the getsockname result.
+                    AddressFamily socketAddressFamily = _addressFamily;
+                    if (socketAddressFamily == AddressFamily.Unknown && bufferLength >= 2)
+                    {
+                        socketAddressFamily = SocketAddressPal.GetAddressFamily(buffer.Slice(0, bufferLength));
+                        _addressFamily = socketAddressFamily;
+                    }
+                    
+                    switch (socketAddressFamily)
                     {
                         case AddressFamily.InterNetwork:
                             _rightEndPoint = new IPEndPoint(
