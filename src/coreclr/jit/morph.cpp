@@ -8548,12 +8548,11 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
 
     if (!indir->IsVolatile() && !indir->TypeIs(TYP_STRUCT) && addr->OperIs(GT_LCL_ADDR))
     {
-        unsigned size    = indir->Size();
-        unsigned offset  = addr->AsLclVarCommon()->GetLclOffs();
-        unsigned extent  = offset + size;
-        unsigned lclSize = lvaLclExactSize(addr->AsLclVarCommon()->GetLclNum());
+        int       lclNum    = addr->AsLclVarCommon()->GetLclNum();
+        unsigned  offset    = addr->AsLclVarCommon()->GetLclOffs();
+        ValueSize indirSize = indir->ValueSize();
 
-        if ((extent <= lclSize) && (extent < UINT16_MAX))
+        if (!IsWideAccess(lclNum, offset, indirSize))
         {
             addr->ChangeType(indir->TypeGet());
             if (indir->OperIs(GT_STOREIND))
@@ -10452,21 +10451,25 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
 
     if (opts.OptimizationEnabled())
     {
-        // Reduce local addresses: "ADD(LCL_ADDR, OFFSET)" => "LCL_FLD_ADDR".
+        // Reduce local addresses: "ADD(LCL_ADDR(BASE), OFFSET)" => "LCL_ADDR(BASE+OFFSET)".
         //
         if (op1->OperIs(GT_LCL_ADDR) && op2->IsCnsIntOrI())
         {
             GenTreeLclVarCommon* lclAddrNode = op1->AsLclVarCommon();
             GenTreeIntCon*       offsetNode  = op2->AsIntCon();
-            if (FitsIn<uint16_t>(offsetNode->IconValue()))
-            {
-                unsigned offset = lclAddrNode->GetLclOffs() + static_cast<uint16_t>(offsetNode->IconValue());
+            ssize_t              consVal     = offsetNode->IconValue();
 
-                // Note: the emitter does not expect out-of-bounds access for LCL_FLD_ADDR.
-                if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclAddrNode->GetLclNum())))
+            if (FitsIn<uint16_t>(consVal))
+            {
+                ClrSafeInt<uint16_t> newOffset =
+                    ClrSafeInt<uint16_t>(lclAddrNode->GetLclOffs()) + ClrSafeInt<uint16_t>(consVal);
+
+                // Note: the emitter does not expect out-of-bounds access for LCL_ADDR.  We check the bounds of a
+                // 1-byte access at the address, offset by the constant, to determine if this is a valid address.
+                if (!newOffset.IsOverflow() && !IsWideAccess(lclAddrNode->GetLclNum(), newOffset.Value(), ValueSize(1)))
                 {
                     lclAddrNode->SetOper(GT_LCL_ADDR);
-                    lclAddrNode->AsLclFld()->SetLclOffs(offset);
+                    lclAddrNode->AsLclFld()->SetLclOffs(newOffset.Value());
                     assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
 
                     lclAddrNode->SetVNsFromNode(add);
