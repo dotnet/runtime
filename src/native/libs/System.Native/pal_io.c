@@ -160,7 +160,9 @@ c_static_assert((int)PAL_DT_BLK == (int)DT_BLK);
 c_static_assert((int)PAL_DT_REG == (int)DT_REG);
 c_static_assert((int)PAL_DT_LNK == (int)DT_LNK);
 c_static_assert((int)PAL_DT_SOCK == (int)DT_SOCK);
+#ifdef DT_WHT // not available in OpenBSD
 c_static_assert((int)PAL_DT_WHT == (int)DT_WHT);
+#endif
 #endif
 
 // Validate that our Lock enum value are correct for the platform
@@ -1539,7 +1541,9 @@ int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
 
     // ucred causes Emscripten to fail even though it's defined,
     // but getting peer credentials won't work for WebAssembly anyway
-#if defined(SO_PEERCRED) && !defined(TARGET_WASM)
+    // ucred also causes OpeBSD to fail because the struct definition is named
+    // differently and on OpenBSD we can use getpeereid(3) instead anyways.
+#if defined(SO_PEERCRED) && !defined(TARGET_WASM) && !defined(TARGET_OPENBSD)
     struct ucred creds;
     socklen_t len = sizeof(creds);
     if (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &creds, &len) == 0)
