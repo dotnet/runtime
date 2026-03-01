@@ -8127,28 +8127,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto _CONV;
 
             _CONV:
-                // only converts from FLOAT or DOUBLE to an integer type
-                // and converts from  ULONG (or LONG on ARM) to DOUBLE are morphed to calls
-
-                if (varTypeIsFloating(lclTyp))
-                {
-                    callNode = varTypeIsLong(impStackTop().val) ||
-                               uns // uint->dbl gets turned into uint->long->dbl
-#ifdef TARGET_64BIT
-                                   // TODO-ARM64-Bug?: This was AMD64; I enabled it for ARM64 also. OK?
-                                   // TYP_BYREF could be used as TYP_I_IMPL which is long.
-                                   // TODO-CQ: remove this when we lower casts long/ulong --> float/double
-                                   // and generate SSE2 code instead of going through helper calls.
-                               || impStackTop().val->TypeIs(TYP_BYREF)
-#endif
-                        ;
-                }
-                else
-                {
-                    callNode = varTypeIsFloating(impStackTop().val->TypeGet());
-                }
-
-                op1 = impPopStack().val;
+                op1      = impPopStack().val;
+                callNode = fgCastRequiresHelper(op1->TypeGet(), lclTyp, ovfl);
 
                 impBashVarAddrsToI(op1);
 
