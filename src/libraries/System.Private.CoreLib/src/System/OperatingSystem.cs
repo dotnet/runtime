@@ -38,6 +38,8 @@ namespace System
         "ILLUMOS"
 #elif TARGET_SOLARIS
         "SOLARIS"
+#elif TARGET_HAIKU
+        "HAIKU"
 #else
 #error Unknown OS, add a corresponding TARGET_* constant to System.Private.CoreLib.Shared.projitems
 #endif

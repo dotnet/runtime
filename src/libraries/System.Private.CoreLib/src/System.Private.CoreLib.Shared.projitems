@@ -2680,6 +2680,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSVersion.Unix.cs" Condition="'$(IsApplePlatform)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.SunOS.cs" Condition="'$(Targetsillumos)' == 'true' or '$(TargetsSolaris)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Haiku.cs" Condition="'$(TargetsHaiku)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.FullGlobalizationData.Unix.cs" Condition="'$(UseMinimalGlobalizationData)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DriveInfoInternal.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Unix.cs" />
@@ -2698,6 +2699,14 @@
   </ItemGroup>
   <ItemGroup Condition="'$(UseMinimalGlobalizationData)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.MinimalGlobalizationData.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsHaiku)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Haiku\Interop.Libraries.cs">
+      <Link>Common\Interop\Haiku\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Haiku\Interop.OS.cs">
+      <Link>Common\Interop\Haiku\Interop.OS.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsApplePlatform)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libobjc.cs">
