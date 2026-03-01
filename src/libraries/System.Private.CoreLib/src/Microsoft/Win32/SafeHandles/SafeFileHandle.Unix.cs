@@ -339,6 +339,9 @@ namespace Microsoft.Win32.SafeHandles
                     Debug.Assert(status.Size == 0 || Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
                 }
 
+                // Cache the file type from the status
+                _cachedFileType = (int)MapUnixFileTypeToFileType(status.Mode & Interop.Sys.FileTypes.S_IFMT);
+
                 fileLength = status.Size;
                 filePermissions = ((UnixFileMode)status.Mode) & PermissionMask;
             }
@@ -492,6 +495,43 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return canSeek == NullableBool.True;
+        }
+
+        internal System.IO.FileType GetFileTypeCore()
+        {
+            int cachedType = _cachedFileType;
+            if (cachedType != -1)
+            {
+                return (System.IO.FileType)cachedType;
+            }
+
+            // If we don't have a cached value, call FStat to get it
+            int result = Interop.Sys.FStat(this, out Interop.Sys.FileStatus status);
+            if (result != 0)
+            {
+                throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+            }
+
+            System.IO.FileType fileType = MapUnixFileTypeToFileType(status.Mode & Interop.Sys.FileTypes.S_IFMT);
+            _cachedFileType = (int)fileType;
+            return fileType;
+        }
+
+        private static System.IO.FileType MapUnixFileTypeToFileType(int unixFileType)
+        {
+#pragma warning disable CA1416 // BlockDevice is only returned on Unix platforms
+            return unixFileType switch
+            {
+                Interop.Sys.FileTypes.S_IFREG => System.IO.FileType.RegularFile,
+                Interop.Sys.FileTypes.S_IFDIR => System.IO.FileType.Directory,
+                Interop.Sys.FileTypes.S_IFLNK => System.IO.FileType.SymbolicLink,
+                Interop.Sys.FileTypes.S_IFIFO => System.IO.FileType.Pipe,
+                Interop.Sys.FileTypes.S_IFSOCK => System.IO.FileType.Socket,
+                Interop.Sys.FileTypes.S_IFCHR => System.IO.FileType.CharacterDevice,
+                Interop.Sys.FileTypes.S_IFBLK => System.IO.FileType.BlockDevice,
+                _ => System.IO.FileType.Unknown
+            };
+#pragma warning restore CA1416
         }
 
         internal long GetFileLength()
