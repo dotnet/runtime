@@ -105,12 +105,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ExtensionDataWithNullableJsonElement_Throws()
         {
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<MyOverflowWrapper>(@"{""key"":""value""}"));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<AnotherOverflowWrapper>(@"{""Wrapper"": {""key"":""value""}}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<MyOverflowWrapper>("""{"key":"value"}"""));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<AnotherOverflowWrapper>("""{"Wrapper": {"key":"value"}}"""));
 
             // Having multiple extension properties is not allowed.
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<MyMultipleOverflowWrapper>(@"{""key"":""value""}"));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<AnotherMultipleOverflowWrapper>(@"{""key"":""value""}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<MyMultipleOverflowWrapper>("""{"key":"value"}"""));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<AnotherMultipleOverflowWrapper>("""{"key":"value"}"""));
         }
 
         private static void TestDictionaryWithNullableValue<TDict, TDictOfDict, TValue>(
@@ -146,7 +146,7 @@ namespace System.Text.Json.Serialization.Tests
             ValidateDict(parsedDictWithValue, value);
 
             json = JsonSerializer.Serialize(dictWithNull);
-            Assert.Equal(@"{""key"":null}", json);
+            Assert.Equal("""{"key":null}""", json);
 
             TDict parsedDictWithNull = JsonSerializer.Deserialize<TDict>(json);
             ValidateDict(parsedDictWithNull, default);
@@ -159,7 +159,7 @@ namespace System.Text.Json.Serialization.Tests
             ValidateDictOfDict(parsedDictOfDictWithValue, value);
 
             json = JsonSerializer.Serialize(dictOfDictWithNull);
-            Assert.Equal(@"{""key"":{""key"":null}}", json);
+            Assert.Equal("""{"key":{"key":null}}""", json);
 
             TDictOfDict parsedDictOfDictWithNull = JsonSerializer.Deserialize<TDictOfDict>(json);
             ValidateDictOfDict(parsedDictOfDictWithNull, default);
@@ -178,12 +178,14 @@ namespace System.Text.Json.Serialization.Tests
         public static void ClassWithDictionariesWithNullableValues()
         {
             string json =
-                @"{
-                    ""Dict"": {""key"": ""1995-04-16""},
-                    ""IDict"": {""key"": null},
-                    ""ImmutableDict"": {""key"": ""1997-03-22""},
-                    ""ImmutableSortedDict"": { ""key"": null}
-                }";
+                """
+                        {
+                                            "Dict": {"key": "1995-04-16"},
+                                            "IDict": {"key": null},
+                                            "ImmutableDict": {"key": "1997-03-22"},
+                                            "ImmutableSortedDict": { "key": null}
+                                        }
+                    """;
 
             SimpleClassWithDictionariesWithNullableValues obj = JsonSerializer.Deserialize<SimpleClassWithDictionariesWithNullableValues>(json);
             Assert.Equal(new DateTime(1995, 4, 16), obj.Dict["key"]);
@@ -192,10 +194,18 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(obj.ImmutableSortedDict["key"]);
 
             string serialized = JsonSerializer.Serialize(obj);
-            Assert.Contains(@"""Dict"":{""key"":""1995-04-16T00:00:00""}", serialized);
-            Assert.Contains(@"""IDict"":{""key"":null}", serialized);
-            Assert.Contains(@"""ImmutableDict"":{""key"":""1997-03-22T00:00:00""}", serialized);
-            Assert.Contains(@"""ImmutableSortedDict"":{""key"":null}", serialized);
+            Assert.Contains("""
+                "Dict":{"key":"1995-04-16T00:00:00"}
+                """, serialized);
+            Assert.Contains("""
+                "IDict":{"key":null}
+                """, serialized);
+            Assert.Contains("""
+                "ImmutableDict":{"key":"1997-03-22T00:00:00"}
+                """, serialized);
+            Assert.Contains("""
+                "ImmutableSortedDict":{"key":null}
+                """, serialized);
         }
 
         [Fact]
@@ -410,12 +420,22 @@ namespace System.Text.Json.Serialization.Tests
                     Age = 24
                 }
             });
-            Assert.Contains(@"{""Person"":{", serialized);
-            Assert.Contains(@"""FirstName"":""John""", serialized);
-            Assert.Contains(@"""Age"":24", serialized);
-            Assert.Contains(@"""Birthday"":null", serialized);
-            Assert.DoesNotContain(@"""Value"":{""", serialized);
-            Assert.DoesNotContain(@"""HasValue"":""", serialized);
+            Assert.Contains("""{"Person":{""", serialized);
+            Assert.Contains("""
+                "FirstName":"John"
+                """, serialized);
+            Assert.Contains("""
+                "Age":24
+                """, serialized);
+            Assert.Contains("""
+                "Birthday":null
+                """, serialized);
+            Assert.DoesNotContain("""
+                "Value":{"
+                """, serialized);
+            Assert.DoesNotContain("""
+                "HasValue":"
+                """, serialized);
 
             var obj = JsonSerializer.Deserialize<ClassWithNullablePerson>(serialized);
             Assert.Equal("John", obj.Person?.FirstName);
@@ -423,7 +443,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(obj.Person?.Birthday);
 
             serialized = JsonSerializer.Serialize(new ClassWithNullablePerson());
-            Assert.Equal(@"{""Person"":null}", serialized);
+            Assert.Equal("""{"Person":null}""", serialized);
 
             obj = JsonSerializer.Deserialize<ClassWithNullablePerson>(serialized);
             Assert.Null(obj.Person);
