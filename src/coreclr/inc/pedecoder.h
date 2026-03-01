@@ -126,6 +126,8 @@ typedef bool (*PEDecoder_ResourceCallbackFunction)(LPCWSTR lpName, LPCWSTR lpTyp
 
 class PEDecoder
 {
+    friend class PEImageLayout;
+
   public:
 
     // ------------------------------------------------------------
@@ -171,45 +173,20 @@ class PEDecoder
     IMAGE_NT_HEADERS64 *GetNTHeaders64() const;
     BOOL Has32BitNTHeaders() const;
 
-    const void *GetHeaders(COUNT_T *pSize = NULL) const;
-
     BOOL IsDll() const;
     BOOL HasBaseRelocations() const;
     const void *GetPreferredBase() const; // OptionalHeaders.ImageBase
     COUNT_T GetVirtualSize() const; // OptionalHeaders.SizeOfImage - size of mapped/expanded image in memory
-    WORD GetSubsystem() const;
-    WORD GetDllCharacteristics() const;
     DWORD GetTimeDateStamp() const;
-    DWORD GetCheckSum() const;
     WORD GetMachine() const;
-    WORD GetCharacteristics() const;
-    SIZE_T GetSizeOfStackReserve() const;
-    SIZE_T GetSizeOfStackCommit() const;
-    SIZE_T GetSizeOfHeapReserve() const;
-    SIZE_T GetSizeOfHeapCommit() const;
-    UINT32 GetLoaderFlags() const;
-    UINT32 GetWin32VersionValue() const;
-    COUNT_T GetNumberOfRvaAndSizes() const;
     COUNT_T GetNumberOfSections() const;
     PTR_IMAGE_SECTION_HEADER FindFirstSection() const;
     IMAGE_SECTION_HEADER *FindSection(LPCSTR sectionName) const;
 
-    DWORD GetImageIdentity() const;
-
-    BOOL HasWriteableSections() const;
-
     // Directory entry access
 
     BOOL HasDirectoryEntry(int entry) const;
-    CHECK CheckDirectoryEntry(int entry, int forbiddenFlags = 0, IsNullOK ok = NULL_NOT_OK) const;
-    IMAGE_DATA_DIRECTORY *GetDirectoryEntry(int entry) const;
     TADDR GetDirectoryEntryData(int entry, COUNT_T *pSize = NULL) const;
-
-    // IMAGE_DATA_DIRECTORY access
-
-    CHECK CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags = 0, IsNullOK ok = NULL_NOT_OK) const;
-    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const;
-    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir, COUNT_T *pSize) const;
 
     // Basic RVA access
 
@@ -218,66 +195,92 @@ class PEDecoder
     TADDR GetRvaData(RVA rva, IsNullOK ok = NULL_NOT_OK) const;
     // Called with ok=NULL_OK only for mapped fields (RVA statics)
 
+    // Flat mapping utilities
+    CHECK CheckOffset(COUNT_T fileOffset, IsNullOK ok = NULL_NOT_OK) const;
+    CHECK CheckOffset(COUNT_T fileOffset, COUNT_T size, IsNullOK ok = NULL_NOT_OK) const;
+    TADDR GetOffsetData(COUNT_T fileOffset, IsNullOK ok = NULL_NOT_OK) const;
+
+    // Look up a named symbol in the export directory
+    PTR_VOID GetExport(LPCSTR exportName) const;
+
+    // Win32 resources
+    bool EnumerateWin32ResourceTypes(PEDecoder_ResourceTypesCallbackFunction callback, void* context) const;
+    bool EnumerateWin32ResourceNames(LPCWSTR lpType, PEDecoder_ResourceNamesCallbackFunction callback, void* context) const;
+    bool EnumerateWin32Resources(LPCWSTR lpName, LPCWSTR lpType, PEDecoder_ResourceCallbackFunction callback, void* context) const;
+
+    // COR header fields
+
+    CHECK CheckCorHeader() const;
+    PTR_CVOID GetMetadata(COUNT_T *pSize = NULL) const;
+
+    void GetPEKindAndMachine(DWORD * pdwPEKind, DWORD *pdwMachine);  // Returns CorPEKind flags
+
+    // Compute size of IL blob. Assumes that the IL is within the bounds of the image - make sure
+    // to call CheckILMethod before calling this method.
+    static SIZE_T ComputeILMethodSize(TADDR pIL);
+
+    // Debug directory access, returns NULL if no such entry
+    PTR_IMAGE_DEBUG_DIRECTORY GetDebugDirectoryEntry(UINT index) const;
+
+  private:
+    // ------------------------------------------------------------
+    // PEImageLayout-only API — accessible via friend declaration.
+    // Not part of the standalone PEDecoder public API.
+    // ------------------------------------------------------------
+
+    const void *GetHeaders(COUNT_T *pSize = NULL) const;
+
+    WORD GetSubsystem() const;
+    WORD GetDllCharacteristics() const;
+    DWORD GetCheckSum() const;
+    WORD GetCharacteristics() const;
+    SIZE_T GetSizeOfStackReserve() const;
+    SIZE_T GetSizeOfStackCommit() const;
+    SIZE_T GetSizeOfHeapReserve() const;
+    SIZE_T GetSizeOfHeapCommit() const;
+    UINT32 GetLoaderFlags() const;
+    UINT32 GetWin32VersionValue() const;
+    COUNT_T GetNumberOfRvaAndSizes() const;
+
+    DWORD GetImageIdentity() const;
+    BOOL HasWriteableSections() const;
+
+    CHECK CheckDirectoryEntry(int entry, int forbiddenFlags = 0, IsNullOK ok = NULL_NOT_OK) const;
+    IMAGE_DATA_DIRECTORY *GetDirectoryEntry(int entry) const;
+
+    CHECK CheckDirectory(IMAGE_DATA_DIRECTORY *pDir, int forbiddenFlags = 0, IsNullOK ok = NULL_NOT_OK) const;
+    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const;
+    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir, COUNT_T *pSize) const;
+
     CHECK CheckData(const void *data, IsNullOK ok = NULL_NOT_OK) const;
     CHECK CheckData(const void *data, COUNT_T size, IsNullOK ok = NULL_NOT_OK) const;
     RVA GetDataRva(const TADDR data) const;
     BOOL PointerInPE(PTR_CVOID data) const;
 
-    // Flat mapping utilities - using PointerToRawData instead of (Relative)VirtualAddress
-    CHECK CheckOffset(COUNT_T fileOffset, IsNullOK ok = NULL_NOT_OK) const;
-    CHECK CheckOffset(COUNT_T fileOffset, COUNT_T size, IsNullOK ok = NULL_NOT_OK) const;
-    TADDR GetOffsetData(COUNT_T fileOffset, IsNullOK ok = NULL_NOT_OK) const;
-    // Called with ok=NULL_OK only for mapped fields (RVA statics)
-
-    // Mapping between RVA and file offsets
     COUNT_T RvaToOffset(RVA rva) const;
     RVA OffsetToRva(COUNT_T fileOffset) const;
-
-    // Base intra-image pointer access
-    // (These are for pointers retrieved out of the PE image)
 
     CHECK CheckInternalAddress(SIZE_T address, IsNullOK ok = NULL_NOT_OK) const;
     CHECK CheckInternalAddress(SIZE_T address, COUNT_T size, IsNullOK ok = NULL_NOT_OK) const;
     TADDR GetInternalAddressData(SIZE_T address) const;
 
-    // CLR loader IL Image verification - these checks apply to IL_ONLY images.
-
     BOOL IsILOnly() const;
     CHECK CheckILOnly() const;
-
-    // Strong name & hashing support
 
     BOOL HasStrongNameSignature() const;
     CHECK CheckStrongNameSignature() const;
     PTR_CVOID GetStrongNameSignature(COUNT_T *pSize = NULL) const;
-
-    // CorHeader flag support
-
-    // IsStrongNameSigned indicates whether the signature has been filled in.
-    // (otherwise if it has a signature it is delay signed.)
-    BOOL IsStrongNameSigned() const;    // TRUE if the COMIMAGE_FLAGS_STRONGNAMESIGNED flag is set
-
-    // TLS
+    BOOL IsStrongNameSigned() const;
 
     BOOL HasTls() const;
     CHECK CheckTls() const;
     PTR_VOID GetTlsRange(COUNT_T *pSize = NULL) const;
     UINT32 GetTlsIndex() const;
 
-    // Win32 resources
     void *GetWin32Resource(LPCWSTR lpName, LPCWSTR lpType, COUNT_T *pSize = NULL) const;
-    bool EnumerateWin32ResourceTypes(PEDecoder_ResourceTypesCallbackFunction callback, void* context) const;
-    bool EnumerateWin32ResourceNames(LPCWSTR lpType, PEDecoder_ResourceNamesCallbackFunction callback, void* context) const;
-    bool EnumerateWin32Resources(LPCWSTR lpName, LPCWSTR lpType, PEDecoder_ResourceCallbackFunction callback, void* context) const;
-  public:
-
-    // COR header fields
 
     BOOL HasCorHeader() const;
-    CHECK CheckCorHeader() const;
     IMAGE_COR20_HEADER *GetCorHeader() const;
-
-    PTR_CVOID GetMetadata(COUNT_T *pSize = NULL) const;
 
     const void *GetResources(COUNT_T *pSize = NULL) const;
     CHECK CheckResource(COUNT_T offset) const;
@@ -289,23 +292,9 @@ class PEDecoder
 
     BOOL IsNativeMachineFormat() const;
     BOOL IsI386() const;
+    BOOL IsPlatformNeutral();
 
-    void GetPEKindAndMachine(DWORD * pdwPEKind, DWORD *pdwMachine);  // Returns CorPEKind flags
-    BOOL IsPlatformNeutral(); // Returns TRUE for IL-only platform neutral images
-
-    //
-    // Verifies that the IL is within the bounds of the image.
-    //
     CHECK CheckILMethod(RVA rva);
-
-    //
-    // Compute size of IL blob. Assumes that the IL is within the bounds of the image - make sure
-    // to call CheckILMethod before calling this method.
-    //
-    static SIZE_T ComputeILMethodSize(TADDR pIL);
-
-    // Debug directory access, returns NULL if no such entry
-    PTR_IMAGE_DEBUG_DIRECTORY GetDebugDirectoryEntry(UINT index) const;
 
     PTR_CVOID GetNativeManifestMetadata(COUNT_T* pSize = NULL) const;
 
@@ -313,12 +302,10 @@ class PEDecoder
     BOOL HasReadyToRunHeader() const;
     READYTORUN_HEADER *GetReadyToRunHeader() const;
 
-    // Native DLLMain Entrypoint
     BOOL HasNativeEntryPoint() const;
     void *GetNativeEntryPoint() const;
 
-    // Look up a named symbol in the export directory
-    PTR_VOID GetExport(LPCSTR exportName) const;
+  public:
 
 #ifdef _DEBUG
     // Stress mode for relocations

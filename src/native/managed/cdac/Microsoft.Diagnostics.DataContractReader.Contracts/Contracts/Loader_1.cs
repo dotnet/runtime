@@ -216,6 +216,9 @@ internal readonly struct Loader_1 : ILoader
 
     private uint RvaToOffset(int rva, Data.PEImageLayout imageLayout)
     {
+        if (imageLayout.IsWebcilFormat)
+            return WebcilRvaToOffset(rva, imageLayout);
+
         TargetPointer section = RvaToSection(rva, imageLayout);
         if (section == TargetPointer.Null)
             throw new InvalidOperationException("Failed to read from image.");
@@ -223,6 +226,37 @@ internal readonly struct Loader_1 : ILoader
         Data.ImageSectionHeader sectionHeader = _target.ProcessedData.GetOrAdd<Data.ImageSectionHeader>(section);
         uint offset = (uint)(rva - sectionHeader.VirtualAddress) + sectionHeader.PointerToRawData;
         return offset;
+    }
+
+    // Webcil section table starts at offset 28 (sizeof(WebcilHeader)), each entry is 16 bytes.
+    // WebcilSectionHeader: VirtualSize(4), VirtualAddress(4), SizeOfRawData(4), PointerToRawData(4)
+    private const int WebcilHeaderSize = 28;
+    private const int WebcilSectionHeaderSize = 16;
+    private const int WebcilCoffSectionsOffset = 8; // offset of CoffSections in WebcilHeader
+
+    private uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
+    {
+        TargetPointer headerBase = imageLayout.Base;
+        ushort numSections = _target.Read<ushort>(headerBase + WebcilCoffSectionsOffset);
+        if (numSections == 0 || numSections > 16)
+            throw new InvalidOperationException("Invalid Webcil section count.");
+        TargetPointer sectionTableBase = headerBase + WebcilHeaderSize;
+
+        for (int i = 0; i < numSections; i++)
+        {
+            TargetPointer sectionPtr = sectionTableBase + (uint)(i * WebcilSectionHeaderSize);
+            uint virtualSize = _target.Read<uint>(sectionPtr);         // VirtualSize at offset 0
+            uint virtualAddress = _target.Read<uint>(sectionPtr + 4);  // VirtualAddress at offset 4
+            uint sizeOfRawData = _target.Read<uint>(sectionPtr + 8);   // SizeOfRawData at offset 8
+            uint pointerToRawData = _target.Read<uint>(sectionPtr + 12); // PointerToRawData at offset 12
+
+            if ((uint)rva >= virtualAddress && (uint)rva < virtualAddress + virtualSize && (uint)rva < virtualAddress + sizeOfRawData)
+            {
+                return (uint)(rva - virtualAddress) + pointerToRawData;
+            }
+        }
+
+        throw new InvalidOperationException("Failed to resolve RVA in Webcil image.");
     }
 
     TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)

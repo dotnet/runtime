@@ -271,6 +271,7 @@ CDAC_TYPE_BEGIN(PEImageLayout)
 CDAC_TYPE_FIELD(PEImageLayout, /*pointer*/, Base, cdac_data<PEImageLayout>::Base)
 CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Size, cdac_data<PEImageLayout>::Size)
 CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Flags, cdac_data<PEImageLayout>::Flags)
+CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Format, cdac_data<PEImageLayout>::Format)
 CDAC_TYPE_END(PEImageLayout)
 
 CDAC_TYPE_BEGIN(CGrowableSymbolStream)

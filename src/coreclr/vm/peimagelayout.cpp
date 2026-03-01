@@ -216,6 +216,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(IsPEFormat());
     SetRelocated();
 
     //
@@ -485,7 +486,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
         loadedImage = source->LoadImageByCopyingParts(this->m_imageParts);
     }
 
-    IfFailThrow(Init(loadedImage));
+    IfFailThrow(m_peDecoder.Init(loadedImage));
 
     if (AllowR2RForImage(m_pOwner) && IsNativeMachineFormat())
     {
@@ -557,7 +558,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         return;
     }
 
-    IfFailThrow(Init(m_Module, true));
+    IfFailThrow(m_peDecoder.Init(m_Module, true));
 
 #ifdef LOGGING
     SString ownerPath{ pOwner->GetPath() };
@@ -582,12 +583,12 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         ownerPath.GetUTF8(), hFile, (void*)m_LoadedFile));
 #endif // LOGGING
 
-    IfFailThrow(Init((void*)m_LoadedFile));
+    IfFailThrow(m_peDecoder.Init((void*)m_LoadedFile));
 
     if (!HasCorHeader())
     {
         *loadFailure = COR_E_BADIMAGEFORMAT;
-        Reset();
+        m_peDecoder.Reset();
         return;
     }
 
@@ -597,7 +598,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
         if (!IsNativeMachineFormat())
         {
             *loadFailure = COR_E_BADIMAGEFORMAT;
-            Reset();
+            m_peDecoder.Reset();
             return;
         }
 
@@ -612,7 +613,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HMODULE hModule)
 {
     m_pOwner = pOwner;
-    PEDecoder::Init((void*)hModule, /* relocated */ true);
+    m_peDecoder.Init((void*)hModule, /* relocated */ true);
 }
 #endif // !TARGET_UNIX
 
@@ -655,7 +656,18 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         // Image was provided as flat data via external assembly probing.
         // We do not manage the data - just initialize with it directly.
         _ASSERTE(dataSize != 0);
-        Init(data, (COUNT_T)dataSize);
+#ifdef FEATURE_WEBCIL
+        if (WebcilDecoder::DetectWebcilFormat(data, (COUNT_T)dataSize))
+        {
+            m_format = FORMAT_WEBCIL;
+            m_webcilDecoder.Init(data, (COUNT_T)dataSize);
+            m_peDecoder.Init(data, (COUNT_T)dataSize); // Initialize base/size/flags for cDAC
+        }
+        else
+#endif
+        {
+            m_peDecoder.Init(data, (COUNT_T)dataSize);
+        }
         return;
     }
 
@@ -763,7 +775,18 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         }
     }
 
-    Init(addr, (COUNT_T)size);
+#ifdef FEATURE_WEBCIL
+    if (WebcilDecoder::DetectWebcilFormat(addr, (COUNT_T)size))
+    {
+        m_format = FORMAT_WEBCIL;
+        m_webcilDecoder.Init(addr, (COUNT_T)size);
+        m_peDecoder.Init(addr, (COUNT_T)size); // Initialize base/size/flags for cDAC
+    }
+    else
+#endif
+    {
+        m_peDecoder.Init(addr, (COUNT_T)size);
+    }
 }
 
 FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size)
@@ -781,7 +804,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
 
     if (size == 0)
     {
-        Init((void*)array, size);
+        m_peDecoder.Init((void*)array, size);
     }
     else
     {
@@ -811,7 +834,18 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
             ThrowLastError();
 
         memcpy(m_FileView, array, size);
-        Init((void*)m_FileView, size);
+#ifdef FEATURE_WEBCIL
+        if (WebcilDecoder::DetectWebcilFormat(m_FileView, size))
+        {
+            m_format = FORMAT_WEBCIL;
+            m_webcilDecoder.Init((void*)m_FileView, size);
+            m_peDecoder.Init((void*)m_FileView, size); // Initialize base/size/flags for cDAC
+        }
+        else
+#endif
+        {
+            m_peDecoder.Init((void*)m_FileView, size);
+        }
     }
 }
 
@@ -1262,11 +1296,11 @@ NativeImageLayout::NativeImageLayout(LPCWSTR fullPath)
 
 
 #if TARGET_UNIX
-    PEDecoder::Init(loadedImage, /* relocated */ false);
+    m_peDecoder.Init(loadedImage, /* relocated */ false);
     // Unix specifies write sharing at map time (i.e. MAP_PRIVATE implies writecopy).
     ApplyBaseRelocations(/* relocationMustWriteCopy*/ false);
 #else // TARGET_UNIX
-    PEDecoder::Init(loadedImage, /* relocated */ true);
+    m_peDecoder.Init(loadedImage, /* relocated */ true);
 #endif // TARGET_UNIX
 }
 #endif // !DACESS_COMPILE
@@ -1278,6 +1312,13 @@ PEImageLayout::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p PEAssembly\n", dac_cast<TADDR>(this)));
-    PEDecoder::EnumMemoryRegions(flags,false);
+#ifdef FEATURE_WEBCIL
+    if (IsWebcilFormat())
+    {
+        m_webcilDecoder.EnumMemoryRegions(flags, false);
+        return;
+    }
+#endif
+    m_peDecoder.EnumMemoryRegions(flags,false);
 }
 #endif //DACCESS_COMPILE

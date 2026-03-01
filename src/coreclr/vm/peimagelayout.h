@@ -17,6 +17,9 @@
 #include "clrtypes.h"
 #include "pedecoder.h"
 #include "holder.h"
+#ifdef FEATURE_WEBCIL
+#include "webcildecoder.h"
+#endif
 
 // --------------------------------------------------------------------------------
 // Forward declarations
@@ -28,10 +31,19 @@ class PEImage;
 
 typedef VPTR(class PEImageLayout) PTR_PEImageLayout;
 
-class PEImageLayout : public PEDecoder
+class PEImageLayout
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(PEImageLayout)
 public:
+    // ------------------------------------------------------------
+    // Image format discriminator
+    // ------------------------------------------------------------
+    enum ImageFormat
+    {
+        FORMAT_PE       = 0,
+        FORMAT_WEBCIL   = 1,
+    };
+
     // ------------------------------------------------------------
     // Public constants
     // ------------------------------------------------------------
@@ -63,13 +75,166 @@ public:
 
     void ApplyBaseRelocations(bool relocationMustWriteCopy);
 
+    // ------------------------------------------------------------
+    // Format query
+    // ------------------------------------------------------------
+    ImageFormat GetImageFormat() const { return m_format; }
+#ifdef FEATURE_WEBCIL
+    BOOL IsPEFormat() const { return m_format == FORMAT_PE; }
+    BOOL IsWebcilFormat() const { return m_format == FORMAT_WEBCIL; }
+#else
+    BOOL IsPEFormat() const { return TRUE; }
+    BOOL IsWebcilFormat() const { return FALSE; }
+#endif
+
+    // ------------------------------------------------------------
+    // Generalized header checks (format-agnostic)
+    // ------------------------------------------------------------
+    BOOL HasHeaders() const;
+    CHECK CheckHeaders() const;
+
+    // ------------------------------------------------------------
+    // Forwarding methods — delegate to the active decoder
+    // These provide the same API surface as PEDecoder so that
+    // all existing callers continue to work unchanged.
+    // ------------------------------------------------------------
+
+    // Basic properties
+    PTR_VOID GetBase() const;
+    BOOL IsMapped() const;
+    BOOL IsRelocated() const;
+    BOOL IsFlat() const;
+    BOOL HasContents() const;
+    COUNT_T GetSize() const;
+
+    // Format checks
+    CHECK CheckFormat() const;
+    CHECK CheckNTFormat() const;
+    CHECK CheckCORFormat() const;
+    CHECK CheckILFormat() const;
+    CHECK CheckILOnlyFormat() const;
+
+    // NT header access
+    BOOL HasNTHeaders() const;
+    CHECK CheckNTHeaders() const;
+    IMAGE_NT_HEADERS32 *GetNTHeaders32() const;
+    IMAGE_NT_HEADERS64 *GetNTHeaders64() const;
+    BOOL Has32BitNTHeaders() const;
+
+    BOOL IsDll() const;
+    BOOL HasBaseRelocations() const;
+    const void *GetPreferredBase() const;
+    COUNT_T GetVirtualSize() const;
+    DWORD GetTimeDateStamp() const;
+    WORD GetMachine() const;
+    COUNT_T GetNumberOfSections() const;
+    PTR_IMAGE_SECTION_HEADER FindFirstSection() const;
+    IMAGE_SECTION_HEADER *FindSection(LPCSTR sectionName) const;
+    BOOL HasWriteableSections() const;
+
+    // Directory entry access
+    BOOL HasDirectoryEntry(int entry) const;
+    IMAGE_DATA_DIRECTORY *GetDirectoryEntry(int entry) const;
+    TADDR GetDirectoryEntryData(int entry, COUNT_T *pSize = NULL) const;
+
+    // IMAGE_DATA_DIRECTORY access
+    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir) const;
+    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY *pDir, COUNT_T *pSize) const;
+
+    // RVA access
+    CHECK CheckRva(RVA rva, IsNullOK ok = NULL_NOT_OK) const;
+    CHECK CheckRva(RVA rva, COUNT_T size, int forbiddenFlags=0, IsNullOK ok = NULL_NOT_OK) const;
+    TADDR GetRvaData(RVA rva, IsNullOK ok = NULL_NOT_OK) const;
+    CHECK CheckData(const void *data, IsNullOK ok = NULL_NOT_OK) const;
+    CHECK CheckData(const void *data, COUNT_T size, IsNullOK ok = NULL_NOT_OK) const;
+    RVA GetDataRva(const TADDR data) const;
+    BOOL PointerInPE(PTR_CVOID data) const;
+
+    // Flat mapping utilities
+    CHECK CheckOffset(COUNT_T fileOffset, IsNullOK ok = NULL_NOT_OK) const;
+    CHECK CheckOffset(COUNT_T fileOffset, COUNT_T size, IsNullOK ok = NULL_NOT_OK) const;
+    TADDR GetOffsetData(COUNT_T fileOffset, IsNullOK ok = NULL_NOT_OK) const;
+    COUNT_T RvaToOffset(RVA rva) const;
+    RVA OffsetToRva(COUNT_T fileOffset) const;
+
+    // IL-only properties
+    BOOL IsILOnly() const;
+    CHECK CheckILOnly() const;
+
+    // Strong name
+    BOOL HasStrongNameSignature() const;
+    CHECK CheckStrongNameSignature() const;
+    PTR_CVOID GetStrongNameSignature(COUNT_T *pSize = NULL) const;
+    BOOL IsStrongNameSigned() const;
+
+    // TLS
+    BOOL HasTls() const;
+    CHECK CheckTls() const;
+    PTR_VOID GetTlsRange(COUNT_T *pSize = NULL) const;
+    UINT32 GetTlsIndex() const;
+
+    // COR header
+    BOOL HasCorHeader() const;
+    CHECK CheckCorHeader() const;
+    IMAGE_COR20_HEADER *GetCorHeader() const;
+    PTR_CVOID GetMetadata(COUNT_T *pSize = NULL) const;
+    const void *GetResources(COUNT_T *pSize = NULL) const;
+    CHECK CheckResource(COUNT_T offset) const;
+    const void *GetResource(COUNT_T offset, COUNT_T *pSize = NULL) const;
+    BOOL HasManagedEntryPoint() const;
+    ULONG GetEntryPointToken() const;
+    IMAGE_COR_VTABLEFIXUP *GetVTableFixups(COUNT_T *pCount = NULL) const;
+
+    BOOL IsNativeMachineFormat() const;
+    BOOL IsI386() const;
+    void GetPEKindAndMachine(DWORD *pdwPEKind, DWORD *pdwMachine);
+    BOOL IsPlatformNeutral();
+
+    CHECK CheckILMethod(RVA rva);
+
+    PTR_IMAGE_DEBUG_DIRECTORY GetDebugDirectoryEntry(UINT index) const;
+    PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize = NULL) const;
+
+    BOOL IsComponentAssembly() const;
+    BOOL HasReadyToRunHeader() const;
+    READYTORUN_HEADER *GetReadyToRunHeader() const;
+
+    BOOL HasNativeEntryPoint() const;
+    void *GetNativeEntryPoint() const;
+    PTR_VOID GetExport(LPCSTR exportName) const;
+
+    DWORD GetCorHeaderFlags() const;
+
+private:
+    PEDecoder& GetPEDecoder() { return m_peDecoder; }
+    const PEDecoder& GetPEDecoder() const { return m_peDecoder; }
+#ifdef FEATURE_WEBCIL
+    WebcilDecoder& GetWebcilDecoder() { return m_webcilDecoder; }
+    const WebcilDecoder& GetWebcilDecoder() const { return m_webcilDecoder; }
+#endif
+
 public:
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
+protected:
+    // Protected forwarding helpers for subclass access to PEDecoder protected members
+    IMAGE_NT_HEADERS* FindNTHeaders() const { return m_peDecoder.FindNTHeaders(); }
+    IMAGE_SECTION_HEADER* RvaToSection(RVA rva) const { return m_peDecoder.RvaToSection(rva); }
+    void SetRelocated() { m_peDecoder.SetRelocated(); }
+
 private:
     Volatile<LONG> m_refCount;
+
+protected:
+    ImageFormat m_format;
+
+    PEDecoder m_peDecoder;
+#ifdef FEATURE_WEBCIL
+    WebcilDecoder m_webcilDecoder;
+#endif
+
 public:
     PEImage* m_pOwner;
 
@@ -79,9 +244,10 @@ public:
 template<>
 struct cdac_data<PEImageLayout>
 {
-    static constexpr size_t Base = offsetof(PEImageLayout, m_base);
-    static constexpr size_t Size = offsetof(PEImageLayout, m_size);
-    static constexpr size_t Flags = offsetof(PEImageLayout, m_flags);
+    static constexpr size_t Base = offsetof(PEImageLayout, m_peDecoder) + offsetof(PEDecoder, m_base);
+    static constexpr size_t Size = offsetof(PEImageLayout, m_peDecoder) + offsetof(PEDecoder, m_size);
+    static constexpr size_t Flags = offsetof(PEImageLayout, m_peDecoder) + offsetof(PEDecoder, m_flags);
+    static constexpr size_t Format = offsetof(PEImageLayout, m_format);
 };
 
 typedef ReleaseHolder<PEImageLayout> PEImageLayoutHolder;
