@@ -90,6 +90,8 @@ usage()
   echo "  --ninja                    Optional argument: use Ninja instead of Make (default: true, use --ninja false to disable)."
   echo "  --pgoinstrument            Optional argument: build PGO-instrumented runtime"
   echo "  --fsanitize                Optional argument: Specify native sanitizers to instrument the native build with. Supported values are: 'address'."
+  echo "  --validate-config          Validate that the platform CMake cache matches the current system configuration."
+  echo "  --regenerate-config        Regenerate the platform CMake cache if it differs from the current system."
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -569,12 +571,66 @@ while [[ $# -gt 0 ]]; do
       shift 1
       ;;
 
+      -validate-config|-validateconfig)
+      validateConfig=1
+      shift 1
+      ;;
+
+      -regenerate-config|-regenerateconfig)
+      regenerateConfig=1
+      shift 1
+      ;;
+
+      -sourcebuild|-source-build|-sb)
+      # Export env var to disable platform cache for source builds
+      export CLR_CMAKE_SKIP_PLATFORM_CACHE=1
+      extraargs+=("$1")
+      shift 1
+      ;;
+
       *)
       extraargs+=("$1")
       shift 1
       ;;
   esac
 done
+
+# Handle --validate-config and --regenerate-config
+if [[ "${validateConfig:-0}" == "1" || "${regenerateConfig:-0}" == "1" ]]; then
+    # Determine platform string
+    platform=""
+    case "$os" in
+        osx)
+            platform="osx-$arch"
+            ;;
+        linux)
+            platform="linux-$arch"
+            ;;
+        browser)
+            platform="browser"
+            ;;
+        ios|tvos|iossimulator|tvossimulator)
+            platform="ios"
+            ;;
+        *)
+            echo "No platform cache defined for $os-$arch"
+            exit 0
+            ;;
+    esac
+
+    validateScript="$scriptroot/native/validate-platform-cache.sh"
+    if [[ ! -f "$validateScript" ]]; then
+        echo "Error: validate-platform-cache.sh not found at $validateScript"
+        exit 1
+    fi
+
+    if [[ "${regenerateConfig:-0}" == "1" ]]; then
+        "$validateScript" --regenerate "$platform"
+    else
+        "$validateScript" "$platform"
+    fi
+    exit $?
+fi
 
 if [ ${#actInt[@]} -eq 0 ]; then
     arguments=("-restore" "-build" ${arguments[@]+"${arguments[@]}"})
