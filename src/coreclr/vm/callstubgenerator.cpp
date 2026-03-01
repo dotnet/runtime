@@ -1572,7 +1572,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     bool hasSwiftError = m_isSwiftCallConv && m_hasSwiftError && pMD->IsILStub();
 
     int targetSlotIndex = m_interpreterToNative ? m_targetSlotIndex : (m_routineIndex - 1);
+#ifdef TARGET_ARM
+    // AAPCS compliant stack alignment for function calls
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, 8), sig.IsAsyncCall(), hasSwiftError, m_pInvokeFunction);
+#else
     CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), hasSwiftError, m_pInvokeFunction);
+#endif // TARGET_ARM
 
     return pHeader;
 }
