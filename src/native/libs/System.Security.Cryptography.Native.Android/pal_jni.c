@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_jni.h"
+#include "pal_trust_manager.h"
 #include <pthread.h>
 
 JavaVM* gJvm;
@@ -487,9 +488,21 @@ jmethodID g_KeyAgreementGenerateSecret;
 // javax/net/ssl/TrustManager
 jclass g_TrustManager;
 
+// javax/net/ssl/TrustManagerFactory
+jclass    g_TrustManagerFactory;
+jmethodID g_TrustManagerFactoryGetInstance;
+jmethodID g_TrustManagerFactoryGetDefaultAlgorithm;
+jmethodID g_TrustManagerFactoryInit;
+jmethodID g_TrustManagerFactoryGetTrustManagers;
+
+// javax/net/ssl/X509TrustManager
+jclass g_X509TrustManager;
+
 // net/dot/android/crypto/DotnetProxyTrustManager
 jclass    g_DotnetProxyTrustManager;
 jmethodID g_DotnetProxyTrustManagerCtor;
+jmethodID g_DotnetProxyTrustManagerIsCleartextTrafficPermitted;
+jmethodID g_DotnetProxyTrustManagerIsCertificateTrustedForHost;
 
 // net/dot/android/crypto/DotnetX509KeyManager
 jclass    g_DotnetX509KeyManager;
@@ -1103,8 +1116,27 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 
     g_TrustManager = GetClassGRef(env, "javax/net/ssl/TrustManager");
 
+    g_TrustManagerFactory =                   GetClassGRef(env, "javax/net/ssl/TrustManagerFactory");
+    g_TrustManagerFactoryGetInstance =        GetMethod(env, true, g_TrustManagerFactory, "getInstance", "(Ljava/lang/String;)Ljavax/net/ssl/TrustManagerFactory;");
+    g_TrustManagerFactoryGetDefaultAlgorithm = GetMethod(env, true, g_TrustManagerFactory, "getDefaultAlgorithm", "()Ljava/lang/String;");
+    g_TrustManagerFactoryInit =               GetMethod(env, false, g_TrustManagerFactory, "init", "(Ljava/security/KeyStore;)V");
+    g_TrustManagerFactoryGetTrustManagers =   GetMethod(env, false, g_TrustManagerFactory, "getTrustManagers", "()[Ljavax/net/ssl/TrustManager;");
+
+    g_X509TrustManager = GetClassGRef(env, "javax/net/ssl/X509TrustManager");
+
     g_DotnetProxyTrustManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetProxyTrustManager");
-    g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(J)V");
+    g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(JLjavax/net/ssl/X509TrustManager;Ljava/lang/String;)V");
+    g_DotnetProxyTrustManagerIsCleartextTrafficPermitted = GetMethod(env, true, g_DotnetProxyTrustManager, "isCleartextTrafficPermitted", "(Ljava/lang/String;)Z");
+    g_DotnetProxyTrustManagerIsCertificateTrustedForHost = GetMethod(env, true, g_DotnetProxyTrustManager, "isCertificateTrustedForHost", "([BLjava/lang/String;)Z");
+
+    // Register native methods explicitly so the JVM can find them when the
+    // native crypto library is statically linked into the final binary
+    // (NativeAOT). Without this, the JVM relies on symbol lookup via the
+    // JNI naming convention which fails when the linker strips the symbol.
+    JNINativeMethod trustManagerMethods[] = {
+        { "verifyRemoteCertificate", "(JZ)Z", (void*)Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate },
+    };
+    (*env)->RegisterNatives(env, g_DotnetProxyTrustManager, trustManagerMethods, 1);
 
     g_DotnetX509KeyManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetX509KeyManager");
     g_DotnetX509KeyManagerCtor = GetMethod(env, false, g_DotnetX509KeyManager, "<init>", "(Ljava/security/KeyStore$PrivateKeyEntry;)V");

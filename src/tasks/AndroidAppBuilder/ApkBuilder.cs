@@ -51,6 +51,8 @@ public partial class ApkBuilder
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
     public string[] NativeDependencies { get; set; } = Array.Empty<string>();
     public string RuntimeFlavor { get; set; } = nameof(RuntimeFlavorEnum.Mono);
+    public string? NetworkSecurityConfig { get; set; }
+    public string? NetworkSecurityConfigResourcesDir { get; set; }
 
     private RuntimeFlavorEnum parsedRuntimeFlavor;
     private bool IsMono => parsedRuntimeFlavor == RuntimeFlavorEnum.Mono;
@@ -460,11 +462,52 @@ public partial class ApkBuilder
 
         File.WriteAllText(monoRunnerPath, monoRunner);
 
+        // Handle network security config
+        string networkSecurityConfigAttr = "";
+        string resourceDirArg = "";
+        if (!string.IsNullOrEmpty(NetworkSecurityConfigResourcesDir) && string.IsNullOrEmpty(NetworkSecurityConfig))
+        {
+            throw new ArgumentException(
+                $"'{nameof(NetworkSecurityConfigResourcesDir)}' cannot be set without '{nameof(NetworkSecurityConfig)}'. Set '{nameof(NetworkSecurityConfig)}' first.");
+        }
+        if (!string.IsNullOrEmpty(NetworkSecurityConfig))
+        {
+            if (!File.Exists(NetworkSecurityConfig))
+            {
+                throw new ArgumentException($"NetworkSecurityConfig file not found: '{NetworkSecurityConfig}'");
+            }
+
+            string resXmlDir = Path.Combine(OutputDir, "res", "xml");
+            Directory.CreateDirectory(resXmlDir);
+            File.Copy(NetworkSecurityConfig, Path.Combine(resXmlDir, "network_security_config.xml"), overwrite: true);
+            networkSecurityConfigAttr = "\n               a:networkSecurityConfig=\"@xml/network_security_config\"";
+            resourceDirArg = "-S res ";
+
+            // Copy additional resource files (e.g., res/raw/ for certificate files)
+            if (!string.IsNullOrEmpty(NetworkSecurityConfigResourcesDir))
+            {
+                if (!Directory.Exists(NetworkSecurityConfigResourcesDir))
+                {
+                    throw new ArgumentException($"NetworkSecurityConfigResourcesDir directory not found: '{NetworkSecurityConfigResourcesDir}'");
+                }
+
+                string destResDir = Path.Combine(OutputDir, "res");
+                foreach (string srcFile in Directory.GetFiles(NetworkSecurityConfigResourcesDir, "*", SearchOption.AllDirectories))
+                {
+                    string relativePath = Path.GetRelativePath(NetworkSecurityConfigResourcesDir, srcFile);
+                    string destFile = Path.Combine(destResDir, relativePath);
+                    Directory.CreateDirectory(Path.GetDirectoryName(destFile)!);
+                    File.Copy(srcFile, destFile, overwrite: true);
+                }
+            }
+        }
+
         File.WriteAllText(Path.Combine(OutputDir, "AndroidManifest.xml"),
             Utils.GetEmbeddedResource("AndroidManifest.xml")
                 .Replace("%PackageName%", packageId)
                 .Replace("%MinSdkLevel%", MinApiLevel)
-                .Replace("%TargetSdkVersion%", TargetApiLevel));
+                .Replace("%TargetSdkVersion%", TargetApiLevel)
+                .Replace("%NetworkSecurityConfig%", networkSecurityConfigAttr));
 
         string javaCompilerArgs = $"-d obj -classpath src -bootclasspath {androidJar} -source 1.8 -target 1.8 ";
         Utils.RunProcess(logger, javac, javaCompilerArgs + javaActivityPath, workingDir: OutputDir);
@@ -488,7 +531,7 @@ public partial class ApkBuilder
 
         string debugModeArg = StripDebugSymbols ? string.Empty : "--debug-mode";
         string apkFile = Path.Combine(OutputDir, "bin", $"{ProjectName}.unaligned.apk");
-        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"package -f -m -F {apkFile} -A assets -M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
+        Utils.RunProcess(logger, androidSdkHelper.AaptPath, $"package -f -m -F {apkFile} -A assets {resourceDirArg}-M AndroidManifest.xml -I {androidJar} {debugModeArg}", workingDir: OutputDir);
 
         var dynamicLibs = new List<string>();
         if (!IsNativeAOT)
