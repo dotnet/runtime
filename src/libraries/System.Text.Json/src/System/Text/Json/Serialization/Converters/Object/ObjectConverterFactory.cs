@@ -62,7 +62,14 @@ namespace System.Text.Json.Serialization.Converters
                 foreach (ParameterInfo parameter in parameters)
                 {
                     // Every argument must be of supported type.
-                    JsonTypeInfo.ValidateType(parameter.ParameterType);
+                    // For byref parameters (in/ref/out), validate the underlying element type.
+                    Type parameterType = parameter.ParameterType;
+                    if (parameterType.IsByRef)
+                    {
+                        parameterType = parameterType.GetElementType()!;
+                    }
+
+                    JsonTypeInfo.ValidateType(parameterType);
                 }
 
                 if (parameterCount <= JsonConstants.UnboxedParameterCountThreshold)
@@ -75,7 +82,15 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         if (i < parameterCount)
                         {
-                            typeArguments[i + 1] = parameters[i].ParameterType;
+                            // For byref parameters (in/ref/out), use the underlying element type
+                            // since byref types cannot be used as generic type arguments.
+                            Type parameterType = parameters[i].ParameterType;
+                            if (parameterType.IsByRef)
+                            {
+                                parameterType = parameterType.GetElementType()!;
+                            }
+
+                            typeArguments[i + 1] = parameterType;
                         }
                         else
                         {
