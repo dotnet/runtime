@@ -276,6 +276,13 @@ namespace Microsoft.Extensions.Logging.Generators
                                         keepMethod = false;
                                     }
 
+                                    bool casingValid = ValidateTemplatesCasingConsistency(lm.TemplateList);
+                                    if (!casingValid)
+                                    {
+                                        Diag(DiagnosticDescriptors.InconsistentTemplateCasing, method.Identifier.GetLocation(), method.Identifier.ToString());
+                                        keepMethod = false;
+                                    }
+
                                     if (lm.Name[0] == '_')
                                     {
                                         // can't have logging method names that start with _ since that can lead to conflicting symbol names
@@ -881,6 +888,36 @@ namespace Microsoft.Extensions.Logging.Generators
                 }
 
                 return success;
+            }
+
+            /// <summary>
+            /// Validates that templates list does not contains templates with mixed casing like {hello} and {Hello}
+            /// </summary>
+            /// <returns>Value indicating lack of mixed casing within templates list</returns>
+            private static bool ValidateTemplatesCasingConsistency(List<string> templates)
+            {
+                int count = templates.Count;
+
+                for (int i = 1; i < count; i++)
+                {
+                    string templateI = templates[i];
+
+                    for (int j = 0; j < i; j++)
+                    {
+                        string templateJ = templates[j];
+
+                        bool matchIgnoreCase = StringComparer.OrdinalIgnoreCase.Compare(templateI, templateJ) == 0;
+                        bool matchExact = StringComparer.Ordinal.Compare(templateI, templateJ) == 0;
+
+                        if (matchIgnoreCase && !matchExact)
+                        {
+                            return false;
+                        }
+
+                    }
+                }
+
+                return true;
             }
 
             /// <summary>

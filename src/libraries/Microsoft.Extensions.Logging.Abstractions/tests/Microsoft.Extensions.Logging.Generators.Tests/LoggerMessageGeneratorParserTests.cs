@@ -284,6 +284,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public async Task MixedCasing()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {par1} {PAr1} {a}"")]
+                    static partial void M1(ILogger logger, int par1, int a);
+                }
+            ");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.InconsistentTemplateCasing.Id, diagnostics[0].Id);
+        }
+
+        [Fact]
         public async Task DoubleLogLevel_InAttributeAndAsParameterButMissingInTemplate_ProducesDiagnostic()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
