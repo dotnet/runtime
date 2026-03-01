@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "histogram.h"
-#include <cassert>
 
 //------------------------------------------------------------------------
 // Histogram::Histogram:
