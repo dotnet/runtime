@@ -2130,14 +2130,11 @@ namespace System.Threading.Tasks
             }
 
             int completionState;
+            AsyncCausalityStatus causalityStatus;
             if (ExceptionRecorded)
             {
                 completionState = (int)TaskStateFlags.Faulted;
-                if (TplEventSource.Log.IsEnabled())
-                    TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Error);
-
-                if (s_asyncDebuggingEnabled)
-                    RemoveFromActiveTasks(this);
+                causalityStatus = AsyncCausalityStatus.Error;
             }
             else if (IsCancellationRequested && IsCancellationAcknowledged)
             {
@@ -2149,21 +2146,19 @@ namespace System.Threading.Tasks
                 // then we regard it as a regular exception
 
                 completionState = (int)TaskStateFlags.Canceled;
-                if (TplEventSource.Log.IsEnabled())
-                    TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Canceled);
-
-                if (s_asyncDebuggingEnabled)
-                    RemoveFromActiveTasks(this);
+                causalityStatus = AsyncCausalityStatus.Canceled;
             }
             else
             {
                 completionState = (int)TaskStateFlags.RanToCompletion;
-                if (TplEventSource.Log.IsEnabled())
-                    TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
-
-                if (s_asyncDebuggingEnabled)
-                    RemoveFromActiveTasks(this);
+                causalityStatus = AsyncCausalityStatus.Completed;
             }
+
+            if (TplEventSource.Log.IsEnabled())
+                TplEventSource.Log.TraceOperationEnd(this.Id, causalityStatus);
+
+            if (s_asyncDebuggingEnabled)
+                RemoveFromActiveTasks(this);
 
             // Use Interlocked.Exchange() to effect a memory fence, preventing
             // any SetCompleted() (or later) instructions from sneak back before it.
@@ -2382,20 +2377,20 @@ namespace System.Threading.Tasks
             Task? previousTask = currentTaskSlot;
 
             // ETW event for Task Started
-            TplEventSource log = TplEventSource.Log;
+            TplEventSource? log = TplEventSource.Log;
             Guid savedActivityID = default;
-            bool etwIsEnabled = log.IsEnabled();
-            if (etwIsEnabled)
+            if (!log.IsEnabled())
             {
+                log = null;
+            }
+            else
+            {
+                _ = Id;
                 if (log.TasksSetActivityIds)
-                    EventSource.SetCurrentThreadActivityId(TplEventSource.CreateGuidForTaskID(this.Id), out savedActivityID);
+                    EventSource.SetCurrentThreadActivityId(TplEventSource.CreateGuidForTaskID(m_taskId), out savedActivityID);
                 // previousTask holds the actual "current task" we want to report in the event
-                if (previousTask != null)
-                    log.TaskStarted(previousTask.m_taskScheduler!.Id, previousTask.Id, this.Id);
-                else
-                    log.TaskStarted(TaskScheduler.Current.Id, 0, this.Id);
-
-                log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
+                log.TaskStarted(previousTask?.m_taskScheduler!.Id ?? TaskScheduler.DefaultId, previousTask?.Id ?? 0, m_taskId);
+                log.TraceSynchronousWorkBegin(m_taskId, CausalitySynchronousWork.Execution);
             }
 
             try
@@ -2431,8 +2426,7 @@ namespace System.Threading.Tasks
                     HandleException(exn);
                 }
 
-                if (etwIsEnabled)
-                    log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                log?.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
 
                 Finish(true);
             }
@@ -2441,14 +2435,10 @@ namespace System.Threading.Tasks
                 currentTaskSlot = previousTask;
 
                 // ETW event for Task Completed
-                if (etwIsEnabled)
+                if (log != null)
                 {
                     // previousTask holds the actual "current task" we want to report in the event
-                    if (previousTask != null)
-                        log.TaskCompleted(previousTask.m_taskScheduler!.Id, previousTask.Id, this.Id, IsFaulted);
-                    else
-                        log.TaskCompleted(TaskScheduler.Current.Id, 0, this.Id, IsFaulted);
-
+                    log.TaskCompleted(previousTask?.m_taskScheduler!.Id ?? TaskScheduler.DefaultId, previousTask?.m_taskId ?? 0, m_taskId, IsFaulted);
                     if (log.TasksSetActivityIds)
                         EventSource.SetCurrentThreadActivityId(savedActivityID);
                 }
@@ -3054,13 +3044,16 @@ namespace System.Threading.Tasks
             }
 
             // ETW event for Task Wait Begin
-            TplEventSource log = TplEventSource.Log;
-            bool etwIsEnabled = log.IsEnabled();
-            if (etwIsEnabled)
+            TplEventSource? log = TplEventSource.Log;
+            if (!log.IsEnabled())
+            {
+                log = null;
+            }
+            else
             {
                 Task? currentTask = InternalCurrent;
                 log.TaskWaitBegin(
-                    currentTask != null ? currentTask.m_taskScheduler!.Id : TaskScheduler.Default.Id, currentTask != null ? currentTask.Id : 0,
+                    currentTask?.m_taskScheduler!.Id ?? TaskScheduler.DefaultId, currentTask?.Id ?? 0,
                     this.Id, TplEventSource.TaskWaitBehavior.Synchronous, 0);
             }
 
@@ -3089,19 +3082,12 @@ namespace System.Threading.Tasks
             Debug.Assert(IsCompleted || millisecondsTimeout != Timeout.Infinite);
 
             // ETW event for Task Wait End
-            if (etwIsEnabled)
+            if (log != null)
             {
                 Task? currentTask = InternalCurrent;
-                if (currentTask != null)
-                {
-                    log.TaskWaitEnd(currentTask.m_taskScheduler!.Id, currentTask.Id, this.Id);
-                }
-                else
-                {
-                    log.TaskWaitEnd(TaskScheduler.Default.Id, 0, this.Id);
-                }
+                log.TaskWaitEnd(currentTask?.m_taskScheduler!.Id ?? TaskScheduler.DefaultId, currentTask?.Id ?? 0, m_taskId);
                 // logically the continuation is empty so we immediately fire
-                log.TaskWaitContinuationComplete(this.Id);
+                log.TaskWaitContinuationComplete(m_taskId);
             }
 
             return returnValue;
@@ -3539,10 +3525,15 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(continuationObject != null);
 
-            TplEventSource log = TplEventSource.Log;
-            bool etwIsEnabled = log.IsEnabled();
-            if (etwIsEnabled)
+            TplEventSource? log = TplEventSource.Log;
+            if (!log.IsEnabled())
+            {
+                log = null;
+            }
+            else
+            {
                 log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.CompletionNotification);
+            }
 
             bool canInlineContinuations =
                 (m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) == 0 &&
@@ -3556,26 +3547,22 @@ namespace System.Threading.Tasks
                 // most common form of continuation, so we check it first.
                 case IAsyncStateMachineBox stateMachineBox:
                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
-                    LogFinishCompletionNotification();
-                    return;
+                    goto LogFinishCompletionNotification;
 
                 // Handle the single Action case.
                 case Action action:
                     AwaitTaskContinuation.RunOrScheduleAction(action, canInlineContinuations);
-                    LogFinishCompletionNotification();
-                    return;
+                    goto LogFinishCompletionNotification;
 
                 // Handle the single TaskContinuation case.
                 case TaskContinuation tc:
                     tc.Run(this, canInlineContinuations);
-                    LogFinishCompletionNotification();
-                    return;
+                    goto LogFinishCompletionNotification;
 
                 // Handle the single ITaskCompletionAction case.
                 case ITaskCompletionAction completionAction:
                     RunOrQueueCompletionAction(completionAction, canInlineContinuations);
-                    LogFinishCompletionNotification();
-                    return;
+                    goto LogFinishCompletionNotification;
             }
 
             // Not a single; it must be a list.
@@ -3616,8 +3603,7 @@ namespace System.Threading.Tasks
                         if ((stc.m_options & TaskContinuationOptions.ExecuteSynchronously) == 0)
                         {
                             continuations[i] = null; // so that we can skip this later
-                            if (etwIsEnabled)
-                                log.RunningContinuationList(Id, i, stc);
+                            log?.RunningContinuationList(m_taskId, i, stc);
                             stc.Run(this, canInlineContinuationTask: false);
                         }
                     }
@@ -3626,8 +3612,7 @@ namespace System.Threading.Tasks
                         if (forceContinuationsAsync)
                         {
                             continuations[i] = null;
-                            if (etwIsEnabled)
-                                log.RunningContinuationList(Id, i, currentContinuation);
+                            log?.RunningContinuationList(m_taskId, i, currentContinuation);
                             switch (currentContinuation)
                             {
                                 case IAsyncStateMachineBox stateMachineBox:
@@ -3658,8 +3643,7 @@ namespace System.Threading.Tasks
                     continue;
                 }
                 continuations[i] = null; // to enable free'ing up memory earlier
-                if (etwIsEnabled)
-                    log.RunningContinuationList(Id, i, currentContinuation);
+                log?.RunningContinuationList(m_taskId, i, currentContinuation);
 
                 switch (currentContinuation)
                 {
@@ -3682,7 +3666,8 @@ namespace System.Threading.Tasks
                 }
             }
 
-            LogFinishCompletionNotification();
+        LogFinishCompletionNotification:
+            log?.TraceSynchronousWorkEnd(CausalitySynchronousWork.CompletionNotification);
         }
 
         private void RunOrQueueCompletionAction(ITaskCompletionAction completionAction, bool allowInlining)
@@ -3695,12 +3680,6 @@ namespace System.Threading.Tasks
             {
                 ThreadPool.UnsafeQueueUserWorkItemInternal(new CompletionActionInvoker(completionAction, this), preferLocal: true);
             }
-        }
-
-        private static void LogFinishCompletionNotification()
-        {
-            if (TplEventSource.Log.IsEnabled())
-                TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.CompletionNotification);
         }
 
         #region Continuation methods

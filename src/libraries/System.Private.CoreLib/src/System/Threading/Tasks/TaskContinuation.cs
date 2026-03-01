@@ -404,7 +404,7 @@ namespace System.Threading.Tasks
                 if (log.IsEnabled())
                 {
                     m_continuationId = Task.NewId();
-                    log.AwaitTaskContinuationScheduled((task.ExecutingTaskScheduler ?? TaskScheduler.Default).Id, task.Id, m_continuationId);
+                    log.AwaitTaskContinuationScheduled(task.ExecutingTaskScheduler?.Id ?? TaskScheduler.DefaultId, task.Id, m_continuationId);
                 }
                 RunCallback(GetPostActionCallback(), this, ref Task.t_currentTask);
             }
@@ -577,7 +577,7 @@ namespace System.Threading.Tasks
                 if (log.IsEnabled())
                 {
                     m_continuationId = Task.NewId();
-                    log.AwaitTaskContinuationScheduled((task.ExecutingTaskScheduler ?? TaskScheduler.Default).Id, task.Id, m_continuationId);
+                    log.AwaitTaskContinuationScheduled(task.ExecutingTaskScheduler?.Id ?? TaskScheduler.DefaultId, task.Id, m_continuationId);
                 }
 
                 // We couldn't inline, so now we need to schedule it
@@ -815,7 +815,7 @@ namespace System.Threading.Tasks
             if (log.IsEnabled() && task != null)
             {
                 atc.m_continuationId = Task.NewId();
-                log.AwaitTaskContinuationScheduled((task.ExecutingTaskScheduler ?? TaskScheduler.Default).Id, task.Id, atc.m_continuationId);
+                log.AwaitTaskContinuationScheduled(task.ExecutingTaskScheduler?.Id ?? TaskScheduler.DefaultId, task.Id, atc.m_continuationId);
             }
 
             ThreadPool.UnsafeQueueUserWorkItemInternal(atc, preferLocal: true);
