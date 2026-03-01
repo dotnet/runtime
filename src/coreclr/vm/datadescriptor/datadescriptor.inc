@@ -6,6 +6,20 @@
 // This file is compiled using the target architecture.  Preprocessor defines for the target
 // platform will be available.  It is ok to use `#ifdef`.
 
+// Increment this when making a change where we'd like to recommend users update their diagnostic tools.
+// Tools can use this to display an advisory notice to users encouraging them to update. Changing
+// this value on its own is not considered a breaking change. See the RuntimeInfo.md data contract for details.
+// When incrementing this value, also implement the new functionality in the cDAC reader and update the
+// CurrentReaderVersion property on the IRuntimeInfo contract in
+// src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
+// to match.
+#ifndef CDAC_RECOMMENDED_READER_VERSION
+#define CDAC_RECOMMENDED_READER_VERSION 1
+#endif
+
+// When changes will break existing diagnostic tools (changes that are incompatible with the existing data contracts)
+// you should also update the contract versions at the bottom of this file for any contract that is being broken.
+
 
 CDAC_BASELINE("empty")
 CDAC_TYPES_BEGIN()
@@ -1082,6 +1096,7 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
+CDAC_GLOBAL(RecommendedReaderVersion, uint32, CDAC_RECOMMENDED_READER_VERSION)
 CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)
 CDAC_GLOBAL(HashMapValueMask, uint64, VALUE_MASK)

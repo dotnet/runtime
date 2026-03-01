@@ -13,10 +13,11 @@ public class RuntimeInfoTests
 {
     internal static Target CreateTarget(
         MockTarget.Architecture arch,
-        (string Name, string Value)[] globalStrings)
+        (string Name, string Value)[] globalStrings,
+        (string Name, ulong Value)[] globals = null)
     {
         MockMemorySpace.Builder builder = new MockMemorySpace.Builder(new TargetTestHelpers(arch));
-        TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, [], [], globalStrings);
+        TestPlaceholderTarget target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, [], globals, globalStrings);
 
         IContractFactory<IRuntimeInfo> runtimeInfoFactory = new RuntimeInfoFactory();
 
@@ -98,5 +99,22 @@ public class RuntimeInfoTests
 
         var actualArchitecture = runtimeInfo.GetTargetOperatingSystem();
         Assert.Equal(expectedOS, actualArchitecture);
+    }
+
+    private static readonly MockTarget.Architecture DefaultArch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true };
+
+    [Fact]
+    public void RecommendedReaderVersion_GlobalPresent_ReturnsValue()
+    {
+        var target = CreateTarget(DefaultArch, [],
+            [(Constants.Globals.RecommendedReaderVersion, (ulong)2)]);
+        Assert.Equal((uint)2, target.Contracts.RuntimeInfo.RecommendedReaderVersion);
+    }
+
+    [Fact]
+    public void RecommendedReaderVersion_GlobalAbsent_ReturnsZero()
+    {
+        var target = CreateTarget(DefaultArch, []);
+        Assert.Equal((uint)0, target.Contracts.RuntimeInfo.RecommendedReaderVersion);
     }
 }
