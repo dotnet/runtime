@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using System.Reflection.Internal;
 using System.Text;
 using Xunit;
 
@@ -18,18 +17,28 @@ namespace System.Reflection.Metadata.Tests
         {
             var builder = new BlobBuilder();
             Assert.Equal(BlobBuilder.DefaultChunkSize, builder.ChunkCapacity);
+            Assert.Equal(BlobBuilder.DefaultChunkSize, builder.Capacity);
 
             builder = new BlobBuilder(0);
             Assert.Equal(BlobBuilder.MinChunkSize, builder.ChunkCapacity);
+            Assert.Equal(BlobBuilder.MinChunkSize, builder.Capacity);
 
             builder = new BlobBuilder(10001);
             Assert.Equal(10001, builder.ChunkCapacity);
+            Assert.Equal(10001, builder.Capacity);
+
+            var buffer = new byte[1024];
+            builder = new BlobBuilderWithEvents(buffer);
+            Assert.Same(buffer, builder.Buffer);
         }
 
         [Fact]
         public void Ctor_Errors()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilder(-1));
+            Assert.Throws<ArgumentException>(() => new BlobBuilderWithEvents(new byte[BlobBuilder.MinChunkSize - 1]));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilderWithEvents(new byte[1024], BlobBuilder.MinChunkSize - 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new BlobBuilderWithEvents(new byte[1024], -1));
         }
 
         [Fact]
@@ -53,69 +62,69 @@ namespace System.Reflection.Metadata.Tests
             AssertEx.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, builder.ToArray());
         }
 
-        private void TestContentEquals(byte[] left, byte[] right)
-        {
-            var builder1 = new BlobBuilder(0);
-            builder1.WriteBytes(left);
-
-            var builder2 = new BlobBuilder(0);
-            builder2.WriteBytes(right);
-
-            bool expected = left.AsSpan().SequenceEqual(right.AsSpan());
-            Assert.Equal(expected, builder1.ContentEquals(builder2));
-        }
-
         [Fact]
         public void ContentEquals()
         {
             var builder = new BlobBuilder();
             Assert.True(builder.ContentEquals(builder));
-            Assert.False(builder.ContentEquals(null));
+            Assert.False(builder.ContentEquals((BlobBuilder)null));
 
-            TestContentEquals(new byte[] { }, new byte[] { });
-            TestContentEquals(new byte[] { 1 }, new byte[] { });
-            TestContentEquals(new byte[] { }, new byte[] { 1 });
-            TestContentEquals(new byte[] { 1 }, new byte[] { 1 });
-
-            TestContentEquals(
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 },
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 });
+            TestContentEquals([], []);
+            TestContentEquals([1], []);
+            TestContentEquals([], [1]);
+            TestContentEquals([1], [1]);
 
             TestContentEquals(
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 },
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
             TestContentEquals(
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 },
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 });
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
 
             TestContentEquals(
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 },
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
             TestContentEquals(
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 },
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
 
             TestContentEquals(
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 },
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
 
             TestContentEquals(
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 },
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 });
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
 
             TestContentEquals(
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 },
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 });
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
 
             TestContentEquals(
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 99, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 },
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 });
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
 
             TestContentEquals(
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 },
-                new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 99, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 });
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 99, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
+
+            TestContentEquals(
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17],
+                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 99, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
+
+            static void TestContentEquals(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
+            {
+                var builder1 = new BlobBuilder(0);
+                builder1.WriteBytes(left);
+
+                var builder2 = new BlobBuilder(0);
+                builder2.WriteBytes(right);
+
+                bool expected = left.SequenceEqual(right);
+                Assert.Equal(expected, builder1.ContentEquals(builder2));
+            }
         }
 
         [Fact]
@@ -125,20 +134,23 @@ namespace System.Reflection.Metadata.Tests
             builder.WriteBytes(1, 100);
 
             var blobs = builder.GetBlobs().ToArray();
-            Assert.Equal(2, blobs.Length);
-            Assert.Equal(16, blobs[0].Length);
-            Assert.Equal(100 - 16, blobs[1].Length);
-
-            builder.WriteByte(1);
-
-            blobs = builder.GetBlobs().ToArray();
-            Assert.Equal(3, blobs.Length);
+            Assert.Equal(4, blobs.Length);
             Assert.Equal(16, blobs[0].Length);
             Assert.Equal(16, blobs[0].GetBytes().Array.Length);
-            Assert.Equal(100 - 16, blobs[1].Length);
-            Assert.Equal(100 - 16, blobs[1].GetBytes().Array.Length);
-            Assert.Equal(1, blobs[2].Length);
-            Assert.Equal(100 - 16, blobs[2].GetBytes().Array.Length);
+            Assert.Equal(16, blobs[1].Length);
+            Assert.Equal(16, blobs[1].GetBytes().Array.Length);
+            Assert.Equal(32, blobs[2].Length);
+            Assert.Equal(32, blobs[2].GetBytes().Array.Length);
+            Assert.Equal(36, blobs[3].Length);
+            Assert.Equal(64, blobs[3].GetBytes().Array.Length);
+
+            builder.WriteBytes(1, 64 - 36 + 1);
+
+            blobs = builder.GetBlobs().ToArray();
+            Assert.Equal(5, blobs.Length);
+            Assert.Equal(64, blobs[3].Length);
+            Assert.Equal(1, blobs[4].Length);
+            Assert.Equal(128, blobs[4].GetBytes().Array.Length);
 
             builder.Clear();
 
@@ -157,18 +169,13 @@ namespace System.Reflection.Metadata.Tests
             {
                 var builder = new BlobBuilder(16);
 
-                for (int i = 0; i < j; i++)
+                builder.WriteBytes(0, 16);
+                for (int i = 0; i < j - 1; i++)
                 {
-                    builder.WriteBytes((byte)i, 16);
+                    builder.WriteBytes((byte)i, 16 << i);
                 }
 
-                int n = 0;
-                foreach (var chunk in builder.GetChunks())
-                {
-                    n++;
-                }
-
-                Assert.Equal(j, n);
+                Assert.Equal(j, builder.GetChunks().Count());
 
                 var chunks = new HashSet<BlobBuilder>();
                 foreach (var chunk in builder.GetChunks())
@@ -645,6 +652,16 @@ namespace System.Reflection.Metadata.Tests
             }, blobs[0].GetBytes().ToArray());
         }
 
+        [Fact]
+        public void ReserveBytes3()
+        {
+            var builder = new BlobBuilder(16);
+            builder.Buffer.AsSpan().Fill(0xff);
+            // Reserved buffers must be zero-initialized.
+            var reserved = builder.ReserveBytes(4);
+            AssertEx.Equal(Enumerable.Repeat((byte)0, 4).ToArray(), reserved.GetBytes().ToArray());
+        }
+
         // TODO:
         // WriteBytes(byte*)
         // WriteBytes(stream)
@@ -973,43 +990,6 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        public void WriteUTF8_Substring()
-        {
-            var writer = new BlobBuilder(4);
-            writer.WriteUTF8("abc", 0, 0, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new byte[0], writer.ToArray());
-            writer.Clear();
-
-            writer.WriteUTF8("abc", 0, 1, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'a' }, writer.ToArray());
-            writer.Clear();
-
-            writer.WriteUTF8("abc", 0, 2, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'a', (byte)'b' }, writer.ToArray());
-            writer.Clear();
-
-            writer.WriteUTF8("abc", 0, 3, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'a', (byte)'b', (byte)'c' }, writer.ToArray());
-            writer.Clear();
-
-            writer.WriteUTF8("abc", 1, 0, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new byte[0], writer.ToArray());
-            writer.Clear();
-
-            writer.WriteUTF8("abc", 1, 1, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'b' }, writer.ToArray());
-            writer.Clear();
-
-            writer.WriteUTF8("abc", 1, 2, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'b', (byte)'c' }, writer.ToArray());
-            writer.Clear();
-
-            writer.WriteUTF8("abc", 2, 1, allowUnpairedSurrogates: true, prependSize: false);
-            AssertEx.Equal(new[] { (byte)'c' }, writer.ToArray());
-            writer.Clear();
-        }
-
-        [Fact]
         public void EmptyWrites()
         {
             var writer = new BlobWriter(16);
@@ -1115,6 +1095,109 @@ namespace System.Reflection.Metadata.Tests
 
             b1.LinkPrefix(b5);
             Assert.True(b4.IsHead);
+        }
+
+        [Fact]
+        public void OnLinkingGetsCalled()
+        {
+            var b1 = new BlobBuilderWithEvents();
+            var b2 = new BlobBuilderWithEvents();
+            var b3 = new BlobBuilderWithEvents();
+            var b4 = new BlobBuilderWithEvents();
+
+            b1.WriteBytes(1, 1);
+            b2.WriteBytes(1, 1);
+            b3.WriteBytes(1, 1);
+            b4.WriteBytes(1, 1);
+
+            b1.Linking += b => Assert.Same(b2, b);
+            b2.Linking += b => Assert.Same(b1, b);
+            b1.LinkSuffix(b2);
+
+            b3.Linking += b => Assert.Same(b4, b);
+            b4.Linking += b => Assert.Same(b3, b);
+            b3.LinkPrefix(b4);
+        }
+
+        [Fact]
+        public void SetCapacityGetsCalled()
+        {
+            var b = new BlobBuilderWithEvents();
+            bool called = false;
+            b.SettingCapacity += SettingCapacityHandler;
+
+            b.Capacity = 1024;
+            Assert.True(called);
+
+            void SettingCapacityHandler(int c)
+            {
+                Assert.Equal(1024, c);
+                Assert.False(called);
+                called = true;
+            }
+        }
+
+        [Fact]
+        public void Chunking()
+        {
+            const int ChunkSize = 128;
+            const byte TestValue = (byte)'a';
+            const int TestSize = 1024;
+
+            var b = new FixedChunkBlobBuilder(ChunkSize);
+            b.WriteBytes(Enumerable.Repeat(TestValue, TestSize).ToArray().AsSpan());
+            AssertIsChunked();
+
+            b = new FixedChunkBlobBuilder(ChunkSize);
+            b.WriteBytes(TestValue, TestSize);
+            AssertIsChunked();
+
+            b = new FixedChunkBlobBuilder(ChunkSize);
+            int written = b.TryWriteBytes(new MemoryStream(Enumerable.Repeat(TestValue, TestSize).ToArray()), TestSize);
+            Assert.Equal(TestSize, written);
+            AssertIsChunked();
+
+            b = new FixedChunkBlobBuilder(ChunkSize);
+            b.WriteUTF8(new string((char)TestValue, TestSize));
+            AssertIsChunked();
+
+            void AssertIsChunked()
+            {
+                Assert.Equal(TestSize, b.Count);
+                foreach (var chunk in b.GetBlobs())
+                {
+                    Assert.InRange(chunk.Length, 1, ChunkSize);
+                    foreach (var x in chunk.GetBytes().AsSpan())
+                    {
+                        Assert.Equal(TestValue, x);
+                    }
+                }
+            }
+        }
+
+        private sealed class FixedChunkBlobBuilder(int size) : BlobBuilder(new byte[size], size);
+
+        private sealed class BlobBuilderWithEvents : BlobBuilder
+        {
+            public event Action<BlobBuilder>? Linking;
+
+            public event Action<int>? SettingCapacity;
+
+            public BlobBuilderWithEvents() { }
+
+            public BlobBuilderWithEvents(byte[] bytes, int maxChunkSize = 0) : base(bytes, maxChunkSize) { }
+
+            protected override void OnLinking(BlobBuilder builder)
+            {
+                Linking?.Invoke(builder);
+                base.OnLinking(builder);
+            }
+
+            protected override void SetCapacity(int capacity)
+            {
+                SettingCapacity?.Invoke(capacity);
+                base.SetCapacity(capacity);
+            }
         }
     }
 }

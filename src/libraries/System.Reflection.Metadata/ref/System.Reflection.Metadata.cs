@@ -227,8 +227,11 @@ namespace System.Reflection.Metadata
     }
     public partial class BlobBuilder
     {
+        protected BlobBuilder(byte[] buffer, int maxChunkSize = 0) { }
         public BlobBuilder(int capacity = 256) { }
         protected internal int ChunkCapacity { get { throw null; } }
+        protected byte[] Buffer { get { throw null; } set { } }
+        public int Capacity { get { throw null; } set { } }
         public int Count { get { throw null; } }
         protected int FreeBytes { get { throw null; } }
         public void Align(int alignment) { }
@@ -240,8 +243,10 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.BlobBuilder.Blobs GetBlobs() { throw null; }
         public void LinkPrefix(System.Reflection.Metadata.BlobBuilder prefix) { }
         public void LinkSuffix(System.Reflection.Metadata.BlobBuilder suffix) { }
+        protected virtual void OnLinking(System.Reflection.Metadata.BlobBuilder other) { }
         public void PadTo(int position) { }
         public System.Reflection.Metadata.Blob ReserveBytes(int byteCount) { throw null; }
+        protected virtual void SetCapacity(int capacity) { throw null; }
         public byte[] ToArray() { throw null; }
         public byte[] ToArray(int start, int byteCount) { throw null; }
         public System.Collections.Immutable.ImmutableArray<byte> ToImmutableArray() { throw null; }
@@ -255,6 +260,7 @@ namespace System.Reflection.Metadata
         public void WriteBytes(byte[] buffer, int start, int byteCount) { }
         public void WriteBytes(System.Collections.Immutable.ImmutableArray<byte> buffer) { }
         public void WriteBytes(System.Collections.Immutable.ImmutableArray<byte> buffer, int start, int byteCount) { }
+        public void WriteBytes(System.ReadOnlySpan<byte> buffer) { }
         public void WriteCompressedInteger(int value) { }
         public void WriteCompressedSignedInteger(int value) { }
         public void WriteConstant(object? value) { }
@@ -2805,7 +2811,9 @@ namespace System.Reflection.Metadata.Ecma335
     }
     public sealed partial class MetadataBuilder
     {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public MetadataBuilder(int userStringHeapStartOffset = 0, int stringHeapStartOffset = 0, int blobHeapStartOffset = 0, int guidHeapStartOffset = 0) { }
+        public MetadataBuilder(int userStringHeapStartOffset = 0, int stringHeapStartOffset = 0, int blobHeapStartOffset = 0, int guidHeapStartOffset = 0, System.Func<int, System.Reflection.Metadata.BlobBuilder>? createBlobBuilderFunc = null) { }
         public System.Reflection.Metadata.AssemblyDefinitionHandle AddAssembly(System.Reflection.Metadata.StringHandle name, System.Version version, System.Reflection.Metadata.StringHandle culture, System.Reflection.Metadata.BlobHandle publicKey, System.Reflection.AssemblyFlags flags, System.Reflection.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         public System.Reflection.Metadata.AssemblyFileHandle AddAssemblyFile(System.Reflection.Metadata.StringHandle name, System.Reflection.Metadata.BlobHandle hashValue, bool containsMetadata) { throw null; }
         public System.Reflection.Metadata.AssemblyReferenceHandle AddAssemblyReference(System.Reflection.Metadata.StringHandle name, System.Version version, System.Reflection.Metadata.StringHandle culture, System.Reflection.Metadata.BlobHandle publicKeyOrToken, System.Reflection.AssemblyFlags flags, System.Reflection.Metadata.BlobHandle hashValue) { throw null; }
@@ -3265,6 +3273,7 @@ namespace System.Reflection.PortableExecutable
     public sealed partial class DebugDirectoryBuilder
     {
         public DebugDirectoryBuilder() { }
+        public DebugDirectoryBuilder(System.Reflection.Metadata.BlobBuilder blobBuilder) { }
         public void AddCodeViewEntry(string pdbPath, System.Reflection.Metadata.BlobContentId pdbContentId, ushort portablePdbVersion) { }
         public void AddCodeViewEntry(string pdbPath, System.Reflection.Metadata.BlobContentId pdbContentId, ushort portablePdbVersion, int age) { }
         public void AddEmbeddedPortablePdbEntry(System.Reflection.Metadata.BlobBuilder debugMetadata, ushort portablePdbVersion) { }
@@ -3358,6 +3367,7 @@ namespace System.Reflection.PortableExecutable
         public const int ManagedResourcesDataAlignment = 8;
         public const int MappedFieldDataAlignment = 8;
         public ManagedPEBuilder(System.Reflection.PortableExecutable.PEHeaderBuilder header, System.Reflection.Metadata.Ecma335.MetadataRootBuilder metadataRootBuilder, System.Reflection.Metadata.BlobBuilder ilStream, System.Reflection.Metadata.BlobBuilder? mappedFieldData = null, System.Reflection.Metadata.BlobBuilder? managedResources = null, System.Reflection.PortableExecutable.ResourceSectionBuilder? nativeResources = null, System.Reflection.PortableExecutable.DebugDirectoryBuilder? debugDirectoryBuilder = null, int strongNameSignatureSize = 128, System.Reflection.Metadata.MethodDefinitionHandle entryPoint = default(System.Reflection.Metadata.MethodDefinitionHandle), System.Reflection.PortableExecutable.CorFlags flags = System.Reflection.PortableExecutable.CorFlags.ILOnly, System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Reflection.Metadata.BlobContentId>? deterministicIdProvider = null) : base (default(System.Reflection.PortableExecutable.PEHeaderBuilder), default(System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Reflection.Metadata.BlobContentId>)) { }
+        protected virtual System.Reflection.Metadata.BlobBuilder CreateBlobBuilder(int minimumSize = 0) { throw null; }
         protected override System.Collections.Immutable.ImmutableArray<System.Reflection.PortableExecutable.PEBuilder.Section> CreateSections() { throw null; }
         protected internal override System.Reflection.PortableExecutable.PEDirectoriesBuilder GetDirectories() { throw null; }
         protected override System.Reflection.Metadata.BlobBuilder SerializeSection(string name, System.Reflection.PortableExecutable.SectionLocation location) { throw null; }

@@ -31,7 +31,6 @@
     <Compile Include="Metadata\AssemblyNameInfoTests.cs" />
     <Compile Include="Metadata\BlobContentIdTests.cs" />
     <Compile Include="Metadata\BlobTests.cs" />
-    <Compile Include="Metadata\BlobUtilitiesTests.cs" />
     <Compile Include="Metadata\Ecma335\CodedIndexTests.cs" />
     <Compile Include="Metadata\Ecma335\Encoding\ExceptionRegionEncoderTests.cs" />
     <Compile Include="Metadata\Ecma335\Encoding\ControlFlowBuilderTests.cs" />
