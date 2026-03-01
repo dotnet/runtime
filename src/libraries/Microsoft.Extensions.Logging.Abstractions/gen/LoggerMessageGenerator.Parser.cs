@@ -22,6 +22,13 @@ namespace Microsoft.Extensions.Logging.Generators
         {
             internal const string LoggerMessageAttribute = "Microsoft.Extensions.Logging.LoggerMessageAttribute";
 
+            // ITypeParameterSymbol.AllowsRefLikeType was added in Roslyn 4.9 (C# 13). Access via a compiled
+            // delegate so the same source file compiles against all supported Roslyn versions, while
+            // avoiding the per-call overhead of PropertyInfo.GetValue boxing.
+            private static readonly Func<ITypeParameterSymbol, bool>? s_getAllowsRefLikeType =
+                (Func<ITypeParameterSymbol, bool>?)
+                    typeof(ITypeParameterSymbol).GetProperty("AllowsRefLikeType")?.GetGetMethod()!.CreateDelegate(typeof(Func<ITypeParameterSymbol, bool>));
+
             private readonly CancellationToken _cancellationToken;
             private readonly INamedTypeSymbol _loggerMessageAttribute;
             private readonly INamedTypeSymbol _loggerSymbol;
@@ -239,7 +246,28 @@ namespace Microsoft.Extensions.Logging.Generators
                                         SkipEnabledCheck = skipEnabledCheck
                                     };
 
+                                    foreach (ITypeParameterSymbol tp in logMethodSymbol.TypeParameters)
+                                    {
+                                        lm.TypeParameters.Add(new LoggerMethodTypeParameter
+                                        {
+                                            Name = tp.Name,
+                                            Constraints = GetTypeParameterConstraints(tp)
+                                        });
+                                    }
+
                                     bool keepMethod = true;   // whether or not we want to keep the method definition or if it's got errors making it so we should discard it instead
+
+                                    // Forbid 'allows ref struct': the code generator stores template parameters as
+                                    // fields in a generated struct, so ref-struct type arguments cannot be supported.
+                                    foreach (ITypeParameterSymbol tp in logMethodSymbol.TypeParameters)
+                                    {
+                                        if (s_getAllowsRefLikeType?.Invoke(tp) == true)
+                                        {
+                                            Diag(DiagnosticDescriptors.LoggingMethodHasAllowsRefStructConstraint, method.Identifier.GetLocation());
+                                            keepMethod = false;
+                                            break;
+                                        }
+                                    }
 
                                     bool success = ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
                                     if (!success)
@@ -260,13 +288,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                     {
                                         // logging methods must return void
                                         Diag(DiagnosticDescriptors.LoggingMethodMustReturnVoid, method.ReturnType.GetLocation());
-                                        keepMethod = false;
-                                    }
-
-                                    if (method.Arity > 0)
-                                    {
-                                        // we don't currently support generic methods
-                                        Diag(DiagnosticDescriptors.LoggingMethodIsGeneric, method.Identifier.GetLocation());
                                         keepMethod = false;
                                     }
 
@@ -366,9 +387,41 @@ namespace Microsoft.Extensions.Logging.Generators
                                             keepMethod = false;
                                             break;
                                         }
+#if ROSLYN4_8_OR_GREATER
+                                        else if (paramSymbol.RefKind == RefKind.RefReadOnlyParameter)
+#else
+                                        else if (paramSymbol.RefKind == (RefKind)4) // RefKind.RefReadOnlyParameter, added in Roslyn 4.8
+#endif
+                                        {
+                                            qualifier = "ref readonly";
+                                        }
+
+                                        if (paramSymbol.IsParams)
+                                        {
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterParams, paramSymbol.Locations[0], paramName);
+                                            keepMethod = false;
+                                            break;
+                                        }
+
+                                        if (paramTypeSymbol.IsRefLikeType)
+                                        {
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterRefStruct, paramSymbol.Locations[0], paramName);
+                                            keepMethod = false;
+                                            break;
+                                        }
+
+#if ROSLYN4_4_OR_GREATER
+                                        if (paramSymbol.ScopedKind != ScopedKind.None)
+                                        {
+                                            Diag(DiagnosticDescriptors.InvalidLoggingMethodParameterParams, paramSymbol.Locations[0], paramName);
+                                            keepMethod = false;
+                                            break;
+                                        }
+#endif
 
                                         string typeName = paramTypeSymbol.ToDisplayString(
                                             SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                                                SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
                                                 SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
                                         var lp = new LoggerParameter
@@ -714,6 +767,48 @@ namespace Microsoft.Extensions.Logging.Generators
                 return (loggerField, false);
             }
 
+            private static string? GetTypeParameterConstraints(ITypeParameterSymbol typeParameter)
+            {
+                var constraints = new List<string>();
+
+                if (typeParameter.HasReferenceTypeConstraint)
+                {
+                    string classConstraint = typeParameter.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.Annotated
+                        ? "class?"
+                        : "class";
+                    constraints.Add(classConstraint);
+                }
+                else if (typeParameter.HasValueTypeConstraint)
+                {
+                    // HasUnmanagedTypeConstraint also implies HasValueTypeConstraint
+                    constraints.Add(typeParameter.HasUnmanagedTypeConstraint ? "unmanaged" : "struct");
+                }
+                else if (typeParameter.HasNotNullConstraint)
+                {
+                    constraints.Add("notnull");
+                }
+
+                foreach (ITypeSymbol constraintType in typeParameter.ConstraintTypes)
+                {
+                    if (constraintType is IErrorTypeSymbol)
+                    {
+                        continue;
+                    }
+
+                    constraints.Add(constraintType.ToDisplayString(
+                        SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(
+                            SymbolDisplayFormat.FullyQualifiedFormat.MiscellaneousOptions |
+                            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier)));
+                }
+
+                if (typeParameter.HasConstructorConstraint)
+                {
+                    constraints.Add("new()");
+                }
+
+                return constraints.Count > 0 ? string.Join(", ", constraints) : null;
+            }
+
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
             {
                 // Report immediately if callback is provided (preserves pragma suppression with original locations)
@@ -918,6 +1013,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public readonly List<LoggerParameter> TemplateParameters = new();
             public readonly Dictionary<string, string> TemplateMap = new(StringComparer.OrdinalIgnoreCase);
             public readonly List<string> TemplateList = new();
+            public readonly List<LoggerMethodTypeParameter> TypeParameters = new();
             public string Name = string.Empty;
             public string UniqueName = string.Empty;
             public string Message = string.Empty;
@@ -935,6 +1031,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 TemplateParameters = TemplateParameters.Select(p => p.ToSpec()).ToImmutableEquatableArray(),
                 TemplateMap = TemplateMap.Select(kvp => new KeyValuePairEquatable<string, string>(kvp.Key, kvp.Value)).ToImmutableEquatableArray(),
                 TemplateList = TemplateList.ToImmutableEquatableArray(),
+                TypeParameters = TypeParameters.Select(tp => tp.ToSpec()).ToImmutableEquatableArray(),
                 Name = Name,
                 UniqueName = UniqueName,
                 Message = Message,
@@ -957,6 +1054,7 @@ namespace Microsoft.Extensions.Logging.Generators
             public required ImmutableEquatableArray<LoggerParameterSpec> TemplateParameters { get; init; }
             public required ImmutableEquatableArray<KeyValuePairEquatable<string, string>> TemplateMap { get; init; }
             public required ImmutableEquatableArray<string> TemplateList { get; init; }
+            public required ImmutableEquatableArray<LoggerMethodTypeParameterSpec> TypeParameters { get; init; }
             public required string Name { get; init; }
             public required string UniqueName { get; init; }
             public required string Message { get; init; }
@@ -976,6 +1074,7 @@ namespace Microsoft.Extensions.Logging.Generators
                        TemplateParameters.Equals(other.TemplateParameters) &&
                        TemplateMap.Equals(other.TemplateMap) &&
                        TemplateList.Equals(other.TemplateList) &&
+                       TypeParameters.Equals(other.TypeParameters) &&
                        Name == other.Name &&
                        UniqueName == other.UniqueName &&
                        Message == other.Message &&
@@ -994,6 +1093,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 hash = HashHelpers.Combine(hash, TemplateParameters.GetHashCode());
                 hash = HashHelpers.Combine(hash, TemplateMap.GetHashCode());
                 hash = HashHelpers.Combine(hash, TemplateList.GetHashCode());
+                hash = HashHelpers.Combine(hash, TypeParameters.GetHashCode());
                 hash = HashHelpers.Combine(hash, Name.GetHashCode());
                 hash = HashHelpers.Combine(hash, UniqueName.GetHashCode());
                 hash = HashHelpers.Combine(hash, Message.GetHashCode());
@@ -1099,6 +1199,44 @@ namespace Microsoft.Extensions.Logging.Generators
             public override int GetHashCode()
             {
                 return HashHelpers.Combine(Key.GetHashCode(), Value.GetHashCode());
+            }
+        }
+
+        /// <summary>
+        /// A type parameter of a generic logging method.
+        /// </summary>
+        internal sealed class LoggerMethodTypeParameter
+        {
+            public string Name = string.Empty;
+            public string? Constraints;
+
+            public LoggerMethodTypeParameterSpec ToSpec() => new LoggerMethodTypeParameterSpec
+            {
+                Name = Name,
+                Constraints = Constraints
+            };
+        }
+
+        /// <summary>
+        /// Immutable specification of a type parameter for incremental caching.
+        /// </summary>
+        internal sealed record LoggerMethodTypeParameterSpec : IEquatable<LoggerMethodTypeParameterSpec>
+        {
+            public required string Name { get; init; }
+            public required string? Constraints { get; init; }
+
+            public bool Equals(LoggerMethodTypeParameterSpec? other)
+            {
+                if (other is null) return false;
+                if (ReferenceEquals(this, other)) return true;
+                return Name == other.Name && Constraints == other.Constraints;
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = Name.GetHashCode();
+                hash = HashHelpers.Combine(hash, Constraints?.GetHashCode() ?? 0);
+                return hash;
             }
         }
 

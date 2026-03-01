@@ -117,7 +117,7 @@ public class Runtime_40444
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         bool passes_test = false;

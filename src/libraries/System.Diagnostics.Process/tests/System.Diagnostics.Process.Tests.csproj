@@ -82,6 +82,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj" />
     <ProjectReference Include="LongPath\LongPath.csproj" Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>

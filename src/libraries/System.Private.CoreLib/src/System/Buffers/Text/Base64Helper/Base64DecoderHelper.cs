@@ -168,6 +168,11 @@ namespace System.Buffers.Text
                 Debug.Assert(typeof(TBase64Decoder) == typeof(Base64DecoderByte) ? remaining == 4 : remaining < 8);
                 int i0 = decoder.DecodeRemaining(srcEnd, ref decodingMap, remaining, out uint t2, out uint t3);
 
+                if (i0 < 0)
+                {
+                    goto InvalidDataExit;
+                }
+
                 byte* destMax = destBytes + (uint)destLength;
 
                 if (!decoder.IsValidPadding(t3))
@@ -602,7 +607,7 @@ namespace System.Buffers.Text
 
                 bool hasAnotherBlock;
 
-                if (decoder is Base64DecoderByte)
+                if (decoder is Base64DecoderChar)
                 {
                     hasAnotherBlock = source.Length >= BlockSize;
                 }

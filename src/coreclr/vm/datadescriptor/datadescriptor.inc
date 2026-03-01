@@ -5,6 +5,15 @@
 //
 // This file is compiled using the target architecture.  Preprocessor defines for the target
 // platform will be available.  It is ok to use `#ifdef`.
+//
+// When modifying this file (adding/removing types, fields, or globals), you must also:
+//   1. Update the corresponding contract doc in docs/design/datacontracts/<contract>.md
+//      to reflect the new data descriptors and any changes to the contract algorithm.
+//   2. Update the managed data class in src/native/managed/cdac/.../Data/<Type>.cs
+//      to read the new field(s).
+//   3. Update the contract implementation in src/native/managed/cdac/.../Contracts/<Contract>.cs
+//      to use the new data.
+//   4. Update the mock descriptors and tests in src/native/managed/cdac/tests/.
 
 
 CDAC_BASELINE("empty")
@@ -18,6 +27,8 @@ CDAC_TYPE_FIELD(Thread, /*uint32*/, State, cdac_data<Thread>::State)
 CDAC_TYPE_FIELD(Thread, /*uint32*/, PreemptiveGCDisabled, cdac_data<Thread>::PreemptiveGCDisabled)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, RuntimeThreadLocals, cdac_data<Thread>::RuntimeThreadLocals)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, Frame, cdac_data<Thread>::Frame)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, CachedStackBase, cdac_data<Thread>::CachedStackBase)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, CachedStackLimit, cdac_data<Thread>::CachedStackLimit)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, ExceptionTracker, cdac_data<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, GCHandle, GCHandle, cdac_data<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, GCHandle, LastThrownObject, cdac_data<Thread>::LastThrownObject)
@@ -86,6 +97,8 @@ CDAC_TYPE_BEGIN(GCAllocContext)
 CDAC_TYPE_INDETERMINATE(GCAllocContext)
 CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Pointer, offsetof(gc_alloc_context, alloc_ptr))
 CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Limit, offsetof(gc_alloc_context, alloc_limit))
+CDAC_TYPE_FIELD(GCAllocContext, /*int64*/, AllocBytes, offsetof(gc_alloc_context, alloc_bytes))
+CDAC_TYPE_FIELD(GCAllocContext, /*int64*/, AllocBytesLoh, offsetof(gc_alloc_context, alloc_bytes_uoh))
 CDAC_TYPE_END(GCAllocContext)
 
 // Exception
@@ -120,7 +133,7 @@ CDAC_TYPE_END(GCHandle)
 // Object
 
 CDAC_TYPE_BEGIN(Object)
-CDAC_TYPE_INDETERMINATE(Object)
+CDAC_TYPE_SIZE(sizeof(Object))
 CDAC_TYPE_FIELD(Object, /*pointer*/, m_pMethTab, cdac_data<Object>::m_pMethTab)
 CDAC_TYPE_END(Object)
 
@@ -140,24 +153,44 @@ CDAC_TYPE_INDETERMINATE(InteropSyncBlockInfo)
 #ifdef FEATURE_COMINTEROP
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, CCW, cdac_data<InteropSyncBlockInfo>::CCW)
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, RCW, cdac_data<InteropSyncBlockInfo>::RCW)
+CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, CCF, cdac_data<InteropSyncBlockInfo>::CCF)
 #endif // FEATURE_COMINTEROP
 CDAC_TYPE_END(InteropSyncBlockInfo)
 
 CDAC_TYPE_BEGIN(SyncBlock)
 CDAC_TYPE_INDETERMINATE(SyncBlock)
 CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, InteropInfo, cdac_data<SyncBlock>::InteropInfo)
+CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, Lock, cdac_data<SyncBlock>::Lock)
+CDAC_TYPE_FIELD(SyncBlock, /*uint32*/, ThinLock, cdac_data<SyncBlock>::ThinLock)
+CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, LinkNext, cdac_data<SyncBlock>::LinkNext)
 CDAC_TYPE_END(SyncBlock)
+
+CDAC_TYPE_BEGIN(SLink)
+CDAC_TYPE_INDETERMINATE(SLink)
+CDAC_TYPE_FIELD(SLink, /*pointer*/, Next, offsetof(SLink, m_pNext))
+CDAC_TYPE_END(SLink)
 
 #ifdef FEATURE_COMWRAPPERS
 CDAC_TYPE_BEGIN(NativeObjectWrapperObject)
 CDAC_TYPE_INDETERMINATE(NativeObjectWrapperObject)
 CDAC_TYPE_FIELD(NativeObjectWrapperObject, /*pointer*/, ExternalComObject, cdac_data<NativeObjectWrapperObject>::ExternalComObject)
 CDAC_TYPE_END(NativeObjectWrapperObject)
+
+CDAC_TYPE_BEGIN(ManagedObjectWrapperHolderObject)
+CDAC_TYPE_INDETERMINATE(ManagedObjectWrapperHolderObject)
+CDAC_TYPE_FIELD(ManagedObjectWrapperHolderObject, /*pointer*/, WrappedObject, cdac_data<ManagedObjectWrapperHolderObject>::WrappedObject)
+CDAC_TYPE_END(ManagedObjectWrapperHolderObject)
+
+CDAC_TYPE_BEGIN(ManagedObjectWrapperLayout)
+CDAC_TYPE_INDETERMINATE(ManagedObjectWrapperLayout)
+CDAC_TYPE_FIELD(ManagedObjectWrapperLayout, /*int64*/, RefCount, cdac_data<InteropLib::ABI::ManagedObjectWrapperLayout>::RefCount)
+CDAC_TYPE_END(ManagedObjectWrapperLayout)
 #endif // FEATURE_COMWRAPPERS
 
 CDAC_TYPE_BEGIN(SyncTableEntry)
 CDAC_TYPE_SIZE(sizeof(SyncTableEntry))
 CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, SyncBlock, offsetof(SyncTableEntry, m_SyncBlock))
+CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, Object, offsetof(SyncTableEntry, m_Object))
 CDAC_TYPE_END(SyncTableEntry)
 
 // Loader
@@ -261,6 +294,7 @@ CDAC_TYPE_END(AppDomain)
 CDAC_TYPE_BEGIN(SystemDomain)
 CDAC_TYPE_INDETERMINATE(SystemDomain)
 CDAC_TYPE_FIELD(SystemDomain, /*GlobalLoaderAllocator*/, GlobalLoaderAllocator, cdac_data<SystemDomain>::GlobalLoaderAllocator)
+CDAC_TYPE_FIELD(SystemDomain, /*pointer*/, SystemAssembly, cdac_data<SystemDomain>::SystemAssembly)
 CDAC_TYPE_END(SystemDomain)
 
 CDAC_TYPE_BEGIN(ArrayListBase)
@@ -318,11 +352,6 @@ CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumStaticFields, cdac_data<EEClass>::NumSta
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_END(EEClass)
-
-CDAC_TYPE_BEGIN(ArrayClass)
-CDAC_TYPE_INDETERMINATE(ArrayClass)
-CDAC_TYPE_FIELD(ArrayClass, /*uint8*/, Rank, cdac_data<ArrayClass>::Rank)
-CDAC_TYPE_END(ArrayClass)
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)
 CDAC_TYPE_INDETERMINATE(GenericsDictInfo)
@@ -453,6 +482,10 @@ CDAC_TYPE_BEGIN(NativeCodeSlot)
 CDAC_TYPE_SIZE(sizeof(MethodDesc::NativeCodeSlot))
 CDAC_TYPE_END(NativeCodeSlot)
 
+CDAC_TYPE_BEGIN(AsyncMethodData)
+CDAC_TYPE_SIZE(sizeof(AsyncMethodData))
+CDAC_TYPE_END(AsyncMethodData)
+
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
 CDAC_TYPE_SIZE(sizeof(InstantiatedMethodDesc))
 CDAC_TYPE_FIELD(InstantiatedMethodDesc, /*pointer*/, PerInstInfo, cdac_data<InstantiatedMethodDesc>::PerInstInfo)
@@ -497,6 +530,13 @@ CDAC_TYPE_END(CLRToCOMCallMethodDesc)
 CDAC_TYPE_BEGIN(CodePointer)
 CDAC_TYPE_SIZE(sizeof(PCODE))
 CDAC_TYPE_END(CodePointer)
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_TYPE_BEGIN(PortableEntryPoint)
+CDAC_TYPE_INDETERMINATE(PortableEntryPoint)
+CDAC_TYPE_FIELD(PortableEntryPoint, /*pointer*/, MethodDesc, cdac_data<PortableEntryPoint>::MethodDesc)
+CDAC_TYPE_END(PortableEntryPoint)
+#endif
 
 CDAC_TYPE_BEGIN(MethodDescCodeData)
 CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
@@ -709,6 +749,7 @@ CDAC_TYPE_END(ILCodeVersionNode)
 
 CDAC_TYPE_BEGIN(ProfControlBlock)
 CDAC_TYPE_FIELD(ProfControlBlock, /*uint64*/, GlobalEventMask, offsetof(ProfControlBlock, globalEventMask))
+CDAC_TYPE_FIELD(ProfControlBlock, /*bool*/, RejitOnAttachEnabled, offsetof(ProfControlBlock, fRejitOnAttachEnabled))
 CDAC_TYPE_END(ProfControlBlock)
 
 #ifdef HAVE_GCCOVER
@@ -1006,6 +1047,30 @@ CDAC_TYPE_FIELD(DynamicILBlobTable, /*uint32*/, EntryMethodToken, cdac_data<Dyna
 CDAC_TYPE_FIELD(DynamicILBlobTable, /*pointer*/, EntryIL, cdac_data<DynamicILBlobTable>::EntryIL)
 CDAC_TYPE_END(DynamicILBlobTable)
 
+#ifdef FEATURE_COMINTEROP
+CDAC_TYPE_BEGIN(ComCallWrapper)
+CDAC_TYPE_INDETERMINATE(ComCallWrapper)
+CDAC_TYPE_FIELD(ComCallWrapper, /*pointer*/, SimpleWrapper, cdac_data<ComCallWrapper>::SimpleWrapper)
+CDAC_TYPE_END(ComCallWrapper)
+
+CDAC_TYPE_BEGIN(SimpleComCallWrapper)
+CDAC_TYPE_INDETERMINATE(SimpleComCallWrapper)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*int64*/, RefCount, cdac_data<SimpleComCallWrapper>::RefCount)
+CDAC_TYPE_FIELD(SimpleComCallWrapper, /*uint32*/, Flags, cdac_data<SimpleComCallWrapper>::Flags)
+CDAC_TYPE_END(SimpleComCallWrapper)
+#endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_COMWRAPPERS
+CDAC_TYPE_BEGIN(ComWrappersVtablePtrs)
+CDAC_TYPE_SIZE(g_numKnownQueryInterfaceImplementations * sizeof(PCODE))
+CDAC_TYPE_END(ComWrappersVtablePtrs)
+#endif
+
+CDAC_TYPE_BEGIN(SyncBlockCache)
+CDAC_TYPE_INDETERMINATE(SyncBlockCache)
+CDAC_TYPE_FIELD(SyncBlockCache, /*uint32*/, FreeSyncTableIndex, cdac_data<SyncBlockCache>::FreeSyncTableIndex)
+CDAC_TYPE_END(SyncBlockCache)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -1070,6 +1135,21 @@ CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
 #endif
+#if FEATURE_COMWRAPPERS
+CDAC_GLOBAL(FeatureComWrappers, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureComWrappers, uint8, 0)
+#endif
+#if FEATURE_OBJCMARSHAL
+CDAC_GLOBAL(FeatureObjCMarshal, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureObjCMarshal, uint8, 0)
+#endif
+#if FEATURE_JAVAMARSHAL
+CDAC_GLOBAL(FeatureJavaMarshal, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureJavaMarshal, uint8, 0)
+#endif
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 1)
 #else
@@ -1081,12 +1161,18 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
 #else
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 1)
+#else
+CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 0)
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)
 CDAC_GLOBAL(HashMapValueMask, uint64, VALUE_MASK)
 CDAC_GLOBAL(MethodDescAlignment, uint64, MethodDesc::ALIGNMENT)
 CDAC_GLOBAL(ObjectHeaderSize, uint64, OBJHEADER_SIZE)
+CDAC_GLOBAL(ArrayBaseSize, uint32, ARRAYBASE_BASESIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, uint16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
 CDAC_GLOBAL(StubCodeBlockLast, uint8, STUB_CODE_BLOCK_LAST)
 CDAC_GLOBAL(DefaultADID, uint32, DefaultADID)
@@ -1111,7 +1197,12 @@ CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(DacNotificationFlags, &::g_dacNotificationFlags)
 CDAC_GLOBAL_POINTER(OffsetOfCurrentThreadInfo, &::g_offsetOfCurrentThreadInfo)
 CDAC_GLOBAL_POINTER(ThinlockThreadIdDispenser, &::g_pThinLockThreadIdDispenser)
+#ifdef FEATURE_COMWRAPPERS
+CDAC_GLOBAL(DispatchThisPtrMask, uintptr_t, InteropLib::ABI::DispatchThisPtrMask)
+CDAC_GLOBAL_POINTER(ComWrappersVtablePtrs, InteropLib::ABI::g_knownQueryInterfaceImplementations)
+#endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_POINTER(GcNotificationFlags, &::g_gcNotificationFlags)
+CDAC_GLOBAL_POINTER(GlobalAllocContext, &::g_global_alloc_context)
 CDAC_GLOBAL_POINTER(CoreLib, &::g_CoreLib)
 #ifdef TARGET_WINDOWS
 CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
@@ -1130,11 +1221,16 @@ CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
-CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
+CDAC_GLOBAL_POINTER(SyncBlockCache, &SyncBlockCache::s_pSyncBlockCache)
+CDAC_GLOBAL(SyncBlockMaskLockThreadId, uint32, SBLK_MASK_LOCK_THREADID)
+CDAC_GLOBAL(SyncBlockMaskLockRecursionLevel, uint32, SBLK_MASK_LOCK_RECLEVEL)
+CDAC_GLOBAL(SyncBlockRecursionLevelShift, uint32, SBLK_RECLEVEL_SHIFT)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
-
+#if FEATURE_COMINTEROP
+CDAC_GLOBAL(ComRefcountMask, int64, SimpleComCallWrapper::COM_REFCOUNT_MASK)
+#endif // FEATURE_COMINTEROP
 
 // It is important for the subdescriptor pointers to be the last pointers in the global structure.
 // EnumMemDataDescriptors in enummem.cpp hardcodes the number of subdescriptors and utilizes
@@ -1143,6 +1239,9 @@ CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 // When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
+#if FEATURE_COMINTEROP
+CDAC_GLOBAL_CONTRACT(BuiltInCOM, 1)
+#endif // FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
 #ifdef FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(ComWrappers, 1)
@@ -1152,6 +1251,7 @@ CDAC_GLOBAL_CONTRACT(DebugInfo, 2)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, 1)
 CDAC_GLOBAL_CONTRACT(Exception, 1)
 CDAC_GLOBAL_CONTRACT(ExecutionManager, 2)
+CDAC_GLOBAL_CONTRACT(GCInfo, 1)
 CDAC_GLOBAL_CONTRACT(Loader, 1)
 CDAC_GLOBAL_CONTRACT(Notifications, 1)
 CDAC_GLOBAL_CONTRACT(Object, 1)
@@ -1162,6 +1262,7 @@ CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
 CDAC_GLOBAL_CONTRACT(SHash, 1)
 CDAC_GLOBAL_CONTRACT(SignatureDecoder, 1)
+CDAC_GLOBAL_CONTRACT(SyncBlock, 1)
 CDAC_GLOBAL_CONTRACT(StackWalk, 1)
 CDAC_GLOBAL_CONTRACT(StressLog, 2)
 CDAC_GLOBAL_CONTRACT(Thread, 1)
