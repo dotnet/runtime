@@ -756,6 +756,7 @@ namespace System.Collections.Generic
     {
         protected EqualityComparer() { }
         public static System.Collections.Generic.EqualityComparer<T> Create(System.Func<T?, T?, bool> equals, System.Func<T, int>? getHashCode = null) { throw null; }
+        public static System.Collections.Generic.EqualityComparer<T> Create<TKey>(System.Func<T?, TKey?> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? keyComparer = null) { throw null; }
         public static System.Collections.Generic.EqualityComparer<T> Default { get { throw null; } }
         public abstract bool Equals(T? x, T? y);
         public abstract int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
