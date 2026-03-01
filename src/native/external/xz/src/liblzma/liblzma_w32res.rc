@@ -1,0 +1,19 @@
+/* SPDX-License-Identifier: 0BSD */
+
+/*
+ * Author: Lasse Collin
+ */
+
+#define MY_TYPE VFT_DLL
+
+#if defined(__MSYS__)
+#	define MY_NAME "msys-lzma-5"
+#elif defined(__CYGWIN__)
+#	define MY_NAME "cyglzma-5"
+#else
+#	define MY_NAME "liblzma"
+#endif
+
+#define MY_SUFFIX ".dll"
+#define MY_DESC "liblzma data compression library"
+#include "common_w32res.rc"
