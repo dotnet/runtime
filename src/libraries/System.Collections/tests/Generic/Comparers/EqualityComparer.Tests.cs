@@ -519,6 +519,56 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
+        public void EqualityComparerCreate_KeySelectorNull_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => EqualityComparer<string>.Create<int>(keySelector: null));
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_KeySelectorUsed()
+        {
+            var original = "foo";
+            var otherEqualLen = "bar";
+            var otherLongerLen = "fooo";
+
+            var comparer = EqualityComparer<string>.Create(str => str.Length);
+
+            Assert.True(comparer.Equals(original, original));
+            Assert.True(comparer.Equals(original, otherEqualLen));
+            Assert.False(comparer.Equals(original, otherLongerLen));
+        }
+
+        [Fact]
+        public void EqualityComparerCreate_KeySelectorComparerUsed()
+        {
+            var evenLen1 = "12";
+            var evenLen2 = "1234";
+            var evenLen3 = "123456";
+            var oddLen1 = "1";
+            var oddLen2 = "123";
+
+            bool isEven(int len) => len % 2 == 0;
+
+            var evenOrOddComparer = EqualityComparer<int>.Create(equals: (len1, len2) => isEven(len1) == isEven(len2), getHashCode: len => isEven(len) ? 0 : 1);
+            var comparer = EqualityComparer<string>.Create(str => str?.Length ?? 0, keyComparer: evenOrOddComparer);
+
+            Assert.True(comparer.Equals(evenLen1, evenLen1));
+            Assert.True(comparer.Equals(evenLen1, evenLen2));
+            Assert.True(comparer.Equals(evenLen1, evenLen3));
+            Assert.True(comparer.Equals(oddLen1, oddLen2));
+
+            Assert.False(comparer.Equals(evenLen1, oddLen1));
+            Assert.False(comparer.Equals(evenLen1, oddLen2));
+            Assert.False(comparer.Equals(oddLen1, evenLen2));
+
+            Assert.True(comparer.Equals(null, null));
+            Assert.True(comparer.Equals(evenLen1, null));
+            Assert.True(comparer.Equals(null, evenLen1));
+            Assert.False(comparer.Equals(oddLen1, null));
+            Assert.False(comparer.Equals(null, oddLen1));
+        }
+
+        [Fact]
         public void EqualityComparerCreate_ArgsNotDereferenced()
         {
             EqualityComparer<string> ec = EqualityComparer<string>.Create((x, y) => true, x => 0);
