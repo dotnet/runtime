@@ -7,6 +7,8 @@
         Type has no accessible constructors which use only CLS-compliant types -->
     <NoWarn>$(NoWarn);0809;0618;CS3015</NoWarn>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
+    <DefineConstants Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureMultithreading)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.cs" />

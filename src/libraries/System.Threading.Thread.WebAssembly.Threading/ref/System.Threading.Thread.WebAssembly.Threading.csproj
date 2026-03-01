@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <FeatureWasmManagedThreads>true</FeatureWasmManagedThreads>
+    <FeatureMultithreading>true</FeatureMultithreading>
     <AssemblyName>System.Threading.Thread</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- tell references.targets to bump the assembly version -->
@@ -11,7 +11,9 @@
     <EnableBinPlacing>false</EnableBinPlacing>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <DefineConstants>$(DefineConstants);FEATURE_MULTITHREADING</DefineConstants>
+    <DefineConstants Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureMultithreading)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

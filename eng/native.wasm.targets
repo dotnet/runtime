@@ -9,6 +9,7 @@
   <PropertyGroup>
     <_RuntimeVariant />
     <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
+    <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
 
     <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != '' and '$(TargetsWasm)' == 'true'">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
     <_TzdDir Condition="'$(PkgSystem_Runtime_TimeZoneData)' != '' and '$(TargetsWasm)' == 'true'">$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_TzdDir>
@@ -33,18 +34,19 @@
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1&quot;" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmEnableThreads)' != 'true'">
+  <ItemGroup Condition="'$(FeatureMultithreading)' != 'true'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_THREADS=1&quot;" />
-      <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_SINGLE_THREADED=1&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_MULTITHREADING=0&quot;" />
   </ItemGroup>
-  <!-- TODO-WASM - https://github.com/dotnet/runtime/issues/68162
-  <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
-    -sUSE_PTHREADS=1
-    -sPTHREAD_POOL_SIZE=0
-    -sPTHREAD_POOL_SIZE_STRICT=0
-    -Wno-pthreads-mem-growth
+  <ItemGroup Condition="'$(FeatureMultithreading)' == 'true'">
+      <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_MULTITHREADING=1&quot;" />
+      <!-- TODO-WASM - https://github.com/dotnet/runtime/issues/68162
+        -sUSE_PTHREADS=1
+        -sPTHREAD_POOL_SIZE=0
+        -sPTHREAD_POOL_SIZE_STRICT=0
+        -Wno-pthreads-mem-growth
+      -->
   </ItemGroup>
-  -->
 
   <Target Name="GenerateEmccExports" Condition="'$(TargetsBrowser)' == 'true'">
     <ItemGroup>
