@@ -29,6 +29,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <IlcPgoOptimize Condition="'$(IlcPgoOptimize)' == '' and '$(OptimizationPreference)' == 'Speed'">true</IlcPgoOptimize>
     <RunILLink>false</RunILLink>
     <IlcTreatWarningsAsErrors Condition="'$(IlcTreatWarningsAsErrors)' == ''">$(TreatWarningsAsErrors)</IlcTreatWarningsAsErrors>
+    <UseNativeLibPrefix Condition="'$(UseNativeLibPrefix)' == '' and '$(_targetOS)' != 'win'">true</UseNativeLibPrefix>
     <_IsiOSLikePlatform Condition="'$(_targetOS)' == 'maccatalyst' or $(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos'))">true</_IsiOSLikePlatform>
     <_IsApplePlatform Condition="'$(_targetOS)' == 'osx' or '$(_IsiOSLikePlatform)' == 'true'">true</_IsApplePlatform>
   </PropertyGroup>
@@ -71,7 +72,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' == 'win' and '$(NativeLib)' == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win' and '$(NativeLib)' == 'Static'">.a</NativeBinaryExt>
 
-    <NativeBinaryPrefix Condition="'$(_UseNativeLibPrefix)' == 'true' and '$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win'">lib</NativeBinaryPrefix>
+    <NativeBinaryPrefix Condition="'$(UseNativeLibPrefix)' == 'true' and '$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win'">lib</NativeBinaryPrefix>
 
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == '' and '$(_IsApplePlatform)' == 'true'">.dSYM</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == '' and '$(_targetOS)' == 'win'">.pdb</NativeSymbolExt>
