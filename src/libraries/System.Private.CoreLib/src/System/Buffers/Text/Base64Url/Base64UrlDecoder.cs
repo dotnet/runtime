@@ -464,12 +464,12 @@ namespace System.Buffers.Text
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe int DecodeFourElements(byte* source, ref sbyte decodingMap) =>
+            public int DecodeFourElements(ReadOnlySpan<byte> source, ref sbyte decodingMap) =>
                 default(Base64DecoderByte).DecodeFourElements(source, ref decodingMap);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe int DecodeRemaining(byte* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3) =>
-                default(Base64DecoderByte).DecodeRemaining(srcEnd, ref decodingMap, remaining, out t2, out t3);
+            public int DecodeRemaining(ReadOnlySpan<byte> source, ref sbyte decodingMap, out uint t2, out uint t3) =>
+                default(Base64DecoderByte).DecodeRemaining(source, ref decodingMap, out t2, out t3);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<byte> span) => default(Base64DecoderByte).IndexOfAnyExceptWhiteSpace(span);
@@ -549,12 +549,12 @@ namespace System.Buffers.Text
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe int DecodeFourElements(ushort* source, ref sbyte decodingMap) =>
+            public int DecodeFourElements(ReadOnlySpan<ushort> source, ref sbyte decodingMap) =>
                 default(Base64DecoderChar).DecodeFourElements(source, ref decodingMap);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe int DecodeRemaining(ushort* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3) =>
-                default(Base64DecoderChar).DecodeRemaining(srcEnd, ref decodingMap, remaining, out t2, out t3);
+            public int DecodeRemaining(ReadOnlySpan<ushort> source, ref sbyte decodingMap, out uint t2, out uint t3) =>
+                default(Base64DecoderChar).DecodeRemaining(source, ref decodingMap, out t2, out t3);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<ushort> span) => default(Base64DecoderChar).IndexOfAnyExceptWhiteSpace(span);

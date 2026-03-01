@@ -129,14 +129,14 @@ namespace System.Buffers.Text
 
                 while (src < srcMax)
                 {
-                    int result = decoder.DecodeFourElements(src, ref decodingMap);
+                    int result = decoder.DecodeFourElements(new ReadOnlySpan<T>(src, 4), ref decodingMap);
 
                     if (result < 0)
                     {
                         goto InvalidDataExit;
                     }
 
-                    WriteThreeLowOrderBytes(dest, result);
+                    WriteThreeLowOrderBytes(new Span<byte>(dest, 3), result);
                     src += 4;
                     dest += 3;
                 }
@@ -166,7 +166,7 @@ namespace System.Buffers.Text
                 // If more than 4 bytes remained it will end up in DestinationTooSmallExit or InvalidDataExit (might succeed after whitespace removed)
                 long remaining = srcEnd - src;
                 Debug.Assert(typeof(TBase64Decoder) == typeof(Base64DecoderByte) ? remaining == 4 : remaining < 8);
-                int i0 = decoder.DecodeRemaining(srcEnd, ref decodingMap, remaining, out uint t2, out uint t3);
+                int i0 = decoder.DecodeRemaining(new ReadOnlySpan<T>(src, (int)remaining), ref decodingMap, out uint t2, out uint t3);
 
                 if (i0 < 0)
                 {
@@ -194,7 +194,7 @@ namespace System.Buffers.Text
                         goto DestinationTooSmallExit;
                     }
 
-                    WriteThreeLowOrderBytes(dest, i0);
+                    WriteThreeLowOrderBytes(new Span<byte>(dest, 3), i0);
                     dest += 3;
                     src += 4;
                 }
@@ -331,7 +331,7 @@ namespace System.Buffers.Text
             }
         }
 
-        internal static unsafe OperationStatus DecodeFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> buffer, out int bytesWritten, bool ignoreWhiteSpace)
+        internal static OperationStatus DecodeFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> buffer, out int bytesWritten, bool ignoreWhiteSpace)
             where TBase64Decoder : IBase64Decoder<byte>
         {
             if (buffer.IsEmpty)
@@ -340,64 +340,63 @@ namespace System.Buffers.Text
                 return OperationStatus.Done;
             }
 
-            fixed (byte* bufferBytes = &MemoryMarshal.GetReference(buffer))
+            uint bufferLength = (uint)buffer.Length;
+            uint sourceIndex = 0;
+            uint destIndex = 0;
+
+            if (decoder.IsInvalidLength(buffer.Length))
             {
-                uint bufferLength = (uint)buffer.Length;
-                uint sourceIndex = 0;
-                uint destIndex = 0;
+                goto InvalidExit;
+            }
 
-                if (decoder.IsInvalidLength(buffer.Length))
+            ref sbyte decodingMap = ref MemoryMarshal.GetReference(decoder.DecodingMap);
+
+            if (bufferLength > 4)
+            {
+                while (sourceIndex < bufferLength - 4)
                 {
-                    goto InvalidExit;
-                }
-
-                ref sbyte decodingMap = ref MemoryMarshal.GetReference(decoder.DecodingMap);
-
-                if (bufferLength > 4)
-                {
-                    while (sourceIndex < bufferLength - 4)
+                    int result = decoder.DecodeFourElements(buffer.Slice((int)sourceIndex, 4), ref decodingMap);
+                    if (result < 0)
                     {
-                        int result = decoder.DecodeFourElements(bufferBytes + sourceIndex, ref decodingMap);
-                        if (result < 0)
-                        {
-                            goto InvalidExit;
-                        }
-
-                        WriteThreeLowOrderBytes(bufferBytes + destIndex, result);
-                        destIndex += 3;
-                        sourceIndex += 4;
-                    }
-                }
-
-                uint t0;
-                uint t1;
-                uint t2;
-                uint t3;
-
-                switch (bufferLength - sourceIndex)
-                {
-                    case 2:
-                        t0 = bufferBytes[bufferLength - 2];
-                        t1 = bufferBytes[bufferLength - 1];
-                        t2 = EncodingPad;
-                        t3 = EncodingPad;
-                        break;
-                    case 3:
-                        t0 = bufferBytes[bufferLength - 3];
-                        t1 = bufferBytes[bufferLength - 2];
-                        t2 = bufferBytes[bufferLength - 1];
-                        t3 = EncodingPad;
-                        break;
-                    case 4:
-                        t0 = bufferBytes[bufferLength - 4];
-                        t1 = bufferBytes[bufferLength - 3];
-                        t2 = bufferBytes[bufferLength - 2];
-                        t3 = bufferBytes[bufferLength - 1];
-                        break;
-                    default:
                         goto InvalidExit;
-                }
+                    }
 
+                    WriteThreeLowOrderBytes(buffer.Slice((int)destIndex, 3), result);
+                    destIndex += 3;
+                    sourceIndex += 4;
+                }
+            }
+
+            uint t0;
+            uint t1;
+            uint t2;
+            uint t3;
+
+            switch (bufferLength - sourceIndex)
+            {
+                case 2:
+                    t0 = buffer[(int)(bufferLength - 2)];
+                    t1 = buffer[(int)(bufferLength - 1)];
+                    t2 = EncodingPad;
+                    t3 = EncodingPad;
+                    break;
+                case 3:
+                    t0 = buffer[(int)(bufferLength - 3)];
+                    t1 = buffer[(int)(bufferLength - 2)];
+                    t2 = buffer[(int)(bufferLength - 1)];
+                    t3 = EncodingPad;
+                    break;
+                case 4:
+                    t0 = buffer[(int)(bufferLength - 4)];
+                    t1 = buffer[(int)(bufferLength - 3)];
+                    t2 = buffer[(int)(bufferLength - 2)];
+                    t3 = buffer[(int)(bufferLength - 1)];
+                    break;
+                default:
+                    goto InvalidExit;
+            }
+
+            {
                 int i0 = Unsafe.Add(ref decodingMap, (int)t0);
                 int i1 = Unsafe.Add(ref decodingMap, (int)t1);
 
@@ -421,7 +420,7 @@ namespace System.Buffers.Text
                         goto InvalidExit;
                     }
 
-                    WriteThreeLowOrderBytes(bufferBytes + destIndex, i0);
+                    WriteThreeLowOrderBytes(buffer.Slice((int)destIndex, 3), i0);
                     destIndex += 3;
                 }
                 else if (!decoder.IsValidPadding(t2))
@@ -437,8 +436,8 @@ namespace System.Buffers.Text
                         goto InvalidExit;
                     }
 
-                    bufferBytes[destIndex] = (byte)(i0 >> 16);
-                    bufferBytes[destIndex + 1] = (byte)(i0 >> 8);
+                    buffer[(int)destIndex] = (byte)(i0 >> 16);
+                    buffer[(int)(destIndex + 1)] = (byte)(i0 >> 8);
                     destIndex += 2;
                 }
                 else
@@ -448,19 +447,19 @@ namespace System.Buffers.Text
                         goto InvalidExit;
                     }
 
-                    bufferBytes[destIndex] = (byte)(i0 >> 16);
+                    buffer[(int)destIndex] = (byte)(i0 >> 16);
                     destIndex += 1;
                 }
-
-                bytesWritten = (int)destIndex;
-                return OperationStatus.Done;
-
-            InvalidExit:
-                bytesWritten = (int)destIndex;
-                return ignoreWhiteSpace ?
-                    DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(decoder, buffer, ref bytesWritten, sourceIndex) : // The input may have whitespace, attempt to decode while ignoring whitespace.
-                    OperationStatus.InvalidData;
             }
+
+            bytesWritten = (int)destIndex;
+            return OperationStatus.Done;
+
+        InvalidExit:
+            bytesWritten = (int)destIndex;
+            return ignoreWhiteSpace ?
+                DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(decoder, buffer, ref bytesWritten, sourceIndex) : // The input may have whitespace, attempt to decode while ignoring whitespace.
+                OperationStatus.InvalidData;
         }
 
         internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
@@ -1300,7 +1299,7 @@ namespace System.Buffers.Text
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void WriteThreeLowOrderBytes(byte* destination, int value)
+        private static void WriteThreeLowOrderBytes(Span<byte> destination, int value)
         {
             destination[0] = (byte)(value >> 16);
             destination[1] = (byte)(value >> 8);
@@ -1514,7 +1513,7 @@ namespace System.Buffers.Text
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe int DecodeFourElements(byte* source, ref sbyte decodingMap)
+            public int DecodeFourElements(ReadOnlySpan<byte> source, ref sbyte decodingMap)
             {
                 // The 'source' span expected to have at least 4 elements, and the 'decodingMap' consists 256 sbytes
                 uint t0 = source[0];
@@ -1539,28 +1538,28 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe int DecodeRemaining(byte* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3)
+            public int DecodeRemaining(ReadOnlySpan<byte> source, ref sbyte decodingMap, out uint t2, out uint t3)
             {
                 uint t0;
                 uint t1;
                 t2 = EncodingPad;
                 t3 = EncodingPad;
-                switch (remaining)
+                switch (source.Length)
                 {
                     case 2:
-                        t0 = srcEnd[-2];
-                        t1 = srcEnd[-1];
+                        t0 = source[0];
+                        t1 = source[1];
                         break;
                     case 3:
-                        t0 = srcEnd[-3];
-                        t1 = srcEnd[-2];
-                        t2 = srcEnd[-1];
+                        t0 = source[0];
+                        t1 = source[1];
+                        t2 = source[2];
                         break;
                     case 4:
-                        t0 = srcEnd[-4];
-                        t1 = srcEnd[-3];
-                        t2 = srcEnd[-2];
-                        t3 = srcEnd[-1];
+                        t0 = source[0];
+                        t1 = source[1];
+                        t2 = source[2];
+                        t3 = source[3];
                         break;
                     default:
                         return -1;
@@ -1720,7 +1719,7 @@ namespace System.Buffers.Text
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe int DecodeFourElements(ushort* source, ref sbyte decodingMap)
+            public int DecodeFourElements(ReadOnlySpan<ushort> source, ref sbyte decodingMap)
             {
                 // The 'source' span expected to have at least 4 elements, and the 'decodingMap' consists 256 sbytes
                 uint t0 = source[0];
@@ -1750,28 +1749,28 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe int DecodeRemaining(ushort* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3)
+            public int DecodeRemaining(ReadOnlySpan<ushort> source, ref sbyte decodingMap, out uint t2, out uint t3)
             {
                 uint t0;
                 uint t1;
                 t2 = EncodingPad;
                 t3 = EncodingPad;
-                switch (remaining)
+                switch (source.Length)
                 {
                     case 2:
-                        t0 = srcEnd[-2];
-                        t1 = srcEnd[-1];
+                        t0 = source[0];
+                        t1 = source[1];
                         break;
                     case 3:
-                        t0 = srcEnd[-3];
-                        t1 = srcEnd[-2];
-                        t2 = srcEnd[-1];
+                        t0 = source[0];
+                        t1 = source[1];
+                        t2 = source[2];
                         break;
                     case 4:
-                        t0 = srcEnd[-4];
-                        t1 = srcEnd[-3];
-                        t2 = srcEnd[-2];
-                        t3 = srcEnd[-1];
+                        t0 = source[0];
+                        t1 = source[1];
+                        t2 = source[2];
+                        t3 = source[3];
                         break;
                     default:
                         return -1;
