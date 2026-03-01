@@ -1770,6 +1770,15 @@ void HelperCallProperties::init()
                 isAllocator = true;
                 break;
 
+            case CORINFO_HELP_ASYNC_CAPTURE_CONTEXTS:
+            case CORINFO_HELP_ASYNC_RESTORE_CONTEXTS:
+            case CORINFO_HELP_ASYNC_CAPTURE_EXECUTION_CONTEXT:
+            case CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT:
+            case CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION:
+            case CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT:
+                mutatesHeap = true;
+                break;
+
             default:
                 // The most pessimistic results are returned for these helpers.
                 mutatesHeap = true;

@@ -127,6 +127,12 @@
                                                 '$(IsGeneratorProject)' != 'true'">true</SkipTargetingPackShimReferences>
   </PropertyGroup>
 
+  <!-- Enable runtime async for source projects when UseRuntimeAsync is set. -->
+  <PropertyGroup Condition="'$(UseRuntimeAsync)' == 'true' and '$(IsSourceProject)' == 'true'">
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(EnableTestSupport)' == 'true'" />

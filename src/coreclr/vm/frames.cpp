@@ -2244,11 +2244,14 @@ void ComputeCallRefMap(MethodDesc* pMD,
         {
             msig.SetHasParamTypeArg();
         }
+    }
 
-        if (pMD->IsAsyncMethod())
-        {
-            msig.SetIsAsyncCall();
-        }
+    // The async continuation is a caller-side argument that is always passed
+    // regardless of whether the dispatch target has been resolved, unlike the
+    // instantiation argument which is an implementation detail of shared generics.
+    if (pMD->IsAsyncMethod())
+    {
+        msig.SetIsAsyncCall();
     }
 
     ArgIterator argit(&msig);

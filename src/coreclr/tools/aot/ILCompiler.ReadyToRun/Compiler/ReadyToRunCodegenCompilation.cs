@@ -109,9 +109,9 @@ namespace ILCompiler
                 }
             }
 
-            if (callee.IsAsyncThunk())
+            // TODO: Enable async inlining. https://github.com/dotnet/runtime/issues/124665
+            if (callee.IsAsyncThunk() || callee.IsAsyncCall())
             {
-                // Async thunks require special handling in the compiler and should not be inlined
                 return false;
             }
 
@@ -302,7 +302,7 @@ namespace ILCompiler
 
         private readonly ProfileDataManager _profileData;
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
-        private readonly HashSet<EcmaMethod> _methodsWhichNeedMutableILBodies = new HashSet<EcmaMethod>();
+        private readonly HashSet<MethodDesc> _methodsWhichNeedMutableILBodies = new HashSet<MethodDesc>();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
 
         public ProfileDataManager ProfileData => _profileData;
@@ -695,12 +695,15 @@ namespace ILCompiler
                     if (dependency is MethodWithGCInfo methodCodeNodeNeedingCode)
                     {
                         var method = methodCodeNodeNeedingCode.Method;
-                        if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                        var typicalDef = method.GetTypicalMethodDefinition();
+                        if (typicalDef is EcmaMethod or AsyncMethodVariant or AsyncResumptionStub)
                         {
-                            if (ilProvider.NeedsCrossModuleInlineableTokens(ecmaMethod) &&
-                                !_methodsWhichNeedMutableILBodies.Contains(ecmaMethod) &&
-                                CorInfoImpl.IsMethodCompilable(this, methodCodeNodeNeedingCode.Method))
-                                _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
+                            if (ilProvider.NeedsCrossModuleInlineableTokens(typicalDef) &&
+                                !_methodsWhichNeedMutableILBodies.Contains(typicalDef) &&
+                                CorInfoImpl.IsMethodCompilable(this, method))
+                            {
+                                _methodsWhichNeedMutableILBodies.Add(typicalDef);
+                            }
                         }
 
                         if (method.IsAsyncCall()
@@ -748,11 +751,11 @@ namespace ILCompiler
 
             void ProcessMutableMethodBodiesList()
             {
-                EcmaMethod[] mutableMethodBodyNeedList = new EcmaMethod[_methodsWhichNeedMutableILBodies.Count];
+                MethodDesc[] mutableMethodBodyNeedList = new MethodDesc[_methodsWhichNeedMutableILBodies.Count];
                 _methodsWhichNeedMutableILBodies.CopyTo(mutableMethodBodyNeedList);
                 _methodsWhichNeedMutableILBodies.Clear();
                 TypeSystemComparer comparer = TypeSystemComparer.Instance;
-                Comparison<EcmaMethod> comparison = (EcmaMethod a, EcmaMethod b) => comparer.Compare(a, b);
+                Comparison<MethodDesc> comparison = (MethodDesc a, MethodDesc b) => comparer.Compare(a, b);
                 Array.Sort(mutableMethodBodyNeedList, comparison);
                 var ilProvider = (ReadyToRunILProvider)_methodILCache.ILProvider;
 
