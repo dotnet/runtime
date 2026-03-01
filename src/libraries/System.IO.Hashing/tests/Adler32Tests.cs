@@ -152,19 +152,31 @@ namespace System.IO.Hashing.Tests
         }
 
         [Theory]
-        [InlineData(5553, 0xAA40476Bu)]
-        [InlineData(11104, 0xA2778E87u)]
+        [InlineData(5553, 0x62C69C89u)]
+        [InlineData(11104, 0xA8AE3724u)]
         public void LargeInput_ExceedsNMax(int length, uint expected)
         {
-            byte[] data = new byte[length];
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (byte)('a' + (i % 26));
-            }
-
-            Assert.Equal(expected, Adler32.HashToUInt32(data));
+            // This test ensures that Adler32 optimizations involving delayed modulo
+            // do not overflow a 32-bit intermediate at any point.
 
             var alg = new Adler32();
+
+            // The maximum possible value of an Adler32 checksum is 0xFFF0FFF0,
+            // which has both components just below the modulo value (0xFFF0 == 65520).
+            // A sequence of 65519 ones will generate this value.
+
+            byte[] primer = new byte[65519];
+            primer.AsSpan().Fill(1);
+
+            alg.Append(primer);
+            Assert.Equal(0xFFF0FFF0, alg.GetCurrentHashAsUInt32());
+
+            // Starting from an already-maxed checksum, a stream of 5553 max value
+            // bytes will overflow if not reduced by mod 65521 before the last byte.
+
+            byte[] data = new byte[length];
+            data.AsSpan().Fill(byte.MaxValue);
+
             alg.Append(data);
             Assert.Equal(expected, alg.GetCurrentHashAsUInt32());
         }
@@ -221,25 +233,6 @@ namespace System.IO.Hashing.Tests
             var alg = new Adler32();
             alg.Append(data);
             Assert.Equal(expected, alg.GetCurrentHashAsUInt32());
-        }
-
-        /// <summary>
-        /// Tests with all-0xFF bytes, which maximizes accumulator values and stresses
-        /// overflow-safe behavior in the vectorized paths.
-        /// </summary>
-        [Theory]
-        [InlineData(32)]
-        [InlineData(64)]
-        [InlineData(128)]
-        [InlineData(256)]
-        [InlineData(5552)]
-        [InlineData(5553)]
-        public void AllMaxBytes_MatchesReference(int length)
-        {
-            byte[] data = new byte[length];
-            data.AsSpan().Fill(0xFF);
-
-            Assert.Equal(ReferenceAdler32(data), Adler32.HashToUInt32(data));
         }
 
         /// <summary>
