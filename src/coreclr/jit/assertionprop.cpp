@@ -6200,9 +6200,9 @@ PhaseStatus Compiler::optAssertionPropMain()
         }
     }
 
-    for (int i = 0; i < switchBlocks.Height(); i++)
+    for (BasicBlock* const switchBlock : switchBlocks.BottomUpOrder())
     {
-        madeChanges |= optCreateJumpTableImpliedAssertions(switchBlocks.Bottom(i));
+        madeChanges |= optCreateJumpTableImpliedAssertions(switchBlock);
     }
 
     if (optAssertionCount == 0)

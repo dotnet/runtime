@@ -267,10 +267,8 @@ private:
 
         SegmentList segments(dstLayout->GetNonPadding(m_compiler));
 
-        for (int i = 0; i < m_entries.Height(); i++)
+        for (const Entry& entry : m_entries.BottomUpOrder())
         {
-            const Entry& entry = m_entries.BottomRef(i);
-
             segments.Subtract(SegmentList::Segment(entry.Offset, entry.Offset + genTypeSize(entry.Type)));
         }
 
@@ -426,10 +424,8 @@ private:
         assert((agg != nullptr) && (agg->Replacements.size() > 0));
         Replacement* firstRep = agg->Replacements.data();
 
-        for (int i = 0; i < m_entries.Height(); i++)
+        for (const Entry& entry : m_entries.BottomUpOrder())
         {
-            const Entry& entry = m_entries.BottomRef(i);
-
             assert(entry.ToReplacement != nullptr);
             assert((entry.ToReplacement >= firstRep) && (entry.ToReplacement < firstRep + agg->Replacements.size()));
             size_t replacementIndex = entry.ToReplacement - firstRep;
@@ -517,9 +513,8 @@ private:
         if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_store->OperIs(GT_STORE_BLK) &&
             m_store->AsBlk()->GetLayout()->HasGCPtr())
         {
-            for (int i = 0; i < m_entries.Height(); i++)
+            for (const Entry& entry : m_entries.BottomUpOrder())
             {
-                const Entry& entry = m_entries.BottomRef(i);
                 if ((entry.FromReplacement != nullptr) && (entry.Type == TYP_REF))
                 {
                     Replacement* rep = entry.FromReplacement;
@@ -573,9 +568,9 @@ private:
 
         if (addr != nullptr)
         {
-            for (int i = 0; i < m_entries.Height(); i++)
+            for (const Entry& entry : m_entries.BottomUpOrder())
             {
-                if (!CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
+                if (!CanSkipEntry(entry, dstDeaths, remainderStrategy))
                 {
                     numAddrUses++;
                 }
@@ -596,13 +591,12 @@ private:
                 {
                     needsNullCheck = true;
                     // See if our first indirection will subsume the null check (usual case).
-                    for (int i = 0; i < m_entries.Height(); i++)
+                    for (const Entry& entry : m_entries.BottomUpOrder())
                     {
-                        if (CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
+                        if (CanSkipEntry(entry, dstDeaths, remainderStrategy))
                         {
                             continue;
                         }
-                        const Entry& entry = m_entries.BottomRef(i);
                         assert((entry.FromReplacement == nullptr) || (entry.ToReplacement == nullptr));
                         needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
                         break;
@@ -699,10 +693,8 @@ private:
             srcDeaths = m_liveness->GetDeathsForStructLocal(m_src->AsLclVarCommon());
         }
 
-        for (int i = 0; i < m_entries.Height(); i++)
+        for (const Entry& entry : m_entries.BottomUpOrder())
         {
-            const Entry& entry = m_entries.BottomRef(i);
-
             if (entry.ToReplacement != nullptr)
             {
                 m_replacer->ClearNeedsReadBack(*entry.ToReplacement);
@@ -879,9 +871,8 @@ private:
             }
 
             // It could also be one of the replacement locals we're going to write.
-            for (int i = 0; i < m_entries.Height(); i++)
+            for (const Entry& entry : m_entries.BottomUpOrder())
             {
-                const Entry& entry = m_entries.BottomRef(i);
                 if ((entry.ToReplacement != nullptr) && (entry.ToReplacement->LclNum == lclNum))
                 {
                     return false;
@@ -928,9 +919,8 @@ private:
             case RemainderStrategy::FullBlock:
                 return true;
             case RemainderStrategy::Primitive:
-                for (int i = 0; i < m_entries.Height(); i++)
+                for (const Entry& entry : m_entries.BottomUpOrder())
                 {
-                    const Entry& entry = m_entries.BottomRef(i);
                     if (entry.Offset + genTypeSize(entry.Type) <= remainderStrategy.PrimitiveOffset)
                     {
                         // Entry ends before remainder starts

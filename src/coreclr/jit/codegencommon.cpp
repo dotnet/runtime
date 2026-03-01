@@ -2873,9 +2873,8 @@ public:
     //
     RegNode* Get(regNumber reg)
     {
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const node : m_nodes.BottomUpOrder())
         {
-            RegNode* node = m_nodes.Bottom(i);
             if (node->reg == reg)
             {
                 return node;
@@ -2952,9 +2951,8 @@ public:
 
         // Prefer a node with no outgoing edges meaning that its value does not
         // need to be saved.
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const reg : m_nodes.BottomUpOrder())
         {
-            RegNode* reg = m_nodes.Bottom(i);
             if (reg->incoming == nullptr)
             {
                 continue;
@@ -3009,9 +3007,8 @@ public:
     void Dump()
     {
         printf("%d registers in register parameter interference graph\n", m_nodes.Height());
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const regNode : m_nodes.BottomUpOrder())
         {
-            RegNode* regNode = m_nodes.Bottom(i);
             printf("  %s", getRegName(regNode->reg));
             for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
             {
@@ -3032,9 +3029,8 @@ public:
     //
     void Validate()
     {
-        for (int i = 0; i < m_nodes.Height(); i++)
+        for (RegNode* const regNode : m_nodes.BottomUpOrder())
         {
-            RegNode* regNode = m_nodes.Bottom(i);
             for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
             {
                 unsigned destStart = incoming->destOffset;

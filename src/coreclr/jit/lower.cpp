@@ -3279,12 +3279,12 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
         // incoming args that live in that area. If we have later uses of those args, this
         // is a problem. We introduce a defensive copy into a temp here of those args that
         // potentially may cause problems.
-        for (int i = 0; i < putargs.Height(); i++)
+        for (GenTree* const put : putargs.BottomUpOrder())
         {
-            GenTreePutArgStk* put = putargs.Bottom(i)->AsPutArgStk();
+            GenTreePutArgStk* putArgStk = put->AsPutArgStk();
 
-            unsigned int overwrittenStart = put->getArgOffset();
-            unsigned int overwrittenEnd   = overwrittenStart + put->GetStackByteSize();
+            unsigned int overwrittenStart = putArgStk->getArgOffset();
+            unsigned int overwrittenEnd   = overwrittenStart + putArgStk->GetStackByteSize();
 
             for (unsigned callerArgLclNum = 0; callerArgLclNum < m_compiler->info.compArgsCount; callerArgLclNum++)
             {
@@ -9009,9 +9009,8 @@ void Lowering::MapParameterRegisterLocals()
     if (m_compiler->verbose)
     {
         printf("%d parameter register to local mappings\n", m_compiler->m_paramRegLocalMappings->Height());
-        for (int i = 0; i < m_compiler->m_paramRegLocalMappings->Height(); i++)
+        for (const ParameterRegisterLocalMapping& mapping : m_compiler->m_paramRegLocalMappings->BottomUpOrder())
         {
-            const ParameterRegisterLocalMapping& mapping = m_compiler->m_paramRegLocalMappings->BottomRef(i);
             printf("  %s -> V%02u+%u\n", getRegName(mapping.RegisterSegment->GetRegister()), mapping.LclNum,
                    mapping.Offset);
         }
