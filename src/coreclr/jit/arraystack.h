@@ -25,6 +25,7 @@ public:
         }
 
         tosIndex = 0;
+        INDEBUG(m_version = 0);
     }
 
     void Push(T item)
@@ -36,6 +37,7 @@ public:
 
         data[tosIndex] = item;
         tosIndex++;
+        INDEBUG(m_version++);
     }
 
     template <typename... Args>
@@ -48,6 +50,7 @@ public:
 
         new (&data[tosIndex], jitstd::placement_t()) T(std::forward<Args>(args)...);
         tosIndex++;
+        INDEBUG(m_version++);
     }
 
     void Realloc()
@@ -68,6 +71,7 @@ public:
     {
         assert(tosIndex > 0);
         tosIndex--;
+        INDEBUG(m_version++);
         return data[tosIndex];
     }
 
@@ -76,6 +80,7 @@ public:
     {
         assert(tosIndex >= count);
         tosIndex -= count;
+        INDEBUG(m_version++);
     }
 
     // Return the i'th element from the top
@@ -119,6 +124,7 @@ public:
     void Reset()
     {
         tosIndex = 0;
+        INDEBUG(m_version++);
     }
 
     T* Data()
@@ -159,13 +165,24 @@ public:
     {
         T* m_begin;
         T* m_end;
+        INDEBUG(unsigned m_version);
+        INDEBUG(const unsigned* m_pStackVersion);
 
     public:
-        BottomUpView(T* begin, T* end)
+        BottomUpView(T* begin, T* end DEBUGARG(unsigned version) DEBUGARG(const unsigned* pStackVersion))
             : m_begin(begin)
             , m_end(end)
         {
+            INDEBUG(m_version = version);
+            INDEBUG(m_pStackVersion = pStackVersion);
         }
+
+#ifdef DEBUG
+        ~BottomUpView()
+        {
+            assert(m_version == *m_pStackVersion && "ArrayStack was modified during BottomUpOrder iteration");
+        }
+#endif
 
         T* begin() const
         {
@@ -183,13 +200,24 @@ public:
     {
         T* m_begin;
         T* m_end;
+        INDEBUG(unsigned m_version);
+        INDEBUG(const unsigned* m_pStackVersion);
 
     public:
-        TopDownView(T* begin, T* end)
+        TopDownView(T* begin, T* end DEBUGARG(unsigned version) DEBUGARG(const unsigned* pStackVersion))
             : m_begin(begin)
             , m_end(end)
         {
+            INDEBUG(m_version = version);
+            INDEBUG(m_pStackVersion = pStackVersion);
         }
+
+#ifdef DEBUG
+        ~TopDownView()
+        {
+            assert(m_version == *m_pStackVersion && "ArrayStack was modified during TopDownOrder iteration");
+        }
+#endif
 
         ReverseIterator begin() const
         {
@@ -204,12 +232,12 @@ public:
 
     BottomUpView BottomUpOrder()
     {
-        return BottomUpView(data, data + tosIndex);
+        return BottomUpView(data, data + tosIndex DEBUGARG(m_version) DEBUGARG(&m_version));
     }
 
     TopDownView TopDownOrder()
     {
-        return TopDownView(data + tosIndex, data);
+        return TopDownView(data + tosIndex, data DEBUGARG(m_version) DEBUGARG(&m_version));
     }
 
 private:
@@ -219,4 +247,5 @@ private:
     T*            data;
     // initial allocation
     char builtinData[builtinSize * sizeof(T)];
+    INDEBUG(unsigned m_version);
 };
