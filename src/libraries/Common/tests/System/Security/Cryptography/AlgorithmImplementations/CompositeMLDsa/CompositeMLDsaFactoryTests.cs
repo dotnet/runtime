@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android")]
-        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        [MemberData(nameof(CompositeMLDsaTestData.AllIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportBadPrivateKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
             byte[] key = vector.SecretKey;
@@ -374,7 +374,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android")]
-        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        [MemberData(nameof(CompositeMLDsaTestData.AllIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportBadPublicKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
             byte[] key = vector.PublicKey;
@@ -385,9 +385,13 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android")]
-        [MemberData(nameof(CompositeMLDsaTestData.SupportedECDsaAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        [MemberData(nameof(CompositeMLDsaTestData.AllIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportBadPublicKey_ECDsa_Uncompressed(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
+            Assert.SkipUnless(
+                CompositeMLDsa.IsAlgorithmSupported(vector.Algorithm) && CompositeMLDsaTestHelpers.IsECDsa(vector.Algorithm),
+                "Algorithm is not supported or is not ECDsa.");
+
             byte[] key = vector.PublicKey.AsSpan().ToArray();
             int formatIndex = CompositeMLDsaTestHelpers.MLDsaAlgorithms[vector.Algorithm].PublicKeySizeInBytes;
 
@@ -654,7 +658,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        [MemberData(nameof(CompositeMLDsaTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void AlgorithmMatches_GenerateKey(CompositeMLDsaAlgorithm algorithm)
         {
             AssertThrowIfNotSupported(
@@ -668,7 +672,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android")]
-        [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
+        [MemberData(nameof(CompositeMLDsaTestData.AllIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void AlgorithmMatches_Import(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
             CompositeMLDsaTestHelpers.AssertImportPublicKey(
