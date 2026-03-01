@@ -3684,9 +3684,9 @@ void CSE_HeuristicRL::Softmax(ArrayStack<Choice>& choices)
     double softmaxSum = 0;
     for (Choice& choice : choices.TopDownOrder())
     {
-        double softmax    = exp(choice.m_preference);
-        choice.m_softmax  = softmax;
-        softmaxSum       += softmax;
+        double softmax   = exp(choice.m_preference);
+        choice.m_softmax = softmax;
+        softmaxSum += softmax;
     }
 
     // Normalize each choice's softmax likelihood
