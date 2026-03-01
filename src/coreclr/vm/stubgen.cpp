@@ -9,6 +9,7 @@
 
 #include "common.h"
 
+#include <inttypes.h>
 #include "stubgen.h"
 #include "jitinterface.h"
 #include "ilstubcache.h"
@@ -528,11 +529,11 @@ ILStubLinker::LogILInstruction(
         case ShortInlineVar:
         case ShortInlineI:
         case InlineI:
-            strArgument.Printf("0x%p", pInstruction->uArg);
+            strArgument.Printf("0x%lx", (unsigned long)pInstruction->uArg);
             break;
 
         case InlineI8:
-            strArgument.Printf("0x%llx", (uint64_t)pInstruction->uArg);
+            strArgument.Printf("0x%" PRIx64, (uint64_t)pInstruction->uArg);
             break;
 
         case InlineMethod:
@@ -544,7 +545,7 @@ ILStubLinker::LogILInstruction(
         case InlineTok:
             // No token value when we dump IL for ETW
             if (pDumpILStubCode == NULL)
-                strArgument.Printf("0x%08p", pInstruction->uArg);
+                strArgument.Printf("0x%08lx", (unsigned long)pInstruction->uArg);
 
             // Dump to szTokenNameBuffer if logging, otherwise dump to szArgumentBuffer to avoid an extra space because we are omitting the token
             _ASSERTE(FitsIn<mdToken>(pInstruction->uArg));

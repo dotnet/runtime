@@ -329,7 +329,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
             name.AppendPrintf("[%s]", optimizationTier);
         }
         SString line;
-        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
+        line.Printf(FMT_CODE_ADDR " %zx %s\n", (void*)pCode, codeSize, name.GetUTF8());
 
         {
             CrstHolder ch(&(s_csPerfMap));
@@ -440,7 +440,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
             name.Printf("stub<%d> %s<%s>", ++(s_StubsMapped), stubType, stubOwner);
         }
         SString line;
-        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
+        line.Printf(FMT_CODE_ADDR " %zx %s\n", (void*)pCode, codeSize, name.GetUTF8());
 
         {
             CrstHolder ch(&(s_csPerfMap));
