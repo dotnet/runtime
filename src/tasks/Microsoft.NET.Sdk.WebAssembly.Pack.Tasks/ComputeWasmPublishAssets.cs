@@ -60,7 +60,7 @@ public class ComputeWasmPublishAssets : Task
 
     public bool EmitSymbolMap { get; set; }
 
-    public bool IsWebCilEnabled { get; set; }
+    public bool IsWebcilEnabled { get; set; }
 
     public bool FingerprintAssets { get; set; }
 
@@ -454,7 +454,7 @@ public class ComputeWasmPublishAssets : Task
             var asset = kvp.Value;
             var fileName = Path.GetFileName(GetItemSpecWithoutFingerprint(asset));
             var assetToUpdateItemSpec = FingerprintAssets ? GetNonFingerprintedAssetItemSpec(asset) : asset.ItemSpec;
-            if (IsWebCilEnabled)
+            if (IsWebcilEnabled)
                 fileName = Path.ChangeExtension(fileName, ".dll");
 
             if (resolvedAssembliesToPublish.TryGetValue(fileName, out var existing))
@@ -484,7 +484,7 @@ public class ComputeWasmPublishAssets : Task
                 assetsToUpdate.Add(satelliteAssembly.ItemSpec, satelliteAssembly);
                 var culture = satelliteAssembly.GetMetadata("AssetTraitValue");
                 var fileName = Path.GetFileName(GetItemSpecWithoutFingerprint(satelliteAssembly));
-                if (IsWebCilEnabled)
+                if (IsWebcilEnabled)
                     fileName = Path.ChangeExtension(fileName, ".dll");
 
                 if (satelliteAssemblies.TryGetValue((culture, fileName), out var existing))

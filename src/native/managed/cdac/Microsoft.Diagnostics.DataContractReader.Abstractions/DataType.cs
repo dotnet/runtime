@@ -51,7 +51,6 @@ public enum DataType
     DynamicStaticsInfo,
     EEClass,
     CoreLibBinder,
-    ArrayClass,
     MethodTableAuxiliaryData,
     GenericsDictInfo,
     TypeDesc,
@@ -83,8 +82,10 @@ public enum DataType
     ThisPtrRetBufPrecodeData,
     Array,
     SyncBlock,
+    SLink,
     SyncTableEntry,
     InteropSyncBlockInfo,
+    SyncBlockCache,
     InstantiatedMethodDesc,
     DynamicMethodDesc,
     StoredSigMethodDesc,
@@ -141,6 +142,8 @@ public enum DataType
     HijackFrame,
     TailCallFrame,
     StubDispatchFrame,
+    ComCallWrapper,
+    SimpleComCallWrapper,
 
 
     /* GC Data Types */
@@ -150,4 +153,8 @@ public enum DataType
     CFinalize,
     HeapSegment,
     OomHistory,
+    HandleTableMap,
+    HandleTableBucket,
+    HandleTable,
+    TableSegment,
 }
