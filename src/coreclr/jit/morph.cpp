@@ -154,9 +154,9 @@ public:
     {
         m_compiler->fgUsedSharedTemps = m_prevUsedSharedTemps;
 
-        for (int i = 0; i < m_usedSharedTemps.Height(); i++)
+        for (unsigned const temp : m_usedSharedTemps.TopDownOrder())
         {
-            m_compiler->fgAvailableOutgoingArgTemps->setBit((indexType)m_usedSharedTemps.Top(i));
+            m_compiler->fgAvailableOutgoingArgTemps->setBit((indexType)temp);
         }
     }
 };

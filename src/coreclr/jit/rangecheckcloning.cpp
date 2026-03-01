@@ -208,9 +208,9 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
 
     // Find the maximum offset
     int offset = 0;
-    for (int i = 0; i < bndChkStack->Height(); i++)
+    for (const BoundsCheckInfo& bci : bndChkStack->TopDownOrder())
     {
-        offset = max(offset, bndChkStack->Top(i).offset);
+        offset = max(offset, bci.offset);
     }
     assert(offset >= 0);
 

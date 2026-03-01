@@ -1498,9 +1498,9 @@ void Compiler::fgDumpWasmControlFlow()
         }
         else
         {
-            for (int i = 0; i < activeIntervals.Height(); i++)
+            for (WasmInterval* const interval : activeIntervals.TopDownOrder())
             {
-                JITDUMP(" [%u,%u]", activeIntervals.Top(i)->Start(), activeIntervals.Top(i)->End());
+                JITDUMP(" [%u,%u]", interval->Start(), interval->End());
             }
         }
         JITDUMP("\n");
