@@ -2767,3 +2767,25 @@ bool IsSpecialNumber(const char* szf)
         || (strstr(szf, "nan") != NULL) || (strstr(szf, "NAN") != NULL)
         || (strstr(szf, "inf") != NULL) || (strstr(szf, "INF") != NULL);
 }
+
+void NormalizeFloatString(char* szf)
+{
+    // Normalize NaN representations to remove platform-specific suffixes
+    // Windows can produce "-nan(ind)" while Linux produces "-nan"
+    // This function removes the "(ind)" suffix to ensure cross-platform consistency
+    
+    char* nan_pos = strstr(szf, "nan(");
+    if (nan_pos != NULL)
+    {
+        // "nan" is 3 characters, so truncate at position 3 from the match
+        nan_pos[3] = '\0';
+    }
+    
+    // Also handle uppercase NAN
+    char* NAN_pos = strstr(szf, "NAN(");
+    if (NAN_pos != NULL)
+    {
+        // "NAN" is 3 characters, so truncate at position 3 from the match
+        NAN_pos[3] = '\0';
+    }
+}
