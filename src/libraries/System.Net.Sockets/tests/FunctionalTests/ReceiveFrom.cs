@@ -4,6 +4,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -57,7 +58,7 @@ namespace System.Net.Sockets.Tests
             else
             {
                 await AssertThrowsSynchronously<ArgumentNullException>(() => ReceiveFromAsync(socket, new byte[1], null));
-            }   
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]

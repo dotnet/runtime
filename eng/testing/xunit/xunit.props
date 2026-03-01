@@ -10,8 +10,7 @@
     <!-- Excluding xunit.core/build as it enables deps file generation. -->
     <PackageReference Include="xunit.v3.core" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" ExcludeAssets="build" />
 
-    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
-    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" />
 
     <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" Condition="'$(IncludeRemoteExecutor)' == 'true'" />

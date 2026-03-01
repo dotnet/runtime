@@ -17,7 +17,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XUnitV3Extensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.v3.extensibility.core" Version="$(XUnitV3Version)" ExcludeAssets="build" />
-    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />

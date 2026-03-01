@@ -483,10 +483,7 @@ namespace System.Net.Security.Tests
                 // Make sure at least some tests run.
 
                 Assert.SkipWhen(Tls13Supported, $"Test requires that at least {minCipherSuites} non TLS 1.3 cipher suites are supported.");
-                else
-                {
-                    throw new Exception($"Less than {minCipherSuites} cipher suites are supported: {string.Join(", ", SupportedNonTls13CipherSuites)}");
-                }
+                throw new Exception($"Less than {minCipherSuites} cipher suites are supported: {string.Join(", ", SupportedNonTls13CipherSuites)}");
             }
         }
 
