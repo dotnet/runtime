@@ -4239,10 +4239,10 @@ void CSE_Heuristic::Initialize()
         }
     }
 
-    // The minumum value that we want to use for aggressiveRefCnt is BB_UNITY_WEIGHT * 2
+    // The minimum value that we want to use for aggressiveRefCnt is BB_UNITY_WEIGHT / 2
     // so increase it when we are below that value
     //
-    aggressiveRefCnt = max(BB_UNITY_WEIGHT * 2, aggressiveRefCnt);
+    aggressiveRefCnt = max(BB_UNITY_WEIGHT / 2, aggressiveRefCnt);
 
     // The minumum value that we want to use for moderateRefCnt is BB_UNITY_WEIGHT
     // so increase it when we are below that value
