@@ -58,17 +58,6 @@ internal sealed class ClrMdDumpHost : IDisposable
     }
 
     /// <summary>
-    /// Creates a <see cref="Microsoft.Diagnostics.Runtime.ClrRuntime"/> for the first
-    /// .NET runtime found in the dump. Used by tests that need to enumerate heap objects.
-    /// </summary>
-    public Microsoft.Diagnostics.Runtime.ClrRuntime CreateClrRuntime()
-    {
-        if (_dataTarget.ClrVersions.Length == 0)
-            throw new InvalidOperationException("No CLR runtime found in the dump.");
-        return _dataTarget.ClrVersions[0].CreateRuntime();
-    }
-
-    /// <summary>
     /// Locate the DotNetRuntimeContractDescriptor symbol address in the dump.
     /// Uses ClrMD's built-in export resolution which handles PE, ELF, and Mach-O formats.
     /// </summary>

@@ -579,7 +579,6 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, DacpCOMInterfacePointerData* interfaces, uint* pNeeded)
     {
         int hr = HResults.S_OK;
-        uint itemCount = 0;
         try
         {
             if (ccw == 0 || (interfaces == null && pNeeded == null))
@@ -593,7 +592,6 @@ public sealed unsafe partial class SOSDacImpl
             {
                 uint c = (uint)result.Count();
                 *pNeeded = c;
-                itemCount = c;
             }
             else
             {
@@ -611,7 +609,6 @@ public sealed unsafe partial class SOSDacImpl
 
                 if (pNeeded is not null)
                     *pNeeded = itemIndex;
-                itemCount = itemIndex;
             }
         }
         catch (System.Exception ex)
@@ -621,7 +618,7 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            DacpCOMInterfacePointerData[]? interfacesLocal = interfaces != null && count > 0 ? new DacpCOMInterfacePointerData[(int)count] : null;
+            DacpCOMInterfacePointerData[] interfacesLocal = new DacpCOMInterfacePointerData[(int)count];
             uint neededLocal = 0;
             int hrLocal;
             fixed (DacpCOMInterfacePointerData* interfacesLocalPtr = interfacesLocal)
@@ -631,7 +628,7 @@ public sealed unsafe partial class SOSDacImpl
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
             {
-                Debug.Assert(itemCount == neededLocal, $"cDAC count: {itemCount}, DAC count: {neededLocal}");
+                Debug.Assert(pNeeded is null || *pNeeded == neededLocal, $"cDAC count: {(pNeeded is null ? "null" : (*pNeeded).ToString())}, DAC count: {neededLocal}");
                 if (interfaces != null)
                 {
                     for (uint i = 0; i < neededLocal; i++)

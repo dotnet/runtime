@@ -1034,9 +1034,6 @@ const StdInterfaceDesc<3> g_IAgileObject =
     }
 };
 
-// [cDAC] [BuiltInCOM]: These globals expose the tear-off function entry points used by DACGetCCWFromAddress
-// to distinguish COM interface pointers from direct CCW/SimpleComCallWrapper pointers.
-// The values are the raw function addresses (without any THUMB bit on ARM).
 const TADDR g_cdacTearOffAddRef        = (TADDR)(void*)Unknown_AddRef;
 const TADDR g_cdacTearOffAddRefSimple  = (TADDR)(void*)Unknown_AddRefSpecial;
 const TADDR g_cdacTearOffAddRefSimpleInner = (TADDR)(void*)Unknown_AddRefInner;

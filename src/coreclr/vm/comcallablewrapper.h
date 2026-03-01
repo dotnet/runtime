@@ -748,11 +748,11 @@ private:
     {
         NumVtablePtrs = 5,
 #ifdef HOST_64BIT
-        enum_ThisMask = ~0x3f, // [cDAC] [BuiltInCOM]: Contract depends on this value - mask on IUnknown ** to get at the OBJECT-REF handle
+        enum_ThisMask = ~0x3f, // mask on IUnknown ** to get at the OBJECT-REF handle
 #else
-        enum_ThisMask = ~0x1f, // [cDAC] [BuiltInCOM]: Contract depends on this value - mask on IUnknown ** to get at the OBJECT-REF handle
+        enum_ThisMask = ~0x1f, // mask on IUnknown ** to get at the OBJECT-REF handle
 #endif
-        Slot_Basic = 0,
+        Slot_Basic = 0, // [cDAC] [BuiltInCOM]: Contract depends on this value
         Slot_IClassX = 1,
         Slot_FirstInterface = 2,
     };

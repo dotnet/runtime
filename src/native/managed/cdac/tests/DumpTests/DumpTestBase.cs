@@ -93,14 +93,6 @@ public abstract class DumpTestBase : IDisposable
         Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
     }
 
-    /// <summary>
-    /// Creates a <see cref="Microsoft.Diagnostics.Runtime.ClrRuntime"/> for the dump
-    /// loaded by <see cref="InitializeDumpTest"/>. Use this to enumerate heap objects
-    /// or access other ClrMD functionality in tests that need it.
-    /// </summary>
-    protected Microsoft.Diagnostics.Runtime.ClrRuntime CreateClrRuntime()
-        => (_host ?? throw new InvalidOperationException("Dump not loaded. Call InitializeDumpTest first.")).CreateClrRuntime();
-
     public void Dispose()
     {
         _host?.Dispose();
