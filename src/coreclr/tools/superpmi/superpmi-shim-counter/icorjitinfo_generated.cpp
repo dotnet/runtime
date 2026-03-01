@@ -171,6 +171,14 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(
     return original_ICorJitInfo->getInstantiatedEntry(ftn, methodArg, classArg);
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncOtherVariant(
+          CORINFO_METHOD_HANDLE ftn,
+          bool* variantIsThunk)
+{
+    mcs->AddCall("getAsyncOtherVariant");
+    return original_ICorJitInfo->getAsyncOtherVariant(ftn, variantIsThunk);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {

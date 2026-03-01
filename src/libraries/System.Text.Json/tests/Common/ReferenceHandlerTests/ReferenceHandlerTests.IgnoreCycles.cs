@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization.Tests
                 T root = new T();
                 SetNextProperty(typeof(T), root, root);
 
-                await Test_Serialize_And_SerializeAsync(root, @"{""Next"":null}", s_optionsIgnoreCycles);
+                await Test_Serialize_And_SerializeAsync(root, """{"Next":null}""", s_optionsIgnoreCycles);
 
                 // Verify that object property is not mutated on serialization.
                 object rootNext = GetNextProperty(typeof(T), root);
@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 var root = new ClassWithGenericProperty<T>();
                 root.Foo = node;
-                await Test_Serialize_And_SerializeAsync(root, expected: @"{""Foo"":{""Next"":null}}", s_optionsIgnoreCycles);
+                await Test_Serialize_And_SerializeAsync(root, expected: """{"Foo":{"Next":null}}""", s_optionsIgnoreCycles);
 
                 object nodeNext = GetNextProperty(typeof(T), node);
                 Assert.NotNull(nodeNext);
@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 var rootWithObjProperty = new ClassWithGenericProperty<object>();
                 rootWithObjProperty.Foo = node;
-                await Test_Serialize_And_SerializeAsync(rootWithObjProperty, expected: @"{""Foo"":{""Next"":null}}", s_optionsIgnoreCycles);
+                await Test_Serialize_And_SerializeAsync(rootWithObjProperty, expected: """{"Foo":{"Next":null}}""", s_optionsIgnoreCycles);
 
                 nodeNext = GetNextProperty(typeof(T), node);
                 Assert.NotNull(nodeNext);
@@ -81,7 +81,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 object root = new T();
                 SetNextProperty(typeof(T), root, root);
-                await Test_Serialize_And_SerializeAsync(root, expected: @"{""Next"":null}", s_optionsIgnoreCycles);
+                await Test_Serialize_And_SerializeAsync(root, expected: """{"Next":null}""", s_optionsIgnoreCycles);
 
                 object rootNext = GetNextProperty(typeof(T), root);
                 Assert.NotNull(rootNext);
@@ -94,11 +94,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             IValueNodeWithIValueNodeProperty root = new ValueNodeWithIValueNodeProperty();
             root.Next = root;
-            await Test_Serialize_And_SerializeAsync(root, expected: @"{""Next"":null}", s_optionsIgnoreCycles);
+            await Test_Serialize_And_SerializeAsync(root, expected: """{"Next":null}""", s_optionsIgnoreCycles);
 
             IValueNodeWithObjectProperty root2 = new ValueNodeWithObjectProperty();
             root2.Next = root2;
-            await Test_Serialize_And_SerializeAsync(root2, expected: @"{""Next"":null}", s_optionsIgnoreCycles);
+            await Test_Serialize_And_SerializeAsync(root2, expected: """{"Next":null}""", s_optionsIgnoreCycles);
         }
 
         [Fact]
@@ -114,7 +114,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 var rootWithObjProperty = new ClassWithGenericProperty<object>();
                 rootWithObjProperty.Foo = node;
-                await Test_Serialize_And_SerializeAsync(rootWithObjProperty, expected: @"{""Foo"":{""Next"":null}}", s_optionsIgnoreCycles);
+                await Test_Serialize_And_SerializeAsync(rootWithObjProperty, expected: """{"Foo":{"Next":null}}""", s_optionsIgnoreCycles);
 
                 object nodeNext = GetNextProperty(typeof(T), node);
                 Assert.NotNull(nodeNext);
@@ -130,7 +130,7 @@ namespace System.Text.Json.Serialization.Tests
             var root = (IDictionary<string, object>)Activator.CreateInstance(typeToSerialize);
             root.Add("self", root);
 
-            await Test_Serialize_And_SerializeAsync(root, @"{""self"":null}", s_optionsIgnoreCycles);
+            await Test_Serialize_And_SerializeAsync(root, """{"self":null}""", s_optionsIgnoreCycles);
         }
 
         [Fact]
@@ -139,7 +139,7 @@ namespace System.Text.Json.Serialization.Tests
             var root = new RecursiveDictionary();
             root.Add("self", root);
 
-            await Test_Serialize_And_SerializeAsync(root, @"{""self"":null}", s_optionsIgnoreCycles);
+            await Test_Serialize_And_SerializeAsync(root, """{"self":null}""", s_optionsIgnoreCycles);
         }
 
         [Fact]
@@ -149,7 +149,7 @@ namespace System.Text.Json.Serialization.Tests
             var root = new ReadOnlyDictionary<string, object>(innerDictionary);
             innerDictionary.Add("self", root);
 
-            await Test_Serialize_And_SerializeAsync(root, @"{""self"":null}", s_optionsIgnoreCycles);
+            await Test_Serialize_And_SerializeAsync(root, """{"self":null}""", s_optionsIgnoreCycles);
         }
 
         [Fact]
@@ -158,7 +158,7 @@ namespace System.Text.Json.Serialization.Tests
             var root = new WrapperForIDictionary();
             root.Add("self", root);
 
-            await Test_Serialize_And_SerializeAsync(root, @"{""self"":null}", s_optionsIgnoreCycles);
+            await Test_Serialize_And_SerializeAsync(root, """{"self":null}""", s_optionsIgnoreCycles);
         }
 
         [Fact]
@@ -230,7 +230,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var root = new EmptyClassWithExtensionProperty();
             root.MyOverflow.Add("root", root);
-            await Test_Serialize_And_SerializeAsync(root, @"{""root"":null}", s_optionsIgnoreCycles);
+            await Test_Serialize_And_SerializeAsync(root, """{"root":null}""", s_optionsIgnoreCycles);
         }
 
         [Fact]
@@ -340,16 +340,16 @@ namespace System.Text.Json.Serialization.Tests
             Person person = new() { Name = "John" };
 
             await Test_Serialize_And_SerializeAsync(new PersonHolder { Person1 = person, Person2 = person },
-                expected: @"{""Person1"":""John"",""Person2"":""John""}", opts);
+                expected: """{"Person1":"John","Person2":"John"}""", opts);
 
             await Test_Serialize_And_SerializeAsync(new BoxedPersonHolder { Person1 = person, Person2 = person },
-                expected: @"{""Person1"":""John"",""Person2"":""John""}", opts);
+                expected: """{"Person1":"John","Person2":"John"}""", opts);
 
             await Test_Serialize_And_SerializeAsync(new List<Person> { person, person },
-                expected: @"[""John"",""John""]", opts);
+                expected: """["John","John"]""", opts);
 
             await Test_Serialize_And_SerializeAsync(new List<object> { person, person },
-                expected: @"[""John"",""John""]", opts);
+                expected: """["John","John"]""", opts);
         }
 
         public class PersonHolder
@@ -389,7 +389,7 @@ namespace System.Text.Json.Serialization.Tests
             var rootDictionary = new Dictionary<string, object>();
             rootDictionary.Add("self", rootDictionary);
 
-            await Test_Serialize_And_SerializeAsync(rootDictionary, @"{""self"":null}", opts);
+            await Test_Serialize_And_SerializeAsync(rootDictionary, """{"self":null}""", opts);
         }
 
         [Fact] // https://github.com/dotnet/runtime/issues/51837
@@ -406,7 +406,9 @@ namespace System.Text.Json.Serialization.Tests
                 }
             };
 
-            await Test_Serialize_And_SerializeAsync_Contains(root, expectedSubstring: @"""Name"":""John""", expectedTimes: 2, s_optionsIgnoreCycles);
+            await Test_Serialize_And_SerializeAsync_Contains(root, expectedSubstring: """
+                "Name":"John"
+                """, expectedTimes: 2, s_optionsIgnoreCycles);
         }
 
         [Fact]
@@ -426,7 +428,9 @@ namespace System.Text.Json.Serialization.Tests
                 }
             };
 
-            await Test_Serialize_And_SerializeAsync_Contains(root, expectedSubstring: @"""DayOfBirth"":15", expectedTimes: 2, s_optionsIgnoreCycles);
+            await Test_Serialize_And_SerializeAsync_Contains(root, expectedSubstring: """
+                "DayOfBirth":15
+                """, expectedTimes: 2, s_optionsIgnoreCycles);
         }
 
         [Fact]
@@ -474,7 +478,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task CycleDetectionStatePersistsAcrossContinuations()
         {
-            string expectedValueJson = @"{""LargePropertyName"":""A large-ish string to force continuations"",""Nested"":null}";
+            string expectedValueJson = """{"LargePropertyName":"A large-ish string to force continuations","Nested":null}""";
             var recVal = new RecursiveValue { LargePropertyName = "A large-ish string to force continuations" };
             recVal.Nested = recVal;
 
