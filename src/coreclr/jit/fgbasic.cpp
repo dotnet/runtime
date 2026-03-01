@@ -3751,8 +3751,8 @@ void Compiler::fgFindBasicBlocks()
         if (clause.Flags & CORINFO_EH_CLAUSE_FILTER)
         {
             filtBB = HBtab->ebdFilter = fgLookupBB(clause.FilterOffset);
-            filtBB->bbCatchTyp        = BBCT_FILTER;
-            hndBegBB->bbCatchTyp      = BBCT_FILTER_HANDLER;
+            filtBB->SetCatchType(BBCT_FILTER);
+            hndBegBB->SetCatchType(BBCT_FILTER_HANDLER);
 
             // Mark all BBs that belong to the filter with the XTnum of the corresponding handler
             for (block = filtBB; /**/; block = block->Next())
@@ -3771,7 +3771,7 @@ void Compiler::fgFindBasicBlocks()
                     // Mark catch handler as successor.
                     FlowEdge* const newEdge = fgAddRefPred(hndBegBB, block);
                     block->SetTargetEdge(newEdge);
-                    assert(hndBegBB->bbCatchTyp == BBCT_FILTER_HANDLER);
+                    assert(hndBegBB->CatchTypeIs(BBCT_FILTER_HANDLER));
                     break;
                 }
             }
@@ -3784,31 +3784,31 @@ void Compiler::fgFindBasicBlocks()
         }
         else
         {
-            // Set ebdTyp and bbCatchTyp as appropriate
+            // Set ebdTyp and bbCatchType as appropriate
             //
             if (clause.Flags & CORINFO_EH_CLAUSE_FINALLY)
             {
-                hndBegBB->bbCatchTyp = BBCT_FINALLY;
-                HBtab->ebdTyp        = 0;
+                hndBegBB->SetCatchType(BBCT_FINALLY);
+                HBtab->ebdTyp = 0;
             }
             else
             {
                 if (clause.Flags & CORINFO_EH_CLAUSE_FAULT)
                 {
-                    hndBegBB->bbCatchTyp = BBCT_FAULT;
-                    HBtab->ebdTyp        = 0;
+                    hndBegBB->SetCatchType(BBCT_FAULT);
+                    HBtab->ebdTyp = 0;
                 }
                 else
                 {
                     // These values should be non-zero value that will
-                    // not collide with real tokens for bbCatchTyp
+                    // not collide with real tokens for bbCatchType
                     if (clause.ClassToken == 0)
                     {
                         BADCODE("Exception catch type is Null");
                     }
 
-                    hndBegBB->bbCatchTyp = clause.ClassToken;
-                    HBtab->ebdTyp        = clause.ClassToken;
+                    hndBegBB->SetCatchType(clause.ClassToken);
+                    HBtab->ebdTyp = clause.ClassToken;
 
                     noway_assert(clause.ClassToken != BBCT_FAULT);
                     noway_assert(clause.ClassToken != BBCT_FINALLY);
@@ -3891,14 +3891,14 @@ void Compiler::fgFindBasicBlocks()
 
                 // If the most nested EH handler region of this block is a 'fault' region, then change any
                 // BBJ_EHFINALLYRET that were imported to BBJ_EHFAULTRET.
-                if ((hndBegBB->bbCatchTyp == BBCT_FAULT) && block->KindIs(BBJ_EHFINALLYRET))
+                if (hndBegBB->CatchTypeIs(BBCT_FAULT) && block->KindIs(BBJ_EHFINALLYRET))
                 {
                     block->SetKind(BBJ_EHFAULTRET);
                 }
             }
 
             // All blocks in a catch handler or filter are rarely run, except the entry
-            if ((block != hndBegBB) && (hndBegBB->bbCatchTyp != BBCT_FINALLY))
+            if ((block != hndBegBB) && !hndBegBB->CatchTypeIs(BBCT_FINALLY))
             {
                 block->bbSetRunRarely();
             }
@@ -4699,12 +4699,12 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
 
     if (stmt != nullptr)
     {
-        newBlock->bbStmtList = stmt->GetNextStmt();
-        if (newBlock->bbStmtList != nullptr)
+        newBlock->SetFirstStmt(stmt->GetNextStmt());
+        if (newBlock->firstStmt() != nullptr)
         {
-            newBlock->bbStmtList->SetPrevStmt(curr->bbStmtList->GetPrevStmt());
+            newBlock->firstStmt()->SetPrevStmt(curr->firstStmt()->GetPrevStmt());
         }
-        curr->bbStmtList->SetPrevStmt(stmt);
+        curr->firstStmt()->SetPrevStmt(stmt);
         stmt->SetNextStmt(nullptr);
 
         // Update the IL offsets of the blocks to match the split.
@@ -4722,7 +4722,7 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
     }
     else
     {
-        assert(curr->bbStmtList == nullptr); // if no tree was given then it better be an empty block
+        assert(curr->firstStmt() == nullptr); // if no tree was given then it better be an empty block
     }
 
     return newBlock;
@@ -4856,7 +4856,7 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
     }
     else
     {
-        assert(curr->bbStmtList == nullptr); // if no node was given then it better be an empty block
+        assert(curr->firstStmt() == nullptr); // if no node was given then it better be an empty block
     }
 
     return newBlock;
@@ -4881,8 +4881,8 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
     }
     else
     {
-        newBlock->bbStmtList = curr->bbStmtList;
-        curr->bbStmtList     = nullptr;
+        newBlock->SetFirstStmt(curr->firstStmt());
+        curr->SetFirstStmt(nullptr);
     }
 
     // The new block now has all the code, and the old block has none. Update the
@@ -5841,7 +5841,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
             reachedNear = true;
         }
 
-        if (blk->bbCatchTyp == BBCT_FILTER)
+        if (blk->CatchTypeIs(BBCT_FILTER))
         {
             // Record the fact that we entered a filter region, so we don't insert into filters...
             // Unless the caller actually wanted the block inserted in this exact filter region.
@@ -5850,7 +5850,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
                 inFilter = true;
             }
         }
-        else if (blk->bbCatchTyp == BBCT_FILTER_HANDLER)
+        else if (blk->CatchTypeIs(BBCT_FILTER_HANDLER))
         {
             // Record the fact that we exited a filter region.
             inFilter = false;

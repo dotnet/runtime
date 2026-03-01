@@ -530,9 +530,8 @@ enum class BasicBlockVisit
 // (The list of zero edges is represented by NULL.)
 // Every BasicBlock has a field called bbPreds of this type.  This field
 // represents the list of "edges" that flow into this BasicBlock.
-// The FlowEdge type only stores the BasicBlock* of the source for the
-// control flow edge.  The destination block for the control flow edge
-// is implied to be the block which contained the bbPreds field.
+// The FlowEdge type stores the BasicBlock* of both the source and
+// destination for the control flow edge.
 //
 // For a switch branch target there may be multiple "edges" that have
 // the same source block (and destination block).  We need to count the
@@ -540,16 +539,8 @@ enum class BasicBlockVisit
 // we have zero of them.  Rather than have extra FlowEdge entries we
 // track this via the DupCount property.
 //
-// When we have Profile weight for the BasicBlocks we can usually compute
-// the number of times each edge was executed by examining the adjacent
-// BasicBlock weights.  As we are doing for BasicBlocks, we call the number
-// of times that a control flow edge was executed the "edge weight".
-// In order to compute the edge weights we need to use a bounded range
-// for every edge weight. These two fields, 'flEdgeWeightMin' and 'flEdgeWeightMax'
-// are used to hold a bounded range.  Most often these will converge such
-// that both values are the same and that value is the exact edge weight.
-// Sometimes we are left with a rage of possible values between [Min..Max]
-// which represents an inexact edge weight.
+// Each edge has a likelihood value in [0..1] indicating the probability
+// that the source block transfers control along this edge.
 //
 // The bbPreds list is initially created by Compiler::fgLinkBasicBlocks()
 // and is incrementally kept up to date.
@@ -643,7 +634,7 @@ public:
     }
 
     void setLikelihood(weight_t likelihood);
-    void addLikelihood(weight_t addedLikelihod);
+    void addLikelihood(weight_t addedLikelihood);
 
     void clearLikelihood()
     {
@@ -705,6 +696,16 @@ public:
     }
 };
 
+// Special values for bbCatchType, which is normally a class token of the catch handler.
+// These special values will not collide with real tokens.
+//
+#define BBCT_NONE                   0x00000000
+#define BBCT_FAULT                  0xFFFFFFFC
+#define BBCT_FINALLY                0xFFFFFFFD
+#define BBCT_FILTER                 0xFFFFFFFE
+#define BBCT_FILTER_HANDLER         0xFFFFFFFF
+#define handlerGetsXcptnObj(hndTyp) ((hndTyp) != BBCT_NONE && (hndTyp) != BBCT_FAULT && (hndTyp) != BBCT_FINALLY)
+
 //------------------------------------------------------------------------
 // BasicBlock: describes a basic block in the flowgraph.
 //
@@ -721,6 +722,13 @@ private:
     BasicBlock* bbPrev;
 
     BBKinds bbKind; // jump (if any) at the end of this block
+
+    Statement* bbStmtList; // Head of the statement list for this block
+
+    unsigned bbCatchType =
+        BBCT_NONE; // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
+
+    EntryState* bbEntryState = nullptr; // verifier tracked state of all entries in stack.
 
     /* The following union describes the jump target(s) of this block */
     union
@@ -1262,11 +1270,11 @@ public:
     // Similar to inheritWeight(), but we're splitting a block (such as creating blocks for qmark removal).
     // So, specify a percentage (0 to 100) of the weight the block should inherit.
     //
-    // Can be invoked as a self-rescale, eg: block->inheritWeightPecentage(block, 50))
+    // Can be invoked as a self-rescale, eg: block->inheritWeightPercentage(block, 50)
     //
     void inheritWeightPercentage(BasicBlock* bSrc, unsigned percentage)
     {
-        assert(0 <= percentage && percentage <= 100);
+        assert(percentage <= 100);
 
         this->bbWeight                         = (bSrc->bbWeight * percentage) / 100;
         const BasicBlockFlags hasProfileWeight = bSrc->GetFlagsRaw() & BBF_PROF_WEIGHT;
@@ -1323,7 +1331,7 @@ public:
         return KindIs(kind) || KindIs(rest...);
     }
 
-    bool HasTerminator()
+    bool HasTerminator() const
     {
         return KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_COND, BBJ_SWITCH, BBJ_RETURN);
     }
@@ -1382,7 +1390,10 @@ public:
         return bbRefs;
     }
 
-    Statement* bbStmtList;
+    void SetFirstStmt(Statement* stmt)
+    {
+        bbStmtList = stmt;
+    }
 
     GenTree* GetFirstLIRNode() const
     {
@@ -1404,7 +1415,15 @@ public:
         m_lastNode = tree;
     }
 
-    EntryState* bbEntryState; // verifier tracked state of all entries in stack.
+    EntryState* GetEntryState() const
+    {
+        return bbEntryState;
+    }
+
+    void SetEntryState(EntryState* entryState)
+    {
+        bbEntryState = entryState;
+    }
 
 #define NO_BASE_TMP UINT_MAX // base# to use when we have none
 
@@ -1462,8 +1481,26 @@ public:
         }
     }
 
-    // catch type: class token of handler, or one of BBCT_*. Only set on first block of catch handler.
-    unsigned bbCatchTyp;
+    unsigned GetCatchType() const
+    {
+        return bbCatchType;
+    }
+
+    bool CatchTypeIs(unsigned CatchType) const
+    {
+        return bbCatchType == CatchType;
+    }
+
+    template <typename... T>
+    bool CatchTypeIs(unsigned CatchType, T... rest) const
+    {
+        return CatchTypeIs(CatchType) || CatchTypeIs(rest...);
+    }
+
+    void SetCatchType(unsigned CatchType)
+    {
+        bbCatchType = CatchType;
+    }
 
     bool hasTryIndex() const
     {
@@ -1533,17 +1570,6 @@ public:
 
     bool hasEHBoundaryIn() const;
     bool hasEHBoundaryOut() const;
-
-// Some non-zero value that will not collide with real tokens for bbCatchTyp
-#define BBCT_NONE                   0x00000000
-#define BBCT_FAULT                  0xFFFFFFFC
-#define BBCT_FINALLY                0xFFFFFFFD
-#define BBCT_FILTER                 0xFFFFFFFE
-#define BBCT_FILTER_HANDLER         0xFFFFFFFF
-#define handlerGetsXcptnObj(hndTyp) ((hndTyp) != BBCT_NONE && (hndTyp) != BBCT_FAULT && (hndTyp) != BBCT_FINALLY)
-
-    // TODO-Cleanup: Get rid of bbStkDepth and use bbStackDepthOnEntry() instead
-    unsigned short bbStkDepth; // stack depth on entry
 
     // Basic block predecessor lists. Predecessor lists are created by fgLinkBasicBlocks(), stored
     // in 'bbPreds', and then maintained throughout compilation. 'fgPredsComputed' will be 'true' after the
@@ -1829,7 +1855,7 @@ public:
     // SuccEdges: convenience method for enabling range-based `for` iteration over unique successor edges, e.g.:
     //    for (FlowEdge* const edge : block->SuccEdges()) ...
     //
-    BBSuccList<FlowEdgeArrayIterator> SuccEdges()
+    BBSuccList<FlowEdgeArrayIterator> SuccEdges() const
     {
         return BBSuccList<FlowEdgeArrayIterator>(this);
     }
