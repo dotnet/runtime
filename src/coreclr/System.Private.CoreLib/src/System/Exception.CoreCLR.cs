@@ -338,5 +338,19 @@ namespace System
             }
         }
 #endif
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CreateTargetInvocationException(Exception* pInnerException, object* pResult, Exception* pException)
+        {
+            try
+            {
+                Exception? inner = pInnerException is not null ? *pInnerException : null;
+                *pResult = new System.Reflection.TargetInvocationException(inner);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
 }

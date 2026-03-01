@@ -98,8 +98,8 @@ DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, ACCESSTYPE,        _accessType)
 
 DEFINE_CLASS(APPCONTEXT,            System,                 AppContext)
 DEFINE_METHOD(APPCONTEXT,   SETUP,              Setup,          SM_PtrPtrChar_PtrPtrChar_Int_PtrException_RetVoid)
-DEFINE_METHOD(APPCONTEXT,   ON_PROCESS_EXIT,    OnProcessExit,  SM_RetVoid)
-DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  SM_Obj_RetVoid)
+DEFINE_METHOD(APPCONTEXT,   ON_PROCESS_EXIT,    OnProcessExit,  SM_PtrException_RetVoid)
+DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  SM_PtrObj_PtrException_RetVoid)
 DEFINE_FIELD(APPCONTEXT, FIRST_CHANCE_EXCEPTION,        FirstChanceException)
 
 DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
@@ -306,6 +306,7 @@ DEFINE_METHOD(EXCEPTION,            GET_DESCRIPTION_BSTR,   GetDescriptionBstr, 
 DEFINE_METHOD(EXCEPTION,            GET_SOURCE_BSTR,        GetSourceBstr,              SM_PtrException_PtrException_RetIntPtr)
 DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT_BSTR,  GetHelpContextBstr,         SM_PtrException_PtrIntPtr_PtrUInt_PtrException_RetVoid)
 #endif // FEATURE_COMINTEROP
+DEFINE_METHOD(EXCEPTION,            CREATE_TARGET_INVOCATION_EXCEPTION, CreateTargetInvocationException, SM_PtrException_PtrObj_PtrException_RetVoid)
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
@@ -890,7 +891,7 @@ DEFINE_CLASS(EVENT_SOURCE,           Tracing,            EventSource)
 DEFINE_METHOD(EVENT_SOURCE,          INITIALIZE_DEFAULT_EVENT_SOURCES, InitializeDefaultEventSources, SM_PtrException_RetVoid)
 
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
-DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_RetVoid)
+DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_PtrException_RetVoid)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, CALL_STARTUP_HOOK, CallStartupHook, SM_PtrChar_PtrException_RetVoid)
 
 DEFINE_CLASS(STREAM,                IO,                     Stream)
