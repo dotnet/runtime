@@ -2420,7 +2420,25 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
                 PAL_CPP_THROW(Exception *, pEx);
             }
             else
-                AddExceptionToCache(pSpec, pEx);
+            {
+                // If the exception is about a dependency (a different assembly than what we're currently loading),
+                // wrap it with the requesting assembly's info to build the chain of requesting assemblies.
+                // This uses the inner exception chain to represent the full dependency chain without storing extra data.
+                StackSString exceptionName;
+                ((EEFileLoadException*)pEx)->GetName(exceptionName);
+                StackSString specName;
+                pSpec->GetDisplayName(0, specName);
+                if (exceptionName.CompareCaseInsensitive(specName) != 0)
+                {
+                    pEx = new EEFileLoadException(specName, COR_E_FILELOAD, pEx);
+                    AddExceptionToCache(pSpec, pEx);
+                    PAL_CPP_THROW(Exception *, pEx);
+                }
+                else
+                {
+                    AddExceptionToCache(pSpec, pEx);
+                }
+            }
         }
     }
     EX_END_HOOK;
