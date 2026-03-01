@@ -3267,7 +3267,7 @@ HRESULT DacDbiInterfaceImpl::GetDelegateType(VMPTR_Object delegateObject, Delega
     // several pieces of logic so this replicates the logic mostly due to time constraints. The Mainly from:
     // - System.Private.CoreLib!System.Delegate.GetMethodImpl and System.Private.CoreLib!System.MulticastDelegate.GetMethodImpl
     // - System.Private.CoreLib!System.Delegate.GetTarget and System.Private.CoreLib!System.MulticastDelegate.GetTarget
-    // - coreclr!COMDelegate::GetMethodDesc and coreclr!COMDelegate::FindMethodHandle
+    // - coreclr!COMDelegate::GetMethodDesc and coreclr!COMDelegate::CreateMethodInfo
     // - coreclr!Delegate_Construct and the delegate type table in
     // - DELEGATE KINDS TABLE in comdelegate.cpp
 
