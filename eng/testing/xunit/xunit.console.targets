@@ -16,6 +16,14 @@
     <SetScriptCommands Include="$(EnvVarCommand) XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1" />
   </ItemGroup>
 
+  <!-- xunit v3: The test executable needs execute permission on Unix after ZIP extraction on Helix. -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                         '$(RunScriptWindowsCmd)' != 'true' and
+                         '$(TargetsMobile)' != 'true' and
+                         '$(TestSingleFile)' != 'true'">
+    <SetScriptCommands Include="chmod +x $EXECUTION_DIR/$(AssemblyName)" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(BundleXunitRunner)' == 'true'">
     <XunitConsolePath Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">xunit.console.dll</XunitConsolePath>
     <XunitConsolePath Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">xunit.console.exe</XunitConsolePath>
