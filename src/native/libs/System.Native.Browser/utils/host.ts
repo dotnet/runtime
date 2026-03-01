@@ -13,54 +13,19 @@ export function getExitStatus(): new (exitCode: number) => any {
     return _ems_.ExitStatus as any;
 }
 
-export function runBackgroundTimers(): void {
-    if (_ems_.ABORT || _ems_.DOTNET.isAborting) {
-        // runtime is shutting down
-        return;
-    }
-    try {
-        _ems_._SystemJS_ExecuteTimerCallback();
-        _ems_._SystemJS_ExecuteBackgroundJobCallback();
-        _ems_._SystemJS_ExecuteFinalizationCallback();
-    } catch (error: any) {
-        // do not propagate ExitStatus exception
-        if (!error || typeof error.status !== "number") {
-            _ems_.dotnetApi.exit(1, error);
-            throw error;
-        }
-    }
-}
-
-export function abortBackgroundTimers(): void {
-    _ems_.DOTNET.isAborting = true;
-    if (_ems_.DOTNET.lastScheduledTimerId) {
-        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledTimerId);
-        _ems_.runtimeKeepalivePop();
-        _ems_.DOTNET.lastScheduledTimerId = undefined;
-    }
-    if (_ems_.DOTNET.lastScheduledThreadPoolId) {
-        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledThreadPoolId);
-        _ems_.runtimeKeepalivePop();
-        _ems_.DOTNET.lastScheduledThreadPoolId = undefined;
-    }
-    if (_ems_.DOTNET.lastScheduledFinalizationId) {
-        globalThis.clearTimeout(_ems_.DOTNET.lastScheduledFinalizationId);
-        _ems_.runtimeKeepalivePop();
-        _ems_.DOTNET.lastScheduledFinalizationId = undefined;
-    }
-}
-
 export function abortPosix(exitCode: number, reason: any, nativeReady: boolean): void {
     try {
-        _ems_.ABORT = true;
         _ems_.EXITSTATUS = exitCode;
         _ems_.DOTNET.isAborting = true;
         if (exitCode === 0 && nativeReady) {
             _ems_._exit(0);
+            _ems_.ABORT = true;
             return;
         } else if (nativeReady) {
+            _ems_.ABORT = true;
             _ems_.___trap();
         } else {
+            _ems_.ABORT = true;
             _ems_.abort(reason);
         }
         throw reason;

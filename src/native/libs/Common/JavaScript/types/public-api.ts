@@ -409,7 +409,7 @@ export type AssetBehaviors = SingleAssetBehaviors |
     /**
      * Managed assembly packaged as Webcil v 1.0
      */
-    | "webcil10"
+    | "webcil"
     ;
 export declare const enum GlobalizationMode {
     /**

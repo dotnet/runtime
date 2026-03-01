@@ -126,7 +126,7 @@ switch (testCase) {
         testOutput("download finished");
         break;
     case "MaxParallelDownloads":
-        const maxParallelDownloads = params.get("maxParallelDownloads");
+        const maxParallelDownloads = parseInt(params.get("maxParallelDownloads"), 10) || 16;
         let activeFetchCount = 0;
         const originalFetch2 = globalThis.fetch;
         globalThis.fetch = async (...args) => {
