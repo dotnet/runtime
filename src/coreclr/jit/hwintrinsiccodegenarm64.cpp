@@ -2368,6 +2368,52 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve2_GatherVectorByteZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt16WithByteOffsetsSignExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt32WithByteOffsetsSignExtendNonTemporal:
+            case NI_Sve2_GatherVectorNonTemporal:
+            case NI_Sve2_GatherVectorSByteSignExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorWithByteOffsetsNonTemporal:
+            {
+                if (!varTypeIsSIMD(intrin.op2->gtType))
+                {
+                    // GatherVector...(Vector<T> mask, T* address, Vector<T2> offsets)
+
+                    // Calculate the byte offsets if using indices.
+                    if ((intrin.id == NI_Sve2_GatherVectorInt16SignExtendNonTemporal) ||
+                        (intrin.id == NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal))
+                    {
+                        GetEmitter()->emitIns_R_R_I(INS_sve_lsl, emitSize, op3Reg, op3Reg, 1, opt);
+                    }
+                    else if ((intrin.id == NI_Sve2_GatherVectorInt32SignExtendNonTemporal) ||
+                             (intrin.id == NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal))
+                    {
+                        GetEmitter()->emitIns_R_R_I(INS_sve_lsl, emitSize, op3Reg, op3Reg, 2, opt);
+                    }
+                    else if (intrin.id == NI_Sve2_GatherVectorNonTemporal)
+                    {
+                        assert(emitActualTypeSize(intrin.baseType) == EA_8BYTE);
+                        GetEmitter()->emitIns_R_R_I(INS_sve_lsl, emitSize, op3Reg, op3Reg, 3, opt);
+                    }
+
+                    // op2Reg and op3Reg are swapped
+                    GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op3Reg, op2Reg, opt);
+                }
+                else
+                {
+                    // GatherVector...(Vector<T> mask, Vector<T2> addresses)
+
+                    GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, REG_ZR, opt);
+                }
+                break;
+            }
+
             case NI_Sve_ReverseElement:
                 // Use non-predicated version explicitly
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);

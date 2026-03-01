@@ -28369,8 +28369,8 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt32ZeroExtend:
             case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
-            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
             case NI_Sve_GatherVectorWithByteOffsets:
+            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
             case NI_Sve_LoadVector:
             case NI_Sve_LoadVectorNonTemporal:
             case NI_Sve_LoadVector128AndReplicateToVector:
@@ -28433,6 +28433,18 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_LoadVectorUInt16NonFaultingZeroExtendToUInt64:
             case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToInt64:
             case NI_Sve_LoadVectorUInt32NonFaultingZeroExtendToUInt64:
+            case NI_Sve2_GatherVectorByteZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt16WithByteOffsetsSignExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
+            case NI_Sve2_GatherVectorInt32WithByteOffsetsSignExtendNonTemporal:
+            case NI_Sve2_GatherVectorNonTemporal:
+            case NI_Sve2_GatherVectorSByteSignExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
+            case NI_Sve2_GatherVectorWithByteOffsetsNonTemporal:
                 addr = Op(2);
                 break;
 
@@ -28525,9 +28537,24 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                           NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend,
                           NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting,
                           NI_Sve_GatherVectorUInt32ZeroExtend, NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting));
-        assert(varTypeIsI(addr) ||
-               (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherVector) &&
-                                        (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting))));
+
+        static_assert(AreContiguous(NI_Sve2_GatherVectorByteZeroExtendNonTemporal,
+                                    NI_Sve2_GatherVectorInt16SignExtendNonTemporal,
+                                    NI_Sve2_GatherVectorInt16WithByteOffsetsSignExtendNonTemporal,
+                                    NI_Sve2_GatherVectorInt32SignExtendNonTemporal,
+                                    NI_Sve2_GatherVectorInt32WithByteOffsetsSignExtendNonTemporal,
+                                    NI_Sve2_GatherVectorNonTemporal, NI_Sve2_GatherVectorSByteSignExtendNonTemporal,
+                                    NI_Sve2_GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal,
+                                    NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal,
+                                    NI_Sve2_GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal,
+                                    NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal,
+                                    NI_Sve2_GatherVectorWithByteOffsetsNonTemporal));
+
+        bool isSveGatherLoad =
+            (intrinsicId >= NI_Sve_GatherVector) && (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting);
+        bool isSve2GatherLoad = (intrinsicId >= NI_Sve2_GatherVectorByteZeroExtendNonTemporal) &&
+                                (intrinsicId <= NI_Sve2_GatherVectorWithByteOffsetsNonTemporal);
+        assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && (isSveGatherLoad || isSve2GatherLoad)));
 #else
         assert(varTypeIsI(addr));
 #endif
