@@ -45,20 +45,9 @@ namespace Microsoft.Interop
                 .Where(
                     static modelData => modelData is not null);
 
-            var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
-            {
-                Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol);
-                return new { data.Syntax, data.Symbol, Diagnostic = diagnostic };
-            });
-
-            // Split the methods we want to generate and the ones we don't into two separate groups.
-            var methodsToGenerate = methodsWithDiagnostics.Where(static data => data.Diagnostic is null);
-            var invalidMethodDiagnostics = methodsWithDiagnostics.Where(static data => data.Diagnostic is not null);
-
-            context.RegisterSourceOutput(invalidMethodDiagnostics, static (context, invalidMethod) =>
-            {
-                context.ReportDiagnostic(invalidMethod.Diagnostic);
-            });
+            // Filter out methods that are invalid for generation (diagnostics for invalid methods are reported by the analyzer).
+            var methodsToGenerate = attributedMethods.Where(
+                static data => data is not null && VtableIndexStubDiagnosticsAnalyzer.GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol) is null);
 
             // Calculate all of information to generate both managed-to-unmanaged and unmanaged-to-managed stubs
             // for each method.
@@ -84,8 +73,6 @@ namespace Microsoft.Interop
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateManagedToNativeStub);
 
-            context.RegisterDiagnostics(generateManagedToNativeStub.SelectMany((stubInfo, ct) => stubInfo.Item2));
-
             context.RegisterConcatenatedSyntaxOutputs(generateManagedToNativeStub.Select((data, ct) => data.Item1), "ManagedToNativeStubs.g.cs");
 
             // Filter the list of all stubs to only the stubs that requested unmanaged-to-managed stub generation.
@@ -100,8 +87,6 @@ namespace Microsoft.Interop
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateNativeToManagedStub);
-
-            context.RegisterDiagnostics(generateNativeToManagedStub.SelectMany((stubInfo, ct) => stubInfo.Item2));
 
             context.RegisterConcatenatedSyntaxOutputs(generateNativeToManagedStub.Select((data, ct) => data.Item1), "NativeToManagedStubs.g.cs");
 
@@ -195,7 +180,7 @@ namespace Microsoft.Interop
             };
         }
 
-        private static SourceAvailableIncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, StubEnvironment environment, CancellationToken ct)
+        internal static SourceAvailableIncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, StubEnvironment environment, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             INamedTypeSymbol? lcidConversionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
@@ -386,42 +371,6 @@ namespace Microsoft.Interop
                 .WrapMemberInContainingSyntaxWithUnsafeModifier(
                     stub),
                 methodStub.Diagnostics.Array.AddRange(diagnostics));
-        }
-
-        private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax methodSyntax, IMethodSymbol method)
-        {
-            // Verify the method has no generic types or defined implementation
-            // and is not marked static or sealed
-            if (methodSyntax.TypeParameterList is not null
-                || methodSyntax.Body is not null
-                || methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
-                || methodSyntax.Modifiers.Any(SyntaxKind.SealedKeyword))
-            {
-                return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodSignature, methodSyntax.Identifier.GetLocation(), method.Name);
-            }
-
-            // Verify that the types the method is declared in are marked partial.
-            for (SyntaxNode? parentNode = methodSyntax.Parent; parentNode is TypeDeclarationSyntax typeDecl; parentNode = parentNode.Parent)
-            {
-                if (!typeDecl.Modifiers.Any(SyntaxKind.PartialKeyword))
-                {
-                    return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingModifiers, methodSyntax.Identifier.GetLocation(), method.Name, typeDecl.Identifier);
-                }
-            }
-
-            // Verify the method does not have a ref return
-            if (method.ReturnsByRef || method.ReturnsByRefReadonly)
-            {
-                return Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, methodSyntax.Identifier.GetLocation(), "ref return", method.ToDisplayString());
-            }
-
-            // Verify there is an [UnmanagedObjectUnwrapperAttribute<TMapper>]
-            if (!method.ContainingType.GetAttributes().Any(att => att.AttributeClass.IsOfType(TypeNames.UnmanagedObjectUnwrapperAttribute)))
-            {
-                return Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttribute, methodSyntax.Identifier.GetLocation(), method.Name);
-            }
-
-            return null;
         }
 
         private static MemberDeclarationSyntax GenerateNativeInterfaceMetadata(ContainingSyntaxContext context)
