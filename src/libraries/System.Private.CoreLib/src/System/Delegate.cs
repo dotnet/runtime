@@ -78,7 +78,17 @@ namespace System
         /// Gets a value that indicates whether the <see cref="Delegate"/> has a single invocation target.
         /// </summary>
         /// <value>true if the <see cref="Delegate"/> has a single invocation target.</value>
-        public bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
+        public bool HasSingleTarget
+        {
+            get
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
+                }
+            }
+        }
 #endif
 
         /// <summary>
@@ -94,7 +104,13 @@ namespace System
         /// The method returns an empty enumerator for null delegate.
         /// </remarks>
         public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate? d) where TDelegate : System.Delegate
-            => new InvocationListEnumerator<TDelegate>(Unsafe.As<MulticastDelegate>(d));
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return new InvocationListEnumerator<TDelegate>(Unsafe.As<MulticastDelegate>(d));
+            }
+        }
 
         /// <summary>
         /// Provides an enumerator for the invocation list of a delegate.
@@ -128,9 +144,13 @@ namespace System
             public bool MoveNext()
             {
                 int index = _index + 1;
-                if ((_current = Unsafe.As<TDelegate>(_delegate?.TryGetAt(index))) == null)
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    if ((_current = Unsafe.As<TDelegate>(_delegate?.TryGetAt(index))) == null)
                 {
                     return false;
+                    }
                 }
                 _index = index;
                 return true;

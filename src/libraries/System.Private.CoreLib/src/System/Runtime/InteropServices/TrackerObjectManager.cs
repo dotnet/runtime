@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -72,7 +72,12 @@ namespace System.Runtime.InteropServices
             {
                 foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
                 {
-                    ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
+                    ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper;
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
+                    }
                     if (nativeObjectWrapper != null &&
                         nativeObjectWrapper._contextToken == contextToken)
                     {

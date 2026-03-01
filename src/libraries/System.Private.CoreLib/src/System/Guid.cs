@@ -245,7 +245,11 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public readonly Guid ToGuid()
             {
-                return Unsafe.As<GuidResult, Guid>(ref Unsafe.AsRef(in this));
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return Unsafe.As<GuidResult, Guid>(ref Unsafe.AsRef(in this));
+                }
             }
 
             public void ReverseAbcEndianness()

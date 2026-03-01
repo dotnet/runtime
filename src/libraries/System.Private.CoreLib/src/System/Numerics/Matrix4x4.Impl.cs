@@ -20,17 +20,38 @@ namespace System.Numerics
 
         [UnscopedRef]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ref Impl AsImpl() => ref Unsafe.As<Matrix4x4, Impl>(ref this);
+        internal ref Impl AsImpl()
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return ref Unsafe.As<Matrix4x4, Impl>(ref this);
+            }
+        }
 
         [UnscopedRef]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal readonly ref readonly Impl AsROImpl() => ref Unsafe.As<Matrix4x4, Impl>(ref Unsafe.AsRef(in this));
+        internal readonly ref readonly Impl AsROImpl()
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return ref Unsafe.As<Matrix4x4, Impl>(ref Unsafe.AsRef(in this));
+            }
+        }
 
         internal struct Impl : IEquatable<Impl>
         {
             [UnscopedRef]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public ref Matrix4x4 AsM4x4() => ref Unsafe.As<Impl, Matrix4x4>(ref this);
+            public ref Matrix4x4 AsM4x4()
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return ref Unsafe.As<Impl, Matrix4x4>(ref this);
+                }
+            }
 
             private const float BillboardEpsilon = 1e-4f;
             private const float BillboardMinAngle = 1.0f - (0.1f * (float.Pi / 180.0f)); // 0.1 degrees

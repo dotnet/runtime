@@ -102,9 +102,13 @@ namespace System.Runtime.Intrinsics
         {
             Debug.Assert(Vector<T>.Count >= Vector128<T>.Count);
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+            // TODO(unsafe): Baselining unsafe usage
 
-            ref byte address = ref Unsafe.As<Vector<T>, byte>(ref value);
-            return Unsafe.ReadUnaligned<Vector128<T>>(ref address);
+            unsafe
+            {
+                ref byte address = ref Unsafe.As<Vector<T>, byte>(ref value);
+                return Unsafe.ReadUnaligned<Vector128<T>>(ref address);
+            }
         }
 
         /// <summary>Reinterprets a <see langword="Vector2" /> as a new <see cref="Vector128&lt;Single&gt;" />, leaving the new elements undefined.</summary>
@@ -117,7 +121,11 @@ namespace System.Runtime.Intrinsics
             // declaration to let the upper bits be uninitialized.
 
             Unsafe.SkipInit(out Vector128<float> result);
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), value);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), value);
+            }
             return result;
         }
 
@@ -131,7 +139,11 @@ namespace System.Runtime.Intrinsics
             // declaration to let the upper bits be uninitialized.
 
             Unsafe.SkipInit(out Vector128<float> result);
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), value);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), value);
+            }
             return result;
         }
 
@@ -142,8 +154,12 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 AsVector2(this Vector128<float> value)
         {
-            ref byte address = ref Unsafe.As<Vector128<float>, byte>(ref value);
-            return Unsafe.ReadUnaligned<Vector2>(ref address);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref byte address = ref Unsafe.As<Vector128<float>, byte>(ref value);
+                return Unsafe.ReadUnaligned<Vector2>(ref address);
+            }
         }
 
         /// <summary>Reinterprets a <see langword="Vector128&lt;Single&gt;" /> as a new <see cref="Vector3" />.</summary>
@@ -153,8 +169,12 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 AsVector3(this Vector128<float> value)
         {
-            ref byte address = ref Unsafe.As<Vector128<float>, byte>(ref value);
-            return Unsafe.ReadUnaligned<Vector3>(ref address);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref byte address = ref Unsafe.As<Vector128<float>, byte>(ref value);
+                return Unsafe.ReadUnaligned<Vector3>(ref address);
+            }
         }
 
         /// <summary>Reinterprets a <see langword="Vector128&lt;Single&gt;" /> as a new <see cref="Vector4" />.</summary>
@@ -176,7 +196,11 @@ namespace System.Runtime.Intrinsics
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
 
             Vector<T> result = default;
-            Unsafe.WriteUnaligned(ref Unsafe.As<Vector<T>, byte>(ref result), value);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<Vector<T>, byte>(ref result), value);
+            }
             return result;
         }
 

@@ -834,7 +834,11 @@ namespace System.Numerics
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
-            return Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -1983,8 +1987,12 @@ namespace System.Numerics
         public static Vector<T> LoadUnsafe<T>(ref readonly T source)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
-            return Unsafe.ReadUnaligned<Vector<T>>(in address);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
+                return Unsafe.ReadUnaligned<Vector<T>>(in address);
+            }
         }
 
         /// <summary>Loads a vector from the given source and element offset.</summary>
@@ -1999,8 +2007,12 @@ namespace System.Numerics
         public static Vector<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
-            return Unsafe.ReadUnaligned<Vector<T>>(in address);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
+                return Unsafe.ReadUnaligned<Vector<T>>(in address);
+            }
         }
 
         internal static Vector<T> Log<T>(Vector<T> vector)
@@ -3029,8 +3041,12 @@ namespace System.Numerics
         public static void StoreUnsafe<T>(this Vector<T> source, ref T destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            ref byte address = ref Unsafe.As<T, byte>(ref destination);
-            Unsafe.WriteUnaligned(ref address, source);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref byte address = ref Unsafe.As<T, byte>(ref destination);
+                Unsafe.WriteUnaligned(ref address, source);
+            }
         }
 
         /// <summary>Stores a vector at the given destination.</summary>
@@ -3046,7 +3062,11 @@ namespace System.Numerics
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             destination = ref Unsafe.Add(ref destination, (nint)elementOffset);
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
+            }
         }
 
         /// <inheritdoc cref="Vector128.Subtract{T}(Vector128{T}, Vector128{T})" />
@@ -3560,16 +3580,24 @@ namespace System.Numerics
         internal static T GetElementUnsafe<T>(in this Vector<T> vector, int index)
         {
             Debug.Assert((index >= 0) && (index < Vector<T>.Count));
-            ref T address = ref Unsafe.As<Vector<T>, T>(ref Unsafe.AsRef(in vector));
-            return Unsafe.Add(ref address, index);
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref T address = ref Unsafe.As<Vector<T>, T>(ref Unsafe.AsRef(in vector));
+                return Unsafe.Add(ref address, index);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void SetElementUnsafe<T>(in this Vector<T> vector, int index, T value)
         {
             Debug.Assert((index >= 0) && (index < Vector<T>.Count));
-            ref T address = ref Unsafe.As<Vector<T>, T>(ref Unsafe.AsRef(in vector));
-            Unsafe.Add(ref address, index) = value;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                ref T address = ref Unsafe.As<Vector<T>, T>(ref Unsafe.AsRef(in vector));
+                Unsafe.Add(ref address, index) = value;
+            }
         }
     }
 }

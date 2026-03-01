@@ -25,7 +25,11 @@ namespace System
 
             while (ucount >= 2)
             {
-                tempValue = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref data, byteOffset)));
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    tempValue = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref data, byteOffset)));
+                }
                 if (!Utf16Utility.AllCharsInUInt32AreAscii(tempValue))
                 {
                     goto NotAscii;
@@ -90,7 +94,12 @@ namespace System
 
             // Slice the array to the size returned by ToUpperInvariant.
             // Multiplication below will not overflow since going from positive Int32 to UInt32.
-            int hash = ComputeHash32(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(scratch)), (uint)charsWritten * 2, p0, p1);
+            int hash;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                hash = ComputeHash32(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(scratch)), (uint)charsWritten * 2, p0, p1);
+            }
 
             // Return the borrowed array if necessary.
             if (borrowedArr != null)

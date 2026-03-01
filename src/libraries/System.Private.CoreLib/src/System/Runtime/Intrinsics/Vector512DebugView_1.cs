@@ -29,7 +29,11 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new double[Vector512<double>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<double, byte>(ref items[0]), _value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<double, byte>(ref items[0]), _value);
+                }
                 return items;
             }
         }
@@ -39,7 +43,11 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new short[Vector512<short>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<short, byte>(ref items[0]), _value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<short, byte>(ref items[0]), _value);
+                }
                 return items;
             }
         }
@@ -49,7 +57,11 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new int[Vector512<int>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<int, byte>(ref items[0]), _value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<int, byte>(ref items[0]), _value);
+                }
                 return items;
             }
         }
@@ -59,7 +71,11 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new long[Vector512<long>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<long, byte>(ref items[0]), _value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<long, byte>(ref items[0]), _value);
+                }
                 return items;
             }
         }
@@ -69,7 +85,11 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new nint[Vector512<nint>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<nint, byte>(ref items[0]), _value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<nint, byte>(ref items[0]), _value);
+                }
                 return items;
             }
         }
@@ -79,7 +99,11 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new nuint[Vector512<nuint>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<nuint, byte>(ref items[0]), _value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<nuint, byte>(ref items[0]), _value);
+                }
                 return items;
             }
         }
@@ -89,7 +113,11 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new sbyte[Vector512<sbyte>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<sbyte, byte>(ref items[0]), _value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<sbyte, byte>(ref items[0]), _value);
+                }
                 return items;
             }
         }
@@ -99,7 +127,11 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new float[Vector512<float>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref items[0]), _value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref items[0]), _value);
+                }
                 return items;
             }
         }
@@ -109,7 +141,11 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new ushort[Vector512<ushort>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref items[0]), _value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref items[0]), _value);
+                }
                 return items;
             }
         }
@@ -119,7 +155,11 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new uint[Vector512<uint>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref items[0]), _value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref items[0]), _value);
+                }
                 return items;
             }
         }
@@ -129,7 +169,11 @@ namespace System.Runtime.Intrinsics
             get
             {
                 var items = new ulong[Vector512<ulong>.Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<ulong, byte>(ref items[0]), _value);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref Unsafe.As<ulong, byte>(ref items[0]), _value);
+                }
                 return items;
             }
         }
