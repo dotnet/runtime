@@ -452,6 +452,9 @@ DEFINE_CLASS(OBJCMARSHAL,    ObjectiveC, ObjectiveCMarshal)
 DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_PtrException_IntPtr_PtrIntPtr_PtrException_RetVoidPtr)
 #endif // FEATURE_OBJCMARSHAL
 
+DEFINE_CLASS_U(Interop, TypeMapLazyDictionary+CallbackContext, CallbackContext)
+DEFINE_FIELD_U(_currAssembly, CallbackContext, _currAssembly)
+
 DEFINE_CLASS(IENUMERATOR,           Collections,            IEnumerator)
 
 DEFINE_CLASS(IENUMERABLE,           Collections,            IEnumerable)

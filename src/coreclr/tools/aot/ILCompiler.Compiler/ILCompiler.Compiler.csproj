@@ -83,6 +83,15 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
       <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
     </Compile>
+
+    <Compile Include="..\..\Common\Compiler\TypeMapManager.cs" Link="Compiler\TypeMapManager.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeMapMetadata.cs" Link="Compiler\TypeMapMetadata.cs" />
+    <Compile Include="..\..\Common\Compiler\INativeFormatTypeReferenceProvider.cs" Link="Compiler\DependencyAnalysis\INativeFormatTypeReferenceProvider.cs" />
+    <Compile Include="..\..\Common\Compiler\IProxyTypeMapNode.cs" Link="Compiler\DependencyAnalysis\IProxyTypeMapNode.cs" />
+    <Compile Include="..\..\Common\Compiler\IExternalTypeMapNode.cs" Link="Compiler\DependencyAnalysis\IExternalTypeMapNode.cs" />
+    <Compile Include="..\..\Common\Compiler\ProxyTypeMapObjectNode.cs" Link="Compiler\DependencyAnalysis\ProxyTypeMapObjectNode.cs" />
+    <Compile Include="..\..\Common\Compiler\ExternalTypeMapObjectNode.cs" Link="Compiler\DependencyAnalysis\ExternalTypeMapObjectNode.cs" />
+
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs">
       <Link>Interop\IL\MarshalHelpers.cs</Link>
     </Compile>
@@ -444,12 +453,8 @@
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExactMethodInstantiationsEntryNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\IProxyTypeMapNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\IExternalTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ProxyTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ProxyTypeMapObjectNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
@@ -665,7 +670,6 @@
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.Aot.cs" />
     <Compile Include="Compiler\ObjectWriter\UnixObjectWriter.Aot.cs" />
     <Compile Include="Compiler\ObjectWriter\MachObjectWriter.Aot.cs" />
-    <Compile Include="Compiler\TypeMapMetadata.cs" />
     <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
@@ -688,7 +692,6 @@
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />
     <Compile Include="Compiler\StackTraceEmissionPolicy.cs" />
     <Compile Include="Compiler\PreinitializationManager.cs" />
-    <Compile Include="Compiler\TypeMapManager.cs" />
     <Compile Include="Compiler\TypePreinit.cs" />
     <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />

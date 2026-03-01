@@ -253,7 +253,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
-                    Debug.Assert(_nodeFactory.CompilationModuleGroup.CrossModuleInlineableModule(emodule));
                     _manifestAssemblyMvids.Add(default(Guid));
                 }
             }

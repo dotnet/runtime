@@ -41,6 +41,7 @@
     <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormat.cs" Link="Common\NativeFormat.cs" />
     <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormatWriter.cs" Link="Common\NativeFormatWriter.cs" />
     <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormatWriter.Primitives.cs" Link="Common\NativeFormatWriter.Primitives.cs" />
+    <Compile Include="..\..\Common\Internal\NativeFormat\NativeFormatWriterExtensions.cs" Link="Common\NativeFormatWriterExtensions.cs" />
     <Compile Include="..\..\Common\Pgo\PgoFormat.cs" Link="Common\Pgo\PgoFormat.cs" />
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="Common\Pgo\TypeSystemEntityOrUnknown.cs" />
     <Compile Include="..\..\Common\System\FormattingHelpers.cs" Link="Common\FormattingHelpers.cs" />
@@ -124,20 +125,27 @@
     <Compile Include="..\..\Common\Compiler\DependencyTrackingLevel.cs" Link="Compiler\DependencyTrackingLevel.cs" />
     <Compile Include="..\..\Common\Compiler\DevirtualizationManager.cs" Link="Compiler\DevirtualizationManager.cs" />
     <Compile Include="..\..\Common\Compiler\DisplayNameHelpers.cs" Link="Compiler\DisplayNameHelpers.cs" />
+    <Compile Include="..\..\Common\Compiler\ExternalTypeMapObjectNode.cs" Link="Compiler\DependencyAnalysis\ExternalTypeMapObjectNode.cs" />
     <Compile Include="..\..\Common\Compiler\FeatureSettings.cs" Link="Compiler\FeatureSettings.cs" />
     <Compile Include="..\..\Common\Compiler\HardwareIntrinsicHelpers.cs" Link="Compiler\HardwareIntrinsicHelpers.cs" />
+    <Compile Include="..\..\Common\Compiler\IExternalTypeMapNode.cs" Link="Compiler\DependencyAnalysis\IExternalTypeMapNode.cs" />
     <Compile Include="..\..\Common\Compiler\ICompilationRootProvider.cs" Link="Compiler\ICompilationRootProvider.cs" />
+    <Compile Include="..\..\Common\Compiler\IProxyTypeMapNode.cs" Link="Compiler\DependencyAnalysis\IProxyTypeMapNode.cs" />
     <Compile Include="..\..\Common\Compiler\InstructionSetSupport.cs" Link="Compiler\InstructionSetSupport.cs" />
     <Compile Include="..\..\Common\Compiler\Int128FieldLayoutAlgorithm.cs" Link="Compiler\Int128FieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="..\..\Common\Compiler\MethodExtensions.cs" Link="Compiler\MethodExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
     <Compile Include="..\..\Common\Compiler\ProcessLinkerXmlBase.cs" Link="Compiler\ProcessLinkerXmlBase.cs" />
+    <Compile Include="..\..\Common\Compiler\ProxyTypeMapObjectNode.cs" Link="Compiler\DependencyAnalysis\ProxyTypeMapObjectNode.cs" />
     <Compile Include="..\..\Common\Compiler\PropertyPseudoDesc.cs" Link="Compiler\PropertyPseudoDesc.cs" />
     <Compile Include="..\..\Common\Compiler\EventPseudoDesc.cs" Link="Compiler\EventPseudoDesc.cs" />
     <Compile Include="..\..\Common\Compiler\PseudoDescExtensions.cs" Link="Compiler\PseudoDescExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeMapManager.cs" Link="Compiler\TypeMapManager.cs" />
+    <Compile Include="..\..\Common\Compiler\TypeMapMetadata.cs" Link="Compiler\TypeMapMetadata.cs" />
+    <Compile Include="..\..\Common\Compiler\INativeFormatTypeReferenceProvider.cs" Link="Compiler\DependencyAnalysis\INativeFormatTypeReferenceProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypePreserve.cs" Link="Compiler\TypePreserve.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
@@ -188,8 +196,10 @@
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\WellKnownType.cs" Link="ILLink.Shared\TypeSystemProxy\WellKnownType.cs" />
     <Compile Include="CodeGen\ReadyToRunContainerFormat.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ImportReferenceProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\EnclosingTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunModuleSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeGenericInfoMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodIsGenericMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ILBodyFixupSignature.cs" />
@@ -198,9 +208,13 @@
     <Compile Include="Compiler\CallChainProfile.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeValidationChecker.cs" />
     <Compile Include="Compiler\Logger.cs" />
+    <Compile Include="Compiler\ReadyToRunExternalTypeMapNode.cs" />
+    <Compile Include="Compiler\ReadyToRunProxyTypeMapNode.cs" />
+    <Compile Include="Compiler\ReadyToRunTypeMapManager.cs" />
     <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunHardwareIntrinsicRootProvider.cs" />
+    <Compile Include="Compiler\TypeMapAssemblyTargetsNode.cs" />
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
@@ -236,7 +250,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DevirtualizationManager.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\FieldFixupSignature.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\HeaderNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHeaderNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Import.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionsTableNode.cs" />
