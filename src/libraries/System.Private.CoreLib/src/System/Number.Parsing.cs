@@ -133,6 +133,44 @@ namespace System
         static abstract int MaxPrecisionCustomFormat { get; }
     }
 
+    internal interface IDecimalIeee754ParseAndFormatInfo<TSelf, TValue>
+        where TSelf : unmanaged, IDecimalIeee754ParseAndFormatInfo<TSelf, TValue>
+        where TValue : unmanaged, IBinaryInteger<TValue>
+    {
+        static abstract int Precision { get; }
+        static abstract int MaxScale { get; }
+        static abstract int MinScale { get; }
+        static abstract int BufferLength { get; }
+        static abstract int MaxExponent { get; }
+        static abstract int MinExponent { get; }
+        static abstract int ExponentBias { get; }
+        static abstract TValue PositiveInfinity { get; }
+        static abstract TValue NegativeInfinity { get; }
+        static abstract TValue NaN { get; }
+        static abstract TValue Zero { get; }
+        static abstract TValue NegativeZero { get; }
+        static abstract TValue MaxSignificand { get; }
+        static abstract TValue NumberToSignificand(ref Number.NumberBuffer number, int digits);
+        static abstract string ToDecStr(TValue significand);
+        static abstract int ConvertToExponent(TValue value);
+        static abstract TValue Power10(int exponent);
+        static abstract (TValue Quotient, TValue Remainder) DivRemPow10(TValue value, int exponent);
+        Number.DecodedDecimalIeee754<TValue> Unpack();
+        static abstract TSelf Construct(TValue value);
+        static abstract int CountDigits(TValue significand);
+        static abstract int NumberBitsEncoding { get; }
+        static abstract int NumberBitsExponent { get; }
+        static abstract int NumberBitsSignificand { get; }
+        static abstract TValue SignMask { get; }
+        static abstract TValue G0G1Mask { get; }
+        static abstract TValue G0ToGwPlus1ExponentMask { get; } //G0 to G(w+1)
+        static abstract TValue G2ToGwPlus3ExponentMask { get; } //G2 to G(w+3)
+        static abstract TValue GwPlus2ToGwPlus4SignificandMask { get; } //G(w+2) to G(w+4)
+        static abstract TValue GwPlus4SignificandMask { get; } //G(w+4)
+        static abstract TValue MostSignificantBitOfSignificandMask { get; }
+        static abstract bool IsNaN(TValue decimalBits);
+    }
+
     internal static partial class Number
     {
         private const int Int32Precision = 10;
@@ -767,6 +805,21 @@ namespace System
             return result;
         }
 
+        internal static TDecimal ParseDecimalIeee754<TChar, TDecimal, TValue>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            ParsingStatus status = TryParseDecimalIeee754<TChar, TDecimal, TValue>(value, styles, info, out TDecimal result);
+
+            if (status == ParsingStatus.Failed)
+            {
+                ThrowFormatException(value);
+            }
+
+            return result;
+        }
+
         internal static unsafe bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
         {
             number.CheckConsistency();
@@ -914,6 +967,87 @@ namespace System
             {
                 return ParsingStatus.Overflow;
             }
+
+            return ParsingStatus.OK;
+        }
+
+        internal static ParsingStatus TryParseDecimalIeee754<TChar, TDecimal, TValue>(ReadOnlySpan<TChar> value, NumberStyles styles, NumberFormatInfo info, out TDecimal result)
+            where TChar : unmanaged, IUtfChar<TChar>
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[TDecimal.BufferLength]);
+            result = default;
+
+            if (!TryStringToNumber(value, styles, ref number, info))
+            {
+                ReadOnlySpan<TChar> valueTrim = SpanTrim(value);
+                ReadOnlySpan<TChar> positiveInfinitySymbol = info.PositiveInfinitySymbolTChar<TChar>();
+
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
+                {
+                    result = TDecimal.Construct(TDecimal.PositiveInfinity);
+                    return ParsingStatus.OK;
+                }
+
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, info.NegativeInfinitySymbolTChar<TChar>()))
+                {
+                    result = TDecimal.Construct(TDecimal.NegativeInfinity);
+                    return ParsingStatus.OK;
+                }
+
+                ReadOnlySpan<TChar> nanSymbol = info.NaNSymbolTChar<TChar>();
+
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
+                {
+                    result = TDecimal.Construct(TDecimal.NaN);
+                    return ParsingStatus.OK;
+                }
+
+
+                var positiveSign = info.PositiveSignTChar<TChar>();
+
+                if (SpanStartsWith(valueTrim, positiveSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    valueTrim = valueTrim.Slice(positiveSign.Length);
+
+                    if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.PositiveInfinity);
+                        return ParsingStatus.OK;
+                    }
+                    else if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.NaN);
+                        return ParsingStatus.OK;
+                    }
+
+                    result = TDecimal.Construct(TDecimal.Zero);
+                    return ParsingStatus.OK;
+                }
+
+                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+
+                if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(negativeSign.Length), nanSymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.NaN);
+                        return ParsingStatus.OK;
+                    }
+
+                    if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')) && SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(1), nanSymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.NaN);
+                        return ParsingStatus.OK;
+                    }
+                }
+
+                result = TDecimal.Construct(TDecimal.Zero);
+                return ParsingStatus.Failed;
+            }
+
+            result = NumberToDecimalIeee754<TDecimal, TValue>(ref number);
 
             return ParsingStatus.OK;
         }
@@ -1134,6 +1268,28 @@ namespace System
             }
 
             return number.IsNegative ? -result : result;
+        }
+
+        internal static TDecimal NumberToDecimalIeee754<TDecimal, TValue>(ref NumberBuffer number)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            number.CheckConsistency();
+            TValue value;
+
+            if ((number.DigitsCount == 0) || (number.Scale < TDecimal.MinScale))
+            {
+                value = number.IsNegative ? TDecimal.NegativeZero : TDecimal.Zero;
+            }
+            else if (number.Scale > TDecimal.MaxScale)
+            {
+                value = number.IsNegative ? TDecimal.NegativeInfinity : TDecimal.PositiveInfinity;
+            }
+            else
+            {
+                value = NumberToDecimalIeee754Bits<TDecimal, TValue>(ref number);
+            }
+            return TDecimal.Construct(value);
         }
     }
 }
