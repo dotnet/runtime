@@ -320,6 +320,77 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Not supported on Wasi.")]
+        public void EnableBroadcast_ExplicitlyDisabled_NotAutoEnabled()
+        {
+            using (var udpClient = new UdpClient())
+            {
+                udpClient.EnableBroadcast = false;
+
+                // Sending to a broadcast address should not auto-enable
+                // broadcast when the user explicitly disabled it.
+                // The send may throw SocketException on platforms that reject
+                // broadcast sends when the socket option is not set.
+                try
+                {
+                    udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.Broadcast, UnusedPort));
+                }
+                catch (SocketException)
+                {
+                }
+
+                Assert.False(udpClient.EnableBroadcast);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Not supported on Wasi.")]
+        public void EnableBroadcast_ExplicitlyEnabledThenDisabled_NotAutoEnabled()
+        {
+            using (var udpClient = new UdpClient())
+            {
+                udpClient.EnableBroadcast = true;
+                udpClient.EnableBroadcast = false;
+
+                // After toggling enable then disable, sending to a broadcast
+                // address should still not auto-enable broadcast.
+                try
+                {
+                    udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.Broadcast, UnusedPort));
+                }
+                catch (SocketException)
+                {
+                }
+
+                Assert.False(udpClient.EnableBroadcast);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Not supported on Wasi.")]
+        public void EnableBroadcast_NotExplicitlySet_AutoEnabled()
+        {
+            using (var udpClient = new UdpClient())
+            {
+                Assert.False(udpClient.EnableBroadcast);
+
+                // When the user hasn't explicitly set EnableBroadcast,
+                // sending to a broadcast address should auto-enable it
+                // (preserving backward-compatible behavior).
+                try
+                {
+                    udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.Broadcast, UnusedPort));
+                }
+                catch (SocketException)
+                {
+                    return; // Platform doesn't support broadcast sends; skip assertion.
+                }
+
+                Assert.True(udpClient.EnableBroadcast);
+            }
+        }
+
         [PlatformSpecific(TestPlatforms.Windows)] // ExclusiveAddressUse is Windows-specific
         [Fact]
         public void ExclusiveAddressUse_Roundtrips()
