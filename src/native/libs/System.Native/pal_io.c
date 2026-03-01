@@ -73,6 +73,9 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #if defined(TARGET_SUNOS)
 #include <procfs.h>
 #endif
+#if HAVE_SUNOS_PORTFS
+#include <port.h>
+#endif
 
 #ifdef __linux__
 #include <sys/utsname.h>
@@ -1532,6 +1535,119 @@ int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd)
     return -1;
 #endif
 }
+
+// Opens a new FD in portfs (an event port)
+// Close with SystemNative_Close
+intptr_t SystemNative_PortCreate(void)
+{
+#if HAVE_SUNOS_PORTFS
+    int32_t fd = port_create();
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
+    return (fd);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+// pFileObj must point to pinned managed memory of sizeof(file_obj)
+// dirPath is used only during the port_associate system call
+// (port_associate does not reference the string after return)
+// mtime is the directory modification time before reading the directory
+// events indicates which events we care about, eg. FILE_MODIFIED
+// cookie is an arbitrary value returned in portev_user for identification
+int32_t SystemNative_PortAssociate(intptr_t port, intptr_t pFileObj, const char *dirPath, TimeSpec *mtime, int32_t events, uintptr_t cookie)
+{
+#if HAVE_SUNOS_PORTFS
+    struct file_obj *fo;
+    int32_t pfd = ToFileDescriptor(port);
+    int32_t rv;
+
+    fo = (struct file_obj *)pFileObj;
+    memset(fo, 0, sizeof(*fo));
+
+    // Use the provided mtime from managed code
+    // This is the mtime captured before reading the directory
+    fo->fo_mtime.tv_sec = mtime->tv_sec;
+    fo->fo_mtime.tv_nsec = mtime->tv_nsec;
+    fo->fo_name = (char *)dirPath;
+
+    // portev_object will be pFileObj, portev_user will be cookie
+    rv = port_associate(pfd, PORT_SOURCE_FILE, (uintptr_t)fo,
+            events, (void *)cookie);
+    fo->fo_name = NULL;
+    return rv;
+#else
+    (void)port, (void)pFileObj, (void)dirPath, (void)mtime, (void)events, (void)cookie;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+// pFileObj must be the same address passed to PortAssociate
+int32_t SystemNative_PortDissociate(intptr_t port, intptr_t pFileObj)
+{
+#if HAVE_SUNOS_PORTFS
+    int32_t pfd = ToFileDescriptor(port);
+    return port_dissociate(pfd, PORT_SOURCE_FILE, (uintptr_t)pFileObj);
+#else
+    (void)port, (void)pFileObj;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+// Returns event info: cookie from PortAssociate, events bitmask
+int32_t SystemNative_PortGet(intptr_t port, int32_t *events, uintptr_t *cookie, TimeSpec *tmo)
+{
+#if HAVE_SUNOS_PORTFS
+    int fd = ToFileDescriptor(port);
+    int32_t rc;
+    port_event_t pe;
+    struct timespec tv;
+    struct timespec *tvp;
+
+    memset(&pe, 0, sizeof (pe));
+
+    if (tmo == NULL)
+    {
+        tvp = NULL;
+    }
+    else
+    {
+        memset(&tv, 0, sizeof (tv));
+        tv.tv_sec  = tmo->tv_sec;
+        tv.tv_nsec = tmo->tv_nsec;
+        tvp = &tv;
+    }
+
+    rc = port_get(fd, &pe, tvp);
+    if (rc < 0)
+        return (-1);
+
+    *events = pe.portev_events;
+    *cookie = (uintptr_t)pe.portev_user;  // Return the cookie we set
+    return (0);
+#else
+    (void)port, (void)cookie, (void)events, (void)tmo;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+// Send a "user" event to a port.  Used to cancel a PortGet call.
+int32_t SystemNative_PortSend(intptr_t port, int32_t evflags, uintptr_t cookie)
+{
+#if HAVE_SUNOS_PORTFS
+    int32_t pfd = ToFileDescriptor(port);
+    return port_send(pfd, evflags, (void *)cookie);
+#else
+    (void)port, (void)evflags, (void)cookie;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
 
 int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid)
 {
