@@ -33,7 +33,7 @@ try {
     exit(exitCode);
 }
 catch (err) {
-    if (!error || typeof error.status !== "number") {
+    if (!err || typeof err.status !== "number") {
         exit(2, err);
     }
 }
