@@ -133,7 +133,7 @@ CDAC_TYPE_END(GCHandle)
 // Object
 
 CDAC_TYPE_BEGIN(Object)
-CDAC_TYPE_INDETERMINATE(Object)
+CDAC_TYPE_SIZE(sizeof(Object))
 CDAC_TYPE_FIELD(Object, /*pointer*/, m_pMethTab, cdac_data<Object>::m_pMethTab)
 CDAC_TYPE_END(Object)
 
@@ -153,13 +153,22 @@ CDAC_TYPE_INDETERMINATE(InteropSyncBlockInfo)
 #ifdef FEATURE_COMINTEROP
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, CCW, cdac_data<InteropSyncBlockInfo>::CCW)
 CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, RCW, cdac_data<InteropSyncBlockInfo>::RCW)
+CDAC_TYPE_FIELD(InteropSyncBlockInfo, /*pointer*/, CCF, cdac_data<InteropSyncBlockInfo>::CCF)
 #endif // FEATURE_COMINTEROP
 CDAC_TYPE_END(InteropSyncBlockInfo)
 
 CDAC_TYPE_BEGIN(SyncBlock)
 CDAC_TYPE_INDETERMINATE(SyncBlock)
 CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, InteropInfo, cdac_data<SyncBlock>::InteropInfo)
+CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, Lock, cdac_data<SyncBlock>::Lock)
+CDAC_TYPE_FIELD(SyncBlock, /*uint32*/, ThinLock, cdac_data<SyncBlock>::ThinLock)
+CDAC_TYPE_FIELD(SyncBlock, /*pointer*/, LinkNext, cdac_data<SyncBlock>::LinkNext)
 CDAC_TYPE_END(SyncBlock)
+
+CDAC_TYPE_BEGIN(SLink)
+CDAC_TYPE_INDETERMINATE(SLink)
+CDAC_TYPE_FIELD(SLink, /*pointer*/, Next, offsetof(SLink, m_pNext))
+CDAC_TYPE_END(SLink)
 
 #ifdef FEATURE_COMWRAPPERS
 CDAC_TYPE_BEGIN(NativeObjectWrapperObject)
@@ -181,6 +190,7 @@ CDAC_TYPE_END(ManagedObjectWrapperLayout)
 CDAC_TYPE_BEGIN(SyncTableEntry)
 CDAC_TYPE_SIZE(sizeof(SyncTableEntry))
 CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, SyncBlock, offsetof(SyncTableEntry, m_SyncBlock))
+CDAC_TYPE_FIELD(SyncTableEntry, /*pointer*/, Object, offsetof(SyncTableEntry, m_Object))
 CDAC_TYPE_END(SyncTableEntry)
 
 // Loader
@@ -342,11 +352,6 @@ CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumStaticFields, cdac_data<EEClass>::NumSta
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_END(EEClass)
-
-CDAC_TYPE_BEGIN(ArrayClass)
-CDAC_TYPE_INDETERMINATE(ArrayClass)
-CDAC_TYPE_FIELD(ArrayClass, /*uint8*/, Rank, cdac_data<ArrayClass>::Rank)
-CDAC_TYPE_END(ArrayClass)
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)
 CDAC_TYPE_INDETERMINATE(GenericsDictInfo)
@@ -1071,6 +1076,11 @@ CDAC_TYPE_SIZE(g_numKnownQueryInterfaceImplementations * sizeof(PCODE))
 CDAC_TYPE_END(ComWrappersVtablePtrs)
 #endif
 
+CDAC_TYPE_BEGIN(SyncBlockCache)
+CDAC_TYPE_INDETERMINATE(SyncBlockCache)
+CDAC_TYPE_FIELD(SyncBlockCache, /*uint32*/, FreeSyncTableIndex, cdac_data<SyncBlockCache>::FreeSyncTableIndex)
+CDAC_TYPE_END(SyncBlockCache)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -1172,6 +1182,7 @@ CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)
 CDAC_GLOBAL(HashMapValueMask, uint64, VALUE_MASK)
 CDAC_GLOBAL(MethodDescAlignment, uint64, MethodDesc::ALIGNMENT)
 CDAC_GLOBAL(ObjectHeaderSize, uint64, OBJHEADER_SIZE)
+CDAC_GLOBAL(ArrayBaseSize, uint32, ARRAYBASE_BASESIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, uint16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
 CDAC_GLOBAL(StubCodeBlockLast, uint8, STUB_CODE_BLOCK_LAST)
 CDAC_GLOBAL(DefaultADID, uint32, DefaultADID)
@@ -1220,6 +1231,10 @@ CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
+CDAC_GLOBAL_POINTER(SyncBlockCache, &SyncBlockCache::s_pSyncBlockCache)
+CDAC_GLOBAL(SyncBlockMaskLockThreadId, uint32, SBLK_MASK_LOCK_THREADID)
+CDAC_GLOBAL(SyncBlockMaskLockRecursionLevel, uint32, SBLK_MASK_LOCK_RECLEVEL)
+CDAC_GLOBAL(SyncBlockRecursionLevelShift, uint32, SBLK_RECLEVEL_SHIFT)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
@@ -1262,6 +1277,7 @@ CDAC_GLOBAL_CONTRACT(RuntimeInfo, 1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, 1)
 CDAC_GLOBAL_CONTRACT(SHash, 1)
 CDAC_GLOBAL_CONTRACT(SignatureDecoder, 1)
+CDAC_GLOBAL_CONTRACT(SyncBlock, 1)
 CDAC_GLOBAL_CONTRACT(StackWalk, 1)
 CDAC_GLOBAL_CONTRACT(StressLog, 2)
 CDAC_GLOBAL_CONTRACT(Thread, 1)

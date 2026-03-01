@@ -53,6 +53,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
         lastScheduledFinalizationId?: number;
         cryptoWarnOnce?: boolean;
         isAborting?: boolean;
+        isAsyncMain?: boolean;
         gitHash?: string;
     }
     DOTNET_INTEROP: {
