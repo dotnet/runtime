@@ -37,6 +37,13 @@
     <Compile Include="$(CoreClrProjectRoot)tools\Common\MachO\**\*.cs" Link="MachO\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <Reference Include="System.IO.Compression.Zstandard">
+      <HintPath>$(MicrosoftNetCoreAppRefPackRefDir)System.IO.Compression.Zstandard.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
   <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
 
 </Project>
