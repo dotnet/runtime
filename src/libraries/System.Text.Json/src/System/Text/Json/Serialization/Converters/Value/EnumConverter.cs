@@ -261,7 +261,7 @@ namespace System.Text.Json.Serialization.Converters
                 goto End;
             }
 
-            if (JsonHelpers.IntegerRegex.IsMatch(source))
+            if (IsIntegerLike(source))
             {
                 // We found an integer that is not an enum field name.
                 if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0)
@@ -388,6 +388,43 @@ namespace System.Text.Json.Serialization.Converters
                 TypeCode.SByte => (T)(object)(sbyte)value,
                 _ => (T)(object)(byte)value
             };
+        }
+
+        /// <summary>
+        /// Determines whether the string looks like an integer value (optional leading/trailing whitespace,
+        /// optional sign, followed by digits only) as a fast replacement for regex-based integer detection.
+        /// Matches the behavior of the regex pattern: ^\s*(?:\+|\-)?[0-9]+\s*$
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsIntegerLike(ReadOnlySpan<char> source)
+        {
+            ReadOnlySpan<char> trimmed = source.Trim();
+            if (trimmed.IsEmpty)
+            {
+                return false;
+            }
+
+            int i = 0;
+            char first = trimmed[0];
+            if (first is '-' or '+')
+            {
+                i = 1;
+                if (i >= trimmed.Length)
+                {
+                    return false;
+                }
+            }
+
+            for (; i < trimmed.Length; i++)
+            {
+                char c = trimmed[i];
+                if (c < '0' || c > '9')
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
