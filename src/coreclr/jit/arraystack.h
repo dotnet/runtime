@@ -126,6 +126,92 @@ public:
         return data;
     }
 
+    // Reverse iterator for top-down traversal.
+    class ReverseIterator
+    {
+        T* m_ptr;
+
+    public:
+        ReverseIterator(T* ptr)
+            : m_ptr(ptr)
+        {
+        }
+
+        T& operator*() const
+        {
+            return *(m_ptr - 1);
+        }
+
+        ReverseIterator& operator++()
+        {
+            --m_ptr;
+            return *this;
+        }
+
+        bool operator!=(const ReverseIterator& other) const
+        {
+            return m_ptr != other.m_ptr;
+        }
+    };
+
+    // Iterable view for bottom-to-top traversal (Bottom(0) -> Top(0)).
+    class BottomUpView
+    {
+        T* m_begin;
+        T* m_end;
+
+    public:
+        BottomUpView(T* begin, T* end)
+            : m_begin(begin)
+            , m_end(end)
+        {
+        }
+
+        T* begin() const
+        {
+            return m_begin;
+        }
+
+        T* end() const
+        {
+            return m_end;
+        }
+    };
+
+    // Iterable view for top-to-bottom traversal (Top(0) -> Bottom(0)).
+    class TopDownView
+    {
+        T* m_begin;
+        T* m_end;
+
+    public:
+        TopDownView(T* begin, T* end)
+            : m_begin(begin)
+            , m_end(end)
+        {
+        }
+
+        ReverseIterator begin() const
+        {
+            return ReverseIterator(m_begin);
+        }
+
+        ReverseIterator end() const
+        {
+            return ReverseIterator(m_end);
+        }
+    };
+
+    BottomUpView BottomUpOrder()
+    {
+        return BottomUpView(data, data + tosIndex);
+    }
+
+    TopDownView TopDownOrder()
+    {
+        return TopDownView(data + tosIndex, data);
+    }
+
 private:
     CompAllocator m_alloc;
     int           tosIndex; // first free location

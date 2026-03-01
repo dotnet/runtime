@@ -5109,9 +5109,9 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     if (insertIntoSsa)
     {
         JITDUMP("Inserting each use created for defs into SSA\n");
-        for (int i = 0; i < defUses.Height(); i++)
+        for (UseDefLocation& defUse : defUses.BottomUpOrder())
         {
-            InsertUseIntoSsa(ssaBuilder, defUses.BottomRef(i));
+            InsertUseIntoSsa(ssaBuilder, defUse);
         }
     }
 

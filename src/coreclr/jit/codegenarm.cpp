@@ -2151,9 +2151,8 @@ regMaskTP CodeGen::genPrespilledUnmappedRegs()
 
     if (m_compiler->m_paramRegLocalMappings != nullptr)
     {
-        for (int i = 0; i < m_compiler->m_paramRegLocalMappings->Height(); i++)
+        for (const ParameterRegisterLocalMapping& mapping : m_compiler->m_paramRegLocalMappings->BottomUpOrder())
         {
-            const ParameterRegisterLocalMapping& mapping = m_compiler->m_paramRegLocalMappings->BottomRef(i);
             regs &= ~mapping.RegisterSegment->GetRegisterMask();
         }
     }

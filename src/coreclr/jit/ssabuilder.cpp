@@ -1554,9 +1554,8 @@ bool IncrementalSsaBuilder::FindReachingDefInBlock(const UseDefLocation& use, Ba
     Statement*     latestDefStmt = nullptr;
     GenTreeLclVar* latestTree    = nullptr;
 
-    for (int i = 0; i < m_defs.Height(); i++)
+    for (UseDefLocation& candidate : m_defs.BottomUpOrder())
     {
-        UseDefLocation& candidate = m_defs.BottomRef(i);
         if (candidate.Block != block)
         {
             continue;
@@ -1668,9 +1667,9 @@ bool IncrementalSsaBuilder::FinalizeDefs()
     {
         printf("Finalizing defs for SSA insertion of V%02u\n", m_lclNum);
         printf("  %d defs:", m_defs.Height());
-        for (int i = 0; i < m_defs.Height(); i++)
+        for (const UseDefLocation& def : m_defs.BottomUpOrder())
         {
-            printf(" [%06u]", Compiler::dspTreeID(m_defs.Bottom(i).Tree));
+            printf(" [%06u]", Compiler::dspTreeID(def.Tree));
         }
         printf("\n");
     }
@@ -1719,9 +1718,9 @@ bool IncrementalSsaBuilder::FinalizeDefs()
     // know which blocks are candidates for phis.
     BlkVector idf(m_compiler->getAllocator(CMK_SSA));
 
-    for (int i = 0; i < m_defs.Height(); i++)
+    for (UseDefLocation& def : m_defs.BottomUpOrder())
     {
-        BasicBlock* block = m_defs.BottomRef(i).Block;
+        BasicBlock* block = def.Block;
         idf.clear();
         m_compiler->m_domFrontiers->ComputeIteratedDominanceFrontier(block, &idf);
 
@@ -1740,9 +1739,8 @@ bool IncrementalSsaBuilder::FinalizeDefs()
     }
 
     // Alloc SSA numbers for all real definitions.
-    for (int i = 0; i < m_defs.Height(); i++)
+    for (UseDefLocation& def : m_defs.BottomUpOrder())
     {
-        UseDefLocation& def = m_defs.BottomRef(i);
         if (m_compiler->m_dfsTree->Contains(def.Block))
         {
             BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);

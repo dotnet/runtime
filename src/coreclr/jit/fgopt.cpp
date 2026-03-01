@@ -5443,9 +5443,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     }
 
     predInfo.Reset();
-    for (int i = 0; i < retOrThrowBlocks.Height(); i++)
+    for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
     {
-        predInfo.Push(PredInfo(retOrThrowBlocks.Bottom(i), retOrThrowBlocks.Bottom(i)->lastStmt()));
+        predInfo.Push(PredInfo(block, block->lastStmt()));
     }
 
     tailMergePreds(nullptr);

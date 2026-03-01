@@ -744,9 +744,8 @@ void FgWasm::WasmFindSccs(ArrayStack<Scc*>& sccs)
     {
         JITDUMP("\n*** Sccs\n");
 
-        for (int i = 0; i < sccs.Height(); i++)
+        for (Scc* const scc : sccs.BottomUpOrder())
         {
-            Scc* const scc = sccs.Bottom(i);
             scc->DumpAll();
 
             numIrreducible += scc->NumIrr();
@@ -798,9 +797,8 @@ void FgWasm::WasmFindSccsCore(BitVec& subset, ArrayStack<Scc*>& sccs, BasicBlock
         AssignBlockToScc(block, block, subset, sccs, map);
     }
 
-    for (int i = 0; i < sccs.Height(); i++)
+    for (Scc* const scc : sccs.BottomUpOrder())
     {
-        Scc* const scc = sccs.Bottom(i);
         scc->Finalize();
     }
 }
@@ -939,9 +937,8 @@ bool FgWasm::WasmTransformSccs(ArrayStack<Scc*>& sccs)
 {
     bool modified = false;
 
-    for (int i = 0; i < sccs.Height(); i++)
+    for (Scc* const scc : sccs.BottomUpOrder())
     {
-        Scc* const scc = sccs.Bottom(i);
         modified |= scc->TransformViaSwitchDispatch();
     }
 
