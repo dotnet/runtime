@@ -696,14 +696,9 @@ public:
     }
 };
 
-//------------------------------------------------------------------------
-// BasicBlock: describes a basic block in the flowgraph.
+// Special values for bbCatchType, which is normally a class token of the catch handler.
+// These special values will not collide with real tokens.
 //
-// Note that this type derives from LIR::Range in order to make the LIR
-// utilities that are polymorphic over basic block and scratch ranges
-// faster and simpler.
-//
-// Some non-zero value that will not collide with real tokens for bbCatchType
 #define BBCT_NONE                   0x00000000
 #define BBCT_FAULT                  0xFFFFFFFC
 #define BBCT_FINALLY                0xFFFFFFFD
@@ -711,6 +706,13 @@ public:
 #define BBCT_FILTER_HANDLER         0xFFFFFFFF
 #define handlerGetsXcptnObj(hndTyp) ((hndTyp) != BBCT_NONE && (hndTyp) != BBCT_FAULT && (hndTyp) != BBCT_FINALLY)
 
+//------------------------------------------------------------------------
+// BasicBlock: describes a basic block in the flowgraph.
+//
+// Note that this type derives from LIR::Range in order to make the LIR
+// utilities that are polymorphic over basic block and scratch ranges
+// faster and simpler.
+//
 struct BasicBlock : private LIR::Range
 {
     friend class LIR;
