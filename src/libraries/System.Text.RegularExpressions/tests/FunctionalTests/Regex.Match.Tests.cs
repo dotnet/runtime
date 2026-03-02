@@ -2637,11 +2637,16 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix is not available on .NET Framework")]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task CharClassSubtraction_DeepNesting_DoesNotStackOverflow(RegexEngine engine)
         {
+            if (RegexHelpers.IsNonBacktracking(engine) && !PlatformDetection.IsMultithreadingSupported)
+            {
+                throw new SkipTestException("Deep nesting with NonBacktracking hits threading APIs not supported on single-threaded WASM.");
+            }
+
             // Build a pattern with deeply nested character class subtractions: [a-[a-[a-[...[a]...]]]]
             // This previously caused a StackOverflowException due to unbounded recursion in the parser.
             // Use a reduced depth for SourceGenerated to avoid overwhelming Roslyn compilation.
