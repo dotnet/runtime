@@ -119,7 +119,6 @@
     <Compile Include="$(BclSourcesRoot)\System\AppContext.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Array.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\AppContext.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Attribute.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\BadImageFormatException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Buffer.CoreCLR.cs" />
