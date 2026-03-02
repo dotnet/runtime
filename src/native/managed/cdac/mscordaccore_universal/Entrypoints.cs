@@ -97,6 +97,14 @@ internal static class Entrypoints
             return HResults.E_NOTIMPL;
         }
 
+        ComWrappers cw = new StrategyBasedComWrappers();
+        object legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
+        if (legacyObj is not Legacy.IDacDbiInterfaceControl)
+        {
+            *obj = IntPtr.Zero;
+            return HResults.E_NOINTERFACE;
+        }
+
         // Temporary COM binding: return legacy IDacDbiInterface while cDAC implementation is built out.
         *obj = legacyImplPtr;
         return HResults.S_OK;
