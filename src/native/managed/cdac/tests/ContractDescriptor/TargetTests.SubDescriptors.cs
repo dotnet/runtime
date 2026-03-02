@@ -35,11 +35,6 @@ public unsafe partial class TargetTests
                 { "Field1", new(){ Offset = 0, TypeName = "FieldType" }},
                 { "Field2", new(){ Offset = 8 }}
             }
-        },
-        // Size only
-        [DataType.ArrayClass] = new()
-        {
-            Size = 8
         }
     };
 

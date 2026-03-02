@@ -136,7 +136,7 @@
     <value>Multiple logging methods are using event id {0} in class {1}</value>
   </data>
   <data name="LoggingMethodMustReturnVoidMessage" xml:space="preserve">
-    <value>Logging methods must return void</value>
+    <value>Logging methods must return 'void'</value>
   </data>
   <data name="MissingLoggerArgumentTitle" xml:space="preserve">
     <value>One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
@@ -147,13 +147,10 @@
     <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
   </data>
   <data name="LoggingMethodShouldBeStaticMessage" xml:space="preserve">
-    <value>Logging methods must be static</value>
+    <value>Logging methods must be 'static'</value>
   </data>
   <data name="LoggingMethodMustBePartialMessage" xml:space="preserve">
-    <value>Logging methods must be partial</value>
-  </data>
-  <data name="LoggingMethodHasAllowsRefStructConstraintMessage" xml:space="preserve">
-    <value>Logging methods cannot have type parameters with 'allows ref struct' constraints</value>
+    <value>Logging methods must be 'partial'</value>
   </data>
   <data name="ShouldntMentionInTemplateMessage" xml:space="preserve">
     <value>Don't include a template for {0} in the logging message since it is implicitly taken care of</value>
@@ -162,7 +159,7 @@
     <value>Don't include exception parameters as templates in the logging message</value>
   </data>
   <data name="RedundantQualifierInMessageMessage" xml:space="preserve">
-    <value>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</value>
+    <value>Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</value>
   </data>
   <data name="RedundantQualifierInMessageTitle" xml:space="preserve">
     <value>Redundant qualifier in logging message</value>
@@ -217,10 +214,10 @@
     <value>Generating more than 6 arguments is not supported</value>
   </data>
   <data name="InvalidLoggingMethodParameterOutMessage" xml:space="preserve">
-    <value>Argument '{0}' is using the unsupported out parameter modifier</value>
+    <value>Argument '{0}' is using the unsupported 'out' parameter modifier</value>
   </data>
   <data name="InvalidLoggingMethodParameterOutTitle" xml:space="preserve">
-    <value>Argument is using the unsupported out parameter modifier</value>
+    <value>Argument is using the unsupported 'out' parameter modifier</value>
   </data>
   <data name="ShouldntReuseEventNamesMessage" xml:space="preserve">
     <value>Multiple logging methods are using event name {0} in class {1}</value>
@@ -245,16 +242,19 @@
     <value>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</value>
     <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
   </data>
+  <data name="LoggingMethodHasAllowsRefStructConstraintMessage" xml:space="preserve">
+    <value>Logging methods cannot have type parameters with 'allows ref struct' constraints</value>
+  </data>
   <data name="InvalidLoggingMethodParameterParamsMessage" xml:space="preserve">
-    <value>Argument '{0}' is using the unsupported params or scoped parameter modifier</value>
+    <value>Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</value>
   </data>
   <data name="InvalidLoggingMethodParameterParamsTitle" xml:space="preserve">
-    <value>Argument is using the unsupported params or scoped parameter modifier</value>
+    <value>Argument is using the unsupported 'params' or 'scoped' parameter modifier</value>
   </data>
   <data name="InvalidLoggingMethodParameterRefStructMessage" xml:space="preserve">
-    <value>Parameter '{0}' is a ref struct, which is not supported by the logging source generator</value>
+    <value>Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</value>
   </data>
   <data name="InvalidLoggingMethodParameterRefStructTitle" xml:space="preserve">
-    <value>Logging method parameter is a ref struct</value>
+    <value>Logging method parameter is a 'ref struct'</value>
   </data>
 </root>
