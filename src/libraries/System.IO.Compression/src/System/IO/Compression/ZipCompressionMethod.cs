@@ -25,5 +25,10 @@ namespace System.IO.Compression
         /// The entry is compressed using the Deflate64 algorithm.
         /// </summary>
         Deflate64 = 0x9,
+
+        /// <summary>
+        /// The entry is compressed using the Zstandard algorithm.
+        /// </summary>
+        ZStandard = 0x5D,
     }
 }

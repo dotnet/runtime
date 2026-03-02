@@ -185,6 +185,8 @@ namespace System.IO.Compression
                     VersionToExtractAtLeast(ZipVersionNeededValues.Deflate);
                 else if (value == ZipCompressionMethod.Deflate64)
                     VersionToExtractAtLeast(ZipVersionNeededValues.Deflate64);
+                else if (value == ZipCompressionMethod.ZStandard)
+                    VersionToExtractAtLeast(ZipVersionNeededValues.ZStandard);
                 _storedCompressionMethod = value;
             }
         }
@@ -771,23 +773,36 @@ namespace System.IO.Compression
             //
             // Note: Deflate64 is not supported on all platforms
             Debug.Assert(CompressionMethod == ZipCompressionMethod.Deflate
+                || CompressionMethod == ZipCompressionMethod.ZStandard
                 || CompressionMethod == ZipCompressionMethod.Stored);
-            Func<Stream> compressorStreamFactory;
+            Func<Stream> compressorStreamFactory = null!;
 
             bool isIntermediateStream = true;
+            bool handledByZStandard = false;
 
-            switch (CompressionMethod)
+            if (ZipArchiveSettings.AllowZstandard)
             {
-                case ZipCompressionMethod.Stored:
-                    compressorStreamFactory = () => backingStream;
-                    isIntermediateStream = false;
-                    break;
-                case ZipCompressionMethod.Deflate:
-                case ZipCompressionMethod.Deflate64:
-                default:
-                    compressorStreamFactory = () => new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
-                    break;
+                if (CompressionMethod == ZipCompressionMethod.ZStandard)
+                {
+                    compressorStreamFactory = CreateZstandardCompressionStreamFactory(backingStream, leaveBackingStreamOpen);
+                    handledByZStandard = true;
+                }
+            }
 
+            if (!handledByZStandard)
+            {
+                switch (CompressionMethod)
+                {
+                    case ZipCompressionMethod.Stored:
+                        compressorStreamFactory = () => backingStream;
+                        isIntermediateStream = false;
+                        break;
+                    case ZipCompressionMethod.Deflate:
+                    case ZipCompressionMethod.Deflate64:
+                    default:
+                        compressorStreamFactory = () => new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
+                        break;
+                }
             }
             bool leaveCompressorStreamOpenOnClose = leaveBackingStreamOpen && !isIntermediateStream;
             var checkSumStream = new CheckSumAndSizeWriteStream(
@@ -809,27 +824,39 @@ namespace System.IO.Compression
 
         private Stream GetDataDecompressor(Stream compressedStreamToRead)
         {
-            Stream? uncompressedStream;
+            if (ZipArchiveSettings.AllowZstandard)
+            {
+                if (CompressionMethod == ZipCompressionMethod.ZStandard)
+                {
+                    return CreateZstandardDecompressionStream(compressedStreamToRead);
+                }
+            }
+
             switch (CompressionMethod)
             {
                 case ZipCompressionMethod.Deflate:
-                    uncompressedStream = new DeflateStream(compressedStreamToRead, CompressionMode.Decompress, _uncompressedSize);
-                    break;
+                    return new DeflateStream(compressedStreamToRead, CompressionMode.Decompress, _uncompressedSize);
                 case ZipCompressionMethod.Deflate64:
-                    uncompressedStream = new DeflateManagedStream(compressedStreamToRead, ZipCompressionMethod.Deflate64, _uncompressedSize);
-                    break;
+                    return new DeflateManagedStream(compressedStreamToRead, ZipCompressionMethod.Deflate64, _uncompressedSize);
                 case ZipCompressionMethod.Stored:
                 default:
-                    // we can assume that only deflate/deflate64/stored are allowed because we assume that
+                    // we can assume that only deflate/deflate64/zstandard/stored are allowed because we assume that
                     // IsOpenable is checked before this function is called
                     Debug.Assert(CompressionMethod == ZipCompressionMethod.Stored);
 
-                    uncompressedStream = compressedStreamToRead;
-                    break;
+                    return compressedStreamToRead;
             }
-
-            return uncompressedStream;
         }
+
+#pragma warning disable CA1416 // ZstandardStream throws PNSE on unsupported platforms
+#pragma warning disable CA1859 // Return type is Stream to isolate ZstandardStream references for trimming
+        private static Stream CreateZstandardDecompressionStream(Stream compressedStreamToRead) =>
+            new ZstandardStream(compressedStreamToRead, CompressionMode.Decompress, leaveOpen: false);
+
+        private static Func<Stream> CreateZstandardCompressionStreamFactory(Stream backingStream, bool leaveBackingStreamOpen) =>
+            () => new ZstandardStream(backingStream, CompressionMode.Compress, leaveOpen: leaveBackingStreamOpen);
+#pragma warning restore CA1859
+#pragma warning restore CA1416
 
         private Stream OpenInReadMode(bool checkOpenable)
         {
@@ -912,7 +939,9 @@ namespace System.IO.Compression
 
             // Normalize compression method when actually modifying - Deflate64 data will be
             // re-compressed as Deflate since we don't support writing Deflate64.
-            if (CompressionMethod != ZipCompressionMethod.Stored)
+            // ZStandard is preserved since we can write it.
+            if (CompressionMethod != ZipCompressionMethod.Stored &&
+                !(ZipArchiveSettings.AllowZstandard && CompressionMethod == ZipCompressionMethod.ZStandard))
             {
                 CompressionMethod = ZipCompressionMethod.Deflate;
             }
@@ -954,7 +983,8 @@ namespace System.IO.Compression
             {
                 if (CompressionMethod != ZipCompressionMethod.Stored &&
                     CompressionMethod != ZipCompressionMethod.Deflate &&
-                    CompressionMethod != ZipCompressionMethod.Deflate64)
+                    CompressionMethod != ZipCompressionMethod.Deflate64 &&
+                    !(ZipArchiveSettings.AllowZstandard && CompressionMethod == ZipCompressionMethod.ZStandard))
                 {
                     message = SR.UnsupportedCompression;
                     return false;
