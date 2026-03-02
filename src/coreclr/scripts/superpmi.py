@@ -103,6 +103,10 @@ throughput_description = """\
 Measure throughput using PIN on one or more collections.
 """
 
+metricdiff_description = """\
+Measure JIT metric differences (for all metrics in the -details CSV, such as memory allocations) on one or more collections.
+"""
+
 upload_description = """\
 Upload a collection to SuperPMI Azure storage.
 """
@@ -131,7 +135,7 @@ summarize_description = """\
 Summarize multiple .json summaries created by --summary_as_json into a single .md file.
 """
 
-summary_type_help = "Type of summaries: asmdiffs or tpdiff"
+summary_type_help = "Type of summaries: asmdiffs, tpdiff, or metricdiff"
 
 summaries_help = "List of .json files to summarize"
 
@@ -375,6 +379,10 @@ asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a 
 # subparser for throughput
 throughput_parser = subparsers.add_parser("tpdiff", description=throughput_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
 add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help)
+
+# subparser for metricdiff
+metricdiff_parser = subparsers.add_parser("metricdiff", description=metricdiff_description, parents=[target_parser, superpmi_common_parser, replay_common_parser, base_diff_parser])
+add_core_root_arguments(metricdiff_parser, "Release", throughput_build_type_help)
 
 # subparser for upload
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
@@ -3050,6 +3058,8 @@ class SuperPMIReplayThroughputDiff:
         if self.coreclr_args.jitoption:
             for o in self.coreclr_args.jitoption:
                 base_option_flags += "-jitoption", o
+        # Disable JitReportMetrics for throughput diffs to avoid measurement noise
+        base_option_flags += "-jitoption", "force", "JitReportMetrics=0"
 
         diff_option_flags = []
         if self.coreclr_args.diff_jit_option:
@@ -3058,6 +3068,8 @@ class SuperPMIReplayThroughputDiff:
         if self.coreclr_args.jitoption:
             for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
+        # Disable JitReportMetrics for throughput diffs to avoid measurement noise
+        diff_option_flags += "-jit2option", "force", "JitReportMetrics=0"
 
         base_jit_build_string_decoded = decode_clrjit_build_string(self.base_jit_path)
         diff_jit_build_string_decoded = decode_clrjit_build_string(self.diff_jit_path)
@@ -3283,6 +3295,339 @@ def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_
                         mch_file, base_instructions, diff_instructions,
                         compute_and_format_pct(base_instructions, diff_instructions)))
                 write_fh.write("\n")
+
+################################################################################
+# SuperPMI Metric Diff
+################################################################################
+
+
+class SuperPMIReplayMetricDiff:
+    """ SuperPMI Replay metric diff class
+
+    Notes:
+        The object is responsible for replaying the mch files given to the
+        instance of the class and measuring JIT metric differences.
+    """
+
+    def __init__(self, coreclr_args, mch_files, base_jit_path, diff_jit_path):
+        """ Constructor
+
+        Args:
+            coreclr_args (CoreclrArguments) : parsed args
+            mch_files (list)                : list of MCH files to replay
+            base_jit_path (str)             : path to baseline clrjit
+            diff_jit_path (str)             : path to diff clrjit
+
+        """
+
+        self.base_jit_path = base_jit_path
+        self.diff_jit_path = diff_jit_path
+        self.mch_files = mch_files
+        self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
+
+        self.coreclr_args = coreclr_args
+        self.diff_mcl_contents = None
+
+    ############################################################################
+    # Instance Methods
+    ############################################################################
+
+    def replay_with_metric_diff(self):
+        """ Replay SuperPMI collections measuring JIT metric differences.
+
+        Returns:
+            (bool) True on success; False otherwise
+        """
+
+        target_flags = []
+        if self.coreclr_args.arch != self.coreclr_args.target_arch:
+            target_flags += [ "-target", self.coreclr_args.target_arch ]
+
+        base_option_flags = []
+        if self.coreclr_args.base_jit_option:
+            for o in self.coreclr_args.base_jit_option:
+                base_option_flags += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                base_option_flags += "-jitoption", o
+
+        diff_option_flags = []
+        if self.coreclr_args.diff_jit_option:
+            for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                diff_option_flags += "-jit2option", o
+
+        metric_diffs  = []
+
+        with TempDir(None, self.coreclr_args.skip_cleanup) as temp_location:
+            logging.debug("")
+            logging.debug("Temp Location: %s", temp_location)
+            logging.debug("")
+
+            for mch_file in self.mch_files:
+
+                logging.info("Running metric diff of %s", mch_file)
+
+                if self.coreclr_args.details:
+                    details_info_file = self.coreclr_args.details
+                else:
+                    details_info_file = os.path.join(temp_location, os.path.basename(mch_file) + "_details.csv")
+
+                flags = [
+                    "-applyDiff",
+                    "-v", "ewi",
+                    "-details", details_info_file,
+                ]
+                flags += target_flags
+                flags += base_option_flags
+                flags += diff_option_flags
+
+                if not self.coreclr_args.sequential and not self.coreclr_args.compile:
+                    if not self.coreclr_args.parallelism:
+                        flags += [ "-p" ]
+                    else:
+                        flags += [ "-p", self.coreclr_args.parallelism ]
+
+                if self.coreclr_args.break_on_assert:
+                    flags += [ "-boa" ]
+
+                if self.coreclr_args.break_on_error:
+                    flags += [ "-boe" ]
+
+                if self.coreclr_args.compile:
+                    flags += [ "-c", self.coreclr_args.compile ]
+
+                if self.coreclr_args.spmi_log_file is not None:
+                    flags += [ "-w", self.coreclr_args.spmi_log_file ]
+
+                if self.coreclr_args.error_limit is not None:
+                    flags += ["-failureLimit", self.coreclr_args.error_limit]
+
+                with ChangeDir(self.coreclr_args.core_root):
+                    command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
+                    return_code = run_and_log(command)
+
+                print_superpmi_error_result(return_code, self.coreclr_args)
+
+                metrics_list = None
+                base_metrics = None
+                diff_metrics = None
+                try:
+                    if os.path.isfile(details_info_file):
+                        (metrics_list, base_metrics, diff_metrics) = aggregate_metric_diff_metrics(details_info_file)
+                    else:
+                        logging.warning("Details info file '%s' not found; skipping metric diff aggregation", details_info_file)
+                except Exception as ex:
+                    logging.warning("Failed to aggregate metric diff metrics from '%s': %s", details_info_file, ex)
+
+                if base_metrics is not None and diff_metrics is not None:
+                    if return_code == 0:
+                        logging.info("Clean SuperPMI diff ({} contexts processed)".format(base_metrics["Successful compiles"]))
+                    elif return_code == 3:
+                        logging.warning("SuperPMI encountered missing data for {} contexts".format(base_metrics["Missing compiles"]))
+
+                    has_any_data = any(base_metrics[m] != 0 or diff_metrics[m] != 0 for m in metrics_list)
+                    if has_any_data:
+                        for metric in metrics_list:
+                            base_val = base_metrics[metric]
+                            diff_val = diff_metrics[metric]
+                            if base_val != 0 or diff_val != 0:
+                                delta = diff_val - base_val
+                                fmt = "{:,.2f}" if isinstance(base_val, float) else "{:,d}"
+                                if base_val != 0:
+                                    logging.info("  {}: base={}, diff={}, delta={} ({:.2%})".format(
+                                        metric, fmt.format(base_val), fmt.format(diff_val), fmt.format(delta), delta / base_val))
+                                else:
+                                    logging.info("  {}: base={}, diff={}, delta={}".format(
+                                        metric, fmt.format(base_val), fmt.format(diff_val), fmt.format(delta)))
+                        metric_diffs .append((os.path.basename(mch_file), metrics_list, base_metrics, diff_metrics))
+                    else:
+                        logging.warning("One compilation failed to produce any results")
+                else:
+                    logging.warning("No metric files present?")
+
+            ################################################################################################ end of for mch_file in self.mch_files
+
+        # Report the overall results summary of the metricdiff run
+
+        logging.info("Metric diff summary:")
+
+        # Construct overall summary files.
+
+        if self.coreclr_args.summary_as_json:
+            if not os.path.isdir(self.coreclr_args.spmi_location):
+                os.makedirs(self.coreclr_args.spmi_location)
+
+            (base_jit_options, diff_jit_options) = get_base_diff_jit_options(self.coreclr_args)
+
+            overall_json_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "metricdiff_summary", "json")
+            if os.path.isfile(overall_json_summary_file):
+                os.remove(overall_json_summary_file)
+
+            with open(overall_json_summary_file, "w") as write_fh:
+                json.dump((base_jit_options, diff_jit_options, metric_diffs ), write_fh)
+                logging.info("  Summary JSON file: %s", overall_json_summary_file)
+        elif len(metric_diffs ) > 0:
+            if not os.path.isdir(self.coreclr_args.spmi_location):
+                os.makedirs(self.coreclr_args.spmi_location)
+
+            (base_jit_options, diff_jit_options) = get_base_diff_jit_options(self.coreclr_args)
+
+            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "metricdiff_summary", "md")
+
+            if os.path.isfile(overall_md_summary_file):
+                os.remove(overall_md_summary_file)
+
+            with open(overall_md_summary_file, "w") as write_fh:
+                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs , True)
+                logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+            short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "metricdiff_short_summary", "md")
+
+            if os.path.isfile(short_md_summary_file):
+                os.remove(short_md_summary_file)
+
+            with open(short_md_summary_file, "w") as write_fh:
+                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs , False)
+                logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
+        return True
+        ################################################################################################ end of replay_with_metric_diff()
+
+
+def discover_metrics_from_csv(details_file):
+    """ Read the CSV header and return all metric column names (those with 'Base X' / 'Diff X' pairs). """
+    with open(details_file, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        headers = reader.fieldnames
+    metrics = []
+    for h in headers:
+        if h.startswith("Base ") and ("Diff " + h[5:]) in headers:
+            name = h[5:]
+            if name not in ("result", "instructions"):
+                metrics.append(name)
+    return metrics
+
+def aggregate_metric_diff_metrics(details_file):
+    """ Given the path to a CSV details file output by SPMI for a diff, aggregate all metrics.
+
+    Returns:
+        (metrics_list, base_metrics, diff_metrics)
+    """
+
+    metrics_list = discover_metrics_from_csv(details_file)
+    base_totals = {m: 0 for m in metrics_list}
+    diff_totals = {m: 0 for m in metrics_list}
+    base_compile_stats = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0}
+    diff_compile_stats = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0}
+
+    for row in read_csv(details_file):
+        base_result = row["Base result"]
+        diff_result = row["Diff result"]
+
+        if base_result == "Success":
+            base_compile_stats["Successful compiles"] += 1
+        elif base_result == "Miss":
+            base_compile_stats["Missing compiles"] += 1
+        else:
+            base_compile_stats["Failing compiles"] += 1
+
+        if diff_result == "Success":
+            diff_compile_stats["Successful compiles"] += 1
+        elif diff_result == "Miss":
+            diff_compile_stats["Missing compiles"] += 1
+        else:
+            diff_compile_stats["Failing compiles"] += 1
+
+        if base_result == "Success" and diff_result == "Success":
+            for metric in metrics_list:
+                base_val = row["Base " + metric]
+                diff_val = row["Diff " + metric]
+                base_totals[metric] += float(base_val) if '.' in base_val else int(base_val)
+                diff_totals[metric] += float(diff_val) if '.' in diff_val else int(diff_val)
+
+    base_totals.update(base_compile_stats)
+    diff_totals.update(diff_compile_stats)
+
+    return (metrics_list, base_totals, diff_totals)
+
+
+def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs, include_details):
+
+    def fmt_val(v):
+        return "{:,.2f}".format(v) if isinstance(v, float) else "{:,d}".format(v)
+
+    def fmt_pct(base_val, diff_val):
+        if base_val == 0:
+            if diff_val > 0:
+                return html_color("red", "+\u221e")
+            elif diff_val < 0:
+                return html_color("green", "-\u221e")
+            return "0.00%"
+        return compute_and_format_pct(base_val, diff_val)
+
+    write_jit_options(base_jit_options, diff_jit_options, write_fh)
+
+    # Collect the union of all metrics across all collections
+    all_metrics = []
+    seen = set()
+    for (_, metrics_list, _, _) in metric_diffs:
+        for m in metrics_list:
+            if m not in seen:
+                all_metrics.append(m)
+                seen.add(m)
+
+    any_significant = False
+    metrics_with_diffs = set()
+    for metric in all_metrics:
+        significant_diffs = [(mch, base, diff) for (mch, _, base, diff) in metric_diffs
+                             if metric in base and base[metric] != diff[metric]]
+        if not significant_diffs:
+            continue
+
+        any_significant = True
+        metrics_with_diffs.add(metric)
+        pcts = [compute_pct(base[metric], diff[metric]) for (_, base, diff) in significant_diffs
+                if base[metric] != 0]
+        if pcts:
+            min_pct_str = format_pct(min(pcts))
+            max_pct_str = format_pct(max(pcts))
+            if min_pct_str == max_pct_str:
+                header = "{} ({})".format(metric, min_pct_str)
+            else:
+                header = "{} ({} to {})".format(metric, min_pct_str, max_pct_str)
+        else:
+            header = metric
+
+        with DetailsSection(write_fh, header):
+            write_fh.write("|Collection|Base|Diff|PDIFF|\n")
+            write_fh.write("|---|--:|--:|--:|\n")
+            for mch_file, base, diff in significant_diffs:
+                write_fh.write("|{}|{}|{}|{}|\n".format(
+                    mch_file, fmt_val(base[metric]), fmt_val(diff[metric]),
+                    fmt_pct(base[metric], diff[metric])))
+
+    if not any_significant:
+        if include_details:
+            write_fh.write("No significant metric differences found\n")
+
+    if include_details:
+        for metric in all_metrics:
+            if metric in metrics_with_diffs:
+                continue
+            rows = [(mch, base.get(metric, 0), diff.get(metric, 0)) for (mch, _, base, diff) in metric_diffs
+                    if base.get(metric, 0) != 0 or diff.get(metric, 0) != 0]
+            if not rows:
+                continue
+            write_fh.write("\n")
+            with DetailsSection(write_fh, metric):
+                write_fh.write("|Collection|Base|Diff|PDIFF|\n")
+                write_fh.write("|---|--:|--:|--:|\n")
+                for mch_file, base_val, diff_val in rows:
+                    write_fh.write("|{}|{}|{}|{}|\n".format(
+                        mch_file, fmt_val(base_val), fmt_val(diff_val),
+                        fmt_pct(base_val, diff_val)))
 
 ################################################################################
 # Argument handling helpers
@@ -4240,8 +4585,21 @@ def summarize_json_summaries(coreclr_args):
     for file in coreclr_args.summaries:
         logging.info("  {}".format(file))
 
-    file_name_prefix = "diff" if coreclr_args.summary_type == "asmdiffs" else "tpdiff"
+    summary_type_to_prefix = {
+        "asmdiffs": "diff",
+        "metricdiff": "metricdiff",
+        "tpdiff": "tpdiff",
+    }
 
+    if coreclr_args.summary_type not in summary_type_to_prefix:
+        logging.error(
+            "Invalid summary_type '%s'. Valid values are: %s",
+            coreclr_args.summary_type,
+            ", ".join(sorted(summary_type_to_prefix.keys())),
+        )
+        raise ValueError(f"Invalid summary_type: {coreclr_args.summary_type}")
+
+    file_name_prefix = summary_type_to_prefix[coreclr_args.summary_type]
     if coreclr_args.output_long_summary_path:
         overall_md_summary_file = coreclr_args.output_long_summary_path
     else:
@@ -4272,6 +4630,29 @@ def summarize_json_summaries(coreclr_args):
 
         with open(short_md_summary_file, "w") as write_fh:
             write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, False)
+            logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
+    elif coreclr_args.summary_type == "metricdiff":
+        base_jit_options = []
+        diff_jit_options = []
+        summarizable_metric_diffs  = []
+
+        for json_file in coreclr_args.summaries:
+            with open(json_file, "r") as fh:
+                data = json.load(fh)
+                if isinstance(data, str):
+                    continue
+                (base_jit_options, diff_jit_options, metric_diffs ) = data
+                summarizable_metric_diffs .extend(metric_diffs )
+
+        # Sort by collection name
+        summarizable_metric_diffs .sort(key=lambda t: t[0])
+
+        with open(overall_md_summary_file, "w") as write_fh:
+            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs , True)
+            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+
+        with open(short_md_summary_file, "w") as write_fh:
+            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs , False)
             logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
     else:
         base_jit_build_string_decoded = ""
@@ -5279,6 +5660,20 @@ def setup_args(args):
         process_base_jit_path_arg(coreclr_args)
         download_clrjit_pintool(coreclr_args)
 
+    elif coreclr_args.mode == "metricdiff":
+
+        verify_target_args()
+        verify_superpmi_common_args()
+        verify_replay_common_args()
+        verify_base_diff_args()
+
+        coreclr_args.verify(determine_coredis_tools(coreclr_args),
+                            "coredistools_location",
+                            os.path.isfile,
+                            "Unable to find coredistools.")
+
+        process_base_jit_path_arg(coreclr_args)
+
     elif coreclr_args.mode == "upload":
 
         verify_target_args()
@@ -5384,7 +5779,7 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set output_long_summary_path")
 
-    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "download":
+    if coreclr_args.mode == "replay" or coreclr_args.mode == "asmdiffs" or coreclr_args.mode == "tpdiff" or coreclr_args.mode == "metricdiff" or coreclr_args.mode == "download":
         if hasattr(coreclr_args, "private_store") and coreclr_args.private_store is not None:
             logging.info("Using private stores:")
             for path in coreclr_args.private_store:
@@ -5526,6 +5921,37 @@ def main(args):
 
         tp_diff = SuperPMIReplayThroughputDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
         success = tp_diff.replay_with_throughput_diff()
+
+        end_time = datetime.datetime.now()
+        elapsed_time = end_time - begin_time
+
+        logging.debug("Finish time: %s", end_time.strftime("%H:%M:%S"))
+        logging.debug("Elapsed time: %s", elapsed_time)
+
+    elif coreclr_args.mode == "metricdiff":
+        local_mch_paths = process_mch_files_arg(coreclr_args)
+        mch_files = get_mch_files_for_replay(local_mch_paths, coreclr_args.filter)
+        if mch_files is None:
+            return 1
+
+        begin_time = datetime.datetime.now()
+
+        logging.info("SuperPMI metric diff")
+        logging.debug("------------------------------------------------------------")
+        logging.debug("Start time: %s", begin_time.strftime("%H:%M:%S"))
+
+        base_jit_path = coreclr_args.base_jit_path
+        diff_jit_path = coreclr_args.diff_jit_path
+
+        logging.info("Base JIT Path: %s", base_jit_path)
+        logging.info("Diff JIT Path: %s", diff_jit_path)
+
+        logging.info("Using MCH files:")
+        for mch_file in mch_files:
+            logging.info("  %s", mch_file)
+
+        metric_diff = SuperPMIReplayMetricDiff(coreclr_args, mch_files, base_jit_path, diff_jit_path)
+        success = metric_diff.replay_with_metric_diff()
 
         end_time = datetime.datetime.now()
         elapsed_time = end_time - begin_time
