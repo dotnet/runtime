@@ -355,6 +355,36 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
 #endif
 }
 
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::QueryInterface(REFIID interfaceId, PVOID* iface)
+{
+    static const GUID IID_IDacDbiInterfaceGuid =
+    { 0xb7a6d3f5, 0x6b46, 0x4dd4, { 0x8a, 0xf1, 0x0d, 0x4a, 0x2a, 0xfb, 0x98, 0xc1 } };
+
+    if (iface == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (IsEqualIID(interfaceId, IID_IDacDbiInterfaceGuid))
+    {
+        ClrDataAccess::AddRef();
+        *iface = static_cast<IDacDbiInterface*>(this);
+        return S_OK;
+    }
+
+    return ClrDataAccess::QueryInterface(interfaceId, iface);
+}
+
+ULONG STDMETHODCALLTYPE DacDbiInterfaceImpl::AddRef()
+{
+    return ClrDataAccess::AddRef();
+}
+
+ULONG STDMETHODCALLTYPE DacDbiInterfaceImpl::Release()
+{
+    return ClrDataAccess::Release();
+}
+
 //-----------------------------------------------------------------------------
 // Destructor.
 //
@@ -475,7 +505,7 @@ HRESULT DacDbiInterfaceImpl::Destroy()
     {
         m_pAllocator = NULL;
 
-        this->Release();
+        ClrDataAccess::Release();
         // Memory is deleted, don't access this object any more
     }
     EX_CATCH_HRESULT(hr);

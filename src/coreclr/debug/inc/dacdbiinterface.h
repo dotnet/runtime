@@ -163,7 +163,8 @@ const DWORD kCurrentDbiVersionFormat = 1;
 //
 //
 //-----------------------------------------------------------------------------
-class IDacDbiInterface
+MIDL_INTERFACE("B7A6D3F5-6B46-4DD4-8AF1-0D4A2AFB98C1")
+IDacDbiInterface : public IUnknown
 {
 public:
     class IStringHolder;

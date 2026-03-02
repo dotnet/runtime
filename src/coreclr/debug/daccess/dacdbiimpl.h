@@ -45,6 +45,11 @@ class DacDbiInterfaceImpl :
     public IDacDbiInterface
 {
 public:
+    // Explicitly forward IUnknown through ClrDataAccess to keep one COM identity.
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID interfaceId, PVOID* iface);
+    ULONG STDMETHODCALLTYPE AddRef();
+    ULONG STDMETHODCALLTYPE Release();
+
     // Ctor to instantiate a DAC reader around a given data-target.
     DacDbiInterfaceImpl(ICorDebugDataTarget * pTarget, CORDB_ADDRESS baseAddress, IAllocator * pAllocator, IMetaDataLookup * pLookup);
 
