@@ -64,31 +64,31 @@ namespace Microsoft.Interop
                 )
                 .WithTrackingName(StepNames.CalculateStubInformation);
 
-            // Generate the code for the managed-to-unmangaed stubs and the diagnostics from code-generation.
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateManagedToNativeStub = generateStubInformation
+            // Generate the code for the managed-to-unmanaged stubs.
+            IncrementalValuesProvider<MemberDeclarationSyntax> generateManagedToNativeStub = generateStubInformation
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                 .Select(
                     static (data, ct) => GenerateManagedToNativeStub(data)
                 )
-                .WithComparer(Comparers.GeneratedSyntax)
+                .WithComparer(SyntaxEquivalentComparer.Instance)
                 .WithTrackingName(StepNames.GenerateManagedToNativeStub);
 
-            context.RegisterConcatenatedSyntaxOutputs(generateManagedToNativeStub.Select((data, ct) => data.Item1), "ManagedToNativeStubs.g.cs");
+            context.RegisterConcatenatedSyntaxOutputs(generateManagedToNativeStub, "ManagedToNativeStubs.g.cs");
 
             // Filter the list of all stubs to only the stubs that requested unmanaged-to-managed stub generation.
             IncrementalValuesProvider<SourceAvailableIncrementalMethodStubGenerationContext> nativeToManagedStubContexts =
                 generateStubInformation
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional);
 
-            // Generate the code for the unmanaged-to-managed stubs and the diagnostics from code-generation.
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateNativeToManagedStub = nativeToManagedStubContexts
+            // Generate the code for the unmanaged-to-managed stubs.
+            IncrementalValuesProvider<MemberDeclarationSyntax> generateNativeToManagedStub = nativeToManagedStubContexts
                 .Select(
                     static (data, ct) => GenerateNativeToManagedStub(data)
                 )
-                .WithComparer(Comparers.GeneratedSyntax)
+                .WithComparer(SyntaxEquivalentComparer.Instance)
                 .WithTrackingName(StepNames.GenerateNativeToManagedStub);
 
-            context.RegisterConcatenatedSyntaxOutputs(generateNativeToManagedStub.Select((data, ct) => data.Item1), "NativeToManagedStubs.g.cs");
+            context.RegisterConcatenatedSyntaxOutputs(generateNativeToManagedStub, "NativeToManagedStubs.g.cs");
 
             // Generate the native interface metadata for each interface that contains a method with the [VirtualMethodIndex] attribute.
             IncrementalValuesProvider<MemberDeclarationSyntax> generateNativeInterface = generateStubInformation
@@ -347,30 +347,26 @@ namespace Microsoft.Interop
             return NoMarshallingInfo.Instance;
         }
 
-        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
+        private static MemberDeclarationSyntax GenerateManagedToNativeStub(
             SourceAvailableIncrementalMethodStubGenerationContext methodStub)
         {
-            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
+            var (stub, _) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
 
-            return (
-                methodStub.ContainingSyntaxContext.AddContainingSyntax(
+            return methodStub.ContainingSyntaxContext.AddContainingSyntax(
                     NativeTypeContainingSyntax)
                 .WrapMemberInContainingSyntaxWithUnsafeModifier(
-                    stub),
-                methodStub.Diagnostics.Array.AddRange(diagnostics));
+                    stub);
         }
 
-        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
+        private static MemberDeclarationSyntax GenerateNativeToManagedStub(
             SourceAvailableIncrementalMethodStubGenerationContext methodStub)
         {
-            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
+            var (stub, _) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
 
-            return (
-                methodStub.ContainingSyntaxContext.AddContainingSyntax(
+            return methodStub.ContainingSyntaxContext.AddContainingSyntax(
                     NativeTypeContainingSyntax)
                 .WrapMemberInContainingSyntaxWithUnsafeModifier(
-                    stub),
-                methodStub.Diagnostics.Array.AddRange(diagnostics));
+                    stub);
         }
 
         private static MemberDeclarationSyntax GenerateNativeInterfaceMetadata(ContainingSyntaxContext context)
