@@ -39,7 +39,7 @@ public class BuiltInCOMDumpTests : DumpTestBase
             if (objPtr == TargetPointer.Null)
                 continue;
 
-            bool hasCOM = objectContract.GetBuiltInComData(objPtr, out _, out TargetPointer ccwPtr);
+            bool hasCOM = objectContract.GetBuiltInComData(objPtr, out _, out TargetPointer ccwPtr, out _);
             if (hasCOM && ccwPtr != TargetPointer.Null)
                 ccwPtrs.Add(ccwPtr);
         }
@@ -67,6 +67,35 @@ public class BuiltInCOMDumpTests : DumpTestBase
 
             // Non-slot-0 entries (from IComTestInterface) should have a valid MethodTable.
             Assert.Contains(interfaces, static i => i.MethodTable != TargetPointer.Null);
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
+    public void BuiltInCOM_CCW_InterfaceMethodTablesAreReadable(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
+        Assert.True(ccwPtrs.Count > 0, "Expected at least one object with an active CCW from strong handles");
+
+        foreach (TargetPointer ccwPtr in ccwPtrs)
+        {
+            foreach (COMInterfacePointerData iface in builtInCOM.GetCCWInterfaces(ccwPtr))
+            {
+                if (iface.MethodTable == TargetPointer.Null)
+                    continue;
+
+                // Verify the MethodTable is readable by resolving it to a TypeHandle.
+                TypeHandle typeHandle = rts.GetTypeHandle(iface.MethodTable);
+                Assert.False(typeHandle.IsNull,
+                    $"Expected non-null TypeHandle for MethodTable 0x{iface.MethodTable:X} in CCW 0x{ccwPtr:X}");
+                Assert.True(rts.GetBaseSize(typeHandle) > 0,
+                    $"Expected positive base size for MethodTable 0x{iface.MethodTable:X} in CCW 0x{ccwPtr:X}");
+            }
         }
     }
 
