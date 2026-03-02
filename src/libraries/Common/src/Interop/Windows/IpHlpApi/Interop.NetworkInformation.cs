@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -379,59 +379,48 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct MibTcpTable
         {
-            internal uint numberOfEntries;
+            internal uint NumEntries;
+            internal MibTcpRow FirstEntry;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct MibTcpRow
         {
-            internal TcpState state;
-            internal uint localAddr;
-            internal byte localPort1;
-            internal byte localPort2;
+            internal TcpState State;
+            internal uint LocalAddr;
+            internal uint LocalPort;
+            internal uint RemoteAddr;
+            internal uint RemotePort;
+
             // Ports are only 16 bit values (in network WORD order, 3,4,1,2).
             // There are reports where the high order bytes have garbage in them.
-            internal byte ignoreLocalPort3;
-            internal byte ignoreLocalPort4;
-            internal uint remoteAddr;
-            internal byte remotePort1;
-            internal byte remotePort2;
-            // Ports are only 16 bit values (in network WORD order, 3,4,1,2).
-            // There are reports where the high order bytes have garbage in them.
-            internal byte ignoreRemotePort3;
-            internal byte ignoreRemotePort4;
+            internal readonly IPEndPoint LocalEndPoint => new(LocalAddr, BinaryPrimitives.ReverseEndianness((ushort)LocalPort));
+            internal readonly IPEndPoint RemoteEndPoint => new(RemoteAddr, BinaryPrimitives.ReverseEndianness((ushort)RemotePort));
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct MibTcp6TableOwnerPid
         {
-            internal uint numberOfEntries;
+            internal uint NumEntries;
+            internal MibTcp6RowOwnerPid FirstEntry;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct MibTcp6RowOwnerPid
         {
-            internal fixed byte localAddr[16];
-            internal uint localScopeId;
-            internal byte localPort1;
-            internal byte localPort2;
-            // Ports are only 16 bit values (in network WORD order, 3,4,1,2).
-            // There are reports where the high order bytes have garbage in them.
-            internal byte ignoreLocalPort3;
-            internal byte ignoreLocalPort4;
-            internal fixed byte remoteAddr[16];
-            internal uint remoteScopeId;
-            internal byte remotePort1;
-            internal byte remotePort2;
-            // Ports are only 16 bit values (in network WORD order, 3,4,1,2).
-            // There are reports where the high order bytes have garbage in them.
-            internal byte ignoreRemotePort3;
-            internal byte ignoreRemotePort4;
-            internal TcpState state;
-            internal uint owningPid;
+            internal fixed byte LocalAddr[16];
+            internal uint LocalScopeId;
+            internal uint LocalPort;
+            internal fixed byte RemoteAddr[16];
+            internal uint RemoteScopeId;
+            internal uint RemotePort;
+            internal TcpState State;
+            internal uint OwningPid;
 
-            internal ReadOnlySpan<byte> localAddrAsSpan => MemoryMarshal.CreateSpan(ref localAddr[0], 16);
-            internal ReadOnlySpan<byte> remoteAddrAsSpan => MemoryMarshal.CreateSpan(ref remoteAddr[0], 16);
+            // Ports are only 16 bit values (in network WORD order, 3,4,1,2).
+            // There are reports where the high order bytes have garbage in them.
+            internal readonly IPEndPoint LocalEndPoint => new(new IPAddress(MemoryMarshal.CreateReadOnlySpan(in LocalAddr[0], 16), LocalScopeId), BinaryPrimitives.ReverseEndianness((ushort)LocalPort));
+            internal readonly IPEndPoint RemoteEndPoint => new(new IPAddress(MemoryMarshal.CreateReadOnlySpan(in RemoteAddr[0], 16), RemoteScopeId), BinaryPrimitives.ReverseEndianness((ushort)RemotePort));
         }
 
         internal enum TcpTableClass
@@ -450,19 +439,19 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct MibUdpTable
         {
-            internal uint numberOfEntries;
+            internal uint NumEntries;
+            internal MibUdpRow FirstEntry;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct MibUdpRow
         {
-            internal uint localAddr;
-            internal byte localPort1;
-            internal byte localPort2;
+            internal uint LocalAddr;
+            internal uint LocalPort;
+
             // Ports are only 16 bit values (in network WORD order, 3,4,1,2).
             // There are reports where the high order bytes have garbage in them.
-            internal byte ignoreLocalPort3;
-            internal byte ignoreLocalPort4;
+            internal readonly IPEndPoint LocalEndPoint => new(LocalAddr, BinaryPrimitives.ReverseEndianness((ushort)LocalPort));
         }
 
         internal enum UdpTableClass
@@ -475,23 +464,21 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct MibUdp6TableOwnerPid
         {
-            internal uint numberOfEntries;
+            internal uint NumEntries;
+            internal MibUdp6RowOwnerPid FirstEntry;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct MibUdp6RowOwnerPid
         {
-            internal fixed byte localAddr[16];
-            internal uint localScopeId;
-            internal byte localPort1;
-            internal byte localPort2;
+            internal fixed byte LocalAddr[16];
+            internal uint LocalScopeId;
+            internal uint LocalPort;
+            internal uint OwningPid;
+
             // Ports are only 16 bit values (in network WORD order, 3,4,1,2).
             // There are reports where the high order bytes have garbage in them.
-            internal byte ignoreLocalPort3;
-            internal byte ignoreLocalPort4;
-            internal uint owningPid;
-
-            internal ReadOnlySpan<byte> localAddrAsSpan => MemoryMarshal.CreateSpan(ref localAddr[0], 16);
+            internal readonly IPEndPoint LocalEndPoint => new(new IPAddress(MemoryMarshal.CreateReadOnlySpan(in LocalAddr[0], 16), LocalScopeId), BinaryPrimitives.ReverseEndianness((ushort)LocalPort));
         }
 
         [LibraryImport(Interop.Libraries.IpHlpApi)]
@@ -524,14 +511,8 @@ internal static partial class Interop
         internal static partial uint GetIcmpStatisticsEx(out MibIcmpInfoEx statistics, AddressFamily family);
 
         [LibraryImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order);
-
-        [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetExtendedTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order,
                                                         uint IPVersion, TcpTableClass tableClass, uint reserved);
-
-        [LibraryImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order);
 
         [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetExtendedUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order,
