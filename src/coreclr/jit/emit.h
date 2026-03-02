@@ -628,19 +628,21 @@ protected:
 
     struct instrDescDebugInfo
     {
-        unsigned          idNum;
-        size_t            idSize;        // size of the instruction descriptor
-        unsigned          idVarRefOffs;  // IL offset for LclVar reference
-        unsigned          idVarRefOffs2; // IL offset for 2nd LclVar reference (in case this is a pair)
-        size_t            idMemCookie;   // compile time handle (check idFlags)
-        GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
-        bool              idFinallyCall; // Branch instruction is a call to finally
-        bool              idCatchRet;    // Instruction is for a catch 'return'
-        CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
-        BasicBlock*       idTargetBlock; // Target block for branches
+        unsigned          idNum         = 0;
+        size_t            idSize        = 0;         // size of the instruction descriptor
+        unsigned          idVarRefOffs  = 0;         // IL offset for LclVar reference
+        unsigned          idVarRefOffs2 = 0;         // IL offset for 2nd LclVar reference (in case this is a pair)
+        size_t            idMemCookie   = 0;         // compile time handle (check idFlags)
+        GenTreeFlags      idFlags       = GTF_EMPTY; // for determining type of handle in idMemCookie
+        bool              idFinallyCall = false;     // Branch instruction is a call to finally
+        bool              idCatchRet    = false;     // Instruction is for a catch 'return'
+        CORINFO_SIG_INFO* idCallSig     = nullptr;   // Used to report native call site signatures to the EE
+        BasicBlock*       idTargetBlock = nullptr;   // Target block for branches
 
 #ifdef TARGET_WASM
-        int lclBaseIndex; // Base index of the WASM locals being declared
+        int      lclBaseIndex = 0;           // Base index of the WASM locals being declared
+        unsigned idLclNum     = BAD_VAR_NUM; // LclVar number for this instruction
+        unsigned idLclOffset  = 0;           // LclVar field offset for this instruction
 #endif
     };
 
