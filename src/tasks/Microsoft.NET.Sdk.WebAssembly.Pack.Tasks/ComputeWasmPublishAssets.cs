@@ -619,9 +619,11 @@ public class ComputeWasmPublishAssets : Task
                     break;
                 }
             }
-            if (updatedRelatedAsset == null)
+            if (updatedRelatedAsset is null)
             {
-                throw new InvalidOperationException("Related asset not found.");
+                throw new InvalidOperationException(
+                    $"Related asset not found for asset '{asset.ItemSpec}' with RelatedAsset '{relatedAsset}' " +
+                    $"after filename-based matching (webcil normalization {(isWebCilEnabled ? "enabled" : "disabled")}).");
             }
         }
 
