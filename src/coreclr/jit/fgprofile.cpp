@@ -644,7 +644,7 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
         //
         weight_t blockWeight = block->bbWeight;
 
-        if (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount)
+        if (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount)
         {
             *((uint32_t*)addrOfCurrentExecutionCount) = (uint32_t)blockWeight;
         }
@@ -1403,7 +1403,7 @@ void EfficientEdgeCountInstrumentor::Prepare(bool preImport)
 
 //------------------------------------------------------------------------
 // EfficientEdgeCountInstrumentor::SplitCriticalEdges: add blocks for
-//   probes along critical edges and adjust affeted probes and probe lists.
+//   probes along critical edges and adjust affected probes and probe lists.
 //
 //
 // Notes:
@@ -1746,7 +1746,7 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
     const bool dual           = interlocked && scalable;
 
     JITDUMP("Using %s probes\n",
-            unsynchronized ? "unsychronized"
+            unsynchronized ? "unsynchronized"
                            : (dual ? "both interlocked and scalable" : (interlocked ? "interlocked" : "scalable")));
 
     // Walk the bbSparseProbeList, adding instrumentation.
@@ -1789,7 +1789,7 @@ void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schem
             // Write the current synthesized count as the profile data
             //
             // Todo: handle pseudo edges!
-            FlowEdge* const edge = m_compiler->fgGetPredForBlock(source, target);
+            FlowEdge* const edge = m_compiler->fgGetPredForBlock(target, source);
 
             if (edge != nullptr)
             {
@@ -2549,7 +2549,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
 
     if (minimalProfiling && (fgBBcount < 2))
     {
-        // Don't instrumenting small single-block methods.
+        // Don't instrument small single-block methods.
         JITDUMP("Not using any block profiling (fgBBcount < 2)\n");
         fgCountInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
     }
@@ -3994,7 +3994,7 @@ void EfficientEdgeCountReconstructor::PropagateEdges(BasicBlock* block, BlockInf
 
     // We may not have have the same number of model edges and flow edges.
     //
-    // This can happen because bome BBJ_LEAVE blocks may have been missed during
+    // This can happen because some BBJ_LEAVE blocks may have been missed during
     // our spanning tree walk since we don't know where all the finallies can return
     // to just yet (specially, in WalkSpanningTree, we may not add the target of
     // a BBJ_LEAVE to the worklist).
@@ -4905,7 +4905,6 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 
         // Walk successor edges and add up flow counts.
         //
-        unsigned missingEdges      = 0;
         unsigned missingLikelihood = 0;
 
         for (FlowEdge* succEdge : block->SuccEdges())
@@ -4922,12 +4921,6 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
                 JITDUMP("Missing likelihood on %p " FMT_BB "->" FMT_BB "\n", succEdge, block->bbNum, succBlock->bbNum);
                 missingLikelihood++;
             }
-        }
-
-        if (missingEdges > 0)
-        {
-            JITDUMP("  " FMT_BB " - missing %d successor edges\n", block->bbNum, missingEdges);
-            likelyWeightsValid = false;
         }
 
         if (verifyHasLikelihood)
@@ -5118,7 +5111,7 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
         {
             if (metric != nullptr)
             {
-                *metric++;
+                (*metric)++;
             }
             fgPgoConsistent = false;
         }

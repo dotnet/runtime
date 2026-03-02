@@ -79,6 +79,12 @@ extends:
           buildConfig: release
           platforms:
           - windows_x64
+          # Workaround: microsoft/azure-pipelines-tasks#21871
+          # PublishTestResults v2.270.0 garbles parameterized xUnit test names containing dots.
+          # Unsetting this feature flag restores v2.262.0 behavior until a permanent fix ships.
+          variables:
+            - name: AllowPtrToDetectTestRunRetryFiles
+              value: false
           jobParameters:
             name: cDAC
             useCdac: true
@@ -107,12 +113,30 @@ extends:
                 buildConfiguration: $(_BuildConfig)
               continueOnError: true
               condition: always()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
+                artifactName: 'Dumps_cDAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Crash Dumps'
+              continueOnError: true
+              condition: failed()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
+                artifactName: 'TestResults_cDAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Test Results and SOS Logs'
+              continueOnError: true
+              condition: failed()
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
           buildConfig: release
           platforms:
           - windows_x64
+          # Workaround: microsoft/azure-pipelines-tasks#21871
+          variables:
+            - name: AllowPtrToDetectTestRunRetryFiles
+              value: false
           jobParameters:
             name: DAC
             useCdac: false
@@ -141,6 +165,20 @@ extends:
                 buildConfiguration: $(_BuildConfig)
               continueOnError: true
               condition: always()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
+                artifactName: 'Dumps_DAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Crash Dumps'
+              continueOnError: true
+              condition: failed()
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
+                artifactName: 'TestResults_DAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish Test Results and SOS Logs'
+              continueOnError: true
+              condition: failed()
 
     #
     # cDAC Dump Creation — Build runtime, create crash dumps, publish dump artifacts
