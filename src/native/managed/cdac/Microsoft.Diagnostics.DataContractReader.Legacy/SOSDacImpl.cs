@@ -3848,13 +3848,14 @@ public sealed unsafe partial class SOSDacImpl
         {
             Dictionary<ulong, ulong> expectedElements = cleanupInfos.ToDictionary(info => info.RCW.ToClrDataAddress(_target).Value, info => info.Context.ToClrDataAddress(_target).Value);
             expectedElements.Add(default, 0);
-            void* tokenDebug = GCHandle.ToIntPtr(GCHandle.Alloc(expectedElements)).ToPointer();
+            GCHandle expectedElementsHandle = GCHandle.Alloc(expectedElements);
+            void* tokenDebug = GCHandle.ToIntPtr(expectedElementsHandle).ToPointer();
             delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> callbackDebugPtr = &TraverseRCWCleanupListCallback;
 
             int hrLocal = _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, callbackDebugPtr, tokenDebug);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             Debug.Assert(expectedElements[default] == (ulong)cleanupInfos.Count(), $"cDAC: {cleanupInfos.Count()} elements, DAC: {expectedElements[default]} elements");
-            GCHandle.FromIntPtr((nint)tokenDebug).Free();
+            expectedElementsHandle.Free();
         }
 #endif
         return hr;

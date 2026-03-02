@@ -662,7 +662,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetCCWInterfaces(ClrDataAddress ccw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
     [PreserveSig]
-    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token);
+    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ delegate* unmanaged[Stdcall]</*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token);
 
     // GC Reference Functions
 
