@@ -523,6 +523,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\MatchCasing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\MatchType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\MemoryStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\MemoryStream.Memory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathTooLongException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PinnedBufferMemoryStream.cs" />

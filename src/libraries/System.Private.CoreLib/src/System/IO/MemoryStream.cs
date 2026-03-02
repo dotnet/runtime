@@ -18,7 +18,7 @@ namespace System.IO
     // from an unsigned byte array, or you can create an empty one.  Empty
     // memory streams are resizable, while ones created with a byte array provide
     // a stream "view" of the data.
-    public class MemoryStream : Stream
+    public partial class MemoryStream : Stream
     {
         private byte[] _buffer;    // Either allocated internally or externally.
         private readonly int _origin;       // For user-provided arrays, start at this origin
@@ -34,9 +34,9 @@ namespace System.IO
 
         private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
-        // When non-null, all operations are delegated to this instance.
+        // When non-null, the stream is backed by Memory<byte> or ReadOnlyMemory<byte>.
         // Only set by the ReadOnlyMemory<byte>/Memory<byte> constructors.
-        private readonly MemoryMemoryStream? _memoryMemoryStream;
+        private readonly MemoryData? _memoryData;
 
         private static int MemStreamMaxLength => Array.MaxLength;
 
@@ -100,33 +100,6 @@ namespace System.IO
             _isOpen = true;
         }
 
-        /// <summary>Initializes a new non-writable instance of the <see cref="MemoryStream"/> class based on the specified <see cref="ReadOnlyMemory{T}"/>.</summary>
-        /// <param name="memory">The read-only memory from which to create the current stream.</param>
-        public MemoryStream(ReadOnlyMemory<byte> memory)
-        {
-            _memoryMemoryStream = new MemoryMemoryStream(memory);
-            _buffer = [];
-            _isOpen = true;
-        }
-
-        /// <summary>Initializes a new writable instance of the <see cref="MemoryStream"/> class based on the specified <see cref="Memory{T}"/>.</summary>
-        /// <param name="memory">The memory from which to create the current stream.</param>
-        public MemoryStream(Memory<byte> memory)
-            : this(memory, true)
-        {
-        }
-
-        /// <summary>Initializes a new instance of the <see cref="MemoryStream"/> class based on the specified <see cref="Memory{T}"/> with the <see cref="CanWrite"/> property set as specified.</summary>
-        /// <param name="memory">The memory from which to create the current stream.</param>
-        /// <param name="writable"><see langword="true"/> to enable writing; otherwise, <see langword="false"/>.</param>
-        public MemoryStream(Memory<byte> memory, bool writable)
-        {
-            _memoryMemoryStream = new MemoryMemoryStream(memory, writable);
-            _buffer = [];
-            _writable = writable;
-            _isOpen = true;
-        }
-
         public override bool CanRead => _isOpen;
 
         public override bool CanSeek => _isOpen;
@@ -154,7 +127,6 @@ namespace System.IO
                 _expandable = false;
                 // Don't set buffer to null - allow TryGetBuffer, GetBuffer & ToArray to work.
                 _lastReadTask = default;
-                _memoryMemoryStream?.Dispose();
             }
         }
 
@@ -211,7 +183,7 @@ namespace System.IO
 
         public virtual byte[] GetBuffer()
         {
-            if (_memoryMemoryStream is not null)
+            if (_memoryData is not null)
                 throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
             if (!_exposable)
                 throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
@@ -220,7 +192,7 @@ namespace System.IO
 
         public virtual bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
-            if (_memoryMemoryStream is not null)
+            if (_memoryData is not null)
             {
                 buffer = default;
                 return false;
@@ -254,8 +226,8 @@ namespace System.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpan<byte> InternalReadSpan(int count)
         {
-            if (_memoryMemoryStream is not null)
-                return _memoryMemoryStream.InternalReadSpan(count);
+            if (_memoryData is not null)
+                return _memoryData.InternalReadSpan(this, count);
 
             EnsureNotClosed();
 
@@ -276,9 +248,6 @@ namespace System.IO
         // PERF: Get actual length of bytes available for read; do sanity checks; shift position - i.e. everything except actual copying bytes
         internal int InternalEmulateRead(int count)
         {
-            if (_memoryMemoryStream is not null)
-                return _memoryMemoryStream.InternalEmulateRead(count);
-
             EnsureNotClosed();
 
             int n = _length - _position;
@@ -297,12 +266,13 @@ namespace System.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpan<byte> InternalRead(int count)
         {
-            if (_memoryMemoryStream is not null)
+            if (_memoryData is not null)
             {
-                int n = Math.Min(_memoryMemoryStream.RemainingBytes, count);
+                EnsureNotClosed();
+                int n = Math.Min(_length - _position, count);
                 if (n <= 0)
                     return default;
-                return _memoryMemoryStream.InternalReadSpan(n);
+                return _memoryData.InternalReadSpan(this, n);
             }
 
             EnsureNotClosed();
@@ -326,18 +296,11 @@ namespace System.IO
         {
             get
             {
-                if (_memoryMemoryStream is not null)
-                    return _memoryMemoryStream.Capacity;
                 EnsureNotClosed();
                 return _capacity - _origin;
             }
             set
             {
-                if (_memoryMemoryStream is not null)
-                {
-                    _memoryMemoryStream.SetCapacity(value);
-                    return;
-                }
                 // Only update the capacity if the MS is expandable and the value is different than the current capacity.
                 // Special behavior if the MS isn't expandable: we don't throw if value is the same as the current capacity
                 if (value < Length)
@@ -373,8 +336,6 @@ namespace System.IO
         {
             get
             {
-                if (_memoryMemoryStream is not null)
-                    return _memoryMemoryStream.Length;
                 EnsureNotClosed();
                 return _length - _origin;
             }
@@ -384,18 +345,11 @@ namespace System.IO
         {
             get
             {
-                if (_memoryMemoryStream is not null)
-                    return _memoryMemoryStream.Position;
                 EnsureNotClosed();
                 return _position - _origin;
             }
             set
             {
-                if (_memoryMemoryStream is not null)
-                {
-                    _memoryMemoryStream.Position = value;
-                    return;
-                }
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
                 EnsureNotClosed();
 
@@ -409,8 +363,8 @@ namespace System.IO
         {
             ValidateBufferArguments(buffer, offset, count);
 
-            if (_memoryMemoryStream is not null)
-                return _memoryMemoryStream.Read(new Span<byte>(buffer, offset, count));
+            if (_memoryData is not null)
+                return _memoryData.Read(this, new Span<byte>(buffer, offset, count));
 
             EnsureNotClosed();
 
@@ -445,8 +399,8 @@ namespace System.IO
                 return base.Read(buffer);
             }
 
-            if (_memoryMemoryStream is not null)
-                return _memoryMemoryStream.Read(buffer);
+            if (_memoryData is not null)
+                return _memoryData.Read(this, buffer);
 
             EnsureNotClosed();
 
@@ -521,8 +475,8 @@ namespace System.IO
 
         public override int ReadByte()
         {
-            if (_memoryMemoryStream is not null)
-                return _memoryMemoryStream.ReadByte();
+            if (_memoryData is not null)
+                return _memoryData.ReadByte(this);
 
             EnsureNotClosed();
 
@@ -547,9 +501,9 @@ namespace System.IO
             // Validate the arguments the same way Stream does for back-compat.
             ValidateCopyToArguments(destination, bufferSize);
 
-            if (_memoryMemoryStream is not null)
+            if (_memoryData is not null)
             {
-                _memoryMemoryStream.CopyTo(destination);
+                _memoryData.CopyTo(this, destination);
                 return;
             }
 
@@ -575,8 +529,8 @@ namespace System.IO
 
             ValidateCopyToArguments(destination, bufferSize);
 
-            if (_memoryMemoryStream is not null)
-                return _memoryMemoryStream.CopyToAsync(destination, cancellationToken);
+            if (_memoryData is not null)
+                return _memoryData.CopyToAsync(this, destination, cancellationToken);
 
             EnsureNotClosed();
 
@@ -620,9 +574,6 @@ namespace System.IO
 
         public override long Seek(long offset, SeekOrigin loc)
         {
-            if (_memoryMemoryStream is not null)
-                return _memoryMemoryStream.Seek(offset, loc);
-
             EnsureNotClosed();
 
             return SeekCore(offset, loc switch
@@ -659,9 +610,9 @@ namespace System.IO
         //
         public override void SetLength(long value)
         {
-            if (_memoryMemoryStream is not null)
+            if (_memoryData is not null)
             {
-                _memoryMemoryStream.SetLength(value);
+                _memoryData.SetLength(this, value);
                 return;
             }
 
@@ -686,8 +637,8 @@ namespace System.IO
 
         public virtual byte[] ToArray()
         {
-            if (_memoryMemoryStream is not null)
-                return _memoryMemoryStream.ToArray();
+            if (_memoryData is not null)
+                return _memoryData.ToArray(this);
             int count = _length - _origin;
             if (count == 0)
                 return [];
@@ -700,9 +651,9 @@ namespace System.IO
         {
             ValidateBufferArguments(buffer, offset, count);
 
-            if (_memoryMemoryStream is not null)
+            if (_memoryData is not null)
             {
-                _memoryMemoryStream.Write(new ReadOnlySpan<byte>(buffer, offset, count));
+                _memoryData.Write(this, new ReadOnlySpan<byte>(buffer, offset, count));
                 return;
             }
 
@@ -757,9 +708,9 @@ namespace System.IO
                 return;
             }
 
-            if (_memoryMemoryStream is not null)
+            if (_memoryData is not null)
             {
-                _memoryMemoryStream.Write(buffer);
+                _memoryData.Write(this, buffer);
                 return;
             }
 
@@ -849,9 +800,9 @@ namespace System.IO
 
         public override void WriteByte(byte value)
         {
-            if (_memoryMemoryStream is not null)
+            if (_memoryData is not null)
             {
-                _memoryMemoryStream.WriteByte(value);
+                _memoryData.WriteByte(this, value);
                 return;
             }
 
@@ -882,9 +833,9 @@ namespace System.IO
         // Writes this MemoryStream to another stream.
         public virtual void WriteTo(Stream stream)
         {
-            if (_memoryMemoryStream is not null)
+            if (_memoryData is not null)
             {
-                _memoryMemoryStream.WriteTo(stream);
+                _memoryData.WriteTo(this, stream);
                 return;
             }
 
@@ -893,295 +844,6 @@ namespace System.IO
             EnsureNotClosed();
 
             stream.Write(_buffer, _origin, _length - _origin);
-        }
-
-        private sealed class MemoryMemoryStream
-        {
-            private readonly ReadOnlyMemory<byte> _memory;
-            private readonly Memory<byte> _writableMemory;
-            private int _position;
-            private int _length;
-            private bool _writable;
-            private bool _isOpen;
-
-            public MemoryMemoryStream(ReadOnlyMemory<byte> memory)
-            {
-                _memory = memory;
-                _length = memory.Length;
-                _isOpen = true;
-            }
-
-            public MemoryMemoryStream(Memory<byte> memory, bool writable)
-            {
-                _memory = memory;
-                if (writable)
-                {
-                    _writableMemory = memory;
-                }
-                _writable = writable;
-                _length = memory.Length;
-                _isOpen = true;
-            }
-
-            public int Capacity
-            {
-                get
-                {
-                    EnsureNotClosed();
-                    return _memory.Length;
-                }
-            }
-
-            public void SetCapacity(int value)
-            {
-                if (value < _length)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
-                EnsureNotClosed();
-                if (value != _memory.Length)
-                    throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
-            }
-
-            public long Length
-            {
-                get
-                {
-                    EnsureNotClosed();
-                    return _length;
-                }
-            }
-
-            public long Position
-            {
-                get
-                {
-                    EnsureNotClosed();
-                    return _position;
-                }
-                set
-                {
-                    ArgumentOutOfRangeException.ThrowIfNegative(value);
-                    EnsureNotClosed();
-                    if (value > MemStreamMaxLength)
-                        throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
-                    _position = (int)value;
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private void EnsureNotClosed()
-            {
-                if (!_isOpen)
-                    ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
-            }
-
-            public int RemainingBytes
-            {
-                get
-                {
-                    EnsureNotClosed();
-                    int n = _length - _position;
-                    return n > 0 ? n : 0;
-                }
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private void EnsureWriteable()
-            {
-                if (!_writable)
-                    ThrowHelper.ThrowNotSupportedException_UnwritableStream();
-            }
-
-            public int Read(Span<byte> buffer)
-            {
-                EnsureNotClosed();
-
-                int n = Math.Min(_length - _position, buffer.Length);
-                if (n <= 0)
-                    return 0;
-
-                _memory.Span.Slice(_position, n).CopyTo(buffer);
-                _position += n;
-                return n;
-            }
-
-            public int ReadByte()
-            {
-                EnsureNotClosed();
-
-                if (_position >= _length)
-                    return -1;
-
-                return _memory.Span[_position++];
-            }
-
-            public void Write(ReadOnlySpan<byte> buffer)
-            {
-                EnsureNotClosed();
-                EnsureWriteable();
-
-                int i = _position + buffer.Length;
-                if (i < 0)
-                    throw new IOException(SR.IO_StreamTooLong);
-
-                if (i > _memory.Length)
-                    throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
-
-                if (i > _length)
-                {
-                    if (_position > _length)
-                    {
-                        _writableMemory.Span.Slice(_length, _position - _length).Clear();
-                    }
-                    _length = i;
-                }
-
-                buffer.CopyTo(_writableMemory.Span.Slice(_position));
-                _position = i;
-            }
-
-            public void WriteByte(byte value)
-            {
-                EnsureNotClosed();
-                EnsureWriteable();
-
-                if (_position >= _length)
-                {
-                    int newLength = _position + 1;
-                    if (newLength > _memory.Length)
-                        throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
-
-                    if (_position > _length)
-                    {
-                        _writableMemory.Span.Slice(_length, _position - _length).Clear();
-                    }
-                    _length = newLength;
-                }
-                _writableMemory.Span[_position++] = value;
-            }
-
-            public long Seek(long offset, SeekOrigin loc)
-            {
-                EnsureNotClosed();
-
-                long tempPosition = loc switch
-                {
-                    SeekOrigin.Begin => offset,
-                    SeekOrigin.Current => _position + offset,
-                    SeekOrigin.End => _length + offset,
-                    _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin)
-                };
-
-                if (tempPosition < 0)
-                    throw new IOException(SR.IO_SeekBeforeBegin);
-                if (tempPosition > MemStreamMaxLength)
-                    throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
-
-                _position = (int)tempPosition;
-                return _position;
-            }
-
-            public void SetLength(long value)
-            {
-                if (value < 0 || value > MemStreamMaxLength)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
-
-                EnsureWriteable();
-
-                int newLength = (int)value;
-                if (newLength > _memory.Length)
-                    throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
-
-                if (newLength > _length)
-                    _writableMemory.Span.Slice(_length, newLength - _length).Clear();
-
-                _length = newLength;
-                if (_position > newLength)
-                    _position = newLength;
-            }
-
-            public byte[] ToArray()
-            {
-                if (_length == 0)
-                    return [];
-                byte[] copy = GC.AllocateUninitializedArray<byte>(_length);
-                _memory.Span.Slice(0, _length).CopyTo(copy);
-                return copy;
-            }
-
-            public void WriteTo(Stream stream)
-            {
-                ArgumentNullException.ThrowIfNull(stream);
-                EnsureNotClosed();
-                stream.Write(_memory.Span.Slice(0, _length));
-            }
-
-            public void CopyTo(Stream destination)
-            {
-                EnsureNotClosed();
-
-                int remaining = _length - _position;
-                if (remaining > 0)
-                {
-                    destination.Write(_memory.Span.Slice(_position, remaining));
-                    _position = _length;
-                }
-            }
-
-            public Task CopyToAsync(Stream destination, CancellationToken cancellationToken)
-            {
-                EnsureNotClosed();
-
-                if (cancellationToken.IsCancellationRequested)
-                    return Task.FromCanceled(cancellationToken);
-
-                int pos = _position;
-                int n = _length - _position;
-                _position = _length;
-
-                if (n == 0)
-                    return Task.CompletedTask;
-
-                return destination.WriteAsync(_memory.Slice(pos, n), cancellationToken).AsTask();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public ReadOnlySpan<byte> InternalReadSpan(int count)
-            {
-                EnsureNotClosed();
-
-                int origPos = _position;
-                int newPos = origPos + count;
-
-                if ((uint)newPos > (uint)_length)
-                {
-                    _position = _length;
-                    ThrowHelper.ThrowEndOfFileException();
-                }
-
-                var span = _memory.Span.Slice(origPos, count);
-                _position = newPos;
-                return span;
-            }
-
-            public int InternalEmulateRead(int count)
-            {
-                EnsureNotClosed();
-
-                int n = _length - _position;
-                if (n > count)
-                    n = count;
-                if (n < 0)
-                    n = 0;
-
-                _position += n;
-                return n;
-            }
-
-            public void Dispose()
-            {
-                _isOpen = false;
-                _writable = false;
-            }
         }
     }
 }
