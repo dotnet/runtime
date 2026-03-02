@@ -221,7 +221,16 @@ namespace ILCompiler
                     && key.IsPInvoke
                     && _compilationModuleGroup.GeneratesPInvoke(key))
                 {
-                    methodIL = PInvokeILEmitter.EmitIL(key);
+                    try
+                    {
+                        methodIL = PInvokeILEmitter.EmitIL(key);
+                    }
+                    catch (RequiresRuntimeJitException)
+                    {
+                        // The P/Invoke IL emitter will throw for known unsupported scenarios.
+                        // We don't propagate the exception and keep methodIL as null - this causes a fall back to JIT during runtime.
+                        // We store the null methodIL in the IL cache so we don't keep trying to emit unsupported P/Invoke IL.
+                    }
                 }
 
                 return new MethodILData() { Method = key, MethodIL = methodIL };
