@@ -114,14 +114,8 @@ export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
     if (assetNameForUrl && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetNameForUrl);
     }
-    assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
-        ? assetInternal.virtualPath
-        : assetInternal.culture
-            ? `${browserVirtualAppBase}${assetInternal.culture}/${assetInternal.virtualPath}`
-            : browserVirtualAppBase + assetInternal.virtualPath;
-    assetInternal.shortName = assetInternal.virtualPath.startsWith(browserVirtualAppBase)
-        ? assetInternal.virtualPath.substring(browserVirtualAppBase.length)
-        : assetInternal.virtualPath.substring(assetInternal.virtualPath.lastIndexOf("/") + 1);
+
+    normalizeVirtualPath(assetInternal);
 
     if (assetInternal.virtualPath.endsWith(".wasm")) {
         await fetchWebcil(assetInternal);
@@ -133,15 +127,13 @@ export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
 async function fetchWebcil(assetInternal: AssetEntryInternal): Promise<void> {
     try {
         assetInternal.behavior = "webcil";
-        const virtualPath = assetInternal.virtualPath = assetInternal.virtualPath!.replace(/\.wasm$/, ".dll");
-        assetInternal.shortName = virtualPath.startsWith(browserVirtualAppBase)
-            ? virtualPath.substring(browserVirtualAppBase.length)
-            : virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
+
+        normalizeVirtualPath(assetInternal);
 
         const webcilPromise = loadResource(assetInternal);
 
         const memory = await wasmMemoryPromiseController.promise;
-        const instancePromise = dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, virtualPath);
+        const instancePromise = dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, assetInternal.virtualPath!);
         await instancePromise;
     } finally {
         onDownloadedAsset(assetInternal);
@@ -174,12 +166,8 @@ export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
         }
         assetInternal.behavior = "pdb";
         assetInternal.isOptional = assetInternal.isOptional || loaderConfig.ignorePdbLoadErrors;
-        assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
-            ? assetInternal.virtualPath
-            : browserVirtualAppBase + assetInternal.virtualPath;
-        assetInternal.shortName = assetInternal.virtualPath.startsWith(browserVirtualAppBase)
-            ? assetInternal.virtualPath.substring(browserVirtualAppBase.length)
-            : assetInternal.virtualPath.substring(assetInternal.virtualPath.lastIndexOf("/") + 1);
+
+        normalizeVirtualPath(assetInternal);
 
         bytes = await fetchBytes(assetInternal);
     } finally {
@@ -399,7 +387,7 @@ async function loadResourceThrottle(asset: AssetEntryInternal): Promise<Response
     }
     try {
 
-        enterThrottling(asset);
+        startThrottling(asset);
         const responsePromise = loadResourceFetch(asset);
         const response = await responsePromise;
         dotnetAssert.check(response, "Bad response in loadResourceThrottle");
@@ -408,16 +396,16 @@ async function loadResourceThrottle(asset: AssetEntryInternal): Promise<Response
             asset.buffer = await response.arrayBuffer();
         }
         if (!leaveAfterInstantiation[asset.behavior]) {
-            leaveThrottling(asset);
+            finishThrottling(asset);
         }
         return response;
     } catch (err) {
-        leaveThrottling(asset);
+        finishThrottling(asset);
         throw err;
     }
 }
 
-function enterThrottling(asset: AssetEntryInternal) {
+function startThrottling(asset: AssetEntryInternal) {
     asset.inprogress = true;
     ++currentParallelDownloads;
     if (currentParallelDownloads === loaderConfig.maxParallelDownloads) {
@@ -426,8 +414,8 @@ function enterThrottling(asset: AssetEntryInternal) {
     }
 }
 
-function leaveThrottling(asset: AssetEntryInternal) {
-    dotnetAssert.check(asset.inprogress, "Asset is not in progress in leaveThrottling");
+function finishThrottling(asset: AssetEntryInternal) {
+    dotnetAssert.check(asset.inprogress, "Asset is not in progress in finishThrottling");
     asset.inprogress = false;
     --currentParallelDownloads;
     if (throttlingPCS && currentParallelDownloads == loaderConfig.maxParallelDownloads! - 1) {
@@ -493,7 +481,7 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
 
 function onDownloadedAsset(asset: AssetEntryInternal): void {
     if (asset.inprogress) {
-        leaveThrottling(asset);
+        finishThrottling(asset);
     }
     ++downloadedAssetsCount;
     if (Module.onDownloadResourceProgress) {
@@ -506,6 +494,19 @@ function onDownloadedAsset(asset: AssetEntryInternal): void {
 
 export function verifyAllAssetsDownloaded(): void {
     dotnetAssert.check(downloadedAssetsCount === totalAssetsToDownload, `Not all assets were downloaded. Downloaded ${downloadedAssetsCount} out of ${totalAssetsToDownload}`);
+}
+
+function normalizeVirtualPath(asset: AssetEntryInternal): void {
+    dotnetAssert.check(asset.virtualPath, "Asset must have virtualPath");
+    asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
+    asset.virtualPath = asset.virtualPath.startsWith("/")
+        ? asset.virtualPath
+        : asset.culture
+            ? `${browserVirtualAppBase}${asset.culture}/${asset.virtualPath}`
+            : browserVirtualAppBase + asset.virtualPath;
+    asset.shortName = asset.virtualPath.startsWith(browserVirtualAppBase)
+        ? asset.virtualPath.substring(browserVirtualAppBase.length)
+        : asset.virtualPath.substring(asset.virtualPath.lastIndexOf("/") + 1);
 }
 
 const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
