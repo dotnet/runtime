@@ -219,6 +219,7 @@ namespace System.IO.Tests
             MemberData(nameof(UncPathsWithoutShareName))]
         public void UncPathWithoutShareNameAsPath_ReturnsFalse(string component)
         {
+            Assert.SkipUnless(PlatformDetection.IsWindows, "UNC paths are a Windows concept.");
             Assert.False(Exists(component));
         }
 
