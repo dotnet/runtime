@@ -876,13 +876,13 @@ public unsafe partial interface ISOSDacInterface8
 
     // WKS
     [PreserveSig]
-    int GetGenerationTable(uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
+    int GetGenerationTable(uint cGenerations, DacpGenerationData* pGenerationData, uint* pNeeded);
     [PreserveSig]
     int GetFinalizationFillPointers(uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
 
     // SVR
     [PreserveSig]
-    int GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
+    int GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, DacpGenerationData* pGenerationData, uint* pNeeded);
     [PreserveSig]
     int GetFinalizationFillPointersSvr(ClrDataAddress heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
 
