@@ -195,9 +195,69 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!--
     ============================================================
+                     _PrepareTrimConfiguration
+
+    Set up shared trim configuration properties and metadata on ResolvedFileToPublish.
+    This target is shared between ILLink and ILC (NativeAOT). It sets default values for
+    trim-related properties (TrimMode, TrimmerSingleWarn), populates TrimmerRootAssembly
+    and _TrimmerFeatureSettings, and applies TrimmerSingleWarn metadata to
+    ResolvedFileToPublish items for the intermediate assembly and project references.
+
+    Consumers that need trim metadata on ResolvedFileToPublish should depend on this target.
+    Metadata set here flows to ManagedAssemblyToLink via _ComputeManagedAssemblyToLink (which
+    depends on this target), since ComputeManagedAssemblies preserves metadata from its inputs.
+   -->
+   <Target Name="_PrepareTrimConfiguration"
+           DependsOnTargets="_ComputeAssembliesToPostprocessOnPublish">
+
+    <!-- Set up TrimMode. -->
+    <PropertyGroup>
+      <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <TrimmerSingleWarn Condition=" '$(TrimmerSingleWarn)' == '' ">true</TrimmerSingleWarn>
+    </PropertyGroup>
+
+    <!-- Root the main assembly entry point. -->
+    <ItemGroup>
+      <TrimmerRootAssembly Include="@(IntermediateAssembly)" RootMode="EntryPoint" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Don't collapse to a single warning for the intermediate assembly.
+           This sets metadata on the items in ResolvedFileToPublish that came from IntermediateAssembly. -->
+      <!-- Find ResolvedFileToPublish _except_ IntermediateAssembly -->
+      <__SingleWarnIntermediateAssembly Include="@(ResolvedFileToPublish)" />
+      <__SingleWarnIntermediateAssembly Remove="@(IntermediateAssembly)" />
+      <!-- Subtract these from ResolvedFileToPublish, to get the intersection. -->
+      <_SingleWarnIntermediateAssembly Include="@(ResolvedFileToPublish)" />
+      <_SingleWarnIntermediateAssembly Remove="@(__SingleWarnIntermediateAssembly)" />
+      <!-- Set metadata on the intersection. -->
+      <_SingleWarnIntermediateAssembly>
+        <TrimmerSingleWarn Condition=" '%(_SingleWarnIntermediateAssembly.TrimmerSingleWarn)' == '' ">false</TrimmerSingleWarn>
+      </_SingleWarnIntermediateAssembly>
+      <!-- Replace these items in ResolvedFileToPublish. -->
+      <ResolvedFileToPublish Remove="@(_SingleWarnIntermediateAssembly)" />
+      <ResolvedFileToPublish Include="@(_SingleWarnIntermediateAssembly)" />
+
+      <!-- Don't collapse to a single warning for project references -->
+      <ResolvedFileToPublish Condition=" '%(ResolvedFileToPublish.ProjectReferenceOriginalItemSpec)' != '' ">
+        <TrimmerSingleWarn Condition=" '%(ResolvedFileToPublish.TrimmerSingleWarn)' == '' ">false</TrimmerSingleWarn>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_TrimmerFeatureSettings Include="@(RuntimeHostConfigurationOption)" Condition="'%(RuntimeHostConfigurationOption.Trim)' == 'true'" />
+    </ItemGroup>
+
+   </Target>
+
+  <!--
+    ============================================================
                      PrepareForILLink
 
-    Set up the default options and inputs to ILLink. Other targets are expected to hook into
+    Set up the ILLink-specific options and inputs. Other targets are expected to hook into
     this extension point via BeforeTargets/AfterTargets to opt assemblies into or out of trimming
     using global ILLink options, or per-assembly IsTrimmable and TrimMode metadata.
 
@@ -236,14 +296,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --link-attributes "@(_ILLinkSuppressions->'%(Identity)', '" --link-attributes "')"</_ExtraTrimmerArgs>
     </PropertyGroup>
 
-    <!-- Set up TrimMode. -->
-    <PropertyGroup>
-      <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
-    </PropertyGroup>
-
     <PropertyGroup>
       <ILLinkTreatWarningsAsErrors Condition=" '$(ILLinkTreatWarningsAsErrors)' == '' ">$(TreatWarningsAsErrors)</ILLinkTreatWarningsAsErrors>
-      <TrimmerSingleWarn Condition=" '$(TrimmerSingleWarn)' == '' ">true</TrimmerSingleWarn>
     </PropertyGroup>
 
     <!-- Set a default value for TrimmerRemoveSymbols unless set explicitly. -->
@@ -281,38 +335,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <ManagedAssemblyToLink Include="@(_TrimmableManagedAssemblyToLink)" IsTrimmable="true" />
     </ItemGroup>
 
-    <!-- Root the main assembly entry point. -->
-    <ItemGroup>
-      <TrimmerRootAssembly Include="@(IntermediateAssembly)" RootMode="EntryPoint" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <!-- Don't collapse to a single warning for the intermediate assembly.
-           This just sets metadata on the items in ManagedAssemblyToLink that came from IntermediateAssembly. -->
-      <!-- Find ManagedAssemblyToLink _except_ IntermediateAssembly -->
-      <__SingleWarnIntermediateAssembly Include="@(ManagedAssemblyToLink)" />
-      <__SingleWarnIntermediateAssembly Remove="@(IntermediateAssembly)" />
-      <!-- Subtract these from ManagedAssemblyToLink, to get the intersection. -->
-      <_SingleWarnIntermediateAssembly Include="@(ManagedAssemblyToLink)" />
-      <_SingleWarnIntermediateAssembly Remove="@(__SingleWarnIntermediateAssembly)" />
-      <!-- Set metadata on the intersection. -->
-      <_SingleWarnIntermediateAssembly>
-        <TrimmerSingleWarn Condition=" '%(_SingleWarnIntermediateAssembly.TrimmerSingleWarn)' == '' ">false</TrimmerSingleWarn>
-      </_SingleWarnIntermediateAssembly>
-      <!-- Replace these items in ManagedAssemblyToLink. -->
-      <ManagedAssemblyToLink Remove="@(_SingleWarnIntermediateAssembly)" />
-      <ManagedAssemblyToLink Include="@(_SingleWarnIntermediateAssembly)" />
-
-      <!-- Don't collapse to a single warning for project references -->
-      <ManagedAssemblyToLink Condition=" '%(ManagedAssemblyToLink.ProjectReferenceOriginalItemSpec)' != '' ">
-        <TrimmerSingleWarn Condition=" '%(ManagedAssemblyToLink.TrimmerSingleWarn)' == '' ">false</TrimmerSingleWarn>
-      </ManagedAssemblyToLink>
-    </ItemGroup>
-
-    <ItemGroup>
-      <_TrimmerFeatureSettings Include="@(RuntimeHostConfigurationOption)" Condition="'%(RuntimeHostConfigurationOption.Trim)' == 'true'" />
-    </ItemGroup>
-
    </Target>
 
   <!--
@@ -323,7 +345,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     ============================================================
     -->
   <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" TaskFactory="TaskHostFactory" />
-  <Target Name="_ComputeManagedAssemblyToLink" DependsOnTargets="_ComputeAssembliesToPostprocessOnPublish">
+  <Target Name="_ComputeManagedAssemblyToLink" DependsOnTargets="_PrepareTrimConfiguration">
 
     <!-- NB: There should not be non-managed assemblies in this list, but we still give the ILLink a chance to
          further refine this list. It currently drops C++/CLI assemblies in ComputeManageAssemblies. -->
