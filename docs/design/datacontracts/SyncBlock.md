@@ -27,9 +27,8 @@ Data descriptors used:
 | `SyncBlockCache` | `CleanupBlockList` | Head of the `SLink` cleanup list (points into `SyncBlock.m_Link`) |
 | `SyncBlock` | `Lock` | Optional pointer to a `System.Threading.Lock` object payload |
 | `SyncBlock` | `ThinLock` | Thin-lock state bits |
-| `SyncBlock` | `LinkNext` | Head pointer for additional waiting threads list / cleanup list link |
+| `SyncBlock` | `LinkNext` | Head pointer for cleanup list link |
 | `SyncBlock` | `InteropInfo` | Optional pointer to an `InteropSyncBlockInfo` for the sync block |
-| `SLink` | `Next` | Next link for the additional waiting threads list |
 | `InteropSyncBlockInfo` | `RCW` | RCW pointer; bit 0 is a lock bit and must be masked off |
 | `InteropSyncBlockInfo` | `CCW` | CCW pointer; sentinel value `0x1` means previously had a CCW (treat as null) |
 | `InteropSyncBlockInfo` | `CCF` | COM class factory pointer; sentinel value `0x1` means previously had a CCF (treat as null) |
@@ -139,15 +138,8 @@ private uint ReadUintField(TypeHandle enclosingType, string fieldName, IRuntimeT
 
 uint GetAdditionalThreadCount(TargetPointer syncBlock)
 {
-    uint threadCount = 0;
-    TargetPointer next = target.ReadPointer(syncBlock + /* SyncBlock::LinkNext offset */);
-    while (next != TargetPointer.Null && threadCount < 1000)
-    {
-        threadCount++;
-        next = target.ReadPointer(next + /* SLink::Next offset */);
-    }
-
-    return threadCount;
+    // TODO: read conditional weaktable
+    return 0;
 }
 
 // Returns the first sync block in the cleanup list, or TargetPointer.Null if the list is empty.

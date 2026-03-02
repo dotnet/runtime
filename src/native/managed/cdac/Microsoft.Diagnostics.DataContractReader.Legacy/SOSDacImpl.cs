@@ -3471,6 +3471,7 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
+
     int ISOSDacInterface.GetSyncBlockData(uint number, DacpSyncBlockData* data)
     {
         int hr = HResults.S_OK;

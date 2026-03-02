@@ -83,7 +83,6 @@ public enum DataType
     ThisPtrRetBufPrecodeData,
     Array,
     SyncBlock,
-    SLink,
     SyncTableEntry,
     InteropSyncBlockInfo,
     SyncBlockCache,

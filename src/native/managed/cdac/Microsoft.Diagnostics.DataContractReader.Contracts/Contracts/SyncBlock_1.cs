@@ -97,15 +97,8 @@ internal readonly struct SyncBlock_1 : ISyncBlock
 
     public uint GetAdditionalThreadCount(TargetPointer syncBlock)
     {
-        Data.SyncBlock sb = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlock);
-        uint threadCount = 0;
-        TargetPointer next = sb.LinkNext;
-        while (next != TargetPointer.Null && threadCount < 1000)
-        {
-            threadCount++;
-            next = _target.ProcessedData.GetOrAdd<Data.SLink>(next).Next;
-        }
-        return threadCount;
+        // TODO: read conditional weak table to get additional thread count
+        return 0;
     }
 
     public TargetPointer GetSyncBlockFromCleanupList()
