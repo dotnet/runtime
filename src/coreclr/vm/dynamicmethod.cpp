@@ -1411,6 +1411,8 @@ void LCGMethodResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken
 
     handle = TypeHandle::FromTAddr(typeHandleValue);
 
+    GCPROTECT_END();
+
     _ASSERTE(pMD == NULL || pFD == NULL);
 
     if (handle.IsNull())
@@ -1457,6 +1459,11 @@ LCGMethodResolver::ResolveSignature(
     UnmanagedCallersOnlyCaller resolveSignature(METHOD__RESOLVER__RESOLVE_SIGNATURE);
     resolveSignature.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), 0, &gc.DataArray);
 
+    if (gc.DataArray == NULL)
+    {
+        COMPlusThrow(kInvalidProgramException);
+    }
+
     cbSig = gc.DataArray->GetNumComponents();
     pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
     memcpy((void *)pSig, gc.DataArray->GetDataPtr(), cbSig);
@@ -1491,6 +1498,11 @@ LCGMethodResolver::ResolveSignatureForVarArg(
 
     UnmanagedCallersOnlyCaller resolveSignature(METHOD__RESOLVER__RESOLVE_SIGNATURE);
     resolveSignature.InvokeThrowing(&gc.Resolver, static_cast<int32_t>(token), 1, &gc.DataArray);
+
+    if (gc.DataArray == NULL)
+    {
+        COMPlusThrow(kInvalidProgramException);
+    }
 
     cbSig = gc.DataArray->GetNumComponents();
     pSig = (PCCOR_SIGNATURE)m_jitTempData.New(cbSig);
