@@ -33,7 +33,7 @@ namespace Microsoft.Interop.JavaScript
             var locations = new MethodSignatureDiagnosticLocations(originalSyntax);
             var generatorDiagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
 
-            JSImportData? jsImportData = ProcessJSImportAttribute(attr);
+            JSImportData? jsImportData = JSImportGenerator.ProcessJSImportAttribute(attr);
             if (jsImportData is null)
             {
                 generatorDiagnostics.ReportConfigurationNotSupported(attr, "Invalid syntax");
@@ -54,16 +54,5 @@ namespace Microsoft.Interop.JavaScript
             return generatorDiagnostics.Diagnostics.ToImmutableArray();
         }
 
-        private static JSImportData? ProcessJSImportAttribute(AttributeData attrData)
-        {
-            if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
-                return null;
-
-            if (attrData.ConstructorArguments.Length == 1)
-                return new JSImportData(attrData.ConstructorArguments[0].Value!.ToString(), null);
-            if (attrData.ConstructorArguments.Length == 2)
-                return new JSImportData(attrData.ConstructorArguments[0].Value!.ToString(), attrData.ConstructorArguments[1].Value!.ToString());
-            return null;
-        }
     }
 }

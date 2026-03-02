@@ -105,7 +105,7 @@ namespace Microsoft.Interop.JavaScript
             return toPrint;
         }
 
-        private static JSImportData? ProcessJSImportAttribute(AttributeData attrData)
+        internal static JSImportData? ProcessJSImportAttribute(AttributeData attrData)
         {
             // Found the JSImport, but it has an error so report the error.
             // This is most likely an issue with targeting an incorrect TFM.
