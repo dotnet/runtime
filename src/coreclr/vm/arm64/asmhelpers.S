@@ -769,6 +769,7 @@ LOCAL_LABEL(HaveInterpThreadContext):
     ldr x2, [sp, #(__PWTB_ArgumentRegister_FirstArg + 16)]
 LOCAL_LABEL(InterpreterStub_SkipSwiftReturnLowering):
 
+#ifdef TARGET_APPLE
     ldr x11, [sp, #0]
     cbz x11, LOCAL_LABEL(InterpreterStub_SkipStoreSwiftError)
     mov x21, x11
@@ -779,6 +780,7 @@ LOCAL_LABEL(InterpreterStub_SkipStoreSwiftError):
     cbz x11, LOCAL_LABEL(InterpreterStub_Epilog)
     EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
 LOCAL_LABEL(InterpreterStub_Epilog):
+#endif // TARGET_APPLE
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
 NESTED_END InterpreterStub, _TEXT
@@ -1368,8 +1370,7 @@ LEAF_END Load_Stack_AtOffset
     add x14, x14, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
 .endm
 
-.macro Store_Stack_AtOffset_Epilog
-    str x13, [x9, x11]       // Store 8 bytes to [x9 + offset]
+.macro Store_Stack_AtOffset_Epilog_Common
     ubfx x12, x12, #16, #16  // Extract structSize (bits 16-31)
     add x9, x9, x12          // Advance x9 by structSize
     ldr x11, [x10], #8
@@ -1379,25 +1380,29 @@ LEAF_END Load_Stack_AtOffset
 LEAF_ENTRY Store_Stack_AtOffset
     Store_Stack_AtOffset_Prolog
     ldr x13, [x14]
-    Store_Stack_AtOffset_Epilog
+    str x13, [x9, x11]       // Store 8 bytes to [x9 + offset]
+    Store_Stack_AtOffset_Epilog_Common
 LEAF_END Store_Stack_AtOffset
 
 LEAF_ENTRY Store_Stack_4B_AtOffset
     Store_Stack_AtOffset_Prolog
     ldr w13, [x14]
-    Store_Stack_AtOffset_Epilog
+    str w13, [x9, x11]       // Store 4 bytes to [x9 + offset]
+    Store_Stack_AtOffset_Epilog_Common
 LEAF_END Store_Stack_4B_AtOffset
 
 LEAF_ENTRY Store_Stack_2B_AtOffset
     Store_Stack_AtOffset_Prolog
     ldrh w13, [x14]
-    Store_Stack_AtOffset_Epilog
+    strh w13, [x9, x11]      // Store 2 bytes to [x9 + offset]
+    Store_Stack_AtOffset_Epilog_Common
 LEAF_END Store_Stack_2B_AtOffset
 
 LEAF_ENTRY Store_Stack_1B_AtOffset
     Store_Stack_AtOffset_Prolog
     ldrb w13, [x14]
-    Store_Stack_AtOffset_Epilog
+    strb w13, [x9, x11]      // Store 1 byte to [x9 + offset]
+    Store_Stack_AtOffset_Epilog_Common
 LEAF_END Store_Stack_1B_AtOffset
 
 .macro SwiftStore_AtOffset reg

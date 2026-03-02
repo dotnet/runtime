@@ -3298,13 +3298,16 @@ void CallStubGenerator::EmitSwiftReturnLoweringRoutines(PCODE *pRoutines)
         CorInfoType elemType = m_swiftReturnLowering.loweredElements[i];
         uint32_t offset = m_swiftReturnLowering.offsets[i];
 
+        _ASSERTE(offset <= 0xFFFF && "Swift return offset must fit in 16 bits");
+        PCODE packedOffset = (PCODE)(offset & 0xFFFF);
+
         bool isFloat = (elemType == CORINFO_TYPE_FLOAT || elemType == CORINFO_TYPE_DOUBLE);
 
         if (isFloat)
         {
             _ASSERTE(fpRegIndex < 4);
             pRoutines[m_routineIndex++] = GetSwiftStoreFPAtOffsetRoutine(fpRegIndex);
-            pRoutines[m_routineIndex++] = (PCODE)offset;
+            pRoutines[m_routineIndex++] = packedOffset;
             fpRegIndex++;
 #if LOG_COMPUTE_CALL_STUB
             LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift return store FP d%d at offset %d\n", fpRegIndex - 1, offset));
@@ -3314,7 +3317,7 @@ void CallStubGenerator::EmitSwiftReturnLoweringRoutines(PCODE *pRoutines)
         {
             _ASSERTE(gpRegIndex < 4);
             pRoutines[m_routineIndex++] = GetSwiftStoreGPAtOffsetRoutine(gpRegIndex);
-            pRoutines[m_routineIndex++] = (PCODE)offset;
+            pRoutines[m_routineIndex++] = packedOffset;
             gpRegIndex++;
 #if LOG_COMPUTE_CALL_STUB
             LOG2((LF2_INTERPRETER, LL_INFO10000, "Swift return store GP x%d at offset %d\n", gpRegIndex - 1, offset));
