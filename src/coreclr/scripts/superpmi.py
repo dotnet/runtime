@@ -3359,7 +3359,7 @@ class SuperPMIReplayMetricDiff:
             for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
 
-        metric_diffs  = []
+        metric_diffs = []
 
         with TempDir(None, self.coreclr_args.skip_cleanup) as temp_location:
             logging.debug("")
@@ -3442,7 +3442,7 @@ class SuperPMIReplayMetricDiff:
                                 else:
                                     logging.info("  {}: base={}, diff={}, delta={}".format(
                                         metric, fmt.format(base_val), fmt.format(diff_val), fmt.format(delta)))
-                        metric_diffs .append((os.path.basename(mch_file), metrics_list, base_metrics, diff_metrics))
+                        metric_diffs.append((os.path.basename(mch_file), metrics_list, base_metrics, diff_metrics))
                     else:
                         logging.warning("One compilation failed to produce any results")
                 else:
@@ -3467,9 +3467,9 @@ class SuperPMIReplayMetricDiff:
                 os.remove(overall_json_summary_file)
 
             with open(overall_json_summary_file, "w") as write_fh:
-                json.dump((base_jit_options, diff_jit_options, metric_diffs ), write_fh)
+                json.dump((base_jit_options, diff_jit_options, metric_diffs), write_fh)
                 logging.info("  Summary JSON file: %s", overall_json_summary_file)
-        elif len(metric_diffs ) > 0:
+        elif len(metric_diffs) > 0:
             if not os.path.isdir(self.coreclr_args.spmi_location):
                 os.makedirs(self.coreclr_args.spmi_location)
 
@@ -3481,7 +3481,7 @@ class SuperPMIReplayMetricDiff:
                 os.remove(overall_md_summary_file)
 
             with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
-                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs , True)
+                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs, True)
                 logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
             short_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "metricdiff_short_summary", "md")
@@ -3490,7 +3490,7 @@ class SuperPMIReplayMetricDiff:
                 os.remove(short_md_summary_file)
 
             with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
-                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs , False)
+                write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs, False)
                 logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
         return True
         ################################################################################################ end of replay_with_metric_diff()
@@ -4648,25 +4648,25 @@ def summarize_json_summaries(coreclr_args):
     elif coreclr_args.summary_type == "metricdiff":
         base_jit_options = []
         diff_jit_options = []
-        summarizable_metric_diffs  = []
+        summarizable_metric_diffs = []
 
         for json_file in coreclr_args.summaries:
             with open(json_file, "r") as fh:
                 data = json.load(fh)
                 if isinstance(data, str):
                     continue
-                (base_jit_options, diff_jit_options, metric_diffs ) = data
-                summarizable_metric_diffs .extend(metric_diffs )
+                (base_jit_options, diff_jit_options, metric_diffs) = data
+                summarizable_metric_diffs.extend(metric_diffs)
 
         # Sort by collection name
-        summarizable_metric_diffs .sort(key=lambda t: t[0])
+        summarizable_metric_diffs.sort(key=lambda t: t[0])
 
         with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
-            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs , True)
+            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs, True)
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
         with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
-            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs , False)
+            write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs, False)
             logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
     else:
         base_jit_build_string_decoded = ""
