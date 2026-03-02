@@ -22,11 +22,6 @@
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
-      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
-          string('https://github.com/dotnet/runtime/issues/123793')
-          type([TestLibrary]TestLibrary.PlatformDetection)
-          string[1] ('IsWasm')
-      }
       .entrypoint
       // Code size       120 (0x78)
       .maxstack  2
