@@ -85,8 +85,10 @@ Check if canceled job "{JOB_NAME}" from build {BUILD_ID} has recoverable Helix r
 
 Steps:
 1. Check if TRX test results are available for the work item. Parse them for pass/fail counts.
-2. If no structured results, check for testResults.xml
-3. Parse the XML for pass/fail counts on the <assembly> element
+   NOTE: hlx_test_results may error if no TRX files were uploaded (common for non-.NET-test work items like mobile device tests). If it errors, proceed to step 2.
+2. If no structured results, search for testResults.xml using hlx_search_file(jobId, workItem, fileName="testResults.xml", pattern="total")
+3. If found, parse the XML for pass/fail counts on the <assembly> element
+4. If neither is available, check the console log for test summary lines using hlx_search_log(jobId, workItem, pattern="passed")
 
 Return JSON: { "jobName": "...", "hasResults": true, "passed": N, "failed": N }
 Or: { "jobName": "...", "hasResults": false, "reason": "no testResults.xml uploaded" }
