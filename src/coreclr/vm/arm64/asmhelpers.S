@@ -739,6 +739,8 @@ LOCAL_LABEL(HaveInterpThreadContext):
     add x10, x9, #OFFSETOF__CallStubHeader__Routines
     ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
 #ifdef TARGET_APPLE
+    // Swift error slot for reverse P/Invoke. Store_SwiftError assigns the SwiftError*
+    // argument address to this slot. The epilog restores it to x21.
     str xzr, [sp, #0]
 #endif
     // x19 contains IR bytecode address
@@ -1313,46 +1315,36 @@ LEAF_ENTRY Load_X7_AtOffset
     SwiftLoad_AtOffset x7
 LEAF_END Load_X7_AtOffset
 
-.macro SwiftLoadFloat_AtOffset reg
-    ldr x12, [x10], #8       // Load offset|struct_size
-    and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
-    ldr \reg, [x9, x11]      // Load float from [x9 + offset]
-    lsr x12, x12, #16        // Shift to get struct_size
-    add x9, x9, x12          // Advance x9 by struct_size (no-op if zero)
-    ldr x11, [x10], #8
-    EPILOG_BRANCH_REG x11
-.endm
-
 LEAF_ENTRY Load_D0_AtOffset
-    SwiftLoadFloat_AtOffset d0
+    SwiftLoad_AtOffset d0
 LEAF_END Load_D0_AtOffset
 
 LEAF_ENTRY Load_D1_AtOffset
-    SwiftLoadFloat_AtOffset d1
+    SwiftLoad_AtOffset d1
 LEAF_END Load_D1_AtOffset
 
 LEAF_ENTRY Load_D2_AtOffset
-    SwiftLoadFloat_AtOffset d2
+    SwiftLoad_AtOffset d2
 LEAF_END Load_D2_AtOffset
 
 LEAF_ENTRY Load_D3_AtOffset
-    SwiftLoadFloat_AtOffset d3
+    SwiftLoad_AtOffset d3
 LEAF_END Load_D3_AtOffset
 
 LEAF_ENTRY Load_D4_AtOffset
-    SwiftLoadFloat_AtOffset d4
+    SwiftLoad_AtOffset d4
 LEAF_END Load_D4_AtOffset
 
 LEAF_ENTRY Load_D5_AtOffset
-    SwiftLoadFloat_AtOffset d5
+    SwiftLoad_AtOffset d5
 LEAF_END Load_D5_AtOffset
 
 LEAF_ENTRY Load_D6_AtOffset
-    SwiftLoadFloat_AtOffset d6
+    SwiftLoad_AtOffset d6
 LEAF_END Load_D6_AtOffset
 
 LEAF_ENTRY Load_D7_AtOffset
-    SwiftLoadFloat_AtOffset d7
+    SwiftLoad_AtOffset d7
 LEAF_END Load_D7_AtOffset
 
 LEAF_ENTRY Load_Stack_AtOffset
@@ -1450,46 +1442,36 @@ LEAF_ENTRY Store_X7_AtOffset
     SwiftStore_AtOffset x7
 LEAF_END Store_X7_AtOffset
 
-.macro SwiftStoreFloat_AtOffset reg
-    ldr x12, [x10], #8       // Load offset|struct_size
-    and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
-    str \reg, [x9, x11]      // Store to [x9 + offset]
-    lsr x12, x12, #16        // Shift to get struct_size
-    add x9, x9, x12          // Advance x9 by struct_size (no-op if zero)
-    ldr x11, [x10], #8
-    br x11
-.endm
-
 LEAF_ENTRY Store_D0_AtOffset
-    SwiftStoreFloat_AtOffset d0
+    SwiftStore_AtOffset d0
 LEAF_END Store_D0_AtOffset
 
 LEAF_ENTRY Store_D1_AtOffset
-    SwiftStoreFloat_AtOffset d1
+    SwiftStore_AtOffset d1
 LEAF_END Store_D1_AtOffset
 
 LEAF_ENTRY Store_D2_AtOffset
-    SwiftStoreFloat_AtOffset d2
+    SwiftStore_AtOffset d2
 LEAF_END Store_D2_AtOffset
 
 LEAF_ENTRY Store_D3_AtOffset
-    SwiftStoreFloat_AtOffset d3
+    SwiftStore_AtOffset d3
 LEAF_END Store_D3_AtOffset
 
 LEAF_ENTRY Store_D4_AtOffset
-    SwiftStoreFloat_AtOffset d4
+    SwiftStore_AtOffset d4
 LEAF_END Store_D4_AtOffset
 
 LEAF_ENTRY Store_D5_AtOffset
-    SwiftStoreFloat_AtOffset d5
+    SwiftStore_AtOffset d5
 LEAF_END Store_D5_AtOffset
 
 LEAF_ENTRY Store_D6_AtOffset
-    SwiftStoreFloat_AtOffset d6
+    SwiftStore_AtOffset d6
 LEAF_END Store_D6_AtOffset
 
 LEAF_ENTRY Store_D7_AtOffset
-    SwiftStoreFloat_AtOffset d7
+    SwiftStore_AtOffset d7
 LEAF_END Store_D7_AtOffset
 
 #endif // TARGET_APPLE
