@@ -763,11 +763,35 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         IfConvertJoinStmts(m_elseOperation.block);
     }
 
-    // Update the flow from the original block.
-    FlowEdge* const removedEdge  = m_compiler->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
-    FlowEdge* const retainedEdge = m_startBlock->GetTrueEdge();
-    m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
-    m_compiler->fgRepairProfileCondToUncond(m_startBlock, retainedEdge, removedEdge);
+    // Update the flow graph. JTRUE block now contains the SELECT.
+    //
+
+    // Remove flow into then/else blocks and update their weights
+    auto RemoveFlowInto = [&](BasicBlock* block)
+    {
+        m_compiler->fgRemoveAllRefPreds(block, m_startBlock);
+        block->setBBProfileWeight(0.0);
+        assert(block->bbPreds == nullptr);
+    };
+    RemoveFlowInto(m_startBlock->GetFalseTarget());
+    if (m_doElseConversion)
+    {
+        RemoveFlowInto(m_startBlock->GetTrueTarget());
+    }
+
+    // Change kind of JTRUE block and make it flow 
+    // directly into block where flow merges (which is null in case of GT_RETURN)
+    if (m_mainOper == GT_RETURN)
+    {
+        m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
+    }
+    else
+    {
+        FlowEdge* newEdge = m_doElseConversion ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
+        m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+    }
+
+    assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
 
 #ifdef DEBUG
     if (m_compiler->verbose)
