@@ -6,6 +6,7 @@ Use this checklist to validate an API proposal before publishing. Items are orde
 
 - [ ] **DO** state the concrete user problem with at least one real-world scenario
 - [ ] **DO** evaluate existing workarounds and explain why they are insufficient (performance, boilerplate, bad practices)
+- [ ] **DO** research existing usage of the affected APIs (search the local repo, [grep.app](https://grep.app), and [apisof.net](https://apisof.net)) when modifying or extending existing APIs — understand usage volume, common patterns, and compatibility risks
 - [ ] **DO** reference prior art in other ecosystems where relevant (e.g., Python, Java, Rust equivalents)
 - [ ] **DO NOT** assume the reviewers are subject matter experts of the library being augmented (even though they're .NET experts)
 - [ ] **DO NOT** make unsubstantiated claims (e.g., "this is commonly needed" without showing who needs it)

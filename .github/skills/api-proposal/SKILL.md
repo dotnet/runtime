@@ -79,6 +79,12 @@ The skill contains baked-in examples and guidelines for writing good proposals (
 
 3. **Read the reference documentation for updating ref source** at `docs/coding-guidelines/updating-ref-source.md`.
 
+4. **Research existing usage** of the APIs being modified or extended. This is especially important when the proposal changes existing API behavior, adds overloads that could cause ambiguity, or has compatibility implications.
+   - **Search the local repo** (grep/ripgrep) for internal usage of the affected types and methods within dotnet/runtime. This is the most up-to-date source for how APIs are used within the framework itself.
+   - **Search [grep.app](https://grep.app)** for .NET code patterns in public repos to gauge ecosystem usage volume and discover common consumption patterns. This helps answer: "how widely is this API used today?" and "what patterns would benefit from the new API?"
+   - **Check [apisof.net](https://apisof.net)** for TFM and version availability of the affected APIs. This helps assess the API's reach and cross-platform surface.
+   - **What to look for**: usage volume and popularity, common calling patterns, code that might break with the proposed changes (overload resolution, behavioral changes), and code that would benefit from the new API.
+
 ---
 
 ### Phase 2: Prototype
