@@ -19,6 +19,9 @@
 
     protected override void OnAfterRender(bool firstRender)
     {
-        Console.WriteLine("Counter.OnAfterRender");
+        if (firstRender)
+        {
+            Console.WriteLine("Counter.OnAfterRender");
+        }
     }
 }

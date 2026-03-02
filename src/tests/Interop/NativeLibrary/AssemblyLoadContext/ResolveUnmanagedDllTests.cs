@@ -59,6 +59,8 @@ public class ResolveUnmanagedDllTests
     private static readonly int seed = 123;
     internal static readonly Random rand = new Random(seed);
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41180", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/165", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [Fact]
     public static int TestEntryPoint()
     {

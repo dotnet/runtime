@@ -247,7 +247,7 @@ try {
         case "OutErrOverrideWorks":
         case "DotnetRun":
         case "MainWithArgs":
-            dotnet.run();
+            await dotnet.runMainAndExit();
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
@@ -371,5 +371,7 @@ try {
             break;
     }
 } catch (e) {
-    exit(1, e);
+    if (e.name != "ExitStatus") {
+        exit(1, e);
+    }
 }

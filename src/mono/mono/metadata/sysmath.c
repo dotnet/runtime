@@ -17,7 +17,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 //
 // Files:
-//  - src/classlibnative/float/floatnative.cpp
+//  - src/coreclr/vm/floatdouble.cpp
+//  - src/coreclr/vm/floatsingle.cpp
 //  - src/pal/src/cruntime/floatnative.cpp
 //
 // Ported from C++ to C and adjusted to Mono runtime

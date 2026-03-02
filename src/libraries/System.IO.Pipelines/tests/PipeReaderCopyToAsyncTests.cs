@@ -38,7 +38,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<TaskCanceledException>(() => PipeReader.CopyToAsync(new MemoryStream(), new CancellationToken(true)));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CopyToAsyncStreamWorks()
         {
             var messages = new List<byte[]>()
@@ -170,7 +170,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CancelingBetweenReadsThrowsOperationCancelledException()
         {
             var stream = new WriteCheckMemoryStream { MidWriteCancellation = new CancellationTokenSource() };
@@ -193,7 +193,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CancelingPipeWriterViaCancellationTokenThrowsOperationCancelledException()
         {
             // This should make the write call pause
@@ -207,7 +207,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CancelingPipeWriterViaPendingFlushThrowsOperationCancelledException()
         {
             // This should make the write call pause
@@ -220,7 +220,7 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CancelingStreamViaCancellationTokenThrowsOperationCancelledException()
         {
             var stream = new CancelledWritesStream();
@@ -261,7 +261,7 @@ namespace System.IO.Pipelines.Tests
             PipeReader.Complete();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         public async Task ThrowingFromStreamCallsAdvanceToWithStartOfLastReadResult(int throwAfterNWrites)

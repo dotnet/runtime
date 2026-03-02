@@ -144,6 +144,22 @@ namespace ILCompiler
         private DefaultInterfaceMethodImplementationInstantiationThunkHashtable _dimThunkHashtable = new DefaultInterfaceMethodImplementationInstantiationThunkHashtable();
 
         /// <summary>
+        /// Does a method represent a default interface method specialization thunk?
+        /// </summary>
+        public bool IsDefaultInterfaceMethodImplementationInstantiationThunk(MethodDesc method)
+        {
+            return method is DefaultInterfaceMethodImplementationInstantiationThunk;
+        }
+
+        /// <summary>
+        /// Convert from a default interface method specialization thunk to the actual target method.
+        /// </summary>
+        public MethodDesc GetTargetOfDefaultInterfaceMethodImplementationInstantiationThunk(MethodDesc method)
+        {
+            return ((DefaultInterfaceMethodImplementationInstantiationThunk)method).TargetMethod;
+        }
+
+        /// <summary>
         /// Represents a thunk to call shared instance method on generic interfaces.
         /// </summary>
         private sealed partial class DefaultInterfaceMethodImplementationInstantiationThunk : ILStubMethod, IPrefixMangledMethod
@@ -152,6 +168,7 @@ namespace ILCompiler
             private readonly TypeDesc _owningType;
             private readonly int _interfaceIndex;
             private readonly bool _useContextFromRuntime;
+            private readonly byte[] _prefix;
 
             public DefaultInterfaceMethodImplementationInstantiationThunk(TypeDesc owningType, MethodDesc targetMethod, int interfaceIndex, bool useContextFromRuntime)
             {
@@ -162,6 +179,9 @@ namespace ILCompiler
                 _targetMethod = targetMethod;
                 _interfaceIndex = interfaceIndex;
                 _useContextFromRuntime = useContextFromRuntime;
+
+                string prefixString = $"__InstantiatingStub_{(uint)interfaceIndex}_{(useContextFromRuntime ? "_FromRuntime" : "")}_";
+                _prefix = System.Text.Encoding.UTF8.GetBytes(prefixString);
             }
 
             public override TypeSystemContext Context => _targetMethod.Context;
@@ -194,20 +214,10 @@ namespace ILCompiler
 
             public MethodDesc BaseMethod => _targetMethod;
 
-            public string Prefix => $"__InstantiatingStub_{(uint)_interfaceIndex}_{(_useContextFromRuntime ? "_FromRuntime" : "")}_";
+            public ReadOnlySpan<byte> Prefix => _prefix;
 
             public override MethodIL EmitIL()
             {
-                // TODO: (async) https://github.com/dotnet/runtime/issues/121781
-                if (_targetMethod.IsAsyncCall())
-                {
-                    ILEmitter e = new ILEmitter();
-                    ILCodeStream c = e.NewCodeStream();
-
-                    c.EmitCallThrowHelper(e, Context.GetCoreLibEntryPoint("System.Runtime"u8, "InternalCalls"u8, "RhpFallbackFailFast"u8, null));
-                    return e.Link(this);
-                }
-
                 // Generate the instantiating stub. This loosely corresponds to following C#:
                 // return Interface.Method(this, GetOrdinalInterface(this.m_pEEType, Index), [rest of parameters])
 
@@ -244,6 +254,11 @@ namespace ILCompiler
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)
                 {
                     codeStream.EmitLdArg(i + 1);
+                }
+
+                if (_targetMethod.IsAsyncCall())
+                {
+                    codeStream.Emit(ILOpcode.call, emit.NewToken(Context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "TailAwait"u8, null)));
                 }
 
                 codeStream.Emit(ILOpcode.call, emit.NewToken(_targetMethod));

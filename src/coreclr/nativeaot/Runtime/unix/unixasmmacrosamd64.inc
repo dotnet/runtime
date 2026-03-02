@@ -243,6 +243,7 @@ C_FUNC(\Name):
 #define PTFF_SAVE_ALL_PRESERVED  0x000000F1   // NOTE: RBP is not included in this set!
 #define PTFF_SAVE_RSP            0x00008000
 #define PTFF_SAVE_RAX            0x00000100   // RAX is saved in hijack handler - in case it contains a GC ref
+#define PTFF_SAVE_RCX            0x00000200   // RCX is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_RDX            0x00000400   // RDX is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_ALL_SCRATCH    0x00007F00
 #define PTFF_THREAD_HIJACK       0x00100000   // indicates that this is a frame for a hijacked call

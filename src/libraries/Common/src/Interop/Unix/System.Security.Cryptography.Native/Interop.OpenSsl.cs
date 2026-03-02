@@ -936,10 +936,23 @@ internal static partial class Interop
             Debug.Assert(ssl != IntPtr.Zero);
             Debug.Assert(session != IntPtr.Zero);
 
-            // remember if the session used a certificate, this information is used after
-            // session resumption, the pointer is not being dereferenced and the refcount
+            // Remember if the session used a certificate, this information is used after
+            // session resumption. The pointer is not being dereferenced and the refcount
             // is not going to be manipulated.
             IntPtr cert = Interop.Ssl.SslGetCertificate(ssl);
+
+            // In TLS 1.3, new session tickets can be issued on resumed connections.
+            // When resuming, no certificate is set on the SSL object, so inherit
+            // the cert info from the current (resuming) session.
+            if (cert == IntPtr.Zero && Interop.Ssl.SslSessionReused(ssl))
+            {
+                IntPtr currentSession = Interop.Ssl.SslGetSession(ssl);
+                if (currentSession != IntPtr.Zero)
+                {
+                    cert = Interop.Ssl.SslSessionGetData(currentSession);
+                }
+            }
+
             Interop.Ssl.SslSessionSetData(session, cert);
 
             IntPtr ptr = Ssl.SslGetData(ssl);

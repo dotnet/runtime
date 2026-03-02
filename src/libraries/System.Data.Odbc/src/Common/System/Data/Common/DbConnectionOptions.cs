@@ -119,7 +119,7 @@ namespace System.Data.Common
             ADP.CheckArgumentNull(builder, nameof(builder));
             ADP.CheckArgumentLength(keyName, nameof(keyName));
 
-            if ((null == keyName) || !s_connectionStringValidKeyRegex.IsMatch(keyName))
+            if ((null == keyName) || !ConnectionStringValidKeyRegex.IsMatch(keyName))
             {
                 throw ADP.InvalidKeyname(keyName);
             }
@@ -147,10 +147,9 @@ namespace System.Data.Common
             { // else <keyword>=;
                 if (useOdbcRules)
                 {
-                    if ((0 < keyValue.Length) &&
-                        // string.Contains(char) is .NetCore2.1+ specific
-                        (('{' == keyValue[0]) || (0 <= keyValue.IndexOf(';')) || (string.Equals(DbConnectionStringKeywords.Driver, keyName, StringComparison.OrdinalIgnoreCase))) &&
-                        !s_connectionStringQuoteOdbcValueRegex.IsMatch(keyValue))
+                    if (keyValue.Length > 0 &&
+                        (keyValue[0] == '{' || keyValue.Contains(';') || string.Equals(DbConnectionStringKeywords.Driver, keyName, StringComparison.OrdinalIgnoreCase)) &&
+                        !ConnectionStringQuoteOdbcValueRegex.IsMatch(keyValue))
                     {
                         // always quote Driver value (required for ODBC Version 2.65 and earlier)
                         // always quote values that contain a ';'
@@ -161,13 +160,12 @@ namespace System.Data.Common
                         builder.Append(keyValue);
                     }
                 }
-                else if (s_connectionStringQuoteValueRegex.IsMatch(keyValue))
+                else if (ConnectionStringQuoteValueRegex.IsMatch(keyValue))
                 {
                     // <value> -> <value>
                     builder.Append(keyValue);
                 }
-                // string.Contains(char) is .NetCore2.1+ specific
-                else if ((-1 != keyValue.IndexOf('\"')) && (-1 == keyValue.IndexOf('\'')))
+                else if (keyValue.Contains('\"') && !keyValue.Contains('\''))
                 {
                     // <val"ue> -> <'val"ue'>
                     builder.Append('\'');
@@ -446,11 +444,11 @@ namespace System.Data.Common
 
         internal static void ValidateKeyValuePair(string keyword, string value)
         {
-            if ((null == keyword) || !s_connectionStringValidKeyRegex.IsMatch(keyword))
+            if ((null == keyword) || !ConnectionStringValidKeyRegex.IsMatch(keyword))
             {
                 throw ADP.InvalidKeyname(keyword);
             }
-            if ((null != value) && value.IndexOf('\0') >= 0)
+            if ((null != value) && value.Contains('\0'))
             {
                 throw ADP.InvalidValue(keyword);
             }

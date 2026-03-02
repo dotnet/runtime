@@ -30,6 +30,9 @@ public class ManagedToNativeGenerator : Task
     public string? PInvokeOutputPath { get; set; }
 
     [Required, NotNull]
+    public string? ReversePInvokeOutputPath { get; set; }
+
+    [Required, NotNull]
     public string? InterpToNativeOutputPath { get; set; }
     public string? CacheFilePath { get; set; }
 
@@ -72,18 +75,43 @@ public class ManagedToNativeGenerator : Task
     private static readonly string[] missingCookies =
                     [
                         "d",
+                        "ddid",
+                        "dii",
+                        "f",
+                        "id",
+                        "idfi",
                         "idi",
+                        "if",
                         "iff",
                         "iid",
                         "iif",
                         "iifiif",
                         "iiiiiiiiiiiiiiiiii",
                         "iin",
+                        "iinini",
                         "iinn",
+                        "il",
+                        "inn",
                         "lii",
+                        "ld",
+                        "lf",
+                        "ll",
+                        "lli",
+                        "n",
                         "ni",
                         "nii",
+                        "niii",
+                        "nin",
+                        "nn",
+                        "nni",
+                        "nnn",
+                        "vd",
+                        "vf",
+                        "viiiiiii",
                         "viin",
+                        "vid",
+                        "viil",
+                        "vil",
                         "vin",
                         "vinni",
                         "iinini",
@@ -107,7 +135,7 @@ public class ManagedToNativeGenerator : Task
         }
 
         IEnumerable<string> cookies = Enumerable.Concat(
-            pinvoke.Generate(PInvokeModules, PInvokeOutputPath),
+            pinvoke.Generate(PInvokeModules, PInvokeOutputPath, ReversePInvokeOutputPath),
             Enumerable.Concat(icall.Generate(IcallOutputPath),
             missingCookies));
 

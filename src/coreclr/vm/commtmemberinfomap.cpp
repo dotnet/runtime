@@ -332,7 +332,7 @@ void ComMTMemberInfoMap::SetupPropsForIClassX(size_t sizeOfPtr)
 
             IfFailThrow(pField->GetMDImport()->GetNameOfFieldDef(pField->GetMemberDef(), &pszName));
             IfFailThrow(Utf2Quick(pszName, rName));
-            ULONG cchpName = ((int)u16_strlen(rName.Ptr())) + 1;
+            size_t cchpName = u16_strlen(rName.Ptr()) + 1;
             m_MethodProps[i].pName = reinterpret_cast<WCHAR*>(m_sNames.Alloc(cchpName * sizeof(WCHAR)));
 
             m_MethodProps[i].pMeth = (MethodDesc*)pFieldMeth;
@@ -450,14 +450,14 @@ UnLink:
             // property names.  This is an obscure corner case.
             m_MethodProps[i].pName = m_MethodProps[m_MethodProps[i].property].pName;
             WCHAR *pNewName;
-            //string length + "get" + null terminator.
-            //XXX Fri 11/19/2004 Why is this + 4 rather than +3?
-            ULONG cchpNewName = ((int)u16_strlen(m_MethodProps[ixGet].pName)) + 4 + 1;
+            // string length + 3 chars for "get"/"set" + 1 for null terminator.
+            size_t cchpNewName = u16_strlen(m_MethodProps[ixGet].pName) + 3 + 1;
             pNewName = reinterpret_cast<WCHAR*>(m_sNames.Alloc(cchpNewName * sizeof(WCHAR)));
             wcscpy_s(pNewName, cchpNewName, W("get"));
             wcscat_s(pNewName, cchpNewName, m_MethodProps[ixGet].pName);
             m_MethodProps[ixGet].pName = pNewName;
-            pNewName = reinterpret_cast<WCHAR*>(m_sNames.Alloc((int)((4+u16_strlen(m_MethodProps[ixSet].pName))*sizeof(WCHAR)+2)));
+            cchpNewName = u16_strlen(m_MethodProps[ixSet].pName) + 3 + 1;
+            pNewName = reinterpret_cast<WCHAR*>(m_sNames.Alloc(cchpNewName * sizeof(WCHAR)));
             wcscpy_s(pNewName, cchpNewName, W("set"));
             wcscat_s(pNewName, cchpNewName, m_MethodProps[ixSet].pName);
             m_MethodProps[ixSet].pName = pNewName;
@@ -747,10 +747,6 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
             // Save the name.  Have to convert from UTF8.
             int iLen = MultiByteToWideChar(CP_UTF8, 0, pPropName, -1, 0, 0);
             rProps[ix].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(iLen*sizeof(WCHAR)));
-            if (rProps[ix].pName == NULL)
-            {
-                ThrowHR(E_OUTOFMEMORY);
-            }
             MultiByteToWideChar(CP_UTF8, 0, pPropName, -1, rProps[ix].pName, iLen);
 
             // Check whether the property has a dispid attribute.
@@ -806,12 +802,8 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
             }
         }
 
-        ULONG len = ((int)u16_strlen(pName)) + 1;
+        size_t len = u16_strlen(pName) + 1;
         rProps[ix].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(len * sizeof(WCHAR)));
-        if (rProps[ix].pName == NULL)
-        {
-            ThrowHR(E_OUTOFMEMORY);
-        }
         wcscpy_s(rProps[ix].pName, len, pName);
 
         // Determine if the method is visible from COM.
@@ -956,12 +948,8 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
                 }
 
                 // Remember the new name.
-                ULONG len = ((int)u16_strlen(rcName)) + 1;
+                size_t len = u16_strlen(rcName) + 1;
                 rProps[iCur].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(len * sizeof(WCHAR)));
-                if (rProps[iCur].pName == NULL)
-                {
-                    ThrowHR(E_OUTOFMEMORY);
-                }
                 wcscpy_s(rProps[iCur].pName, len, rcName);
 
                 // Don't need to look at this iCur any more, since we know it is completely unique.
@@ -1038,12 +1026,8 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
             } while (htNames.Find(rcName) != NULL);
 
             // Now rcName has an acceptable (unique) name.  Remember the new name.
-            ULONG len = ((int)u16_strlen(rcName)) + 1;
+            size_t len = u16_strlen(rcName) + 1;
             rProps[iCur].pName = reinterpret_cast<WCHAR*>(sNames.Alloc(len * sizeof(WCHAR)));
-            if (rProps[iCur].pName == NULL)
-            {
-                ThrowHR(E_OUTOFMEMORY);
-            }
             wcscpy_s(rProps[iCur].pName, len, rcName);
 
             // Stick it in the table.

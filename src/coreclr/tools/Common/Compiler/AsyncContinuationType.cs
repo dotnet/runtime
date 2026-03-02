@@ -12,7 +12,7 @@ namespace ILCompiler
 {
     /// <summary>
     /// An async continuation type. The code generator will request this to store local state
-    /// through an async suspension/resumption. We only identify these using a <see cref="GCPointerMap"/>
+    /// through an async suspension/resumption. We only identify these using a <see cref="GCPointerMap"/>,
     /// since that's all the code generator cares about - size of the type, and where the GC pointers are.
     /// </summary>
     public sealed partial class AsyncContinuationType : MetadataType
@@ -49,7 +49,7 @@ namespace ILCompiler
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => false;
         public override IEnumerable<MetadataType> GetNestedTypes() => [];
-        public override MetadataType GetNestedType(string name) => null;
+        public override MetadataType GetNestedType(ReadOnlySpan<byte> name) => null;
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => [];
         public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => [];
 

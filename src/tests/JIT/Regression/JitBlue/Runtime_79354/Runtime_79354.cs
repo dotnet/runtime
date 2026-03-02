@@ -6,6 +6,7 @@ namespace Runtime_79354;
 
 using System;
 using System.Reflection;
+using TestLibrary;
 using Xunit;
 
 public interface IGetContents {
@@ -28,6 +29,7 @@ public class Program {
     public delegate (string, int, string) MyDelegate(IGetContents arg);
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124221", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
     public static int TestEntryPoint()
     {
         MyStruct str = new MyStruct();

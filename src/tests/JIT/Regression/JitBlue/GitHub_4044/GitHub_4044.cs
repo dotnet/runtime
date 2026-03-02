@@ -10,6 +10,8 @@ public class C
 {
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/114908", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123793", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    [SkipOnMono("needs triage")]
     public static int TestEntryPoint()
     {
         int error = Test1();

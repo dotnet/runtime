@@ -2373,10 +2373,10 @@ namespace Mono.Linker.Steps
         }
 
         [GeneratedRegex("{[^{}]+}")]
-        private static partial Regex DebuggerDisplayAttributeValueRegex();
+        private static partial Regex DebuggerDisplayAttributeValueRegex { get; }
 
         [GeneratedRegex(@".+,\s*nq")]
-        private static partial Regex ContainsNqSuffixRegex();
+        private static partial Regex ContainsNqSuffixRegex { get; }
 
         void MarkTypeWithDebuggerDisplayAttribute(TypeDefinition type, CustomAttribute attribute, MessageOrigin origin)
         {
@@ -2405,14 +2405,14 @@ namespace Mono.Linker.Steps
             if (string.IsNullOrEmpty(displayString))
                 return;
 
-            foreach (Match match in DebuggerDisplayAttributeValueRegex().Matches(displayString))
+            foreach (Match match in DebuggerDisplayAttributeValueRegex.Matches(displayString))
             {
                 // Remove '{' and '}'
                 string realMatch = match.Value.Substring(1, match.Value.Length - 2);
 
                 // Remove ",nq" suffix if present
                 // (it asks the expression evaluator to remove the quotes when displaying the final value)
-                if (ContainsNqSuffixRegex().IsMatch(realMatch))
+                if (ContainsNqSuffixRegex.IsMatch(realMatch))
                 {
                     realMatch = realMatch.Substring(0, realMatch.LastIndexOf(','));
                 }

@@ -26,8 +26,8 @@ namespace System.Net.Tests
 
         public void Dispose()
         {
-            Factory?.Dispose();
             Client?.Dispose();
+            Factory?.Dispose();
         }
 
         [Theory]
@@ -229,11 +229,6 @@ namespace System.Net.Tests
         [InlineData("Unknown-Header: Test", false)]
         public async Task IsWebSocketRequest_GetProperty_ReturnsExpected(string webSocketString, bool expected)
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                return;
-            }
-
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { webSocketString });
             Assert.Equal(expected, request.IsWebSocketRequest);
         }
@@ -276,7 +271,7 @@ namespace System.Net.Tests
         public async Task GetClientCertificateAsync_NoCertificate_ReturnsNull()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
-            Assert.Null(request.GetClientCertificateAsync().Result);
+            Assert.Null(await request.GetClientCertificateAsync());
         }
 
         [Fact]
@@ -607,7 +602,7 @@ namespace System.Net.Tests
 
         private async Task<HttpListenerRequest> GetRequest(string requestType, string query, string[] headers, string content = "Text\r\n", string httpVersion = "1.1")
         {
-            Client.Send(Factory.GetContent(httpVersion, requestType, query, content, headers, true));
+            await Client.SendAsync(Factory.GetContent(httpVersion, requestType, query, content, headers, true));
 
             HttpListener listener = Factory.GetListener();
             return (await listener.GetContextAsync()).Request;

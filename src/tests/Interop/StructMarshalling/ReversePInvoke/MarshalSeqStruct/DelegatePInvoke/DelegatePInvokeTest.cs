@@ -6,6 +6,7 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public class MarshalStructTest
 {
@@ -1413,6 +1414,9 @@ public class MarshalStructTest
 
     #endregion
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/53351", TestPlatforms.Android)]
+    [ActiveIssue("needs triage", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()

@@ -249,13 +249,30 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    async run (): Promise<number> {
+    run (): Promise<number> {
+        return this.runMainAndExit();
+    }
+
+    async runMainAndExit (): Promise<number> {
         try {
             mono_assert(emscriptenModule.config, "Null moduleConfig.config");
             if (!this.instance) {
                 await this.create();
             }
             return this.instance!.runMainAndExit();
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    async runMain (): Promise<number> {
+        try {
+            mono_assert(emscriptenModule.config, "Null moduleConfig.config");
+            if (!this.instance) {
+                await this.create();
+            }
+            return this.instance!.runMain();
         } catch (err) {
             mono_exit(1, err);
             throw err;
@@ -378,7 +395,7 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
     });
     result.catch((error) => {
         if (error.message && error.message.toLowerCase().includes("out of memory")) {
-            throw new Error(".NET runtime has failed to start, because too much memory was requested. Please decrease the memory by adjusting EmccMaximumHeapSize. See also https://aka.ms/dotnet-wasm-features");
+            throw new Error(".NET runtime has failed to start, because too much memory was requested. Please decrease the memory by adjusting EmccMaximumHeapSize.");
         }
         throw error;
     });

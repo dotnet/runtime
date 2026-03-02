@@ -60,6 +60,10 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
 
+#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
+#define FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
+#endif
+
 enum class AsyncMethodFlags
 {
     // Method uses CORINFO_CALLCONV_ASYNCCALL call convention.
@@ -68,8 +72,10 @@ enum class AsyncMethodFlags
     ReturnsTaskOrValueTask     = 2,
     // An AsyncCall representation of a ReturnsTaskOrValueTask method.
     IsAsyncVariant             = 4,
+    // Whether the ReturnsTaskOrValueTask counterpart is returning Task or ValueTask
+    IsAsyncVariantForValueTask = 8,
     // Method has synthetic body, which forwards to the other variant.
-    Thunk                      = 8,
+    Thunk                      = 16,
     // The rest of the methods that are not in any of the above groups.
     // Such methods are not interesting to the Runtime Async feature.
     // Note: Generic T-returning methods are classified as "None", even if T could be a Task.
@@ -80,19 +86,14 @@ enum class AsyncMethodFlags
     //
     // When we see a Task/ValueTask-returning method in metadata we create 2 method variants that logically
     // match the same method definition. One variant has the same signature/callconv as the defining method
-    // and another is a matching AsyncCall variant. 
+    // and another is a matching AsyncCall variant.
     // Depending on whether the definition was marked with `MethodImpl.Async` or not,
     // the IL body belongs to one of the variants and another variant is a synthetic thunk.
     //
     // The signature of the Async variant is derived from the Task-returning signature by replacing
-    // Task return type with modreq'd element type:
-    //   Example: "Task<int> Foo();"  ===> "modreq(Task`) int Foo();"
-    //   Example: "ValueTask Bar();"  ===> "modreq(ValueTask) void Bar();"
-    //
-    // The reason for this encoding is that:
-    //   - it uses parts of original signature, as-is, thus does not need to look for or construct anything
-    //   - it "unwraps" the element type.
-    //   - it is reversible. Thus nonconflicting signatures will map to nonconflicting ones.
+    // Task return type with "element" type:
+    //   Example: "Task<int> Foo();"  ===> "int Foo();"
+    //   Example: "ValueTask Bar();"  ===> "void Bar();"
     //
     // It is possible to get from one variant to another via GetAsyncOtherVariant.
     //
@@ -176,6 +177,7 @@ FORCEINLINE mdToken MergeToken(UINT16 tokrange, UINT16 tokremainder)
 // so that when a method is replaced its relevant flags are updated
 
 // Used in MethodDesc
+// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of mcIL, mcFCall, mcPInvoke, mcEEImpl, mcArray, mcInstantiated, mcComInterop, and mcDynamic.
 enum MethodClassification
 {
     mcIL        = 0, // IL
@@ -195,6 +197,8 @@ enum MethodClassification
 
 
 // All flags in the MethodDesc now reside in a single 16-bit field.
+// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of mdfClassification, mdfHasNonVtableSlot, mdfMethodImpl,
+// mdfHasNativeCodeSlot, and mdfHasAsyncMethodData.
 
 enum MethodDescFlags
 {
@@ -747,12 +751,17 @@ public:
     inline bool IsLCGMethod();
 
     inline bool IsDiagnosticsHidden();
-    
+
     inline DWORD IsPInvoke()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return mcPInvoke == GetClassification();
     }
+
+    // Returns true if this MethodDesc represents an interop stub.
+    // This includes interop IL stubs (PInvoke, COM, reverse PInvoke, struct marshal)
+    // and PInvoke methods (PInvokeMethodDesc).
+    inline bool IsInteropStub();
 
     inline DWORD IsInterface()
     {
@@ -858,9 +867,11 @@ public:
     // arguments passed in registers.
     UINT SizeOfArgStack();
 
+#ifdef FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
     // Returns the # of bytes of stack used by arguments in a call from native to this function.
     // Does not include arguments passed in registers.
     UINT SizeOfNativeArgStack();
+#endif // FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE
 
     // Returns the # of bytes to pop after a call. Not necessary the
     // same as SizeOfArgStack()!
@@ -1544,13 +1555,14 @@ public:
     // necessary, or if you can guarantee that it has already happened. For instance, the frame of a
     // stackwalk has obviously been virtualized as much as it will be.
     //
-    PCODE GetSingleCallableAddrOfCode()
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(!IsGenericMethodDefinition());
-        return GetMethodEntryPoint();
-    }
-#endif
+    PCODE GetSingleCallableAddrOfCode();
+
+    // Returns address of code to call for a MethodDesc marked with UnmanagedCallersOnlyAttribute.
+    // The address is good for one immediate invocation only. Use GetMultiCallableAddrOfCode()
+    // passing CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE to get address that can be invoked multiple times.
+    //
+    PCODE GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
+#endif // !DACCESS_COMPILE
 
     // This one is used to implement "ldftn".
     PCODE GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_LDFTN);
@@ -1612,6 +1624,13 @@ public:
     //*******************************************************************************
     // Returns the address of the native code.
     PCODE GetNativeCode();
+
+    // Returns either the jitted code or the interpreter code (will not return the InterpreterStub which GetNativeCode might return)
+    PCODE GetCodeForInterpreterOrJitted()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetInterpreterCodeFromInterpreterPrecodeIfPresent(GetNativeCode());
+    }
 
     // Returns GetNativeCode() if it exists, but also checks to see if there
     // is a non-default code version that is populated with a code body and returns that.
@@ -1812,6 +1831,7 @@ protected:
     {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
         // have a fairly strong justification for existence.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of enum_flag3_HasStableEntryPoint, enum_flag3_HasPrecode, enum_flag3_IsUnboxingStub, and enum_flag3_IsEligibleForTieredCompilation.
         enum_flag3_TokenRemainderMask                       = 0x0FFF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
                                                                       // for this method.
         // enum_flag3_HasPrecode implies that enum_flag3_HasStableEntryPoint is set in non-portable entrypoint scenarios.
@@ -1826,6 +1846,7 @@ protected:
 
     BYTE        m_chunkIndex;
 
+    // [cDAC] [RuntimeTypeSystem]: Contract depends on the value of enum_flag4_TemporaryEntryPointAssigned.
     enum {
         enum_flag4_ComputedRequiresStableEntryPoint         = 0x01,
         enum_flag4_RequiresStableEntryPoint                 = 0x02,
@@ -1963,6 +1984,18 @@ public:
 
         AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant);
+    }
+
+    // Is this an Async variant method for a method that
+    // returns ValueTask or ValueTask<T> ?
+    inline bool IsAsyncVariantForValueTaskReturningMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariantForValueTask);
     }
 
     // Is this a small(ish) synthetic Task/async adapter to an async/Task implementation?
@@ -2162,7 +2195,6 @@ private:
     void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
     void EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig& msig, ILStubLinker* pSL);
     SigPointer GetAsyncThunkResultTypeSig();
-    bool IsValueTaskAsyncThunk();
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
 public:
@@ -2775,39 +2807,40 @@ public:
     DPTR(struct InterpreterPrecode) m_interpreterPrecode;
 #endif
 
+    // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of StubPInvokeVarArg and StubCLRToCOMInterop.
     enum ILStubType : DWORD
     {
         StubNotSet = 0,
-        StubPInvoke,
-        StubPInvokeDelegate,
-        StubPInvokeCalli,
-        StubPInvokeVarArg,
-        StubReversePInvoke,
-        StubCLRToCOMInterop,
-        StubCOMToCLRInterop,
-        StubStructMarshalInterop,
-        StubArrayOp,
-        StubMulticastDelegate,
-        StubWrapperDelegate,
-        StubUnboxingIL,
-        StubInstantiating,
-        StubTailCallStoreArgs,
-        StubTailCallCallTarget,
+        StubPInvoke = 1,
+        StubPInvokeDelegate = 2,
+        StubPInvokeCalli = 3,
+        StubPInvokeVarArg = 4,
+        StubReversePInvoke = 5,
+        StubCLRToCOMInterop = 6,
+        StubCOMToCLRInterop = 7,
+        StubStructMarshalInterop = 8,
+        StubArrayOp = 9,
+        StubMulticastDelegate = 10,
+        StubWrapperDelegate = 11,
+        StubUnboxingIL = 12,
+        StubInstantiating = 13,
+        StubTailCallStoreArgs = 14,
+        StubTailCallCallTarget = 15,
 
-        StubVirtualStaticMethodDispatch,
-        StubDelegateShuffleThunk,
+        StubVirtualStaticMethodDispatch = 16,
+        StubDelegateShuffleThunk = 17,
 
-        StubDelegateInvokeMethod,
+        StubDelegateInvokeMethod = 18,
 
-        StubAsyncResume,
-
-        StubLast
+        StubAsyncResume = 19,
+        StubLast = 20
     };
 
     enum Flag : DWORD
     {
         // Flags for DynamicMethodDesc
         // Define new flags in descending order. This allows the IL type enumeration to increase naturally.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of FlagIsLCGMethod, FlagIsILStub, and ILStubTypeMask.
         FlagNone                = 0x00000000,
         FlagPublic              = 0x00000800,
         FlagStatic              = 0x00001000,
@@ -2887,6 +2920,7 @@ public:
         return asMetadata;
     }
 
+#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
     WORD GetNativeStackArgSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2903,6 +2937,7 @@ public:
 #endif
         m_dwExtendedFlags = (m_dwExtendedFlags & ~StackArgSizeMask) | ((DWORD)cbArgSize << 16);
     }
+#endif // TARGET_X86 || FEATURE_COMINTEROP
 
     bool IsReversePInvokeStub() const
     {
@@ -3333,11 +3368,11 @@ private:
 #endif
 public:
 
+#if defined(TARGET_X86)
     void SetStackArgumentSize(WORD cbDstBuffer, CorInfoCallConvExtension unmgdCallConv)
     {
         LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_X86)
         // thiscall passes the this pointer in ECX
         if (unmgdCallConv == CorInfoCallConvExtension::Thiscall)
         {
@@ -3354,10 +3389,8 @@ public:
         {
             _ASSERTE(m_cbStackArgumentSize == cbDstBuffer);
         }
-#endif // defined(TARGET_X86)
     }
 
-#if defined(TARGET_X86)
     void EnsureStackArgumentSize();
 
     WORD GetStackArgumentSize() const
@@ -3475,16 +3508,6 @@ struct CLRToCOMCallInfo
         _ASSERTE(m_cbStackArgumentSize != 0xFFFF);
         return m_cbStackArgumentSize;
     }
-#else // TARGET_X86
-    void InitStackArgumentSize()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    void SetStackArgumentSize(WORD cbDstBuffer)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
 #endif // TARGET_X86
 };
 
@@ -3553,11 +3576,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_pCLRToCOMCallInfo->m_cbStackPop = (WORD)CbStackPop();
-    }
-#else // TARGET_X86
-    void SetStackArgumentSize(WORD cbDstBuffer)
-    {
-        LIMITED_METHOD_CONTRACT;
     }
 #endif // TARGET_X86
 };
@@ -3741,6 +3759,7 @@ public: // <TODO>make private: JITinterface.cpp accesses through this </TODO>
     PTR_Dictionary m_pPerInstInfo;  //SHARED
 
 private:
+    // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of KindMask, GenericMethodDefinition, UnsharedMethodInstantiation, SharedMethodInstantiation, and WrapperStubWithInstantiations.
     enum
     {
         KindMask                        = 0x07,

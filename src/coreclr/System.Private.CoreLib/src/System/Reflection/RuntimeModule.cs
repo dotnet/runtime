@@ -454,7 +454,7 @@ namespace System.Reflection
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
             if (RuntimeType == null)
-                return Array.Empty<FieldInfo>();
+                return [];
 
             return RuntimeType.GetFields(bindingFlags);
         }
@@ -471,7 +471,7 @@ namespace System.Reflection
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             if (RuntimeType == null)
-                return Array.Empty<MethodInfo>();
+                return [];
 
             return RuntimeType.GetMethods(bindingFlags);
         }

@@ -284,7 +284,10 @@ public class ProcessRunner : IDisposable
         if (!string.IsNullOrEmpty(data))
         {
             WriteLog(data);
-            _outputCapture.AppendLine("  " + data);
+            lock (_outputCapture)
+            {
+                _outputCapture.AppendLine("  " + data);
+            }
         }
     }
 
@@ -294,7 +297,10 @@ public class ProcessRunner : IDisposable
         if (!string.IsNullOrEmpty(data))
         {
             WriteLog(data);
-            _outputCapture.AppendLine("!! " + data);
+            lock (_outputCapture)
+            {
+                _outputCapture.AppendLine("!! " + data);
+            }
         }
     }
 
