@@ -8335,6 +8335,13 @@ HRESULT DacGCBookkeepingEnumerator::Init()
 
 HRESULT DacHandleTableMemoryEnumerator::Init()
 {
+    // The GC sets the number of slots based on the number of processors. Prior to
+    // DATAS, num_processors == GCHeapCount() for ServerGC. Unfortunately the GC DAC
+    // contract didn't record the number of processors independently until minor
+    // version 8 and DATAS was enabled prior to that. When using a standalone GC version
+    // < 8 the DAC approximates the processor count as GCHeapCount() because we don't
+    // have more accurate data to work with. This may cause handle enumeration to be
+    // incomplete.
     uint32_t max_slots = 1;
 
 #ifdef FEATURE_SVR_GC
