@@ -5203,9 +5203,8 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             bool        haveNoSplitVictim     = false;
             bool        haveFallThroughVictim = false;
 
-            for (int j = 0; j < matchedPredInfo.Height(); j++)
+            for (PredInfo& info : matchedPredInfo.TopDownOrder())
             {
-                PredInfo&         info      = matchedPredInfo.TopRef(j);
                 Statement* const  stmt      = info.m_stmt;
                 BasicBlock* const predBlock = info.m_block;
 
@@ -5278,9 +5277,8 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
             // Do the cross jumping
             //
-            for (int j = 0; j < matchedPredInfo.Height(); j++)
+            for (PredInfo& info : matchedPredInfo.TopDownOrder())
             {
-                PredInfo&         info      = matchedPredInfo.TopRef(j);
                 BasicBlock* const predBlock = info.m_block;
                 Statement* const  stmt      = info.m_stmt;
 
@@ -5443,9 +5441,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     }
 
     predInfo.Reset();
-    for (int i = 0; i < retOrThrowBlocks.Height(); i++)
+    for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
     {
-        predInfo.Push(PredInfo(retOrThrowBlocks.Bottom(i), retOrThrowBlocks.Bottom(i)->lastStmt()));
+        predInfo.Push(PredInfo(block, block->lastStmt()));
     }
 
     tailMergePreds(nullptr);

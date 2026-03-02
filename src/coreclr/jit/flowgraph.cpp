@@ -4158,9 +4158,9 @@ bool Compiler::fgHasCycleWithoutGCSafePoint()
                     {
                         printf("Found a cycle that does not go through a GC safe point:\n");
                         printf(FMT_BB, succ->bbNum);
-                        for (int index = 0; index < stack.Height(); index++)
+                        for (auto& entry : stack.TopDownOrder())
                         {
-                            BasicBlock* block = stack.TopRef(index).Block();
+                            BasicBlock* block = entry.Block();
                             printf(" <- " FMT_BB, block->bbNum);
 
                             if (block == succ)

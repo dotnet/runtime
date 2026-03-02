@@ -3767,9 +3767,9 @@ void Compiler::fgDebugCheckLinkedLocals()
 
                 printf("\nExpected:\n");
                 const char* pref = "  ";
-                for (int i = 0; i < expected->Height(); i++)
+                for (GenTree* const node : expected->BottomUpOrder())
                 {
-                    printf("%s[%06u]", pref, dspTreeID(expected->Bottom(i)));
+                    printf("%s[%06u]", pref, dspTreeID(node));
                     pref = " -> ";
                 }
 
