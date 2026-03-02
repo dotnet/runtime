@@ -35,6 +35,39 @@ namespace System.Net.Sockets
             return true;
         }
 
+        internal static int EngineCount => 1;
+
+        internal int EngineIndex
+        {
+            get
+            {
+                Debug.Assert(this == s_engine);
+                return 0;
+            }
+        }
+
+        internal static SocketAsyncEngine GetEngineByIndex(int index)
+        {
+            Debug.Assert(index == 0);
+            return s_engine;
+        }
+
+        internal static bool TryRegisterSocketWithEngine(
+            IntPtr socketHandle,
+            SocketAsyncContext context,
+            SocketAsyncEngine engine,
+            out Interop.Error error)
+        {
+            Debug.Assert(engine == s_engine);
+            return TryRegisterSocket(socketHandle, context, out _, out error);
+        }
+
+        internal void WakeIoUringEventLoopForSocketClose()
+        {
+            Debug.Assert(this == s_engine);
+            // No-op: WASI does not use io_uring.
+        }
+
         public static void UnregisterSocket(SocketAsyncContext context)
         {
             context.unregisterPollHook.Cancel();

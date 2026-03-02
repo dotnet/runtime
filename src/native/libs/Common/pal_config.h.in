@@ -55,6 +55,7 @@
 #cmakedefine01 HAVE_ETHTOOL_H
 #cmakedefine01 HAVE_SYS_POLL_H
 #cmakedefine01 HAVE_EPOLL
+#cmakedefine01 HAVE_LINUX_IO_URING_H
 #cmakedefine01 HAVE_GETHOSTNAME
 #cmakedefine01 HAVE_GETNAMEINFO
 #cmakedefine01 HAVE_SOCKADDR_UN_SUN_PATH
