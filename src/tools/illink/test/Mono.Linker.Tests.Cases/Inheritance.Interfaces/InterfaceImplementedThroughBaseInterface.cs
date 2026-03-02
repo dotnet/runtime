@@ -11,7 +11,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 {
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [SetupLinkerArgument("-a", "test.exe", "library")]
     [SetupLinkerArgument("-a", "library.dll", "library")]
     [TestCaseRequirements(TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]

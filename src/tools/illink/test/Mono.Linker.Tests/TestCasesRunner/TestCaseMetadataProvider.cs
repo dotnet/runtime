@@ -31,7 +31,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 LinkSymbols = GetOptionAttributeValue(nameof(SetupLinkerLinkSymbolsAttribute), string.Empty),
                 TrimMode = GetOptionAttributeValue<string>(nameof(SetupLinkerTrimModeAttribute), null),
                 DefaultAssembliesAction = GetOptionAttributeValue<string>(nameof(SetupLinkerDefaultActionAttribute), null),
-                SkipUnresolved = GetOptionAttributeValue(nameof(SkipUnresolvedAttribute), false),
+                SkipUnresolved = GetOptionAttributeValue(nameof(SkipUnresolvedAttribute), true),
                 StripDescriptors = GetOptionAttributeValue(nameof(StripDescriptorsAttribute), true),
                 StripSubstitutions = GetOptionAttributeValue(nameof(StripSubstitutionsAttribute), true),
                 StripLinkAttributes = GetOptionAttributeValue(nameof(StripLinkAttributesAttribute), true),
