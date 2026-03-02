@@ -313,7 +313,8 @@ namespace System.CommandLine
                     {
                         string prefix = input ? string.Empty : "out_"; // prefix output directories for clarity
                         string reproFileDir = prefix + originalToReproPackageFileName.Count.ToString() + Path.DirectorySeparatorChar;
-                        reproPackagePath = Path.Combine(reproFileDir, Path.GetFileName(originalPath));
+                        string fileName = Path.GetFileName(originalPath ?? string.Empty);
+                        reproPackagePath = Path.Combine(reproFileDir, fileName);
                         if (!input)
                         {
                             archive.CreateEntry(reproFileDir); // for outputs just create output directory
