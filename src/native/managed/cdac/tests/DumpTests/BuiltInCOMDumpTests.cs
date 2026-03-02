@@ -30,7 +30,7 @@ public class BuiltInCOMDumpTests : DumpTestBase
         IObject objectContract = Target.Contracts.Object;
 
         List<HandleData> strongHandles = gcContract.GetHandles([HandleType.Strong]);
-        List<TargetPointer> ccwPtrs = new();
+        List<TargetPointer> ccwPtrs = [];
 
         foreach (HandleData handleData in strongHandles)
         {
@@ -56,7 +56,7 @@ public class BuiltInCOMDumpTests : DumpTestBase
         IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
 
         List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
-        Assert.True(ccwPtrs.Count > 0, "Expected at least one object with an active CCW from strong handles");
+        Assert.True(ccwPtrs.Count >= 3, "Expected at least three objects with an active CCW from strong handles");
 
         foreach (TargetPointer ccwPtr in ccwPtrs)
         {

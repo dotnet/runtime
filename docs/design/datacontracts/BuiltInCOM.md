@@ -55,7 +55,7 @@ Contracts used:
 
 ``` csharp
 
-private enum Flags
+private enum CCWFlags
 {
     IsHandleWeak = 0x4,
 }
@@ -78,7 +78,7 @@ public bool IsHandleWeak(TargetPointer address)
 {
     var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
     uint flags = _target.Read<uint>(ccw + /* SimpleComCallWrapper::Flags offset */);
-    return (flags & (uint)Flags.IsHandleWeak) != 0;
+    return (flags & (uint)CCWFlags.IsHandleWeak) != 0;
 }
 
 // Mirrors ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.

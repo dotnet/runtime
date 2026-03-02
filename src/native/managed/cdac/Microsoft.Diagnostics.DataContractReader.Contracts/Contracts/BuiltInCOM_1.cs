@@ -57,9 +57,8 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         // Try to interpret address as a COM interface pointer (IP).
         // Read the vtable pointer stored at the address, then read AddRef (slot 1) from that vtable.
         if (_target.TryReadPointer(address, out TargetPointer vtable) && vtable != TargetPointer.Null
-            && _target.TryReadCodePointer(vtable + (ulong)pointerSize, out TargetCodePointer addRefSlot))
+            && _target.TryReadCodePointer(vtable + (ulong)pointerSize, out TargetCodePointer addRefValue))
         {
-            TargetPointer addRefValue = CodePointerUtils.AddressFromCodePointer(addRefSlot, _target);
 
             TargetPointer tearOffAddRef      = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRef);
             TargetPointer tearOffSimple      = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimple);

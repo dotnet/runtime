@@ -595,6 +595,7 @@ public sealed unsafe partial class SOSDacImpl
             }
             else
             {
+                NativeMemory.Clear(interfaces, (nuint)(sizeof(DacpCOMInterfacePointerData) * count));
                 uint itemIndex = 0;
                 foreach (Contracts.COMInterfacePointerData item in result)
                 {
@@ -618,7 +619,7 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            DacpCOMInterfacePointerData[] interfacesLocal = new DacpCOMInterfacePointerData[(int)count];
+            DacpCOMInterfacePointerData[]? interfacesLocal = count > 0 && interfaces != null ? new DacpCOMInterfacePointerData[(int)count] : null;
             uint neededLocal = 0;
             int hrLocal;
             fixed (DacpCOMInterfacePointerData* interfacesLocalPtr = interfacesLocal)
