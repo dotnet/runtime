@@ -19,7 +19,7 @@
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
 // storing code:DAC_INSTANCE .  Otherwise, the DAC uses the STL unordered_map to.
 
-#define DAC_HASHTABLE
+// #define DAC_HASHTABLE
 
 #ifndef DAC_HASHTABLE
 #pragma push_macro("return")
@@ -732,9 +732,8 @@ private:
     // This has the benefit of scaling to different workloads appropriately (as opposed to having a
     // fixed number of buckets).
 
-    class DacHashCompare : public std::hash_compare<TADDR>
+    struct DacHashCompare
     {
-    public:
         // Custom hash function
         // The default hash function uses a pseudo-randomizing function to get a random
         // distribution.  In our case, we'd actually like a more even distribution to get
@@ -751,29 +750,14 @@ private:
         // The default pseudo-randomizing function also requires a call to ldiv which shows up as
         // a 3%-5% perf hit in most perf-sensitive scenarios, so this should also always be
         // faster.
-        inline size_t operator()(const TADDR& keyval) const
+        std::size_t operator()(const TADDR& keyval) const noexcept
         {
-            return (unsigned)(keyval >>DAC_INSTANCE_HASH_SHIFT);
+            return (std::size_t)(keyval >>DAC_INSTANCE_HASH_SHIFT);
         }
-
-        // Explicitly bring in the two-argument comparison function from the base class (just less-than)
-        // This is necessary because once we override one form of operator() above, we don't automatically
-        // get the others by C++ inheritance rules.
-    using std::hash_compare<TADDR>::operator();
-
-#ifdef NIDUMP_CUSTOMIZED_DAC_HASH   // not set
-        //this particular number is supposed to be roughly the same amount of
-        //memory as the old code (buckets * number of entries in the old
-        //blocks.)
-        //disabled for now.  May tweak implementation later.  It turns out that
-        //having a large number of initial buckets is excellent for nidump, but it
-        // is terrible for most other scenarios due to the cost of clearing them at
-        // every Flush.  Once there is a better perf suite, we can tweak these values more.
-        static const size_t min_buckets = DAC_INSTANCE_HASH_SIZE * 256;
-#endif
-
     };
-    typedef std::unordered_map<TADDR, DAC_INSTANCE*, DacHashCompare > DacInstanceHash;
+    // typedef std::unordered_map<TADDR, DAC_INSTANCE*, DacHashCompare > DacInstanceHash;
+    // Start the experiment without bringing in hash_compare which was moved to stdex and isn't portable.
+    typedef std::unordered_map<TADDR, DAC_INSTANCE*, DacHashCompare> DacInstanceHash;
     typedef DacInstanceHash::value_type DacInstanceHashValue;
     typedef DacInstanceHash::iterator DacInstanceHashIterator;
     DacInstanceHash m_hash;

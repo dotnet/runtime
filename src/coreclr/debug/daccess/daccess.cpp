@@ -1546,7 +1546,7 @@ DacInstanceManager::Add(DAC_INSTANCE* inst)
 #ifdef _DEBUG
     bool isInserted = (m_hash.find(inst->addr) == m_hash.end());
 #endif //_DEBUG
-    DAC_INSTANCE *(&target) = m_hash[inst->addr];
+    DAC_INSTANCE* &target = m_hash[inst->addr];
     _ASSERTE(!isInserted || target == NULL);
     if( target != NULL )
     {
@@ -2020,7 +2020,6 @@ DacInstanceManager::ClearEnumMemMarker(void)
 void
 DacInstanceManager::ClearEnumMemMarker(void)
 {
-    ULONG i;
     DAC_INSTANCE* inst;
 
     DacInstanceHashIterator end = m_hash.end();
