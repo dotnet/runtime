@@ -18,7 +18,7 @@ parameters:
 - name: cdacDumpTestMode
   displayName: cDAC Dump Test Mode
   type: string
-  default: xplat
+  default: single-leg
   values:
     - single-leg
     - xplat
@@ -156,7 +156,7 @@ extends:
     #
     # cDAC Dump Tests — Build, generate dumps, and run tests on Helix (single-leg mode)
     #
-    - ${{ if eq(parameters.cdacDumpTestMode, 'single-leg') }}:
+    - ${{ if and(eq(parameters.cdacDumpTestMode, 'single-leg'), ne(variables['Build.Reason'], 'Schedule')) }}:
       - stage: CdacDumpTests
         dependsOn: []
         jobs:
@@ -218,7 +218,7 @@ extends:
     # 1. Generate dumps on each platform via Helix, download and publish as artifacts
     # 2. Download all platforms' dumps and run tests on each target platform
     #
-    - ${{ if eq(parameters.cdacDumpTestMode, 'xplat') }}:
+    - ${{ if or(eq(parameters.cdacDumpTestMode, 'xplat'), eq(variables['Build.Reason'], 'Schedule')) }}:
       - stage: CdacXPlatDumpGen
         dependsOn: []
         jobs:
