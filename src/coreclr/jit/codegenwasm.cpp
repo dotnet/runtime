@@ -13,6 +13,8 @@
 static const int LINEAR_MEMORY_INDEX = 0;
 
 #ifdef TARGET_64BIT
+static const instruction INS_I_load  = INS_i64_load;
+static const instruction INS_I_store = INS_i64_store;
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
 static const instruction INS_I_and   = INS_i64_and;
@@ -23,6 +25,8 @@ static const instruction INS_I_le_u  = INS_i64_le_u;
 static const instruction INS_I_ge_u  = INS_i64_ge_u;
 static const instruction INS_I_gt_u  = INS_i64_gt_u;
 #else  // !TARGET_64BIT
+static const instruction INS_I_load  = INS_i32_load;
+static const instruction INS_I_store = INS_i32_store;
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
 static const instruction INS_I_and   = INS_i32_and;
@@ -431,7 +435,9 @@ void CodeGen::WasmProduceReg(GenTree* node)
 //
 // If the operand is a candidate, we use that candidate's current register.
 // Otherwise it must have been allocated into a temporary register initialized
-// in 'WasmProduceReg'.
+// in 'WasmProduceReg'. To do this, call treeNode->SetMultiplyUsed() during
+// lowering and ensure that regalloc is updated to call 'ConsumeTemporaryRegForOperand'
+// on the node(s) that need to be used multiple times.
 //
 // Arguments:
 //    operand - The operand node
@@ -1514,6 +1520,11 @@ void CodeGen::genCodeForBitCast(GenTreeOp* tree)
     assert(tree->OperIs(GT_BITCAST));
     genConsumeOperands(tree);
 
+    if (tree->gtGetOp1()->isContained())
+    {
+        NYI_WASM("Contained bitcast operands");
+    }
+
     var_types toType   = tree->TypeGet();
     var_types fromType = genActualType(tree->gtGetOp1()->TypeGet());
     assert(toType == genActualType(tree));
@@ -2021,6 +2032,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 {
     GenTree* data = tree->Data();
     GenTree* addr = tree->Addr();
+
+    assert(!addr->isContained());
 
     // We must consume the operands in the proper execution order,
     // so that liveness is updated appropriately.
@@ -2585,11 +2598,128 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         default:
             unreached();
     }
+
+    genUpdateLife(blkOp);
 }
 
+//------------------------------------------------------------------------
+// genCodeForCpObj: Produce code for a GT_STORE_BLK node that represents a cpobj operation.
+//
+// Arguments:
+//    cpObjNode - the node
+//
 void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
-    NYI_WASM("genCodeForCpObj");
+    GenTree*  dstAddr     = cpObjNode->Addr();
+    GenTree*  source      = cpObjNode->Data();
+    var_types srcAddrType = TYP_BYREF;
+    regNumber dstReg      = GetMultiUseOperandReg(dstAddr);
+    unsigned  dstOffset   = 0;
+    regNumber srcReg;
+    unsigned  srcOffset;
+
+    // Identify the register containing our source base address, either a multi-use
+    //  reg representing the operand of a GT_IND, or the frame pointer for LCL_VAR/LCL_FLD.
+    if (source->OperIs(GT_IND))
+    {
+        source = source->gtGetOp1();
+        assert(!source->isContained());
+        srcAddrType = source->TypeGet();
+        srcReg      = GetMultiUseOperandReg(source);
+        srcOffset   = 0;
+
+        genEmitNullCheck(srcReg);
+    }
+    else
+    {
+        assert(source->OperIs(GT_LCL_FLD, GT_LCL_VAR));
+        GenTreeLclVarCommon* lclVar = source->AsLclVarCommon();
+        bool                 fpBased;
+        srcOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
+        assert(fpBased);
+        srcReg = GetFramePointerReg();
+    }
+
+    // If the destination is on the stack we don't need the write barrier.
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(m_compiler);
+    // We should have generated a memory.copy for this scenario in lowering.
+    assert(!dstOnStack);
+
+#ifdef DEBUG
+    assert(!dstAddr->isContained());
+
+    // This GenTree node has data about GC pointers, this means we're dealing
+    // with CpObj.
+    assert(cpObjNode->GetLayout()->HasGCPtr());
+#endif // DEBUG
+
+    genConsumeOperands(cpObjNode);
+
+    emitter* emit = GetEmitter();
+
+    genEmitNullCheck(dstReg);
+
+    // TODO-WASM: Remove the need to do this somehow
+    // The dst and src may be on the evaluation stack, but we can't reliably use them, so drop them.
+    emit->emitIns(INS_drop);
+    if (!source->isContained())
+        emit->emitIns(INS_drop);
+
+    if (cpObjNode->IsVolatile())
+    {
+        // TODO-WASM: Memory barrier
+    }
+
+    ClassLayout* layout = cpObjNode->GetLayout();
+    unsigned     slots  = layout->GetSlotCount();
+
+    emitAttr attrSrcAddr = emitActualTypeSize(srcAddrType);
+    emitAttr attrDstAddr = emitActualTypeSize(dstAddr->TypeGet());
+
+    unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
+
+    unsigned i = 0;
+    while (i < slots)
+    {
+        // Copy the pointer-sized non-gc-pointer slots one at a time using regular I-sized load/store pairs,
+        //  and gc-pointer slots using a write barrier.
+        if (!layout->IsGCPtr(i))
+        {
+            // Do a pointer-sized load+store pair at the appropriate offset relative to dest and source
+            emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
+            emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
+            emit->emitIns_I(INS_I_load, EA_PTRSIZE, srcOffset);
+            emit->emitIns_I(INS_I_store, EA_PTRSIZE, dstOffset);
+        }
+        else
+        {
+            // Load the sp onto the stack for the helper call.
+            // TODO-WASM: Implement a special calling convention for this helper that doesn't accept sp/pep.
+            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
+            // Compute the actual dest/src of the slot being copied to pass to the helper.
+            emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
+            emit->emitIns_I(INS_I_const, attrDstAddr, dstOffset);
+            emit->emitIns(INS_I_add);
+            emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
+            emit->emitIns_I(INS_I_const, attrSrcAddr, srcOffset);
+            emit->emitIns(INS_I_add);
+            // TODO-WASM: don't load PEP in genEmitHelperCall for write barriers.
+            // TODO-WASM-CQ: add a version of CORINFO_HELP_ASSIGN_BYREF that returns the updated dest/src
+            // pointers as a multi-value tuple and use it here.
+            genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+            gcPtrCount--;
+        }
+        ++i;
+        srcOffset += TARGET_POINTER_SIZE;
+        dstOffset += TARGET_POINTER_SIZE;
+    }
+
+    assert(gcPtrCount == 0);
+
+    if (cpObjNode->IsVolatile())
+    {
+        // TODO-WASM: Memory barrier
+    }
 }
 
 //------------------------------------------------------------------------

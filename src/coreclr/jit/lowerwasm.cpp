@@ -169,8 +169,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     if (binOp->gtOverflow())
     {
-        binOp->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
-        binOp->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        binOp->gtGetOp1()->SetMultiplyUsed();
+        binOp->gtGetOp2()->SetMultiplyUsed();
     }
 
     return binOp->gtNext;
@@ -189,12 +189,12 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
     ExceptionSetFlags exSetFlags = divMod->OperExceptions(m_compiler);
     if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
     {
-        divMod->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
-        divMod->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        divMod->gtGetOp1()->SetMultiplyUsed();
+        divMod->gtGetOp2()->SetMultiplyUsed();
     }
     else if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
     {
-        divMod->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        divMod->gtGetOp2()->SetMultiplyUsed();
     }
 
     ContainCheckDivOrMod(divMod);
@@ -245,6 +245,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         ClassLayout* layout  = blkNode->GetLayout();
         bool         doCpObj = layout->HasGCPtr();
 
+        // If copying to the stack instead of the heap, we should treat it as a raw memcpy for
+        //  smaller generated code and potentially better performance.
+        if (blkNode->IsAddressNotOnHeap(m_compiler))
+            doCpObj = false;
+
         // CopyObj or CopyBlk
         if (doCpObj)
         {
@@ -255,6 +260,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
+            dstAddr->SetMultiplyUsed();
+            if (src->OperIs(GT_IND))
+                src->gtGetOp1()->SetMultiplyUsed();
         }
         else
         {
@@ -291,7 +299,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     if (tree->gtOverflow())
     {
-        tree->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        tree->gtGetOp1()->SetMultiplyUsed();
     }
     ContainCheckCast(tree->AsCast());
 }
@@ -356,13 +364,6 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 
     // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
     // LEA doesn't overflow. It will involve creating a new frontend node to represent "nuw" (offset) addition.
-    GenTree* addr = indirNode->Addr();
-    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
-    {
-        // These nodes go into an addr mode:
-        // - GT_LCL_ADDR is a stack addr mode.
-        MakeSrcContained(indirNode, addr);
-    }
 }
 
 //------------------------------------------------------------------------
@@ -486,6 +487,20 @@ void Lowering::AfterLowerBlock()
             }
         }
 
+        bool CanMoveNodePast(GenTree* node, GenTree* past)
+        {
+            bool result = node->IsInvariant() || node->isContained() ||
+                          (node->OperIs(GT_LCL_VAR) &&
+                           !m_lower->m_compiler->lvaGetDesc(node->AsLclVarCommon())->IsAddressExposed());
+
+            if (result)
+            {
+                assert(m_lower->IsInvariantInRange(node, past));
+            }
+
+            return result;
+        }
+
         GenTree* StackifyTree(GenTree* root)
         {
             ArrayStack<GenTree*>* stack        = &m_lower->m_stackificationStack;
@@ -512,6 +527,26 @@ void Lowering::AfterLowerBlock()
                     // rare, introduced in lowering only. All HIR-induced cases (such as from "gtSetEvalOrder") should
                     // instead be ifdef-ed out for WASM.
                     m_anyChanges = true;
+
+                    // Invariant nodes can be safely moved by the stackifier with no side effects.
+                    // For other nodes, the side effects would require us to turn them into a temporary local, but this
+                    //  is not possible for contained nodes like an IND inside a STORE_BLK. However, the few types of
+                    //  contained nodes we have in Wasm should be safe to move freely since the lack of 'dup' or
+                    //  persistent registers in Wasm means that the actual codegen will trigger the side effect(s) and
+                    //  store the result into a Wasm local for any later uses during the containing node's execution,
+                    //  i.e. cpobj where the src and dest get stashed at the start and then used as add operands
+                    //  repeatedly.
+                    // Locals can also be safely moved as long as they aren't address-exposed due to local var nodes
+                    //  being implicitly pseudo-contained.
+                    // TODO-WASM: Verify that it is actually safe to do this for all contained nodes.
+                    if (CanMoveNodePast(node, prev->gtNext))
+                    {
+                        JITDUMP("Stackifier moving node [%06u] after [%06u]\n", Compiler::dspTreeID(node),
+                                Compiler::dspTreeID(prev));
+                        m_lower->BlockRange().Remove(node);
+                        m_lower->BlockRange().InsertAfter(prev, node);
+                        break;
+                    }
 
                     JITDUMP("node==[%06u] prev==[%06u]\n", Compiler::dspTreeID(node), Compiler::dspTreeID(prev));
                     NYI_WASM("IR not in a stackified form");
@@ -550,6 +585,6 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
     {
         // Prepare for explicit null check
         CallArg* thisArg = call->gtArgs.GetThisArg();
-        thisArg->GetNode()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        thisArg->GetNode()->SetMultiplyUsed();
     }
 }

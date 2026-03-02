@@ -8678,6 +8678,11 @@ public:
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
 
+    Lowering* GetLowering() const
+    {
+        return m_pLowering;
+    }
+
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
