@@ -58,12 +58,12 @@ namespace System.Runtime.CompilerServices
             {
                 if (instantiatingArg == null)
                 {
-                    ((delegate* unmanaged<void>)cctor)();
+                    ((delegate*<void>)cctor)();
                 }
                 else
                 {
                     // Explicitly pass the instantiating argument as a regular argument to match the ABI of a non-instantiating stub.
-                    ((delegate* unmanaged<void*, void>)cctor)(instantiatingArg);
+                    ((delegate*<void*, void>)cctor)(instantiatingArg);
                 }
             }
             catch (Exception ex)
