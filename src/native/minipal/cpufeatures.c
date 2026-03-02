@@ -409,10 +409,10 @@ int minipal_getcpufeatures(void)
             {
                 if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                                                   // Apx_F
                 {
-                    // APX availability check is split to 2 part, Apx_F here 
-                    // checks the fundamental support, and APX_NCI_NDD_NF checks 
+                    // APX availability check is split into two parts, Apx_F here
+                    // checks the fundamental support, and APX_NCI_NDD_NF checks
                     // feature support.
-                    // Full APX requires 2 parts both present to be enabled.
+                    // Full APX requires both parts to be present to be enabled.
                     hasApxDependencies = true;
                 }
             }
