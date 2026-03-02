@@ -36,7 +36,7 @@ namespace Internal.TypeSystem.Ecma
                 // Multi-module assembly: compare two modules that are part of same assembly
                 string thisName = _metadataReader.GetString(_metadataReader.GetModuleDefinition().Name);
                 string otherName = other._metadataReader.GetString(other._metadataReader.GetModuleDefinition().Name);
-                Debug.Assert(StringComparer.Ordinal.Compare(thisName, otherName) != 0);
+                Debug.Assert(!StringComparer.Ordinal.Equals(thisName, otherName));
                 return StringComparer.Ordinal.Compare(thisName, otherName);
             }
         }
