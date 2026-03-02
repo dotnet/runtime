@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Numerics;
 
 #if SYSTEM_PRIVATE_CORELIB
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -19,6 +20,12 @@ namespace System
 {
     internal static class HexConverter
     {
+#if SYSTEM_PRIVATE_CORELIB
+        [FeatureSwitchDefinition("System.HexConverter.UseVectorizedImplementation")]
+        private static bool UseVectorizedImplementation =>
+            AppContext.TryGetSwitch("System.HexConverter.UseVectorizedImplementation", out bool v) ? v : true;
+#endif
+
         public enum Casing : uint
         {
             // Output [ '0' .. '9' ] and [ 'A' .. 'F' ].
@@ -187,7 +194,7 @@ namespace System
             Debug.Assert(utf8Destination.Length >= (source.Length * 2));
 
 #if SYSTEM_PRIVATE_CORELIB
-            if ((AdvSimd.Arm64.IsSupported || Ssse3.IsSupported) && (source.Length >= (Vector128<byte>.Count / 2)))
+            if (UseVectorizedImplementation && (AdvSimd.Arm64.IsSupported || Ssse3.IsSupported) && (source.Length >= (Vector128<byte>.Count / 2)))
             {
                 EncodeTo_Vector128(source, utf8Destination, casing);
                 return;
@@ -204,7 +211,7 @@ namespace System
             Debug.Assert(destination.Length >= (source.Length * 2));
 
 #if SYSTEM_PRIVATE_CORELIB
-            if ((AdvSimd.Arm64.IsSupported || Ssse3.IsSupported) && (source.Length >= (Vector128<ushort>.Count / 2)))
+            if (UseVectorizedImplementation && (AdvSimd.Arm64.IsSupported || Ssse3.IsSupported) && (source.Length >= (Vector128<ushort>.Count / 2)))
             {
                 EncodeTo_Vector128(source, Unsafe.BitCast<Span<char>, Span<ushort>>(destination), casing);
                 return;
@@ -274,7 +281,7 @@ namespace System
         public static bool TryDecodeFromUtf8(ReadOnlySpan<byte> utf8Source, Span<byte> destination, out int bytesProcessed)
         {
 #if SYSTEM_PRIVATE_CORELIB
-            if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
+            if (UseVectorizedImplementation && BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
                 (utf8Source.Length >= Vector128<byte>.Count))
             {
                 return TryDecodeFrom_Vector128(utf8Source, destination, out bytesProcessed);
@@ -286,7 +293,7 @@ namespace System
         public static bool TryDecodeFromUtf16(ReadOnlySpan<char> source, Span<byte> destination, out int charsProcessed)
         {
 #if SYSTEM_PRIVATE_CORELIB
-            if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
+            if (UseVectorizedImplementation && BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
                 (source.Length >= (Vector128<ushort>.Count * 2)))
             {
                 return TryDecodeFrom_Vector128(Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<ushort>>(source), destination, out charsProcessed);
