@@ -104,6 +104,8 @@ The skill contains baked-in examples and guidelines for writing good proposals (
    - Cover edge cases, null inputs, boundary conditions
    - Test any interaction with existing APIs
 
+4. **Apply the new API throughout the runtime codebase** where relevant. Search (grep/ripgrep) for existing patterns that would benefit from the new API — e.g., manual workarounds, verbose boilerplate, or older idioms that the new API replaces. Include these call-site updates in the prototype commit to demonstrate real-world applicability and exercise the API in diverse contexts.
+
 #### Prototype Validation (all steps required)
 
 > **Prerequisite:** Follow the build and test workflow in [`copilot-instructions.md`](/.github/copilot-instructions.md) — complete the baseline build, configure the environment, and use the component-specific workflow for the target library. All build and test steps below assume the baseline build has already succeeded.
@@ -201,7 +203,7 @@ public partial class JsonNamingPolicy
 }
 ```
 
-When existing members ARE needed for context (e.g., to show sibling overloads), use `diff` blocks instead:
+When existing members ARE needed for context (e.g., to show sibling overloads), use `diff` blocks or `csharp` blocks with `// EXISTING` and `// NEW` markers. Prefer `// EXISTING`/`// NEW` markers when the diff format would be unwieldy (e.g., many existing members with a few additions interspersed):
 
 ```diff
 namespace System.Text.Json;
@@ -211,6 +213,20 @@ public partial class JsonNamingPolicy
      public static JsonNamingPolicy CamelCase { get; }
 +    public static JsonNamingPolicy SnakeLowerCase { get; }
 +    public static JsonNamingPolicy SnakeUpperCase { get; }
+}
+```
+
+```csharp
+namespace System.Text.Json;
+
+public partial class JsonNamingPolicy
+{
+    // EXISTING
+    public static JsonNamingPolicy CamelCase { get; }
+
+    // NEW
+    public static JsonNamingPolicy SnakeLowerCase { get; }
+    public static JsonNamingPolicy SnakeUpperCase { get; }
 }
 ```
 
