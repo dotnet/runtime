@@ -384,20 +384,31 @@ void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
 #ifdef DEBUG
 void OptIfConversionDsc::IfConvertDump()
 {
-    assert(m_startBlock != nullptr);
     m_compiler->fgDumpBlock(m_startBlock);
-    BasicBlock* dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetFalseTarget() : m_startBlock->GetTarget();
-    for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
+
+    bool beforeTransformation = m_startBlock->KindIs(BBJ_COND);
+    if (beforeTransformation)
     {
-        m_compiler->fgDumpBlock(dumpBlock);
-    }
-    if (m_doElseConversion)
-    {
-        dumpBlock = m_startBlock->KindIs(BBJ_COND) ? m_startBlock->GetTrueTarget() : m_startBlock->GetTarget();
-        for (; dumpBlock != m_finalBlock; dumpBlock = dumpBlock->GetUniqueSucc())
+        // Dump all then blocks
+        for (BasicBlock* bb = m_startBlock->GetFalseTarget(); bb != m_finalBlock; bb = bb->GetUniqueSucc())
         {
-            m_compiler->fgDumpBlock(dumpBlock);
+            m_compiler->fgDumpBlock(bb);
         }
+
+        if (m_doElseConversion)
+        {
+            // Dump all else blocks
+            for (BasicBlock* bb = m_startBlock->GetTrueTarget(); bb != m_finalBlock; bb = bb->GetUniqueSucc())
+            {
+                m_compiler->fgDumpBlock(bb);
+            }
+        }
+    }
+    else if (m_finalBlock != nullptr)
+    {
+        // After the transformating then/else blocks are empty. Instead,
+        // print unique succ of the SELECT block (prev. JTRUE) where flows would merge
+        m_compiler->fgDumpBlock(m_finalBlock);
     }
 }
 #endif
@@ -767,8 +778,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     //
 
     // Remove flow into then/else blocks and update their weights
-    auto RemoveFlowInto = [&](BasicBlock* block)
-    {
+    auto RemoveFlowInto = [&](BasicBlock* block) {
         m_compiler->fgRemoveAllRefPreds(block, m_startBlock);
         block->setBBProfileWeight(0.0);
         assert(block->bbPreds == nullptr);
@@ -779,7 +789,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         RemoveFlowInto(m_startBlock->GetTrueTarget());
     }
 
-    // Change kind of JTRUE block and make it flow 
+    // Change kind of JTRUE block and make it flow
     // directly into block where flow merges (which is null in case of GT_RETURN)
     if (m_mainOper == GT_RETURN)
     {
@@ -787,7 +797,8 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     }
     else
     {
-        FlowEdge* newEdge = m_doElseConversion ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
+        FlowEdge* newEdge =
+            m_doElseConversion ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
         m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
 
