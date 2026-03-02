@@ -21,6 +21,7 @@ set "__RootBinDir=%__RepoRootDir%\artifacts"
 set __ToolsDir=%__ProjectDir%\..\Tools
 set "DotNetCli=%__RepoRootDir%\dotnet.cmd"
 
+set __HostOS=
 set __Sequential=
 set __ParallelType=
 set __msbuildExtraArgs=
@@ -47,6 +48,7 @@ if /i "%1" == "-help" goto Usage
 if /i "%1" == "x64"                                     (set __BuildArch=x64&shift&goto Arg_Loop)
 if /i "%1" == "x86"                                     (set __BuildArch=x86&shift&goto Arg_Loop)
 if /i "%1" == "arm64"                                   (set __BuildArch=arm64&shift&goto Arg_Loop)
+if /i "%1" == "wasm"                                    (set __BuildArch=wasm&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                                   (set __BuildType=Debug&shift&goto Arg_Loop)
 if /i "%1" == "release"                                 (set __BuildType=Release&shift&goto Arg_Loop)
@@ -96,6 +98,19 @@ shift
 
 if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Environment script %__TestEnv% not found && exit /b 1)
 
+:: Set default for RunWithNodeJS when using wasm architecture
+if /i "%__BuildArch%" == "wasm" (
+    if not defined RunWithNodeJS set RunWithNodeJS=1
+)
+
+:: Set default HostOS to browser when using wasm architecture
+if /i "%__BuildArch%" == "wasm" (
+    if not defined __HostOS set __HostOS=browser
+)
+
+:: Override TargetOS when HostOS is set
+if defined __HostOS set __TargetOS=%__HostOS%
+
 :: Set the remaining variables based upon the determined configuration
 set __MSBuildBuildArch=%__BuildArch%
 
@@ -111,6 +126,10 @@ if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinB
 REM Set up arguments to call run.py
 
 set __RuntestPyArgs=-arch %__BuildArch% -build_type %__BuildType%
+
+if defined __HostOS (
+    set __RuntestPyArgs=!__RuntestPyArgs! -os %__HostOS%
+)
 
 if defined LogsDirArg (
     set __RuntestPyArgs=%__RuntestPyArgs% -logs_dir %LogsDirArg%
@@ -210,7 +229,7 @@ echo.
 echo where:
 echo.
 echo./? -? /h -h /help -help   - View this message.
-echo ^<build_architecture^>      - Specifies build architecture: x64, x86, or arm64 ^(default: x64^).
+echo ^<build_architecture^>      - Specifies build architecture: x64, x86, arm64, or wasm ^(default: x64^).
 echo ^<build_type^>              - Specifies build type: Debug, Release, or Checked ^(default: Debug^).
 echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
 echo sequential                - Run tests sequentially ^(no parallelism^).
@@ -248,4 +267,5 @@ echo.
 echo Examples:
 echo   %0 x86 checked
 echo   %0 x64 release
+echo   %0 wasm debug
 exit /b 1
