@@ -294,8 +294,8 @@ DacDbiInterfaceInstance(
                         IDacDbiInterface* cdacDbi = nullptr;
                         if (SUCCEEDED(cdac.CreateDacDbiInterface(&cdacDbi)) && cdacDbi != nullptr)
                         {
-                            // Keep legacy DAC as the active implementation until cDAC-backed IDacDbiInterface wiring is complete.
-                            cdacDbi->Destroy();
+                            *ppInterface = cdacDbi;
+                            return S_OK;
                         }
                     }
                 }

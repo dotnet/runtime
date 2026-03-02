@@ -89,12 +89,17 @@ internal static class Entrypoints
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_dacdbi_interface")]
     private static unsafe int CreateDacDbiInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
     {
-        _ = handle;
-        _ = legacyImplPtr;
         if (obj == null)
             return HResults.E_INVALIDARG;
-        *obj = IntPtr.Zero;
-        return HResults.E_NOTIMPL;
+        if (handle == IntPtr.Zero || legacyImplPtr == IntPtr.Zero)
+        {
+            *obj = IntPtr.Zero;
+            return HResults.E_NOTIMPL;
+        }
+
+        // Temporary COM binding: return legacy IDacDbiInterface while cDAC implementation is built out.
+        *obj = legacyImplPtr;
+        return HResults.S_OK;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstanceWithFallback")]
