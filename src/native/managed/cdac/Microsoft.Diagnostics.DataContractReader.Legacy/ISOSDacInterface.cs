@@ -931,6 +931,22 @@ public unsafe partial interface ISOSDacInterface12
     int GetGlobalAllocationContext(ClrDataAddress* allocPtr, ClrDataAddress* allocLimit);
 }
 
+public struct SOSMemoryRegion
+{
+    public ClrDataAddress Start;
+    public ClrDataAddress Size;
+    public ClrDataAddress ExtraData;
+    public int Heap;
+}
+
+[GeneratedComInterface]
+[Guid("E4B860EC-337A-40C0-A591-F09A9680690F")]
+public unsafe partial interface ISOSMemoryEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegion, uint* pNeeded);
+}
+
 [GeneratedComInterface]
 [Guid("3176a8ed-597b-4f54-a71f-83695c6a8c5e")]
 public unsafe partial interface ISOSDacInterface13
@@ -944,11 +960,11 @@ public unsafe partial interface ISOSDacInterface13
     [PreserveSig]
     int GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded);
     [PreserveSig]
-    int GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    int GetHandleTableMemoryRegions(out ISOSMemoryEnum? ppEnum);
     [PreserveSig]
-    int GetGCBookkeepingMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    int GetGCBookkeepingMemoryRegions(out ISOSMemoryEnum? ppEnum);
     [PreserveSig]
-    int GetGCFreeRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    int GetGCFreeRegions(out ISOSMemoryEnum? ppEnum);
     [PreserveSig]
     int LockedFlush();
 }

@@ -116,6 +116,33 @@ public readonly struct GCOomData
     HandleType[] GetHandleTypes(uint[] types);
     // Gets the global allocation context pointer and limit
     void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit);
+
+    // Gets handle table memory regions (segments)
+    IReadOnlyList<GCMemoryRegionData> GetHandleTableMemoryRegions();
+    // Gets GC bookkeeping memory regions (card table info linked list)
+    IReadOnlyList<GCMemoryRegionData> GetGCBookkeepingMemoryRegions();
+    // Gets GC free regions (free region lists and freeable segments)
+    IReadOnlyList<GCMemoryRegionData> GetGCFreeRegions();
+```
+
+```csharp
+public enum FreeRegionKind
+{
+    FreeUnknownRegion = 0,
+    FreeGlobalHugeRegion = 1,
+    FreeGlobalRegion = 2,
+    FreeRegion = 3,
+    FreeSohSegment = 4,
+    FreeUohSegment = 5,
+}
+
+public readonly struct GCMemoryRegionData
+{
+    public TargetPointer Start { get; init; }
+    public ulong Size { get; init; }
+    public ulong ExtraData { get; init; }
+    public int Heap { get; init; }
+}
 ```
 
 ## Version 1
@@ -175,6 +202,14 @@ Data descriptors used:
 | `TableSegment` | RgAllocation | GC | Circular block-list links per block |
 | `TableSegment` | RgValue | GC | Start of handle value storage |
 | `TableSegment` | RgUserData | GC | Auxiliary per-block metadata (e.g. secondary handle blocks) |
+| `CardTableInfo` | Recount | GC | Reference count for the card table |
+| `CardTableInfo` | Size | GC | Total size of the bookkeeping allocation |
+| `CardTableInfo` | NextCardTable | GC | Pointer to the next card table in the linked list |
+| `RegionFreeList` | HeadFreeRegion | GC | Head of the free region segment list |
+| `GCHeap` | FreeableSohSegment | GC | Head of the freeable SOH segment linked list (server builds, background GC) |
+| `GCHeap` | FreeableUohSegment | GC | Head of the freeable UOH segment linked list (server builds, background GC) |
+| `GCHeap` | FreeRegions | GC | Start of the per-heap free region list array (server builds, region GC) |
+| `GCHeap` | BookkeepingStart | GC | Pointer to the start of bookkeeping memory (card table info) |
 | `GCAllocContext` | AllocBytes | VM | Number of bytes allocated on SOH by this context |
 | `GCAllocContext` | AllocBytesLoh | VM | Number of bytes allocated not on SOH by this context |
 | `EEAllocContext` | GCAllocationContext | VM | The `GCAllocContext` struct within an `EEAllocContext` |
@@ -229,6 +264,15 @@ Global variables used:
 | `FeatureJavaMarshal` | byte | VM | Non-zero when Java marshal support is enabled |
 | `GlobalAllocContext` | TargetPointer | VM | Pointer to the global `EEAllocContext` |
 | `TotalCpuCount` | uint | GC | Number of available processors |
+| `HandleSegmentSize` | uint | GC | Size of each handle table segment allocation |
+| `CardTableInfoSize` | uint | GC | Size of the `dac_card_table_info` structure |
+| `CountFreeRegionKinds` | uint | GC | Number of free region kinds (basic, large, huge) |
+| `GlobalFreeHugeRegions` | TargetPointer | GC | Pointer to the global free huge region list |
+| `GlobalRegionsToDecommit` | TargetPointer | GC | Pointer to the global regions-to-decommit array |
+| `GCHeapBookkeepingStart` | TargetPointer | GC | Pointer to the bookkeeping start address (workstation builds) |
+| `GCHeapFreeableSohSegment` | TargetPointer | GC | Pointer to the freeable SOH segment head (workstation builds) |
+| `GCHeapFreeableUohSegment` | TargetPointer | GC | Pointer to the freeable UOH segment head (workstation builds) |
+| `GCHeapFreeRegions` | TargetPointer | GC | Pointer to the free regions array (workstation builds) |
 
 Contracts used:
 | Contract Name |
@@ -738,5 +782,147 @@ void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointe
     TargetPointer globalAllocContextAddress = target.ReadGlobalPointer("GlobalAllocContext");
     allocPtr = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Pointer offset */);
     allocLimit = target.ReadPointer(globalAllocContextAddress + /* EEAllocContext::GCAllocationContext offset */ + /* GCAllocContext::Limit offset */);
+}
+```
+
+GetHandleTableMemoryRegions
+```csharp
+IReadOnlyList<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
+{
+    List<GCMemoryRegionData> regions = new();
+    uint handleSegmentSize = target.ReadGlobal<uint>("HandleSegmentSize");
+    // For server GC, use TotalCpuCount (processor count) for the number of
+    // table slots per bucket, not NumHeaps (GC heap count).
+    uint tableCount = isServerGC
+        ? target.Read<uint>(target.ReadGlobalPointer("TotalCpuCount"))
+        : 1;
+
+    int maxRegions = 8192;
+    TargetPointer handleTableMap = target.ReadGlobalPointer("HandleTableMap");
+    while (handleTableMap != null && maxRegions >= 0)
+    {
+        HandleTableMap map = Read<HandleTableMap>(handleTableMap);
+        foreach (TargetPointer bucketPtr in map.BucketsPtr)
+        {
+            if (bucketPtr == null) continue;
+            HandleTableBucket bucket = Read<HandleTableBucket>(bucketPtr);
+            for (uint j = 0; j < tableCount; j++)
+            {
+                TargetPointer htPtr = ReadPointer(bucket.Table + j * PointerSize);
+                if (htPtr == null) continue;
+                HandleTable ht = Read<HandleTable>(htPtr);
+                if (ht.SegmentList == null) continue;
+                TargetPointer seg = ht.SegmentList;
+                TargetPointer first = seg;
+                do
+                {
+                    TableSegment ts = Read<TableSegment>(seg);
+                    regions.Add(new GCMemoryRegionData { Start = seg, Size = handleSegmentSize, Heap = (int)j });
+                    seg = ts.NextSegment;
+                    maxRegions--;
+                } while (seg != null && seg != first && maxRegions >= 0);
+            }
+        }
+        handleTableMap = map.Next;
+        maxRegions--;
+    }
+    return regions;
+}
+```
+
+GetGCBookkeepingMemoryRegions
+```csharp
+IReadOnlyList<GCMemoryRegionData> IGC.GetGCBookkeepingMemoryRegions()
+{
+    List<GCMemoryRegionData> regions = new();
+    if (!TryReadGlobalPointer("GCHeapBookkeepingStart", out TargetPointer? bkGlobal))
+        return regions;
+    TargetPointer bookkeepingStart = ReadPointer(bkGlobal);
+    if (bookkeepingStart == null) return regions;
+
+    uint cardTableInfoSize = ReadGlobal<uint>("CardTableInfoSize");
+    CardTableInfo cti = Read<CardTableInfo>(bookkeepingStart);
+    if (cti.Recount != 0 && cti.Size != 0)
+        regions.Add(new GCMemoryRegionData { Start = bookkeepingStart, Size = cti.Size });
+
+    TargetPointer next = cti.NextCardTable;
+    TargetPointer firstNext = next;
+    int maxRegions = 32;
+    while (next != null && next > cardTableInfoSize && maxRegions > 0)
+    {
+        TargetPointer ctAddr = next - cardTableInfoSize;
+        CardTableInfo ct = Read<CardTableInfo>(ctAddr);
+        if (ct.Recount != 0 && ct.Size != 0)
+            regions.Add(new GCMemoryRegionData { Start = ctAddr, Size = ct.Size });
+        next = ct.NextCardTable;
+        if (next == firstNext) break;
+        maxRegions--;
+    }
+    return regions;
+}
+```
+
+GetGCFreeRegions
+```csharp
+IReadOnlyList<GCMemoryRegionData> IGC.GetGCFreeRegions()
+{
+    List<GCMemoryRegionData> regions = new();
+    int countFreeRegionKinds = min(ReadGlobal<uint>("CountFreeRegionKinds"), 16);
+    uint regionFreeListSize = GetTypeInfo(RegionFreeList).Size;
+
+    // Global free huge regions
+    if (TryReadGlobalPointer("GlobalFreeHugeRegions", out TargetPointer? globalHuge))
+        AddFreeList(globalHuge, FreeGlobalHugeRegion, regions);
+
+    // Global regions to decommit
+    if (TryReadGlobalPointer("GlobalRegionsToDecommit", out TargetPointer? globalDecommit))
+        for (int i = 0; i < countFreeRegionKinds; i++)
+            AddFreeList(globalDecommit + i * regionFreeListSize, FreeGlobalRegion, regions);
+
+    if (isServerGC)
+    {
+        // For each server heap: enumerate per-heap free regions + freeable segments
+        for each heap in server heaps:
+            for (int j = 0; j < countFreeRegionKinds; j++)
+                AddFreeList(heap.FreeRegions + j * regionFreeListSize, FreeRegion, regions, heapIndex);
+            AddSegmentList(heap.FreeableSohSegment, FreeSohSegment, regions, heapIndex);
+            AddSegmentList(heap.FreeableUohSegment, FreeUohSegment, regions, heapIndex);
+    }
+    else
+    {
+        // Workstation: use globals for free regions and freeable segments
+        if (TryReadGlobalPointer("GCHeapFreeRegions", out TargetPointer? freeRegions))
+            for (int i = 0; i < countFreeRegionKinds; i++)
+                AddFreeList(freeRegions + i * regionFreeListSize, FreeRegion, regions);
+        if (TryReadGlobalPointer("GCHeapFreeableSohSegment", out TargetPointer? soh))
+            AddSegmentList(ReadPointer(soh), FreeSohSegment, regions);
+        if (TryReadGlobalPointer("GCHeapFreeableUohSegment", out TargetPointer? uoh))
+            AddSegmentList(ReadPointer(uoh), FreeUohSegment, regions);
+    }
+    return regions;
+}
+
+void AddFreeList(TargetPointer freeListAddr, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
+{
+    RegionFreeList fl = Read<RegionFreeList>(freeListAddr);
+    if (fl.HeadFreeRegion != null)
+        AddSegmentList(fl.HeadFreeRegion, kind, regions, heap);
+}
+
+void AddSegmentList(TargetPointer start, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
+{
+    int iterationMax = 2048;
+    TargetPointer curr = start;
+    while (curr != null && iterationMax-- > 0)
+    {
+        HeapSegment seg = Read<HeapSegment>(curr);
+        if (seg.Mem != null)
+        {
+            ulong size = (seg.Mem < seg.Committed) ? seg.Committed - seg.Mem : 0;
+            regions.Add(new GCMemoryRegionData { Start = seg.Mem, Size = size, ExtraData = kind, Heap = heap });
+        }
+        curr = seg.Next;
+        if (curr == start) break;
+    }
 }
 ```

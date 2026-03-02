@@ -157,4 +157,6 @@ public enum DataType
     HandleTableBucket,
     HandleTable,
     TableSegment,
+    CardTableInfo,
+    RegionFreeList,
 }
