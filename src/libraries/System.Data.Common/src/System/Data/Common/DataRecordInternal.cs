@@ -119,6 +119,10 @@ namespace System.Data.Common
                 throw ADP.InvalidSourceBufferIndex(cbytes, dataIndex, nameof(dataIndex));
             }
 
+            if (dataIndex < 0 || dataIndex > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(dataIndex));
+            }
             ndataIndex = (int)dataIndex;
 
             // if no buffer is passed in, return the number of characters we have
@@ -189,6 +193,10 @@ namespace System.Data.Common
                 throw ADP.InvalidSourceBufferIndex(cchars, dataIndex, nameof(dataIndex));
             }
 
+            if (dataIndex < 0)
+	     {
+                throw new ArgumentOutOfRangeException(nameof(dataIndex), dataIndex, SR.Format(SR.Argument_MustBeGEZeroString));
+            }
             int ndataIndex = (int)dataIndex;
 
 
