@@ -392,11 +392,10 @@ namespace System.Globalization.Tests
             yield return new object[] { "a\u0300bc", 1, 1, (Range?)(2..3) }; // "b"
             // Empty string
             yield return new object[] { "", 0, 0, (Range?)(0..0) };
-            // Out of range: returns null
+            // Out of range (beyond end): returns null
             yield return new object[] { "abc", 0, 4, (Range?)null };
             yield return new object[] { "abc", 4, 0, (Range?)null };
-            yield return new object[] { "abc", -1, 1, (Range?)null };
-            yield return new object[] { "abc", 0, -1, (Range?)null };
+            yield return new object[] { "abc", 3, 1, (Range?)null };
             yield return new object[] { "", 1, 0, (Range?)null };
         }
 
@@ -414,17 +413,23 @@ namespace System.Globalization.Tests
             }
         }
 
+        [Fact]
+        public void GetRangeByTextElements_NegativeArgs_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => StringInfo.GetRangeByTextElements("abc".AsSpan(), -1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => StringInfo.GetRangeByTextElements("abc".AsSpan(), 0, -1));
+        }
+
         public static IEnumerable<object[]> RangeByTextElements_TestData()
         {
             yield return new object[] { "Simple Text", 7, 4, (Range?)(7..11) };
             yield return new object[] { "Simple Text", 0, 6, (Range?)(0..6) };
             yield return new object[] { "\uD800\uDC00\uD801\uDC01Left", 2, 2, (Range?)(4..6) };
             yield return new object[] { "a\u0300bc", 0, 3, (Range?)(0..4) };
-            // Out of range: returns null
+            // Out of range (beyond end): returns null
             yield return new object[] { "abc", 0, 4, (Range?)null };
             yield return new object[] { "abc", 4, 0, (Range?)null };
-            yield return new object[] { "abc", -1, 1, (Range?)null };
-            yield return new object[] { "abc", 0, -1, (Range?)null };
+            yield return new object[] { "abc", 3, 1, (Range?)null };
         }
 
         [Theory]
@@ -440,6 +445,14 @@ namespace System.Globalization.Tests
                 string slice = str[result.Value];
                 Assert.Equal(lengthInTextElements, StringInfo.GetLengthInTextElements(slice.AsSpan()));
             }
+        }
+
+        [Fact]
+        public void RangeByTextElements_NegativeArgs_ThrowsArgumentOutOfRangeException()
+        {
+            StringInfo si = new StringInfo("abc");
+            Assert.Throws<ArgumentOutOfRangeException>(() => si.RangeByTextElements(-1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => si.RangeByTextElements(0, -1));
         }
     }
 }

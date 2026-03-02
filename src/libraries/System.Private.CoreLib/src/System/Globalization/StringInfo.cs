@@ -69,6 +69,9 @@ namespace System.Globalization
         /// <summary>
         /// Returns the number of text elements (extended grapheme clusters) in the given span.
         /// </summary>
+        /// <remarks>
+        /// A grapheme cluster is a sequence of one or more Unicode code points that should be treated as a single unit.
+        /// </remarks>
         /// <param name="str">The input span to analyze.</param>
         /// <returns>The number of text elements within <paramref name="str"/>.</returns>
         public static int GetLengthInTextElements(ReadOnlySpan<char> str)
@@ -84,23 +87,26 @@ namespace System.Globalization
 
         /// <summary>
         /// Retrieves a range covering a substring of text elements from the given span,
-        /// or <see langword="null"/> if the requested range is out of bounds.
+        /// or <see langword="null"/> if the requested range extends beyond the end of <paramref name="str"/>.
         /// </summary>
+        /// <remarks>
+        /// A grapheme cluster is a sequence of one or more Unicode code points that should be treated as a single unit.
+        /// </remarks>
         /// <param name="str">The input span to analyze.</param>
         /// <param name="startingTextElement">The zero-based text element index at which the substring begins.</param>
         /// <param name="lengthInTextElements">The number of text elements to include in the substring.</param>
         /// <returns>
         /// A <see cref="Range"/> representing the char offsets within <paramref name="str"/> that correspond to the
-        /// requested text elements, or <see langword="null"/> if <paramref name="startingTextElement"/> or
-        /// <paramref name="lengthInTextElements"/> is negative, or if the requested range extends beyond the end
+        /// requested text elements, or <see langword="null"/> if the requested range extends beyond the end
         /// of <paramref name="str"/>.
         /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="startingTextElement"/> or <paramref name="lengthInTextElements"/> is negative.
+        /// </exception>
         public static Range? GetRangeByTextElements(ReadOnlySpan<char> str, int startingTextElement, int lengthInTextElements)
         {
-            if (startingTextElement < 0 || lengthInTextElements < 0)
-            {
-                return null;
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(startingTextElement);
+            ArgumentOutOfRangeException.ThrowIfNegative(lengthInTextElements);
 
             int startOffset = 0;
 
@@ -133,16 +139,21 @@ namespace System.Globalization
 
         /// <summary>
         /// Retrieves a range covering a substring of text elements from the instance string,
-        /// or <see langword="null"/> if the requested range is out of bounds.
+        /// or <see langword="null"/> if the requested range extends beyond the end of <see cref="String"/>.
         /// </summary>
+        /// <remarks>
+        /// A grapheme cluster is a sequence of one or more Unicode code points that should be treated as a single unit.
+        /// </remarks>
         /// <param name="startingTextElement">The zero-based text element index at which the substring begins.</param>
         /// <param name="lengthInTextElements">The number of text elements to include in the substring.</param>
         /// <returns>
         /// A <see cref="Range"/> representing the char offsets within <see cref="String"/> that correspond to the
-        /// requested text elements, or <see langword="null"/> if <paramref name="startingTextElement"/> or
-        /// <paramref name="lengthInTextElements"/> is negative, or if the requested range extends beyond the end
+        /// requested text elements, or <see langword="null"/> if the requested range extends beyond the end
         /// of <see cref="String"/>.
         /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="startingTextElement"/> or <paramref name="lengthInTextElements"/> is negative.
+        /// </exception>
         public Range? RangeByTextElements(int startingTextElement, int lengthInTextElements)
         {
             return GetRangeByTextElements(String, startingTextElement, lengthInTextElements);
