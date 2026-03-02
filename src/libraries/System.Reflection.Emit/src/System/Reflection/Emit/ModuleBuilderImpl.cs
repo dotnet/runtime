@@ -696,7 +696,8 @@ namespace System.Reflection.Emit
             if (!_typeReferences.TryGetValue(type, out var typeHandle))
             {
                 if (type.HasElementType || type.IsGenericParameter ||
-                    (type.IsGenericType && !type.IsGenericTypeDefinition))
+                    (type.IsGenericType && !type.IsGenericTypeDefinition)
+                    || type.IsFunctionPointer)
                 {
                     typeHandle = AddTypeSpecification(type);
                 }
@@ -1103,6 +1104,19 @@ namespace System.Reflection.Emit
                 return (elementType is TypeBuilderImpl tbi && Equals(tbi.Module)) || IsConstructedFromTypeBuilder(elementType);
             }
 
+            if (type.IsFunctionPointer)
+            {
+                Type ret = type.GetFunctionPointerReturnType();
+                if ((ret is TypeBuilderImpl retTb && Equals(retTb.Module)) || IsConstructedFromTypeBuilder(ret))
+                    return true;
+
+                foreach (Type paramType in type.GetFunctionPointerParameterTypes())
+                {
+                    if ((paramType is TypeBuilderImpl paramTb && Equals(paramTb.Module)) || IsConstructedFromTypeBuilder(paramType))
+                        return true;
+                }
+            }
+
             return false;
         }
 
@@ -1358,6 +1372,16 @@ namespace System.Reflection.Emit
         internal int GetSignatureToken(CallingConvention callingConvention, Type? returnType, Type[]? parameterTypes) =>
             MetadataTokens.GetToken(_metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(
                 MetadataSignatureHelper.GetMethodSignature(this, parameterTypes, returnType, GetSignatureConvention(callingConvention)))));
+
+        internal int GetFunctionPointerSignatureToken(Type functionPointerType)
+        {
+            BlobBuilder blobBuilder = new();
+            SignatureTypeEncoder encoder = new(blobBuilder);
+            MetadataSignatureHelper.WriteSignatureForFunctionPointerType(encoder, functionPointerType, this);
+
+            byte[] blob = blobBuilder.ToArray(1, blobBuilder.Count - 1); // Strip away ELEMENT_TYPE_FNPTR
+            return MetadataTokens.GetToken(_metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(blob)));
+        }
 
         private static SignatureCallingConvention GetSignatureConvention(CallingConvention callingConvention) =>
             callingConvention switch

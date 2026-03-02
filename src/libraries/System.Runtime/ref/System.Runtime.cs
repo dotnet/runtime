@@ -6771,11 +6771,14 @@ namespace System
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public virtual System.Type MakeArrayType(int rank) { throw null; }
         public virtual System.Type MakeByRefType() { throw null; }
+        public static System.Type MakeFunctionPointerSignatureType(System.Type returnType, System.Type[]? parameterTypes, bool isUnmanaged = false, System.Type[]? callingConventions = null) { throw null; }
+        public virtual System.Type MakeFunctionPointerType(System.Type[]? parameterTypes, bool isUnmanaged = false) { throw null; }
         public static System.Type MakeGenericMethodParameter(int position) { throw null; }
         public static System.Type MakeGenericSignatureType(System.Type genericTypeDefinition, params System.Type[] typeArguments) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The native code for this instantiation might not be available at runtime.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual System.Type MakeGenericType(params System.Type[] typeArguments) { throw null; }
+        public static System.Type MakeModifiedSignatureType(System.Type type, System.Type[]? requiredCustomModifiers, System.Type[]? optionalCustomModifiers) { throw null; }
         public virtual System.Type MakePointerType() { throw null; }
         public static bool operator ==(System.Type? left, System.Type? right) { throw null; }
         public static bool operator !=(System.Type? left, System.Type? right) { throw null; }

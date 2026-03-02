@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -298,6 +299,296 @@ namespace System.Reflection.Tests
             TestSignatureTypeInvariants(t);
         }
 
+        [Fact]
+        public static void MakeFunctionPointerSignatureTypeManaged()
+        {
+            Type[] paramTypes = [typeof(string), typeof(bool)];
+            Type t = Type.MakeFunctionPointerSignatureType(typeof(int), paramTypes);
+
+            Assert.True(t.IsFunctionPointer);
+            Assert.False(t.IsUnmanagedFunctionPointer);
+            Assert.Equal(typeof(int).ToString(), t.GetFunctionPointerReturnType().ToString());
+            Assert.Equal(paramTypes.Select(t => t.ToString()), t.GetFunctionPointerParameterTypes().Select(t => t.ToString()));
+            Assert.Equal(0, t.GetFunctionPointerCallingConventions().Length);
+        }
+
+        [Fact]
+        public static void MakeFunctionPointerSignatureTypeManaged_InvalidCallingConventions()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                Type[] paramTypes = [typeof(string), typeof(bool)];
+                Type t = Type.MakeFunctionPointerSignatureType(typeof(int), paramTypes, false, [typeof(CallConvCdecl)]);
+            });
+        }
+
+        [Fact]
+        public static void MakeFunctionPointerSignatureTypeUnmanaged1()
+        {
+            Type[] paramTypes = [typeof(short)];
+            Type[] callConvs = [typeof(CallConvCdecl)];
+            Type t = Type.MakeFunctionPointerSignatureType(typeof(void), paramTypes, true, callConvs);
+
+            Type fnPtrRet = t.GetFunctionPointerReturnType();
+            Type[] fnPtrParams = t.GetFunctionPointerParameterTypes();
+            Type[] fnPtrCallConvs = t.GetFunctionPointerCallingConventions();
+            Assert.True(t.IsFunctionPointer);
+            Assert.True(t.IsUnmanagedFunctionPointer);
+            Assert.Equal(typeof(void).ToString(), fnPtrRet.ToString());
+            Assert.Equal(paramTypes.Select(t => t.ToString()), fnPtrParams.Select(t => t.ToString()));
+            Assert.Equal(callConvs.Select(t => t.ToString()), fnPtrCallConvs.Select(t => t.ToString()));
+            Assert.Equal(0, fnPtrRet.GetOptionalCustomModifiers().Length);
+        }
+
+        [Fact]
+        public static void MakeFunctionPointerSignatureTypeUnmanaged2()
+        {
+            Type[] paramTypes = [typeof(short)];
+            Type[] callConvs = [typeof(CallConvSwift)];
+            Type t = Type.MakeFunctionPointerSignatureType(typeof(void), paramTypes, true, callConvs);
+
+            Type fnPtrRet = t.GetFunctionPointerReturnType();
+            Type[] fnPtrParams = t.GetFunctionPointerParameterTypes();
+            Type[] fnPtrCallConvs = t.GetFunctionPointerCallingConventions();
+            Assert.True(t.IsFunctionPointer);
+            Assert.True(t.IsUnmanagedFunctionPointer);
+            Assert.Equal(typeof(void).ToString(), fnPtrRet.ToString());
+            Assert.Equal(paramTypes.Select(t => t.ToString()), fnPtrParams.Select(t => t.ToString()));
+            Assert.Equal(callConvs.Select(t => t.ToString()), fnPtrCallConvs.Select(t => t.ToString()));
+            Assert.Equal(1, fnPtrRet.GetOptionalCustomModifiers().Length);
+        }
+
+        [Fact]
+        public static void MakeFunctionPointerSignatureTypeUnmanaged3()
+        {
+            Type[] paramTypes = [typeof(short)];
+            Type[] callConvs = [typeof(CallConvCdecl), typeof(CallConvSuppressGCTransition)];
+            Type t = Type.MakeFunctionPointerSignatureType(typeof(void), paramTypes, true, callConvs);
+
+            Type fnPtrRet = t.GetFunctionPointerReturnType();
+            Type[] fnPtrParams = t.GetFunctionPointerParameterTypes();
+            Type[] fnPtrCallConvs = t.GetFunctionPointerCallingConventions();
+            Assert.True(t.IsFunctionPointer);
+            Assert.True(t.IsUnmanagedFunctionPointer);
+            Assert.Equal(typeof(void).ToString(), fnPtrRet.ToString());
+            Assert.Equal(paramTypes.Select(t => t.ToString()), fnPtrParams.Select(t => t.ToString()));
+            Assert.Equal(callConvs.Select(t => t.ToString()), fnPtrCallConvs.Select(t => t.ToString()));
+            Assert.Equal(2, fnPtrRet.GetOptionalCustomModifiers().Length);
+        }
+
+        private static void AssertFunctionPointerTypesEqual(Type expected, Type actual)
+        {
+            Assert.Equal(expected.ToString(), actual.ToString());
+            Assert.Equal(expected.IsFunctionPointer, actual.IsFunctionPointer);
+            Assert.Equal(expected.IsUnmanagedFunctionPointer, actual.IsUnmanagedFunctionPointer);
+            Assert.Equal(expected.GetFunctionPointerReturnType().UnderlyingSystemType, actual.GetFunctionPointerReturnType().UnderlyingSystemType);
+            Assert.Equal(expected.GetFunctionPointerReturnType().GetOptionalCustomModifiers(), actual.GetFunctionPointerReturnType().GetOptionalCustomModifiers());
+            Assert.Equal(expected.GetFunctionPointerParameterTypes().Select(p => p.UnderlyingSystemType), actual.GetFunctionPointerParameterTypes().Select(p => p.UnderlyingSystemType));
+            Assert.Equal(expected.GetFunctionPointerCallingConventions(), actual.GetFunctionPointerCallingConventions());
+        }
+
+        public static IEnumerable<object[]> MakeFunctionPointerSignatureTypeTestData
+        {
+            get
+            {
+                yield return
+                [
+                    Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(int), typeof(int)]),
+                    typeof(ClassWithFunctionPointers).GetField("Func1").GetModifiedFieldType()
+                ];
+
+                yield return
+                [
+                    Type.MakeFunctionPointerSignatureType(typeof(bool), [typeof(string)], true, [typeof(CallConvCdecl)]),
+                    typeof(ClassWithFunctionPointers).GetField("Func2").GetModifiedFieldType()
+                ];
+
+                yield return
+                [
+                    Type.MakeFunctionPointerSignatureType(typeof(void), [typeof(int)], true, [typeof(CallConvSuppressGCTransition), typeof(CallConvFastcall)]),
+                    typeof(ClassWithFunctionPointers).GetField("Func3").GetModifiedFieldType()
+                ];
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MakeFunctionPointerSignatureTypeTestData))]
+        public static void MakeFunctionPointerSignatureType_MatchesGetModifiedFieldType(Type signatureType, Type reflectedType)
+        {
+            AssertFunctionPointerTypesEqual(reflectedType, signatureType);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", TestRuntimes.Mono)]
+        public static void MakeFunctionPointerSignatureType_MatchesGetModifiedFieldType_NestedFunctionPointer()
+        {
+            Type expected = typeof(ClassWithFunctionPointers).GetField("Func4").GetModifiedFieldType();
+            Type actual = Type.MakeFunctionPointerSignatureType(
+                typeof(string),
+                [Type.MakeFunctionPointerSignatureType(typeof(bool), [typeof(short)], true, [typeof(CallConvMemberFunction), typeof(CallConvStdcall)])],
+                true, [typeof(CallConvSwift)]);
+
+            Assert.Equal(expected.ToString(), actual.ToString());
+            Assert.Equal(expected.IsFunctionPointer, actual.IsFunctionPointer);
+            Assert.Equal(expected.IsUnmanagedFunctionPointer, actual.IsUnmanagedFunctionPointer);
+            Assert.Equal(expected.GetFunctionPointerReturnType().UnderlyingSystemType, actual.GetFunctionPointerReturnType().UnderlyingSystemType);
+            Assert.Equal(expected.GetFunctionPointerCallingConventions(), actual.GetFunctionPointerCallingConventions());
+            AssertFunctionPointerTypesEqual(expected.GetFunctionPointerParameterTypes()[0], actual.GetFunctionPointerParameterTypes()[0]);
+        }
+
+        public static IEnumerable<object[]> MakeFunctionPointerSignatureType_RoundTrip_TestData
+        {
+            get
+            {
+                yield return [Type.MakeFunctionPointerSignatureType(typeof(int), [typeof(int), typeof(int)])];
+
+                yield return [Type.MakeFunctionPointerSignatureType(typeof(bool), [typeof(string)], true, [typeof(CallConvCdecl)])];
+
+                yield return [Type.MakeFunctionPointerSignatureType(typeof(void), [typeof(int)], true, [typeof(CallConvFastcall), typeof(CallConvSuppressGCTransition)])];
+
+                yield return [Type.MakeFunctionPointerSignatureType(
+                    Type.MakeModifiedSignatureType(
+                        typeof(bool),
+                        [typeof(IsConst)],
+                        [typeof(IsVolatile)]),
+                    [typeof(short), typeof(string)],
+                    true,
+                    [typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition)])];
+
+
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MakeFunctionPointerSignatureType_RoundTrip_TestData))]
+        public static void MakeFunctionPointerSignatureType_RoundTrip(Type original)
+        {
+            Type newType = Type.MakeFunctionPointerSignatureType(
+                original.GetFunctionPointerReturnType(),
+                original.GetFunctionPointerParameterTypes(),
+                original.IsUnmanagedFunctionPointer,
+                original.GetFunctionPointerCallingConventions());
+
+            AssertFunctionPointerTypesEqual(original, newType);
+            Assert.Equal(original.GetFunctionPointerReturnType().GetRequiredCustomModifiers(), newType.GetFunctionPointerReturnType().GetRequiredCustomModifiers());
+        }
+
+        public static IEnumerable<object[]> MakeFunctionPointerSignatureType_InvalidEncoding_TestData
+        {
+            get
+            {
+                yield return
+                [
+                    Type.MakeModifiedSignatureType(
+                        typeof(void), [],
+                        [typeof(CallConvCdecl)]),
+                    new Type[] { typeof(CallConvCdecl) }
+                ];
+
+                yield return
+                [
+                    Type.MakeModifiedSignatureType(
+                        typeof(int), [],
+                        [typeof(CallConvFastcall), typeof(CallConvSuppressGCTransition), typeof(CallConvMemberFunction)]),
+                    new Type[] { typeof(CallConvFastcall), typeof(CallConvSuppressGCTransition) }
+                ];
+
+                yield return
+                [
+                    Type.MakeModifiedSignatureType(
+                        typeof(int), [],
+                        [typeof(CallConvSuppressGCTransition), typeof(CallConvMemberFunction)]),
+                    new Type[] { typeof(CallConvThiscall), typeof(CallConvSuppressGCTransition), typeof(CallConvMemberFunction) }
+                ];
+
+                yield return
+                [
+                    Type.MakeModifiedSignatureType(
+                        typeof(bool), [],
+                        [typeof(CallConvMemberFunction), typeof(CallConvStdcall)]),
+                    new Type[] { typeof(CallConvStdcall), typeof(CallConvMemberFunction) }
+                ];
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MakeFunctionPointerSignatureType_InvalidEncoding_TestData))]
+        public static void MakeFunctionPointerSignatureType_InvalidEncoding(Type retType, Type[] callConvs)
+        {
+            Assert.Throws<ArgumentException>(() => Type.MakeFunctionPointerSignatureType(retType, [], true, callConvs));
+        }
+
+        [Fact]
+        public static void MakeFunctionPointerType_FromSignatureType()
+        {
+            Type retType = Type.MakeFunctionPointerSignatureType(typeof(int), []);
+            Type fnPtrType = retType.MakeFunctionPointerType([typeof(bool)]);
+
+            Assert.True(fnPtrType.IsSignatureType);
+            Assert.True(fnPtrType.IsFunctionPointer);
+            AssertFunctionPointerTypesEqual(retType, fnPtrType.GetFunctionPointerReturnType());
+        }
+
+        [Fact]
+        public static void MakeSignatureModifiedType()
+        {
+            Type t = Type.MakeModifiedSignatureType(typeof(List<int>), [], [typeof(IsVolatile)]);
+
+            Assert.True(t.IsGenericType);
+            Assert.Equal(typeof(int).ToString(), t.GetGenericArguments()[0].ToString());
+            Assert.Equal(0, t.GetRequiredCustomModifiers().Length);
+            Assert.Equal(1, t.GetOptionalCustomModifiers().Length);
+            Assert.Equal(typeof(IsVolatile).ToString(), t.GetOptionalCustomModifiers()[0].ToString());
+        }
+
+        [Fact]
+        public static void MakeSignatureModifiedType_Nested1()
+        {
+            Type type = Type.MakeModifiedSignatureType(
+                Type.MakeModifiedSignatureType(
+                    typeof(int),
+                    [typeof(IsVolatile)], []),
+                [typeof(IsConst)], []);
+
+            Assert.True(type.IsSignatureType);
+            Assert.True(type.UnderlyingSystemType == typeof(int));
+            Assert.Equal([typeof(IsConst), typeof(IsVolatile)], type.GetRequiredCustomModifiers());
+            Assert.Equal([], type.GetOptionalCustomModifiers());
+        }
+
+        [Fact]
+        public static void MakeSignatureModifiedType_Nested2()
+        {
+            Type type = Type.MakeModifiedSignatureType(
+                Type.MakeModifiedSignatureType(
+                    typeof(bool),
+                    [],
+                    [typeof(CallConvSuppressGCTransition), typeof(CallConvCdecl)]),
+            [typeof(IsConst)], []);
+
+            Assert.True(type.IsSignatureType);
+            Assert.True(type.UnderlyingSystemType == typeof(bool));
+            Assert.Equal([typeof(IsConst)], type.GetRequiredCustomModifiers());
+            Assert.Equal([typeof(CallConvSuppressGCTransition), typeof(CallConvCdecl)], type.GetOptionalCustomModifiers());
+        }
+
+        [Fact]
+        public static void MakeSignatureModifiedType_Nested3()
+        {
+            Type type = Type.MakeModifiedSignatureType(
+                Type.MakeModifiedSignatureType(
+                    Type.MakeModifiedSignatureType(
+                        typeof(long),
+                        [typeof(IsLong)], []),
+                    [typeof(IsConst)], []),
+                [typeof(IsVolatile)], []);
+
+            Assert.True(type.IsSignatureType);
+            Assert.True(type.UnderlyingSystemType == typeof(long));
+            Assert.Equal([typeof(IsVolatile), typeof(IsConst), typeof(IsLong)], type.GetRequiredCustomModifiers());
+            Assert.Equal([], type.GetOptionalCustomModifiers());
+        }
+
         [Theory]
         [InlineData(typeof(List<>))]
         [InlineData(typeof(Span<>))]
@@ -392,7 +683,7 @@ namespace System.Reflection.Tests
             [Marker(0)] public static void Moo(int x) { }
             [Marker(1)] public static void Moo<T1>(int x) { }
             [Marker(2)] public static void Moo<T1, T2>(int x) { }
-            [Marker(3)] public static void Moo<T1, T2, T3>(int x) {}
+            [Marker(3)] public static void Moo<T1, T2, T3>(int x) { }
         }
 
         private class TestClass2
@@ -404,7 +695,7 @@ namespace System.Reflection.Tests
             [Marker(4)] public static void Moo<T, U>(int x, int[] y) { }
         }
 
-        private class TestClass3<T,U>
+        private class TestClass3<T, U>
         {
             public static void Moo(T p1, T[] p2, T[,] p3, ref T p4, TestClass3<T, T> p5, ref TestClass3<T, T[]>[,] p6) { }
             public static void Moo(U p1, U[] p2, U[,] p3, ref U p4, TestClass3<U, U> p5, ref TestClass3<U, U[]>[,] p6) { }
@@ -417,7 +708,7 @@ namespace System.Reflection.Tests
             public static void Moo<M, N>(N p1, N[] p2, N[,] p3, ref N p4, TestClass3<N, N> p5, ref TestClass3<N, N[]>[,] p6) { }
         }
 
-        private class TestClass4<T> where T: NoOneSubclasses, new()
+        private class TestClass4<T> where T : NoOneSubclasses, new()
         {
             public static void Moo<M>(int p1, int p2) where M : NoOneSubclassesThisEither { }
             public static void Moo<N, O>(TestClass4<N> p1, int p2) where N : NoOneSubclasses, new() { }
@@ -432,6 +723,14 @@ namespace System.Reflection.Tests
             public enum GenericEnum
             {
             }
+        }
+
+        private unsafe class ClassWithFunctionPointers
+        {
+            public static delegate*<int, int, int> Func1 = null;
+            public static delegate* unmanaged[Cdecl]<string, bool> Func2 = null;
+            public static delegate* unmanaged[Fastcall, SuppressGCTransition]<int, void> Func3 = null;
+            public static delegate* unmanaged[Swift]<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, string> Func4 = null;
         }
 
         private static void TestSignatureTypeInvariants(Type type)

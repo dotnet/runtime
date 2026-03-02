@@ -303,4 +303,7 @@
   <data name="Argument_MustBeEnum" xml:space="preserve">
     <value>Type provided must be an Enum.</value>
   </data>
+  <data name="Argument_MustBeFunctionPointer" xml:space="preserve">
+    <value>Argument must represent a function pointer type.</value>
+  </data>
 </root>

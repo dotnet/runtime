@@ -492,6 +492,99 @@ namespace System.Tests
             Assert.Throws<TypeLoadException>(() => t.MakePointerType());
         }
 
+        public static IEnumerable<object[]> MakeFunctionPointerType_TestData()
+        {
+            yield return new object[] { typeof(void), Type.EmptyTypes };
+            yield return new object[] { typeof(int), new Type[] { typeof(string) } };
+            yield return new object[] { typeof(string), new Type[] { typeof(int), typeof(double) } };
+            yield return new object[] { typeof(int*), new Type[] { typeof(int*) } };
+            yield return new object[] { typeof(int[]), new Type[] { typeof(string[]) } };
+            yield return new object[] { typeof(GenericClass<int>), new Type[] { typeof(GenericStruct<int>) } };
+            yield return new object[] { typeof(int), new Type[] { typeof(int).MakeByRefType() } };
+        }
+
+        [Theory]
+        [MemberData(nameof(MakeFunctionPointerType_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_Invoke_ReturnsExpected(Type returnType, Type[] parameterTypes)
+        {
+            Type fnPtrType = returnType.MakeFunctionPointerType(parameterTypes);
+
+            Assert.True(fnPtrType.IsFunctionPointer);
+            Assert.False(fnPtrType.IsUnmanagedFunctionPointer);
+            Assert.Equal(returnType, fnPtrType.GetFunctionPointerReturnType());
+            Assert.Equal(parameterTypes, fnPtrType.GetFunctionPointerParameterTypes());
+
+            Assert.Equal(fnPtrType, returnType.MakeFunctionPointerType(parameterTypes));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_NullParameters_ReturnsExpected()
+        {
+            Type fnPtrType = typeof(int).MakeFunctionPointerType(null);
+
+            Assert.True(fnPtrType.IsFunctionPointer);
+            Assert.Empty(fnPtrType.GetFunctionPointerParameterTypes());
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_Unmanaged_ReturnsExpected()
+        {
+            Type[] parameterTypes = [typeof(int), typeof(double)];
+            Type fnPtrManaged = typeof(int).MakeFunctionPointerType(parameterTypes, isUnmanaged: false);
+            Type fnPtrUnmanaged = typeof(int).MakeFunctionPointerType(parameterTypes, isUnmanaged: true);
+
+            Assert.False(fnPtrManaged.IsUnmanagedFunctionPointer);
+            Assert.True(fnPtrUnmanaged.IsUnmanagedFunctionPointer);
+            Assert.NotEqual(fnPtrManaged, fnPtrUnmanaged);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_ParameterArrayIsCloned()
+        {
+            Type[] parameterTypes = [typeof(int), typeof(string)];
+            Type fnPtrType = typeof(int).MakeFunctionPointerType(parameterTypes);
+
+            parameterTypes[0] = typeof(double);
+
+            Assert.Equal(typeof(int), fnPtrType.GetFunctionPointerParameterTypes()[0]);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_NullParameterInArray_ThrowsArgumentNullException()
+        {
+            Type[] parameterTypes = [typeof(int), null!, typeof(string)];
+            Assert.Throws<ArgumentNullException>("parameterTypes", () => typeof(int).MakeFunctionPointerType(parameterTypes));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_InvalidArgumentTypes()
+        {
+            Type[] voidParam = [typeof(void)];
+            Type[] openGenericParam = [typeof(List<>)];
+
+            Assert.Throws<ArgumentException>("parameterTypes", () => typeof(void).MakeFunctionPointerType(voidParam));
+            Assert.Throws<ArgumentException>("parameterTypes", () => typeof(void).MakeFunctionPointerType(openGenericParam));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_WithSignatureTypeParameter()
+        {
+            Type paramType = Type.MakeGenericMethodParameter(0);
+            Type fnPtrType = typeof(int).MakeFunctionPointerType([paramType]);
+
+            Assert.True(fnPtrType.IsSignatureType);
+            Assert.True(fnPtrType.IsFunctionPointer);
+            Assert.Equal(typeof(int), fnPtrType.GetFunctionPointerReturnType());
+            Assert.Equal(paramType, fnPtrType.GetFunctionPointerParameterTypes()[0]);
+        }
+
         [Theory]
         [InlineData("System.Nullable`1[System.Int32]", typeof(int?))]
         [InlineData("System.Int32*", typeof(int*))]

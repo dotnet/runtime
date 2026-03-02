@@ -177,11 +177,11 @@ namespace System.Reflection.Emit.Tests
 
             public FunctionPointer(
                 Type baseFunctionPointerType,
-                Type[] conventions = null,
-                Type customReturnType = null,
-                Type[] customParameterTypes = null,
-                Type[] fnPtrRequiredMods = null,
-                Type[] fnPtrOptionalMods = null)
+                Type[]? conventions = null,
+                Type? customReturnType = null,
+                Type[]? customParameterTypes = null,
+                Type[]? fnPtrRequiredMods = null,
+                Type[]? fnPtrOptionalMods = null)
                 : base(baseFunctionPointerType)
             {
                 callingConventions = conventions ?? [];
@@ -203,7 +203,7 @@ namespace System.Reflection.Emit.Tests
             private readonly Type[] requiredModifiers;
             private readonly Type[] optionalModifiers;
 
-            public ModifiedType(Type delegatingType, Type[] requiredMods = null, Type[] optionalMods = null)
+            public ModifiedType(Type delegatingType, Type[]? requiredMods = null, Type[]? optionalMods = null)
                 : base(delegatingType)
             {
                 requiredModifiers = requiredMods ?? [];
@@ -213,5 +213,16 @@ namespace System.Reflection.Emit.Tests
             public override Type[] GetRequiredCustomModifiers() => requiredModifiers;
             public override Type[] GetOptionalCustomModifiers() => optionalModifiers;
         }
+    }
+
+    public unsafe class ClassWithFunctionPointers
+    {
+        public static delegate*<int, int, int> FuncManaged;
+        public static int Add(int a, int b) => a + b;
+        public static void Init() => FuncManaged = &Add;
+
+        public static delegate* unmanaged[Cdecl]<string, bool> FuncUnmanaged1;
+        public static delegate* unmanaged[Fastcall, SuppressGCTransition]<int, void> FuncUnmanaged2;
+        public static delegate* unmanaged[Swift]<delegate* unmanaged[Stdcall, MemberFunction]<short, bool>, string> FuncUnmanaged3;
     }
 }

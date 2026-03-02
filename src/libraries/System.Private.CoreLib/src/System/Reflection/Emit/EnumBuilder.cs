@@ -62,5 +62,10 @@ namespace System.Reflection.Emit
             string s = GetRankString(rank);
             return SymbolType.FormCompoundType(s, this, 0)!;
         }
+
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
+        }
     }
 }

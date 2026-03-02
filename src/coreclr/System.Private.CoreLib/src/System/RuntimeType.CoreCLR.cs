@@ -3729,6 +3729,24 @@ namespace System
             return new RuntimeTypeHandle(this).MakeArray(rank);
         }
 
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
+            for (int i = 0; i < parameterTypes.Length; i++)
+            {
+                Type paramType = parameterTypes[i];
+                ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
+
+                if (paramType is not RuntimeType)
+                    return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
+
+                if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
+                    throw new ArgumentException(string.Format(SR.FunctionPointer_ParameterInvalid, paramType.ToString()), nameof(parameterTypes));
+            }
+
+            return new RuntimeTypeHandle(this).MakeFunctionPointer(parameterTypes, isUnmanaged);
+        }
+
         public override StructLayoutAttribute? StructLayoutAttribute => PseudoCustomAttribute.GetStructLayoutCustomAttribute(this);
 
         #endregion
