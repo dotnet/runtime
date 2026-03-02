@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <minipal/types.h>
+
 #ifndef __cplusplus
 #include <stdbool.h>
 #endif
@@ -28,7 +30,7 @@
 #endif
 
 #if defined(TARGET_ANDROID)
-static inline void ATTR_FORMAT_PRINTF(2, 3)
+static inline void MINIPAL_ATTR_FORMAT_PRINTF(2, 3)
 do_abort_unless (bool condition, const char* fmt, ...)
 {
     if (condition) {
@@ -80,10 +82,3 @@ do_abort_unless (bool condition, const char* fmt, ...)
 #define TYPEOF __typeof
 #endif // __cplusplus
 #endif // TYPEOF
-
-// Format attribute for printf-style functions
-#ifdef __GNUC__
-#define ATTR_FORMAT_PRINTF(fmt_pos, arg_pos) __attribute__ ((__format__(__printf__, fmt_pos, arg_pos)))
-#else
-#define ATTR_FORMAT_PRINTF(fmt_pos, arg_pos)
-#endif
