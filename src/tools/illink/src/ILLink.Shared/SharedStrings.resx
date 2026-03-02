@@ -1221,6 +1221,12 @@
   <data name="InvalidDependenciesFileFormatTitle" xml:space="preserve">
     <value>Unrecognized dependencies file type.</value>
   </data>
+  <data name="MultipleEntryPointRootsMessage" xml:space="preserve">
+    <value>Multiple root assemblies specified with 'entrypoint' root mode. Assembly '{0}' conflicts with '{1}'.</value>
+  </data>
+  <data name="MultipleEntryPointRootsTitle" xml:space="preserve">
+    <value>Multiple root assemblies specified with 'entrypoint' root mode.</value>
+  </data>
   <data name="RedundantSuppressionMessage" xml:space="preserve">
     <value>Unused 'UnconditionalSuppressMessageAttribute' for warning '{0}'. Consider removing the unused warning suppression.</value>
   </data>
