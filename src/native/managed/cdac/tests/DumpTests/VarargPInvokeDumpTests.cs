@@ -42,6 +42,27 @@ public class VarargPInvokeDumpTests : DumpTestBase
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     [SkipOnOS(IncludeOnly = "windows", Reason = "VarargPInvoke debuggee uses msvcrt.dll (Windows only)")]
+    public void VarargPInvoke_ContainsExpectedFrames(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+
+        ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
+
+        // Stack (top → bottom): sprintf, sprintf, IL_STUB_PInvoke, CrashInVarargPInvoke, Main
+        DumpTestStackWalker.Walk(Target, crashingThread)
+            .ExpectFrameWhere(
+                f => f.MethodDescPtr != TargetPointer.Null && rts.IsILStub(rts.GetMethodDescHandle(f.MethodDescPtr)),
+                "ILStub frame")
+            .ExpectAdjacentFrame("CrashInVarargPInvoke")
+            .ExpectAdjacentFrame("Main")
+            .Verify();
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "VarargPInvoke debuggee uses msvcrt.dll (Windows only)")]
     public void VarargPInvoke_HasILStubFrame(TestConfiguration config)
     {
         InitializeDumpTest(config);
