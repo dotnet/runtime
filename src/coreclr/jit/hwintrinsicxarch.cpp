@@ -3541,7 +3541,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     op2 = gtNewSimdMinMaxNode(retType, op2, gtCloneExpr(maxCns), simdBaseType, simdSize,
                                               /* isMax */ false, /* isMagnitude */ false, /* isNumber */ false);
 
-                    retNode = gtNewSimdNarrowNode(retType, op1, op2, narrowSimdBaseType, simdSize);
+                    // For unsigned narrow types (TYP_UBYTE, TYP_USHORT, TYP_UINT), the clamping
+                    // already ensures the upper bits are zero, so the AND masking in
+                    // gtNewSimdNarrowNode is redundant. For signed narrow types, we still need
+                    // the AND masking to clear sign-extended bits before PackUnsignedSaturate
+                    // can correctly pack the values.
+                    bool inputsAlreadyClamped = varTypeIsUnsigned(narrowSimdBaseType);
+
+                    retNode =
+                        gtNewSimdNarrowNode(retType, op1, op2, narrowSimdBaseType, simdSize, inputsAlreadyClamped);
                 }
             }
             break;
