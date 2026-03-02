@@ -11,6 +11,17 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal partial class StackWalk_1 : IStackWalk
 {
     /// <summary>
+    /// Flags from the ExceptionFlags class (exstatecommon.h).
+    /// These are bit flags stored in ExInfo.m_ExceptionFlags.m_flags.
+    /// </summary>
+    [Flags]
+    private enum ExceptionFlagsEnum : uint
+    {
+        // See Ex_UnwindHasStarted in src/coreclr/vm/exstatecommon.h
+        UnwindHasStarted = 0x00000004,
+    }
+
+    /// <summary>
     /// Given the CrawlFrame for a funclet frame, return the frame pointer of the enclosing funclet frame.
     /// For filter funclet frames and normal method frames, this function returns a NULL StackFrame.
     /// </summary>
@@ -126,46 +137,44 @@ internal partial class StackWalk_1 : IStackWalk
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
 
-        TargetPointer exInfo = GetCurrentExceptionTracker(handle);
-        while (exInfo != TargetPointer.Null)
+        TargetPointer callerStackPointer;
+        if (handle.State is StackWalkState.SW_FRAMELESS)
         {
-            Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exInfo);
-            exInfo = exceptionInfo.PreviousNestedInfo;
+            IPlatformAgnosticContext callerContext = handle.Context.Clone();
+            callerContext.Unwind(_target);
+            callerStackPointer = callerContext.StackPointer;
+        }
+        else
+        {
+            callerStackPointer = handle.FrameAddress;
+        }
 
-            TargetPointer stackPointer;
-            if (handle.State is StackWalkState.SW_FRAMELESS)
-            {
-                IPlatformAgnosticContext callerContext = handle.Context.Clone();
-                callerContext.Unwind(_target);
-                stackPointer = callerContext.StackPointer;
-            }
-            else
-            {
-                stackPointer = handle.Context.FramePointer;
-            }
-            if (IsInStackRegionUnwoundBySpecifiedException(handle.ThreadData, stackPointer))
-            {
+        TargetPointer pExInfo = GetCurrentExceptionTracker(handle);
+        while (pExInfo != TargetPointer.Null)
+        {
+            Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(pExInfo);
+            pExInfo = exceptionInfo.PreviousNestedInfo;
+
+            if (IsInStackRegionUnwoundBySpecifiedException(callerStackPointer, exceptionInfo))
                 return true;
-            }
         }
         return false;
     }
 
-    private bool IsInStackRegionUnwoundBySpecifiedException(ThreadData threadData, TargetPointer stackPointer)
+    private bool IsInStackRegionUnwoundBySpecifiedException(TargetPointer callerStackPointer, Data.ExceptionInfo exceptionInfo)
     {
-        // See ExInfo::IsInStackRegionUnwoundBySpecifiedException for explanation
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
-        TargetPointer exInfo = thread.ExceptionTracker;
-        while (exInfo != TargetPointer.Null)
+        // The tracker must be in the second pass (unwind has started), and its stack range must not be empty.
+        if ((exceptionInfo.ExceptionFlags & (uint)ExceptionFlagsEnum.UnwindHasStarted) == 0)
+            return false;
+
+        // Check for empty range
+        if (exceptionInfo.StackLowBound == TargetPointer.PlatformMaxValue(_target)
+            && exceptionInfo.StackHighBound == TargetPointer.Null)
         {
-            Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exInfo);
-            if (exceptionInfo.StackLowBound < stackPointer && stackPointer <= exceptionInfo.StackHighBound)
-            {
-                return true;
-            }
-            exInfo = exceptionInfo.PreviousNestedInfo;
+            return false;
         }
-        return false;
+
+        return (exceptionInfo.StackLowBound < callerStackPointer) && (callerStackPointer <= exceptionInfo.StackHighBound);
     }
 
 }

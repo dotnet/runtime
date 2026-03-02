@@ -90,12 +90,12 @@ internal partial class StackWalk_1 : IStackWalk
 
         foreach (GCFrameData gcFrame in gcFrames)
         {
-            TargetPointer pMethodDesc = ((IStackWalk)this).GetMethodDescPtr(gcFrame.Frame);
-
-            bool reportGcReferences = gcFrame.ShouldCrawlFrameReportGCReferences;
-
             try
             {
+                TargetPointer pMethodDesc = ((IStackWalk)this).GetMethodDescPtr(gcFrame.Frame);
+
+                bool reportGcReferences = gcFrame.ShouldCrawlFrameReportGCReferences;
+
                 TargetPointer pFrame = ((IStackWalk)this).GetFrameAddress(gcFrame.Frame);
                 scanContext.UpdateScanContext(
                     gcFrame.Frame.Context.StackPointer,
@@ -113,14 +113,14 @@ internal partial class StackWalk_1 : IStackWalk
                     }
                     else
                     {
-
+                        // TODO(stackref): Implement Frame::GcScanRoots for non-frameless frames
                     }
                 }
             }
             catch (System.Exception ex)
             {
                 Debug.WriteLine($"Exception during WalkStackReferences: {ex}");
-                // TODO(stackref): Handle exceptions properly
+                // Matching native DAC behavior: capture errors, don't propagate
             }
         }
 
