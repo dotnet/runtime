@@ -7,6 +7,13 @@
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' != 'browser'
+    and '$(TargetOS)' != 'wasi'
+    and '$(RuntimeFlavor)' != 'Mono'">
+    <NoWarn>$(NoWarn);CA2252</NoWarn>
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
