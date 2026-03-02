@@ -156,5 +156,140 @@ namespace System.Linq
                 }
             }
         }
+
+        /// <summary>Correlates the elements of two sequences based on matching keys.</summary>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{T}"/> to use to hash and compare keys.</param>
+        /// <returns>
+        /// An <see cref="IAsyncEnumerable{T}"/> that has elements of type <c>(TOuter Outer, TInner Inner)</c>
+        /// that are obtained by performing an inner join on two sequences.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="inner" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="outerKeySelector" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
+        public static IAsyncEnumerable<(TOuter Outer, TInner Inner)> Join<TOuter, TInner, TKey>(
+            this IAsyncEnumerable<TOuter> outer,
+            IAsyncEnumerable<TInner> inner,
+            Func<TOuter, TKey> outerKeySelector,
+            Func<TInner, TKey> innerKeySelector,
+            IEqualityComparer<TKey>? comparer = null)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+
+            return
+                outer.IsKnownEmpty() || inner.IsKnownEmpty() ? Empty<(TOuter Outer, TInner Inner)>() :
+                Impl(outer, inner, outerKeySelector, innerKeySelector, comparer, default);
+
+            static async IAsyncEnumerable<(TOuter Outer, TInner Inner)> Impl(
+                IAsyncEnumerable<TOuter> outer, IAsyncEnumerable<TInner> inner,
+                Func<TOuter, TKey> outerKeySelector,
+                Func<TInner, TKey> innerKeySelector,
+                IEqualityComparer<TKey>? comparer,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                await using IAsyncEnumerator<TOuter> e = outer.GetAsyncEnumerator(cancellationToken);
+
+                if (await e.MoveNextAsync())
+                {
+                    AsyncLookup<TKey, TInner> lookup = await AsyncLookup<TKey, TInner>.CreateForJoinAsync(inner, innerKeySelector, comparer, cancellationToken);
+                    if (lookup.Count != 0)
+                    {
+                        do
+                        {
+                            TOuter item = e.Current;
+                            Grouping<TKey, TInner>? g = lookup.GetGrouping(outerKeySelector(item), create: false);
+                            if (g is not null)
+                            {
+                                int count = g._count;
+                                TInner[] elements = g._elements;
+                                for (int i = 0; i != count; ++i)
+                                {
+                                    yield return (item, elements[i]);
+                                }
+                            }
+                        }
+                        while (await e.MoveNextAsync());
+                    }
+                }
+            }
+        }
+
+        /// <summary>Correlates the elements of two sequences based on matching keys.</summary>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{T}"/> to use to hash and compare keys.</param>
+        /// <returns>
+        /// An <see cref="IAsyncEnumerable{T}"/> that has elements of type <c>(TOuter Outer, TInner Inner)</c>
+        /// that are obtained by performing an inner join on two sequences.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="inner" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="outerKeySelector" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
+        public static IAsyncEnumerable<(TOuter Outer, TInner Inner)> Join<TOuter, TInner, TKey>(
+            this IAsyncEnumerable<TOuter> outer,
+            IAsyncEnumerable<TInner> inner,
+            Func<TOuter, CancellationToken, ValueTask<TKey>> outerKeySelector,
+            Func<TInner, CancellationToken, ValueTask<TKey>> innerKeySelector,
+            IEqualityComparer<TKey>? comparer = null)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+
+            return
+                outer.IsKnownEmpty() || inner.IsKnownEmpty() ? Empty<(TOuter Outer, TInner Inner)>() :
+                Impl(outer, inner, outerKeySelector, innerKeySelector, comparer, default);
+
+            static async IAsyncEnumerable<(TOuter Outer, TInner Inner)> Impl(
+                IAsyncEnumerable<TOuter> outer,
+                IAsyncEnumerable<TInner> inner,
+                Func<TOuter, CancellationToken, ValueTask<TKey>> outerKeySelector,
+                Func<TInner, CancellationToken, ValueTask<TKey>> innerKeySelector,
+                IEqualityComparer<TKey>? comparer,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                await using IAsyncEnumerator<TOuter> e = outer.GetAsyncEnumerator(cancellationToken);
+
+                if (await e.MoveNextAsync())
+                {
+                    AsyncLookup<TKey, TInner> lookup = await AsyncLookup<TKey, TInner>.CreateForJoinAsync(inner, innerKeySelector, comparer, cancellationToken);
+                    if (lookup.Count != 0)
+                    {
+                        do
+                        {
+                            TOuter item = e.Current;
+                            Grouping<TKey, TInner>? g = lookup.GetGrouping(await outerKeySelector(item, cancellationToken), create: false);
+                            if (g is not null)
+                            {
+                                int count = g._count;
+                                TInner[] elements = g._elements;
+                                for (int i = 0; i != count; ++i)
+                                {
+                                    yield return (item, elements[i]);
+                                }
+                            }
+                        }
+                        while (await e.MoveNextAsync());
+                    }
+                }
+            }
+        }
     }
 }

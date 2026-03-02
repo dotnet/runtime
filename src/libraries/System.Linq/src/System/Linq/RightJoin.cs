@@ -270,5 +270,85 @@ namespace System.Linq
                 while (e.MoveNext());
             }
         }
+
+        /// <summary>
+        /// Correlates the elements of two sequences based on matching keys. A specified <see cref="IEqualityComparer{T}" /> is used to compare keys.
+        /// </summary>
+        /// <param name="outer">The first sequence to join.</param>
+        /// <param name="inner">The sequence to join to the first sequence.</param>
+        /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
+        /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to hash and compare keys.</param>
+        /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
+        /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
+        /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
+        /// <returns>An <see cref="IEnumerable{T}" /> that has elements of type <c>(TOuter? Outer, TInner Inner)</c> that are obtained by performing a right outer join on two sequences.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> is <see langword="null" />.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method is implemented by using deferred execution. The immediate return value is an object that stores
+        /// all the information that is required to perform the action. The query represented by this method is not
+        /// executed until the object is enumerated either by calling its <c>GetEnumerator</c> method directly or by
+        /// using <c>foreach</c> in C# or <c>For Each</c> in Visual Basic.
+        /// </para>
+        /// </remarks>
+        public static IEnumerable<(TOuter? Outer, TInner Inner)> RightJoin<TOuter, TInner, TKey>(this IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, IEqualityComparer<TKey>? comparer = null)
+        {
+            if (outer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outer);
+            }
+
+            if (inner is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.inner);
+            }
+
+            if (outerKeySelector is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.outerKeySelector);
+            }
+
+            if (innerKeySelector is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.innerKeySelector);
+            }
+
+            if (IsEmptyArray(inner))
+            {
+                return [];
+            }
+
+            return RightJoinIterator(outer, inner, outerKeySelector, innerKeySelector, comparer);
+        }
+
+        private static IEnumerable<(TOuter? Outer, TInner Inner)> RightJoinIterator<TOuter, TInner, TKey>(IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, IEqualityComparer<TKey>? comparer)
+        {
+            using IEnumerator<TInner> e = inner.GetEnumerator();
+
+            if (e.MoveNext())
+            {
+                Lookup<TKey, TOuter> outerLookup = Lookup<TKey, TOuter>.CreateForJoin(outer, outerKeySelector, comparer);
+                do
+                {
+                    TInner item = e.Current;
+                    Grouping<TKey, TOuter>? g = outerLookup.GetGrouping(innerKeySelector(item), create: false);
+                    if (g is null)
+                    {
+                        yield return (default, item);
+                    }
+                    else
+                    {
+                        int count = g._count;
+                        TOuter[] elements = g._elements;
+                        for (int i = 0; i != count; ++i)
+                        {
+                            yield return (elements[i], item);
+                        }
+                    }
+                }
+                while (e.MoveNext());
+            }
+        }
     }
 }
