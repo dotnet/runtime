@@ -1,17 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Case3.cs" />
+    <Compile Include="Case1.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Library2.csproj" />
+    <ProjectReference Include="Library1.csproj" />
   </ItemGroup>
 </Project>

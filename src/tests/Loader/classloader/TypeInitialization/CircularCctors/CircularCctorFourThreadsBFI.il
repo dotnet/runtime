@@ -6,6 +6,7 @@
 .assembly extern System.Threading.Thread { auto }
 // Metadata version: v2.0.50103
 .assembly extern mscorlib { auto }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
 .assembly 'CircularCctorFourThreadsBFI'
 {
@@ -308,6 +309,10 @@
         01 00 00 00
     )
     .entrypoint
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
+        string('System.Threading.Thread.ThrowIfMultithreadingIsNotSupported: PlatformNotSupportedException')
+        int32(0x400) // TestPlatforms.Browser
+    }
     // Code size       302 (0x12e)
     .maxstack  3
     .locals init (class [System.Threading.Thread]System.Threading.Thread V_0,

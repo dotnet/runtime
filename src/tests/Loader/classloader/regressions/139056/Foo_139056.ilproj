@@ -3,6 +3,6 @@
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CircularCctorThreeThreads01BFI.il" />
+    <Compile Include="Foo.il" />
   </ItemGroup>
 </Project>
