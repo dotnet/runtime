@@ -5259,6 +5259,7 @@ public sealed unsafe partial class SOSDacImpl
     // LoaderAllocatorLoaderHeapNames in request.cpp. These are process-lifetime allocations,
     // equivalent to static const char* literals in C++.
     private static readonly (string Name, nint AnsiPtr)[] s_heapNameEntries = InitializeHeapNameEntries();
+    private (string Name, nint AnsiPtr)[]? _filteredHeapNameEntries;
 
     private static (string Name, nint AnsiPtr)[] InitializeHeapNameEntries()
     {
@@ -5282,36 +5283,48 @@ public sealed unsafe partial class SOSDacImpl
         return entries;
     }
 
+    // Returns the set of heap name entries for this target, filtered by which
+    // data descriptor fields exist. This mirrors the DAC's compile-time
+    // LoaderAllocatorLoaderHeapNames array and ensures a fixed count/ordering
+    // regardless of per-loader-allocator runtime state (e.g. VCS manager being null).
+    private (string Name, nint AnsiPtr)[] GetFilteredHeapNameEntries()
+    {
+        if (_filteredHeapNameEntries is not null)
+            return _filteredHeapNameEntries;
+
+        Target.TypeInfo laType = _target.GetTypeInfo(DataType.LoaderAllocator);
+        Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
+
+        var entries = new List<(string Name, nint AnsiPtr)>();
+        foreach (var entry in s_heapNameEntries)
+        {
+            bool include = entry.Name is "IndcellHeap" or "CacheEntryHeap"
+                ? vcsType.Fields.ContainsKey(entry.Name)
+                : laType.Fields.ContainsKey(entry.Name);
+            if (include)
+                entries.Add(entry);
+        }
+
+        _filteredHeapNameEntries = entries.ToArray();
+        return _filteredHeapNameEntries;
+    }
 
     int ISOSDacInterface13.GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded)
     {
         int hr = HResults.S_OK;
         try
         {
-            Contracts.ILoader contract = _target.Contracts.Loader;
-            TargetPointer globalLoaderAllocator = contract.GetGlobalLoaderAllocator();
-            IReadOnlyDictionary<string, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(globalLoaderAllocator);
-
-            int loaderHeapCount = 0;
-            foreach ((string name, _) in s_heapNameEntries)
-            {
-                if (heaps.ContainsKey(name))
-                    loaderHeapCount++;
-            }
+            var filteredEntries = GetFilteredHeapNameEntries();
+            int loaderHeapCount = filteredEntries.Length;
 
             if (pNeeded != null)
                 *pNeeded = loaderHeapCount;
 
             if (ppNames != null)
             {
-                int i = 0;
-                foreach ((string name, nint ansiPtr) in s_heapNameEntries)
-                {
-                    if (i >= count)
-                        break;
-                    if (heaps.ContainsKey(name))
-                        ppNames[i++] = (char*)ansiPtr;
-                }
+                int fillCount = Math.Min(count, loaderHeapCount);
+                for (int i = 0; i < fillCount; i++)
+                    ppNames[i] = (char*)filteredEntries[i].AnsiPtr;
             }
 
             if (count < loaderHeapCount)
@@ -5355,12 +5368,8 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.ILoader contract = _target.Contracts.Loader;
             IReadOnlyDictionary<string, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
 
-            int loaderHeapCount = 0;
-            foreach ((string name, _) in s_heapNameEntries)
-            {
-                if (heaps.ContainsKey(name))
-                    loaderHeapCount++;
-            }
+            var filteredEntries = GetFilteredHeapNameEntries();
+            int loaderHeapCount = filteredEntries.Length;
 
             if (pNeeded != null)
                 *pNeeded = loaderHeapCount;
@@ -5373,17 +5382,12 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 else
                 {
-                    int i = 0;
-                    foreach ((string name, _) in s_heapNameEntries)
+                    for (int i = 0; i < loaderHeapCount; i++)
                     {
-                        if (heaps.ContainsKey(name))
-                        {
-                            pLoaderHeaps[i] = heaps.TryGetValue(name, out TargetPointer heapAddr)
-                                ? heapAddr.ToClrDataAddress(_target)
-                                : 0;
-                            pKinds[i] = 0; // LoaderHeapKindNormal
-                            i++;
-                        }
+                        pLoaderHeaps[i] = heaps.TryGetValue(filteredEntries[i].Name, out TargetPointer heapAddr)
+                            ? heapAddr.ToClrDataAddress(_target)
+                            : 0;
+                        pKinds[i] = 0; // LoaderHeapKindNormal
                     }
                 }
             }

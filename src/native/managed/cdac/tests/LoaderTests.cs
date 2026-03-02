@@ -102,7 +102,34 @@ public unsafe class LoaderTests
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
         MockLoader loader = new(builder);
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
+        var types = new Dictionary<DataType, Target.TypeInfo>(loader.Types);
+
+        // Register LoaderAllocator and VirtualCallStubManager type infos so that
+        // GetCanonicalHeapNameEntries() can determine which heap names exist.
+        var dummyField = new Target.FieldInfo { Offset = 0 };
+        types[DataType.LoaderAllocator] = new Target.TypeInfo
+        {
+            Fields = new Dictionary<string, Target.FieldInfo>
+            {
+                ["LowFrequencyHeap"] = dummyField,
+                ["HighFrequencyHeap"] = dummyField,
+                ["StaticsHeap"] = dummyField,
+                ["StubHeap"] = dummyField,
+                ["ExecutableHeap"] = dummyField,
+                ["FixupPrecodeHeap"] = dummyField,
+                ["NewStubPrecodeHeap"] = dummyField,
+            }
+        };
+        types[DataType.VirtualCallStubManager] = new Target.TypeInfo
+        {
+            Fields = new Dictionary<string, Target.FieldInfo>
+            {
+                ["IndcellHeap"] = dummyField,
+                ["CacheEntryHeap"] = dummyField,
+            }
+        };
+
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, types);
         target.SetContracts(Mock.Of<ContractRegistry>(
             c => c.Loader == Mock.Of<ILoader>(
                 l => l.GetLoaderAllocatorHeaps(It.IsAny<TargetPointer>()) == (IReadOnlyDictionary<string, TargetPointer>)MockHeapDictionary
