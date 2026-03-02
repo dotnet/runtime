@@ -73,7 +73,7 @@ void Compiler::fgCreateNewInitBB()
         {
             // If the result is clearly nonsensical, just inherit
             //
-            JITDUMP("\fgCanonicalizeFirstBB: Profile data could not be locally repaired. Data %s inconsistent.\n",
+            JITDUMP("fgCanonicalizeFirstBB: Profile data could not be locally repaired. Data %s inconsistent.\n",
                     fgPgoConsistent ? "is now" : "was already");
 
             if (fgPgoConsistent)
@@ -1312,7 +1312,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                                         FgStack::FgSlot arg1 = pushedStack.Top(0);
 
-                                        isArg1Arg      = FgStack::IsArgument(arg0);
+                                        isArg1Arg      = FgStack::IsArgument(arg1);
                                         isArg1Const    = FgStack::IsConstant(arg1);
                                         isArg1ConstArg = FgStack::IsConstantOrConstArg(arg1, impInlineInfo);
                                     }
@@ -1337,7 +1337,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                     else if (isArg0Const && isArg1Const)
                                     {
                                         // both are constants so we still want to track this as foldable, unlike
-                                        // what is done for the regulary binary operator handling, since we have
+                                        // what is done for the regular binary operator handling, since we have
                                         // a CEE_CALL node and not something more primitive
                                         foldableIntrinsic = true;
                                     }
@@ -1395,7 +1395,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 else if (FgStack::IsConstant(arg))
                                 {
                                     // input is a constant so we still want to track this as foldable, unlike
-                                    // what is done for the regulary unary operator handling, since we have
+                                    // what is done for the regular unary operator handling, since we have
                                     // a CEE_CALL node and not something more primitive
                                     foldableIntrinsic = true;
                                 }
@@ -1419,7 +1419,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector64_AsUInt32:
                             case NI_Vector64_AsUInt64:
                             case NI_Vector64_op_UnaryPlus:
-#endif // TARGET_XARCH
+#endif // TARGET_ARM64
                             case NI_Vector128_As:
                             case NI_Vector128_AsByte:
                             case NI_Vector128_AsDouble:
@@ -3583,8 +3583,11 @@ void Compiler::fgFindBasicBlocks()
         }
 
         // Use a spill temp for the return value if there are multiple return blocks,
-        // or if the inlinee has GC ref locals.
-        if ((info.compRetNativeType != TYP_VOID) && ((fgReturnCount > 1) || impInlineInfo->HasGcRefLocals()))
+        // if the inlinee has GC ref locals, or if async contexts need save/restore.
+        // In the latter cases we will need to insert IR after the return.
+        if ((info.compRetNativeType != TYP_VOID) &&
+            ((fgReturnCount > 1) || impInlineInfo->HasGcRefLocals() ||
+             ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)))
         {
             // If we've spilled the ret expr to a temp we can reuse the temp
             // as the inlinee return spill temp.
@@ -4166,7 +4169,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
                         BADCODE("Unexpected endfilter");
                     }
                 }
-                else if (blk->KindIs(BBJ_EHFILTERRET))
+                else if (blk->KindIs(BBJ_EHFINALLYRET))
                 {
                     // endfinally allowed only in a finally block
                     if (!HBtab->HasFinallyHandler())

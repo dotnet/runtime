@@ -1,0 +1,12 @@
+Wasm.Build.Tests.DebugLevelTests
+Wasm.Build.Tests.EnvVariablesTests
+Wasm.Build.Tests.FilesToIncludeInFileSystemTests
+Wasm.Build.Tests.HttpTests
+Wasm.Build.Tests.LazyLoadingTests
+Wasm.Build.Tests.ModuleConfigTests
+Wasm.Build.Tests.PreloadingTests
+Wasm.Build.Tests.RebuildTests
+Wasm.Build.Tests.SatelliteLoadingTests
+Wasm.Build.Tests.WasmBuildAppTest
+Wasm.Build.Tests.WasmRunOutOfAppBundleTests
+Wasm.Build.Tests.WasmTemplateTests

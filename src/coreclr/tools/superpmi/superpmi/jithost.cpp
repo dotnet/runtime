@@ -160,6 +160,11 @@ int JitHost::getIntConfigValue(const char* key, int defaultValue)
             result     = jitInstance.mc->index;
             valueFound = true;
         }
+        else if (strcmp(key, "JitReportMetrics") == 0)
+        {
+            result     = 1;
+            valueFound = true;
+        }
     }
 
     if (!valueFound)

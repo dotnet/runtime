@@ -483,7 +483,7 @@ internal readonly struct GC_1 : IGC
         {
             IObject obj = _target.Contracts.Object;
             TargetPointer handle = _target.ReadPointer(handleAddress);
-            obj.GetBuiltInComData(handle, out _, out TargetPointer ccw);
+            obj.GetBuiltInComData(handle, out _, out TargetPointer ccw, out _);
             if (ccw != TargetPointer.Null)
             {
                 IBuiltInCOM builtInCOM = _target.Contracts.BuiltInCOM;

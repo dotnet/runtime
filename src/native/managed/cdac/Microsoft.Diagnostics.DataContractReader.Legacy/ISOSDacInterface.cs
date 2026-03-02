@@ -437,6 +437,26 @@ public struct DacpFieldDescData
     public ClrDataAddress NextField;
 };
 
+public struct DacpSyncBlockData
+{
+    public enum COMFlagsEnum : uint
+    {
+        HasCCW = 0x1,
+        HasRCW = 0x2,
+        HasCCF = 0x4
+    }
+    public ClrDataAddress Object;
+    public Interop.BOOL bFree;
+    public ClrDataAddress SyncBlockPointer;
+    public uint COMFlags;
+    public uint MonitorHeld;
+    public uint Recursion;
+    public ClrDataAddress HoldingThread;
+    public uint AdditionalThreadCount;
+    public ClrDataAddress appDomainPtr;
+    public uint SyncBlockCount;
+};
+
 public struct SOSHandleData
 {
     public ClrDataAddress AppDomain;
@@ -612,7 +632,7 @@ public unsafe partial interface ISOSDacInterface
 
     // SyncBlock
     [PreserveSig]
-    int GetSyncBlockData(uint number, /*struct DacpSyncBlockData */ void* data);
+    int GetSyncBlockData(uint number, DacpSyncBlockData* data);
     [PreserveSig]
     int GetSyncBlockCleanupData(ClrDataAddress addr, /*struct DacpSyncBlockCleanupData */ void* data);
 
