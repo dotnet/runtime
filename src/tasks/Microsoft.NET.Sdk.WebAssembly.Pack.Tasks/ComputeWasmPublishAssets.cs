@@ -334,23 +334,11 @@ public class ComputeWasmPublishAssets : Task
 
     private TaskItem CreatePromotedAsset(ITaskItem asset)
     {
-        string newAssetItemSpec = asset.ItemSpec;
-        string newAssetRelativePath = asset.GetMetadata("RelativePath");
-
-        if (FingerprintAssets)
-        {
-            string assetDirectory = Path.GetDirectoryName(asset.ItemSpec);
-            string assetFileNameToFingerprint = Path.GetFileName(newAssetRelativePath);
-            string fingerprint = asset.GetMetadata("Fingerprint");
-            string newAssetFingerprintedFileName = assetFileNameToFingerprint.Replace("#[.{fingerprint}]!", $".{fingerprint}");
-            if (newAssetFingerprintedFileName != assetFileNameToFingerprint)
-            {
-                newAssetItemSpec = $"{assetDirectory}/{newAssetFingerprintedFileName}";
-            }
-        }
-
-        var newAsset = new TaskItem(newAssetItemSpec, asset.CloneCustomMetadata());
-        newAsset.SetMetadata("RelativePath", newAssetRelativePath);
+        // Keep ItemSpec pointing to the actual file on disk.
+        // DefineStaticWebAssets will resolve fingerprint placeholders in RelativePath
+        // and compute Fingerprint/Integrity from the real file.
+        var newAsset = new TaskItem(asset.ItemSpec, asset.CloneCustomMetadata());
+        newAsset.SetMetadata("RelativePath", asset.GetMetadata("RelativePath"));
 
         ApplyPublishProperties(newAsset);
         return newAsset;
@@ -448,6 +436,10 @@ public class ComputeWasmPublishAssets : Task
         // when the original assembly they depend on has been linked out.
         var assetsToUpdate = new Dictionary<string, ITaskItem>();
         var linkedAssets = new Dictionary<string, ITaskItem>();
+        // Secondary lookup by normalized filename for satellite matching.
+        // RelatedAsset may use a different base path (e.g., OutputPath/wwwroot)
+        // than the asset's build-time Identity (e.g., IntermediateOutputPath/webcil).
+        var assetsToUpdateByFileName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var kvp in assemblyAssets)
         {
@@ -461,6 +453,8 @@ public class ComputeWasmPublishAssets : Task
             {
                 // We found the assembly, so it'll have to be updated.
                 assetsToUpdate.Add(assetToUpdateItemSpec, asset);
+                if (!assetsToUpdateByFileName.ContainsKey(fileName))
+                    assetsToUpdateByFileName[fileName] = assetToUpdateItemSpec;
                 filesToRemove.Add(existing);
                 if (!string.Equals(asset.ItemSpec, existing.GetMetadata("FullPath"), StringComparison.Ordinal))
                 {
@@ -478,6 +472,18 @@ public class ComputeWasmPublishAssets : Task
         {
             var satelliteAssembly = kvp.Value;
             var relatedAsset = satelliteAssembly.GetMetadata("RelatedAsset");
+
+            // Try exact match first, then fall back to filename-based lookup.
+            // Normalize to .dll when webcil is enabled since assetsToUpdateByFileName
+            // keys are normalized to .dll (above) but RelatedAsset paths use .wasm.
+            var relatedAssetFileName = Path.GetFileName(relatedAsset);
+            if (IsWebcilEnabled)
+                relatedAssetFileName = Path.ChangeExtension(relatedAssetFileName, ".dll");
+            if (!assetsToUpdate.ContainsKey(relatedAsset)
+                && assetsToUpdateByFileName.TryGetValue(relatedAssetFileName, out var matchedKey))
+            {
+                relatedAsset = matchedKey;
+            }
 
             if (assetsToUpdate.ContainsKey(relatedAsset))
             {
@@ -537,7 +543,7 @@ public class ComputeWasmPublishAssets : Task
                 default:
                     // Satellite assembliess and compressed assets
                     TaskItem newAsset = CreatePromotedAsset(asset);
-                    UpdateRelatedAssetProperty(asset, newAsset, updatedAssetsMap);
+                    UpdateRelatedAssetProperty(asset, newAsset, updatedAssetsMap, IsWebcilEnabled);
                     Log.LogMessage(MessageImportance.Low, "Promoting asset '{0}' to Publish asset.", asset.ItemSpec);
 
                     promotedAssets.Add(newAsset);
@@ -590,11 +596,35 @@ public class ComputeWasmPublishAssets : Task
         return runtimeAssetsToUpdate;
     }
 
-    private static void UpdateRelatedAssetProperty(ITaskItem asset, TaskItem newAsset, Dictionary<string, ITaskItem> updatedAssetsMap)
+    private static void UpdateRelatedAssetProperty(ITaskItem asset, TaskItem newAsset, Dictionary<string, ITaskItem> updatedAssetsMap, bool isWebcilEnabled)
     {
-        if (!updatedAssetsMap.TryGetValue(asset.GetMetadata("RelatedAsset"), out var updatedRelatedAsset))
+        var relatedAsset = asset.GetMetadata("RelatedAsset");
+        if (!updatedAssetsMap.TryGetValue(relatedAsset, out var updatedRelatedAsset))
         {
-            throw new InvalidOperationException("Related asset not found.");
+            // Fall back to filename matching when RelatedAsset uses a different base path
+            // than the asset's build-time Identity (e.g., OutputPath/wwwroot vs obj/webcil).
+            // Match by full filename (with extension) to avoid ambiguity between .dll/.pdb etc.
+            // Normalize .wasm → .dll when webcil is enabled since keys use .dll extensions.
+            var relatedFileName = Path.GetFileName(relatedAsset);
+            if (isWebcilEnabled)
+                relatedFileName = Path.ChangeExtension(relatedFileName, ".dll");
+            foreach (var kvp in updatedAssetsMap)
+            {
+                var candidateFileName = Path.GetFileName(kvp.Key);
+                if (isWebcilEnabled)
+                    candidateFileName = Path.ChangeExtension(candidateFileName, ".dll");
+                if (string.Equals(candidateFileName, relatedFileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    updatedRelatedAsset = kvp.Value;
+                    break;
+                }
+            }
+            if (updatedRelatedAsset is null)
+            {
+                throw new InvalidOperationException(
+                    $"Related asset not found for asset '{asset.ItemSpec}' with RelatedAsset '{relatedAsset}' " +
+                    $"after filename-based matching (webcil normalization {(isWebCilEnabled ? "enabled" : "disabled")}).");
+            }
         }
 
         newAsset.SetMetadata("RelatedAsset", updatedRelatedAsset.ItemSpec);
