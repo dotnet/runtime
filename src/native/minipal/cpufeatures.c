@@ -237,6 +237,7 @@ int minipal_getcpufeatures(void)
 
     bool hasAvx2Dependencies = false;
     bool hasAvx10v1Dependencies = false;
+    bool hasApxDependencies = false;
 
     if (((cpuidInfo[CPUID_EDX] & (1 << 25)) == 0) ||                                                            // SSE
         ((cpuidInfo[CPUID_EDX] & (1 << 26)) == 0) ||                                                            // SSE2
@@ -406,9 +407,13 @@ int minipal_getcpufeatures(void)
 
             if (IsApxEnabled() && apxStateSupport())
             {
-                if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                                                    // Apx
+                if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                                                   // Apx_F
                 {
-                    result |= XArchIntrinsicConstants_Apx;
+                    // APX availability check is split into two parts, Apx_F here
+                    // checks the fundamental support, and APX_NCI_NDD_NF checks
+                    // feature support.
+                    // Full APX requires both parts to be present to be enabled.
+                    hasApxDependencies = true;
                 }
             }
         }
@@ -444,6 +449,15 @@ int minipal_getcpufeatures(void)
                 {
                     hasAvx10v1Dependencies = false;
                 }
+            }
+        }
+
+        if (maxCpuId >= 0x29)
+        {
+            __cpuidex(cpuidInfo, 0x00000029, 0x00000000);
+            if (((cpuidInfo[CPUID_EBX] & (1 << 0)) != 0) && hasApxDependencies)                                                             // AMX-TILE
+            {
+                result |= XArchIntrinsicConstants_Apx;
             }
         }
     }
