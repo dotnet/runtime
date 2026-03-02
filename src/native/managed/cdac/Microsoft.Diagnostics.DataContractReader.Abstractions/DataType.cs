@@ -141,6 +141,8 @@ public enum DataType
     HijackFrame,
     TailCallFrame,
     StubDispatchFrame,
+    ComCallWrapper,
+    SimpleComCallWrapper,
 
 
     /* GC Data Types */
@@ -150,4 +152,8 @@ public enum DataType
     CFinalize,
     HeapSegment,
     OomHistory,
+    HandleTableMap,
+    HandleTableBucket,
+    HandleTable,
+    TableSegment,
 }

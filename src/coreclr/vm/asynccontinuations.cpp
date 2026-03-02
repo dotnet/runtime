@@ -19,7 +19,7 @@ AsyncContinuationsManager::AsyncContinuationsManager(LoaderAllocator* allocator)
 {
     LIMITED_METHOD_CONTRACT;
 
-    m_layoutsLock.Init(CrstLeafLock);
+    m_layoutsLock.Init(CrstAsyncContinuations);
     LockOwner lock = {&m_layoutsLock, IsOwnerOfCrst};
     m_layouts.Init(16, &lock, m_allocator->GetLowFrequencyHeap());
 }

@@ -4,6 +4,10 @@
     <linux_ChromeRevision>1536371</linux_ChromeRevision>
     <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1536376</linux_ChromeBaseSnapshotUrl>
     <linux_V8Version>14.3.127</linux_V8Version>
+    <macos_ChromeVersion>143.0.7499.40</macos_ChromeVersion>
+    <macos_ChromeRevision>1536371</macos_ChromeRevision>
+    <macos_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Mac_Arm/1536376</macos_ChromeBaseSnapshotUrl>
+    <macos_V8Version>14.3.127</macos_V8Version>
     <win_ChromeVersion>143.0.7499.40</win_ChromeVersion>
     <win_ChromeRevision>1536371</win_ChromeRevision>
     <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1536376</win_ChromeBaseSnapshotUrl>

@@ -8,6 +8,7 @@ import type { addOnExitListener, isExited, isRuntimeRunning, quitNow } from "../
 import type { initializeCoreCLR } from "../host/host";
 import type { instantiateWasm, installVfsFile, registerDllBytes, loadIcuData, registerPdbBytes, instantiateWebcilModule } from "../host/assets";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../loader/promise-completion-source";
+import type { fetchSatelliteAssemblies, fetchLazyAssembly } from "../loader/assets";
 
 import type { isSharedArrayBuffer, zeroRegion } from "../../../System.Native.Browser/utils/memory";
 import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
@@ -71,7 +72,9 @@ export type LoaderExports = {
     addOnExitListener: typeof addOnExitListener,
     abortStartup: typeof abortStartup,
     quitNow: typeof quitNow,
-    normalizeException: typeof normalizeException
+    normalizeException: typeof normalizeException,
+    fetchSatelliteAssemblies: typeof fetchSatelliteAssemblies,
+    fetchLazyAssembly: typeof fetchLazyAssembly,
 }
 
 export type LoaderExportsTable = [
@@ -93,6 +96,8 @@ export type LoaderExportsTable = [
     typeof abortStartup,
     typeof quitNow,
     typeof normalizeException,
+    typeof fetchSatelliteAssemblies,
+    typeof fetchLazyAssembly,
 ]
 
 export type BrowserHostExports = {
