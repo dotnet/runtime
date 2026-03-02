@@ -226,7 +226,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsNotWinHttpHandler))]
+        [ConditionalTheory(typeof(HttpClientHandlerTest), nameof(IsNotWinHttpHandler))]
         [InlineData("[::1234]", "[::1234]")]
         [InlineData("[::1234]:8080", "[::1234]:8080")]
         [InlineData("[fe80::9c3a:b64d:6249:1de8%2]", "[fe80::9c3a:b64d:6249:1de8]")]
@@ -1526,22 +1526,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [OuterLoop("Uses external servers")]
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/29424")]
-        public async Task GetAsync_UnicodeHostName_SuccessStatusCodeInResponse()
-        {
-            using (HttpClient client = CreateHttpClient())
-            {
-                // international version of the Starbucks website
-                // punycode: xn--oy2b35ckwhba574atvuzkc.com
-                string server = "http://\uc2a4\ud0c0\ubc85\uc2a4\ucf54\ub9ac\uc544.com";
-                using (HttpResponseMessage response = await client.GetAsync(server))
-                {
-                    response.EnsureSuccessStatusCode();
-                }
-            }
-        }
 
         #region Post Methods Tests
 
@@ -2136,7 +2120,7 @@ namespace System.Net.Http.Functional.Tests
         // HttpRequestMessage ctor guards against such Uris before .NET 6. We allow passing relative/unknown Uris to BrowserHttpHandler.
         public static bool InvalidRequestUriTest_IsSupported => PlatformDetection.IsNotNetFramework && PlatformDetection.IsNotBrowser;
 
-        [ConditionalFact(nameof(InvalidRequestUriTest_IsSupported))]
+        [ConditionalFact(typeof(HttpClientHandlerTest), nameof(InvalidRequestUriTest_IsSupported))]
         public async Task SendAsync_InvalidRequestUri_Throws()
         {
             using var invoker = new HttpMessageInvoker(CreateHttpClientHandler());

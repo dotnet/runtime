@@ -2225,7 +2225,6 @@ CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(CORINFO_OBJECT_HANDLE objPt
 }
 
 void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
                                            CORINFO_METHOD_HANDLE   callerHandle,
                                            CORINFO_CONST_LOOKUP*   pLookup,
@@ -2237,7 +2236,6 @@ void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToke
     GetReadyToRunHelper_TOKENin key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.ResolvedToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetReadyToRunHelper);
-    key.GenericLookupKind = SpmiRecordsHelper::CreateAgnostic_CORINFO_LOOKUP_KIND(pGenericLookupKind);
     key.id                = (DWORD)id;
     key.callerHandle      = CastHandle(callerHandle);
     GetReadyToRunHelper_TOKENout value;
@@ -2250,15 +2248,13 @@ void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToke
 
 void MethodContext::dmpGetReadyToRunHelper(GetReadyToRunHelper_TOKENin key, GetReadyToRunHelper_TOKENout value)
 {
-    printf("GetReadyToRunHelper key: tk{%s} kind{%s} id-%u",
-           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(),
-           SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP_KIND(key.GenericLookupKind).c_str(), key.id);
+    printf("GetReadyToRunHelper key: tk{%s} id-%u",
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(), key.id);
     printf(", value: lk{ %s } %u", SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.Lookup).c_str(),
            value.result);
 }
 
 bool MethodContext::repGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,
                                            CORINFO_METHOD_HANDLE   callerHandle,
                                            CORINFO_CONST_LOOKUP*   pLookup)
@@ -2268,7 +2264,6 @@ bool MethodContext::repGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToke
     GetReadyToRunHelper_TOKENin key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.ResolvedToken     = SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetReadyToRunHelper);
-    key.GenericLookupKind = SpmiRecordsHelper::CreateAgnostic_CORINFO_LOOKUP_KIND(pGenericLookupKind);
     key.id                = (DWORD)id;
     key.callerHandle      = CastHandle(callerHandle);
 
@@ -3400,6 +3395,38 @@ CORINFO_METHOD_HANDLE MethodContext::repGetInstantiatedEntry(CORINFO_METHOD_HAND
     *classHandle = (CORINFO_CLASS_HANDLE)value.classHandle;
 
     return (CORINFO_METHOD_HANDLE)(value.result);
+}
+
+void MethodContext::recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn,
+                                       bool*                 variantIsThunk,
+                                       CORINFO_METHOD_HANDLE result)
+{
+    if (GetAsyncOtherVariant == nullptr)
+    {
+        GetAsyncOtherVariant = new LightWeightMap<DWORDLONG, DLD>();
+    }
+
+    DWORDLONG key = CastHandle(ftn);
+    DLD       value;
+    value.A = CastHandle(result);
+    value.B = (DWORD)*variantIsThunk ? 1 : 0;
+    GetAsyncOtherVariant->Add(key, value);
+    DEBUG_REC(dmpGetAsyncOtherVariant(key, value));
+}
+
+void MethodContext::dmpGetAsyncOtherVariant(DWORDLONG key, DLD value)
+{
+    printf("GetAsyncOtherVariant ftn-%016" PRIX64 ", result-%016" PRIX64 ", variantIsThunk-%u", key, value.A, value.B);
+}
+
+CORINFO_METHOD_HANDLE MethodContext::repGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk)
+{
+    DWORDLONG key = CastHandle(ftn);
+
+    DLD value = LookupByKeyOrMiss(GetAsyncOtherVariant, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetAsyncOtherVariant(key, value));
+    *variantIsThunk = (value.B != 0);
+    return (CORINFO_METHOD_HANDLE)(value.A);
 }
 
 void MethodContext::recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)

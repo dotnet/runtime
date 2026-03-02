@@ -211,6 +211,7 @@ private:
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
+    void     AfterLowerArgsForCall(GenTreeCall* call);
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
     void LowerSpecialCopyArgs(GenTreeCall* call);
     void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);

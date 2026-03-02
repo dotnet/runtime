@@ -1840,8 +1840,12 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     {
         GenTree* const stackPointer = comp->gtNewLclVarNode(comp->lvaWasmSpArg, TYP_I_IMPL);
         PushFront(comp, NewCallArg::Primitive(stackPointer).WellKnown(WellKnownArg::WasmShadowStackPointer));
+
+        // TODO-WASM: pass proper portable entry point as the last argument for managed calls
+        GenTree* const pePointer = comp->gtNewZeroConNode(TYP_I_IMPL);
+        PushBack(comp, NewCallArg::Primitive(pePointer).WellKnown(WellKnownArg::WasmPortableEntryPoint));
     }
-    // TODO-WASM: pass the portable entry point as the last argument for managed calls
+
 #endif // defined(TARGET_WASM)
 
     ClassifierInfo info;
@@ -7127,6 +7131,22 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 }
             }
 #endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+
+#if defined(TARGET_WASM)
+            if (tree->gtOverflow())
+            {
+                // For long multiply with overflow, call the helper.
+                if (tree->TypeIs(TYP_LONG))
+                {
+                    helper = tree->IsUnsigned() ? CORINFO_HELP_ULMUL_OVF : CORINFO_HELP_LMUL_OVF;
+                    goto USE_HELPER_FOR_ARITH;
+                }
+                else
+                {
+                    // TODO-WASM_CQ: Transform to a long multiply and then a checked cast?
+                }
+            }
+#endif
             break;
 
         case GT_ARR_LENGTH:
@@ -14381,7 +14401,7 @@ GenTree* Compiler::fgInitThisClass()
             // base of the class that owns the method being compiled". If we're in this method, it means we're not
             // inlining and there's no ambiguity.
             return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, TYP_BYREF,
-                                             &kind, ctxTree);
+                                             ctxTree);
         }
 #endif
 

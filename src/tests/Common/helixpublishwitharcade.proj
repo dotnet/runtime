@@ -838,6 +838,8 @@
                                                                                 Destination="build/BuildIntegration" />
       <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Condition="'$(RuntimeFlavor)' == 'coreclr'"
                                                                                 Destination="build/aotsdk" />
+      <HelixCorrelationPayload Include="$(Crossgen2InBuildDir)"                  Condition="'$(RuntimeFlavor)' == 'coreclr'"
+                                                                                Destination="build/crossgen2" />
       <HelixCorrelationPayload Include="$(ToolsILLinkDir)"                       Destination="build" />
     </ItemGroup>
 

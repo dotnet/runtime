@@ -1101,14 +1101,12 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
                     if (pLookup.lookupKind.runtimeLookupKind != CORINFO_LOOKUP_NOT_SUPPORTED)
                     {
-                        CORINFO_CONST_LOOKUP genericLookup;
-                        info.compCompHnd->getReadyToRunHelper(&ldftnToken->m_token, &pLookup.lookupKind,
-                                                              CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
-                                                              info.compMethodHnd, &genericLookup);
+                        assert((pLookup.runtimeLookup.indirections == CORINFO_USEHELPER) &&
+                               (pLookup.runtimeLookup.helper == CORINFO_HELP_READYTORUN_DELEGATE_CTOR));
                         GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
                         call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
                                                    targetObjPointers, ctxTree);
-                        call->setEntryPoint(genericLookup);
+                        call->setEntryPoint(pLookup.runtimeLookup.helperEntryPoint);
                     }
                     else
                     {

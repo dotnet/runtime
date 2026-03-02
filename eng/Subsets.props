@@ -165,7 +165,7 @@
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+clr.paltests+clr.paltestlist+clr.hosts+clr.jit+clr.alljits+clr.alljitscommunity+clr.spmi+clr.corelib+clr.nativecorelib+clr.tools+clr.toolstests+clr.packages</AllSubsetsExpansion>
     <AllSubsetsExpansion Condition="$([MSBuild]::IsOsPlatform(Windows))">$(AllSubsetsExpansion)+linuxdac+alpinedac</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+mono.runtime+provision.emsdk+mono.aotcross+mono.corelib+mono.manifests+mono.packages+mono.tools+mono.wasmruntime+mono.wasiruntime+mono.wasmworkload+mono.mscordbi+mono.workloads</AllSubsetsExpansion>
-    <AllSubsetsExpansion>$(AllSubsetsExpansion)+tools.illink+tools.cdac+tools.illinktests+tools.cdactests</AllSubsetsExpansion>
+    <AllSubsetsExpansion>$(AllSubsetsExpansion)+tools.illink+tools.cdac+tools.illinktests+tools.cdactests+tools.cdacdumptests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+host.native+host.pkg+host.tools+host.pretest+host.tests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+libs.native+libs.sfx+libs.oob+libs.pretest+libs.tests</AllSubsetsExpansion>
     <AllSubsetsExpansion>$(AllSubsetsExpansion)+packs.product+packs.installers+packs.tests</AllSubsetsExpansion>
@@ -253,6 +253,7 @@
     <SubsetName Include="Tools.Cdac" Description="Diagnostic data contract reader and related projects." />
     <SubsetName Include="Tools.ILLinkTests" OnDemand="true" Description="Unit tests for the tools.illink subset." />
     <SubsetName Include="Tools.CdacTests" OnDemand="true" Description="Unit tests for the diagnostic data contract reader." />
+    <SubsetName Include="Tools.CdacDumpTests" OnDemand="true" Description="Dump-based integration tests for the diagnostic data contract reader." />
     <SubsetName Include="Tools.ILAsm" OnDemand="true" Description="Build only the managed ilasm tool." />
 
     <!-- Host -->
@@ -484,7 +485,9 @@
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_publish.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
-    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
+
+    <!-- Build managed ilasm as part of the clr tools subset when building just dotnet/runtime as we use it in runtime testing. Don't do so for VMR builds as we aren't shipping it yet and it pulls in prebuilts that we haven't handled for source-build. -->
+    <ProjectToBuild Include="$(ToolsProjectRoot)ilasm\src\ilasm\ilasm.csproj" Condition="'$(SdkToolsSupported)' == 'true' and '$(DotNetBuildFromVMR)' != 'true'" Category="clr" />
 
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Condition="'$(SdkToolsSupported)' == 'true'" Category="clr" />
@@ -521,6 +524,10 @@
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdactests+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+tools.cdacdumptests+'))">
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\DumpTests\Microsoft.Diagnostics.DataContractReader.DumpTests.csproj" Test="true" Category="tools"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.illink+'))">

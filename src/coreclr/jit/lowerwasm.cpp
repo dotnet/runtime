@@ -97,6 +97,7 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
     assert(mul->OperIs(GT_MUL));
+    LowerBinaryArithmetic(mul);
     ContainCheckMul(mul);
     return mul->gtNext;
 }
@@ -121,7 +122,12 @@ GenTree* Lowering::LowerNeg(GenTreeOp* node)
     //
     GenTree* x    = node->gtGetOp1();
     GenTree* zero = m_compiler->gtNewZeroConNode(node->TypeGet());
-    BlockRange().InsertBefore(x, zero);
+
+    // To preserve stack order we must insert the zero before the entire
+    // tree rooted at x.
+    //
+    GenTree* insertBefore = x->gtFirstNodeInOperandOrder();
+    BlockRange().InsertBefore(insertBefore, zero);
     LowerNode(zero);
     node->ChangeOper(GT_SUB);
     node->gtOp1 = zero;
@@ -160,6 +166,13 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
     ContainCheckBinary(binOp);
+
+    if (binOp->gtOverflow())
+    {
+        binOp->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+        binOp->gtGetOp2()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
+
     return binOp->gtNext;
 }
 
@@ -195,7 +208,61 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
-    NYI_WASM("LowerBlockStore");
+    GenTree* dstAddr = blkNode->Addr();
+    GenTree* src     = blkNode->Data();
+
+    if (blkNode->OperIsInitBlkOp())
+    {
+        if (src->OperIs(GT_INIT_VAL))
+        {
+            src->SetContained();
+            src = src->AsUnOp()->gtGetOp1();
+        }
+
+        if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            src->SetContained();
+        }
+        else
+        {
+            // memory.fill
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        }
+    }
+    else
+    {
+        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+        src->SetContained();
+
+        if (src->OperIs(GT_LCL_VAR))
+        {
+            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+            m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
+        }
+
+        ClassLayout* layout  = blkNode->GetLayout();
+        bool         doCpObj = layout->HasGCPtr();
+
+        // CopyObj or CopyBlk
+        if (doCpObj)
+        {
+            // Try to use bulk copy helper
+            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
+            {
+                return;
+            }
+
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
+        }
+        else
+        {
+            assert(blkNode->OperIs(GT_STORE_BLK));
+            // memory.copy
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindNativeOpcode;
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -221,6 +288,11 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
 void Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperIs(GT_CAST));
+
+    if (tree->gtOverflow())
+    {
+        tree->gtGetOp1()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
     ContainCheckCast(tree->AsCast());
 }
 
@@ -440,6 +512,8 @@ void Lowering::AfterLowerBlock()
                     // rare, introduced in lowering only. All HIR-induced cases (such as from "gtSetEvalOrder") should
                     // instead be ifdef-ed out for WASM.
                     m_anyChanges = true;
+
+                    JITDUMP("node==[%06u] prev==[%06u]\n", Compiler::dspTreeID(node), Compiler::dspTreeID(prev));
                     NYI_WASM("IR not in a stackified form");
                 }
 
@@ -462,4 +536,20 @@ void Lowering::AfterLowerBlock()
 
     Stackifier stackifier(this);
     stackifier.StackifyCurrentBlock();
+}
+
+//------------------------------------------------------------------------
+// AfterLowerArgsForCall: post processing after call args are lowered
+//
+// Arguments:
+//    call - Call node
+//
+void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
+{
+    if (call->NeedsNullCheck())
+    {
+        // Prepare for explicit null check
+        CallArg* thisArg = call->gtArgs.GetThisArg();
+        thisArg->GetNode()->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
 }
