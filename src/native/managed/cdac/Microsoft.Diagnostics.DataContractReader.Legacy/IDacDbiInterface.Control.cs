@@ -89,4 +89,61 @@ public unsafe interface IDacDbiInterfaceControl
 
     [PreserveSig]
     int WalkRefs(nuint handle, uint count, nint objects, uint* pFetched);
+
+    [PreserveSig]
+    int GetTypeID(ulong obj, nint pID);
+
+    [PreserveSig]
+    int GetTypeIDForType(ulong vmTypeHandle, nint pID);
+
+    [PreserveSig]
+    int GetObjectFields(nint id, uint celt, nint layout, uint* pceltFetched);
+
+    [PreserveSig]
+    int GetTypeLayout(nint id, nint pLayout);
+
+    [PreserveSig]
+    int GetArrayLayout(nint id, nint pLayout);
+
+    [PreserveSig]
+    int GetGCHeapInformation(nint pHeapInfo);
+
+    [PreserveSig]
+    int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW);
+
+    [PreserveSig]
+    int GetReJitInfo(ulong vmModule, uint methodTk, ulong* pReJitInfo);
+
+    [PreserveSig]
+    int GetReJitInfo(ulong vmMethod, ulong codeStartAddress, ulong* pReJitInfo);
+
+    [PreserveSig]
+    int AreOptimizationsDisabled(ulong vmModule, uint methodTk, int* pOptimizationsDisabled);
+
+    [PreserveSig]
+    int GetSharedReJitInfo(ulong vmReJitInfo, ulong* pSharedReJitInfo);
+
+    [PreserveSig]
+    int GetSharedReJitInfoData(ulong sharedReJitInfo, nint pData);
+
+    [PreserveSig]
+    int GetDefinesBitField(uint* pDefines);
+
+    [PreserveSig]
+    int GetMDStructuresVersion(uint* pMDStructuresVersion);
+
+    [PreserveSig]
+    int EnableGCNotificationEvents(int fEnable);
+
+    [PreserveSig]
+    int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly);
+
+    [PreserveSig]
+    int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState);
+
+    [PreserveSig]
+    int GetAsyncLocals(ulong vmMethod, ulong codeAddr, uint state, nint pAsyncLocals);
+
+    [PreserveSig]
+    int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
 }
