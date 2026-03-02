@@ -619,20 +619,12 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            DacpCOMInterfacePointerData[]? interfacesLocal = null;
+            DacpCOMInterfacePointerData[]? interfacesLocal = count > 0 && interfaces != null ? new DacpCOMInterfacePointerData[(int)count] : null;
             uint neededLocal = 0;
             int hrLocal;
-            if (interfaces is null)
+            fixed (DacpCOMInterfacePointerData* interfacesLocalPtr = interfacesLocal)
             {
-                hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, null, &neededLocal);
-            }
-            else
-            {
-                interfacesLocal = new DacpCOMInterfacePointerData[(int)count];
-                fixed (DacpCOMInterfacePointerData* interfacesLocalPtr = interfacesLocal)
-                {
-                    hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocalPtr, &neededLocal);
-                }
+                hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocalPtr, &neededLocal);
             }
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
