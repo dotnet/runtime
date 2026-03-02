@@ -16,8 +16,6 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        private static readonly object s_createProcessLock = new object();
-
         private string? _processName;
 
         /// <summary>
@@ -453,7 +451,8 @@ namespace System.Diagnostics
             // calls. We do not want one process to inherit the handles created concurrently for another
             // process, as that will impact the ownership and lifetimes of those handles now inherited
             // into multiple child processes.
-            lock (s_createProcessLock)
+            ProcessUtils.s_processStartLock.EnterWriteLock();
+            try
             {
                 try
                 {
@@ -512,7 +511,7 @@ namespace System.Diagnostics
                     if (startInfo._environmentVariables != null)
                     {
                         creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_UNICODE_ENVIRONMENT;
-                        environmentBlock = GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
+                        environmentBlock = ProcessUtils.GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
                     }
 
                     string? workingDirectory = startInfo.WorkingDirectory;
@@ -629,6 +628,10 @@ namespace System.Diagnostics
                     childOutputPipeHandle?.Dispose();
                     childErrorPipeHandle?.Dispose();
                 }
+            }
+            finally
+            {
+                ProcessUtils.s_processStartLock.ExitWriteLock();
             }
 
             if (startInfo.RedirectStandardInput)
@@ -859,33 +862,6 @@ namespace System.Diagnostics
                     hTmp.Dispose();
                 }
             }
-        }
-
-        private static string GetEnvironmentVariablesBlock(DictionaryWrapper sd)
-        {
-            // https://learn.microsoft.com/windows/win32/procthread/changing-environment-variables
-            // "All strings in the environment block must be sorted alphabetically by name. The sort is
-            //  case-insensitive, Unicode order, without regard to locale. Because the equal sign is a
-            //  separator, it must not be used in the name of an environment variable."
-
-            var keys = new string[sd.Count];
-            sd.Keys.CopyTo(keys, 0);
-            Array.Sort(keys, StringComparer.OrdinalIgnoreCase);
-
-            // Join the null-terminated "key=val\0" strings
-            var result = new StringBuilder(8 * keys.Length);
-            foreach (string key in keys)
-            {
-                string? value = sd[key];
-
-                // Ignore null values for consistency with Environment.SetEnvironmentVariable
-                if (value != null)
-                {
-                    result.Append(key).Append('=').Append(value).Append('\0');
-                }
-            }
-
-            return result.ToString();
         }
 
         private static string GetErrorMessage(int error) => Interop.Kernel32.GetMessage(error);

@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading;
 
 namespace System.Diagnostics
 {
     internal static partial class ProcessUtils
     {
+        internal static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
+
         internal static string? FindProgramInPath(string program)
         {
             string? pathEnvVar = System.Environment.GetEnvironmentVariable("PATH");

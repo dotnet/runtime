@@ -10,7 +10,17 @@ namespace Microsoft.Win32.SafeHandles
     {
         public SafeProcessHandle() : base (default(bool)) { }
         public SafeProcessHandle(System.IntPtr existingHandle, bool ownsHandle) : base (default(bool)) { }
+        public bool Kill() { throw null; }
+        public static Microsoft.Win32.SafeHandles.SafeProcessHandle Open(int processId) { throw null; }
         protected override bool ReleaseHandle() { throw null; }
+        public void Signal(System.Runtime.InteropServices.PosixSignal signal) { }
+        public void SignalProcessGroup(System.Runtime.InteropServices.PosixSignal signal) { }
+        public static Microsoft.Win32.SafeHandles.SafeProcessHandle Start(System.Diagnostics.ProcessStartOptions options, Microsoft.Win32.SafeHandles.SafeFileHandle? input, Microsoft.Win32.SafeHandles.SafeFileHandle? output, Microsoft.Win32.SafeHandles.SafeFileHandle? error) { throw null; }
+        public bool TryWaitForExit(System.TimeSpan timeout, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Diagnostics.ProcessExitStatus? exitStatus) { throw null; }
+        public System.Diagnostics.ProcessExitStatus WaitForExit() { throw null; }
+        public System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> WaitForExitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.Diagnostics.ProcessExitStatus> WaitForExitOrKillOnCancellationAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Diagnostics.ProcessExitStatus WaitForExitOrKillOnTimeout(System.TimeSpan timeout) { throw null; }
     }
 }
 namespace System.Diagnostics

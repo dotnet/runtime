@@ -36,6 +36,7 @@
     <Compile Include="ProcessTests.cs" />
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />
+    <Compile Include="SafeProcessHandleTests.cs" />
     <Compile Include="RemotelyInvokable.cs" />
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
@@ -53,8 +54,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.SetConsoleCtrlHandler.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConsoleCtrl.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.ConsoleCtrl.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
              Link="Common\Interop\Windows\Interop.Errors.cs" />
     <!-- Helpers -->
