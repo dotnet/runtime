@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
-#if FEATURE_SINGLE_THREADED
+#if !FEATURE_MULTITHREADING
 using WorkQueue = System.Collections.Generic.Queue<object>;
 #else
 using WorkQueue = System.Collections.Concurrent.ConcurrentQueue<object>;
@@ -715,7 +715,7 @@ namespace System.Threading
 
                 tl.isProcessingHighPriorityWorkItems = false;
             }
-#if FEATURE_SINGLE_THREADED
+#if !FEATURE_MULTITHREADING
             else if (highPriorityWorkItems.Count == 0 &&
 #else
             else if (!highPriorityWorkItems.IsEmpty &&

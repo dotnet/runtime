@@ -418,14 +418,14 @@ WFMOExIntReleaseControllers:
 
     if (fNeedToBlock)
     {
-#ifdef FEATURE_SINGLE_THREADED
+#ifndef FEATURE_MULTITHREADING
         // In single-threaded WASM, blocking would deadlock because there is no other
         // thread to signal the object. This is a programming error.
         _ASSERT_MSG(false, "Cannot block on wait in single-threaded mode\n");
         pThread->SetLastError(ERROR_NOT_SUPPORTED);
         dwRet = WAIT_FAILED;
         goto WFMOExIntCleanup;
-#else // FEATURE_SINGLE_THREADED
+#else // !FEATURE_MULTITHREADING
         ThreadWakeupReason twrWakeupReason;
 
         //
@@ -460,7 +460,7 @@ WFMOExIntReleaseControllers:
             dwRet = WAIT_FAILED;
             break;
         }
-#endif // FEATURE_SINGLE_THREADED
+#endif // !FEATURE_MULTITHREADING
     }
 
     if (!fWAll && (WAIT_OBJECT_0 == dwRet))
@@ -502,13 +502,13 @@ DWORD CorUnix::InternalSleepEx (
     CPalThread * pThread,
     DWORD dwMilliseconds)
 {
-#ifdef FEATURE_SINGLE_THREADED
+#ifndef FEATURE_MULTITHREADING
     // In single-threaded WASM, Sleep returns immediately.
     // There's no other thread that could make progress while we sleep.
     (void)pThread;
     (void)dwMilliseconds;
     return 0;
-#else // FEATURE_SINGLE_THREADED
+#else // !FEATURE_MULTITHREADING
     PAL_ERROR palErr = NO_ERROR;
     DWORD dwRet = WAIT_FAILED;
     int iSignaledObjIndex;
@@ -551,6 +551,6 @@ DWORD CorUnix::InternalSleepEx (
 
     TRACE("Done sleeping %u ms", dwMilliseconds);
     return dwRet;
-#endif // FEATURE_SINGLE_THREADED
+#endif // !FEATURE_MULTITHREADING
 }
 
