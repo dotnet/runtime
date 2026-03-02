@@ -791,9 +791,9 @@ void EEStartupHelper()
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
 
-        // Initialize EBR (Epoch-Based Reclamation) for HashMap's async mode.
+        // Initialize EBR (Epoch-Based Reclamation) for safe deferred deletion.
         // This must be done before any HashMap is initialized with fAsyncMode=TRUE.
-        g_HashMapEbr.Init();
+        g_EbrCollector.Init();
 
         StubManager::InitializeStubManagers();
 

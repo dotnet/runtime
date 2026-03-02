@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal;
 
@@ -105,7 +106,7 @@ namespace System.Threading
                 }
             }
 
-            Thread.ThrowIfMultithreadingIsNotSupported();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             return WaitSlow(timeoutMs, activeThreadCount);
         }
