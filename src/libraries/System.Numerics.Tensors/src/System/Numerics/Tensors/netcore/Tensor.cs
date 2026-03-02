@@ -199,15 +199,21 @@ namespace System.Numerics.Tensors
         public static ref readonly TensorSpan<T> ConcatenateOnDimension<T>(int dimension, scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination)
         {
             if (tensors.Length < 2)
+            {
                 ThrowHelper.ThrowArgument_ConcatenateTooFewTensors();
+            }
 
             if (dimension < -1 || dimension > tensors[0].Rank)
+            {
                 ThrowHelper.ThrowArgument_InvalidDimension();
+            }
 
             // Calculate total space needed.
             nint totalLength = 0;
             for (int i = 0; i < tensors.Length; i++)
+            {
                 totalLength += tensors[i].FlattenedLength;
+            }
 
             // If axis != -1, make sure all dimensions except the one to concatenate on match.
             if (dimension != -1)
@@ -217,13 +223,17 @@ namespace System.Numerics.Tensors
                 for (int i = 1; i < tensors.Length; i++)
                 {
                     if (rank != tensors[i].Rank)
+                    {
                         ThrowHelper.ThrowArgument_InvalidConcatenateShape();
+                    }
                     for (int j = 0; j < rank; j++)
                     {
                         if (j != dimension)
                         {
                             if (tensors[0].Lengths[j] != tensors[i].Lengths[j])
+                            {
                                 ThrowHelper.ThrowArgument_InvalidConcatenateShape();
+                            }
                         }
                     }
                     sumOfAxis += tensors[i].Lengths[dimension];
@@ -235,10 +245,39 @@ namespace System.Numerics.Tensors
                 lengths[dimension] = sumOfAxis;
 
                 if (!TensorShape.AreLengthsTheSame(destination.Lengths, lengths))
+                {
                     ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
+                }
             }
-            Span<T> dstSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)totalLength);
 
+            if (!destination.IsDense)
+            {
+                // For non-dense destinations, concatenate into a temporary dense buffer,
+                // then copy element-by-element to respect the destination's stride layout.
+                T[] tempBuffer = ArrayPool<T>.Shared.Rent((int)totalLength);
+                try
+                {
+                    Span<T> tempSpan = tempBuffer.AsSpan(0, (int)totalLength);
+                    ConcatenateOnDimensionToSpan(dimension, tensors, destination, tempSpan);
+                    ReadOnlyTensorSpan<T> tempTensor = new ReadOnlyTensorSpan<T>(tempBuffer, 0, destination.Lengths, []);
+                    TensorOperation.Invoke<TensorOperation.CopyTo<T>, T, T>(tempTensor, destination);
+                }
+                finally
+                {
+                    ArrayPool<T>.Shared.Return(tempBuffer);
+                }
+            }
+            else
+            {
+                Span<T> dstSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+                ConcatenateOnDimensionToSpan(dimension, tensors, destination, dstSpan);
+            }
+
+            return ref destination;
+        }
+
+        private static void ConcatenateOnDimensionToSpan<T>(int dimension, scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination, Span<T> dstSpan)
+        {
             if (dimension is 0 or -1)
             {
                 for (int i = 0; i < tensors.Length; i++)
@@ -273,7 +312,6 @@ namespace System.Numerics.Tensors
                 }
                 rentedBuffer.Dispose();
             }
-            return ref destination;
         }
 
         private static nint CalculateCopyLength(ReadOnlySpan<nint> lengths, int startingAxis)
@@ -347,14 +385,29 @@ namespace System.Numerics.Tensors
         /// <returns></returns>
         public static ref readonly TensorSpan<T> FillGaussianNormalDistribution<T>(in TensorSpan<T> destination, Random? random = null) where T : IFloatingPoint<T>
         {
-            Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
             random ??= Random.Shared;
 
-            for (int i = 0; i < span.Length; i++)
+            if (destination.IsDense)
             {
-                double u1 = 1.0 - random.NextDouble();
-                double u2 = 1.0 - random.NextDouble();
-                span[i] = T.CreateChecked(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2));
+                Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+
+                for (int i = 0; i < span.Length; i++)
+                {
+                    double u1 = 1.0 - random.NextDouble();
+                    double u2 = 1.0 - random.NextDouble();
+                    span[i] = T.CreateChecked(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2));
+                }
+            }
+            else
+            {
+                TensorSpan<T>.Enumerator enumerator = destination.GetEnumerator();
+
+                while (enumerator.MoveNext())
+                {
+                    double u1 = 1.0 - random.NextDouble();
+                    double u2 = 1.0 - random.NextDouble();
+                    enumerator.Current = T.CreateChecked(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2));
+                }
             }
 
             return ref destination;
@@ -370,10 +423,25 @@ namespace System.Numerics.Tensors
         /// <returns></returns>
         public static ref readonly TensorSpan<T> FillUniformDistribution<T>(in TensorSpan<T> destination, Random? random = null) where T : IFloatingPoint<T>
         {
-            Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
             random ??= Random.Shared;
-            for (int i = 0; i < span.Length; i++)
-                span[i] = T.CreateChecked(random.NextDouble());
+
+            if (destination.IsDense)
+            {
+                Span<T> span = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+                for (int i = 0; i < span.Length; i++)
+                {
+                    span[i] = T.CreateChecked(random.NextDouble());
+                }
+            }
+            else
+            {
+                TensorSpan<T>.Enumerator enumerator = destination.GetEnumerator();
+
+                while (enumerator.MoveNext())
+                {
+                    enumerator.Current = T.CreateChecked(random.NextDouble());
+                }
+            }
 
             return ref destination;
         }
@@ -1549,12 +1617,33 @@ namespace System.Numerics.Tensors
             nint newSize = TensorPrimitives.Product(lengths);
             T[] values = tensor.IsPinned ? GC.AllocateArray<T>((int)newSize) : (new T[newSize]);
             Tensor<T> output = Create(values, lengths, []);
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref tensor.AsTensorSpan()._reference, tensor._start), tensor._values.Length - tensor._start);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
-            if (newSize >= span.Length)
-                span.CopyTo(ospan);
+
+            if (tensor.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref tensor.AsTensorSpan()._reference, tensor._start), tensor._values.Length - tensor._start);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
+                if (newSize >= span.Length)
+                {
+                    span.CopyTo(ospan);
+                }
+                else
+                {
+                    span.Slice(0, ospan.Length).CopyTo(ospan);
+                }
+            }
             else
-                span.Slice(0, ospan.Length).CopyTo(ospan);
+            {
+                nint copyLength = Math.Min(tensor.FlattenedLength, newSize);
+                ReadOnlyTensorSpan<T>.Enumerator enumerator = tensor.AsReadOnlyTensorSpan().GetEnumerator();
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
+
+                for (nint i = 0; i < copyLength; i++)
+                {
+                    bool moved = enumerator.MoveNext();
+                    Debug.Assert(moved);
+                    ospan[(int)i] = enumerator.Current;
+                }
+            }
 
             return output;
         }
@@ -1589,12 +1678,33 @@ namespace System.Numerics.Tensors
         /// <param name="destination">Destination <see cref="TensorSpan{T}"/> with the desired new shape.</param>
         public static void ResizeTo<T>(scoped in ReadOnlyTensorSpan<T> tensor, in TensorSpan<T> destination)
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor._shape.LinearLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape.LinearLength);
-            if (ospan.Length >= span.Length)
-                span.CopyTo(ospan);
+            if (tensor.IsDense && destination.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor.FlattenedLength);
+                Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+                if (ospan.Length >= span.Length)
+                {
+                    span.CopyTo(ospan);
+                }
+                else
+                {
+                    span.Slice(0, ospan.Length).CopyTo(ospan);
+                }
+            }
             else
-                span.Slice(0, ospan.Length).CopyTo(ospan);
+            {
+                nint copyLength = Math.Min(tensor.FlattenedLength, destination.FlattenedLength);
+                ReadOnlyTensorSpan<T>.Enumerator srcEnumerator = tensor.GetEnumerator();
+                TensorSpan<T>.Enumerator dstEnumerator = destination.GetEnumerator();
+
+                for (nint i = 0; i < copyLength; i++)
+                {
+                    bool srcMoved = srcEnumerator.MoveNext();
+                    bool dstMoved = dstEnumerator.MoveNext();
+                    Debug.Assert(srcMoved && dstMoved);
+                    dstEnumerator.Current = srcEnumerator.Current;
+                }
+            }
         }
         #endregion
 
@@ -1684,10 +1794,7 @@ namespace System.Numerics.Tensors
         public static bool SequenceEqual<T>(this scoped in TensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> other)
             where T : IEquatable<T>?
         {
-            return tensor.FlattenedLength == other.FlattenedLength
-                && tensor._shape.LinearLength == other._shape.LinearLength
-                && tensor.Lengths.SequenceEqual(other.Lengths)
-                && MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor._shape.LinearLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other._shape.LinearLength));
+            return ((ReadOnlyTensorSpan<T>)tensor).SequenceEqual(other);
         }
 
         /// <summary>
@@ -1696,10 +1803,32 @@ namespace System.Numerics.Tensors
         public static bool SequenceEqual<T>(this scoped in ReadOnlyTensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> other)
             where T : IEquatable<T>?
         {
-            return tensor.FlattenedLength == other.FlattenedLength
-                && tensor._shape.LinearLength == other._shape.LinearLength
-                && tensor.Lengths.SequenceEqual(other.Lengths)
-                && MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor._shape.LinearLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other._shape.LinearLength));
+            if (tensor.FlattenedLength != other.FlattenedLength
+                || !tensor.Lengths.SequenceEqual(other.Lengths))
+            {
+                return false;
+            }
+
+            if (tensor.IsDense && other.IsDense)
+            {
+                return MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor.FlattenedLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other.FlattenedLength));
+            }
+
+            ReadOnlyTensorSpan<T>.Enumerator enumerator1 = tensor.GetEnumerator();
+            ReadOnlyTensorSpan<T>.Enumerator enumerator2 = other.GetEnumerator();
+
+            while (enumerator1.MoveNext())
+            {
+                bool moved = enumerator2.MoveNext();
+                Debug.Assert(moved);
+
+                if (!(enumerator1.Current?.Equals(enumerator2.Current) ?? (object?)enumerator2.Current is null))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
         #endregion
 
@@ -3528,8 +3657,28 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMax<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            return TensorPrimitives.IndexOfMax(span);
+            if (x.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
+                return TensorPrimitives.IndexOfMax(span);
+            }
+
+            return IndexOfMaxFallback(x);
+        }
+
+        private static nint IndexOfMaxFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : INumber<T>
+        {
+            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
+            try
+            {
+                x.FlattenTo(flat);
+                return TensorPrimitives.IndexOfMax<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            }
+            finally
+            {
+                ArrayPool<T>.Shared.Return(flat);
+            }
         }
 
         #endregion
@@ -3540,8 +3689,28 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMaxMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            return TensorPrimitives.IndexOfMaxMagnitude(span);
+            if (x.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
+                return TensorPrimitives.IndexOfMaxMagnitude(span);
+            }
+
+            return IndexOfMaxMagnitudeFallback(x);
+        }
+
+        private static nint IndexOfMaxMagnitudeFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : INumber<T>
+        {
+            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
+            try
+            {
+                x.FlattenTo(flat);
+                return TensorPrimitives.IndexOfMaxMagnitude<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            }
+            finally
+            {
+                ArrayPool<T>.Shared.Return(flat);
+            }
         }
         #endregion
 
@@ -3551,8 +3720,28 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMin<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            return TensorPrimitives.IndexOfMin(span);
+            if (x.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
+                return TensorPrimitives.IndexOfMin(span);
+            }
+
+            return IndexOfMinFallback(x);
+        }
+
+        private static nint IndexOfMinFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : INumber<T>
+        {
+            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
+            try
+            {
+                x.FlattenTo(flat);
+                return TensorPrimitives.IndexOfMin<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            }
+            finally
+            {
+                ArrayPool<T>.Shared.Return(flat);
+            }
         }
         #endregion
 
@@ -3564,8 +3753,28 @@ namespace System.Numerics.Tensors
         public static nint IndexOfMinMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x._shape.LinearLength);
-            return TensorPrimitives.IndexOfMinMagnitude(span);
+            if (x.IsDense)
+            {
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref x._reference, (int)x.FlattenedLength);
+                return TensorPrimitives.IndexOfMinMagnitude(span);
+            }
+
+            return IndexOfMinMagnitudeFallback(x);
+        }
+
+        private static nint IndexOfMinMagnitudeFallback<T>(scoped in ReadOnlyTensorSpan<T> x)
+            where T : INumber<T>
+        {
+            T[] flat = ArrayPool<T>.Shared.Rent((int)x.FlattenedLength);
+            try
+            {
+                x.FlattenTo(flat);
+                return TensorPrimitives.IndexOfMinMagnitude<T>(flat.AsSpan(0, (int)x.FlattenedLength));
+            }
+            finally
+            {
+                ArrayPool<T>.Shared.Return(flat);
+            }
         }
         #endregion
 

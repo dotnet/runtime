@@ -714,6 +714,383 @@ namespace System.Numerics.Tensors.Tests
         //    Assert.Throws<Exception>(() => Tensor.SequenceEqual(t0, t1));
         //}
 
+        /// <summary>
+        /// Provides test cases of (dataArray, shape, strides) for creating non-dense tensor spans.
+        /// Each case has known logical elements that differ from the raw buffer layout.
+        /// </summary>
+        public static IEnumerable<object[]> NonDenseTensorData()
+        {
+            // 2x2 from 1D array with stride gap: logical elements are [10, 20, 30, 40]
+            yield return new object[] { new int[] { 10, 20, 99, 99, 30, 40, 99, 99 }, new nint[] { 2, 2 }, new nint[] { 4, 1 }, new int[] { 10, 20, 30, 40 } };
+            // 2x3 from 1D array with stride gap: logical elements are [1, 2, 3, 4, 5, 6]
+            yield return new object[] { new int[] { 1, 2, 3, 99, 4, 5, 6, 99 }, new nint[] { 2, 3 }, new nint[] { 4, 1 }, new int[] { 1, 2, 3, 4, 5, 6 } };
+            // 3x2 from 1D array with stride gap: logical elements are [1, 2, 3, 4, 5, 6]
+            yield return new object[] { new int[] { 1, 2, 99, 3, 4, 99, 5, 6, 99 }, new nint[] { 3, 2 }, new nint[] { 3, 1 }, new int[] { 1, 2, 3, 4, 5, 6 } };
+            // 1x2 from 1D array with larger stride gap
+            yield return new object[] { new int[] { 42, 99, 99, 99, 7, 99, 99, 99 }, new nint[] { 2 }, new nint[] { 4 }, new int[] { 42, 7 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorSequenceEqualNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            var ts1 = new ReadOnlyTensorSpan<int>(data, shape, strides);
+            Assert.False(ts1.IsDense);
+
+            // Non-dense vs non-dense with same logical elements but different gap values
+            int[] data2 = (int[])data.Clone();
+            for (int i = 0; i < data2.Length; i++)
+            {
+                if (data2[i] == 99)
+                {
+                    data2[i] = 77;
+                }
+            }
+            var ts2 = new ReadOnlyTensorSpan<int>(data2, shape, strides);
+            Assert.False(ts2.IsDense);
+            Assert.True(ts1.SequenceEqual(ts2));
+
+            // Non-dense vs dense with same logical elements
+            var tsDense = new ReadOnlyTensorSpan<int>(expectedLogical, shape);
+            Assert.True(tsDense.IsDense);
+            Assert.True(ts1.SequenceEqual(tsDense));
+            Assert.True(tsDense.SequenceEqual(ts1));
+
+            // TensorSpan overload also works
+            var tspan1 = new TensorSpan<int>(data, shape, strides);
+            Assert.True(tspan1.SequenceEqual(ts2));
+
+            // Differing logical element should return false
+            int[] data3 = (int[])data.Clone();
+            data3[0] = data3[0] + 1;
+            var ts3 = new ReadOnlyTensorSpan<int>(data3, shape, strides);
+            Assert.False(ts1.SequenceEqual(ts3));
+        }
+
+        /// <summary>
+        /// Computes the set of buffer offsets that correspond to logical elements in a non-dense tensor.
+        /// </summary>
+        private static HashSet<int> ComputeLogicalOffsets(nint[] shape, nint[] strides, nint flattenedLength)
+        {
+            HashSet<int> logicalOffsets = new HashSet<int>();
+            for (nint i = 0; i < flattenedLength; i++)
+            {
+                nint offset = 0;
+                nint remaining = i;
+                for (int d = shape.Length - 1; d >= 0; d--)
+                {
+                    nint dimIndex = remaining % shape[d];
+                    remaining /= shape[d];
+                    offset += dimIndex * strides[d];
+                }
+                logicalOffsets.Add((int)offset);
+            }
+            return logicalOffsets;
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorFillGaussianNormalDistributionNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            double[] dblData = new double[data.Length];
+            var ts = new TensorSpan<double>(dblData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            Tensor.FillGaussianNormalDistribution(ts, new Random(42));
+
+            // All logical elements should be filled
+            foreach (double val in ts)
+            {
+                Assert.NotEqual(0.0, val);
+            }
+
+            // Gap positions should remain untouched (zero)
+            HashSet<int> logicalOffsets = ComputeLogicalOffsets(shape, strides, ts.FlattenedLength);
+            for (int i = 0; i < dblData.Length; i++)
+            {
+                if (!logicalOffsets.Contains(i))
+                {
+                    Assert.Equal(0.0, dblData[i]);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorFillUniformDistributionNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            double[] dblData = new double[data.Length];
+            var ts = new TensorSpan<double>(dblData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            Tensor.FillUniformDistribution(ts, new Random(42));
+
+            // All logical elements should be filled with values in [0, 1)
+            foreach (double val in ts)
+            {
+                Assert.InRange(val, 0.0, 1.0);
+                Assert.NotEqual(0.0, val);
+            }
+
+            // Gap positions should remain untouched (zero)
+            HashSet<int> logicalOffsets = ComputeLogicalOffsets(shape, strides, ts.FlattenedLength);
+            for (int i = 0; i < dblData.Length; i++)
+            {
+                if (!logicalOffsets.Contains(i))
+                {
+                    Assert.Equal(0.0, dblData[i]);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorIndexOfMaxNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            // Set a known max in the data at logical position
+            int[] testData = (int[])data.Clone();
+            // First, set all logical elements to small values
+            nint flatLen = 1;
+            foreach (nint s in shape)
+            {
+                flatLen *= s;
+            }
+
+            // Place the maximum value at the last logical position
+            nint lastOffset = 0;
+            nint rem = flatLen - 1;
+            for (int d = shape.Length - 1; d >= 0; d--)
+            {
+                nint dimIndex = rem % shape[d];
+                rem /= shape[d];
+                lastOffset += dimIndex * strides[d];
+            }
+            testData[(int)lastOffset] = 9999;
+
+            var ts = new ReadOnlyTensorSpan<int>(testData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMax(ts);
+            Assert.Equal(flatLen - 1, idx);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorIndexOfMinNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            // Set all logical elements to positive values, then put the minimum at the last logical position
+            int[] testData = new int[data.Length];
+            Array.Fill(testData, 50);
+
+            nint flatLen = 1;
+            foreach (nint s in shape)
+            {
+                flatLen *= s;
+            }
+
+            // Set all logical positions to values > 0
+            for (nint i = 0; i < flatLen; i++)
+            {
+                nint offset = 0;
+                nint remaining = i;
+                for (int d = shape.Length - 1; d >= 0; d--)
+                {
+                    nint dimIndex = remaining % shape[d];
+                    remaining /= shape[d];
+                    offset += dimIndex * strides[d];
+                }
+                testData[(int)offset] = (int)(i + 10);
+            }
+
+            // Place the minimum at the last logical position
+            nint lastOffset = 0;
+            nint rem = flatLen - 1;
+            for (int d = shape.Length - 1; d >= 0; d--)
+            {
+                nint dimIndex = rem % shape[d];
+                rem /= shape[d];
+                lastOffset += dimIndex * strides[d];
+            }
+            testData[(int)lastOffset] = -1;
+
+            var ts = new ReadOnlyTensorSpan<int>(testData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMin(ts);
+            Assert.Equal(flatLen - 1, idx);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorIndexOfMaxMagnitudeNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            int[] testData = new int[data.Length];
+            Array.Fill(testData, 1);
+
+            nint flatLen = 1;
+            foreach (nint s in shape)
+            {
+                flatLen *= s;
+            }
+
+            // Set all logical positions to small values
+            for (nint i = 0; i < flatLen; i++)
+            {
+                nint offset = 0;
+                nint remaining = i;
+                for (int d = shape.Length - 1; d >= 0; d--)
+                {
+                    nint dimIndex = remaining % shape[d];
+                    remaining /= shape[d];
+                    offset += dimIndex * strides[d];
+                }
+                testData[(int)offset] = (int)(i + 1);
+            }
+
+            // Place the max magnitude at the last logical position
+            nint lastOffset = 0;
+            nint rem = flatLen - 1;
+            for (int d = shape.Length - 1; d >= 0; d--)
+            {
+                nint dimIndex = rem % shape[d];
+                rem /= shape[d];
+                lastOffset += dimIndex * strides[d];
+            }
+            testData[(int)lastOffset] = -9999;
+
+            var ts = new ReadOnlyTensorSpan<int>(testData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMaxMagnitude(ts);
+            Assert.Equal(flatLen - 1, idx);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorIndexOfMinMagnitudeNonDenseTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            _ = expectedLogical;
+            int[] testData = new int[data.Length];
+            Array.Fill(testData, 100);
+
+            nint flatLen = 1;
+            foreach (nint s in shape)
+            {
+                flatLen *= s;
+            }
+
+            // Set all logical positions to large magnitude values
+            for (nint i = 0; i < flatLen; i++)
+            {
+                nint offset = 0;
+                nint remaining = i;
+                for (int d = shape.Length - 1; d >= 0; d--)
+                {
+                    nint dimIndex = remaining % shape[d];
+                    remaining /= shape[d];
+                    offset += dimIndex * strides[d];
+                }
+                testData[(int)offset] = (int)(i + 100);
+            }
+
+            // Place the min magnitude at the first logical position
+            testData[0] = 0;
+
+            var ts = new ReadOnlyTensorSpan<int>(testData, shape, strides);
+            Assert.False(ts.IsDense);
+
+            nint idx = Tensor.IndexOfMinMagnitude(ts);
+            Assert.Equal(0, idx);
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorResizeToNonDenseSourceTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            var src = new ReadOnlyTensorSpan<int>(data, shape, strides);
+            Assert.False(src.IsDense);
+
+            // Resize to a larger dense destination
+            nint srcFlatLen = src.FlattenedLength;
+            int[] dstData = new int[(int)srcFlatLen + 2];
+            var dst = new TensorSpan<int>(dstData, [(nint)dstData.Length], [1]);
+            Assert.True(dst.IsDense);
+
+            Tensor.ResizeTo(src, dst);
+
+            for (int i = 0; i < expectedLogical.Length; i++)
+            {
+                Assert.Equal(expectedLogical[i], dstData[i]);
+            }
+            // Extra positions should be zero-filled
+            for (int i = expectedLogical.Length; i < dstData.Length; i++)
+            {
+                Assert.Equal(0, dstData[i]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NonDenseTensorData))]
+        public static void TensorResizeToNonDenseDestinationTests(int[] data, nint[] shape, nint[] strides, int[] expectedLogical)
+        {
+            // Create a dense source with known values
+            var src = new ReadOnlyTensorSpan<int>(expectedLogical, [(nint)expectedLogical.Length], [1]);
+            Assert.True(src.IsDense);
+
+            // Create a non-dense destination
+            int[] dstData = new int[data.Length];
+            var dst = new TensorSpan<int>(dstData, shape, strides);
+            Assert.False(dst.IsDense);
+
+            nint copyLength = Math.Min(src.FlattenedLength, dst.FlattenedLength);
+            Tensor.ResizeTo(src, dst);
+
+            // Verify logical elements were written correctly
+            int logicalIdx = 0;
+            foreach (int val in dst)
+            {
+                if (logicalIdx < expectedLogical.Length)
+                {
+                    Assert.Equal(expectedLogical[logicalIdx], val);
+                }
+                logicalIdx++;
+            }
+        }
+
+        [Fact]
+        public static void TensorResizeNonDenseTests()
+        {
+            // 2x3 tensor, slice to 2x2 (non-dense), then resize
+            Tensor<int> tensor = Tensor.Create([10, 20, 30, 40, 50, 60], [2, 3]);
+            Tensor<int> sliced = tensor.Slice(0..2, 0..2);
+            Assert.False(sliced.IsDense);
+
+            Tensor<int> resized = Tensor.Resize(sliced, [3]);
+            Assert.Equal(3, resized.FlattenedLength);
+            Assert.Equal(10, resized[0]);
+            Assert.Equal(20, resized[1]);
+            Assert.Equal(40, resized[2]);
+
+            // 3x4 tensor, slice to 2x2 (non-dense), then resize larger
+            Tensor<int> tensor2 = Tensor.Create(Enumerable.Range(1, 12).ToArray(), [3, 4]);
+            Tensor<int> sliced2 = tensor2.Slice(0..2, 0..2);
+            Assert.False(sliced2.IsDense);
+
+            Tensor<int> resized2 = Tensor.Resize(sliced2, [6]);
+            Assert.Equal(6, resized2.FlattenedLength);
+            Assert.Equal(1, resized2[0]);
+            Assert.Equal(2, resized2[1]);
+            Assert.Equal(5, resized2[2]);
+            Assert.Equal(6, resized2[3]);
+            Assert.Equal(0, resized2[4]);
+            Assert.Equal(0, resized2[5]);
+        }
+
         [Fact]
         public static void TensorMultiplyTests()
         {
