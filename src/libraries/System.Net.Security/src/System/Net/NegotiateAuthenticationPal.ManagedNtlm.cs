@@ -346,21 +346,17 @@ namespace System.Net
                 message.Version = s_version;
             }
 
-            private static int GetFieldLength(MessageField field) => field.Length;
-
-            private static int GetFieldOffset(MessageField field) => field.PayloadOffset;
-
             private static ReadOnlySpan<byte> GetField(MessageField field, ReadOnlySpan<byte> payload)
             {
-                int offset = GetFieldOffset(field);
-                int length = GetFieldLength(field);
+                int offset = field.PayloadOffset;
+                int length = field.Length;
 
                 if (length == 0 || offset + length > payload.Length)
                 {
                     return ReadOnlySpan<byte>.Empty;
                 }
 
-                return payload.Slice(GetFieldOffset(field), GetFieldLength(field));
+                return payload.Slice(offset, length);
             }
 
             private static void SetField(ref MessageField field, int length, int offset)
