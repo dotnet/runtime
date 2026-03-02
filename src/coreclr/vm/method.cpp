@@ -2474,18 +2474,6 @@ BOOL MethodDesc::ShouldCallPrestub()
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-void MethodDesc::ResetPortableEntryPoint()
-{
-    PCODE tempEntry = GetTemporaryEntryPointIfExists();
-    if (tempEntry != (PCODE)NULL)
-    {
-        PortableEntryPoint* pep = PortableEntryPoint::ToPortableEntryPoint(tempEntry);
-        pep->Init(this);  // Re-initializes: clears _pActualCode, _pInterpreterData, _flags
-    }
-}
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
-
 //*******************************************************************************
 void MethodDesc::Reset()
 {
@@ -2892,6 +2880,27 @@ PCODE MethodDesc::GetPortableEntryPoint()
     // The portable entry point is currently the same as the
     // temporary entry point.
     return GetTemporaryEntryPoint();
+}
+
+PCODE MethodDesc::GetPortableEntryPointIfExists()
+{
+    WRAPPER_NO_CONTRACT;
+
+    // The portable entry point is currently the same as the
+    // temporary entry point.
+    return GetTemporaryEntryPointIfExists();
+}
+
+// WASM-TODO: If the portable entry point diverges from the temporary
+// entry point, we may need to reset both of them.
+void MethodDesc::ResetPortableEntryPoint()
+{
+    PCODE portableEntry = GetPortableEntryPointIfExists();
+    if (portableEntry != (PCODE)NULL)
+    {
+        PortableEntryPoint* pep = PortableEntryPoint::ToPortableEntryPoint(portableEntry);
+        pep->Init(this);  // Re-initializes: clears _pActualCode, _pInterpreterData, _flags
+    }
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 

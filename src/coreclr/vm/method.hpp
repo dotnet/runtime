@@ -1620,6 +1620,8 @@ public:
 
     PCODE GetPortableEntryPoint();
 
+    PCODE GetPortableEntryPointIfExists();
+
     void ResetPortableEntryPoint();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
