@@ -1121,6 +1121,12 @@ SplitName::CdStartField(_In_opt_ PCWSTR fullName,
 
     if (typeHandle.IsNull())
     {
+        if (mod == NULL)
+        {
+            status = E_INVALIDARG;
+            goto Fail;
+        }
+         
         if (typeToken == mdTypeDefNil)
         {
             if (!split->FindType(mod->GetMDImport()))
