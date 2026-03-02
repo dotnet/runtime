@@ -2628,7 +2628,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix is not available on .NET Framework")]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task CharClassSubtraction_DeepNesting_DoesNotStackOverflow(RegexEngine engine)
