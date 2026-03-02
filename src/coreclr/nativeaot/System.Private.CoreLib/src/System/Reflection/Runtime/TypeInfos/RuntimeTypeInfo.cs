@@ -416,6 +416,9 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
         {
+            if (this.IsGenericTypeDefinition)
+                throw new InvalidOperationException(SR.Format(SR.FunctionPointer_ReturnTypeInvalid, this.ToString()));
+
             parameterTypes ??= [];
             RuntimeTypeInfo[] runtimeParameterTypes = new RuntimeTypeInfo[parameterTypes.Length];
 

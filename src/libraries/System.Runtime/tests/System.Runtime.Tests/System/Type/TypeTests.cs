@@ -574,6 +574,14 @@ namespace System.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_InvalidReturnType()
+        {
+            Type openGenericReturnType = typeof(List<>);
+            Assert.Throws<InvalidOperationException>(() => openGenericReturnType.MakeFunctionPointerType([]));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
         public void MakeFunctionPointerType_WithSignatureTypeParameter()
         {
             Type paramType = Type.MakeGenericMethodParameter(0);
