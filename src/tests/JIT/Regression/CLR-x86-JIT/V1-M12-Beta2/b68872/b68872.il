@@ -9,8 +9,6 @@
 }
 .assembly 'b68872' { }
 .assembly extern xunit.core {}
-.assembly extern TestLibrary { .ver 0:0:0:0 }
-.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .namespace JitTest
 {
   .class public auto ansi beforefieldinit Test
