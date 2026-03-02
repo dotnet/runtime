@@ -3,7 +3,7 @@
 
 import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback, SymbolsAsset } from "./types";
 
-import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetDiagnosticsExports } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetDiagnosticsExports, dotnetNativeBrowserExports } from "./cross-module";
 import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, browserVirtualAppBase } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
@@ -15,12 +15,13 @@ let currentParallelDownloads = 0;
 let downloadedAssetsCount = 0;
 let totalAssetsToDownload = 0;
 let loadBootResourceCallback: LoadBootResourceCallback | undefined = undefined;
+const loadedLazyAssemblies = new Set<string>();
 
 export function setLoadBootResourceCallback(callback: LoadBootResourceCallback | undefined): void {
     loadBootResourceCallback = callback;
 }
 export let wasmBinaryPromise: Promise<Response> | undefined = undefined;
-export const mainModulePromiseController = createPromiseCompletionSource<WebAssembly.Instance>();
+export const wasmMemoryPromiseController = createPromiseCompletionSource<WebAssembly.Memory>();
 export const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenModuleInternal>(() => {
     dotnetUpdateInternals(dotnetInternals);
 });
@@ -66,10 +67,11 @@ export function fetchWasm(asset: WasmAsset): Promise<Response> {
 }
 
 export async function instantiateMainWasm(imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback): Promise<void> {
-    const { instance, module } = await dotnetBrowserHostExports.instantiateWasm(wasmBinaryPromise!, imports, true, true);
+    const { instance, module } = await dotnetBrowserHostExports.instantiateWasm(wasmBinaryPromise!, imports);
     onDownloadedAsset();
     successCallback(instance, module);
-    mainModulePromiseController.resolve(instance);
+    const memory = dotnetNativeBrowserExports.getWasmMemory();
+    wasmMemoryPromiseController.resolve(memory);
 }
 
 export async function fetchIcu(asset: IcuAsset): Promise<void> {
@@ -91,20 +93,33 @@ export async function fetchDll(asset: AssemblyAsset): Promise<void> {
     totalAssetsToDownload++;
     const assetInternal = asset as AssetEntryInternal;
     dotnetAssert.check(assetInternal.virtualPath, "Assembly asset must have virtualPath");
-    if (assetInternal.name && !asset.resolvedUrl) {
-        asset.resolvedUrl = locateFile(assetInternal.name);
+    const assetNameForUrl = assetInternal.culture
+        ? `${assetInternal.culture}/${assetInternal.name}`
+        : assetInternal.name;
+    if (assetNameForUrl && !asset.resolvedUrl) {
+        asset.resolvedUrl = locateFile(assetNameForUrl);
     }
-    assetInternal.behavior = "assembly";
     assetInternal.virtualPath = assetInternal.virtualPath.startsWith("/")
         ? assetInternal.virtualPath
-        : browserVirtualAppBase + assetInternal.virtualPath;
+        : assetInternal.culture
+            ? `${browserVirtualAppBase}${assetInternal.culture}/${assetInternal.virtualPath}`
+            : browserVirtualAppBase + assetInternal.virtualPath;
+    if (assetInternal.virtualPath.endsWith(".wasm")) {
+        assetInternal.behavior = "webcil10";
+        const webcilPromise = loadResource(assetInternal);
 
-    const bytes = await fetchBytes(assetInternal);
-    await nativeModulePromiseController.promise;
-
-    onDownloadedAsset();
-    if (bytes) {
-        dotnetBrowserHostExports.registerDllBytes(bytes, asset.virtualPath);
+        const memory = await wasmMemoryPromiseController.promise;
+        const virtualPath = assetInternal.virtualPath.replace(/\.wasm$/, ".dll");
+        await dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, virtualPath);
+        onDownloadedAsset();
+    } else {
+        assetInternal.behavior = "assembly";
+        const bytes = await fetchBytes(assetInternal);
+        onDownloadedAsset();
+        await nativeModulePromiseController.promise;
+        if (bytes) {
+            dotnetBrowserHostExports.registerDllBytes(bytes, assetInternal.virtualPath);
+        }
     }
 }
 
@@ -125,7 +140,7 @@ export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
 
     onDownloadedAsset();
     if (bytes) {
-        dotnetBrowserHostExports.registerPdbBytes(bytes, asset.virtualPath);
+        dotnetBrowserHostExports.registerPdbBytes(bytes, assetInternal.virtualPath);
     }
 }
 
@@ -142,6 +157,88 @@ export async function fetchVfs(asset: AssemblyAsset): Promise<void> {
     if (bytes) {
         dotnetBrowserHostExports.installVfsFile(bytes, asset);
     }
+}
+
+export async function fetchSatelliteAssemblies(culturesToLoad: string[]): Promise<void> {
+    const satelliteResources = loaderConfig.resources?.satelliteResources;
+    if (!satelliteResources) {
+        return;
+    }
+
+    const promises: Promise<void>[] = [];
+    for (const culture of culturesToLoad) {
+        if (!Object.prototype.hasOwnProperty.call(satelliteResources, culture)) {
+            continue;
+        }
+        for (const asset of satelliteResources[culture]) {
+            const assetInternal = asset as AssetEntryInternal;
+            assetInternal.culture = culture;
+            promises.push(fetchDll(asset));
+        }
+    }
+    await Promise.all(promises);
+}
+
+export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boolean> {
+    const lazyAssemblies = loaderConfig.resources?.lazyAssembly;
+    if (!lazyAssemblies) {
+        throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
+    }
+
+    let assemblyNameWithoutExtension = assemblyNameToLoad;
+    if (assemblyNameToLoad.endsWith(".dll"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 4);
+    else if (assemblyNameToLoad.endsWith(".wasm"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 5);
+
+    const assemblyNameToLoadDll = assemblyNameWithoutExtension + ".dll";
+    const assemblyNameToLoadWasm = assemblyNameWithoutExtension + ".wasm";
+
+    let dllAsset: AssemblyAsset | null = null;
+    for (const asset of lazyAssemblies) {
+        if (asset.virtualPath === assemblyNameToLoadDll || asset.virtualPath === assemblyNameToLoadWasm) {
+            dllAsset = asset;
+            break;
+        }
+    }
+
+    if (!dllAsset) {
+        throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
+    }
+
+    if (loadedLazyAssemblies.has(dllAsset.virtualPath)) {
+        return false;
+    }
+
+    await fetchDll(dllAsset);
+    loadedLazyAssemblies.add(dllAsset.virtualPath);
+
+    if (loaderConfig.debugLevel !== 0) {
+        const pdbNameToLoad = assemblyNameWithoutExtension + ".pdb";
+        const pdbAssets = loaderConfig.resources?.pdb;
+        let pdbAssetToLoad: AssemblyAsset | undefined;
+        if (pdbAssets) {
+            for (const pdbAsset of pdbAssets) {
+                if (pdbAsset.virtualPath === pdbNameToLoad) {
+                    pdbAssetToLoad = pdbAsset;
+                    break;
+                }
+            }
+        }
+        if (!pdbAssetToLoad) {
+            for (const lazyAsset of lazyAssemblies) {
+                if (lazyAsset.virtualPath === pdbNameToLoad) {
+                    pdbAssetToLoad = lazyAsset as AssemblyAsset;
+                    break;
+                }
+            }
+        }
+        if (pdbAssetToLoad) {
+            await fetchPdb(pdbAssetToLoad);
+        }
+    }
+
+    return true;
 }
 
 export async function fetchNativeSymbols(asset: SymbolsAsset): Promise<void> {
@@ -344,6 +441,7 @@ const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType
     "manifest": "manifest",
     "symbols": "pdb",
     "dotnetwasm": "dotnetwasm",
+    "webcil10": "assembly",
     "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
     "js-module-runtime": "dotnetjs",
@@ -359,9 +457,11 @@ const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
     "manifest": "application/json",
     "symbols": "text/plain; charset=utf-8",
     "dotnetwasm": "application/wasm",
+    "webcil10": "application/wasm",
 };
 
 const noThrottleNoRetry: { [key: string]: number | undefined } = {
     "dotnetwasm": 1,
     "symbols": 1,
+    "webcil10": 1,
 };

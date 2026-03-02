@@ -220,8 +220,8 @@ private:
     }
 
 public:
-    BOOL fGCInProgress;
-    BOOL fBaseSystemClassesLoaded;
+    bool fGCInProgress;
+    bool fBaseSystemClassesLoaded;
 
     STOREDPROFILERLIST storedProfilers;
 
@@ -243,7 +243,7 @@ public:
     //
     // See code:AreCallbackStateFlagsSet#P2CLRRestrictionsOverview for general information
     // on how the test hooks lift restrictions normally in place for the Info functions.
-    BOOL fTestOnlyForceEnterLeave;
+    bool fTestOnlyForceEnterLeave;
 #endif
 
 #ifdef PROF_TEST_ONLY_FORCE_OBJECT_ALLOCATED_DATA
@@ -257,21 +257,23 @@ public:
     //
     // See code:AreCallbackStateFlagsSet#P2CLRRestrictionsOverview for general information
     // on how the test hooks lift restrictions normally in place for the Info functions.
-    BOOL fTestOnlyForceObjectAllocated;
+    bool fTestOnlyForceObjectAllocated;
 #endif
 
 #ifdef _DEBUG
     // Test-only, debug-only code to allow attaching profilers to call ICorProfilerInfo interface,
     // which would otherwise be disallowed for attaching profilers
-    BOOL                    fTestOnlyEnableICorProfilerInfo;
+    bool                    fTestOnlyEnableICorProfilerInfo;
 #endif // _DEBUG
 
     // Whether we've turned off concurrent GC during attach
-    Volatile<BOOL> fConcurrentGCDisabledForAttach;
+    Volatile<bool> fConcurrentGCDisabledForAttach;
 
-    Volatile<BOOL> fProfControlBlockInitialized;
+    Volatile<bool> fProfControlBlockInitialized;
 
-    Volatile<BOOL> fProfilerRequestedRuntimeSuspend;
+    Volatile<bool> fProfilerRequestedRuntimeSuspend;
+
+    bool fRejitOnAttachEnabled;
 
     void Init();
     BOOL IsMainProfiler(EEToProfInterfaceImpl *pEEToProf);

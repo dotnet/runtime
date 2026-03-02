@@ -33,13 +33,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
-        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="translated">Аргумент "{0}" использует неподдерживаемый модификатор выходного параметра</target>
+        <source>Argument '{0}' is using the unsupported 'out' parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported 'out' parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
-        <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="translated">Аргумент использует неподдерживаемый модификатор выходного параметра</target>
+        <source>Argument is using the unsupported 'out' parameter modifier</source>
+        <target state="new">Argument is using the unsupported 'out' parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -47,24 +47,24 @@
         <target state="translated">У методов ведения журнала не может быть текста</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">Методы ведения журнала не могут быть универсальными</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
-        <source>Logging methods must be partial</source>
-        <target state="translated">Методы ведения журнала должны быть частичными</target>
+        <source>Logging methods must be 'partial'</source>
+        <target state="new">Logging methods must be 'partial'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
-        <source>Logging methods must return void</source>
-        <target state="translated">Методы ведения журнала должны возвращать значение void</target>
+        <source>Logging methods must return 'void'</source>
+        <target state="new">Logging methods must return 'void'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
-        <source>Logging methods must be static</source>
-        <target state="translated">Методы ведения журнала должны быть статическими</target>
+        <source>Logging methods must be 'static'</source>
+        <target state="new">Logging methods must be 'static'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
@@ -143,8 +143,8 @@
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
-        <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="translated">Удалите избыточный квалификатор (Info:, Warning:, Error:, и т. п.) из сообщения журнала, поскольку квалификатор подразумевается на указанном уровне ведения журнала.</target>
+        <source>Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</source>
+        <target state="new">Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
@@ -200,6 +200,26 @@
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
         <target state="translated">У шаблона журнала нет соответствующего аргумента метода</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
+        <source>Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
+        <source>Argument is using the unsupported 'params' or 'scoped' parameter modifier</source>
+        <target state="new">Argument is using the unsupported 'params' or 'scoped' parameter modifier</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
+        <source>Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</source>
+        <target state="new">Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
+        <source>Logging method parameter is a 'ref struct'</source>
+        <target state="new">Logging method parameter is a 'ref struct'</target>
         <note />
       </trans-unit>
     </body>
