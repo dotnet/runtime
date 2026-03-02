@@ -30,13 +30,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private bool _emitEnumParseMethod;
             private bool _emitGenericParseEnum;
 
-            public List<DiagnosticInfo>? Diagnostics { get; private set; }
+            public List<Diagnostic>? Diagnostics { get; private set; }
 
             public SourceGenerationSpec? GetSourceGenerationSpec(ImmutableArray<BinderInvocation?> invocations, CancellationToken cancellationToken)
             {
                 if (!_langVersionIsSupported)
                 {
-                    RecordDiagnostic(DiagnosticDescriptors.LanguageVersionNotSupported, trimmedLocation: Location.None);
+                    RecordDiagnostic(DiagnosticDescriptors.LanguageVersionNotSupported, location: Location.None);
                     return null;
                 }
 
@@ -979,10 +979,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private void RecordDiagnostic(DiagnosticDescriptor descriptor, Location trimmedLocation, params object?[]? messageArgs)
+            private void RecordDiagnostic(DiagnosticDescriptor descriptor, Location location, params object?[]? messageArgs)
             {
-                Diagnostics ??= new List<DiagnosticInfo>();
-                Diagnostics.Add(DiagnosticInfo.Create(descriptor, trimmedLocation, messageArgs));
+                Diagnostics ??= new List<Diagnostic>();
+                Diagnostics.Add(Diagnostic.Create(descriptor, location, messageArgs));
             }
 
             private void CheckIfToEmitParseEnumMethod()

@@ -6,10 +6,10 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new CompilationData((CSharpCompilation)compilation)
                         : null);
 
-            IncrementalValueProvider<(SourceGenerationSpec?, ImmutableEquatableArray<DiagnosticInfo>?)> genSpec = context.SyntaxProvider
+            IncrementalValueProvider<(SourceGenerationSpec?, ImmutableArray<Diagnostic>)> genSpec = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     (node, _) => BinderInvocation.IsCandidateSyntaxNode(node),
                     BinderInvocation.Create)
@@ -48,14 +48,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (tuple.Right is not CompilationData compilationData)
                     {
-                        return (null, null);
+                        return (null, default);
                     }
 
                     try
                     {
                         Parser parser = new(compilationData);
                         SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(tuple.Left, cancellationToken);
-                        ImmutableEquatableArray<DiagnosticInfo>? diagnostics = parser.Diagnostics?.ToImmutableEquatableArray();
+                        ImmutableArray<Diagnostic> diagnostics = parser.Diagnostics is { } diags
+                            ? diags.ToImmutableArray()
+                            : ImmutableArray<Diagnostic>.Empty;
                         return (spec, diagnostics);
                     }
                     catch (Exception ex)
@@ -65,7 +67,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 })
                 .WithTrackingName(GenSpecTrackingName);
 
-            context.RegisterSourceOutput(genSpec, ReportDiagnosticsAndEmitSource);
+            // Pipeline 1: Source generation only.
+            // Uses Select to extract just the spec; the Select operator deduplicates by
+            // comparing model equality, so source generation only re-fires on structural changes.
+            context.RegisterSourceOutput(genSpec.Select(static (t, _) => t.Item1), EmitSource);
+
+            // Pipeline 2: Diagnostics only.
+            // Diagnostics use raw SourceLocation instances that are pragma-suppressible.
+            // This pipeline re-fires whenever diagnostics change (e.g. positional shifts)
+            // without triggering expensive source regeneration.
+            // See https://github.com/dotnet/runtime/issues/92509 for context.
+            context.RegisterSourceOutput(genSpec, EmitDiagnostics);
 
             if (!s_hasInitializedInterceptorVersion)
             {
@@ -136,17 +148,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// </summary>
         public Action<SourceGenerationSpec>? OnSourceEmitting { get; init; }
 
-        private void ReportDiagnosticsAndEmitSource(SourceProductionContext sourceProductionContext, (SourceGenerationSpec? SourceGenerationSpec, ImmutableEquatableArray<DiagnosticInfo>? Diagnostics) input)
+        private static void EmitDiagnostics(SourceProductionContext context, (SourceGenerationSpec?, ImmutableArray<Diagnostic>) tuple)
         {
-            if (input.Diagnostics is ImmutableEquatableArray<DiagnosticInfo> diagnostics)
+            foreach (Diagnostic diagnostic in tuple.Item2)
             {
-                foreach (DiagnosticInfo diagnostic in diagnostics)
-                {
-                    sourceProductionContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
-                }
+                context.ReportDiagnostic(diagnostic);
             }
+        }
 
-            if (input.SourceGenerationSpec is SourceGenerationSpec spec)
+        private void EmitSource(SourceProductionContext sourceProductionContext, SourceGenerationSpec? spec)
+        {
+            if (spec is not null)
             {
                 OnSourceEmitting?.Invoke(spec);
                 Emitter emitter = new(spec);

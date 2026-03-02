@@ -755,5 +755,29 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
         }
 #endif
+
+        [Fact]
+        public void Diagnostic_HasPragmaSuppressibleLocation()
+        {
+            // SYSLIB1038: JsonInclude attribute on inaccessible member
+            Compilation compilation = CompilationHelper.CreateCompilation(@"
+                using System.Text.Json.Serialization;
+
+                namespace Test
+                {
+                    public class MyClass
+                    {
+                        [JsonInclude]
+                        private int PrivateField;
+                    }
+
+                    [JsonSerializable(typeof(MyClass))]
+                    public partial class JsonContext : JsonSerializerContext { }
+                }");
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1038");
+            Assert.Equal(LocationKind.SourceFile, diagnostic.Location.Kind);
+        }
     }
 }

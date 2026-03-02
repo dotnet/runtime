@@ -398,6 +398,44 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("SYSLIB1043", Assert.Single(diagnostics).Id);
         }
 
+        [Theory]
+        [InlineData("SYSLIB1041")]
+        [InlineData("SYSLIB1042")]
+        [InlineData("SYSLIB1043")]
+        public async Task Diagnostic_HasPragmaSuppressibleLocation(string diagnosticId)
+        {
+            string code = diagnosticId switch
+            {
+                "SYSLIB1041" => @"
+                    using System.Text.RegularExpressions;
+                    partial class C
+                    {
+                        [GeneratedRegex(""ab"")]
+                        [GeneratedRegex(""abc"")]
+                        private static partial Regex MultipleAttributes();
+                    }",
+                "SYSLIB1042" => @"
+                    using System.Text.RegularExpressions;
+                    partial class C
+                    {
+                        [GeneratedRegex(""ab[]"")]
+                        private static partial Regex InvalidPattern();
+                    }",
+                "SYSLIB1043" => @"
+                    using System.Text.RegularExpressions;
+                    partial class C
+                    {
+                        [GeneratedRegex(""ab"")]
+                        private static Regex NonPartialProperty => null;
+                    }",
+                _ => throw new ArgumentException(diagnosticId),
+            };
+
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(code);
+            Diagnostic diagnostic = Assert.Single(diagnostics, d => d.Id == diagnosticId);
+            Assert.Equal(LocationKind.SourceFile, diagnostic.Location.Kind);
+        }
+
         [Fact]
         public async Task Diagnostic_PropertyMustHaveGetter()
         {

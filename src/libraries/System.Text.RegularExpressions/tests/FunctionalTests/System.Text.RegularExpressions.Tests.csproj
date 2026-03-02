@@ -74,6 +74,7 @@
     <Compile Include="GeneratedRegexAttributeTests.cs" />
     <Compile Include="RegexGeneratorOutputTests.cs" />
     <Compile Include="RegexGeneratorParserTests.cs" />
+    <Compile Include="RegexGeneratorIncrementalTests.cs" />
     <Compile Include="RegexGroupNameTests.cs" />
     <Compile Include="RegexExperiment.cs" />
     <Compile Include="RegexGeneratorHelper.netcoreapp.cs" />

@@ -414,5 +414,30 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.True(result.Diagnostics.Any(diag => diag.Id == Diagnostics.TypeNotSupported.Id));
             Assert.True(result.Diagnostics.Any(diag => diag.Id == Diagnostics.PropertyNotSupported.Id));
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Diagnostic_HasPragmaSuppressibleLocation()
+        {
+            string source = """
+                using System;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        int myInt = 1;
+                        config.Bind(myInt);
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics, d => d.Id == "SYSLIB1103");
+            Assert.Equal(LocationKind.SourceFile, diagnostic.Location.Kind);
+        }
     }
 }

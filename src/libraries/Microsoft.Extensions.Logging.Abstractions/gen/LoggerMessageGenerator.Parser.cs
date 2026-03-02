@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Logging.Generators
             private readonly INamedTypeSymbol _stringSymbol;
             private readonly Action<Diagnostic>? _reportDiagnostic;
 
-            public List<DiagnosticInfo> Diagnostics { get; } = new();
+            public List<Diagnostic> Diagnostics { get; } = new();
 
             public Parser(
                 INamedTypeSymbol loggerMessageAttribute,
@@ -815,8 +815,8 @@ namespace Microsoft.Extensions.Logging.Generators
                 _reportDiagnostic?.Invoke(Diagnostic.Create(desc, location, messageArgs));
 
                 // Also collect for scenarios that need the diagnostics list; in Roslyn 4.0+ incremental generators,
-                // this list is exposed via parser.Diagnostics (as ImmutableEquatableArray<DiagnosticInfo>) and reported in Execute.
-                Diagnostics.Add(DiagnosticInfo.Create(desc, location, messageArgs));
+                // this list is exposed via parser.Diagnostics and reported in the diagnostic pipeline.
+                Diagnostics.Add(Diagnostic.Create(desc, location, messageArgs));
             }
 
             private static bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest, Compilation compilation)
