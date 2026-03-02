@@ -1724,6 +1724,8 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         sig.IsAsyncCall(),
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
         m_hasSwiftError,
+#else
+        false,
 #endif
         m_pInvokeFunction);
 
@@ -1742,7 +1744,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
         // We only need to allocate the actual pRoutines array, and then we can just use the cachedHeader we already constructed
         size_t finalCachedCallStubSize = sizeof(CachedCallStub) + m_routineIndex * sizeof(PCODE);
         void* pHeaderStorage = amTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(finalCachedCallStubSize)));
-        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, m_hasSwiftReturnLowering, m_pInvokeFunction);
+        // hasSwiftReturnLowering is always false here because m_interpreterToNative = true (see line 1601's logic)
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), m_hasSwiftError, false /* hasSwiftReturnLowering */, m_pInvokeFunction);
+#else
+        CachedCallStub *pHeader = new (pHeaderStorage) CachedCallStub(cachedHeaderKey.HashCode, m_routineIndex, m_targetSlotIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), sig.IsAsyncCall(), false, false, m_pInvokeFunction);
+#endif
         s_callStubCache->Add(pHeader);
         amTracker.SuppressRelease();
 
