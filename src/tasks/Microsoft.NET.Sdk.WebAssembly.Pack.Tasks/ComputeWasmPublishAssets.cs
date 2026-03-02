@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -623,7 +623,7 @@ public class ComputeWasmPublishAssets : Task
             {
                 throw new InvalidOperationException(
                     $"Related asset not found for asset '{asset.ItemSpec}' with RelatedAsset '{relatedAsset}' " +
-                    $"after filename-based matching (webcil normalization {(isWebCilEnabled ? "enabled" : "disabled")}).");
+                    $"after filename-based matching (webcil normalization {(isWebcilEnabled ? "enabled" : "disabled")}).");
             }
         }
 
