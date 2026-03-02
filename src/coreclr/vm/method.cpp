@@ -2891,7 +2891,7 @@ PCODE MethodDesc::GetPortableEntryPointIfExists()
     return GetTemporaryEntryPointIfExists();
 }
 
-// WASM-TODO: If the portable entry point diverges from the temporary
+// If the portable entry point diverges from the temporary
 // entry point, we may need to reset both of them.
 void MethodDesc::ResetPortableEntryPoint()
 {
