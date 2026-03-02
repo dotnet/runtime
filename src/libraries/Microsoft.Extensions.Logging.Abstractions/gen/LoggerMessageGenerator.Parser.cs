@@ -874,8 +874,12 @@ namespace Microsoft.Extensions.Logging.Generators
                         break;
                     }
 
-                    templateMap[templateName] = templateName;
-                    templateList.Add(templateName);
+                    // Only add the template name to the list if it hasn't been seen before
+                    if (!templateMap.ContainsKey(templateName))
+                    {
+                        templateMap[templateName] = templateName;
+                        templateList.Add(templateName);
+                    }
 
                     scanIndex = closeBraceIndex + 1;
                 }
