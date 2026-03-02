@@ -12844,7 +12844,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
 
 #ifdef TARGET_WASM
                     case GenTreeBlk::BlkOpKindNativeOpcode:
-                        printf(" (memory.copy|fill)");
+                        printf(" (memory.%s)", tree->OperIsCopyBlkOp() ? "copy" : "fill");
                         break;
 #endif
 

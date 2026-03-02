@@ -1476,7 +1476,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         tryBegBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
 
         faultBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
-        faultBB->bbCatchTyp = BBCT_FAULT;
+        faultBB->SetCatchType(BBCT_FAULT);
 
         tryBegBB->setTryIndex(XTnew);
         tryBegBB->clearHndIndex();
@@ -4158,9 +4158,9 @@ bool Compiler::fgHasCycleWithoutGCSafePoint()
                     {
                         printf("Found a cycle that does not go through a GC safe point:\n");
                         printf(FMT_BB, succ->bbNum);
-                        for (int index = 0; index < stack.Height(); index++)
+                        for (auto& entry : stack.TopDownOrder())
                         {
-                            BasicBlock* block = stack.TopRef(index).Block();
+                            BasicBlock* block = entry.Block();
                             printf(" <- " FMT_BB, block->bbNum);
 
                             if (block == succ)
@@ -4219,7 +4219,7 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
         }
 
 #ifdef DEBUG
-        if (block->bbStmtList == stmt)
+        if (block->firstStmt() == stmt)
         {
             /* first statement in the list */
             assert(stmt->GetPrevStmt()->GetNextStmt() == nullptr);
