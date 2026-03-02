@@ -41,16 +41,3 @@ internal sealed class EEClass : IData<EEClass>
     public TargetPointer FieldDescList { get; init; }
     public ushort NumNonVirtualSlots { get; init; }
 }
-
-internal sealed class ArrayClass : IData<ArrayClass>
-{
-    static ArrayClass IData<ArrayClass>.Create(Target target, TargetPointer address) => new ArrayClass(target, address);
-    public ArrayClass(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ArrayClass);
-
-        Rank = target.Read<byte>(address + (ulong)type.Fields[nameof(Rank)].Offset);
-    }
-
-    public byte Rank { get; init; }
-}
