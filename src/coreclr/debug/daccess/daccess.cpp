@@ -8335,11 +8335,16 @@ HRESULT DacGCBookkeepingEnumerator::Init()
 
 HRESULT DacHandleTableMemoryEnumerator::Init()
 {
-    int max_slots = 1;
+    uint32_t max_slots = 1;
 
 #ifdef FEATURE_SVR_GC
     if (GCHeapUtilities::IsServerHeap())
-        max_slots = GCHeapCount();
+    {
+        if (g_gcDacGlobals->minor_version_number >= 8)
+            max_slots = *g_gcDacGlobals->g_totalCpuCount;
+        else
+            max_slots = GCHeapCount();
+    }
 #endif // FEATURE_SVR_GC
 
     // Cap the number of regions we will walk in case we hit an infinite loop due
@@ -8352,9 +8357,9 @@ HRESULT DacHandleTableMemoryEnumerator::Init()
         {
             if (map->pBuckets[i] != NULL)
             {
-                for (int j = 0; j < max_slots ; ++j)
+                for (uint32_t j = 0; j < max_slots ; ++j)
                 {
-                    DPTR(dac_handle_table) pTable = map->pBuckets[i]->pTable[j];
+                    DPTR(dac_handle_table) pTable = map->pBuckets[i]->pTable[(int)j];
                     DPTR(dac_handle_table_segment) pFirstSegment = pTable->pSegmentList;
                     DPTR(dac_handle_table_segment) curr = pFirstSegment;
 
@@ -8363,7 +8368,7 @@ HRESULT DacHandleTableMemoryEnumerator::Init()
                         SOSMemoryRegion mem = {0};
                         mem.Start = curr.GetAddr();
                         mem.Size = HANDLE_SEGMENT_SIZE;
-                        mem.Heap = j; // heap number
+                        mem.Heap = (int)j; // heap number
 
                         mRegions.Add(mem);
 
