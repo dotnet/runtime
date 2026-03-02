@@ -14,243 +14,45 @@ public struct DbiVersion
     public uint m_dwReservedMustBeZero1;
 }
 
-// Prefix projection of IDacDbiInterface used to validate COM binding in managed cDAC.
-// The full interface surface is intentionally staged in follow-up changes.
+// Name-surface projection of IDacDbiInterface in native method order for COM binding validation.
+// Parameter shapes are intentionally coarse placeholders and will be refined with method implementation work.
 [ComImport]
 [Guid("B7A6D3F5-6B46-4DD4-8AF1-0D4A2AFB98C1")]
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 public unsafe interface IDacDbiInterfaceControl
 {
     [PreserveSig]
-    int CheckDbiVersion(DbiVersion* pVersion);
+    int CheckDbiVersion(nint p0);
 
     [PreserveSig]
     int FlushCache();
 
     [PreserveSig]
-    int DacSetTargetConsistencyChecks([MarshalAs(UnmanagedType.Bool)] bool fEnableAsserts);
+    int DacSetTargetConsistencyChecks(int p0);
 
     [PreserveSig]
     int Destroy();
 
     [PreserveSig]
-    int IsLeftSideInitialized(int* pResult);
+    int IsLeftSideInitialized(nint p0);
 
     [PreserveSig]
-    int GetAppDomainFromId(uint appdomainId, ulong* pRetVal);
+    int GetAppDomainFromId(uint p0, nint p1);
 
     [PreserveSig]
-    int GetAppDomainId(ulong vmAppDomain, uint* pRetVal);
+    int GetAppDomainId(ulong p0, nint p1);
 
     [PreserveSig]
-    int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal);
-
-    [PreserveSig]
-    int GetAppDomainFullName(ulong vmAppDomain, nint pStrName);
-
-    [PreserveSig]
-    int GetCompilerFlags(ulong vmDomainAssembly, int* pfAllowJITOpts, int* pfEnableEnC);
-
-    [PreserveSig]
-    int SetCompilerFlags(ulong vmDomainAssembly, int fAllowJitOpts, int fEnableEnC);
-
-    [PreserveSig]
-    int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, int fCodeAvailable, nint pNativeVarData, nint pSequencePoints);
-
-    [PreserveSig]
-    int IsThreadSuspendedOrHijacked(ulong vmThread, byte* pResult);
-
-    [PreserveSig]
-    int AreGCStructuresValid(byte* pResult);
-
-    [PreserveSig]
-    int CreateHeapWalk(nuint* pHandle);
-
-    [PreserveSig]
-    int DeleteHeapWalk(nuint handle);
-
-    [PreserveSig]
-    int WalkHeap(nuint handle, uint count, nint objects, uint* fetched);
-
-    [PreserveSig]
-    int GetHeapSegments(nint pSegments);
-
-    [PreserveSig]
-    int IsValidObject(ulong obj, byte* pResult);
-
-    [PreserveSig]
-    int GetAppDomainForObject(ulong obj, ulong* pApp, ulong* pModule, ulong* pDomainAssembly, byte* pResult);
-
-    [PreserveSig]
-    int CreateRefWalk(nuint* pHandle, int walkStacks, int walkFQ, uint handleWalkMask);
-
-    [PreserveSig]
-    int DeleteRefWalk(nuint handle);
-
-    [PreserveSig]
-    int WalkRefs(nuint handle, uint count, nint objects, uint* pFetched);
-
-    [PreserveSig]
-    int GetTypeID(ulong obj, nint pID);
-
-    [PreserveSig]
-    int GetTypeIDForType(ulong vmTypeHandle, nint pID);
-
-    [PreserveSig]
-    int GetObjectFields(nint id, uint celt, nint layout, uint* pceltFetched);
-
-    [PreserveSig]
-    int GetTypeLayout(nint id, nint pLayout);
-
-    [PreserveSig]
-    int GetArrayLayout(nint id, nint pLayout);
-
-    [PreserveSig]
-    int GetGCHeapInformation(nint pHeapInfo);
-
-    [PreserveSig]
-    int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW);
-
-    [PreserveSig]
-    int GetReJitInfo(ulong vmModule, uint methodTk, ulong* pReJitInfo);
-
-    [PreserveSig]
-    int GetReJitInfo(ulong vmMethod, ulong codeStartAddress, ulong* pReJitInfo);
-
-    [PreserveSig]
-    int AreOptimizationsDisabled(ulong vmModule, uint methodTk, int* pOptimizationsDisabled);
-
-    [PreserveSig]
-    int GetSharedReJitInfo(ulong vmReJitInfo, ulong* pSharedReJitInfo);
-
-    [PreserveSig]
-    int GetSharedReJitInfoData(ulong sharedReJitInfo, nint pData);
-
-    [PreserveSig]
-    int GetDefinesBitField(uint* pDefines);
-
-    [PreserveSig]
-    int GetMDStructuresVersion(uint* pMDStructuresVersion);
-
-    [PreserveSig]
-    int EnableGCNotificationEvents(int fEnable);
-
-    [PreserveSig]
-    int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly);
-
-    [PreserveSig]
-    int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState);
-
-    [PreserveSig]
-    int GetAsyncLocals(ulong vmMethod, ulong codeAddr, uint state, nint pAsyncLocals);
-
-    [PreserveSig]
-    int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
-
-    [PreserveSig]
-    int GetILCodeAndSig(ulong vmDomainAssembly, uint functionToken, nint pCodeInfo, uint* pLocalSigToken);
-
-    [PreserveSig]
-    int GetNativeCodeInfo(ulong vmDomainAssembly, uint functionToken, nint pCodeInfo);
-
-    [PreserveSig]
-    int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken);
-
-    [PreserveSig]
-    int IsValueType(ulong th, int* pResult);
-
-    [PreserveSig]
-    int HasTypeParams(ulong th, int* pResult);
-
-    [PreserveSig]
-    int GetClassInfo(ulong vmAppDomain, ulong thExact, nint pData);
-
-    [PreserveSig]
-    int GetInstantiationFieldInfo(ulong vmDomainAssembly, ulong vmThExact, ulong vmThApprox, nint pFieldList, nuint* pObjectSize);
-
-    [PreserveSig]
-    int GetObjectExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong addr, nint pTypeInfo);
-
-    [PreserveSig]
-    int GetObjectExpandedTypeInfoFromID(int boxed, ulong vmAppDomain, nint id, nint pTypeInfo);
-
-    [PreserveSig]
-    int TypeHandleToExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong vmTypeHandle, nint pTypeInfo);
-
-    [PreserveSig]
-    int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal);
-
-    [PreserveSig]
-    int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal);
-
-    [PreserveSig]
-    int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* vmTypeHandle);
-
-    [PreserveSig]
-    int GetMethodDescParams(ulong vmAppDomain, ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams);
-
-    [PreserveSig]
-    int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal);
-
-    [PreserveSig]
-    int GetCollectibleTypeStaticAddress(ulong vmField, ulong vmAppDomain, ulong* pRetVal);
-
-    [PreserveSig]
-    int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, int* pfStatic);
-
-    [PreserveSig]
-    int GetTypeHandleParams(ulong vmAppDomain, ulong vmTypeHandle, nint pParams);
-
-    [PreserveSig]
-    int GetSimpleType(ulong vmAppDomain, int simpleType, uint* pMetadataToken, ulong* pVmModule, ulong* pVmDomainAssembly);
-
-    [PreserveSig]
-    int IsExceptionObject(ulong vmObject, int* pResult);
-
-    [PreserveSig]
-    int GetStackFramesFromException(ulong vmObject, nint dacStackFrames);
-
-    [PreserveSig]
-    int IsRcw(ulong vmObject, int* pResult);
-
-    [PreserveSig]
-    int IsDelegate(ulong vmObject, int* pResult);
-
-    [PreserveSig]
-    int GetDelegateType(ulong delegateObject, int* delegateType);
-
-    [PreserveSig]
-    int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionDomainAssembly, uint* pMethodDef);
-
-    [PreserveSig]
-    int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
-
-    [PreserveSig]
-    int GetLoaderHeapMemoryRanges(nint pRanges);
-
-    [PreserveSig]
-    int IsModuleMapped(ulong pModule, int* isModuleMapped);
-
-    [PreserveSig]
-    int MetadataUpdatesApplied(byte* pResult);
-
-    [PreserveSig]
-    int GetRcwCachedInterfaceTypes(ulong vmObject, ulong vmAppDomain, int bIInspectableOnly, nint pDacInterfaces);
-
-    [PreserveSig]
-    int GetRcwCachedInterfacePointers(ulong vmObject, int bIInspectableOnly, nint pDacItfPtrs);
-
-    [PreserveSig]
-    int GetCachedWinRTTypesForIIDs(ulong vmAppDomain, nint iids, nint pTypes);
-
-    [PreserveSig]
-    int GetCachedWinRTTypes(ulong vmAppDomain, nint piids, nint pTypes);
+    int GetAppDomainObject(ulong p0, nint p1);
 
     [PreserveSig]
     int GetAssemblyFromDomainAssembly(ulong p0, nint p1);
 
     [PreserveSig]
     int IsAssemblyFullyTrusted(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetAppDomainFullName(ulong p0, nint p1);
 
     [PreserveSig]
     int GetModuleSimpleName(ulong p0, nint p1);
@@ -284,6 +86,12 @@ public unsafe interface IDacDbiInterfaceControl
 
     [PreserveSig]
     int IsTransitionStub(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetCompilerFlags(ulong p0, nint p1, nint p2);
+
+    [PreserveSig]
+    int SetCompilerFlags(ulong p0, int p1, int p2);
 
     [PreserveSig]
     int EnumerateAppDomains(nint p0, nint p1);
@@ -364,6 +172,9 @@ public unsafe interface IDacDbiInterfaceControl
     int ResolveAssembly(ulong p0, uint p1, nint p2);
 
     [PreserveSig]
+    int GetNativeCodeSequencePointsAndVarInfo(ulong p0, ulong p1, int p2, nint p3, nint p4);
+
+    [PreserveSig]
     int GetManagedStoppedContext(ulong p0, nint p1);
 
     [PreserveSig]
@@ -422,6 +233,84 @@ public unsafe interface IDacDbiInterfaceControl
 
     [PreserveSig]
     int ResolveExactGenericArgsToken(uint p0, nint p1, nint p2);
+
+    [PreserveSig]
+    int GetILCodeAndSig(ulong p0, uint p1, nint p2, nint p3);
+
+    [PreserveSig]
+    int GetNativeCodeInfo(ulong p0, uint p1, nint p2);
+
+    [PreserveSig]
+    int GetNativeCodeInfoForAddr(ulong p0, nint p1, nint p2, nint p3);
+
+    [PreserveSig]
+    int IsValueType(ulong p0, nint p1);
+
+    [PreserveSig]
+    int HasTypeParams(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetClassInfo(ulong p0, ulong p1, nint p2);
+
+    [PreserveSig]
+    int GetInstantiationFieldInfo(ulong p0, ulong p1, ulong p2, nint p3, nint p4);
+
+    [PreserveSig]
+    int TypeHandleToExpandedTypeInfo(nint p0, ulong p1, ulong p2, nint p3);
+
+    [PreserveSig]
+    int GetObjectExpandedTypeInfo(nint p0, ulong p1, ulong p2, nint p3);
+
+    [PreserveSig]
+    int GetObjectExpandedTypeInfoFromID(nint p0, ulong p1, nint p2, nint p3);
+
+    [PreserveSig]
+    int GetTypeHandle(ulong p0, nint p1, nint p2);
+
+    [PreserveSig]
+    int GetApproxTypeHandle(nint p0, nint p1);
+
+    [PreserveSig]
+    int GetExactTypeHandle(nint p0, nint p1, nint p2);
+
+    [PreserveSig]
+    int GetMethodDescParams(ulong p0, ulong p1, nint p2, nint p3, nint p4);
+
+    [PreserveSig]
+    int GetThreadStaticAddress(ulong p0, ulong p1, nint p2);
+
+    [PreserveSig]
+    int GetCollectibleTypeStaticAddress(ulong p0, ulong p1, nint p2);
+
+    [PreserveSig]
+    int GetEnCHangingFieldInfo(nint p0, nint p1, nint p2);
+
+    [PreserveSig]
+    int GetTypeHandleParams(ulong p0, ulong p1, nint p2);
+
+    [PreserveSig]
+    int GetSimpleType(ulong p0, int p1, nint p2, nint p3, nint p4);
+
+    [PreserveSig]
+    int IsExceptionObject(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetStackFramesFromException(ulong p0, nint p1);
+
+    [PreserveSig]
+    int IsRcw(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetRcwCachedInterfaceTypes(ulong p0, ulong p1, int p2, nint p3);
+
+    [PreserveSig]
+    int GetRcwCachedInterfacePointers(ulong p0, int p1, nint p2);
+
+    [PreserveSig]
+    int GetCachedWinRTTypesForIIDs(ulong p0, nint p1, nint p2);
+
+    [PreserveSig]
+    int GetCachedWinRTTypes(ulong p0, nint p1, nint p2);
 
     [PreserveSig]
     int GetTypedByRefInfo(ulong p0, ulong p1, nint p2);
@@ -490,7 +379,82 @@ public unsafe interface IDacDbiInterfaceControl
     int GetMetaDataFileInfoFromPEFile(ulong p0, nint p1, nint p2, nint p3, nint p4);
 
     [PreserveSig]
-    int GetActiveRejitILCodeVersionNode(ulong p0, nint p1, nint p2);
+    int IsThreadSuspendedOrHijacked(ulong p0, nint p1);
+
+    [PreserveSig]
+    int AreGCStructuresValid(nint p0);
+
+    [PreserveSig]
+    int CreateHeapWalk(nint p0);
+
+    [PreserveSig]
+    int DeleteHeapWalk(ulong p0);
+
+    [PreserveSig]
+    int WalkHeap(ulong p0, uint p1, nint p2, nint p3);
+
+    [PreserveSig]
+    int GetHeapSegments(nint p0);
+
+    [PreserveSig]
+    int IsValidObject(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetAppDomainForObject(ulong p0, nint p1, nint p2, nint p3, nint p4);
+
+    [PreserveSig]
+    int CreateRefWalk(nint p0, int p1, int p2, uint p3);
+
+    [PreserveSig]
+    int DeleteRefWalk(ulong p0);
+
+    [PreserveSig]
+    int WalkRefs(ulong p0, uint p1, nint p2, nint p3);
+
+    [PreserveSig]
+    int GetTypeID(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetTypeIDForType(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetObjectFields(nint p0, uint p1, nint p2, nint p3);
+
+    [PreserveSig]
+    int GetTypeLayout(nint p0, nint p1);
+
+    [PreserveSig]
+    int GetArrayLayout(nint p0, nint p1);
+
+    [PreserveSig]
+    int GetGCHeapInformation(nint p0);
+
+    [PreserveSig]
+    int GetPEFileMDInternalRW(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetReJitInfo(ulong p0, uint p1, nint p2);
+
+    [PreserveSig]
+    int GetReJitInfo(ulong p0, ulong p1, nint p2);
+
+    [PreserveSig]
+    int GetSharedReJitInfo(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetSharedReJitInfoData(ulong p0, nint p1);
+
+    [PreserveSig]
+    int AreOptimizationsDisabled(ulong p0, uint p1, nint p2);
+
+    [PreserveSig]
+    int GetDefinesBitField(nint p0);
+
+    [PreserveSig]
+    int GetMDStructuresVersion(nint p0);
+
+    [PreserveSig]
+    int GetActiveRejitILCodeVersionNode(ulong p0, uint p1, nint p2);
 
     [PreserveSig]
     int GetNativeCodeVersionNode(ulong p0, ulong p1, nint p2);
@@ -500,4 +464,41 @@ public unsafe interface IDacDbiInterfaceControl
 
     [PreserveSig]
     int GetILCodeVersionNodeData(ulong p0, nint p1);
+
+    [PreserveSig]
+    int EnableGCNotificationEvents(int p0);
+
+    [PreserveSig]
+    int IsDelegate(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetDelegateType(ulong p0, nint p1);
+
+    [PreserveSig]
+    int GetDelegateFunctionData(int p0, ulong p1, nint p2, nint p3);
+
+    [PreserveSig]
+    int GetDelegateTargetObject(int p0, ulong p1, nint p2, nint p3);
+
+    [PreserveSig]
+    int GetLoaderHeapMemoryRanges(nint p0);
+
+    [PreserveSig]
+    int IsModuleMapped(ulong p0, nint p1);
+
+    [PreserveSig]
+    int MetadataUpdatesApplied(nint p0);
+
+    [PreserveSig]
+    int GetDomainAssemblyFromModule(ulong p0, nint p1);
+
+    [PreserveSig]
+    int ParseContinuation(ulong p0, nint p1, nint p2, nint p3);
+
+    [PreserveSig]
+    int GetAsyncLocals(ulong p0, ulong p1, uint p2, nint p3);
+
+    [PreserveSig]
+    int GetGenericArgTokenIndex(ulong p0, nint p1);
+
 }
