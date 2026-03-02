@@ -29,6 +29,8 @@ namespace System.Linq.Expressions.Tests
 
         public override async ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod, DisposalTracker disposalTracker)
         {
+            delegatedTo.MemberType ??= testMethod.ReflectedType;
+
             var result = new List<ITheoryDataRow>();
             var delegatedData = await delegatedTo.GetData(testMethod, disposalTracker);
 
