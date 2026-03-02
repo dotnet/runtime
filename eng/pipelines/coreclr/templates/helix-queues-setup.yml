@@ -34,17 +34,11 @@ jobs:
 
     # iOS Simulator/Mac Catalyst arm64
     - ${{ if in(parameters.platform, 'iossimulator_arm64', 'tvossimulator_arm64', 'maccatalyst_arm64') }}:
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.15.Arm64.Open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.15.Arm64
+      - $(helix_macos_arm64)
 
     # iOS/tvOS Simulator x64 & MacCatalyst x64
     - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64', 'maccatalyst_x64') }}:
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - OSX.15.Amd64.Open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - OSX.15.Amd64
+      - $(helix_macos_x64)
 
     # Android arm64
     - ${{ if in(parameters.platform, 'android_arm64') }}:
@@ -69,17 +63,11 @@ jobs:
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - osx.15.amd64.iphone.open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - osx.15.amd64.iphone
+      - $(helix_macos_ios_device_latest)
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - osx.15.amd64.appletv.open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - osx.15.amd64.appletv
+      - $(helix_macos_tvos_device_latest)
 
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
