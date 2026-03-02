@@ -51,25 +51,46 @@ public class Color
         Assert.Throws<PlatformNotSupportedException>(() => Console.BackgroundColor = ConsoleColor.Red);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void RedirectedOutputDoesNotUseAnsiSequences()
     {
-        // Make sure that redirecting to a memory stream causes Console not to write out the ANSI sequences
-
-        Helpers.RunInRedirectedOutput((data) =>
+        // Run in a child process with redirected stdout so that no in-process
+        // test framework output (e.g. xunit skip messages) can pollute the stream.
+        var startInfo = new ProcessStartInfo { RedirectStandardOutput = true };
+        using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () =>
         {
-            Console.Write('1');
+            Console.Error.WriteLine($"IsOutputRedirected: {Console.IsOutputRedirected}");
+            Console.Error.WriteLine($"TERM: {Environment.GetEnvironmentVariable("TERM")}");
+            Console.Write("1");
             Console.ForegroundColor = ConsoleColor.Blue;
-            Console.Write('2');
+            Console.Write("2");
             Console.BackgroundColor = ConsoleColor.Red;
-            Console.Write('3');
+            Console.Write("3");
             Console.ResetColor();
-            Console.Write('4');
+            Console.Write("4");
+            Console.Error.WriteLine($"Done writing");
+        }, new RemoteInvokeOptions { StartInfo = startInfo });
 
-            Assert.Equal(0, Encoding.UTF8.GetString(data.ToArray()).ToCharArray().Count(c => c == Esc));
-            Assert.Equal("1234", Encoding.UTF8.GetString(data.ToArray()));
-        });
+        string capturedOutput = handle.Process.StandardOutput.ReadToEnd();
+        byte[] rawBytes = System.Text.Encoding.UTF8.GetBytes(capturedOutput);
+        Console.Error.WriteLine($"Output length: {rawBytes.Length}");
+        Console.Error.WriteLine($"Output hex: {BitConverter.ToString(rawBytes)}");
+        Console.Error.Write("Output chars: ");
+        foreach (char c in capturedOutput)
+        {
+            if (c >= 32 && c < 127)
+                Console.Error.Write(c);
+            else
+                Console.Error.Write($"[0x{(int)c:X2}]");
+        }
+        Console.Error.WriteLine();
+        Console.Error.WriteLine($"capturedOutput[0] = 0x{(int)capturedOutput[0]:X2}");
+        Console.Error.WriteLine($"capturedOutput == \"1234\": {capturedOutput == "1234"}");
+        Console.Error.WriteLine($"Contains ESC: {capturedOutput.Contains(Esc)}");
+        Console.Error.WriteLine($"Esc char value: 0x{(int)Esc:X2}");
+        Assert.DoesNotContain(Esc.ToString(), capturedOutput);
+        Assert.Equal("1234", capturedOutput);
     }
 
     public static bool TermIsSetAndRemoteExecutorIsSupported
@@ -78,16 +99,35 @@ public class Color
     [ConditionalTheory(typeof(Color), nameof(TermIsSetAndRemoteExecutorIsSupported))]
     [PlatformSpecific(TestPlatforms.AnyUnix)]
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
-    [InlineData(null)]
-    [InlineData("1")]
-    [InlineData("true")]
-    [InlineData("tRuE")]
-    [InlineData("0")]
-    [InlineData("false")]
-    public static void RedirectedOutput_EnvVarSet_EmitsAnsiCodes(string? envVar)
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "1", null, null, true)]
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "true", null, null, true)]
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "tRuE", null, null, true)]
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "0", null, null, true)]
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "any-value", null, null, true)]
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "", null, null, false)]
+    [InlineData(null, null, "FORCE_COLOR", "1", true)]
+    [InlineData(null, null, "FORCE_COLOR", "true", true)]
+    [InlineData(null, null, "FORCE_COLOR", "any-value", true)]
+    [InlineData(null, null, "FORCE_COLOR", "", false)]
+    [InlineData(null, null, "NO_COLOR", "1", false)]
+    [InlineData(null, null, "NO_COLOR", "true", false)]
+    [InlineData(null, null, "NO_COLOR", "any-value", false)]
+    [InlineData("FORCE_COLOR", "1", "NO_COLOR", "1", true)]
+    [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "1", "NO_COLOR", "1", true)]
+    public static void RedirectedOutput_ColorEnvVars_RespectColorPreference(
+        string? envVarName1, string? envVarValue1,
+        string? envVarName2, string? envVarValue2,
+        bool shouldEmitEscapes)
     {
         var psi = new ProcessStartInfo { RedirectStandardOutput = true };
-        psi.Environment["DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION"] = envVar;
+        if (envVarName1 is not null)
+        {
+            psi.Environment[envVarName1] = envVarValue1;
+        }
+        if (envVarName2 is not null)
+        {
+            psi.Environment[envVarName2] = envVarValue2;
+        }
 
         for (int i = 0; i < 3; i++)
         {
@@ -113,13 +153,11 @@ public class Color
 
             using RemoteInvokeHandle remote = RemoteExecutor.Invoke(main, i.ToString(CultureInfo.InvariantCulture), new RemoteInvokeOptions() { StartInfo = psi });
 
-            bool expectedEscapes = envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
-
             string stdout = remote.Process.StandardOutput.ReadToEnd();
             string[] parts = stdout.Split("SEPARATOR");
             Assert.Equal(3, parts.Length);
 
-            Assert.Equal(expectedEscapes, parts[1].Contains(Esc));
+            Assert.Equal(shouldEmitEscapes, parts[1].Contains(Esc));
         }
     }
 }

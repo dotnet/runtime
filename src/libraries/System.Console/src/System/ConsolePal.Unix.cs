@@ -1112,9 +1112,9 @@ namespace System
             Volatile.Write(ref s_invalidateCachedSettings, 1);
         }
 
-        // Ansi colors are enabled when stdout is a terminal or when
-        // DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is set.
-        // In both cases, they are written to stdout.
+        // Ansi colors are enabled when stdout is a terminal, when
+        // FORCE_COLOR is set, or when DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION is set.
+        // In all cases, they are written to stdout.
         internal static void WriteTerminalAnsiColorString(string? value)
             => WriteTerminalAnsiString(value, OpenStandardOutputHandle(), mayChangeCursorPosition: false);
 
