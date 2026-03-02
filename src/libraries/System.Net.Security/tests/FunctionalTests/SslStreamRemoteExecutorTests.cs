@@ -179,7 +179,8 @@ activate = 1
                 using (var client = new SslStream(clientStream))
                 using (var server = new SslStream(serverStream, false, (sender, certificate, chain, sslPolicyErrors) =>
                 {
-                    disableCertificateDownloadsObserved = chain!.ChainPolicy.DisableCertificateDownloads;
+                    Assert.NotNull(chain);
+                    disableCertificateDownloadsObserved = chain.ChainPolicy.DisableCertificateDownloads;
                     return true;
                 }))
                 using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
