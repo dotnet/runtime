@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -37,7 +36,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
         try
         {
             TargetPointer currentAppDomain = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.AppDomain));
-            appDomain = new ClrDataAppDomain(_target, currentAppDomain, legacyAppDomain);
+            appDomain = new ClrDataAppDomain(legacyAppDomain);
         }
         catch (System.Exception ex)
         {
@@ -46,7 +45,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            System.Diagnostics.Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
         }
 #endif
         return hr;

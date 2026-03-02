@@ -335,36 +335,6 @@ public unsafe partial interface IXCLRDataProcess2 : IXCLRDataProcess
 }
 
 [GeneratedComInterface]
-[Guid("7CA04601-C702-4670-A63C-FA44F7DA7BD5")]
-public unsafe partial interface IXCLRDataAppDomain
-{
-    [PreserveSig]
-    int GetProcess(IXCLRDataProcess** process);
-
-    [PreserveSig]
-    int GetName(uint bufLen, uint* nameLen, char* name);
-
-    [PreserveSig]
-    int GetUniqueID(ulong* id);
-
-    [PreserveSig]
-    int GetFlags(uint* flags);
-
-    [PreserveSig]
-    int IsSameObject(IXCLRDataAppDomain* appDomain);
-
-    [PreserveSig]
-    int GetManagedObject(/*IXCLRDataValue*/ void** value);
-
-    [PreserveSig]
-    int Request(uint reqCode,
-                uint inBufferSize,
-                [In, MarshalUsing(CountElementName = nameof(inBufferSize))] byte[] inBuffer,
-                uint outBufferSize,
-                [Out, MarshalUsing(CountElementName = nameof(outBufferSize))] byte[] outBuffer);
-}
-
-[GeneratedComInterface]
 [Guid("E59D8D22-ADA7-49a2-89B5-A415AFCFC95F")]
 public unsafe partial interface IXCLRDataStackWalk
 {
@@ -617,7 +587,7 @@ public unsafe partial interface IXCLRDataMethodInstance
 public unsafe partial interface IXCLRDataAppDomain
 {
     [PreserveSig]
-    int GetProcess(/*IXCLRDataProcess*/ void** process);
+    int GetProcess(IXCLRDataProcess** process);
     [PreserveSig]
     int GetName(uint bufLen, uint* nameLen, char* name);
     [PreserveSig]
@@ -625,7 +595,7 @@ public unsafe partial interface IXCLRDataAppDomain
     [PreserveSig]
     int GetFlags(uint* flags);
     [PreserveSig]
-    int IsSameObject(/*IXCLRDataAppDomain*/ void* appDomain);
+    int IsSameObject(IXCLRDataAppDomain* appDomain);
     [PreserveSig]
     int GetManagedObject(/*IXCLRDataValue*/ void** value);
     [PreserveSig]

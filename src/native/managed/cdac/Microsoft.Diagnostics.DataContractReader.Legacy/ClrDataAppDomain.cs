@@ -10,14 +10,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataAppDomain: IXCLRDataAppDomain
 {
-    private readonly Target _target;
-    private readonly TargetPointer _appDomain;
     private readonly IXCLRDataAppDomain? _legacyImpl;
 
-    public ClrDataAppDomain(Target target, TargetPointer appDomain, IXCLRDataAppDomain? legacyImpl)
+    public ClrDataAppDomain(IXCLRDataAppDomain? legacyImpl)
     {
-        _target = target;
-        _appDomain = appDomain;
         _legacyImpl = legacyImpl;
     }
 
@@ -39,10 +35,6 @@ public sealed unsafe partial class ClrDataAppDomain: IXCLRDataAppDomain
     int IXCLRDataAppDomain.GetManagedObject(/*IXCLRDataValue*/ void** value)
         => _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
 
-    int IXCLRDataAppDomain.Request(uint reqCode,
-                uint inBufferSize,
-                [In, MarshalUsing(CountElementName = nameof(inBufferSize))] byte[] inBuffer,
-                uint outBufferSize,
-                [Out, MarshalUsing(CountElementName = nameof(outBufferSize))] byte[] outBuffer)
+    int IXCLRDataAppDomain.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
         => _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
 }
