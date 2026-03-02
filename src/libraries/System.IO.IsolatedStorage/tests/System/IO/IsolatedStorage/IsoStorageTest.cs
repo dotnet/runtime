@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using Xunit;
 
 namespace System.IO.IsolatedStorage
@@ -11,24 +10,18 @@ namespace System.IO.IsolatedStorage
     [Collection("Store collection")]
     public class IsoStorageTest
     {
-        public static IEnumerable<object[]> ValidScopes
+        public static TheoryData<IsolatedStorageScope> ValidScopes => new TheoryData<IsolatedStorageScope>
         {
-            get
-            {
-                return (IEnumerable<object[]>)new TheoryData<IsolatedStorageScope>
-                {
-                    IsolatedStorageScope.User | IsolatedStorageScope.Assembly,
-                    IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain,
-                    IsolatedStorageScope.Roaming | IsolatedStorageScope.User | IsolatedStorageScope.Assembly,
-                    IsolatedStorageScope.Roaming | IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain,
-                    IsolatedStorageScope.Application | IsolatedStorageScope.User,
-                    IsolatedStorageScope.Application | IsolatedStorageScope.User | IsolatedStorageScope.Roaming,
-                    IsolatedStorageScope.Application | IsolatedStorageScope.Machine,
-                    IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly,
-                    IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain
-                };
-            }
-        }
+            IsolatedStorageScope.User | IsolatedStorageScope.Assembly,
+            IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain,
+            IsolatedStorageScope.Roaming | IsolatedStorageScope.User | IsolatedStorageScope.Assembly,
+            IsolatedStorageScope.Roaming | IsolatedStorageScope.User | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain,
+            IsolatedStorageScope.Application | IsolatedStorageScope.User,
+            IsolatedStorageScope.Application | IsolatedStorageScope.User | IsolatedStorageScope.Roaming,
+            IsolatedStorageScope.Application | IsolatedStorageScope.Machine,
+            IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly,
+            IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly | IsolatedStorageScope.Domain
+        };
 
         public enum PresetScopes
         {
@@ -61,14 +54,10 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        public static IEnumerable<object[]> ValidStores
+        public static TheoryData<PresetScopes> ValidStores
         {
             get
             {
-                // While it would be nice to just kick back IsolatedStorageFile instances it is nearly impossible
-                // as the collection will be enumerated completely before the first invocation of a [Theory].
-                // Avoiding TheoryData and disabling DiscoveryEnumeration is not enough.
-
                 TheoryData<PresetScopes> validScopes = new TheoryData<PresetScopes>
                 {
                     PresetScopes.UserStoreForApplication,
@@ -84,7 +73,7 @@ namespace System.IO.IsolatedStorage
                     validScopes.Add(PresetScopes.MachineStoreForAssembly);
                     validScopes.Add(PresetScopes.MachineStoreForDomain);
                 }
-                return (IEnumerable<object[]>)validScopes;
+                return validScopes;
             }
         }
 

@@ -2288,9 +2288,13 @@ namespace System.Collections.Immutable.Tests
                 .Select(array => array[0])
                 .Cast<IEnumerable<int>>();
 
-            return SharedComparers<int>()
-                .OfType<IEqualityComparer>()
-                .Except(new IEqualityComparer[] { null })
+            var comparers = new IEqualityComparer[]
+            {
+                EqualityComparer<int>.Default,
+                StructuralComparisons.StructuralEqualityComparer
+            };
+
+            return comparers
                 .SelectMany(comparer => enumerables.Select(enumerable => new object[] { enumerable, comparer }));
         }
 
