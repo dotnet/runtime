@@ -2595,7 +2595,7 @@ class SuperPMIReplayAsmDiffs:
                 if os.path.isfile(overall_md_summary_file):
                     os.remove(overall_md_summary_file)
 
-                with open(overall_md_summary_file, "w") as write_fh:
+                with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
                     write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, True)
                     logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
@@ -2603,7 +2603,7 @@ class SuperPMIReplayAsmDiffs:
                 if os.path.isfile(short_md_summary_file):
                     os.remove(short_md_summary_file)
 
-                with open(short_md_summary_file, "w") as write_fh:
+                with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
                     write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, False)
                     logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
 
@@ -3197,7 +3197,7 @@ class SuperPMIReplayThroughputDiff:
                 if os.path.isfile(overall_md_summary_file):
                     os.remove(overall_md_summary_file)
 
-                with open(overall_md_summary_file, "w") as write_fh:
+                with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
                     write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, True)
                     logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
@@ -3206,7 +3206,7 @@ class SuperPMIReplayThroughputDiff:
                 if os.path.isfile(short_md_summary_file):
                     os.remove(short_md_summary_file)
 
-                with open(short_md_summary_file, "w") as write_fh:
+                with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
                     write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, False)
                     logging.info("  Short Summary Markdown file: %s", short_md_summary_file)                
 
@@ -3480,7 +3480,7 @@ class SuperPMIReplayMetricDiff:
             if os.path.isfile(overall_md_summary_file):
                 os.remove(overall_md_summary_file)
 
-            with open(overall_md_summary_file, "w") as write_fh:
+            with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
                 write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs , True)
                 logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
@@ -3489,7 +3489,7 @@ class SuperPMIReplayMetricDiff:
             if os.path.isfile(short_md_summary_file):
                 os.remove(short_md_summary_file)
 
-            with open(short_md_summary_file, "w") as write_fh:
+            with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
                 write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, metric_diffs , False)
                 logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
         return True
@@ -4624,11 +4624,11 @@ def summarize_json_summaries(coreclr_args):
         # Sort by collection name
         summarizable_asm_diffs.sort(key=lambda t: t[0])
 
-        with open(overall_md_summary_file, "w") as write_fh:
+        with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
             write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, True)
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-        with open(short_md_summary_file, "w") as write_fh:
+        with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
             write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_asm_diffs, False)
             logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
     elif coreclr_args.summary_type == "metricdiff":
@@ -4647,11 +4647,11 @@ def summarize_json_summaries(coreclr_args):
         # Sort by collection name
         summarizable_metric_diffs .sort(key=lambda t: t[0])
 
-        with open(overall_md_summary_file, "w") as write_fh:
+        with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
             write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs , True)
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-        with open(short_md_summary_file, "w") as write_fh:
+        with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
             write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_options, summarizable_metric_diffs , False)
             logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
     else:
@@ -4669,11 +4669,11 @@ def summarize_json_summaries(coreclr_args):
         # Sort by collection name
         summarizable_tp_diffs.sort(key=lambda t: t[0])
 
-        with open(overall_md_summary_file, "w") as write_fh:
+        with open(overall_md_summary_file, "w", encoding="utf-8") as write_fh:
             write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, summarizable_tp_diffs, True)
             logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
-        with open(short_md_summary_file, "w") as write_fh:
+        with open(short_md_summary_file, "w", encoding="utf-8") as write_fh:
             write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, summarizable_tp_diffs, False)
             logging.info("  Short Summary Markdown file: %s", short_md_summary_file)
 

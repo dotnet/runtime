@@ -181,7 +181,7 @@ def main(main_args):
             return return_code
 
     # Consolidate all superpmi_asmdiffs_summary_*.json and superpmi_tpdiff_summary_*.json
-    # into overall_<asmdiffs|tpdiff>_summary_<os>_<architecture>.md.
+    # into overall_<N>_<asmdiffs|tpdiff|metricdiff>_summary_<os>_<architecture>.md.
     # (Don't name it "superpmi_xxx.md" or we might consolidate it into itself.)
     # If there are no summary files found, add a "No diffs found" text to be explicit about that.
     #
@@ -190,7 +190,11 @@ def main(main_args):
     # We should create a job that depends on all the diff jobs, downloads all the .md file artifacts,
     # and consolidates everything together in one file.
 
-    final_md_path = os.path.join(diff_summary_dir, "overall_{}_summary_{}_{}.md".format(coreclr_args.type, platform_name, arch))
+    # Use a numeric prefix so tabs sort in the desired order on the AzDO Extensions page:
+    # asmdiffs first, tpdiff second, metricdiff last.
+    type_sort_prefix = {"asmdiffs": "1", "tpdiff": "2", "metricdiff": "3"}
+    prefix = type_sort_prefix.get(coreclr_args.type, "0")
+    final_md_path = os.path.join(diff_summary_dir, "overall_{}_{}_summary_{}_{}.md".format(prefix, coreclr_args.type, platform_name, arch))
     print("Consolidating final {}".format(final_md_path))
     with open(final_md_path, "a") as f:
 
