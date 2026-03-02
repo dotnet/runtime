@@ -68,16 +68,19 @@ namespace System.Text.Json.SourceGeneration
 #endif
                 ;
 
-            // Pipeline 1: Source generation only.
-            // Uses Select to extract just the spec; the Select operator deduplicates by
-            // comparing model equality, so source generation only re-fires on structural changes.
-            context.RegisterSourceOutput(contextGenerationSpecs.Select(static (t, _) => t.Item1), EmitSource);
+            // Project the combined pipeline result to just the equatable model, discarding diagnostics.
+            // ContextGenerationSpec implements value equality, so Roslyn's Select operator will compare
+            // successive model snapshots and only propagate changes downstream when the model structurally
+            // differs. This ensures source generation is fully incremental: re-emitting code only when
+            // the serialization spec actually changes, not on every keystroke or positional shift.
+            IncrementalValuesProvider<ContextGenerationSpec?> sourceGenerationSpecs =
+                contextGenerationSpecs.Select(static (t, _) => t.Item1);
 
-            // Pipeline 2: Diagnostics only.
-            // Diagnostics use raw SourceLocation instances that are pragma-suppressible.
-            // This pipeline re-fires whenever diagnostics change (e.g. positional shifts)
-            // without triggering expensive source regeneration.
-            // See https://github.com/dotnet/runtime/issues/92509 for context.
+            context.RegisterSourceOutput(sourceGenerationSpecs, EmitSource);
+
+            // Report diagnostics directly from the unprojected pipeline. Diagnostics carry raw
+            // SourceLocation instances that are pragma-suppressible (cf. https://github.com/dotnet/runtime/issues/92509).
+            // No source code is generated from this pipeline — it exists solely to report diagnostics.
             context.RegisterSourceOutput(contextGenerationSpecs, EmitDiagnostics);
         }
 
