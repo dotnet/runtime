@@ -23,7 +23,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReceivedBytesThreshold_Property), nameof(HasNullModem))]
         public void ReceivedBytesThreshold_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -53,7 +53,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure]
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReceivedBytesThreshold_Property), nameof(HasNullModem))]
         public void ReceivedBytesThreshold_Rnd_ExactWrite()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -79,7 +79,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReceivedBytesThreshold_Property), nameof(HasNullModem))]
         public void ReceivedBytesThreshold_Rnd_MultipleWrite()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -117,7 +117,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReceivedBytesThreshold_Property), nameof(HasNullModem))]
         public void ReceivedBytesThreshold_Above_Exact()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -164,7 +164,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReceivedBytesThreshold_Property), nameof(HasNullModem))]
         public void ReceivedBytesThreshold_Above_Below()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -210,7 +210,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReceivedBytesThreshold_Property), nameof(HasNullModem))]
         public void ReceivedBytesThreshold_Above_1()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -255,21 +255,21 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReceivedBytesThreshold_Property), nameof(HasNullModem))]
         public void ReceivedBytesThreshold_Int32MinValue()
         {
             Debug.WriteLine("Verifying Int32.MinValue ReceivedBytesThreshold");
             VerifyException(int.MinValue, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReceivedBytesThreshold_Property), nameof(HasNullModem))]
         public void ReceivedBytesThreshold_Neg1()
         {
             Debug.WriteLine("Verifying -1 ReceivedBytesThreshold");
             VerifyException(-1, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ReceivedBytesThreshold_Property), nameof(HasNullModem))]
         public void ReceivedBytesThreshold_0()
         {
             Debug.WriteLine("Verifying 0 ReceivedBytesThreshold");

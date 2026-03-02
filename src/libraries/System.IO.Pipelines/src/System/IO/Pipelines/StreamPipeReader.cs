@@ -106,9 +106,12 @@ namespace System.IO.Pipelines
 
             long consumedBytes = BufferSegment.GetLength(returnStart, _readIndex, consumedSegment, consumedIndex);
 
-            _bufferedBytes -= consumedBytes;
+            if (consumedBytes < 0 || consumedBytes > _bufferedBytes)
+            {
+                ThrowHelper.ThrowInvalidOperationException_AdvanceToInvalidCursor();
+            }
 
-            Debug.Assert(_bufferedBytes >= 0);
+            _bufferedBytes -= consumedBytes;
 
             _examinedEverything = false;
 

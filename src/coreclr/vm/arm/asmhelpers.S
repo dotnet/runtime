@@ -1254,7 +1254,7 @@ NESTED_ENTRY CallJittedMethodRetU2, _TEXT, NoHandler
 NESTED_END CallJittedMethodRetU2, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
-    PROLOG_WITH_TRANSITION_BLOCK
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
 
     // IR bytecode address
     mov r4, METHODDESC_REGISTER // InterpMethod
@@ -1367,5 +1367,73 @@ NESTED_ENTRY InterpreterStubRetBuffR1, _TEXT, NoHandler
     free_stack 12
     EPILOG_POP {pc}
 NESTED_END InterpreterStubRetBuffR1, _TEXT
+
+// ------------------------------------------------------------------
+// Create a real TransitionBlock and call CallInterpreterFuncletWorker
+// to execute an interpreter funclet (catch/finally/filter handler).
+//
+// extern "C" DWORD_PTR CallInterpreterFunclet(
+//     OBJECTREF throwable,        // r0
+//     void* pHandler,             // r1
+//     REGDISPLAY *pRD,            // r2
+//     ExInfo *pExInfo,            // r3
+//     bool isFilter               // [sp, #0]
+// );
+// ------------------------------------------------------------------
+NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
+
+    // Worker signature: CallInterpreterFuncletWorker(throwable, pHandler, pRD, pExInfo, isFilter, TransitionBlock*)
+    // Original args: r0=throwable, r1=pHandler, r2=pRD, r3=pExInfo, isFilter on stack
+    // For ARM32, first 4 args go in r0-r3, args 5-6 go on stack
+
+    // First, allocate space for stack args (2 words for isFilter and TransitionBlock*)
+    sub         sp, sp, #8
+
+    // Put TransitionBlock* as 6th param (2nd stack arg)
+    add         r12, sp, #8 + __PWTB_TransitionBlock  // TransitionBlock*
+    str         r12, [sp, #4]
+
+    // Load isFilter from original stack location and store as 5th param (1st stack arg)
+    // After PROLOG_WITH_TRANSITION_BLOCK, original stack args are at __PWTB_TransitionBlock offset
+    // The 5th param (isFilter) was pushed before our stack allocation
+    ldr         r12, [sp, #8 + __PWTB_TransitionBlock + SIZEOF__ArgumentRegisters]
+    str         r12, [sp, #0]
+
+    // r0-r3 remain unchanged
+
+    CHECK_STACK_ALIGNMENT
+    bl          C_FUNC(CallInterpreterFuncletWorker)
+
+    add         sp, sp, #8
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END CallInterpreterFunclet, _TEXT
+
+// ------------------------------------------------------------------
+// Resume an interpreter continuation after an async await.
+// The worker function will restore callee-saved registers from the
+// TransitionBlock.
+//
+// FCDECL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, ContinuationObject* cont, uint8_t* resultStorage);
+//
+// ------------------------------------------------------------------
+NESTED_ENTRY AsyncHelpers_ResumeInterpreterContinuation, _TEXT, NoHandler
+
+    PROLOG_WITH_TRANSITION_BLOCK pushCalleeSavedFloatRegs=1
+
+    // Worker signature: AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, TransitionBlock*)
+    // r0, r1 remain unchanged
+
+    add         r2, sp, #__PWTB_TransitionBlock     // TransitionBlock* as 3rd param (r2)
+
+    CHECK_STACK_ALIGNMENT
+    bl          C_FUNC(AsyncHelpers_ResumeInterpreterContinuationWorker)
+
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END AsyncHelpers_ResumeInterpreterContinuation, _TEXT
 
 #endif // FEATURE_INTERPRETER

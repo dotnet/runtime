@@ -3,7 +3,7 @@
 
 import { exceptions, simd } from "wasm-feature-detect";
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, globalThisAny } from "./per-module";
 import { dotnetAssert } from "./cross-module";
 
 const scriptUrlQuery = /*! webpackIgnore: true */import.meta.url;
@@ -13,8 +13,18 @@ const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 
 export async function validateWasmFeatures(): Promise<void> {
-    dotnetAssert.check(await exceptions, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
-    dotnetAssert.check(await simd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
+    dotnetAssert.check(await exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
+    dotnetAssert.check(await simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
+    if (ENVIRONMENT_IS_NODE) {
+        const nodeMajorVersion = parseInt(globalThisAny.process.versions.node.split(".")[0], 10);
+        dotnetAssert.check(nodeMajorVersion >= 18, `Node.js version ${globalThisAny.process.versions.node} is not supported. Please use Node.js 18 or later.`);
+    } else if (ENVIRONMENT_IS_SHELL) {
+        if (typeof globalThisAny.version === "function" && globalThisAny.d8) {
+            const v8v = globalThisAny.version();
+            const v8MajorVersion = parseInt(v8v.split(".")[0], 10);
+            dotnetAssert.check(v8MajorVersion >= 14, "This V8 shell is too old. Please use a modern version.");
+        }
+    }
 }
 
 export function locateFile(path: string, isModule = false): string {
