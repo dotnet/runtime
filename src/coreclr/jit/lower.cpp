@@ -4889,6 +4889,12 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
     DISPTREERANGE(BlockRange(), condition);
     JITDUMP("\n");
 
+    if (comp->compStressCompile(Compiler::STRESS_SKIP_COND_NODE_LOWERING, 10))
+    {
+        JITDUMP("JitStress: skip lowering attempt\n");
+        return false;
+    }
+
     if (condition->OperIsCompare())
     {
         if (!IsInvariantInRange(condition, parent))
