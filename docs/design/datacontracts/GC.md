@@ -209,7 +209,6 @@ Data descriptors used:
 | `GCHeap` | FreeableSohSegment | GC | Head of the freeable SOH segment linked list (server builds, background GC) |
 | `GCHeap` | FreeableUohSegment | GC | Head of the freeable UOH segment linked list (server builds, background GC) |
 | `GCHeap` | FreeRegions | GC | Start of the per-heap free region list array (server builds, region GC) |
-| `GCHeap` | BookkeepingStart | GC | Pointer to the start of bookkeeping memory (card table info) |
 | `GCAllocContext` | AllocBytes | VM | Number of bytes allocated on SOH by this context |
 | `GCAllocContext` | AllocBytesLoh | VM | Number of bytes allocated not on SOH by this context |
 | `EEAllocContext` | GCAllocationContext | VM | The `GCAllocContext` struct within an `EEAllocContext` |
@@ -269,7 +268,7 @@ Global variables used:
 | `CountFreeRegionKinds` | uint | GC | Number of free region kinds (basic, large, huge) |
 | `GlobalFreeHugeRegions` | TargetPointer | GC | Pointer to the global free huge region list |
 | `GlobalRegionsToDecommit` | TargetPointer | GC | Pointer to the global regions-to-decommit array |
-| `GCHeapBookkeepingStart` | TargetPointer | GC | Pointer to the bookkeeping start address (workstation builds) |
+| `BookkeepingStart` | TargetPointer | GC | Pointer to the bookkeeping start address |
 | `GCHeapFreeableSohSegment` | TargetPointer | GC | Pointer to the freeable SOH segment head (workstation builds) |
 | `GCHeapFreeableUohSegment` | TargetPointer | GC | Pointer to the freeable UOH segment head (workstation builds) |
 | `GCHeapFreeRegions` | TargetPointer | GC | Pointer to the free regions array (workstation builds) |
@@ -835,7 +834,7 @@ GetGCBookkeepingMemoryRegions
 IReadOnlyList<GCMemoryRegionData> IGC.GetGCBookkeepingMemoryRegions()
 {
     List<GCMemoryRegionData> regions = new();
-    if (!TryReadGlobalPointer("GCHeapBookkeepingStart", out TargetPointer? bkGlobal))
+    if (!TryReadGlobalPointer("BookkeepingStart", out TargetPointer? bkGlobal))
         return regions;
     TargetPointer bookkeepingStart = ReadPointer(bkGlobal);
     if (bookkeepingStart == null) return regions;

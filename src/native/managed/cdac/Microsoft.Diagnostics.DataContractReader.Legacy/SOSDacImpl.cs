@@ -1499,14 +1499,14 @@ public sealed unsafe partial class SOSDacImpl
         private readonly SOSMemoryRegion[] _regions;
         private uint _index;
 
-        public SOSMemoryEnum(IReadOnlyList<GCMemoryRegionData> regions)
+        public SOSMemoryEnum(Target target, IReadOnlyList<GCMemoryRegionData> regions)
         {
             _regions = new SOSMemoryRegion[regions.Count];
             for (int i = 0; i < regions.Count; i++)
             {
                 _regions[i] = new SOSMemoryRegion
                 {
-                    Start = (ClrDataAddress)regions[i].Start.Value,
+                    Start = regions[i].Start.ToClrDataAddress(target),
                     Size = (ClrDataAddress)regions[i].Size,
                     ExtraData = (ClrDataAddress)regions[i].ExtraData,
                     Heap = regions[i].Heap,
@@ -1517,6 +1517,8 @@ public sealed unsafe partial class SOSDacImpl
         int ISOSMemoryEnum.Next(uint count, SOSMemoryRegion[] memRegion, uint* pNeeded)
         {
             if (pNeeded is null)
+                return HResults.E_POINTER;
+            if (memRegion is null)
                 return HResults.E_POINTER;
 
             uint written = 0;
@@ -4795,12 +4797,20 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             IReadOnlyList<GCMemoryRegionData> regions = _target.Contracts.GC.GetHandleTableMemoryRegions();
-            ppEnum = new SOSMemoryEnum(regions);
+            ppEnum = new SOSMemoryEnum(_target, regions);
         }
         catch (System.Exception e)
         {
             hr = e.HResult;
         }
+
+#if DEBUG
+        if (_legacyImpl13 is not null)
+        {
+            int hrLocal = _legacyImpl13.GetHandleTableMemoryRegions(out _);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
         return hr;
     }
     int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(out ISOSMemoryEnum? ppEnum)
@@ -4810,12 +4820,20 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             IReadOnlyList<GCMemoryRegionData> regions = _target.Contracts.GC.GetGCBookkeepingMemoryRegions();
-            ppEnum = new SOSMemoryEnum(regions);
+            ppEnum = new SOSMemoryEnum(_target, regions);
         }
         catch (System.Exception e)
         {
             hr = e.HResult;
         }
+
+#if DEBUG
+        if (_legacyImpl13 is not null)
+        {
+            int hrLocal = _legacyImpl13.GetGCBookkeepingMemoryRegions(out _);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
         return hr;
     }
     int ISOSDacInterface13.GetGCFreeRegions(out ISOSMemoryEnum? ppEnum)
@@ -4825,12 +4843,20 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             IReadOnlyList<GCMemoryRegionData> regions = _target.Contracts.GC.GetGCFreeRegions();
-            ppEnum = new SOSMemoryEnum(regions);
+            ppEnum = new SOSMemoryEnum(_target, regions);
         }
         catch (System.Exception e)
         {
             hr = e.HResult;
         }
+
+#if DEBUG
+        if (_legacyImpl13 is not null)
+        {
+            int hrLocal = _legacyImpl13.GetGCFreeRegions(out _);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
         return hr;
     }
     int ISOSDacInterface13.LockedFlush()
