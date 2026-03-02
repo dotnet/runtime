@@ -266,7 +266,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (!accessors.Getter.IsNil)
                     {
-                        getterMethod = (MethodDesc)attributeTypeDefinition.EcmaModule.GetObject(accessors.Getter);
+                        getterMethod = (MethodDesc)attributeTypeDefinition.Module.GetObject(accessors.Getter);
                     }
 
                     return true;
