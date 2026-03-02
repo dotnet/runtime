@@ -533,6 +533,55 @@ interp_get_bb_links (InterpBasicBlock *bb)
 	return str;
 }
 
+// This method links a try bblock (which can be part of the no-eh path, aka basic blocks that are reachable
+// without an exception being thrown) with all exists from the catch bblock that go into no-eh bblocks.
+// This is needed because for no-eh bblocks we do dominance computation. So if a no-eh bblock can be
+// reached through an eh path, we need to have this information exposed.
+static void
+dfs_link_try_bblock (TransformData *td, InterpBasicBlock *catch_bb, InterpBasicBlock **stack, gboolean *marked)
+{
+	int next_stack_index = 0;
+	stack [next_stack_index++] = catch_bb;
+	marked [catch_bb->dfs_index - td->bblocks_count_no_eh] = TRUE;
+
+	while (next_stack_index > 0) {
+		// Pop last added element
+		next_stack_index--;
+		InterpBasicBlock *bb = stack [next_stack_index];
+
+		// Push all nodes to process next
+		for (int i = 0; i < bb->out_count; i++) {
+			InterpBasicBlock *out_bb = bb->out_bb [i];
+			if (out_bb->dfs_index < td->bblocks_count_no_eh) {
+				interp_link_bblocks (td, catch_bb->try_bblock, out_bb);
+				if (td->verbose_level)
+					g_print ("\t linked try_bb BB%d to leave target BB%d\n", catch_bb->try_bblock->index, out_bb->index);
+			} else if (!marked [out_bb->dfs_index - td->bblocks_count_no_eh]) {
+				stack [next_stack_index++] = out_bb;
+				marked [out_bb->dfs_index - td->bblocks_count_no_eh] = TRUE;
+			}
+		}
+	}
+}
+
+static void
+link_try_bblocks (TransformData *td)
+{
+	if (td->header->num_clauses) {
+		int num_eh_bblocks = td->bblocks_count_eh - td->bblocks_count_no_eh;
+		InterpBasicBlock **stack = (InterpBasicBlock**)g_malloc0 (sizeof (InterpBasicBlock*) * num_eh_bblocks);
+		gboolean *marked = (gboolean*)g_malloc0 (sizeof (gboolean) * num_eh_bblocks);
+		for (int i = td->bblocks_count_no_eh; i < td->bblocks_count_eh; i++) {
+			if (td->bblocks [i]->try_bblock && td->bblocks [i]->try_bblock->dfs_index < td->bblocks_count_no_eh)
+				dfs_link_try_bblock (td, td->bblocks [i], stack, marked);
+		}
+		g_free (stack);
+		g_free (marked);
+	}
+
+	td->linked_try_bblocks = TRUE;
+}
+
 static int
 dfs_visit (TransformData *td)
 {
@@ -591,6 +640,9 @@ interp_compute_dfs_indexes (TransformData *td)
 		}
 	}
 	td->bblocks_count_eh = dfs_index;
+
+	if (!td->linked_try_bblocks)
+		link_try_bblocks (td);
 
 	if (td->verbose_level) {
 		InterpBasicBlock *bb;
