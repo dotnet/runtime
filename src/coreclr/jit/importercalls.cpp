@@ -1285,10 +1285,11 @@ DONE:
         {
             JITDUMP("\nSaving generic context %p and inline context %p for call [%06u]\n", dspPtr(exactContextHnd),
                     dspPtr(compInlineContext), dspTreeID(call->AsCall()));
+            assert(call->AsCall()->gtInlineContext == impCurStmtDI.GetInlineContext());
             LateDevirtualizationInfo* const info       = new (this, CMK_Inlining) LateDevirtualizationInfo;
             info->methodHnd                            = callInfo->hMethod;
             info->exactContextHnd                      = exactContextHnd;
-            info->inlinersContext                      = compInlineContext;
+            info->ilLocation                           = impCurStmtDI.GetLocation();
             call->AsCall()->gtLateDevirtualizationInfo = info;
         }
     }
