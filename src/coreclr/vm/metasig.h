@@ -426,6 +426,11 @@ DEFINE_METASIG_T(SM(PtrResolver_Int_PtrArrByte_PtrVoid_PtrException_RetVoid, P(C
 DEFINE_METASIG_T(SM(PtrResolver_Int_PtrIntPtr_PtrIntPtr_PtrIntPtr_PtrException_RetVoid, P(C(RESOLVER)) i P(I) P(I) P(I) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrResolver_Int_Int_PtrArrByte_PtrException_RetVoid, P(C(RESOLVER)) i i P(a(b)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrResolver_Int_PtrStr_PtrException_RetVoid, P(C(RESOLVER)) i P(s) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrObj_PtrObj_PtrException_RetVoid, P(j) P(j) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrObj_PtrStr_PtrException_RetVoid, P(j) P(s) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrException_PtrException_RetVoid, P(C(EXCEPTION)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrChar_PtrException_PtrObj_PtrException_RetVoid, P(u) P(C(EXCEPTION)) P(j) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrChar_PtrStr_PtrException_RetVoid, P(u) P(s) P(C(EXCEPTION)), v))
 
 // fields - e.g.:
 // DEFINE_METASIG(Fld(PtrVoid, P(v)))
@@ -434,10 +439,6 @@ DEFINE_METASIG_T(SM(PtrResolver_Int_PtrStr_PtrException_RetVoid, P(C(RESOLVER)) 
 
 DEFINE_METASIG_T(IM(Dec_RetVoid, g(DECIMAL), v))
 DEFINE_METASIG_T(IM(Currency_RetVoid, g(CURRENCY), v))
-
-
-DEFINE_METASIG_T(SM(Task_RetVoid, C(TASK), v))
-DEFINE_METASIG_T(SM(TaskOfInt_RetInt, GI(C(TASK_1), 1, i), i))
 
 DEFINE_METASIG_T(GM(Exception_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, C(EXCEPTION), GI(C(TASK_1), 1, M(0))))
 DEFINE_METASIG_T(GM(T_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, M(0), GI(C(TASK_1), 1, M(0))))

@@ -395,7 +395,7 @@ private:
                 // If we end up swapping type we may need to retype the tree:
                 if (retType != newType)
                 {
-                    if ((retType == TYP_BYREF) && tree->OperIs(GT_IND))
+                    if ((retType == TYP_BYREF) && inlineCandidate->OperIs(GT_IND))
                     {
                         // - in an RVA static if we've reinterpreted it as a byref;
                         assert(newType == TYP_I_IMPL);
@@ -498,7 +498,7 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // AssignStructInlineeToVar: Store the struct inlinee to a temp local.
+    // StoreStructInlineeToVar: Store the struct inlinee to a temp local.
     //
     // Arguments:
     //    inlinee   - The inlinee of the RET_EXPR node
@@ -1480,7 +1480,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // The inlining attempt cannot be failed starting from this point.
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    // We've successfully obtain the list of inlinee's basic blocks.
+    // We've successfully obtained the list of inlinee's basic blocks.
     // Let's insert it to inliner's basic block list.
     fgInsertInlineeBlocks(&inlineInfo);
 
@@ -1648,7 +1648,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         bottomBlock->RemoveFlags(BBF_DONT_REMOVE);
 
         // If the inlinee has EH, merge the EH tables, and figure out how much of
-        // a shift we need to make in the inlinee blocks EH indicies.
+        // a shift we need to make in the inlinee blocks EH indices.
         //
         unsigned const inlineeRegionCount = InlineeCompiler->compHndBBtabCount;
         const bool     inlineeHasEH       = inlineeRegionCount > 0;
@@ -1738,7 +1738,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             //
             // We just need to add in and fix up the new entries from the inlinee.
             //
-            // Fetch the new enclosing try/handler table indicies.
+            // Fetch the new enclosing try/handler table indices.
             //
             const unsigned enclosingTryIndex =
                 iciBlock->hasTryIndex() ? iciBlock->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
@@ -1773,7 +1773,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             }
         }
 
-        // Fetch the new enclosing try/handler indicies for blocks.
+        // Fetch the new enclosing try/handler indices for blocks.
         // Note these are represented differently than the EH table indices.
         //
         const unsigned blockEnclosingTryIndex = iciBlock->hasTryIndex() ? iciBlock->getTryIndex() + 1 : 0;
@@ -1926,7 +1926,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     else if (InlineeCompiler->fgPgoFailReason != nullptr)
     {
         // Single block inlinees may not have probes
-        // when we've ensabled minimal profiling (which
+        // when we've enabled minimal profiling (which
         // is now the default).
         //
         if (InlineeCompiler->fgBBcount == 1)
@@ -2266,7 +2266,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     // The only reason we move it here is for calling "impInlineFetchArg(0,..." to reserve a temp
     // for the "this" pointer.
     // Note: Here we no longer do the optimization that was done by thisDereferencedFirst in the old inliner.
-    // However the assetionProp logic will remove any unnecessary null checks that we may have added
+    // However the assertionProp logic will remove any unnecessary null checks that we may have added
     //
     GenTree* nullcheck = nullptr;
 
