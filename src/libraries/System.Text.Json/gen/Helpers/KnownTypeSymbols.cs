@@ -225,6 +225,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? JsonDerivedTypeAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonDerivedTypeAttribute", ref _JsonDerivedTypeAttributeType);
         private Option<INamedTypeSymbol?> _JsonDerivedTypeAttributeType;
 
+        public INamedTypeSymbol? JsonIgnoreAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonIgnoreAttribute", ref _JsonIgnoreAttributeType);
+        private Option<INamedTypeSymbol?> _JsonIgnoreAttributeType;
+
         public INamedTypeSymbol? JsonNumberHandlingAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonNumberHandlingAttribute", ref _JsonNumberHandlingAttributeType);
         private Option<INamedTypeSymbol?> _JsonNumberHandlingAttributeType;
 
