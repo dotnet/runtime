@@ -8,6 +8,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -38,10 +39,92 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         uint contextBufSize,
         uint* contextSize,
         [Out, MarshalUsing(CountElementName = nameof(contextBufSize))] byte[] contextBuf)
-        => _legacyImpl is not null ? _legacyImpl.GetContext(contextFlags, contextBufSize, contextSize, contextBuf) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IStackWalk stackWalk = _target.Contracts.StackWalk;
+            byte[] context = stackWalk.GetRawContext(_dataFrame);
 
-    int IXCLRDataFrame.GetAppDomain(/*IXCLRDataAppDomain*/ void** appDomain)
-        => _legacyImpl is not null ? _legacyImpl.GetAppDomain(appDomain) : HResults.E_NOTIMPL;
+            if (contextSize is not null)
+                *contextSize = (uint)context.Length;
+
+            if (context.Length > contextBufSize)
+                return HResults.E_INVALIDARG;
+
+            context.CopyTo(contextBuf);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            byte[] localContextBuf = new byte[contextBufSize];
+            int hrLocal = _legacyImpl.GetContext(contextFlags, contextBufSize, null, localContextBuf);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+
+            if (hr == HResults.S_OK)
+            {
+                IPlatformAgnosticContext contextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
+                IPlatformAgnosticContext localContextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
+                contextStruct.FillFromBuffer(contextBuf);
+                localContextStruct.FillFromBuffer(localContextBuf);
+
+                Debug.Assert(contextStruct.Equals(localContextStruct));
+            }
+        }
+#endif
+
+        return hr;
+    }
+
+    int IXCLRDataFrame.GetAppDomain(void** appDomain)
+    {
+        int hr = HResults.S_OK;
+        *appDomain = null;
+        StrategyBasedComWrappers cw = new();
+
+        IXCLRDataAppDomain? legacyAppDomain = null;
+        if (_legacyImpl is not null)
+        {
+            void* legacyAppDomainPtr;
+            int hrLegacy = _legacyImpl.GetAppDomain(&legacyAppDomainPtr);
+            if (hrLegacy >= 0 && legacyAppDomainPtr is not null)
+            {
+                legacyAppDomain = (IXCLRDataAppDomain)cw.GetOrCreateObjectForComInstance(
+                    (nint)legacyAppDomainPtr, CreateObjectFlags.UniqueInstance);
+            }
+        }
+
+        try
+        {
+            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            TargetPointer appDomainAddr = _target.ReadPointer(appDomainPointer);
+
+            if (appDomainAddr != TargetPointer.Null)
+            {
+                IXCLRDataAppDomain appDomainImpl = new ClrDataAppDomain(_target, appDomainAddr, legacyAppDomain);
+                nint appDomainImplPtr = cw.GetOrCreateComInterfaceForObject(appDomainImpl, CreateComInterfaceFlags.None);
+                Marshal.QueryInterface(appDomainImplPtr, typeof(IXCLRDataAppDomain).GUID, out nint ptrToAppDomain);
+                Marshal.Release(appDomainImplPtr);
+                *appDomain = (void*)ptrToAppDomain;
+            }
+            else
+            {
+                *appDomain = null;
+                hr = HResults.S_FALSE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
 
     int IXCLRDataFrame.GetNumArguments(uint* numArgs)
     {
