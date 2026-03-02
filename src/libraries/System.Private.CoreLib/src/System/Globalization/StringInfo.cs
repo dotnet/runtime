@@ -66,6 +66,88 @@ namespace System.Globalization
 
         public int LengthInTextElements => Indexes?.Length ?? 0;
 
+        /// <summary>
+        /// Returns the number of text elements (extended grapheme clusters) in the given span.
+        /// </summary>
+        /// <param name="str">The input span to analyze.</param>
+        /// <returns>The number of text elements within <paramref name="str"/>.</returns>
+        public static int GetLengthInTextElements(ReadOnlySpan<char> str)
+        {
+            int count = 0;
+            while (!str.IsEmpty)
+            {
+                str = str.Slice(GetNextTextElementLength(str));
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Retrieves a range covering a substring of text elements from the given span,
+        /// or <see langword="null"/> if the requested range is out of bounds.
+        /// </summary>
+        /// <param name="str">The input span to analyze.</param>
+        /// <param name="startingTextElement">The zero-based text element index at which the substring begins.</param>
+        /// <param name="lengthInTextElements">The number of text elements to include in the substring.</param>
+        /// <returns>
+        /// A <see cref="Range"/> representing the char offsets within <paramref name="str"/> that correspond to the
+        /// requested text elements, or <see langword="null"/> if <paramref name="startingTextElement"/> or
+        /// <paramref name="lengthInTextElements"/> is negative, or if the requested range extends beyond the end
+        /// of <paramref name="str"/>.
+        /// </returns>
+        public static Range? GetRangeByTextElements(ReadOnlySpan<char> str, int startingTextElement, int lengthInTextElements)
+        {
+            if (startingTextElement < 0 || lengthInTextElements < 0)
+            {
+                return null;
+            }
+
+            int startOffset = 0;
+
+            for (int i = 0; i < startingTextElement; i++)
+            {
+                if (str.IsEmpty)
+                {
+                    return null;
+                }
+                int len = GetNextTextElementLength(str);
+                str = str.Slice(len);
+                startOffset += len;
+            }
+
+            int endOffset = startOffset;
+
+            for (int i = 0; i < lengthInTextElements; i++)
+            {
+                if (str.IsEmpty)
+                {
+                    return null;
+                }
+                int len = GetNextTextElementLength(str);
+                str = str.Slice(len);
+                endOffset += len;
+            }
+
+            return startOffset..endOffset;
+        }
+
+        /// <summary>
+        /// Retrieves a range covering a substring of text elements from the instance string,
+        /// or <see langword="null"/> if the requested range is out of bounds.
+        /// </summary>
+        /// <param name="startingTextElement">The zero-based text element index at which the substring begins.</param>
+        /// <param name="lengthInTextElements">The number of text elements to include in the substring.</param>
+        /// <returns>
+        /// A <see cref="Range"/> representing the char offsets within <see cref="String"/> that correspond to the
+        /// requested text elements, or <see langword="null"/> if <paramref name="startingTextElement"/> or
+        /// <paramref name="lengthInTextElements"/> is negative, or if the requested range extends beyond the end
+        /// of <see cref="String"/>.
+        /// </returns>
+        public Range? RangeByTextElements(int startingTextElement, int lengthInTextElements)
+        {
+            return GetRangeByTextElements(String, startingTextElement, lengthInTextElements);
+        }
+
         public string SubstringByTextElements(int startingTextElement)
         {
             return SubstringByTextElements(startingTextElement, (Indexes?.Length ?? 0) - startingTextElement);

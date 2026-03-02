@@ -9882,14 +9882,17 @@ namespace System.Globalization
         public string String { get { throw null; } set { } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static int GetLengthInTextElements(System.ReadOnlySpan<char> str) { throw null; }
         public static string GetNextTextElement(string str) { throw null; }
         public static string GetNextTextElement(string str, int index) { throw null; }
         public static int GetNextTextElementLength(System.ReadOnlySpan<char> str) { throw null; }
         public static int GetNextTextElementLength(string str) { throw null; }
         public static int GetNextTextElementLength(string str, int index) { throw null; }
+        public static System.Range? GetRangeByTextElements(System.ReadOnlySpan<char> str, int startingTextElement, int lengthInTextElements) { throw null; }
         public static System.Globalization.TextElementEnumerator GetTextElementEnumerator(string str) { throw null; }
         public static System.Globalization.TextElementEnumerator GetTextElementEnumerator(string str, int index) { throw null; }
         public static int[] ParseCombiningCharacters(string str) { throw null; }
+        public System.Range? RangeByTextElements(int startingTextElement, int lengthInTextElements) { throw null; }
         public string SubstringByTextElements(int startingTextElement) { throw null; }
         public string SubstringByTextElements(int startingTextElement, int lengthInTextElements) { throw null; }
     }

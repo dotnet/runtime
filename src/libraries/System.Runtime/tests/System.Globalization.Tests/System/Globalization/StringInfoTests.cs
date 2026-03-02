@@ -346,5 +346,100 @@ namespace System.Globalization.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("str", () => StringInfo.ParseCombiningCharacters(null)); // Str is null
         }
+
+        public static IEnumerable<object[]> GetLengthInTextElements_TestData()
+        {
+            yield return new object[] { "", 0 };
+            yield return new object[] { "abc", 3 };
+            yield return new object[] { "   ", 3 };
+            yield return new object[] { "\u4f00\u302a\ud800\udc00\u4f01", 3 }; // combining char + surrogate pair + single
+            yield return new object[] { "a\u0300", 1 }; // base + combining
+            yield return new object[] { "\uDBFF\uDFFFlk", 3 }; // surrogate pair + 2 chars
+            yield return new object[] { "\U0001F483\U0001F3FD", 1 }; // emoji with modifier
+        }
+
+        [Theory]
+        [MemberData(nameof(GetLengthInTextElements_TestData))]
+        public void GetLengthInTextElements(string str, int expected)
+        {
+            Assert.Equal(expected, StringInfo.GetLengthInTextElements(str.AsSpan()));
+        }
+
+        [Fact]
+        public void GetLengthInTextElements_MatchesInstanceProperty()
+        {
+            foreach (object[] data in Ctor_String_TestData())
+            {
+                string value = (string)data[0];
+                int expectedLength = (int)data[1];
+                Assert.Equal(expectedLength, StringInfo.GetLengthInTextElements(value.AsSpan()));
+            }
+        }
+
+        public static IEnumerable<object[]> GetRangeByTextElements_TestData()
+        {
+            // Simple ASCII
+            yield return new object[] { "abcde", 0, 3, (Range?)(0..3) };
+            yield return new object[] { "abcde", 2, 2, (Range?)(2..4) };
+            yield return new object[] { "abcde", 4, 1, (Range?)(4..5) };
+            yield return new object[] { "abcde", 0, 0, (Range?)(0..0) };
+            yield return new object[] { "abcde", 5, 0, (Range?)(5..5) };
+            // Surrogate pairs
+            yield return new object[] { "\uD800\uDC00\uD801\uDC01Left", 0, 2, (Range?)(0..4) };
+            yield return new object[] { "\uD800\uDC00\uD801\uDC01Left", 1, 3, (Range?)(2..6) };
+            // Combining characters
+            yield return new object[] { "a\u0300bc", 0, 2, (Range?)(0..3) }; // "a\u0300" + "b"
+            yield return new object[] { "a\u0300bc", 1, 1, (Range?)(2..3) }; // "b"
+            // Empty string
+            yield return new object[] { "", 0, 0, (Range?)(0..0) };
+            // Out of range: returns null
+            yield return new object[] { "abc", 0, 4, (Range?)null };
+            yield return new object[] { "abc", 4, 0, (Range?)null };
+            yield return new object[] { "abc", -1, 1, (Range?)null };
+            yield return new object[] { "abc", 0, -1, (Range?)null };
+            yield return new object[] { "", 1, 0, (Range?)null };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetRangeByTextElements_TestData))]
+        public void GetRangeByTextElements(string str, int startingTextElement, int lengthInTextElements, Range? expected)
+        {
+            Range? result = StringInfo.GetRangeByTextElements(str.AsSpan(), startingTextElement, lengthInTextElements);
+            Assert.Equal(expected, result);
+
+            if (result.HasValue)
+            {
+                string slice = str[result.Value];
+                Assert.Equal(lengthInTextElements, StringInfo.GetLengthInTextElements(slice.AsSpan()));
+            }
+        }
+
+        public static IEnumerable<object[]> RangeByTextElements_TestData()
+        {
+            yield return new object[] { "Simple Text", 7, 4, (Range?)(7..11) };
+            yield return new object[] { "Simple Text", 0, 6, (Range?)(0..6) };
+            yield return new object[] { "\uD800\uDC00\uD801\uDC01Left", 2, 2, (Range?)(4..6) };
+            yield return new object[] { "a\u0300bc", 0, 3, (Range?)(0..4) };
+            // Out of range: returns null
+            yield return new object[] { "abc", 0, 4, (Range?)null };
+            yield return new object[] { "abc", 4, 0, (Range?)null };
+            yield return new object[] { "abc", -1, 1, (Range?)null };
+            yield return new object[] { "abc", 0, -1, (Range?)null };
+        }
+
+        [Theory]
+        [MemberData(nameof(RangeByTextElements_TestData))]
+        public void RangeByTextElements(string str, int startingTextElement, int lengthInTextElements, Range? expected)
+        {
+            StringInfo si = new StringInfo(str);
+            Range? result = si.RangeByTextElements(startingTextElement, lengthInTextElements);
+            Assert.Equal(expected, result);
+
+            if (result.HasValue)
+            {
+                string slice = str[result.Value];
+                Assert.Equal(lengthInTextElements, StringInfo.GetLengthInTextElements(slice.AsSpan()));
+            }
+        }
     }
 }
