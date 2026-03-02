@@ -31,7 +31,10 @@ public class MaxParallelDownloadsTests : WasmTemplateTestsBase
         RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
             config,
             TestScenario: "MaxParallelDownloads",
-            BrowserQueryString: new NameValueCollection { {"maxParallelDownloads", maxParallelDownloads } }
+            BrowserQueryString: new NameValueCollection {
+                {"maxParallelDownloads", maxParallelDownloads },
+                {"runtimeFlavor", s_buildEnv.IsMonoRuntime ? "Mono" : "CoreCLR" }
+            }
         ));
 
         var resultTestOutput = result.TestOutput.ToList();

@@ -129,7 +129,14 @@ switch (testCase) {
         const maxParallelDownloads = params.get("maxParallelDownloads");
         let activeFetchCount = 0;
         const originalFetch2 = globalThis.fetch;
+        const isCoreCLR = params.get("runtimeFlavor") === "CoreCLR";
         globalThis.fetch = async (...args) => {
+            if (isCoreCLR) {
+                const url = typeof args[0] === "string" ? args[0] : args[0]?.url ?? "";
+                if (url.includes("dotnet.native")) {
+                    return originalFetch2(...args);
+                }
+            }
             activeFetchCount++;
             testOutput(`Fetch started. Active downloads: ${activeFetchCount}`);
             try {
@@ -143,7 +150,7 @@ switch (testCase) {
                 throw error;
             }
         };
-        dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
+        dotnet.withConfig({ maxParallelDownloads: parseInt(maxParallelDownloads) });
         break;
     case "AllocateLargeHeapThenInterop":
         dotnet.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
