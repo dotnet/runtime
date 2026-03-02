@@ -53,4 +53,40 @@ public unsafe interface IDacDbiInterfaceControl
 
     [PreserveSig]
     int SetCompilerFlags(ulong vmDomainAssembly, int fAllowJitOpts, int fEnableEnC);
+
+    [PreserveSig]
+    int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, int fCodeAvailable, nint pNativeVarData, nint pSequencePoints);
+
+    [PreserveSig]
+    int IsThreadSuspendedOrHijacked(ulong vmThread, byte* pResult);
+
+    [PreserveSig]
+    int AreGCStructuresValid(byte* pResult);
+
+    [PreserveSig]
+    int CreateHeapWalk(nuint* pHandle);
+
+    [PreserveSig]
+    int DeleteHeapWalk(nuint handle);
+
+    [PreserveSig]
+    int WalkHeap(nuint handle, uint count, nint objects, uint* fetched);
+
+    [PreserveSig]
+    int GetHeapSegments(nint pSegments);
+
+    [PreserveSig]
+    int IsValidObject(ulong obj, byte* pResult);
+
+    [PreserveSig]
+    int GetAppDomainForObject(ulong obj, ulong* pApp, ulong* pModule, ulong* pDomainAssembly, byte* pResult);
+
+    [PreserveSig]
+    int CreateRefWalk(nuint* pHandle, int walkStacks, int walkFQ, uint handleWalkMask);
+
+    [PreserveSig]
+    int DeleteRefWalk(nuint handle);
+
+    [PreserveSig]
+    int WalkRefs(nuint handle, uint count, nint objects, uint* pFetched);
 }
