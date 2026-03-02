@@ -291,7 +291,9 @@ namespace System.Text.Unicode
         {
             return (vec & TVector.Create(unchecked((ushort)~0x007F))) == TVector.Zero;
         }
+#endif
 
+#if NET
         /// <summary>
         /// Returns the char index in <paramref name="utf16Data"/> where the first invalid UTF-16 sequence begins,
         /// or -1 if the buffer contains no invalid sequences.

@@ -816,6 +816,14 @@ namespace System.Text.Unicode
                 return false;
             }
         }
+
+        /// <summary>
+        /// Finds the index of the first invalid UTF-8 subsequence.
+        /// </summary>
+        /// <param name="value">The <see cref="ReadOnlySpan{T}"/> containing the UTF-8 input text to examine.</param>
+        /// <returns>The index of the first invalid UTF-8 subsequence, or <c>-1</c> if the entire input is valid.</returns>
+        public static int IndexOfInvalidSubsequence(ReadOnlySpan<byte> value) =>
+            Utf8Utility.GetIndexOfFirstInvalidUtf8Sequence(value, out _);
 #endif
 
         /// <summary>
@@ -825,13 +833,5 @@ namespace System.Text.Unicode
         /// <returns><c>true</c> if value is well-formed UTF-8, <c>false</c> otherwise.</returns>
         public static bool IsValid(ReadOnlySpan<byte> value) =>
             Utf8Utility.GetIndexOfFirstInvalidUtf8Sequence(value, out _) < 0;
-
-        /// <summary>
-        /// Finds the index of the first invalid UTF-8 subsequence.
-        /// </summary>
-        /// <param name="value">The <see cref="ReadOnlySpan{T}"/> containing the UTF-8 input text to examine.</param>
-        /// <returns>The index of the first invalid UTF-8 subsequence, or <c>-1</c> if the entire input is valid.</returns>
-        public static int IndexOfInvalidSubsequence(ReadOnlySpan<byte> value) =>
-            Utf8Utility.GetIndexOfFirstInvalidUtf8Sequence(value, out _);
     }
 }
