@@ -54,7 +54,6 @@ public interface IThread : IContract
                            out TargetPointer stackLimit, out TargetPointer frameAddress) => throw new NotImplementedException();
     TargetPointer IdToThread(uint id) => throw new NotImplementedException();
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
-    bool IsInStackRegionUnwoundBySpecifiedException(TargetPointer threadAddress, TargetPointer stackPointer) => throw new NotImplementedException();
     TargetPointer GetThrowableObject(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
 }
