@@ -25,6 +25,12 @@ namespace System.Diagnostics.Tests
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_FailCore")]
         private static extern ref Action<string, string?, string?, string>? GetFailCore([UnsafeAccessorType(DebugProviderTypeName)] object _);
 
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_needIndent")]
+        private static extern ref bool GetNeedIndent(TraceListener listener);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_needIndent")]
+        private static extern ref bool GetProviderNeedIndent([UnsafeAccessorType(DebugProviderTypeName)] object provider);
+
         protected abstract bool DebugUsesTraceListeners { get; }
         protected static readonly object _debugOnlyProvider;
         protected static readonly object _debugTraceProvider;
@@ -47,6 +53,22 @@ namespace System.Diagnostics.Tests
             {
                 SetProvider(null, _debugOnlyProvider);
             }
+
+            // Reset indent state to known defaults; xunit3's TraceListener may have
+            // modified these before tests run or a previous test may have leaked state.
+            Debug.IndentLevel = 0;
+            Debug.IndentSize = 4;
+
+            // Reset NeedIndent on all TraceListeners so indentation starts fresh.
+            foreach (TraceListener listener in Trace.Listeners)
+            {
+                listener.IndentLevel = 0;
+                listener.IndentSize = 4;
+                GetNeedIndent(listener) = true;
+            }
+
+            // Reset the DebugProvider's _needIndent as well.
+            GetProviderNeedIndent(GetProvider(null)) = true;
         }
 
         protected void VerifyLogged(Action test, string expectedOutput)
