@@ -43,11 +43,12 @@ namespace System.Threading
         private static long s_contentionCount;
 #endif
 
-        private int _owningThreadId;
+        private int _owningThreadId; // cDAC depends on exact name of this field
+
 #pragma warning disable CA1823 // Unused on ST but required by CoreCLR VM via corelib.h
-        private uint _state; // see State for layout
+        private uint _state; // see State for layout. cDAC depends on exact name of this field
 #pragma warning restore CA1823
-        private uint _recursionCount;
+        private uint _recursionCount; // cDAC depends on exact name of this field
 
 #if !FEATURE_SINGLE_THREADED
         // This field serves a few purposes currently:
