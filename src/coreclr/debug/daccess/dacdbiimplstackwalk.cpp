@@ -1396,7 +1396,7 @@ BOOL DacDbiInterfaceImpl::UnwindRuntimeStackFrame(StackFrameIterator * pIter)
 //    Return true iff TS_SyncSuspended or TS_Hijacked is set on the specified thread.
 //
 
-HRESULT DacDbiInterfaceImpl::IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT bool * pResult)
+HRESULT DacDbiInterfaceImpl::IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult)
 {
     DD_ENTER_MAY_THROW;
 
@@ -1408,17 +1408,17 @@ HRESULT DacDbiInterfaceImpl::IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, 
         Thread::ThreadState ts = pThread->GetSnapshotState();
         if ((ts & Thread::TS_SyncSuspended) != 0)
         {
-            *pResult = true;
+            *pResult = TRUE;
         }
     #ifdef FEATURE_HIJACK
         else if ((ts & Thread::TS_Hijacked) != 0)
         {
-            *pResult = true;
+            *pResult = TRUE;
         }
     #endif
         else
         {
-            *pResult = false;
+            *pResult = FALSE;
         }
     }
     EX_CATCH_HRESULT(hr);

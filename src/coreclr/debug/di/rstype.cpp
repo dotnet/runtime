@@ -1569,7 +1569,7 @@ HRESULT CordbType::InitInstantiationTypeHandle(BOOL fForceInit)
         {
             // Get the TypeHandle based on the type data
             RSLockHolder lockHolder(GetProcess()->GetProcessLock());
-            hr = pProcess->GetDAC()->GetExactTypeHandle(&typeData, &argInfo, m_typeHandleExact);
+            hr = pProcess->GetDAC()->GetExactTypeHandle(&typeData, &argInfo, &m_typeHandleExact);
         }
     }
     EX_CATCH_HRESULT(hr);

@@ -797,10 +797,10 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         _ASSERTE(!m_vmPEFile.IsNull());
         // MetaData lookup favors the NGEN image, which is what we want here.
-        bool _mdFileInfoResult;
+        BOOL _mdFileInfoResult;
         IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
-                                                                         dwImageTimeStamp,
-                                                                         dwImageSize,
+                                                                         &dwImageTimeStamp,
+                                                                         &dwImageSize,
                                                                          &filePath,
                                                                          &_mdFileInfoResult));
         if (!_mdFileInfoResult)
@@ -1187,10 +1187,10 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_
             StringCopyHolder filePath;
 
             _ASSERTE(!m_vmPEFile.IsNull());
-            bool _mdFileInfoResult;
+            BOOL _mdFileInfoResult;
             IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
-                                                                             dwImageTimeStamp,
-                                                                             dwImageSize,
+                                                                             &dwImageTimeStamp,
+                                                                             &dwImageSize,
                                                                              &filePath,
                                                                              &_mdFileInfoResult));
             if (_mdFileInfoResult)
