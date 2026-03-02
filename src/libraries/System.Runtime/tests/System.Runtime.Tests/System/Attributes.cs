@@ -325,6 +325,12 @@ namespace System.Tests
             Assert.Equal(2, derivedAttributeWithGetterAttr.P);
         }
 
+        [Fact]
+        public static void GetCustomAttributesWithCovariantOverrideAndSetterOnBaseClass_Throws()
+        {
+            Assert.Throws<CustomAttributeFormatException>(() => typeof(ClassWithDerivedCovariantAttr).GetCustomAttributes(true));
+        }
+
         private static void GenericAttributesTestHelper<TGenericParameter>(Func<Type, Attribute[]> getCustomAttributes)
         {
             Attribute[] openGenericAttributes = getCustomAttributes(typeof(GenericAttribute<>));
@@ -360,6 +366,20 @@ namespace System.Tests
 
         [DerivedAttributeWithGetter(P = 2)]
         public class ClassWithDerivedAttr
+        { }
+
+        public class BaseAttributeWithObjectProp : Attribute
+        {
+            public virtual object Prop { get; set; }
+        }
+
+        public class DerivedAttributeWithCovariantGetter : BaseAttributeWithObjectProp
+        {
+            public override string Prop { get => (string)base.Prop; }
+        }
+
+        [DerivedAttributeWithCovariantGetter(Prop = "hello")]
+        public class ClassWithDerivedCovariantAttr
         { }
     }
 

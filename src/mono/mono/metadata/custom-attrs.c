@@ -1248,9 +1248,8 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			MonoProperty *prop = NULL;
 			MonoProperty *firstNotNullPropInHierarchy = NULL;
 			MonoMethod *setMethod = NULL;
-			MonoMethod *getMethod = NULL;
 			MonoClass *attrBaseClass = mono_handle_class (attr);
-			while (!setMethod && attrBaseClass && (!prop || !getMethod || m_method_is_virtual(getMethod)))
+			while (!setMethod && attrBaseClass)
 			{
 				prop = mono_class_get_property_from_name_internal (attrBaseClass, name);
 
@@ -1262,12 +1261,6 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 					}
 
 					setMethod = prop->set;
-					getMethod = prop->get;
-				}
-				else
-				{
-					setMethod = NULL;
-					getMethod = NULL;
 				}
 
 				attrBaseClass = m_class_get_parent(attrBaseClass);

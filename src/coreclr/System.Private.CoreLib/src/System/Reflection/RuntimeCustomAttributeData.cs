@@ -1573,10 +1573,7 @@ namespace System.Reflection
                                 }
                             }
 
-                            RuntimeMethodInfo? setMethod = null;
-                            RuntimeMethodInfo? getMethod = null;
                             Type baseAttributeType = attributeType;
-
                             for (; ; )
                             {
                                 RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
@@ -1585,9 +1582,7 @@ namespace System.Reflection
 
                                 if (property is not null)
                                 {
-                                    setMethod = property.GetSetMethod(true);
-                                    getMethod = property.GetGetMethod(true);
-
+                                    RuntimeMethodInfo? setMethod = property.GetSetMethod(true);
                                     if (setMethod is not null)
                                     {
                                         // Public properties may have non-public setter methods
@@ -1599,13 +1594,8 @@ namespace System.Reflection
                                         break;
                                     }
                                 }
-                                else
-                                {
-                                    setMethod = null;
-                                    getMethod = null;
-                                }
 
-                                baseAttributeType = baseAttributeType.BaseType is null || (getMethod is not null && !getMethod.IsVirtual)
+                                baseAttributeType = baseAttributeType.BaseType is null
                                     ? throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name))
                                     : baseAttributeType.BaseType;
                             }

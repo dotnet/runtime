@@ -103,19 +103,13 @@ namespace Internal.Reflection.Extensions.NonPortable
                 }
                 else
                 {
-                    // Property
-                    MethodInfo? getMethod = null;
-                    MethodInfo? setMethod = null;
-
                     for (; ; )
                     {
                         PropertyInfo? propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
                         if (propertyInfo is not null)
                         {
-                            getMethod = propertyInfo.GetGetMethod(true);
-                            setMethod = propertyInfo.GetSetMethod(true);
-
+                            MethodInfo? setMethod = propertyInfo.GetSetMethod(true);
                             if (setMethod is not null)
                             {
                                 // Public properties may have non-public setter methods
@@ -127,16 +121,10 @@ namespace Internal.Reflection.Extensions.NonPortable
                                 break;
                             }
                         }
-                        else
-                        {
-                            getMethod = null;
-                            setMethod = null;
-                        }
 
-                        Type? baseType = walk.BaseType;
-                        if (baseType == null || (getMethod is not null && !getMethod.IsVirtual))
-                            throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
-                        walk = baseType;
+                        walk = walk.BaseType is null
+                            ? throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name))
+                            : walk.BaseType;
                     }
                 }
             }
