@@ -121,11 +121,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         public virtual void AddSkipUnresolved(bool skipUnresolved)
         {
-            if (skipUnresolved)
-            {
-                Append("--skip-unresolved");
-                Append("true");
-            }
+            Append("--skip-unresolved");
+            Append(skipUnresolved.ToString());
         }
 
         public virtual void AddStripDescriptors(bool stripDescriptors)

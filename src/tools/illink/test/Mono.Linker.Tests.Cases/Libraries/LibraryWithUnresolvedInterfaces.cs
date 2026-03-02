@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.Libraries
     [IgnoreTestCase("NativeAOT doesn't implement library trimming the same way", IgnoredBy = Tool.NativeAot)]
     [KeptAttributeAttribute(typeof(IgnoreTestCaseAttribute), By = Tool.Trimmer)]
     [SetupCompileBefore("copylibrary.dll", new[] { "Dependencies/CopyLibrary.cs" }, removeFromLinkerInput: true)]
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [SetupLinkerArgument("-a", "test.exe", "library")]
     [SetupLinkerArgument("--enable-opt", "ipconstprop")]
     [VerifyMetadataNames]
