@@ -32,4 +32,25 @@ public unsafe interface IDacDbiInterfaceControl
 
     [PreserveSig]
     int Destroy();
+
+    [PreserveSig]
+    int IsLeftSideInitialized(int* pResult);
+
+    [PreserveSig]
+    int GetAppDomainFromId(uint appdomainId, ulong* pRetVal);
+
+    [PreserveSig]
+    int GetAppDomainId(ulong vmAppDomain, uint* pRetVal);
+
+    [PreserveSig]
+    int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal);
+
+    [PreserveSig]
+    int GetAppDomainFullName(ulong vmAppDomain, nint pStrName);
+
+    [PreserveSig]
+    int GetCompilerFlags(ulong vmDomainAssembly, int* pfAllowJITOpts, int* pfEnableEnC);
+
+    [PreserveSig]
+    int SetCompilerFlags(ulong vmDomainAssembly, int fAllowJitOpts, int fEnableEnC);
 }
