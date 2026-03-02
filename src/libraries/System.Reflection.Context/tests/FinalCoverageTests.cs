@@ -38,7 +38,7 @@ namespace System.Reflection.Context.Tests
         }
 
         // Tests for projecting constructor
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
         public void Constructor_GetMethodBody_LocalVariables_ReturnsProjectedLocals()
         {
             TypeInfo typeInfo = typeof(TestObject).GetTypeInfo();
@@ -150,7 +150,7 @@ namespace System.Reflection.Context.Tests
         }
 
         // Tests for pointer type
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void PointerType_IsPointer_ReturnsTrue()
         {
             TypeInfo typeInfo = typeof(int*).GetTypeInfo();
@@ -159,7 +159,7 @@ namespace System.Reflection.Context.Tests
             Assert.True(customType.IsPointer);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void PointerType_GetElementType_ReturnsProjectedType()
         {
             TypeInfo typeInfo = typeof(int*).GetTypeInfo();

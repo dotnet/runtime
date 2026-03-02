@@ -75,7 +75,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(_customAssembly.IsDynamic);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void IsFullyTrusted_ReturnsTrue()
         {
             Assert.True(_customAssembly.IsFullyTrusted);
@@ -116,7 +116,7 @@ namespace System.Reflection.Context.Tests
             Assert.NotNull(name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void GetReferencedAssemblies_ReturnsValue()
         {
             AssemblyName[] refs = _customAssembly.GetReferencedAssemblies();
@@ -162,7 +162,7 @@ namespace System.Reflection.Context.Tests
 #pragma warning restore SYSLIB0050
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void GetForwardedTypes_ThrowsNotImplemented()
         {
             // GetForwardedTypes may throw NotImplementedException
@@ -245,7 +245,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(concreteMethod.ContainsGenericParameters);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void Invoke_OnMadeGenericMethod_Works()
         {
             MethodInfo concreteMethod = _genericMethod.MakeGenericMethod(typeof(int));

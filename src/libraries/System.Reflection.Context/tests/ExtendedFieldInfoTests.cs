@@ -52,7 +52,7 @@ namespace System.Reflection.Context.Tests
             Assert.Equal(ProjectionConstants.CustomType, _publicField.DeclaringType.GetType().FullName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void FieldHandle_ReturnsValue()
         {
             RuntimeFieldHandle handle = _publicField.FieldHandle;
@@ -117,21 +117,21 @@ namespace System.Reflection.Context.Tests
             Assert.True(_publicField.IsPublic);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void IsSecurityCritical_ReturnsValue()
         {
             bool value = _publicField.IsSecurityCritical;
             Assert.True(value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
             bool value = _publicField.IsSecuritySafeCritical;
             Assert.False(value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void IsSecurityTransparent_ReturnsValue()
         {
             bool value = _publicField.IsSecurityTransparent;
@@ -151,7 +151,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(_publicField.IsStatic);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void MetadataToken_ReturnsValue()
         {
             Assert.True(_publicField.MetadataToken > 0);

@@ -57,7 +57,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(_customConstructor.IsGenericMethodDefinition);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecurityCritical_ReturnsValue()
         {
@@ -65,7 +65,7 @@ namespace System.Reflection.Context.Tests
             Assert.True(value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
@@ -73,7 +73,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecurityTransparent_ReturnsValue()
         {
@@ -81,13 +81,13 @@ namespace System.Reflection.Context.Tests
             Assert.False(value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void MetadataToken_ReturnsValue()
         {
             Assert.True(_customConstructor.MetadataToken > 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void MethodHandle_ReturnsValue()
         {
             RuntimeMethodHandle handle = _customConstructor.MethodHandle;
@@ -148,7 +148,7 @@ namespace System.Reflection.Context.Tests
             Assert.Throws<NotSupportedException>(() => _customConstructor.GetGenericArguments());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
         public void GetMethodBody_ReturnsBody()
         {
             MethodBody body = _customConstructor.GetMethodBody();

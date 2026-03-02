@@ -98,7 +98,7 @@ namespace System.Reflection.Context.Tests
             // May be null if resource doesn't exist
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void GetModule_ReturnsModule()
         {
             Module module = _customAssembly.GetModule(_customAssembly.ManifestModule.Name);
@@ -147,7 +147,7 @@ namespace System.Reflection.Context.Tests
             Assert.Null(type);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void GetSatelliteAssembly_ThrowsForNonExistent()
         {
             Assert.Throws<FileNotFoundException>(() =>

@@ -162,7 +162,7 @@ namespace System.Reflection.Context.Tests
             Assert.Contains("Value2", names);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void GetEnumValues_ReturnsValues()
         {
             TypeInfo enumTypeInfo = typeof(TestEnum).GetTypeInfo();
@@ -208,7 +208,7 @@ namespace System.Reflection.Context.Tests
             Assert.Equal("test", result);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void GetInterfaceMap_ReturnsProjectedMapping()
         {
             TypeInfo listTypeInfo = typeof(List<int>).GetTypeInfo();

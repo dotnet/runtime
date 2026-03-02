@@ -92,21 +92,21 @@ namespace System.Reflection.Context.Tests
             Assert.False(_customTypeInfo.IsGenericTypeDefinition);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void IsSecurityCritical_ReturnsValue()
         {
             bool value = _customTypeInfo.IsSecurityCritical;
             Assert.True(value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
             bool value = _customTypeInfo.IsSecuritySafeCritical;
             Assert.False(value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void IsSecurityTransparent_ReturnsValue()
         {
             bool value = _customTypeInfo.IsSecurityTransparent;
@@ -122,7 +122,7 @@ namespace System.Reflection.Context.Tests
         }
 #pragma warning restore SYSLIB0050
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void MetadataToken_ReturnsValue()
         {
             Assert.True(_customTypeInfo.MetadataToken > 0);
@@ -153,7 +153,7 @@ namespace System.Reflection.Context.Tests
             Assert.Null(_customTypeInfo.ReflectedType);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void StructLayoutAttribute_ReturnsValue()
         {
             // Class has auto layout by default
@@ -161,7 +161,7 @@ namespace System.Reflection.Context.Tests
             Assert.NotNull(attr);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void TypeHandle_ReturnsValue()
         {
             RuntimeTypeHandle handle = _customTypeInfo.TypeHandle;

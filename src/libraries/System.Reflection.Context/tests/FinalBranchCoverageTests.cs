@@ -146,7 +146,7 @@ namespace System.Reflection.Context.Tests
         }
 
         // Test GetInterfaceMap
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void GetInterfaceMap_ReturnsMapping()
         {
             TypeInfo listType = _customReflectionContext.MapType(typeof(List<int>).GetTypeInfo());
