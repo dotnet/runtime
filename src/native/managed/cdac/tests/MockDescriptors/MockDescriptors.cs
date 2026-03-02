@@ -61,16 +61,6 @@ internal partial class MockDescriptors
         ]
     };
 
-    private static readonly TypeFields ArrayClassFields = new TypeFields()
-    {
-        DataType = DataType.ArrayClass,
-        Fields =
-        [
-            new(nameof(Data.ArrayClass.Rank), DataType.uint8),
-        ],
-        BaseTypeFields = EEClassFields
-    };
-
     private static readonly TypeFields ObjectFields = new TypeFields()
     {
         DataType = DataType.Object,
