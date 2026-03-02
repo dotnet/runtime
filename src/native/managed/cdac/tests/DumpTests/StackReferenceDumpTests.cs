@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
@@ -114,15 +113,13 @@ public class StackReferenceDumpTests : DumpTestBase
     {
         InitializeDumpTest(config, "StackRefs", "full");
         IStackWalk stackWalk = Target.Contracts.StackWalk;
+        IObject objectContract = Target.Contracts.Object;
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "MethodWithStackRefs");
 
         IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
         Assert.True(refs.Count > 0, "Expected at least one stack reference from MethodWithStackRefs");
 
-        // Search for the marker string "cDAC-StackRefs-Marker-12345" among the object references.
-        // A System.String in the CLR has: [MethodTable*][length:int32][chars...]
-        // The chars start at offset (pointerSize + 4) from the object start.
         bool foundMarker = false;
         string expectedMarker = "cDAC-StackRefs-Marker-12345";
 
@@ -133,21 +130,7 @@ public class StackReferenceDumpTests : DumpTestBase
 
             try
             {
-                // Read the method table pointer to verify it's a valid object
-                TargetPointer mt = Target.ReadPointer(r.Object);
-                if (mt == TargetPointer.Null)
-                    continue;
-
-                // Read string length (int32 at offset pointerSize)
-                int strLength = Target.Read<int>(r.Object + (ulong)Target.PointerSize);
-                if (strLength <= 0 || strLength > 1024)
-                    continue;
-
-                // Read chars (UTF-16, starting at offset pointerSize + 4)
-                byte[] charBytes = new byte[strLength * 2];
-                Target.ReadBuffer(r.Object + (ulong)Target.PointerSize + 4, charBytes);
-                string value = Encoding.Unicode.GetString(charBytes);
-
+                string value = objectContract.GetStringValue(r.Object);
                 if (value == expectedMarker)
                 {
                     foundMarker = true;
@@ -171,15 +154,14 @@ public class StackReferenceDumpTests : DumpTestBase
     {
         InitializeDumpTest(config, "StackRefs", "full");
         IStackWalk stackWalk = Target.Contracts.StackWalk;
+        IObject objectContract = Target.Contracts.Object;
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "MethodWithStackRefs");
 
         IReadOnlyList<StackReferenceData> refs = stackWalk.WalkStackReferences(crashingThread);
         Assert.True(refs.Count > 0, "Expected at least one stack reference from MethodWithStackRefs");
 
-        // Look for the int[] { 1, 2, 3, 4, 5 } array.
-        // An array in the CLR has: [MethodTable*][length:pointer-sized][elements...]
-        // For int[], elements start at offset (pointerSize + pointerSize).
+        // Look for the int[] { 1, 2, 3, 4, 5 } array using the Object contract.
         bool foundArray = false;
 
         foreach (StackReferenceData r in refs)
@@ -189,20 +171,13 @@ public class StackReferenceDumpTests : DumpTestBase
 
             try
             {
-                TargetPointer mt = Target.ReadPointer(r.Object);
-                if (mt == TargetPointer.Null)
+                TargetPointer dataStart = objectContract.GetArrayData(r.Object, out uint count, out _, out _);
+                if (count != 5)
                     continue;
 
-                // Read array length
-                ulong arrayLength = Target.ReadNUInt(r.Object + (ulong)Target.PointerSize).Value;
-                if (arrayLength != 5)
-                    continue;
-
-                // Read int elements
-                ulong elementsOffset = (ulong)Target.PointerSize + (ulong)Target.PointerSize;
-                int elem0 = Target.Read<int>(r.Object + elementsOffset);
-                int elem1 = Target.Read<int>(r.Object + elementsOffset + 4);
-                int elem2 = Target.Read<int>(r.Object + elementsOffset + 8);
+                int elem0 = Target.Read<int>(dataStart + sizeof(int) * 0);
+                int elem1 = Target.Read<int>(dataStart + sizeof(int) * 1);
+                int elem2 = Target.Read<int>(dataStart + sizeof(int) * 2);
 
                 if (elem0 == 1 && elem1 == 2 && elem2 == 3)
                 {
