@@ -39,7 +39,7 @@ set(BUILD_SHARED_LIBS OFF)
 # from a clean build fails because the install step tries to install
 # zstd_static.lib which was not built as part of the runtime target.
 # This can be replaced by using EXCLUDE_FROM_ALL in FetchContent_Declare on CMAKE 3.28+
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/zstd/build/cmake ${CMAKE_BINARY_DIR}/_deps/zstd-build EXCLUDE_FROM_ALL)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/zstd/build/cmake" "${CMAKE_BINARY_DIR}/_deps/zstd-build" EXCLUDE_FROM_ALL)
 
 set(BUILD_SHARED_LIBS ${__CURRENT_BUILD_SHARED_LIBS})
 
