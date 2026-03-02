@@ -248,7 +248,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         // If copying to the stack instead of the heap, we should treat it as a raw memcpy for
         //  smaller generated code and potentially better performance.
         if (blkNode->IsAddressNotOnHeap(m_compiler))
+        {
             doCpObj = false;
+        }
 
         // CopyObj or CopyBlk
         if (doCpObj)
@@ -262,7 +264,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
             dstAddr->SetMultiplyUsed();
             if (src->OperIs(GT_IND))
+            {
                 src->gtGetOp1()->SetMultiplyUsed();
+            }
         }
         else
         {
