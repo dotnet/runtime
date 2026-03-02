@@ -662,35 +662,11 @@ LONG ReflectionInvocationExceptionFilter(
 LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData);
 #endif // !DACCESS_COMPILE
 
-// Enum that defines the types of exception notification handlers
-// that we support.
-enum ExceptionNotificationHandlerType
-{
-    UnhandledExceptionHandler   = 0x1
-    ,
-    FirstChanceExceptionHandler = 0x2
-};
-
 // This class contains methods to support delivering the various exception notifications.
 class ExceptionNotifications
 {
-private:
-    void static GetEventArgsForNotification(ExceptionNotificationHandlerType notificationType,
-        OBJECTREF *pOutEventArgs, OBJECTREF *pThrowable);
-
-    void static DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
-        OBJECTREF *pThrowable);
-
 public:
-    void static DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs,
-        OBJECTREF *pAppDomain);
-
-    BOOL static CanDeliverNotificationToCurrentAppDomain(ExceptionNotificationHandlerType notificationType);
-
-    void static DeliverNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pThrowable);
-
-public:
-    void static DeliverFirstChanceNotification();
+    static void DeliverFirstChanceNotification();
 };
 
 #ifndef DACCESS_COMPILE

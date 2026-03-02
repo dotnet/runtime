@@ -38,9 +38,6 @@
 #endif // TARGET_UNIX
 
 
-// Support for extracting MethodDesc of a delegate.
-#include "comdelegate.h"
-
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER
@@ -237,21 +234,22 @@ STRINGREF GetExceptionMessage(OBJECTREF throwable)
     if (throwable == NULL)
         return NULL;
 
-    // Return value.
-    STRINGREF pString = NULL;
-
-    GCPROTECT_BEGIN(throwable);
+    struct
+    {
+       OBJECTREF throwable;
+       STRINGREF pString;
+    } gc;
+    gc.throwable = throwable;
+    gc.pString = NULL;
+    GCPROTECT_BEGIN(gc);
 
     // Call Object.ToString(). Note that exceptions do not have to inherit from System.Exception
-    MethodDescCallSite toString(METHOD__OBJECT__TO_STRING, &throwable);
-
-    // Make the call.
-    ARG_SLOT arg[1] = {ObjToArgSlot(throwable)};
-    pString = toString.Call_RetSTRINGREF(arg);
+    UnmanagedCallersOnlyCaller callToString(METHOD__RUNTIME_HELPERS__CALL_TO_STRING);
+    callToString.InvokeThrowing(&gc.throwable, &gc.pString);
 
     GCPROTECT_END();
 
-    return pString;
+    return gc.pString;
 }
 
 HRESULT GetExceptionHResult(OBJECTREF throwable)
@@ -385,12 +383,9 @@ void ExceptionPreserveStackTrace(   // No return.
     {
         LOG((LF_EH, LL_INFO1000, "ExceptionPreserveStackTrace called\n"));
 
-        // Call Exception.InternalPreserveStackTrace() ...
-        MethodDescCallSite preserveStackTrace(METHOD__EXCEPTION__INTERNAL_PRESERVE_STACK_TRACE, &throwable);
-
-        // Make the call.
-        ARG_SLOT arg[1] = {ObjToArgSlot(throwable)};
-        preserveStackTrace.Call(arg);
+        // Call Exception.InternalPreserveStackTrace()
+        UnmanagedCallersOnlyCaller preserveStackTrace(METHOD__EXCEPTION__INTERNAL_PRESERVE_STACK_TRACE);
+        preserveStackTrace.InvokeThrowing(&throwable);
     }
 
     GCPROTECT_END();
@@ -433,19 +428,12 @@ void WrapNonCompliantException(OBJECTREF *ppThrowable)
         if (pFD_WrappedException == NULL)
             pFD_WrappedException = CoreLibBinder::GetField(FIELD__RUNTIME_WRAPPED_EXCEPTION__WRAPPED_EXCEPTION);
 
-        OBJECTREF orWrapper = AllocateObject(CoreLibBinder::GetException(kRuntimeWrappedException));
+        OBJECTREF orWrapper = NULL;
 
         GCPROTECT_BEGIN(orWrapper);
 
-        MethodDescCallSite ctor(METHOD__RUNTIME_WRAPPED_EXCEPTION__OBJ_CTOR, &orWrapper);
-
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(orWrapper),
-            ObjToArgSlot(*ppThrowable)
-        };
-
-        ctor.Call(args);
+        UnmanagedCallersOnlyCaller createWrapper(METHOD__EXCEPTION__CREATE_RUNTIME_WRAPPED_EXCEPTION);
+        createWrapper.InvokeThrowing(ppThrowable, &orWrapper);
 
         *ppThrowable = orWrapper;
 
@@ -523,49 +511,34 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         PRECONDITION(IsProtectedByGCFrame(pInnerException));
         PRECONDITION(IsProtectedByGCFrame(pInitException));
         PRECONDITION(IsProtectedByGCFrame(pThrowable));
-        PRECONDITION(CheckPointer(GetThreadNULLOk()));
     } CONTRACTL_END;
 
-    Thread *pThread  = GetThreadNULLOk();
     *pThrowable = NULL;
+    Thread *pThread = GetThread();
 
     // This will make sure to put the thread back to its original state if something
     // throws out of this function (like an OOM exception or something)
-    Holder< BOOL, DoNothing< BOOL >, ResetTypeInitializationExceptionState, FALSE, NoNull< BOOL > >
+    Holder<BOOL, DoNothing<BOOL>, ResetTypeInitializationExceptionState, FALSE, NoNull<BOOL>>
         isAlreadyCreating(pThread->IsCreatingTypeInitException());
 
-    EX_TRY {
-        // This will contain the type of exception we want to create. Read comment below
-        // on why we'd want to create an exception other than TypeInitException
-        MethodTable *pMT;
-        BinderMethodID methodID;
+    // If we are already in the midst of creating a TypeInitializationException object,
+    // and we get here, it means there was an exception thrown while initializing the
+    // TypeInitializationException type itself, or one of the types used by its class
+    // constructor. In this case, we fall back to using the inner exception directly.
+    if (isAlreadyCreating.GetValue())
+    {
+        // If we ever hit one of these asserts, then it is bad
+        // because we do not know what exception to return then.
+        _ASSERTE(pInnerException != NULL);
+        _ASSERTE(*pInnerException != NULL);
+        *pThrowable = *pInnerException;
+        *pInitException = *pInnerException;
+        return;
+    }
 
-        // If we are already in the midst of creating a TypeInitializationException object,
-        // and we get here, it means there was an exception thrown while initializing the
-        // TypeInitializationException type itself, or one of the types used by its class
-        // constructor. In this case, we're going to back down and use a SystemException
-        // object in its place. It is *KNOWN* that both these exception types have identical
-        // .ctor sigs "void instance (string, exception)" so both can be used interchangeably
-        // in the code that follows.
-        if (!isAlreadyCreating.GetValue()) {
-            pThread->SetIsCreatingTypeInitException();
-            pMT = CoreLibBinder::GetException(kTypeInitializationException);
-            methodID = METHOD__TYPE_INIT_EXCEPTION__STR_EX_CTOR;
-        }
-        else {
-            // If we ever hit one of these asserts, then it is bad
-            // because we do not know what exception to return then.
-            _ASSERTE(pInnerException != NULL);
-            _ASSERTE(*pInnerException != NULL);
-            *pThrowable = *pInnerException;
-            *pInitException = *pInnerException;
-            goto ErrExit;
-        }
-
-        // Allocate the exception object
-        *pThrowable = AllocateObject(pMT);
-
-        MethodDescCallSite ctor(methodID, pThrowable);
+    EX_TRY
+    {
+        pThread->SetIsCreatingTypeInitException();
 
         // Since the inner exception object in the .ctor is of type Exception, make sure
         // that the object we're passed in derives from Exception. If not, pass NULL.
@@ -573,22 +546,20 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
         if (pInnerException != NULL)
             isException = IsException((*pInnerException)->GetMethodTable());
 
-        _ASSERTE(isException);      // What pathway can give us non-compliant exceptions?
+        OBJECTREF innerEx = isException ? *pInnerException : NULL;
 
-        STRINGREF sType = StringObject::NewString(pTypeThatFailed);
+        GCPROTECT_BEGIN(innerEx);
 
-        // If the inner object derives from exception, set it as the third argument.
-        ARG_SLOT args[] = { ObjToArgSlot(*pThrowable),
-                            ObjToArgSlot(sType),
-                            ObjToArgSlot(isException ? *pInnerException : NULL) };
+        UnmanagedCallersOnlyCaller createTypeInitEx(METHOD__EXCEPTION__CREATE_TYPE_INIT_EXCEPTION);
+        createTypeInitEx.InvokeThrowing(pTypeThatFailed, &innerEx, pThrowable);
 
-        // Call the .ctor
-        ctor.Call(args);
+        GCPROTECT_END();
 
         // On success, set the init exception.
         *pInitException = *pThrowable;
     }
-    EX_CATCH {
+    EX_CATCH
+    {
         // If calling the constructor fails, then we'll call ourselves again, and this time
         // through we will try and create an EEException object. If that fails, then the
         // else block of this will be executed.
@@ -608,9 +579,6 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
     } EX_END_CATCH
 
     CONSISTENCY_CHECK(*pInitException != NULL || !pInnerException);
-
- ErrExit:
-    ;
 }
 
 // ==========================================================================
@@ -2182,46 +2150,8 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     UNREACHABLE();
 }
 
-// this function finds the managed callback to get a resource
-// string from the then current local domain and calls it
-// this could be a lot of work
-STRINGREF GetResourceStringFromManaged(STRINGREF key)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(key != NULL);
-    }
-    CONTRACTL_END;
-
-    struct xx {
-        STRINGREF key;
-        STRINGREF ret;
-    } gc;
-
-    gc.key = key;
-    gc.ret = NULL;
-
-    GCPROTECT_BEGIN(gc);
-
-    MethodDescCallSite getResourceStringLocal(METHOD__ENVIRONMENT__GET_RESOURCE_STRING_LOCAL);
-
-    // Call Environment::GetResourceStringLocal(String name).  Returns String value (or maybe null)
-    // Don't need to GCPROTECT pArgs, since it's not used after the function call.
-
-    ARG_SLOT pArgs[1] = { ObjToArgSlot(gc.key) };
-    gc.ret = getResourceStringLocal.Call_RetSTRINGREF(pArgs);
-
-    GCPROTECT_END();
-
-    return gc.ret;
-}
-
 // This function does poentially a LOT of work (loading possibly 50 classes).
-// The return value is an un-GC-protected string ref, or possibly NULL.
-void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF * ppMessage)
+void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF* ppMessage)
 {
     CONTRACTL
     {
@@ -2235,21 +2165,14 @@ void ResMgrGetString(LPCWSTR wszResourceName, STRINGREF * ppMessage)
 
     if (wszResourceName == NULL || *wszResourceName == W('\0'))
     {
-        ppMessage = NULL;
+        *ppMessage = NULL;
         return;
     }
 
-    // this function never looks at name again after
-    // calling the helper so no need to GCPROTECT it
-    STRINGREF name = StringObject::NewString(wszResourceName);
+    UnmanagedCallersOnlyCaller getResourceString(METHOD__ENVIRONMENT__GET_RESOURCE_STRING);
+    getResourceString.InvokeThrowing(wszResourceName, ppMessage);
 
-    if (wszResourceName != NULL)
-    {
-        STRINGREF value = GetResourceStringFromManaged(name);
-
-        _ASSERTE(value!=NULL || !"Resource string lookup failed - possible misspelling or .resources missing or out of date?");
-        *ppMessage = value;
-    }
+    _ASSERTE(*ppMessage != NULL && "Resource string lookup failed - possible misspelling or .resources missing or out of date?");
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -9550,275 +9473,13 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
 }
 
 #ifndef DACCESS_COMPILE
-// This method will deliver the actual exception notification. Its assumed that the caller has done the necessary checks, including
-// checking whether the delegate can be invoked for the exception's corruption severity.
-void ExceptionNotifications::DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate,
-        OBJECTREF *pAppDomain, OBJECTREF *pEventArgs)
+
+static Volatile<bool> g_firstChanceExceptionHasHandler = false;
+
+extern "C" void QCALLTYPE AppContext_SetFirstChanceExceptionHandler()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pDelegate  != NULL && IsProtectedByGCFrame(pDelegate) && (*pDelegate != NULL));
-        PRECONDITION(pEventArgs != NULL && IsProtectedByGCFrame(pEventArgs));
-        PRECONDITION(pAppDomain != NULL && IsProtectedByGCFrame(pAppDomain));
-    }
-    CONTRACTL_END;
-
-    PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(DELEGATEREF(*pDelegate)->GetMethodPtr());
-
-    DECLARE_ARGHOLDER_ARRAY(args, 3);
-
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(DELEGATEREF(*pDelegate)->GetTarget());
-    args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(*pAppDomain);
-    args[ARGNUM_2] = OBJECTREF_TO_ARGHOLDER(*pEventArgs);
-
-    CALL_MANAGED_METHOD_NORET(args);
-}
-
-// To include definition of COMDelegate::GetMethodDesc
-#include "comdelegate.h"
-
-// This method constructs the arguments to be passed to the exception notification event callback
-void ExceptionNotifications::GetEventArgsForNotification(ExceptionNotificationHandlerType notificationType,
-                                                         OBJECTREF *pOutEventArgs, OBJECTREF *pThrowable)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(notificationType != UnhandledExceptionHandler);
-        PRECONDITION((pOutEventArgs != NULL) && IsProtectedByGCFrame(pOutEventArgs));
-        PRECONDITION(*pOutEventArgs == NULL);
-        PRECONDITION((pThrowable != NULL) && (*pThrowable != NULL) && IsProtectedByGCFrame(pThrowable));
-        PRECONDITION(IsException((*pThrowable)->GetMethodTable())); // We expect a valid exception object
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMTEventArgs = NULL;
-    BinderMethodID idEventArgsCtor = METHOD__FIRSTCHANCE_EVENTARGS__CTOR;
-
-    EX_TRY
-    {
-        switch(notificationType)
-        {
-            case FirstChanceExceptionHandler:
-                pMTEventArgs = CoreLibBinder::GetClass(CLASS__FIRSTCHANCE_EVENTARGS);
-                idEventArgsCtor = METHOD__FIRSTCHANCE_EVENTARGS__CTOR;
-                break;
-            default:
-                _ASSERTE(!"Invalid Exception Notification Handler!");
-                break;
-        }
-
-        // Allocate the instance of the eventargs corresponding to the notification
-        *pOutEventArgs = AllocateObject(pMTEventArgs);
-
-        // Prepare to invoke the .ctor
-        MethodDescCallSite ctor(idEventArgsCtor, pOutEventArgs);
-
-        // Setup the arguments to be passed to the notification specific EventArgs .ctor
-        if (notificationType == FirstChanceExceptionHandler)
-        {
-            // FirstChance notification takes only a single argument: the exception object.
-            ARG_SLOT args[] =
-            {
-                ObjToArgSlot(*pOutEventArgs),
-                ObjToArgSlot(*pThrowable),
-            };
-
-            ctor.Call(args);
-        }
-        else
-        {
-            // Since we have already asserted above, just set the args to NULL.
-            *pOutEventArgs = NULL;
-        }
-    }
-    EX_CATCH
-    {
-        // Set event args to be NULL incase of any error (e.g. OOM)
-        *pOutEventArgs = NULL;
-        LOG((LF_EH, LL_INFO100, "ExceptionNotifications::GetEventArgsForNotification: Setting event args to NULL due to an exception.\n"));
-        RethrowTerminalExceptions();
-    }
-    EX_END_CATCH
-}
-
-// This SEH filter will be invoked when an exception escapes out of the exception notification
-// callback and enters the runtime. In such a case, we ill simply failfast.
-static LONG ExceptionNotificationFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVOID pParam)
-{
-    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    return -1;
-}
-
-// This method returns a BOOL to indicate if the AppDomain is ready to receive exception notifications or not.
-BOOL ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(ExceptionNotificationHandlerType notificationType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(GetThreadNULLOk() != NULL);
-        PRECONDITION(notificationType  != UnhandledExceptionHandler);
-    }
-    CONTRACTL_END;
-
-    // Do we have handler(s) of the specific type wired up?
-    if (notificationType == FirstChanceExceptionHandler)
-    {
-        return CoreLibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF() != NULL;
-    }
-    else
-    {
-        _ASSERTE(!"Invalid exception notification handler specified!");
-        return FALSE;
-    }
-}
-
-// This method wraps the call to the actual 'DeliverNotificationInternal' method in an SEH filter
-// so that if an exception escapes out of the notification callback, we will trigger failfast from
-// our filter.
-void ExceptionNotifications::DeliverNotification(ExceptionNotificationHandlerType notificationType,
-                                                 OBJECTREF *pThrowable)
-{
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_NOTHROW; // NOTHROW because incase of an exception, we will FailFast.
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    struct TryArgs
-    {
-        ExceptionNotificationHandlerType notificationType;
-        OBJECTREF *pThrowable;
-    } args;
-
-    args.notificationType = notificationType;
-    args.pThrowable = pThrowable;
-
-    PAL_TRY(TryArgs *, pArgs, &args)
-    {
-        // Make the call to the actual method that will invoke the callbacks
-        ExceptionNotifications::DeliverNotificationInternal(pArgs->notificationType,
-            pArgs->pThrowable);
-    }
-    PAL_EXCEPT_FILTER(ExceptionNotificationFilter)
-    {
-        // We should never be entering this handler since there should be
-        // no exception escaping out of a callback. If we are here,
-        // failfast.
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    }
-    PAL_ENDTRY;
-}
-
-// This method will deliver the exception notification to the current AppDomain.
-void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
-                                                 OBJECTREF *pThrowable)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-
-        // Unhandled Exception Notification is delivered via Unhandled Exception Processing
-        // mechanism.
-        PRECONDITION(notificationType != UnhandledExceptionHandler);
-        PRECONDITION((pThrowable != NULL) && (*pThrowable != NULL));
-        PRECONDITION(ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(notificationType));
-    }
-    CONTRACTL_END;
-
-    Thread *pCurThread = GetThreadNULLOk();
-    _ASSERTE(pCurThread != NULL);
-
-    // Get the current AppDomain
-    AppDomain *pCurDomain = GetAppDomain();
-    _ASSERTE(pCurDomain != NULL);
-
-    struct
-    {
-        OBJECTREF oNotificationDelegate;
-        PTRARRAYREF arrDelegates;
-        OBJECTREF   oInnerDelegate;
-        OBJECTREF   oEventArgs;
-        OBJECTREF   oCurrentThrowable;
-        OBJECTREF   oCurAppDomain;
-    } gc;
-    gc.oNotificationDelegate = NULL;
-    gc.arrDelegates = NULL;
-    gc.oInnerDelegate = NULL;
-    gc.oEventArgs = NULL;
-    gc.oCurrentThrowable = NULL;
-    gc.oCurAppDomain = NULL;
-
-    // This will hold the MethodDesc of the callback that will be invoked.
-    MethodDesc *pMDDelegate = NULL;
-
-    GCPROTECT_BEGIN(gc);
-
-    // Protect the throwable to be passed to the delegate callback
-    gc.oCurrentThrowable = *pThrowable;
-
-    // We expect a valid exception object
-    _ASSERTE(IsException(gc.oCurrentThrowable->GetMethodTable()));
-
-    // Save the reference to the current AppDomain. If the user code has
-    // wired upto this event, then the managed AppDomain object will exist.
-    gc.oCurAppDomain = pCurDomain->GetRawExposedObject();
-
-    // Get the reference to the delegate based upon the type of notification
-    if (notificationType == FirstChanceExceptionHandler)
-    {
-        gc.oNotificationDelegate = CoreLibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF();
-    }
-    else
-    {
-        gc.oNotificationDelegate = NULL;
-        _ASSERTE(!"Invalid Exception Notification Handler specified!");
-    }
-
-    if (gc.oNotificationDelegate != NULL)
-    {
-        // Prevent any async exceptions from this moment on this thread
-        ThreadPreventAsyncHolder prevAsync;
-
-        gc.oEventArgs = NULL;
-
-        // Get the arguments to be passed to the delegate callback. Incase of any
-        // problem while allocating the event args, we will return a NULL.
-        ExceptionNotifications::GetEventArgsForNotification(notificationType, &gc.oEventArgs,
-            &gc.oCurrentThrowable);
-
-        // Check if there are multiple callbacks registered? If there are, we will
-        // loop through them, invoking each one at a time. Before invoking the target,
-        // we will check if the target can be invoked based upon the corruption severity
-        // for the active exception that was passed to us.
-        gc.arrDelegates = (PTRARRAYREF) ((DELEGATEREF)(gc.oNotificationDelegate))->GetInvocationList();
-        if (gc.arrDelegates == NULL || !gc.arrDelegates->GetMethodTable()->IsArray())
-        {
-            ExceptionNotifications::DeliverExceptionNotification(notificationType, &gc.oNotificationDelegate, &gc.oCurAppDomain, &gc.oEventArgs);
-        }
-        else
-        {
-            // The _invocationCount could be less than the array size, if we are sharing
-            // immutable arrays cleverly.
-            UINT_PTR      cnt = ((DELEGATEREF)(gc.oNotificationDelegate))->GetInvocationCount();
-            _ASSERTE(cnt <= gc.arrDelegates->GetNumComponents());
-
-            for (UINT_PTR i=0; i<cnt; i++)
-            {
-                gc.oInnerDelegate = gc.arrDelegates->m_Array[i];
-                ExceptionNotifications::DeliverExceptionNotification(notificationType, &gc.oInnerDelegate, &gc.oCurAppDomain, &gc.oEventArgs);
-            }
-        }
-    }
-
-    GCPROTECT_END();
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+    g_firstChanceExceptionHasHandler.Store(true);
 }
 
 void ExceptionNotifications::DeliverFirstChanceNotification()
@@ -9831,10 +9492,7 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     }
     CONTRACTL_END;
 
-    // We check for FirstChance notification delivery after setting up the corruption severity
-    // so that we can determine if the callback delegate can handle CSE (or not).
-    //
-    // Deliver it only if not already done and someone has wiredup to receive it.
+    // Deliver it only if not already done and someone has wired up to receive it.
     //
     // We do this provided this is the first frame of a new exception
     // that was thrown or a rethrown exception. We dont want to do this
@@ -9844,18 +9502,30 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     _ASSERTE(pCurTES->GetCurrentExceptionTracker());
     _ASSERTE(!(pCurTES->GetCurrentExceptionTracker()->DeliveredFirstChanceNotification()));
     {
-        GCX_COOP();
-        if (ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(FirstChanceExceptionHandler))
+        if (g_firstChanceExceptionHasHandler.Load())
         {
+            GCX_COOP();
             OBJECTREF oThrowable = NULL;
             GCPROTECT_BEGIN(oThrowable);
 
             oThrowable = pCurTES->GetThrowable();
             _ASSERTE(oThrowable != NULL);
+            _ASSERTE(IsException(oThrowable->GetMethodTable()));
 
-            ExceptionNotifications::DeliverNotification(FirstChanceExceptionHandler, &oThrowable);
+            // Prevent any async exceptions from this moment on this thread
+            ThreadPreventAsyncHolder prevAsync;
+
+            EX_TRY
+            {
+                UnmanagedCallersOnlyCaller deliverNotification(METHOD__APPCONTEXT__ON_FIRST_CHANCE_EXCEPTION);
+                deliverNotification.InvokeThrowing(&oThrowable);
+            }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH
+
             GCPROTECT_END();
-
         }
 
         // Mark the exception tracker as having delivered the first chance notification
