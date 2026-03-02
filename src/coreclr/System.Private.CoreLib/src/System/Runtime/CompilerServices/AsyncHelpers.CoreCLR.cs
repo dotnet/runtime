@@ -19,7 +19,7 @@ using Internal.Runtime;
 
 namespace System.Runtime.CompilerServices
 {
-    internal struct ExecutionAndSyncBlockStore
+    internal struct AsyncContextsSnapshot
     {
         // Store current ExecutionContext and SynchronizationContext as "previousXxx".
         // This allows us to restore them and undo any Context changes made in stateMachine.MoveNext
@@ -202,7 +202,7 @@ namespace System.Runtime.CompilerServices
         private static void TailAwait() => throw new UnreachableException();
 
         // Used during suspensions to hold the continuation chain and on what we are waiting.
-        // Methods like FinalizeTaskReturningThunk will unlink the state and wrap into a Task.
+        // Methods like CreateAsyncMethodTask will unlink the state and wrap into a Task.
         private struct RuntimeAsyncAwaitState
         {
             public Continuation? SentinelContinuation;
@@ -480,7 +480,7 @@ namespace System.Runtime.CompilerServices
             [StackTraceHidden]
             private unsafe void DispatchContinuations()
             {
-                ExecutionAndSyncBlockStore contexts = default;
+                AsyncContextsSnapshot contexts = default;
                 contexts.Push();
 
                 AsyncDispatcherInfo asyncDispatcherInfo;
@@ -717,7 +717,7 @@ namespace System.Runtime.CompilerServices
 #pragma warning disable CA1859
         // When a Task-returning thunk gets a continuation result
         // it calls here to make a Task that awaits on the current async state.
-        private static Task<T?> FinalizeTaskReturningThunk<T>()
+        private static Task<T?> CreateAsyncMethodTask<T>()
         {
             RuntimeAsyncTask<T?> result = new();
             if (Task.s_asyncDebuggingEnabled)
@@ -733,7 +733,7 @@ namespace System.Runtime.CompilerServices
             return result;
         }
 
-        private static Task FinalizeTaskReturningThunk()
+        private static Task CreateAsyncMethodTask()
         {
             RuntimeAsyncTask<VoidTaskResult> result = new();
             if (Task.s_asyncDebuggingEnabled)
@@ -749,16 +749,16 @@ namespace System.Runtime.CompilerServices
             return result;
         }
 
-        private static ValueTask<T?> FinalizeValueTaskReturningThunk<T>()
+        private static ValueTask<T?> CreateAsyncMethodValueTask<T>()
         {
             // We only come to these methods in the expensive case (already
             // suspended), so ValueTask optimization here is not relevant.
-            return new ValueTask<T?>(FinalizeTaskReturningThunk<T>());
+            return new ValueTask<T?>(CreateAsyncMethodTask<T>());
         }
 
-        private static ValueTask FinalizeValueTaskReturningThunk()
+        private static ValueTask CreateAsyncMethodValueTask()
         {
-            return new ValueTask(FinalizeTaskReturningThunk());
+            return new ValueTask(CreateAsyncMethodTask());
         }
 
         private static Task<T?> TaskFromException<T>(Exception ex)
@@ -894,14 +894,14 @@ namespace System.Runtime.CompilerServices
         }
 
         [StackTraceHidden]
-        internal static T CompletedTaskResult<T>(Task<T> task)
+        internal static T GetCompletedTaskResult<T>(Task<T> task)
         {
             TaskAwaiter.ValidateEnd(task);
             return task.ResultOnSuccess;
         }
 
         [StackTraceHidden]
-        internal static void CompletedTask(Task task)
+        internal static void ValidateCompletedTask(Task task)
         {
             TaskAwaiter.ValidateEnd(task);
         }
