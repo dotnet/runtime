@@ -3735,9 +3735,8 @@ namespace System
                 throw new InvalidOperationException(SR.Format(SR.FunctionPointer_ReturnTypeInvalid, this));
 
             parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
-            for (int i = 0; i < parameterTypes.Length; i++)
+            foreach (Type? paramType in parameterTypes)
             {
-                Type paramType = parameterTypes[i];
                 ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
 
                 if (paramType is not RuntimeType)

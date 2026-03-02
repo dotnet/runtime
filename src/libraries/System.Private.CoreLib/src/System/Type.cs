@@ -663,13 +663,13 @@ namespace System
             parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
             callingConventions = (callingConventions != null) ? (Type[])callingConventions.Clone() : [];
 
-            foreach (Type paramType in parameterTypes)
+            foreach (Type? paramType in parameterTypes)
                 ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
 
             bool builtInCallConv = false;
             for (int i = 0; i < callingConventions.Length; i++)
             {
-                Type callConv = callingConventions[i];
+                Type? callConv = callingConventions[i];
                 ArgumentNullException.ThrowIfNull(callConv, nameof(callingConventions));
                 string? fullName = callConv.FullName;
 
@@ -784,11 +784,11 @@ namespace System
             requiredCustomModifiers = (requiredCustomModifiers != null) ? (Type[])requiredCustomModifiers.Clone() : [];
             optionalCustomModifiers = (optionalCustomModifiers != null) ? (Type[])optionalCustomModifiers.Clone() : [];
 
-            for (int i = 0; i < requiredCustomModifiers.Length; i++)
-                ArgumentNullException.ThrowIfNull(requiredCustomModifiers[i], nameof(requiredCustomModifiers));
+            foreach (Type modReq in requiredCustomModifiers)
+                ArgumentNullException.ThrowIfNull(modReq, nameof(requiredCustomModifiers));
 
-            for (int i = 0; i < optionalCustomModifiers.Length; i++)
-                ArgumentNullException.ThrowIfNull(optionalCustomModifiers[i], nameof(optionalCustomModifiers));
+            foreach (Type modOpt in optionalCustomModifiers)
+                ArgumentNullException.ThrowIfNull(modOpt, nameof(optionalCustomModifiers));
 
             return new SignatureModifiedType(
                 type,

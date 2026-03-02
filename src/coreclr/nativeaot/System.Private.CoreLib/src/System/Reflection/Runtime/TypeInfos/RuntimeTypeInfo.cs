@@ -424,7 +424,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
             for (int i = 0; i < parameterTypes.Length; i++)
             {
-                Type paramType = parameterTypes[i];
+                Type? paramType = parameterTypes[i];
                 ArgumentNullException.ThrowIfNull(paramType, nameof(parameterTypes));
 
                 if (paramType is not RuntimeType rtType)

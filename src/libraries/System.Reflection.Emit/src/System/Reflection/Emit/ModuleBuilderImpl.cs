@@ -1379,6 +1379,7 @@ namespace System.Reflection.Emit
             SignatureTypeEncoder encoder = new(blobBuilder);
             MetadataSignatureHelper.WriteSignatureForFunctionPointerType(encoder, functionPointerType, this);
 
+            Debug.Assert(blobBuilder.ToArray()[0] == (byte)SignatureTypeCode.FunctionPointer);
             byte[] blob = blobBuilder.ToArray(1, blobBuilder.Count - 1); // Strip away ELEMENT_TYPE_FNPTR
             return MetadataTokens.GetToken(_metadataBuilder.AddStandaloneSignature(_metadataBuilder.GetOrAddBlob(blob)));
         }

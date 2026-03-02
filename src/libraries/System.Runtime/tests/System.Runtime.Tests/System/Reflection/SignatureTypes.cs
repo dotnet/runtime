@@ -518,6 +518,43 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => Type.MakeFunctionPointerSignatureType(retType, [], true, callConvs));
         }
 
+        public static IEnumerable<object[]> MakeFunctionPointerSignatureType_ToString_TestData
+        {
+            get
+            {
+                yield return
+                [
+                    Type.MakeFunctionPointerSignatureType(typeof(void), []),
+                    "System.Void()"
+                ];
+
+                yield return
+                [
+                    Type.MakeFunctionPointerSignatureType(typeof(bool), [typeof(int)]),
+                    "System.Boolean(System.Int32)"
+                ];
+
+                yield return
+                [
+                    Type.MakeFunctionPointerSignatureType(typeof(void), [typeof(int).MakeByRefType(), typeof(short), typeof(object)]),
+                    "System.Void(System.Int32&, System.Int16, System.Object)"
+                ];
+
+                yield return
+                [
+                    Type.MakeFunctionPointerSignatureType(typeof(List<string>), [Type.MakeFunctionPointerSignatureType(typeof(string), [typeof(object)])]),
+                    "System.Collections.Generic.List`1[System.String](System.String(System.Object))"
+                ];
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(MakeFunctionPointerSignatureType_ToString_TestData))]
+        public static void MakeFunctionPointerSignatureType_ToString(Type type, string expected)
+        {
+            Assert.Equal(expected, type.ToString());
+        }
+
         [Fact]
         public static void MakeFunctionPointerType_FromSignatureType()
         {
