@@ -113,7 +113,21 @@ internal partial class StackWalk_1 : IStackWalk
                     }
                     else
                     {
-                        // TODO(stackref): Implement Frame::GcScanRoots for non-frameless frames
+                        // Non-frameless: capital "F" Frame GcScanRoots dispatch.
+                        // The base Frame::GcScanRoots_Impl is a no-op for most frame types.
+                        // Frame types that override it (StubDispatchFrame, ExternalMethodFrame,
+                        // CallCountingHelperFrame, DynamicHelperFrame, CLRToCOMMethodFrame,
+                        // HijackFrame, ProtectValueClassFrame) call PromoteCallerStack to
+                        // report method arguments from the transition block.
+                        //
+                        // GCFrame is NOT part of the Frame chain — it has its own linked list
+                        // that the GC scans separately. The DAC's DacStackReferenceWalker
+                        // does not scan GCFrame roots.
+                        //
+                        // For now, this is a no-op matching the base Frame behavior.
+                        // TODO(stackref): Implement PromoteCallerStack for stub frames that
+                        // report caller arguments (StubDispatchFrame, ExternalMethodFrame, etc.)
+                        ScanFrameRoots(gcFrame.Frame, scanContext);
                     }
                 }
             }
@@ -759,5 +773,59 @@ internal partial class StackWalk_1 : IStackWalk
         }
 
         return handle;
+    }
+
+    /// <summary>
+    /// Scans GC roots for a non-frameless (capital "F" Frame) stack frame.
+    /// Dispatches based on frame type identifier. Most frame types have a no-op
+    /// GcScanRoots (the base Frame implementation does nothing).
+    ///
+    /// Frame types with meaningful GcScanRoots that call PromoteCallerStack:
+    /// StubDispatchFrame, ExternalMethodFrame, CallCountingHelperFrame,
+    /// DynamicHelperFrame, CLRToCOMMethodFrame, HijackFrame, ProtectValueClassFrame.
+    /// </summary>
+    private void ScanFrameRoots(StackDataFrameHandle frame, GcScanContext scanContext)
+    {
+        _ = scanContext; // Will be used when stub frame scanning is implemented
+        // Read the frame type identifier
+        TargetPointer frameAddress = frame.FrameAddress;
+        if (frameAddress == TargetPointer.Null)
+            return;
+
+        // Get the frame name to identify the type
+        string frameName = ((IStackWalk)this).GetFrameName(frameAddress);
+
+        // Most frame types use the base no-op GcScanRoots_Impl.
+        // The ones that do work (stub frames) need PromoteCallerStack which
+        // requires reading the transition block and decoding method signatures.
+        // This is not yet implemented.
+        switch (frameName)
+        {
+            case "StubDispatchFrame":
+            case "ExternalMethodFrame":
+            case "CallCountingHelperFrame":
+            case "DynamicHelperFrame":
+            case "CLRToCOMMethodFrame":
+            case "ComPrestubMethodFrame":
+                // These frames call PromoteCallerStack to report method arguments.
+                // TODO(stackref): Implement PromoteCallerStack / PromoteCallerStackUsingGCRefMap
+                break;
+
+            case "HijackFrame":
+                // Reports return value registers (X86 only with FEATURE_HIJACK)
+                // TODO(stackref): Implement HijackFrame scanning
+                break;
+
+            case "ProtectValueClassFrame":
+                // Scans value types in linked list
+                // TODO(stackref): Implement ProtectValueClassFrame scanning
+                break;
+
+            default:
+                // Base Frame::GcScanRoots_Impl is a no-op — nothing to report.
+                // This covers: InlinedCallFrame, SoftwareExceptionFrame, FaultingExceptionFrame,
+                // ResumableFrame, FuncEvalFrame, PrestubMethodFrame, PInvokeCalliFrame, etc.
+                break;
+        }
     }
 };
