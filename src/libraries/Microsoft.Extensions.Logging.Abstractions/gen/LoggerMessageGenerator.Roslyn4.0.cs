@@ -108,20 +108,26 @@ namespace Microsoft.Extensions.Logging.Generators
 
             context.RegisterSourceOutput(sourceGenerationSpecs, static (spc, items) => EmitSource(items, spc));
 
-            // Report diagnostics directly from the unprojected pipeline. Diagnostics carry raw
-            // SourceLocation instances that are pragma-suppressible (cf. https://github.com/dotnet/runtime/issues/92509).
+            // Project to just the diagnostics, discarding the model. ImmutableArray<Diagnostic> does not
+            // implement value equality, so Roslyn's incremental pipeline uses reference equality for these
+            // values — the callback fires on every compilation change. This is by design: diagnostic
+            // emission is cheap, and we need fresh SourceLocation instances that are pragma-suppressible
+            // (cf. https://github.com/dotnet/runtime/issues/92509).
             // No source code is generated from this pipeline — it exists solely to report diagnostics.
-            context.RegisterSourceOutput(loggerClasses.Collect(), EmitDiagnostics);
+            IncrementalValueProvider<ImmutableArray<ImmutableArray<Diagnostic>>> diagnostics =
+                loggerClasses.Select(static (t, _) => t.Diagnostics).Collect();
+
+            context.RegisterSourceOutput(diagnostics, EmitDiagnostics);
         }
 
-        private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<(LoggerClassSpec? LoggerClassSpec, ImmutableArray<Diagnostic> Diagnostics, bool HasStringCreate)> items)
+        private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<ImmutableArray<Diagnostic>> items)
         {
             // Use HashSet to deduplicate — each attributed method triggers parsing of entire class,
             // producing duplicate diagnostics.
             var reportedDiagnostics = new HashSet<(string Id, TextSpan? Span, string? FilePath)>();
-            foreach (var item in items)
+            foreach (ImmutableArray<Diagnostic> diagnosticBatch in items)
             {
-                foreach (Diagnostic diagnostic in item.Diagnostics)
+                foreach (Diagnostic diagnostic in diagnosticBatch)
                 {
                     if (reportedDiagnostics.Add((diagnostic.Id, diagnostic.Location?.SourceSpan, diagnostic.Location?.SourceTree?.FilePath)))
                     {

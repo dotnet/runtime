@@ -77,10 +77,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             context.RegisterSourceOutput(sourceGenerationSpec, EmitSource);
 
-            // Report diagnostics directly from the unprojected pipeline. Diagnostics carry raw
-            // SourceLocation instances that are pragma-suppressible (cf. https://github.com/dotnet/runtime/issues/92509).
+            // Project to just the diagnostics, discarding the model. ImmutableArray<Diagnostic> does not
+            // implement value equality, so Roslyn's incremental pipeline uses reference equality for these
+            // values — the callback fires on every compilation change. This is by design: diagnostic
+            // emission is cheap, and we need fresh SourceLocation instances that are pragma-suppressible
+            // (cf. https://github.com/dotnet/runtime/issues/92509).
             // No source code is generated from this pipeline — it exists solely to report diagnostics.
-            context.RegisterSourceOutput(genSpec, EmitDiagnostics);
+            IncrementalValueProvider<ImmutableArray<Diagnostic>> diagnostics =
+                genSpec.Select(static (t, _) => t.Item2);
+
+            context.RegisterSourceOutput(diagnostics, EmitDiagnostics);
 
             if (!s_hasInitializedInterceptorVersion)
             {
@@ -151,9 +157,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// </summary>
         public Action<SourceGenerationSpec>? OnSourceEmitting { get; init; }
 
-        private static void EmitDiagnostics(SourceProductionContext context, (SourceGenerationSpec?, ImmutableArray<Diagnostic>) tuple)
+        private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<Diagnostic> diagnostics)
         {
-            foreach (Diagnostic diagnostic in tuple.Item2)
+            foreach (Diagnostic diagnostic in diagnostics)
             {
                 context.ReportDiagnostic(diagnostic);
             }

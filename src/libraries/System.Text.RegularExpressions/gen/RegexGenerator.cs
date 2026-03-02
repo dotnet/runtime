@@ -140,10 +140,16 @@ namespace System.Text.RegularExpressions.Generator
 
             context.RegisterSourceOutput(sourceResults, EmitSource);
 
-            // Report diagnostics directly from the unprojected pipeline. Diagnostics carry raw
-            // SourceLocation instances that are pragma-suppressible (cf. https://github.com/dotnet/runtime/issues/92509).
+            // Project to just the diagnostics, discarding the model. ImmutableArray<Diagnostic> does not
+            // implement value equality, so Roslyn's incremental pipeline uses reference equality for these
+            // values — the callback fires on every compilation change. This is by design: diagnostic
+            // emission is cheap, and we need fresh SourceLocation instances that are pragma-suppressible
+            // (cf. https://github.com/dotnet/runtime/issues/92509).
             // No source code is generated from this pipeline — it exists solely to report diagnostics.
-            context.RegisterSourceOutput(pipeline.Collect(), EmitDiagnostics);
+            IncrementalValueProvider<ImmutableArray<ImmutableArray<Diagnostic>>> diagnosticResults =
+                pipeline.Select(static (t, _) => t.Diagnostics).Collect();
+
+            context.RegisterSourceOutput(diagnosticResults, EmitDiagnostics);
         }
 
         private static void EmitSource(SourceProductionContext context, ImmutableArray<object> results)
@@ -300,11 +306,11 @@ namespace System.Text.RegularExpressions.Generator
             context.AddSource("RegexGenerator.g.cs", sw.ToString());
         }
 
-        private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<(object? Model, Location? DiagnosticLocation, ImmutableArray<Diagnostic> Diagnostics)> items)
+        private static void EmitDiagnostics(SourceProductionContext context, ImmutableArray<ImmutableArray<Diagnostic>> items)
         {
-            foreach (var item in items)
+            foreach (ImmutableArray<Diagnostic> diagnosticBatch in items)
             {
-                foreach (Diagnostic diagnostic in item.Diagnostics)
+                foreach (Diagnostic diagnostic in diagnosticBatch)
                 {
                     context.ReportDiagnostic(diagnostic);
                 }
