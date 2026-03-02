@@ -10,6 +10,8 @@
 #ifndef _PATCHPOINTINFO_H_
 #define _PATCHPOINTINFO_H_
 
+template<typename T> struct cdac_data;
+
 // --------------------------------------------------------------------------------
 // Describes information needed to make an OSR transition
 //  - location of IL-visible locals and other important state on the
@@ -217,6 +219,8 @@ struct PatchpointInfo
     }
 
 private:
+    template<typename U> friend struct cdac_data;
+
     enum
     {
         OFFSET_SHIFT = 0x1,

@@ -28,6 +28,12 @@
 #include "../debug/ee/debugger.h"
 #include "patchpointinfo.h"
 
+template<>
+struct cdac_data<PatchpointInfo>
+{
+    static constexpr size_t LocalCount = offsetof(PatchpointInfo, m_numberOfLocals);
+};
+
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
 #endif // HAVE_GCCOVER

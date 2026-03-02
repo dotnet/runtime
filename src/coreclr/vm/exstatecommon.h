@@ -255,6 +255,7 @@ private:
 
 class ExceptionFlags
 {
+    friend struct ::cdac_data<ExInfo>;
 public:
     ExceptionFlags()
     {

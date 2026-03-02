@@ -134,7 +134,7 @@ CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObjectHandle, offsetof(ExInfo, m_hThrowable))
-CDAC_TYPE_FIELD(ExceptionInfo, /*uint32*/, ExceptionFlags, offsetof(ExInfo, m_ExceptionFlags.m_flags))
+CDAC_TYPE_FIELD(ExceptionInfo, /*uint32*/, ExceptionFlags, cdac_data<ExInfo>::ExceptionFlagsValue)
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, StackLowBound, cdac_data<ExInfo>::StackLowBound)
 CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, StackHighBound, cdac_data<ExInfo>::StackHighBound)
 #ifndef TARGET_UNIX

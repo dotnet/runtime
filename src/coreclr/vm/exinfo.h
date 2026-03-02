@@ -194,6 +194,9 @@ struct ExInfo
     int            m_longJmpReturnValue;
 #endif
 
+    // Last reported funclet info for cDAC stack walking
+    LastReportedFuncletInfo m_lastReportedFunclet;
+
 #if defined(TARGET_UNIX)
     void TakeExceptionPointersOwnership(PAL_SEHException* ex);
 #endif // TARGET_UNIX
@@ -370,6 +373,7 @@ struct cdac_data<ExInfo>
         + offsetof(ExInfo::StackRange, m_sfLowBound);
     static constexpr size_t StackHighBound = offsetof(ExInfo, m_ScannedStackRange)
         + offsetof(ExInfo::StackRange, m_sfHighBound);
+    static constexpr size_t ExceptionFlagsValue = offsetof(ExInfo, m_ExceptionFlags.m_flags);
 };
 #endif // TARGET_UNIX
 
