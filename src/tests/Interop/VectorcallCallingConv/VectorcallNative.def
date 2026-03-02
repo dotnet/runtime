@@ -1,0 +1,38 @@
+; Licensed to the .NET Foundation under one or more agreements.
+; The .NET Foundation licenses this file to you under the MIT license.
+
+EXPORTS
+    Double_Vectorcall = Double_Vectorcall@@16
+    AddFloats_Vectorcall = AddFloats_Vectorcall@@16
+    AddDoubles_Vectorcall = AddDoubles_Vectorcall@@16
+    MixedIntFloat_Vectorcall = MixedIntFloat_Vectorcall@@32
+    SixFloats_Vectorcall = SixFloats_Vectorcall@@48
+    SixDoubles_Vectorcall = SixDoubles_Vectorcall@@48
+    ReturnFloat_Vectorcall = ReturnFloat_Vectorcall@@8
+    ReturnDouble_Vectorcall = ReturnDouble_Vectorcall@@8
+    AddVector128_Vectorcall = AddVector128_Vectorcall@@32
+    MulVector128_Vectorcall = MulVector128_Vectorcall@@32
+    MixedIntVector128_Vectorcall = MixedIntVector128_Vectorcall@@24
+    SixVector128s_Vectorcall = SixVector128s_Vectorcall@@96
+    TestCallback_Vectorcall = TestCallback_Vectorcall@@8
+    AddHVA2_Vectorcall = AddHVA2_Vectorcall@@64
+    MulHVA2_Vectorcall = MulHVA2_Vectorcall@@64
+    AddHVA3_Vectorcall = AddHVA3_Vectorcall@@48
+    AddHVA4_Vectorcall = AddHVA4_Vectorcall@@64
+    MixedHVA2Int_Vectorcall = MixedHVA2Int_Vectorcall@@40
+    DiscontiguousHVA_Vectorcall = DiscontiguousHVA_Vectorcall@@104
+    AddVector256_Vectorcall = AddVector256_Vectorcall@@64
+    MulVector256_Vectorcall = MulVector256_Vectorcall@@64
+    Vector256MixedInt_Vectorcall = Vector256MixedInt_Vectorcall@@40
+    HVA2_256_Vectorcall = HVA2_256_Vectorcall@@64
+    IdentityVector128_Vectorcall = IdentityVector128_Vectorcall@@16
+    NegateVector128_Vectorcall = NegateVector128_Vectorcall@@16
+    HsumVector128_Vectorcall = HsumVector128_Vectorcall@@16
+    ScaleVector128_Vectorcall = ScaleVector128_Vectorcall@@24
+    FmaVector128_Vectorcall = FmaVector128_Vectorcall@@48
+    ConstVector128_Vectorcall = ConstVector128_Vectorcall@@0
+    ManyIntsOneVector_Vectorcall = ManyIntsOneVector_Vectorcall@@48
+    IdentityVector256_Vectorcall = IdentityVector256_Vectorcall@@32
+    NegateVector256_Vectorcall = NegateVector256_Vectorcall@@32
+    IdentityVector2_Vectorcall = IdentityVector2_Vectorcall@@8
+    AddVector2_Vectorcall = AddVector2_Vectorcall@@16

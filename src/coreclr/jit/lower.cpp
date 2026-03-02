@@ -5668,8 +5668,21 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 #if defined(TARGET_XARCH) && !defined(UNIX_AMD64_ABI)
             // Windows x64 doesn't have multireg returns,
             // x86 uses it only for long return type, not for structs.
-            assert(slotCount == 1);
-            assert(lclRegType != TYP_UNDEF);
+            // Exception: Vectorcall can return SIMD types in XMM/YMM registers,
+            // and HVA structs in multiple XMM registers.
+            CorInfoCallConvExtension callConv               = call->GetUnmanagedCallConv();
+            bool                     isVectorcallSimdReturn = (callConv == CorInfoCallConvExtension::Vectorcall ||
+                                           callConv == CorInfoCallConvExtension::VectorcallMemberFunction) &&
+                                          (layout->GetSize() == 8 || layout->GetSize() == 16 ||
+                                           layout->GetSize() == 32 || layout->GetSize() == 64);
+            bool isVectorcallHvaReturn = (callConv == CorInfoCallConvExtension::Vectorcall ||
+                                          callConv == CorInfoCallConvExtension::VectorcallMemberFunction) &&
+                                         call->HasMultiRegRetVal();
+            if (!isVectorcallSimdReturn && !isVectorcallHvaReturn)
+            {
+                assert(slotCount == 1);
+            }
+            assert(isVectorcallSimdReturn || isVectorcallHvaReturn || lclRegType != TYP_UNDEF);
 #else // !TARGET_XARCH || UNIX_AMD64_ABI
             if (!m_compiler->IsHfa(layout->GetClassHandle()))
             {

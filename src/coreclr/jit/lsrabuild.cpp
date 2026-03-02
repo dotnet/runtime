@@ -1592,6 +1592,16 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
                 if (howToReturnStruct == Compiler::SPK_ByValueAsHfa)
                 {
                     regType = m_compiler->GetHfaType(retClsHnd);
+#ifdef VECTORCALL_SUPPORT
+                    // For vectorcall HVAs on Windows x64, GetHfaType returns TYP_UNDEF because
+                    // compFeatureHfa is false. Determine the actual SIMD element type by
+                    // inspecting the HVA fields.
+                    if (regType == TYP_UNDEF)
+                    {
+                        const unsigned retSize = m_compiler->info.compCompHnd->getClassSize(retClsHnd);
+                        regType                = m_compiler->getVectorcallHvaType(retClsHnd, retSize);
+                    }
+#endif // VECTORCALL_SUPPORT
                 }
 #if defined(TARGET_ARM64)
                 else if (howToReturnStruct == Compiler::SPK_ByValue)
@@ -3137,7 +3147,9 @@ int LinearScan::BuildCallArgUses(GenTreeCall* call)
         // For most of this code there is no need to access the ABI info since
         // we assign it in gtNewPutArgReg during lowering, so we can get it
         // from there.
-#if FEATURE_MULTIREG_ARGS
+
+#if FEATURE_MULTIREG_ARGS || defined(VECTORCALL_SUPPORT)
+        // Handle FIELD_LIST for multi-register arguments (e.g., vectorcall HVAs).
         if (argNode->OperIs(GT_FIELD_LIST))
         {
             for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())

@@ -391,3 +391,61 @@ public:
                                    WellKnownArg wellKnownParam);
 };
 #endif
+
+#ifdef VECTORCALL_SUPPORT
+#if defined(TARGET_AMD64)
+// Vectorcall x64 classifier.
+// Like Win64, vectorcall uses positional argument passing, but extends to 6 vector registers.
+// Integer arguments at positions 0-3 go to RCX, RDX, R8, R9.
+// Vector arguments at positions 0-5 go to XMM0-XMM5.
+// The register used depends on the argument's POSITION in the parameter list.
+class VectorcallX64Classifier
+{
+    unsigned m_argPosition           = 0;  // Current argument position (0-based)
+    unsigned m_stackArgSize          = 32; // Shadow space
+    unsigned m_usedXmmMask           = 0;  // Bitmask of XMM registers used by regular vector args
+    unsigned m_futureVectorPositions = 0;  // Bitmask of positions that will be used by regular vectors
+
+public:
+    VectorcallX64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    // Pre-scan to identify future vector argument positions for discontiguous HVA support.
+    // Must be called before Classify() if discontiguous HVAs are possible.
+    void PreScanForVectorPositions(Compiler* comp, class CallArgs* args);
+
+    ABIPassingInformation Classify(Compiler*    comp,
+                                   var_types    type,
+                                   ClassLayout* structLayout,
+                                   WellKnownArg wellKnownParam);
+};
+#elif defined(TARGET_X86)
+// Vectorcall x86 classifier.
+// Unlike standard x86 calling conventions that pass floats on the stack,
+// vectorcall passes float/double/SIMD types in XMM0-XMM5.
+class VectorcallX86Classifier
+{
+    const ClassifierInfo& m_info;
+    RegisterQueue         m_intRegs;
+    RegisterQueue         m_floatRegs;
+    unsigned              m_stackArgSize = 0;
+
+public:
+    VectorcallX86Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    ABIPassingInformation Classify(Compiler*    comp,
+                                   var_types    type,
+                                   ClassLayout* structLayout,
+                                   WellKnownArg wellKnownParam);
+};
+#endif // TARGET_AMD64 / TARGET_X86
+#endif // VECTORCALL_SUPPORT

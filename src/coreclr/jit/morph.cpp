@@ -1854,67 +1854,91 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     info.IsVarArgs  = call->IsVarargs() && !call->IsTailCallViaJitHelper();
     info.HasThis    = call->gtArgs.HasThisPointer();
     info.HasRetBuff = call->gtArgs.HasRetBuffer();
-    PlatformClassifier classifier(info);
 
-    // Morph the user arguments
-    for (CallArg& arg : Args())
+    // Lambda to process args with a given classifier
+    auto processArgs = [&](auto& classifier) {
+        // Morph the user arguments
+        for (CallArg& arg : Args())
+        {
+            assert(arg.GetEarlyNode() != nullptr);
+            GenTree* argx = arg.GetEarlyNode();
+
+            // TODO-Cleanup: this is duplicative with the code in args morphing, however, also kicks in for
+            // "non-standard" (return buffer on ARM64) arguments. Fix args morphing and delete this code.
+            if (argx->OperIs(GT_LCL_ADDR))
+            {
+                argx->gtType = TYP_I_IMPL;
+            }
+
+            // Note we must use the signature types for making ABI decisions. This is especially important for structs,
+            // where the "argx" node can legally have a type that is not ABI-compatible with the one in the signature.
+            const var_types            argSigType  = arg.GetSignatureType();
+            const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
+            ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
+
+            // Some well known args have custom register assignment.
+            // These should not affect the placement of any other args or stack space required.
+            // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
+            // TODO-Cleanup: Integrate this into the new style ABI classifiers.
+            regNumber nonStdRegNum;
+            if (GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg(), &nonStdRegNum))
+            {
+                if (nonStdRegNum != REG_NA)
+                {
+                    ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
+                    arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
+                }
+                else
+                {
+                    arg.AbiInfo = ABIPassingInformation(comp, 0);
+                }
+            }
+            else
+            {
+                arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
+            }
+
+            JITDUMP("Argument %u ABI info: ", GetIndex(&arg));
+            DBEXEC(VERBOSE, arg.AbiInfo.Dump());
+
+            for (const ABIPassingSegment& segment : arg.AbiInfo.Segments())
+            {
+                if (segment.IsPassedOnStack())
+                {
+                    m_hasStackArgs = true;
+                }
+                else
+                {
+                    m_hasRegArgs = true;
+                    comp->compFloatingPointUsed |= genIsValidFloatReg(segment.GetRegister());
+                }
+            }
+        }
+
+        m_argsStackSize = classifier.StackSize();
+    };
+
+    // Select the appropriate classifier based on calling convention
+#ifdef VECTORCALL_SUPPORT
+    if (info.CallConv == CorInfoCallConvExtension::Vectorcall ||
+        info.CallConv == CorInfoCallConvExtension::VectorcallMemberFunction)
     {
-        assert(arg.GetEarlyNode() != nullptr);
-        GenTree* argx = arg.GetEarlyNode();
-
-        // TODO-Cleanup: this is duplicative with the code in args morphing, however, also kicks in for
-        // "non-standard" (return buffer on ARM64) arguments. Fix args morphing and delete this code.
-        if (argx->OperIs(GT_LCL_ADDR))
-        {
-            argx->gtType = TYP_I_IMPL;
-        }
-
-        // Note we must use the signature types for making ABI decisions. This is especially important for structs,
-        // where the "argx" node can legally have a type that is not ABI-compatible with the one in the signature.
-        const var_types            argSigType  = arg.GetSignatureType();
-        const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
-        ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
-
-        // Some well known args have custom register assignment.
-        // These should not affect the placement of any other args or stack space required.
-        // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
-        // TODO-Cleanup: Integrate this into the new style ABI classifiers.
-        regNumber nonStdRegNum;
-        if (GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg(), &nonStdRegNum))
-        {
-            if (nonStdRegNum != REG_NA)
-            {
-                ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-                arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
-            }
-            else
-            {
-                arg.AbiInfo = ABIPassingInformation(comp, 0);
-            }
-        }
-        else
-        {
-            arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
-        }
-
-        JITDUMP("Argument %u ABI info: ", GetIndex(&arg));
-        DBEXEC(VERBOSE, arg.AbiInfo.Dump());
-
-        for (const ABIPassingSegment& segment : arg.AbiInfo.Segments())
-        {
-            if (segment.IsPassedOnStack())
-            {
-                m_hasStackArgs = true;
-            }
-            else
-            {
-                m_hasRegArgs = true;
-                comp->compFloatingPointUsed |= genIsValidFloatReg(segment.GetRegister());
-            }
-        }
+#if defined(TARGET_AMD64)
+        VectorcallX64Classifier classifier(info);
+        // Pre-scan to identify future vector positions for discontiguous HVA support
+        classifier.PreScanForVectorPositions(comp, this);
+        processArgs(classifier);
+#elif defined(TARGET_X86)
+        VectorcallX86Classifier classifier(info);
+        processArgs(classifier);
+#endif
     }
-
-    m_argsStackSize = classifier.StackSize();
+    else
+#endif // VECTORCALL_SUPPORT
+    {
+        PlatformClassifier classifier(info);
+        processArgs(classifier);
+    }
 
 #ifdef DEBUG
     if (VERBOSE)
@@ -1950,38 +1974,63 @@ void CallArgs::DetermineABIInfo(Compiler* comp, GenTreeCall* call)
     info.IsVarArgs  = call->IsVarargs() && !call->IsTailCallViaJitHelper();
     info.HasThis    = call->gtArgs.HasThisPointer();
     info.HasRetBuff = call->gtArgs.HasRetBuffer();
-    PlatformClassifier classifier(info);
 
-    for (CallArg& arg : Args())
-    {
-        const var_types            argSigType  = arg.GetSignatureType();
-        const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
-        ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
-
-        // Some well known args have custom register assignment.
-        // These should not affect the placement of any other args or stack space required.
-        // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
-        // TODO-Cleanup: Integrate this into the new style ABI classifiers.
-        regNumber nonStdRegNum;
-        if (GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg(), &nonStdRegNum))
+    // Lambda to process args with a given classifier
+    auto processArgs = [&](auto& classifier) {
+        for (CallArg& arg : Args())
         {
-            if (nonStdRegNum != REG_NA)
+            const var_types            argSigType  = arg.GetSignatureType();
+            const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
+            ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
+
+            // Some well known args have custom register assignment.
+            // These should not affect the placement of any other args or stack space required.
+            // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
+            // TODO-Cleanup: Integrate this into the new style ABI classifiers.
+            regNumber nonStdRegNum;
+            if (GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg(), &nonStdRegNum))
             {
-                ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-                arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
+                if (nonStdRegNum != REG_NA)
+                {
+                    ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
+                    arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
+                }
+                else
+                {
+                    arg.AbiInfo = ABIPassingInformation(comp, 0);
+                }
             }
             else
             {
-                arg.AbiInfo = ABIPassingInformation(comp, 0);
+                arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
             }
         }
-        else
-        {
-            arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
-        }
+
+        m_argsStackSize = classifier.StackSize();
+    };
+
+    // Select the appropriate classifier based on calling convention
+#ifdef VECTORCALL_SUPPORT
+    if (info.CallConv == CorInfoCallConvExtension::Vectorcall ||
+        info.CallConv == CorInfoCallConvExtension::VectorcallMemberFunction)
+    {
+#if defined(TARGET_AMD64)
+        VectorcallX64Classifier classifier(info);
+        // Pre-scan to identify future vector positions for discontiguous HVA support
+        classifier.PreScanForVectorPositions(comp, this);
+        processArgs(classifier);
+#elif defined(TARGET_X86)
+        VectorcallX86Classifier classifier(info);
+        processArgs(classifier);
+#endif
+    }
+    else
+#endif // VECTORCALL_SUPPORT
+    {
+        PlatformClassifier classifier(info);
+        processArgs(classifier);
     }
 
-    m_argsStackSize            = classifier.StackSize();
     m_abiInformationDetermined = true;
 }
 
@@ -2337,6 +2386,43 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
             // This can be treated primitively. Leave it alone.
             return true;
         }
+
+#ifdef FEATURE_SIMD
+        // For vectorcall (and similar ABIs), SIMD-compatible structs can be passed in XMM/YMM registers.
+        // If the ABI says to pass this struct in a float register and it's a SIMD-compatible size,
+        // we can convert it to a SIMD type and let the lowering phase handle the register assignment.
+        if (argNode->TypeIs(TYP_STRUCT) && arg->AbiInfo.HasExactlyOneRegisterSegment())
+        {
+            const ABIPassingSegment& seg = arg->AbiInfo.Segment(0);
+            if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
+            {
+                var_types simdType = seg.GetRegisterType();
+                if (varTypeIsSIMD(simdType))
+                {
+                    // This struct will be passed in an XMM/YMM register as a SIMD type.
+                    // Convert the struct load to a SIMD load.
+                    JITDUMP("Converting struct argument [%06u] to SIMD type %s for vector register passing\n",
+                            dspTreeID(argNode), varTypeName(simdType));
+
+                    if (argNode->OperIsLocalRead())
+                    {
+                        // For local reads, change the type to SIMD
+                        argNode->ChangeType(simdType);
+                        arg->GetNode()->ChangeType(simdType);
+                        return true;
+                    }
+                    else if (argNode->OperIsLoad())
+                    {
+                        // For loads (GT_BLK, GT_IND), convert to SIMD indirection
+                        argNode->SetOper(GT_IND);
+                        argNode->ChangeType(simdType);
+                        arg->GetNode()->ChangeType(simdType);
+                        return true;
+                    }
+                }
+            }
+        }
+#endif // FEATURE_SIMD
 
         if (!argNode->OperIsLocalRead() && !argNode->OperIsLoad())
         {

@@ -5956,6 +5956,13 @@ public:
                                      structPassingKind*       wbPassStruct = nullptr,
                                      unsigned                 structSize   = 0);
 
+#ifdef VECTORCALL_SUPPORT
+    // Helper functions for vectorcall HVA detection
+    bool isSimdCompatibleStructForVectorcall(CORINFO_CLASS_HANDLE fieldClsHnd);
+    bool isHvaByFieldInspectionForVectorcall(CORINFO_CLASS_HANDLE clsHnd, unsigned size);
+    var_types getVectorcallHvaType(CORINFO_CLASS_HANDLE clsHnd, unsigned size);
+#endif // VECTORCALL_SUPPORT
+
 #ifdef DEBUG
     // Print a representation of "vnp" or "vn" on standard output.
     // If "level" is non-zero, we also print out a partial expansion of the value.

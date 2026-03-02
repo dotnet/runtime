@@ -373,6 +373,10 @@ RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, "EnableMultiRegLocals", 1)
 // Disables inlining of all methods
 RELEASE_CONFIG_INTEGER(JitNoInline, "JitNoInline", 0)
 
+// When set, pass SIMD types (Vector128/256/512) directly in XMM/YMM/ZMM registers
+// for managed-to-managed calls instead of by implicit reference.
+RELEASE_CONFIG_INTEGER(JitPassSimdInReg, "JitPassSimdInReg", 0)
+
 #if defined(DEBUG)
 CONFIG_INTEGER(JitStressRex2Encoding, "JitStressRex2Encoding", 0) // Enable rex2 encoding for compatible instructions.
 CONFIG_INTEGER(JitStressPromotedEvexEncoding, "JitStressPromotedEvexEncoding", 0) // Enable promoted EVEX encoding for

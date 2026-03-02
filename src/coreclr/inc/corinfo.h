@@ -699,7 +699,9 @@ enum class CorInfoCallConvExtension
     CMemberFunction,
     StdcallMemberFunction,
     FastcallMemberFunction,
-    Swift
+    Swift,
+    Vectorcall,
+    VectorcallMemberFunction
 };
 
 #ifdef TARGET_X86
@@ -716,7 +718,7 @@ inline bool IsCallerPop(CorInfoCallConvExtension callConv)
 // Determines whether or not this calling convention is an instance method calling convention.
 inline bool callConvIsInstanceMethodCallConv(CorInfoCallConvExtension callConv)
 {
-    return callConv == CorInfoCallConvExtension::Thiscall || callConv == CorInfoCallConvExtension::CMemberFunction || callConv == CorInfoCallConvExtension::StdcallMemberFunction || callConv == CorInfoCallConvExtension::FastcallMemberFunction;
+    return callConv == CorInfoCallConvExtension::Thiscall || callConv == CorInfoCallConvExtension::CMemberFunction || callConv == CorInfoCallConvExtension::StdcallMemberFunction || callConv == CorInfoCallConvExtension::FastcallMemberFunction || callConv == CorInfoCallConvExtension::VectorcallMemberFunction;
 }
 
 // These are returned from getMethodOptions

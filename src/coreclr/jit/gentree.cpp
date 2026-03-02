@@ -11131,6 +11131,10 @@ inline const char* GetCallConvName(CorInfoCallConvExtension callConv)
             return "StdcallMemberFunction";
         case CorInfoCallConvExtension::FastcallMemberFunction:
             return "FastcallMemberFunction";
+        case CorInfoCallConvExtension::Vectorcall:
+            return "Vectorcall";
+        case CorInfoCallConvExtension::VectorcallMemberFunction:
+            return "VectorcallMemberFunction";
         default:
             return "UnknownCallConv";
     }
@@ -30940,8 +30944,19 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             assert(varTypeIsStruct(returnType));
             var_types hfaType = comp->GetHfaType(retClsHnd);
 
-            // We should have an hfa struct type
-            assert(varTypeIsValidHfaType(hfaType));
+#ifdef VECTORCALL_SUPPORT
+            // For vectorcall HVAs on Windows x64, GetHfaType returns TYP_UNDEF because
+            // compFeatureHfa is false. Determine the actual SIMD element type by
+            // inspecting the HVA fields.
+            if (hfaType == TYP_UNDEF && (callConv == CorInfoCallConvExtension::Vectorcall ||
+                                         callConv == CorInfoCallConvExtension::VectorcallMemberFunction))
+            {
+                hfaType = comp->getVectorcallHvaType(retClsHnd, structSize);
+            }
+#endif // VECTORCALL_SUPPORT
+
+            // We should have an hfa struct type (or SIMD type for vectorcall HVA)
+            assert(varTypeIsValidHfaType(hfaType) || varTypeIsSIMD(hfaType));
 
             // Note that the retail build issues a warning about a potential divsion by zero without this "max",
             unsigned elemSize = max(1u, genTypeSize(hfaType));
@@ -31277,16 +31292,23 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
     }
 #elif defined(WINDOWS_AMD64_ABI)
 
-    assert(idx == 0);
+    var_types regType = GetReturnRegType(idx);
 
-    if (varTypeUsesIntReg(GetReturnRegType(0)))
+    // For standard Windows x64 ABI, only single-register returns are supported.
+    // For vectorcall HVA returns, we support up to 4 XMM registers (XMM0-XMM3).
+    if (varTypeUsesIntReg(regType))
     {
+        // Integer returns - only single register supported
+        assert(idx == 0);
         resultReg = REG_INTRET;
     }
     else
     {
-        assert(varTypeUsesFloatReg(GetReturnRegType(0)));
-        resultReg = REG_FLOATRET;
+        assert(varTypeUsesFloatReg(regType));
+        // Float/SIMD returns - vectorcall HVAs can use up to 4 XMM registers
+        assert(idx < 4);
+        // XMM0, XMM1, XMM2, XMM3 for HVA returns
+        resultReg = (regNumber)(REG_XMM0 + idx);
     }
 
 #elif defined(TARGET_X86)

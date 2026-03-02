@@ -1066,6 +1066,19 @@ void Compiler::lvaClassifyParameterABI()
     }
     else
 #endif
+#ifdef VECTORCALL_SUPPORT
+        if (info.compCallConv == CorInfoCallConvExtension::Vectorcall ||
+            info.compCallConv == CorInfoCallConvExtension::VectorcallMemberFunction)
+    {
+#if defined(TARGET_AMD64)
+        VectorcallX64Classifier classifier(cInfo);
+#elif defined(TARGET_X86)
+        VectorcallX86Classifier classifier(cInfo);
+#endif
+        lvaClassifyParameterABI(classifier);
+    }
+    else
+#endif // VECTORCALL_SUPPORT
     {
         PlatformClassifier classifier(cInfo);
         lvaClassifyParameterABI(classifier);

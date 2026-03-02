@@ -6810,6 +6810,7 @@ void Compiler::impCheckForPInvokeCall(
     {
         return;
     }
+
     optNativeCallCount++;
 
     if (methHnd == nullptr && (IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
