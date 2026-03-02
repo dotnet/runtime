@@ -2037,6 +2037,25 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("ALLOC_CONTINUATION_CLASS");
                     break;
 
+                case ReadyToRunHelper.AsyncCaptureContexts:
+                    builder.Append("ASYNC_CAPTURE_CONTEXTS");
+                    break;
+                case ReadyToRunHelper.AsyncRestoreContexts:
+                    builder.Append("ASYNC_RESTORE_CONTEXTS");
+                    break;
+                case ReadyToRunHelper.AsyncCaptureExecCtx:
+                    builder.Append("ASYNC_CAPTURE_EXECUTION_CONTEXT");
+                    break;
+                case ReadyToRunHelper.AsyncRestoreExecCtx:
+                    builder.Append("ASYNC_RESTORE_EXECUTION_CONTEXT");
+                    break;
+                case ReadyToRunHelper.AsyncRestoreCtxOnSusp:
+                    builder.Append("ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION");
+                    break;
+                case ReadyToRunHelper.AsyncCaptureContinCtx:
+                    builder.Append("ASYNC_CAPTURE_CONTINUATION_CONTEXT");
+                    break;
+
                 case ReadyToRunHelper.InitClass:
                     builder.Append("INIT_CLASS");
                     break;

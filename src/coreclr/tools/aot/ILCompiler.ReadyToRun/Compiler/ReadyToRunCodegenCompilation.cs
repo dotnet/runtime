@@ -982,8 +982,7 @@ namespace ILCompiler
 
             // Keep in sync with CorInfoImpl.getAsyncInfo()
             DefType continuation = TypeSystemContext.ContinuationType;
-            TypeDesc asyncHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
-            TypeDesc[] requiredTypes = [asyncHelpers, continuation];
+            TypeDesc[] requiredTypes = [continuation];
             FieldDesc[] requiredFields =
             [
                 // For CorInfoImpl.getAsyncInfo
@@ -991,21 +990,6 @@ namespace ILCompiler
                 continuation.GetKnownField("ResumeInfo"u8),
                 continuation.GetKnownField("State"u8),
                 continuation.GetKnownField("Flags"u8),
-            ];
-            MethodDesc[] requiredMethods =
-            [
-                // For CorInfoImpl.getAsyncInfo
-                asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null),
-                asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null),
-                asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null),
-                asyncHelpers.GetKnownMethod("CaptureContexts"u8, null),
-                asyncHelpers.GetKnownMethod("RestoreContexts"u8, null),
-                asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
-
-                // R2R Helpers
-                asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),
-                asyncHelpers.GetKnownMethod("AllocContinuationClass"u8, null),
-                asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
             ];
             _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             try
@@ -1021,11 +1005,6 @@ namespace ILCompiler
                 {
                     if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(fd).HasValue)
                         throw new InternalCompilerErrorException($"Unable to create token to {fd}");
-                }
-                foreach (var md in requiredMethods)
-                {
-                    if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(md).HasValue)
-                        throw new InternalCompilerErrorException($"Unable to create token to {md}");
                 }
                 _hasAddedAsyncReferences = true;
             }

@@ -1255,6 +1255,30 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AllocContinuationClass;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_CONTEXTS:
+                    id = ReadyToRunHelper.AsyncCaptureContexts;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_CONTEXTS:
+                    id = ReadyToRunHelper.AsyncRestoreContexts;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_EXECUTION_CONTEXT:
+                    id = ReadyToRunHelper.AsyncCaptureExecCtx;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT:
+                    id = ReadyToRunHelper.AsyncRestoreExecCtx;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION:
+                    id = ReadyToRunHelper.AsyncRestoreCtxOnSusp;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT:
+                    id = ReadyToRunHelper.AsyncCaptureContinCtx;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                     id = ReadyToRunHelper.InitClass;
                     break;

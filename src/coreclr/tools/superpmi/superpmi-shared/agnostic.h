@@ -200,12 +200,6 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG continuationResumeInfoFldHnd;
     DWORDLONG continuationStateFldHnd;
     DWORDLONG continuationFlagsFldHnd;
-    DWORDLONG captureExecutionContextMethHnd;
-    DWORDLONG restoreExecutionContextMethHnd;
-    DWORDLONG captureContinuationContextMethHnd;
-    DWORDLONG captureContextsMethHnd;
-    DWORDLONG restoreContextsMethHnd;
-    DWORDLONG restoreContextsOnSuspensionMethHnd;
 };
 
 struct Agnostic_GetOSRInfo
