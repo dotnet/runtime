@@ -294,6 +294,10 @@ DacDbiInterfaceInstance(
                         IDacDbiInterface* cdacDbi = nullptr;
                         if (SUCCEEDED(cdac.CreateDacDbiInterface(&cdacDbi)) && cdacDbi != nullptr)
                         {
+                            if (cdacDbi != pDac)
+                            {
+                                pDac->Release();
+                            }
                             *ppInterface = cdacDbi;
                             return S_OK;
                         }
