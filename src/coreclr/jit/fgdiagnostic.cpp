@@ -2092,7 +2092,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
 
     int cnt = 0;
 
-    switch (block->bbCatchTyp)
+    switch (block->GetCatchType())
     {
         case BBCT_NONE:
             break;
@@ -2118,7 +2118,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
             break;
     }
 
-    if (block->bbCatchTyp != BBCT_NONE)
+    if (!block->CatchTypeIs(BBCT_NONE))
     {
         cnt += 2;
         printf("{ ");
@@ -2712,7 +2712,7 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     }
 
     // Our try block can call our finally block
-    if ((block->bbCatchTyp == BBCT_FINALLY) && blockPred->KindIs(BBJ_CALLFINALLY) &&
+    if (block->CatchTypeIs(BBCT_FINALLY) && blockPred->KindIs(BBJ_CALLFINALLY) &&
         m_compiler->ehCallFinallyInCorrectRegion(blockPred, block->getHndIndex()))
     {
         return true;
@@ -2991,7 +2991,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             }
         }
 
-        if (block->bbCatchTyp == BBCT_FILTER)
+        if (block->CatchTypeIs(BBCT_FILTER))
         {
             // A filter has no predecessors
             assert(block->bbPreds == nullptr);
@@ -3137,7 +3137,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     // Make sure the one return BB is not changed.
     if (genReturnBB != nullptr)
     {
-        assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->bbStmtList != nullptr);
+        assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->firstStmt() != nullptr);
         assert(genReturnBB->KindIs(BBJ_RETURN));
     }
 
@@ -3841,13 +3841,13 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
 {
     for (Statement* const stmt : block->Statements())
     {
-        // Verify that bbStmtList is threaded correctly.
+        // Verify that the statement list is threaded correctly.
         // Note that for the statements list, the GetPrevStmt() list is circular.
         // The GetNextStmt() list is not: GetNextStmt() of the last statement in a block is nullptr.
 
         noway_assert(stmt->GetPrevStmt() != nullptr);
 
-        if (stmt == block->bbStmtList)
+        if (stmt == block->firstStmt())
         {
             noway_assert(stmt->GetPrevStmt()->GetNextStmt() == nullptr);
         }

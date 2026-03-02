@@ -6097,7 +6097,7 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
 {
     // TODO-Review: EH successor/predecessor iteration seems broken.
     // See: SELF_HOST_TESTS_ARM\jit\Directed\ExcepFilters\fault\fault.exe
-    if (block->bbCatchTyp == BBCT_FAULT)
+    if (block->CatchTypeIs(BBCT_FAULT))
     {
         return stmt;
     }
@@ -6261,7 +6261,7 @@ PhaseStatus Compiler::optAssertionPropMain()
 
         // TODO-Review: EH successor/predecessor iteration seems broken.
         // SELF_HOST_TESTS_ARM\jit\Directed\ExcepFilters\fault\fault.exe
-        if (block->bbCatchTyp == BBCT_FAULT)
+        if (block->CatchTypeIs(BBCT_FAULT))
         {
             continue;
         }

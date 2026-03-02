@@ -68,13 +68,13 @@ void Compiler::fgResetForSsa(bool deepClean)
         {
             blk->bbMemorySsaPhiFunc[memoryKind] = nullptr;
         }
-        if (blk->bbStmtList != nullptr)
+        if (blk->firstStmt() != nullptr)
         {
             Statement* last = blk->lastStmt();
-            blk->bbStmtList = blk->FirstNonPhiDef();
-            if (blk->bbStmtList != nullptr)
+            blk->SetFirstStmt(blk->FirstNonPhiDef());
+            if (blk->firstStmt() != nullptr)
             {
-                blk->bbStmtList->SetPrevStmt(last);
+                blk->firstStmt()->SetPrevStmt(last);
             }
         }
 
