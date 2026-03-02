@@ -3699,6 +3699,7 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetStackReferences(int osThreadID, DacComNullableByRef<ISOSStackRefEnum> ppEnum)
     {
         int hr = HResults.S_OK;
+        SOSStackRefData[]? sosRefs = null;
         try
         {
             Contracts.IThread threadContract = _target.Contracts.Thread;
@@ -3723,7 +3724,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.IStackWalk stackWalk = _target.Contracts.StackWalk;
             IReadOnlyList<Contracts.StackReferenceData> refs = stackWalk.WalkStackReferences(matchingThread.Value);
 
-            SOSStackRefData[] sosRefs = new SOSStackRefData[refs.Count];
+            sosRefs = new SOSStackRefData[refs.Count];
             for (int i = 0; i < refs.Count; i++)
             {
                 Contracts.StackReferenceData r = refs[i];
@@ -3742,11 +3743,44 @@ public sealed unsafe partial class SOSDacImpl
             }
 
             ppEnum.Interface = new SOSStackRefEnum(sosRefs);
+            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
+            // Leak a refcount here to match previous behavior and avoid breaking customer code.
+            ComInterfaceMarshaller<ISOSStackRefEnum>.ConvertToUnmanaged(ppEnum.Interface);
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacComNullableByRef<ISOSStackRefEnum> legacyOut = new(isNullRef: false);
+            int hrLocal = _legacyImpl.GetStackReferences(osThreadID, legacyOut);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+
+            if (hrLocal == HResults.S_OK && legacyOut.Interface is not null)
+            {
+                ISOSStackRefEnum legacyRefEnum = legacyOut.Interface;
+
+                uint legacyCount;
+                legacyRefEnum.GetCount(&legacyCount);
+
+                SOSStackRefData[] legacyRefs = new SOSStackRefData[legacyCount];
+                uint legacyFetched;
+                legacyRefEnum.Next(legacyCount, legacyRefs, &legacyFetched);
+
+                if (hr == HResults.S_OK && sosRefs is not null)
+                {
+                    Debug.WriteLine($"GetStackReferences debug: cDAC={sosRefs.Length} refs, DAC={legacyFetched} refs");
+
+                    // Don't assert count equality yet — cDAC may miss Frame-based refs.
+                    // Once frame-gc-scan-roots is implemented, enable this:
+                    // Debug.Assert(sosRefs.Length == legacyFetched, $"cDAC: {sosRefs.Length} refs, DAC: {legacyFetched} refs");
+                }
+            }
+        }
+#endif
 
         return hr;
     }
