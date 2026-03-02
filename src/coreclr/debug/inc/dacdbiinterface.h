@@ -163,7 +163,10 @@ const DWORD kCurrentDbiVersionFormat = 1;
 //
 //
 //-----------------------------------------------------------------------------
-class IDacDbiInterface
+
+// {DB505C1B-A327-4A46-8C32-AF55A56F8E09}
+MIDL_INTERFACE("DB505C1B-A327-4A46-8C32-AF55A56F8E09")
+IDacDbiInterface : public IUnknown
 {
 public:
     class IStringHolder;
@@ -200,7 +203,7 @@ public:
     // Notes:
     //    If this fails, the interface is in an undefined state.
     //    This must be called anytime target memory changes, else all other functions
-    //    (besides Destroy) may yield out-of-date or semantically incorrect results.
+    //    (besides Release) may yield out-of-date or semantically incorrect results.
     //
     virtual
     HRESULT FlushCache() = 0;
@@ -226,19 +229,7 @@ public:
     //   consistency failures exceptions (this is independent from asserts - there are legitimate
     //   scenarios for all 4 combinations).
     //
-    virtual HRESULT DacSetTargetConsistencyChecks(bool fEnableAsserts) = 0;
-
-    //
-    // Destroy the interface object. The client should call this when it's done
-    // with the IDacDbiInterface to free up any resources.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //    The client should not call anything else on this interface after Destroy.
-    //
-    virtual HRESULT Destroy() = 0;
+    virtual HRESULT DacSetTargetConsistencyChecks(BOOL fEnableAsserts) = 0;
 
     //-----------------------------------------------------------------------------
     // General purpose target inspection functions
@@ -957,7 +948,7 @@ public:
     //    Whether a thread is dead can be inferred from the ICorDebug API. However, we have this
     //    on DacDbi to ensure that this definition is consistent with the other DacDbi methods,
     //    especially the enumeration and discovery rules.
-    virtual HRESULT IsThreadMarkedDead(VMPTR_Thread vmThread, OUT bool * pResult) = 0;
+    virtual HRESULT IsThreadMarkedDead(VMPTR_Thread vmThread, OUT BOOL * pResult) = 0;
 
 
     //
@@ -1742,13 +1733,13 @@ public:
     //                                    for generics or they may represent the element type or referent
     //                                    type.
     //                 pGenericArgData  - list of type parameters
-    //                 vmTypeHandle     - the exact type handle derived from the type information
+    //            pVmTypeHandle    - [out] the exact type handle derived from the type information
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     virtual
     HRESULT GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData * pTypeData,
                                ArgInfoList *   pArgInfo,
-                               VMPTR_TypeHandle& vmTypeHandle) = 0;
+                               VMPTR_TypeHandle * pVmTypeHandle) = 0;
 
     //
     // Retrieve the generic type params for a given MethodDesc.  This function is specifically
@@ -1857,7 +1848,7 @@ public:
     virtual HRESULT IsExceptionObject(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
 
     // Get the list of raw stack frames for the specified exception object.
-    virtual HRESULT GetStackFramesFromException(VMPTR_Object vmObject, DacDbiArrayList<DacExceptionCallStackData>& dacStackFrames) = 0;
+    virtual HRESULT GetStackFramesFromException(VMPTR_Object vmObject, DacDbiArrayList<DacExceptionCallStackData>* pDacStackFrames) = 0;
 
     // Check whether the argument is a runtime callable wrapper.
     virtual HRESULT IsRcw(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
@@ -1876,7 +1867,7 @@ public:
     // list of IIDs. the interface types are retrieved from an app domain
     // IID / Type cache, that is updated as new types are loaded. will
     // have NULL entries corresponding to unknown IIDs in "iids"
-    virtual HRESULT GetCachedWinRTTypesForIIDs(VMPTR_AppDomain vmAppDomain, DacDbiArrayList<GUID> & iids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes) = 0;
+    virtual HRESULT GetCachedWinRTTypesForIIDs(VMPTR_AppDomain vmAppDomain, DacDbiArrayList<GUID> * pIids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes) = 0;
 
     // retrieves the whole app domain cache of IID / Type mappings.
     virtual HRESULT GetCachedWinRTTypes(VMPTR_AppDomain vmAppDomain, OUT DacDbiArrayList<GUID> * piids, OUT DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> * pTypes) = 0;
@@ -2081,13 +2072,13 @@ public:
     //
     // Arguments:
     //     vmModule: the module to check
-    //     isWinRT: out parameter indicating state of module
+    //     pIsWinRT: [out] indicating state of module
     //
     // Return value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     virtual
-    HRESULT IsWinRTModule(VMPTR_Module vmModule, BOOL& isWinRT) = 0;
+    HRESULT IsWinRTModule(VMPTR_Module vmModule, BOOL * pIsWinRT) = 0;
 
     // Determines the app domain id for the object referred to by a given VMPTR_OBJECTHANDLE
     //
@@ -2165,9 +2156,9 @@ public:
     // to terminate the process when the attach is canceled.
     virtual HRESULT GetAttachStateFlags(OUT CLR_DEBUGGING_PROCESS_FLAGS * pRetVal) = 0;
 
-    virtual HRESULT GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly, DWORD & dwTimeStamp, DWORD & dwImageSize, IStringHolder* pStrFilename, OUT bool * pResult) = 0;
+    virtual HRESULT GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult) = 0;
 
-    virtual HRESULT IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT bool * pResult) = 0;
+    virtual HRESULT IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult) = 0;
 
 
     typedef void* * HeapWalkHandle;
@@ -2175,7 +2166,7 @@ public:
     // Returns true if it is safe to walk the heap.  If this function returns false,
     // you could still create a heap walk and attempt to walk it, but there's no
     // telling how much of the heap will be available.
-    virtual HRESULT AreGCStructuresValid(OUT bool * pResult) = 0;
+    virtual HRESULT AreGCStructuresValid(OUT BOOL * pResult) = 0;
 
     // Creates a HeapWalkHandle which can be used to walk the managed heap with the
     // WalkHeap function.  Note if this function completes successfully you will need
@@ -2225,9 +2216,9 @@ public:
     virtual
     HRESULT GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> * pSegments) = 0;
 
-    virtual HRESULT IsValidObject(CORDB_ADDRESS obj, OUT bool * pResult) = 0;
+    virtual HRESULT IsValidObject(CORDB_ADDRESS obj, OUT BOOL * pResult) = 0;
 
-    virtual HRESULT GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp, OUT VMPTR_Module * pModule, OUT VMPTR_DomainAssembly * pDomainAssembly, OUT bool * pResult) = 0;
+    virtual HRESULT GetAppDomainForObject(CORDB_ADDRESS obj, OUT VMPTR_AppDomain * pApp, OUT VMPTR_Module * pModule, OUT VMPTR_DomainAssembly * pDomainAssembly, OUT BOOL * pResult) = 0;
 
 
     //   Reference Walking.
@@ -2311,6 +2302,7 @@ public:
 
     // DEPRECATED - use GetNativeCodeVersionNode
     // Retrieves the ReJitInfo for a given MethodDesc/code address, if it exists.
+    // Note: Named GetReJitInfoByAddress in dacdbi.idl because COM does not support overloads.
     //
     //
     // Arguments:
@@ -2533,7 +2525,7 @@ public:
     virtual
     HRESULT IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped) = 0;
 
-    virtual HRESULT MetadataUpdatesApplied(OUT bool * pResult) = 0;
+    virtual HRESULT MetadataUpdatesApplied(OUT BOOL * pResult) = 0;
 
     virtual
     HRESULT GetDomainAssemblyFromModule(VMPTR_Module vmModule, OUT VMPTR_DomainAssembly *pVmDomainAssembly) = 0;
