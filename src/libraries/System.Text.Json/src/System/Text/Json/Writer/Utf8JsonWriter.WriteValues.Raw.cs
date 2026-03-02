@@ -142,7 +142,7 @@ namespace System.Text.Json
 
             if (utf8JsonLen == 0)
             {
-                ThrowHelper.ThrowArgumentException(SR.ExpectedJsonTokens);
+                ThrowHelper.ThrowArgumentException_ExpectedJsonTokens();
             }
             if (utf8JsonLen >= int.MaxValue)
             {
@@ -231,7 +231,7 @@ namespace System.Text.Json
 
             if (len == 0)
             {
-                ThrowHelper.ThrowArgumentException(SR.ExpectedJsonTokens);
+                ThrowHelper.ThrowArgumentException_ExpectedJsonTokens();
             }
 
             // In the UTF-16-based entry point methods above, we validate that the payload length <= int.MaxValue /3.
