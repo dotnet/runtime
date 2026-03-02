@@ -46,12 +46,13 @@ namespace System.Formats.Tar
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
         /// <param name="extendedAttributes">An enumeration of string key-value pairs that represents the metadata to include in the Extended Attributes entry that precedes the current entry.</param>
-        /// <remarks>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:
+        /// <remarks><para>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> constructor, only the following entry types are supported:</para>
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
         /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
         /// </list>
-        /// The specified <paramref name="extendedAttributes"/> are additional attributes to be used for the entry.
+        /// <para>The specified <paramref name="extendedAttributes"/> are additional attributes to be used for the entry. If any of the provided extended attributes correspond to standard entry properties (such as <c>path</c>, <c>mtime</c>, <c>uid</c>, <c>gid</c>, <c>uname</c>, <c>gname</c>, <c>linkpath</c>, <c>devmajor</c>, or <c>devminor</c>), those values are applied to the corresponding properties. The <paramref name="entryName"/> parameter always takes precedence over a <c>path</c> extended attribute if both are specified.</para>
+        /// <para>Extended attributes whose values fit within the standard header fields are normalized and may not appear in <see cref="ExtendedAttributes"/>. Setting a property after construction will update the corresponding extended attribute.</para>
         /// <para>It may include PAX attributes like:</para>
         /// <list type="bullet">
         /// <item>Access time, under the name <c>atime</c>, as a <see cref="double"/> number.</item>
@@ -70,11 +71,8 @@ namespace System.Formats.Tar
             _header._prefix = string.Empty;
             _header.ReplaceNormalAttributesWithExtended(extendedAttributes);
 
-            if (_header._name != entryName)
-            {
-                // extended attribute "path" conflicts with entryName parameter
-                throw new ArgumentException(SR.TarEntryNameExtendedAttributeConflict, nameof(extendedAttributes));
-            }
+            // The entryName parameter takes precedence over a "path" extended attribute.
+            _header._name = entryName;
         }
 
         /// <summary>
@@ -114,7 +112,8 @@ namespace System.Formats.Tar
         /// <summary>
         /// Returns the extended attributes for this entry.
         /// </summary>
-        /// <remarks>The extended attributes are specified when constructing an entry and updated with additional attributes when the entry is written. Use <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> to append custom extended attributes.
+        /// <remarks>The extended attributes are specified when constructing an entry. Extended attributes whose values fit within the standard header fields are normalized and may not be present in the returned dictionary.
+        /// <para>Setting properties such as <see cref="TarEntry.Name"/>, <see cref="TarEntry.ModificationTime"/>, <see cref="TarEntry.Uid"/>, <see cref="TarEntry.Gid"/>, <see cref="PosixTarEntry.UserName"/>, <see cref="PosixTarEntry.GroupName"/>, <see cref="TarEntry.LinkName"/>, <see cref="PosixTarEntry.DeviceMajor"/>, or <see cref="PosixTarEntry.DeviceMinor"/> will update the corresponding extended attribute to keep properties and extended attributes synchronized.</para>
         /// <para>The following common PAX attributes may be included:</para>
         /// <list type="bullet">
         /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>

@@ -84,7 +84,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// The ID of the group that owns the file represented by this entry.
         /// </summary>
-        /// <remarks>This field is only supported in Unix platforms.</remarks>
+        /// <remarks>This field is only supported in Unix platforms. For PAX entries, setting this property updates the corresponding <c>gid</c> extended attribute in <see cref="PaxTarEntry.ExtendedAttributes"/>.</remarks>
         public int Gid
         {
             get => _header._gid;
@@ -98,7 +98,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// A timestamps that represents the last time the contents of the file represented by this entry were modified.
         /// </summary>
-        /// <remarks>In Unix platforms, this timestamp is commonly known as <c>mtime</c>.</remarks>
+        /// <remarks>In Unix platforms, this timestamp is commonly known as <c>mtime</c>. For PAX entries, setting this property updates the corresponding <c>mtime</c> extended attribute in <see cref="PaxTarEntry.ExtendedAttributes"/>.</remarks>
         /// <exception cref="ArgumentOutOfRangeException">The specified value is larger than <see cref="DateTimeOffset.UnixEpoch"/> when using <see cref="TarEntryFormat.V7"/> or <see cref="TarEntryFormat.Ustar"/>.</exception>
         public DateTimeOffset ModificationTime
         {
@@ -123,6 +123,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// When the <see cref="EntryType"/> indicates a <see cref="TarEntryType.SymbolicLink"/> or a <see cref="TarEntryType.HardLink"/>, this property returns the link target path of such link.
         /// </summary>
+        /// <remarks>For PAX entries, setting this property updates the corresponding <c>linkpath</c> extended attribute in <see cref="PaxTarEntry.ExtendedAttributes"/>.</remarks>
         /// <exception cref="InvalidOperationException">The entry type is not <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/>.</exception>
         /// <exception cref="ArgumentNullException">The specified value is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">The specified value is empty.</exception>
@@ -163,6 +164,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// Represents the name of the entry, which includes the relative path and the filename.
         /// </summary>
+        /// <remarks>For PAX entries, setting this property updates the corresponding <c>path</c> extended attribute in <see cref="PaxTarEntry.ExtendedAttributes"/>.</remarks>
         public string Name
         {
             get => _header._name;
@@ -177,7 +179,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// The ID of the user that owns the file represented by this entry.
         /// </summary>
-        /// <remarks>This field is only supported in Unix platforms.</remarks>
+        /// <remarks>This field is only supported in Unix platforms. For PAX entries, setting this property updates the corresponding <c>uid</c> extended attribute in <see cref="PaxTarEntry.ExtendedAttributes"/>.</remarks>
         public int Uid
         {
             get => _header._uid;

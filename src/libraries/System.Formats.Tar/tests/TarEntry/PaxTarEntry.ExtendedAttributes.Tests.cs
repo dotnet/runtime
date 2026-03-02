@@ -79,15 +79,21 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
-        public void Constructor_WithConflictingPathExtendedAttribute_ShouldThrowArgumentException()
+        public void Constructor_WithConflictingPathExtendedAttribute_ShouldUseEntryName()
         {
             // Extended attribute path differs from entryName parameter
+            // The constructor should give precedence to entryName
             Dictionary<string, string> extendedAttributes = new Dictionary<string, string>
             {
                 { "path", "different.txt" }
             };
 
-            Assert.Throws<ArgumentException>(() => new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes));
+            PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, "test.txt", extendedAttributes);
+
+            // entryName takes precedence over "path" extended attribute
+            Assert.Equal("test.txt", entry.Name);
+            Assert.True(entry.ExtendedAttributes.ContainsKey("path"));
+            Assert.Equal("test.txt", entry.ExtendedAttributes["path"]);
         }
 
         [Fact]
