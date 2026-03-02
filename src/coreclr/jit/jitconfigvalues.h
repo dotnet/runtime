@@ -589,6 +589,8 @@ OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions",
                                                                                     // conversions
 
 OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
+OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
+                  "JitAsyncDefaultValueAnalysisRange") // Enable async default value analysis based on method hash range
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
@@ -607,6 +609,9 @@ RELEASE_CONFIG_STRING(AltJitExcludeAssemblies, "AltJitExcludeAssemblies")
 
 // If set, measure the IR size after some phases and report it in the time log.
 RELEASE_CONFIG_INTEGER(JitMeasureIR, "JitMeasureIR", 0)
+
+// If set, report JIT metrics back to the EE after each method compilation.
+RELEASE_CONFIG_INTEGER(JitReportMetrics, "JitReportMetrics", 0)
 
 // If set, gather JIT function info and write to this file.
 RELEASE_CONFIG_STRING(JitFuncInfoFile, "JitFuncInfoLogFile")

@@ -148,11 +148,6 @@ check_symbol_exists(
     fcntl.h
     HAVE_F_DUPFD)
 
-check_symbol_exists(
-    F_FULLFSYNC
-    fcntl.h
-    HAVE_F_FULLFSYNC)
-
 check_function_exists(
     getifaddrs
     HAVE_GETIFADDRS)

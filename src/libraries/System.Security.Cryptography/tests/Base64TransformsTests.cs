@@ -439,5 +439,36 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("outputBuffer",
                 () => transform.TransformBlock(block, 0, block.Length, destination, 0));
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void TransformFinalBlock_ShouldResetStateConsistently(int finalBlockSize)
+        {
+            using FromBase64Transform transform = new();
+            byte[] destination = new byte[2048];
+            byte[] partialBlock = [(byte)'A'];
+            byte[] finalBlock = new byte[finalBlockSize];
+            finalBlock.AsSpan().Fill((byte)'A');
+
+            // First, do a TransformBlock with a partial block of one unit
+            transform.TransformBlock(partialBlock, 0, partialBlock.Length, destination, 0);
+
+            // Call TransformFinalBlock with either zero or one input
+            // This still results in a partial block (we need four for a complete block)
+            byte[] transformed = transform.TransformFinalBlock(finalBlock, 0, finalBlockSize);
+
+            // The transform should return an empty buffer for partial blocks
+            Assert.Empty(transformed);
+
+            // Now try to reuse the transform with a complete block
+            // This should succeed without observing leftover data from before
+            byte[] complete = Text.Encoding.UTF8.GetBytes(Convert.ToBase64String("Hello World"u8.ToArray()));
+            transformed = transform.TransformFinalBlock(complete, 0, complete.Length);
+
+            // Verify we get the expected output
+            string result = Text.Encoding.UTF8.GetString(transformed);
+            Assert.Equal("Hello World", result);
+        }
     }
 }

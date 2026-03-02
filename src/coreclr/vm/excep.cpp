@@ -10742,9 +10742,9 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-#if defined(DACCESS_COMPILE) && defined(TARGET_X86)
-// X86 unwinding always works in terms of context pointers, so they need to be in the correct address space when debugging
-// This may work for other architectures as well, but that isn't tested.
+#if defined(DACCESS_COMPILE)
+// Context pointers in m_ContextPointers reference the target process address space and cannot be used directly.
+// Point them at the local context copy instead.
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &pRD->pCurrentContext->regname;
 #else
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = m_ContextPointers.regname;

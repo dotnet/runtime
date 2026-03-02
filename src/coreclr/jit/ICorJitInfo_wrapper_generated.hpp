@@ -202,6 +202,16 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getInstantiatedEntry(
     return temp;
 }
 
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncOtherVariant(
+          CORINFO_METHOD_HANDLE ftn,
+          bool* variantIsThunk)
+{
+    API_ENTER(getAsyncOtherVariant);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAsyncOtherVariant(ftn, variantIsThunk);
+    API_LEAVE(getAsyncOtherVariant);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {
@@ -705,13 +715,12 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getObjectType(
 
 bool WrapICorJitInfo::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunHelper);
-    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
+    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, id, callerHandle, pLookup);
     API_LEAVE(getReadyToRunHelper);
     return temp;
 }

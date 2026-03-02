@@ -766,7 +766,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
     else
     {
-        howToReturnStruct = SPK_ByValue;
+        howToReturnStruct = SPK_PrimitiveType;
         useType           = WasmClassifier::ToJitType(abiType);
     }
 
@@ -1574,10 +1574,10 @@ void Compiler::compShutdown()
     if (s_dspMemStats)
     {
         jitprintf("\nAll allocations:\n");
-        ArenaAllocator::dumpAggregateMemStats(jitstdout());
+        JitMemStatsInfo::dumpAggregateMemStats(jitstdout());
 
         jitprintf("\nLargest method:\n");
-        ArenaAllocator::dumpMaxMemStats(jitstdout());
+        JitMemStatsInfo::dumpMaxMemStats(jitstdout());
 
         jitprintf("\n");
         jitprintf("---------------------------------------------------\n");
@@ -6326,11 +6326,9 @@ void Compiler::compCompileFinish()
 
 #if MEASURE_MEM_ALLOC
     {
-        compArenaAllocator->finishMemStats();
+        JitMemStatsInfo::finishMemStats(compArenaAllocator);
         memAllocHist.record((unsigned)((compArenaAllocator->getTotalBytesAllocated() + 1023) / 1024));
         memUsedHist.record((unsigned)((compArenaAllocator->getTotalBytesUsed() + 1023) / 1024));
-
-        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
     }
 
 #ifdef DEBUG
@@ -6341,6 +6339,11 @@ void Compiler::compCompileFinish()
     }
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
+
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
+    }
 
 #if LOOP_HOIST_STATS
     AddLoopHoistStats();
@@ -6365,8 +6368,8 @@ void Compiler::compCompileFinish()
         (info.compLocalsCount <= 32) && !opts.MinOpts() && // We may have too many local variables, etc
         (getJitStressLevel() == 0) &&                      // We need extra memory for stress
         !opts.optRepeat &&                                 // We need extra memory to repeat opts
-        !compArenaAllocator->bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
-                                                      // DirectAlloc
+        !JitMemKindTraits::bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
+                                                    // DirectAlloc
         // Factor of 2x is because data-structures are bigger under DEBUG
         (compArenaAllocator->getTotalBytesAllocated() > (2 * ArenaAllocator::getDefaultPageSize())) &&
         // RyuJIT backend needs memory tuning! TODO-Cleanup: remove this case when memory tuning is complete.
@@ -6545,7 +6548,10 @@ void Compiler::compCompileFinish()
     }
 
     JITDUMP("Final metrics:\n");
-    Metrics.report(this);
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.report(this);
+    }
     DBEXEC(verbose, Metrics.dump());
 
     if (verbose)
