@@ -86,6 +86,17 @@ internal static class Entrypoints
         return 0;
     }
 
+    [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_dacdbi_interface")]
+    private static unsafe int CreateDacDbiInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
+    {
+        _ = handle;
+        _ = legacyImplPtr;
+        if (obj == null)
+            return HResults.E_INVALIDARG;
+        *obj = IntPtr.Zero;
+        return HResults.E_NOTIMPL;
+    }
+
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstanceWithFallback")]
     private static unsafe int CLRDataCreateInstanceWithFallback(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
     {

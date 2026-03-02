@@ -65,6 +65,7 @@
 
 // Global allocator for DD. Access is protected under the g_dacMutex lock.
 IDacDbiInterface::IAllocator * g_pAllocator = NULL;
+extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
 
 //---------------------------------------------------------------------------------------
 //
@@ -276,6 +277,31 @@ DacDbiInterfaceInstance(
 
     if (SUCCEEDED(hrStatus))
     {
+#ifdef CAN_USE_CDAC
+        CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
+        if (enable.IsSet())
+        {
+            DWORD val;
+            if (enable.TryAsInteger(10, val) && val == 1)
+            {
+                uint64_t contractDescriptorAddr = 0;
+                if (TryGetSymbol(pDac->m_pTarget, pDac->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+                {
+                    CDAC& cdac = pDac->m_cdac;
+                    cdac = CDAC::Create(contractDescriptorAddr, pDac->m_pMutableTarget, pDac);
+                    if (cdac.IsValid())
+                    {
+                        IDacDbiInterface* cdacDbi = nullptr;
+                        if (SUCCEEDED(cdac.CreateDacDbiInterface(&cdacDbi)) && cdacDbi != nullptr)
+                        {
+                            // Keep legacy DAC as the active implementation until cDAC-backed IDacDbiInterface wiring is complete.
+                            cdacDbi->Destroy();
+                        }
+                    }
+                }
+            }
+        }
+#endif
         *ppInterface = pDac;
     }
     else
