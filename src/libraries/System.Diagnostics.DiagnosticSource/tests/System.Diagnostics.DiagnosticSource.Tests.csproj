@@ -5,6 +5,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <NoWarn>NU1511</NoWarn>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+    <RootNamespace>System.Diagnostics.Tests</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.

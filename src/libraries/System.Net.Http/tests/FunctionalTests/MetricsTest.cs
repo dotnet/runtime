@@ -16,7 +16,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -369,13 +368,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server.")]
-        [ConditionalFact]
+        [Fact]
         public async Task ExternalServer_DurationMetrics_Recorded()
         {
-            if (UseVersion == HttpVersion.Version30)
-            {
-                throw new SkipTestException("No remote HTTP/3 server available for testing.");
-            }
+            Assert.SkipWhen(UseVersion == HttpVersion.Version30, "No remote HTTP/3 server available for testing.");
 
             using InstrumentRecorder<double> requestDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
             using InstrumentRecorder<double> connectionDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.ConnectionDuration);
@@ -925,10 +921,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public Task UseIPAddressInTargetUri_NoProxy_RecordsHostHeaderAsServerAddress(bool useTls)
         {
-            if (UseVersion == HttpVersion30 && !useTls)
-            {
-                throw new SkipTestException("No insecure connections with HTTP/3.");
-            }
+            Assert.SkipWhen(UseVersion == HttpVersion30 && !useTls, "No insecure connections with HTTP/3.");
 
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {

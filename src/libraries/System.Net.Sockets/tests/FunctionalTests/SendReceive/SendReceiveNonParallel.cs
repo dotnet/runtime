@@ -6,8 +6,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Sockets.Tests
 {
     [Collection(nameof(DisableParallelization))]

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>System.Diagnostics.TraceSourceConfigTests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />

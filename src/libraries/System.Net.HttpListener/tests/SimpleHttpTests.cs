@@ -8,8 +8,7 @@ using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 
 using Xunit;
-using Xunit.Abstractions;
-
+using Xunit.Sdk;
 namespace System.Net.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
@@ -167,7 +166,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ListenerRestart_Success(bool sync)
@@ -203,7 +202,7 @@ namespace System.Net.Tests
                 {
                     _output.WriteLine(e.Message);
                     // Skip test if we lost race and we are unable to bind on same port again.
-                    throw new SkipTestException("Unable to restart listener");
+                    throw SkipException.ForSkip("Unable to restart listener");
                 }
 
                 _output.WriteLine("Connecting to {0} after restart", factory.ListeningUrl);

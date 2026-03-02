@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -854,10 +854,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
         public async Task GetAsync_TrailingHeadersReceived(bool emptyContent, bool includeContentLength)
         {
-            if (UseVersion.Major == 1 && includeContentLength)
-            {
-                throw new SkipTestException("HTTP/1.1 trailers are only supported with chunked encoding.");
-            }
+            Assert.SkipWhen(UseVersion.Major == 1 && includeContentLength, "HTTP/1.1 trailers are only supported with chunked encoding.");
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
@@ -888,13 +885,10 @@ namespace System.Net.Http.Functional.Tests
 
         [InlineData(false)]
         [InlineData(true)]
-        [ConditionalTheory]
+        [Theory]
         public async Task GetAsync_UseResponseHeadersReadOption_TrailingHeadersReceived(bool includeContentLength)
         {
-            if (UseVersion.Major == 1 && includeContentLength)
-            {
-                throw new SkipTestException("HTTP/1.1 trailers are only supported with chunked encoding.");
-            }
+            Assert.SkipWhen(UseVersion.Major == 1 && includeContentLength, "HTTP/1.1 trailers are only supported with chunked encoding.");
 
             SemaphoreSlim sendDataAgain = new SemaphoreSlim(0);
 
@@ -1711,14 +1705,14 @@ namespace System.Net.Http.Functional.Tests
 
         private delegate int StreamReadSpanDelegate(Span<byte> buffer);
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(TripleBoolValues))]
         public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async, bool lineFolds)
         {
             if (PlatformDetection.IsAndroid && PlatformDetection.Is32BitProcess)
             {
                 // https://github.com/dotnet/runtime/issues/77474
-                throw new SkipTestException("This test runs out of memory on 32-bit Android devices");
+                throw SkipException.ForSkip("This test runs out of memory on 32-bit Android devices");
             }
 
             Memory<byte> responsePrefix = Encoding.ASCII.GetBytes(trailingHeaders
@@ -2896,10 +2890,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
         {
-            if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
-            {
-                throw new SkipTestException("Currently this test is failing on Android API 29 (used on Android-x64 and Android-x86 emulators)");
-            }
+            Assert.SkipWhen(PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process), "Currently this test is failing on Android API 29 (used on Android-x64 and Android-x86 emulators)");
 
             const int MaxConcurrentStreams = 2;
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();

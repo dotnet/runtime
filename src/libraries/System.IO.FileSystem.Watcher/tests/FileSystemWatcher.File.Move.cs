@@ -31,17 +31,14 @@ namespace System.IO.Tests
             FileMove_FromWatchedToUnwatched(WatcherChangeTypes.Deleted);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [PlatformSpecific(TestPlatforms.OSX)]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
         public void File_Move_Multiple_From_Watched_To_Unwatched_Mac(int filesCount)
         {
-            if (Environment.OSVersion.Version.Major == 12)
-            {
-                throw new SkipTestException("Unreliable on Monterey"); // https://github.com/dotnet/runtime/issues/70164
-            }
+            Assert.SkipWhen(Environment.OSVersion.Version.Major == 12, "Unreliable on Monterey");
 
             // On Mac, the FSStream aggregate old events caused by the test setup.
             // There is no option how to get rid of it but skip it.

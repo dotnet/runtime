@@ -5,6 +5,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+    <RootNamespace>System.Diagnostics.Tests</RootNamespace>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -71,9 +72,9 @@
              Link="Common\Interop\OSX\Interop.libproc.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libSystem.cs"
              Link="Common\Interop\OSX\Interop.libSystem.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" 
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs" 
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PosixSignal.cs"
              Link="Common\Interop\Unix\System.Native\Interop.PosixSignal.cs" />
   </ItemGroup>
   <ItemGroup>

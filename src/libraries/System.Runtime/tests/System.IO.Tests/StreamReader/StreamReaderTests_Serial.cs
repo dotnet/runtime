@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -62,7 +63,7 @@ namespace System.IO.Tests
             }
             catch (IOException)
             {
-                throw new SkipTestException($"Unable to run {ReadToEndAsync_WithCancellation} due to lack of available disk space");
+                throw SkipException.ForSkip($"Unable to run {ReadToEndAsync_WithCancellation} due to lack of available disk space");
             }
 
             using StreamWriter streamWriter = new StreamWriter(fs, encoding);

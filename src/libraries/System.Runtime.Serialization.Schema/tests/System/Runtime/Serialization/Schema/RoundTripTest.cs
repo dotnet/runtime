@@ -8,8 +8,6 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Runtime.Serialization.Schema.Tests
 {
     public class RoundTripTest

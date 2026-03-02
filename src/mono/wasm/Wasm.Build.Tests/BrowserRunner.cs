@@ -11,8 +11,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Wasm.Tests.Internal;
-using Xunit.Abstractions;
-
 namespace Wasm.Build.Tests;
 
 internal class BrowserRunner : IAsyncDisposable

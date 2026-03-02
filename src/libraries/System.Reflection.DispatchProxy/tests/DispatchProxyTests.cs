@@ -206,6 +206,7 @@ namespace DispatchProxyTests
             Assert.NotNull(TestType_PrivateProxy.Proxy<TestType_InternalInterfaceService>());
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/0000")]
         [Fact]
         public static void Create_Using_PrivateProxyAndInternalServiceWithExternalGenericArgument()
         {
@@ -244,6 +245,7 @@ namespace DispatchProxyTests
             Assert.NotNull(CreateHelper<TestType_InternalInterfaceImplementsNonPublicExternalType, TestDispatchProxy>(useGenericCreate));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/0000")]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

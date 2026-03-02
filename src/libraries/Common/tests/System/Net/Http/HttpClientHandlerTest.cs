@@ -16,7 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -155,7 +155,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
@@ -173,10 +173,7 @@ namespace System.Net.Http.Functional.Tests
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = Configuration.Sockets.LinkLocalAddress };
-            if (options.Address == null)
-            {
-                throw new SkipTestException("Unable to find valid IPv6 LL address.");
-            }
+            Assert.SkipWhen(options.Address == null, "Unable to find valid IPv6 LL address.");
 
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
@@ -187,7 +184,7 @@ namespace System.Net.Http.Functional.Tests
             }, options: options);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetAsync_IPBasedUri_Success_MemberData))]
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
         {
@@ -266,7 +263,7 @@ namespace System.Net.Http.Functional.Tests
             where PlatformDetection.IsNotBrowser || !useSsl
             select new object[] { address, useSsl };
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)

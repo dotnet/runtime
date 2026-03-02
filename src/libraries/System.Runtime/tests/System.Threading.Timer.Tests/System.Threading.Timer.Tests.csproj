@@ -3,6 +3,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <RootNamespace>System.Threading.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TimerConstructorTests.cs" />

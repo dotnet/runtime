@@ -669,7 +669,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Microsoft.XmlSerializer.Generator\tests\SerializableAssembly.csproj" />
-    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitVersion)" />
+    <PackageReference Include="xunit.v3.extensibility.core" Version="$(XUnitV3Version)" />
     <ProjectReference Include="$(CommonTestPath)System\Xml\BaseLibManaged\BaseLibManaged.csproj" />
     <ProjectReference Include="$(CommonTestPath)System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="$(CommonTestPath)System\Xml\XmlCoreTest\XmlCoreTest.csproj" />

@@ -3,8 +3,6 @@
 
 using System.Xml.Schema;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.XmlSchemaTests
 {
     //[TestCase(Name = "TC_SchemaSet_XmlNameTable", Desc = "")]

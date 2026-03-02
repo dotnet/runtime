@@ -41,7 +41,7 @@ namespace System.Collections.Tests
 
         protected override void AddToCollection(ICollection collection, int numberOfItemsToAdd) => Debug.Assert(false);
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [MemberData(nameof(ValidCollectionSizes))]
         public override void ICollection_NonGeneric_CopyTo_NonZeroLowerBound(int count)
         {

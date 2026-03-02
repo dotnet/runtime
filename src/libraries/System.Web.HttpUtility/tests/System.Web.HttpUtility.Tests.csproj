@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>System.Web.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="HttpUtility\HttpUtilityTest.cs" />

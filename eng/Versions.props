@@ -157,7 +157,7 @@
     <MoqVersion>4.18.4</MoqVersion>
     <MicrosoftDiagnosticsRuntimeVersion>3.1.512801</MicrosoftDiagnosticsRuntimeVersion>
     <AwesomeAssertionsVersion>8.0.2</AwesomeAssertionsVersion>
-    <FsCheckVersion>2.14.3</FsCheckVersion>
+    <FsCheckVersion>3.3.2</FsCheckVersion>
     <CommandLineParserVersion>2.9.1</CommandLineParserVersion>
     <CompilerPlatformTestingVersion>1.1.3-beta1.24423.1</CompilerPlatformTestingVersion>
     <CompilerPlatformTestingDiffPlexVersion>1.7.2</CompilerPlatformTestingDiffPlexVersion>

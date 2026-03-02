@@ -4,6 +4,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-windows</TargetFrameworks>
     <StringResourcesPath>..\src\Resources\Strings.resx</StringResourcesPath>
+    <RootNamespace>System.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BeepByBellChar.cs" />

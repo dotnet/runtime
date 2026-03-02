@@ -10,7 +10,6 @@ using Microsoft.Extensions.Hosting.IntegrationTesting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Test;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Microsoft.AspNetCore.Hosting.FunctionalTests
 {

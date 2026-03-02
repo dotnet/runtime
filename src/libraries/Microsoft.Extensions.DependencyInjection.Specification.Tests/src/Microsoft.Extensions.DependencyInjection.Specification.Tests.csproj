@@ -15,12 +15,13 @@
     <PackageDescription>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</PackageDescription>
     <!-- this assembly doesn't need to be binplaced -->
     <EnableBinPlacing>false</EnableBinPlacing>
+    <IsTestSupportProject>true</IsTestSupportProject>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
-    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
-    <PackageReference Include="xunit.extensibility.core" Version="$(XUnitVersion)" />
+    <PackageReference Include="xunit.v3.assert" Version="$(XUnitV3Version)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" />
+    <PackageReference Include="xunit.v3.extensibility.core" Version="$(XUnitV3Version)" />
   </ItemGroup>
 
 </Project>

@@ -11,7 +11,7 @@ namespace System.Formats.Cbor.Tests
 {
     public static class CborPropertyTests
     {
-        private const string? ReplaySeed = "(42,42)"; // set a seed for deterministic runs, null for randomized runs
+        private const string? ReplaySeed = "(42,43)"; // set a seed for deterministic runs, null for randomized runs (gamma must be odd in FsCheck 3.x)
         private const int MaxTests = 100; // FsCheck default is 100
 
         [Property(Replay = ReplaySeed, MaxTest = MaxTests, Arbitrary = new[] { typeof(CborRandomGenerators) })]

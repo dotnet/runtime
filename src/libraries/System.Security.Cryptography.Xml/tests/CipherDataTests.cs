@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using Xunit;
-using Xunit.Extensions;
 
 namespace System.Security.Cryptography.Xml.Tests
 {

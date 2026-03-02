@@ -9,6 +9,7 @@ using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Diagnostics.Tests
 {
@@ -37,7 +38,7 @@ namespace System.Diagnostics.Tests
                 if (error == Interop.Errors.ERROR_INVALID_FUNCTION && PlatformDetection.IsInContainer)
                 {
                     // Docker in CI runs without a console attached.
-                    throw new SkipTestException($"GenerateConsoleCtrlEvent failed with ERROR_INVALID_FUNCTION. The process is not a console process or does not have a console.");
+                    throw SkipException.ForSkip($"GenerateConsoleCtrlEvent failed with ERROR_INVALID_FUNCTION. The process is not a console process or does not have a console.");
                 }
 
                 throw new Win32Exception(error);

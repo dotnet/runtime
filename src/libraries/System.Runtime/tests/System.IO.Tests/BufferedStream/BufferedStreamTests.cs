@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -111,7 +112,7 @@ namespace System.IO.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Not enough memory");
+                throw SkipException.ForSkip("Not enough memory");
             }
 
             var writableStream = new WriteOnlyStream();
@@ -276,15 +277,12 @@ namespace System.IO.Tests
             Assert.Equal(TaskStatus.Faulted, stream.FlushAsync().Status);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task CopyToTest_RequiresFlushingOfWrites(bool copyAsynchronously)
         {
-            if (copyAsynchronously && !PlatformDetection.IsMultithreadingSupported)
-            {
-                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
-            }
+            Assert.SkipWhen(copyAsynchronously && !PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
 
             byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)(i % 256)).ToArray();
 

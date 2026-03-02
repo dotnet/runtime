@@ -4,8 +4,6 @@
 using System.IO;
 using System.Xml.Schema;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.XmlSchemaValidatorApiTests
 {
     // ===================== Constructor =====================

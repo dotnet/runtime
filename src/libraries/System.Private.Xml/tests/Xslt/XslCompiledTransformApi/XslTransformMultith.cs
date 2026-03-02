@@ -7,8 +7,6 @@ using System.Xml.XPath;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.XslCompiledTransformApiTests
 {
     public class SameInstanceXslTransformTestCase : XsltApiTestCaseBase2

@@ -12,7 +12,6 @@ using System.Runtime.Loader;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 // @TODO medium-to-longer term, we should try to get rid of the special-unicorn-single-file runner in favor of making the real runner work for single file.

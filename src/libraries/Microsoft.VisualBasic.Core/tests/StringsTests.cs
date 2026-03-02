@@ -873,7 +873,6 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Theory]
-        [MemberData(nameof(StrDup_Object_TestData))]
         [MemberData(nameof(StrDup_Char_TestData))]
         [MemberData(nameof(StrDup_String_TestData))]
         public void StrDup_Int_Object_Object(int number, object character, object expected)
@@ -914,11 +913,6 @@ namespace Microsoft.VisualBasic.Tests
         public void StrDup_ArgumentException_Int_String(int number, string character)
         {
             Assert.Throws<ArgumentException>(() => Strings.StrDup(number, character));
-        }
-
-        public static IEnumerable<object[]> StrDup_Object_TestData()
-        {
-            yield break;
         }
 
         public static IEnumerable<object[]> StrDup_Char_TestData()

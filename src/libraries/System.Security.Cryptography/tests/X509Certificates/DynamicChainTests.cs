@@ -597,13 +597,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public static void NameConstraintViolation_ExcludedTree_Upn()
         {
-            if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
-            {
-                throw new SkipTestException("Platform does not handle excludedSubtrees correctly.");
-            }
+            Assert.SkipWhen(PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling, "Platform does not handle excludedSubtrees correctly.");
 
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
             builder.AddUserPrincipalName("v@example.com");
@@ -746,13 +743,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public static void NameConstraintAllowed_ExcludedTree_Upn()
         {
-            if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
-            {
-                throw new SkipTestException("Platform does not handle excludedSubtrees correctly.");
-            }
+            Assert.SkipWhen(PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling, "Platform does not handle excludedSubtrees correctly.");
 
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
             builder.AddUserPrincipalName("v@example.com");

@@ -6,7 +6,6 @@ using System.Tests;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
@@ -249,7 +248,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 using System.Collections.Generic;
                 using System.Text.Json.Serialization;
                 using ReferencedAssembly;
-    
+
                 namespace HelloWorld
                 {
                     [JsonSerializable(typeof(HelloWorld.WeatherForecastWithPOCOs))]
@@ -581,19 +580,19 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             // Regression test for https://github.com/dotnet/runtime/issues/103515
             string source = """
                 using System.Text.Json.Serialization;
-                
+
                 namespace Test
                 {
                     public class Foo
                     {
                         public override bool Equals(object obj) => false;
-                
+
                         public static bool operator ==(Foo left, Foo right) => false;
                         public static bool operator !=(Foo left, Foo right) => false;
-                    
+
                         public static bool operator ==(Foo left, string right) => false;
                         public static bool operator !=(Foo left, string right) => false;
-                    
+
                         public override int GetHashCode() => 1;
                     }
 

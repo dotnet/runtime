@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -425,7 +426,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(false, 1)]
         [InlineData(false, 10_000)]
         [InlineData(true, 1)]           // This should fit with SYN flag
@@ -436,7 +437,7 @@ namespace System.Net.Sockets.Tests
             if (useFastOpen && PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater)
             {
                 // Old Windows versions do not support fast open and SetSocketOption fails with error.
-                throw new SkipTestException("TCP fast open is not supported");
+                throw SkipException.ForSkip("TCP fast open is not supported");
             }
 
             using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -532,7 +533,7 @@ namespace System.Net.Sockets.Tests
             if (useFastOpen && PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater)
             {
                 // Old Windows versions do not support fast open and SetSocketOption fails with error.
-                throw new SkipTestException("TCP fast open is not supported");
+                throw SkipException.ForSkip("TCP fast open is not supported");
             }
 
             using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

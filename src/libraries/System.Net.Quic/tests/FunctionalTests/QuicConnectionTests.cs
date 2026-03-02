@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using TestUtilities;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
@@ -27,7 +26,7 @@ namespace System.Net.Quic.Tests
 
         public QuicConnectionTests(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(LocalAddresses))]
         public async Task TestConnect(IPAddress address)
         {

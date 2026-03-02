@@ -248,6 +248,7 @@ namespace System.Diagnostics.Tests
         public void Trace_AssertUiEnabledFalse_SkipsFail()
         {
             var initialListener = (DefaultTraceListener)Trace.Listeners[0];
+            bool originalAssertUiEnabled = initialListener.AssertUiEnabled;
             Trace.Listeners.Clear();
             Trace.Fail("Skips fail fast");
             Debug.Fail("Skips fail fast");
@@ -279,6 +280,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 Trace.Listeners.Clear();
+                initialListener.AssertUiEnabled = originalAssertUiEnabled;
                 Trace.Listeners.Add(initialListener);
             }
         }

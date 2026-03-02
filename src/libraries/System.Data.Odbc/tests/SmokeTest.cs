@@ -7,7 +7,7 @@ namespace System.Data.Odbc.Tests
 {
     public class SmokeTest : IntegrationTestBase
     {
-        [ConditionalFact]
+        [Fact]
         public void CreateInsertSelectTest()
         {
             command.CommandText =

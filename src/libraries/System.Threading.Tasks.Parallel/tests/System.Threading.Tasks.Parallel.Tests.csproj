@@ -2,6 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RootNamespace>System.Threading.Tasks.Tests</RootNamespace>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />

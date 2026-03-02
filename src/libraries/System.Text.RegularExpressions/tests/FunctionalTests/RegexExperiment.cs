@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using Xunit;
-using Xunit.Abstractions;
 using System.Threading.Tasks;
 
 namespace System.Text.RegularExpressions.Tests

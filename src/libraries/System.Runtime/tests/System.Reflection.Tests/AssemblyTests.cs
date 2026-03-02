@@ -176,9 +176,11 @@ namespace System.Reflection.Tests
             }
             else
             {
+                // In xunit v3, the test runner is the test assembly itself.
                 // Under Visual Studio, the runner is 'testhost', otherwise it is 'xunit.console'.
                 correct = assembly.IndexOf("xunit.console", StringComparison.OrdinalIgnoreCase) != -1 ||
-                          assembly.IndexOf("testhost", StringComparison.OrdinalIgnoreCase) != -1;
+                          assembly.IndexOf("testhost", StringComparison.OrdinalIgnoreCase) != -1 ||
+                          assembly.IndexOf("System.Reflection.Tests", StringComparison.OrdinalIgnoreCase) != -1;
             }
 
             Assert.True(correct, $"Unexpected assembly name {assembly}");

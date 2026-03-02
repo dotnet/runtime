@@ -4,7 +4,7 @@
 using System;
 using System.Linq;
 using System.Text;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace Microsoft.Extensions.Logging.Testing
 {

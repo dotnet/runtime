@@ -3,6 +3,8 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
+    <DefineConstants Condition="'$(TestSingleFile)' == 'true'">$(DefineConstants);TEST_SINGLE_FILE</DefineConstants>
+    <RootNamespace>System.Collections.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->

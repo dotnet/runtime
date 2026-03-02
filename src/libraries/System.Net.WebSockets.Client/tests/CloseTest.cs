@@ -5,8 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
-
 using EchoControlMessage = System.Net.Test.Common.WebSocketEchoHelper.EchoControlMessage;
 
 namespace System.Net.WebSockets.Client.Tests

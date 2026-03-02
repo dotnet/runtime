@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <RootNamespace>System.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TupleElementNamesTests.cs" />

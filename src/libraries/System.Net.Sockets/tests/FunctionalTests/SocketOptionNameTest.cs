@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
 {
@@ -80,7 +81,7 @@ namespace System.Net.Sockets.Tests
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.HostUnreachable && PlatformDetection.IsApplePlatform)
             {
                 // https://github.com/dotnet/runtime/issues/114450
-                throw new SkipTestException("HostUnreachable indicates missing local network permission; this test might pass or fail depending on the environment. Please verify manually.");
+                throw SkipException.ForSkip("HostUnreachable indicates missing local network permission; this test might pass or fail depending on the environment. Please verify manually.");
             }
         }
 
@@ -427,13 +428,13 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task TcpFastOpen_Roundrip_Succeeds()
         {
             if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater)
             {
                 // Old Windows versions do not support fast open and SetSocketOption fails with error.
-                throw new SkipTestException("TCP fast open is not supported");
+                throw SkipException.ForSkip("TCP fast open is not supported");
             }
 
             using (Socket l = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -541,7 +542,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
@@ -565,7 +566,7 @@ namespace System.Net.Sockets.Tests
             }
             else
             {
-                throw new SkipTestException("Unknown platform");
+                throw SkipException.ForSkip("Unknown platform");
             }
 
             using (var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp))

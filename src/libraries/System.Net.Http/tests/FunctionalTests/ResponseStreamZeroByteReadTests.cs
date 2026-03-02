@@ -14,7 +14,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -81,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [MemberData(nameof(ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream_MemberData))]
         [SkipOnPlatform(TestPlatforms.Browser, "ConnectCallback is not supported on Browser")]
-        public async Task ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream(StreamConformanceTests.ReadWriteMode readMode, bool useSsl)
+        public async Task ZeroByteRead_IssuesZeroByteReadOnUnderlyingStream(System.IO.Tests.StreamConformanceTests.ReadWriteMode readMode, bool useSsl)
         {
             (Stream httpConnection, Stream server) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
             try

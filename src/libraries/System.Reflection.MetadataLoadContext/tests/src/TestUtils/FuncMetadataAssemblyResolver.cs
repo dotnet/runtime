@@ -7,13 +7,13 @@ namespace System.Reflection.Tests
 {
     public class FuncMetadataAssemblyResolver : MetadataAssemblyResolver
     {
-        System.Func<System.Reflection.MetadataLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly> func;
-        public FuncMetadataAssemblyResolver(System.Func<System.Reflection.MetadataLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly> func)
+        System.Func<MetadataLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly> func;
+        public FuncMetadataAssemblyResolver(System.Func<MetadataLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly> func)
         {
             this.func = func ?? throw new ArgumentException("", nameof(func));
         }
 
-        public override Assembly Resolve(System.Reflection.MetadataLoadContext context, AssemblyName assemblyName)
+        public override Assembly Resolve(MetadataLoadContext context, AssemblyName assemblyName)
         {
             Debug.Assert(assemblyName != null);
 

@@ -7,6 +7,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -203,7 +204,7 @@ namespace System.Text.Json.Serialization.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Out of memory allocating large objects");
+                throw SkipException.ForSkip("Out of memory allocating large objects");
             }
         }
 

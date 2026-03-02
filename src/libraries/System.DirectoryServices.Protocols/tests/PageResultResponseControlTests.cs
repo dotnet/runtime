@@ -150,7 +150,7 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x02, 0x01, 0x40,
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
                 0x80, 0x80, 0x80 } };
-            
+
             // {iO}, single-byte length. Octet string length extending beyond the end of the buffer
             yield return new object[] { new byte[] { 0x30, 0x0A,
                 0x02, 0x01, 0x40,
@@ -194,6 +194,7 @@ namespace System.DirectoryServices.Protocols.Tests
             => VerifyResponseControl(value, totalCount, cookie);
 
         [Theory]
+        [SkipOnCoreClr("netfx-only test")]
         [MemberData(nameof(NonconformantControlValues))]
         public void NonconformantResponseControlParsedSuccessfully(byte[] value, int totalCount, byte[] cookie)
             => VerifyResponseControl(value, totalCount, cookie);

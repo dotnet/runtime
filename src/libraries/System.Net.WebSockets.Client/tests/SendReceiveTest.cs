@@ -5,8 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
 using EchoControlMessage = System.Net.Test.Common.WebSocketEchoHelper.EchoControlMessage;
 using EchoQueryKey = System.Net.Test.Common.WebSocketEchoOptions.EchoQueryKey;
 
@@ -127,10 +125,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
         {
-            if (HttpVersion == Net.HttpVersion.Version20)
-            {
-                throw new SkipTestException("[ActiveIssue] -- temporarily skipping on HTTP/2");
-            }
+            Assert.SkipWhen(HttpVersion == Net.HttpVersion.Version20, "[ActiveIssue] -- temporarily skipping on HTTP/2");
 
             var sendBuffer = new byte[ushort.MaxValue + 1];
             Random.Shared.NextBytes(sendBuffer);
@@ -355,10 +350,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         protected async Task RunClient_SendReceive_VaryingLengthBuffers_Success(Uri server)
         {
-            if (HttpVersion == Net.HttpVersion.Version20)
-            {
-                throw new SkipTestException("[ActiveIssue] -- temporarily skipping on HTTP/2");
-            }
+            Assert.SkipWhen(HttpVersion == Net.HttpVersion.Version20, "[ActiveIssue] -- temporarily skipping on HTTP/2");
 
             using (ClientWebSocket cws = await GetConnectedWebSocket(server))
             {

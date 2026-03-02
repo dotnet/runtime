@@ -8,8 +8,6 @@ using System.Net.Test.Common;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.NetworkInformation.Tests
 {
     [PlatformSpecific(TestPlatforms.Linux)]

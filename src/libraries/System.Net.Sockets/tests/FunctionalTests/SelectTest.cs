@@ -7,8 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
+using Xunit.Sdk;
 namespace System.Net.Sockets.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
@@ -426,7 +425,7 @@ namespace System.Net.Sockets.Tests
     // Set of tests to not run  together with any other tests.
     public class NoParallelSelectTests
     {
-        [ConditionalFact]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Select_LargeNumber_Succcess()
         {
@@ -439,7 +438,7 @@ namespace System.Net.Sockets.Tests
             }
             catch
             {
-                throw new SkipTestException("Unable to open large count number of socket");
+                throw SkipException.ForSkip("Unable to open large count number of socket");
             }
 
             var readList = new List<Socket>(socketPairs.Select(p => p.Key).ToArray());

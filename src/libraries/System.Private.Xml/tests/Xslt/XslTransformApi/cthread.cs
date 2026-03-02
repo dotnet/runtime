@@ -6,8 +6,6 @@
 using System.Reflection;
 using System.Threading;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.Tests
 {
     ////////////////////////////////////////////////////////////////

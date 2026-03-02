@@ -12,8 +12,6 @@ using System.Runtime.Serialization.Schema.Tests.DataContracts;
 using System.Xml;
 using System.Xml.Schema;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Runtime.Serialization.Schema.Tests
 {
     public class ImporterTests

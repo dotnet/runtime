@@ -226,6 +226,7 @@ namespace System.DirectoryServices.Protocols.Tests
             => VerifyResponseControl(value, moreData, resultSize, cookie);
 
         [Theory]
+        [SkipOnCoreClr("netfx-only test")]
         [MemberData(nameof(NonconformantControlValues))]
         public void NonconformantResponseControlParsedSuccessfully(byte[] value, bool moreData, int resultSize, byte[] cookie)
             => VerifyResponseControl(value, moreData, resultSize, cookie);
