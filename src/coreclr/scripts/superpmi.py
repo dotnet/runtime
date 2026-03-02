@@ -3613,21 +3613,25 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
             write_fh.write("No significant metric differences found\n")
 
     if include_details:
-        for metric in all_metrics:
-            if metric in metrics_with_diffs:
-                continue
+        no_diff_metrics = [m for m in all_metrics if m not in metrics_with_diffs]
+        no_diff_rows_by_metric = []
+        for metric in no_diff_metrics:
             rows = [(mch, base.get(metric, 0), diff.get(metric, 0)) for (mch, _, base, diff) in metric_diffs
                     if base.get(metric, 0) != 0 or diff.get(metric, 0) != 0]
-            if not rows:
-                continue
+            if rows:
+                no_diff_rows_by_metric.append((metric, rows))
+
+        if no_diff_rows_by_metric:
             write_fh.write("\n")
-            with DetailsSection(write_fh, metric):
-                write_fh.write("|Collection|Base|Diff|PDIFF|\n")
-                write_fh.write("|---|--:|--:|--:|\n")
-                for mch_file, base_val, diff_val in rows:
-                    write_fh.write("|{}|{}|{}|{}|\n".format(
-                        mch_file, fmt_val(base_val), fmt_val(diff_val),
-                        fmt_pct(base_val, diff_val)))
+            with DetailsSection(write_fh, "Metrics with no diffs"):
+                for metric, rows in no_diff_rows_by_metric:
+                    with DetailsSection(write_fh, metric):
+                        write_fh.write("|Collection|Base|Diff|PDIFF|\n")
+                        write_fh.write("|---|--:|--:|--:|\n")
+                        for mch_file, base_val, diff_val in rows:
+                            write_fh.write("|{}|{}|{}|{}|\n".format(
+                                mch_file, fmt_val(base_val), fmt_val(diff_val),
+                                fmt_pct(base_val, diff_val)))
 
 ################################################################################
 # Argument handling helpers
