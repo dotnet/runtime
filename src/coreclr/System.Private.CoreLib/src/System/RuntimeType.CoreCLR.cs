@@ -3731,6 +3731,9 @@ namespace System
 
         public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
         {
+            if (this.IsGenericTypeDefinition)
+                throw new InvalidOperationException(SR.Format(SR.FunctionPointer_ReturnTypeInvalid, this.ToString()));
+
             parameterTypes = (parameterTypes != null) ? (Type[])parameterTypes.Clone() : [];
             for (int i = 0; i < parameterTypes.Length; i++)
             {
@@ -3741,7 +3744,7 @@ namespace System
                     return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
 
                 if (paramType == typeof(void) || paramType.IsGenericTypeDefinition)
-                    throw new ArgumentException(string.Format(SR.FunctionPointer_ParameterInvalid, paramType.ToString()), nameof(parameterTypes));
+                    throw new ArgumentException(SR.Format(SR.FunctionPointer_ParameterInvalid, paramType.ToString()), nameof(parameterTypes));
             }
 
             return new RuntimeTypeHandle(this).MakeFunctionPointer(parameterTypes, isUnmanaged);

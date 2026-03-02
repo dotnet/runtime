@@ -4450,6 +4450,9 @@
   <data name="FunctionPointer_ParameterInvalid">
     <value>'{0}' cannot be used as a parameter type for a function pointer.</value>
   </data>
+  <data name="FunctionPointer_ReturnTypeInvalid">
+    <value>'{0}' cannot be used as the return type of a function pointer.</value>
+  </data>
   <data name="FunctionPointer_CallingConventionsUnbalanced">
     <value>Calling conventions present on modified return type must match explicitly specified calling conventions.</value>
   </data>
