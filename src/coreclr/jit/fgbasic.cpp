@@ -3583,8 +3583,11 @@ void Compiler::fgFindBasicBlocks()
         }
 
         // Use a spill temp for the return value if there are multiple return blocks,
-        // or if the inlinee has GC ref locals.
-        if ((info.compRetNativeType != TYP_VOID) && ((fgReturnCount > 1) || impInlineInfo->HasGcRefLocals()))
+        // if the inlinee has GC ref locals, or if async contexts need save/restore.
+        // In the latter cases we will need to insert IR after the return.
+        if ((info.compRetNativeType != TYP_VOID) &&
+            ((fgReturnCount > 1) || impInlineInfo->HasGcRefLocals() ||
+             ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) != 0)))
         {
             // If we've spilled the ret expr to a temp we can reuse the temp
             // as the inlinee return spill temp.
