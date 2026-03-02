@@ -359,9 +359,8 @@ namespace System.IO
                     Debug.Assert(_stream is MemoryStream);
                     MemoryStream mStream = Unsafe.As<MemoryStream>(_stream);
 
-                    int position = mStream.InternalGetPosition();
-                    numBytes = mStream.InternalEmulateRead(numBytes);
-                    byteBuffer = new ReadOnlySpan<byte>(mStream.InternalGetBuffer(), position, numBytes);
+                    byteBuffer = mStream.InternalRead(numBytes);
+                    numBytes = byteBuffer.Length;
                 }
                 else
                 {
