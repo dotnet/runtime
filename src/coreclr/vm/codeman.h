@@ -2872,10 +2872,10 @@ public:
         return STUB_CODE_BLOCK_UNKNOWN;
     }
 
-#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
     // Return execution control for interpreter bytecode breakpoints
     virtual IExecutionControl* GetExecutionControl();
-#endif
+#endif // !DACCESS_COMPILE && !TARGET_WASM
 
 #if defined(DACCESS_COMPILE)
 
@@ -2945,6 +2945,16 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pJM != NULL;
+    }
+
+    BOOL        IsInterpretedCode()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+#ifdef FEATURE_INTERPRETER
+        return IsValid() && m_pJM == ExecutionManager::GetInterpreterJitManager();
+#else
+        return FALSE;
+#endif
     }
 
     IJitManager* GetJitManager()
