@@ -1953,7 +1953,7 @@ PhaseStatus Rationalizer::DoPhase()
             }
         }
 
-        block->bbStmtList = nullptr;
+        block->SetFirstStmt(nullptr);
 
         assert(BlockRange().CheckLIR(m_compiler, true));
     }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -21,16 +22,23 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void OnUnhandledException(object* pUnhandledException, Exception* _)
+        internal static unsafe void OnFirstChanceException(Exception* pException, Exception* pOutException)
         {
             try
             {
-                OnUnhandledException(*pUnhandledException);
+                OnFirstChanceException(*pException, AppDomain.CurrentDomain);
             }
-            catch
+            catch (Exception ex)
             {
-                // The VM does not expect exceptions to propagate out of this callback
+                *pOutException = ex;
             }
         }
+
+        internal static void SetFirstChanceExceptionHandler()
+            => SetFirstChanceExceptionHandlerInternal();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppContext_SetFirstChanceExceptionHandler")]
+        [SuppressGCTransition]
+        private static partial void SetFirstChanceExceptionHandlerInternal();
     }
 }
