@@ -120,6 +120,59 @@ public class ServerGCDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void ServerGC_GetHandleTableMemoryRegions(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
+
+        IReadOnlyList<GCMemoryRegionData> regions = gcContract.GetHandleTableMemoryRegions();
+        Assert.NotNull(regions);
+        Assert.True(regions.Count > 0, "Expected at least one handle table memory region");
+        Assert.All(regions, region =>
+        {
+            Assert.NotEqual(TargetPointer.Null, region.Start);
+            Assert.True(region.Size > 0, $"Expected non-zero size for region starting at 0x{region.Start:X}");
+        });
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void ServerGC_GetGCBookkeepingMemoryRegions(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
+
+        IReadOnlyList<GCMemoryRegionData> regions = gcContract.GetGCBookkeepingMemoryRegions();
+        Assert.NotNull(regions);
+        Assert.True(regions.Count > 0, "Expected at least one bookkeeping memory region");
+        Assert.All(regions, region =>
+        {
+            Assert.NotEqual(TargetPointer.Null, region.Start);
+            Assert.True(region.Size > 0, $"Expected non-zero size for region starting at 0x{region.Start:X}");
+        });
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void ServerGC_GetGCFreeRegions(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
+
+        IReadOnlyList<GCMemoryRegionData> regions = gcContract.GetGCFreeRegions();
+        Assert.NotNull(regions);
+        Assert.All(regions, region =>
+        {
+            Assert.NotEqual(TargetPointer.Null, region.Start);
+            Assert.True(region.Size > 0, $"Expected non-zero size for region starting at 0x{region.Start:X}");
+        });
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
     public void ServerGC_CanEnumerateExpectedHandles(TestConfiguration config)
     {
         InitializeDumpTest(config);

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Xunit;
 
@@ -138,5 +139,58 @@ public class WorkstationGCDumpTests : DumpTestBase
             Assert.True(pointer <= limit,
                 $"Expected allocPtr (0x{pointer:X}) <= allocLimit (0x{limit:X})");
         }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_GetHandleTableMemoryRegions(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
+
+        IReadOnlyList<GCMemoryRegionData> regions = gcContract.GetHandleTableMemoryRegions();
+        Assert.NotNull(regions);
+        Assert.True(regions.Count > 0, "Expected at least one handle table memory region");
+        Assert.All(regions, region =>
+        {
+            Assert.NotEqual(TargetPointer.Null, region.Start);
+            Assert.True(region.Size > 0, $"Expected non-zero size for region starting at 0x{region.Start:X}");
+        });
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_GetGCBookkeepingMemoryRegions(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
+
+        IReadOnlyList<GCMemoryRegionData> regions = gcContract.GetGCBookkeepingMemoryRegions();
+        Assert.NotNull(regions);
+        Assert.True(regions.Count > 0, "Expected at least one bookkeeping memory region");
+        Assert.All(regions, region =>
+        {
+            Assert.NotEqual(TargetPointer.Null, region.Start);
+            Assert.True(region.Size > 0, $"Expected non-zero size for region starting at 0x{region.Start:X}");
+        });
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "GC contract is not available in .NET 10 dumps")]
+    public void WorkstationGC_GetGCFreeRegions(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IGC gcContract = Target.Contracts.GC;
+
+        IReadOnlyList<GCMemoryRegionData> regions = gcContract.GetGCFreeRegions();
+        Assert.NotNull(regions);
+        Assert.All(regions, region =>
+        {
+            Assert.NotEqual(TargetPointer.Null, region.Start);
+            Assert.True(region.Size > 0, $"Expected non-zero size for region starting at 0x{region.Start:X}");
+        });
     }
 }
