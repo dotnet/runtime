@@ -7,12 +7,14 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
@@ -134,8 +136,9 @@ namespace ILAssembler
             // Return early if there are structural errors that prevent building valid metadata.
             // However, allow errors in method bodies (ILA0016-0019) to pass through so we can
             // emit the assembly with the errors reported.
+            // In error-tolerant mode, continue despite errors.
             var structuralErrors = _diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error && !IsRecoverableError(d.Id));
-            if (structuralErrors.Any())
+            if (structuralErrors.Any() && !_options.ErrorTolerant)
             {
                 return (_diagnostics.ToImmutable(), null);
             }
@@ -157,17 +160,44 @@ namespace ILAssembler
 
             BlobBuilder ilStream = new();
             _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames);
-            MetadataRootBuilder rootBuilder = new(_metadataBuilder);
+            MetadataRootBuilder rootBuilder = new(_metadataBuilder, _options.MetadataVersion);
 
             // Compute metadata size from the MetadataSizes
             // We need this for data label fixup RVA calculations
             var sizes = rootBuilder.Sizes;
             int metadataSize = ComputeMetadataSize(sizes);
 
+            // Apply command-line overrides
+            Subsystem subsystem = _options.Subsystem ?? _subsystem;
+            int fileAlignment = _options.FileAlignment ?? _alignment;
+            long imageBase = _options.ImageBase ?? _imageBase;
+            ushort majorSubsystemVersion = _options.SubsystemVersion?.Major ?? 4;
+            ushort minorSubsystemVersion = _options.SubsystemVersion?.Minor ?? 0;
+            Machine machine = _options.Machine ?? Machine.I386;
+
+            // Build DllCharacteristics from options
+            DllCharacteristics dllCharacteristics = DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible | DllCharacteristics.NoSeh | DllCharacteristics.TerminalServerAware;
+            if (_options.AppContainer)
+            {
+                dllCharacteristics |= DllCharacteristics.AppContainer;
+            }
+            if (_options.HighEntropyVA)
+            {
+                dllCharacteristics |= DllCharacteristics.HighEntropyVirtualAddressSpace;
+            }
+            if (_options.StripReloc)
+            {
+                dllCharacteristics &= ~DllCharacteristics.DynamicBase;
+            }
+
             PEHeaderBuilder header = new(
-                fileAlignment: _alignment,
-                imageBase: (ulong)_imageBase,
-                subsystem: _subsystem);
+                machine: machine,
+                fileAlignment: fileAlignment,
+                imageBase: (ulong)imageBase,
+                subsystem: subsystem,
+                majorSubsystemVersion: majorSubsystemVersion,
+                minorSubsystemVersion: minorSubsystemVersion,
+                dllCharacteristics: dllCharacteristics);
 
             MethodDefinitionHandle entryPoint = default;
             if (_entityRegistry.EntryPoint is not null)
@@ -183,6 +213,13 @@ namespace ILAssembler
             {
                 var vtableFixupInfos = BuildVTableFixupInfos();
 
+                // Apply CorFlags from options or directive
+                CorFlags corFlags = _options.CorFlags ?? _corflags;
+                if (_options.Prefer32Bit)
+                {
+                    corFlags |= CorFlags.Prefers32Bit;
+                }
+
                 VTableExportPEBuilder peBuilder = new(
                     header,
                     rootBuilder,
@@ -191,7 +228,7 @@ namespace ILAssembler
                     _manifestResources,
                     debugDirectoryBuilder: debugDirectoryBuilder,
                     entryPoint: entryPoint,
-                    flags: CorFlags.ILOnly,
+                    flags: corFlags,
                     vtableFixups: vtableFixupInfos,
                     exports: exports.ToImmutable(),
                     mappedFieldDataOffsets: _mappedFieldDataNames,
@@ -202,15 +239,36 @@ namespace ILAssembler
                 return (_diagnostics.ToImmutable(), peBuilder);
             }
 
+            // Apply CorFlags from options or directive
+            CorFlags standardCorFlags = _options.CorFlags ?? _corflags;
+            if (_options.Prefer32Bit)
+            {
+                standardCorFlags |= CorFlags.Prefers32Bit;
+            }
+
+            // Deterministic ID provider for reproducible builds
+            Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = _options.Deterministic
+                ? content =>
+                {
+                    using var hash = IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.SHA256);
+                    foreach (var blob in content)
+                    {
+                        hash.AppendData(blob.GetBytes());
+                    }
+                    return BlobContentId.FromHash(hash.GetHashAndReset());
+                }
+                : null;
+
             ManagedPEBuilder standardBuilder = new(
                 header,
                 rootBuilder,
                 ilStream,
                 _mappedFieldData,
                 _manifestResources,
-                flags: CorFlags.ILOnly,
+                flags: standardCorFlags,
                 entryPoint: entryPoint,
-                debugDirectoryBuilder: debugDirectoryBuilder);
+                debugDirectoryBuilder: debugDirectoryBuilder,
+                deterministicIdProvider: deterministicIdProvider);
 
             return (_diagnostics.ToImmutable(), standardBuilder);
         }
@@ -271,7 +329,9 @@ namespace ILAssembler
                 }
             }
 
-            if (!hasDebugInfo)
+            // Generate PDB if we have debug info OR if --debug/--pdb options are set
+            bool generatePdb = hasDebugInfo || _options.Debug || _options.Pdb;
+            if (!generatePdb)
             {
                 return null;
             }
@@ -530,14 +590,116 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitAssemblyBlock(CILParser.AssemblyBlockContext context) => VisitAssemblyBlock(context);
         public GrammarResult VisitAssemblyBlock(CILParser.AssemblyBlockContext context)
         {
-            _entityRegistry.Assembly ??= new EntityRegistry.AssemblyEntity(VisitDottedName(context.dottedName()).Value);
+            // Use command-line override if specified, otherwise use the name from the .assembly directive
+            string assemblyName = _options.AssemblyName ?? VisitDottedName(context.dottedName()).Value;
+            _entityRegistry.Assembly ??= new EntityRegistry.AssemblyEntity(assemblyName);
             var attr = VisitAsmAttr(context.asmAttr()).Value;
             (_entityRegistry.Assembly.ProcessorArchitecture, _entityRegistry.Assembly.Flags) = GetArchAndFlags(attr);
             foreach (var decl in context.assemblyDecls().assemblyDecl())
             {
                 VisitAssemblyDecl(decl);
             }
+
+            // Apply command-line key file override (overrides .publickey directive)
+            if (_options.KeyFile is not null)
+            {
+                ApplyKeyFile(_options.KeyFile);
+            }
+
+            // Apply DebuggableAttribute for --debug option
+            if (_options.Debug || _options.DebugMode is not null)
+            {
+                ApplyDebuggableAttribute();
+            }
+
             return GrammarResult.SentinelValue.Result;
+        }
+
+        /// <summary>
+        /// Add DebuggableAttribute to the assembly based on debug options.
+        /// - /DEBUG: 0x101 = Default | DisableOptimizations
+        /// - /DEBUG=OPT: 0x03 = Default | IgnoreSymbolStoreSequencePoints
+        /// - /DEBUG=IMPL: 0x103 = Default | DisableOptimizations | EnableEditAndContinue
+        /// </summary>
+        private void ApplyDebuggableAttribute()
+        {
+            if (_entityRegistry.Assembly is null)
+            {
+                return;
+            }
+
+            // DebuggingModes enum values from System.Diagnostics.DebuggableAttribute:
+            // None = 0x00, Default = 0x01, IgnoreSymbolStoreSequencePoints = 0x02,
+            // EnableEditAndContinue = 0x04, DisableOptimizations = 0x100
+            const int DebuggingModesDefault = 0x101;  // Default | DisableOptimizations
+            const int DebuggingModesOpt = 0x03;       // Default | IgnoreSymbolStoreSequencePoints
+            const int DebuggingModesImpl = 0x103;     // Default | DisableOptimizations | EnableEditAndContinue
+
+            int debuggingModes = _options.DebugMode switch
+            {
+                DebugMode.Opt => DebuggingModesOpt,
+                DebugMode.Impl => DebuggingModesImpl,
+                _ => DebuggingModesDefault
+            };
+
+            // Get reference to core library
+            var coreAsmRef = _entityRegistry.GetCoreLibAssemblyReference();
+
+            // Create reference to System.Diagnostics.DebuggableAttribute
+            var debuggableAttrType = _entityRegistry.GetOrCreateTypeReference(
+                coreAsmRef,
+                new TypeName(null, "System.Diagnostics.DebuggableAttribute"));
+
+            // Create reference to nested type DebuggingModes
+            var debuggingModesType = _entityRegistry.GetOrCreateTypeReference(
+                debuggableAttrType,
+                new TypeName(null, "DebuggingModes"));
+
+            // Create constructor signature: .ctor(DebuggingModes)
+            BlobBuilder ctorSig = new();
+            var sigEncoder = new BlobEncoder(ctorSig);
+            sigEncoder.MethodSignature(SignatureCallingConvention.Default, 0, isInstanceMethod: true)
+                .Parameters(1,
+                    returnType => returnType.Void(),
+                    parameters => parameters.AddParameter().Type().Type(debuggingModesType.Handle, isValueType: true));
+
+            var ctor = _entityRegistry.CreateLazilyRecordedMemberReference(debuggableAttrType, ".ctor", ctorSig);
+
+            // Create custom attribute blob: prolog (0x0001) + int32 value + named args count (0x0000)
+            BlobBuilder attrValue = new();
+            attrValue.WriteUInt16(0x0001); // Prolog
+            attrValue.WriteInt32(debuggingModes); // DebuggingModes value
+            attrValue.WriteUInt16(0x0000); // No named arguments
+
+            // Create and attach the custom attribute
+            var customAttr = _entityRegistry.CreateCustomAttribute(ctor, attrValue);
+            customAttr.Owner = _entityRegistry.Assembly;
+        }
+
+        private void ApplyKeyFile(string keyFilePath)
+        {
+            if (_entityRegistry.Assembly is null)
+            {
+                return;
+            }
+
+            try
+            {
+                byte[] keyBytes = File.ReadAllBytes(keyFilePath);
+                BlobBuilder blob = new();
+                blob.WriteBytes(keyBytes);
+                _entityRegistry.Assembly.PublicKeyOrToken = blob;
+                _entityRegistry.Assembly.Flags |= AssemblyFlags.PublicKey;
+            }
+            catch (Exception ex)
+            {
+                // Create a location pointing to the first document (if available)
+                var firstDoc = _documents.Values.FirstOrDefault();
+                var location = firstDoc is not null
+                    ? new Location(new SourceSpan(0, 0), firstDoc)
+                    : new Location(new SourceSpan(0, 0), new SourceText(string.Empty, keyFilePath));
+                _diagnostics.Add(new Diagnostic(DiagnosticIds.KeyFileError, DiagnosticSeverity.Error, $"Failed to read key file '{keyFilePath}': {ex.Message}", location));
+            }
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitAssemblyDecl(CILParser.AssemblyDeclContext context) => VisitAssemblyDecl(context);
@@ -1644,7 +1806,10 @@ namespace ILAssembler
                 if (implementation is null)
                 {
                     offset = (uint)_manifestResources.Count;
-                    _manifestResources.WriteBytes(_resourceLocator(alias));
+                    byte[] resourceData = _resourceLocator(alias);
+                    // ECMA-335: Each resource is prefixed with a 4-byte length
+                    _manifestResources.WriteInt32(resourceData.Length);
+                    _manifestResources.WriteBytes(resourceData);
                 }
                 var res = _entityRegistry.CreateManifestResource(name, offset);
                 res.Attributes = flags;

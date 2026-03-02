@@ -1,0 +1,101 @@
+OVERVIEW
+
+The mod_auth_ntlm_winbind module provides authentication and
+authorisation over the web against a Microsoft Windows NT/2000/XP or
+Samba Domain Controller using Samba's winbind daemon running on the
+same machine Apache 1.x or 2.x is running on.
+
+Used only by IE and newer versions of the Mozilla browser family, the
+NTLM over HTTP protocol is completed undocumented by Microsoft but has
+been reverse engineered and described at the following URL:
+
+http://davenport.sf.net/ntlm.html
+
+
+INSTALLATION
+
+The configure.in script and Makefile are essentially wrappers around
+apxs, which should be able to do all the work by itself. Having said
+that, the build/install process should simply be a matter of:
+
+$ autoconf
+$ ./configure
+$ make
+$ sudo make install
+
+The configure script will attempt to locate apxs and httpd. It will
+prefer apxs2 to apxs, and will use the httpd it finds to determine
+whether it is building for Apache 1 or Apache 2. You can override the
+detected settings using --with-apxs=/path/to/apxs and
+--with-httpd=/path/to/httpd
+
+In the event that the configure/Make combination doesn't work, you
+should be able to do:
+
+[Apache 1.x]
+$ apxs -c -i mod_auth_ntlm_winbind.c
+
+[Apache 2.x]
+$ apxs -DAPACHE2 -c -i mod_auth_ntlm_winbind.c
+(substitute apxs2 as appropriate)
+
+
+CONFIGURATION
+
+mod_auth_ntlm_winbind uses the same ntlm_auth helper as the Squid
+proxy, so the same setup applies as for Squid: the winbindd_privileged
+directory must be accessible by the webserver userid. The
+configuration directives added by this module are as follows:
+
+NTLMAuth
+  set to 'on' to activate NTLM authentication
+NegotiateAuth
+  set to 'on' to activate Negotiate authentication
+NTLMBasicAuthoritative
+  set to 'off' to allow access control to be passed along to lower
+  modules if the UserID is not known to this module
+NTLMBasicAuth
+  set to 'on' to activate Basic authentication (for non-NTLM browsers)
+NTLMBasicRealm
+  Realm to use for Basic authentication
+NTLMAuthHelper
+  Location and arguments to the Samba ntlm_auth utility for NTLM auth
+NegotiateAuthHelper
+  Location and arguments to the Samba ntlm_auth utility for Negotiate auth
+PlaintextAuthHelper
+  Location and arguments to the Samba ntlm_auth utility for Plaintext auth
+
+
+The following httpd.conf configuration describes an example
+configuration for this module:
+
+NTLM authentication:
+
+<Directory "/srv/www/auth">
+  AuthName "NTLM Authentication thingy"
+  NTLMAuth on
+  NTLMAuthHelper "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp"
+  NTLMBasicAuthoritative on
+  AuthType NTLM
+  require valid-user
+</Directory>
+
+or, to enable 'NTLM+Negotiate' authentication too:
+
+<Directory "/srv/www/auth">
+  AuthName "NTLM Authentication thingy"
+  NTLMAuth on
+  NegotiateAuth on
+  NTLMAuthHelper "/usr/bin/ntlm_auth --helper-protocol=squid-2.5-ntlmssp"
+  NegotiateAuthHelper "/usr/bin/ntlm_auth --helper-protocol=gss-spnego"
+  NTLMBasicAuthoritative on
+  AuthType NTLM
+  AuthType Negotiate
+  require valid-user
+</Directory>
+
+
+To debug what is going on, add the following line to your httpd.conf
+to enable debug messages to be written to the apache error log file:
+
+LogLevel debug

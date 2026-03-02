@@ -415,7 +415,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device name prefixes
+        [ConditionalTheory(typeof(Directory_CreateDirectory), nameof(ReservedDeviceNamesAreBlocked))] // device name prefixes
         [MemberData(nameof(PathsWithReservedDeviceNames))]
         public void PathWithReservedDeviceNameAsPath_ThrowsDirectoryNotFoundException(string path)
         {
@@ -423,7 +423,7 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => Create(path));
         }
 
-        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device name prefixes
+        [ConditionalTheory(typeof(Directory_CreateDirectory), nameof(ReservedDeviceNamesAreBlocked))] // device name prefixes
         [MemberData(nameof(ReservedDeviceNames))]
         public void PathWithReservedDeviceNameAsExtendedPath(string path)
         {

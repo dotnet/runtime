@@ -49,12 +49,16 @@ export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
     instantiateWasm?: InstantiateWasmCallBack;
     onAbort?: (reason: any, extraJson?: string) => void;
     onExit?: (code: number) => void;
+    preInit?: (() => any)[];
+    preRun?: (() => any)[];
+    postRun?: (() => any)[];
 }
 
 export interface AssetEntryInternal extends AssetEntry {
     integrity?: string
     cache?: RequestCache
     useCredentials?: boolean
+    culture?: string
 }
 
 export type LoaderConfigInternal = LoaderConfig & {

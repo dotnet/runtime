@@ -16,7 +16,7 @@ namespace System.IO.Ports.Tests
         private const int NUM_TRYS = 5;
 
         #region Test Cases
-        [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(typeof(ErrorEvent), nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void ErrorEvent_RxOver()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -55,7 +55,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ErrorEvent), nameof(HasNullModem))]
         public void ErrorEvent_RxParity()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -94,7 +94,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(ErrorEvent), nameof(HasNullModem))]
         public void ErrorEvent_Frame()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))

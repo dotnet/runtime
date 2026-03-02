@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
@@ -1353,42 +1354,16 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunFixupKind.Check_TypeLayout:
                 case ReadyToRunFixupKind.Verify_TypeLayout:
+                case ReadyToRunFixupKind.ContinuationLayout:
                     ParseType(builder);
-                    ReadyToRunTypeLayoutFlags layoutFlags = (ReadyToRunTypeLayoutFlags)ReadUInt();
-                    builder.Append($" Flags {layoutFlags}");
-                    int actualSize = (int)ReadUInt();
-                    builder.Append($" Size {actualSize}");
-
-                    if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_HFA))
+                    ParseTypeLayout(builder);
+                    builder.Append(fixupType switch
                     {
-                        builder.Append($" HFAType {ReadUInt()}");
-                    }
-
-                    if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment))
-                    {
-                        if (!layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment_Native))
-                        {
-                            builder.Append($" Align {ReadUInt()}");
-                        }
-                    }
-
-                    if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout))
-                    {
-                        if (!layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout_Empty))
-                        {
-                            int cbGCRefMap = (actualSize / _contextReader.TargetPointerSize + 7) / 8;
-                            builder.Append(" GCLayout ");
-                            for (int i = 0; i < cbGCRefMap; i++)
-                            {
-                                builder.Append(ReadByte().ToString("X"));
-                            }
-                        }
-                    }
-
-                    if (fixupType == ReadyToRunFixupKind.Check_TypeLayout)
-                        builder.Append(" (CHECK_TYPE_LAYOUT)");
-                    else
-                        builder.Append(" (VERIFY_TYPE_LAYOUT)");
+                        ReadyToRunFixupKind.Check_TypeLayout => " (CHECK_TYPE_LAYOUT)",
+                        ReadyToRunFixupKind.Verify_TypeLayout => " (VERIFY_TYPE_LAYOUT)",
+                        ReadyToRunFixupKind.ContinuationLayout => " (CONTINUATION_LAYOUT)",
+                        _ => throw new UnreachableException()
+                    });
                     break;
 
                 case ReadyToRunFixupKind.Check_VirtualFunctionOverride:
@@ -1513,6 +1488,48 @@ namespace ILCompiler.Reflection.ReadyToRun
         private void ParseMethod(StringBuilder builder)
         {
             builder.Append(ParseMethod());
+        }
+
+        private void ParseTypeLayout(StringBuilder builder)
+        {
+            ReadyToRunTypeLayoutFlags layoutFlags = (ReadyToRunTypeLayoutFlags)ReadUInt();
+            builder.Append($" Flags {layoutFlags}");
+            int actualSize = (int)ReadUInt();
+            builder.Append($" Size {actualSize}");
+
+            if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_HFA))
+            {
+                builder.Append($" HFAType {ReadUInt()}");
+            }
+
+            if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment))
+            {
+                if (!layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_Alignment_Native))
+                {
+                    builder.Append($" Align {ReadUInt()}");
+                }
+                else
+                {
+                    builder.Append(" Align native");
+                }
+            }
+
+            if (layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout))
+            {
+                if (!layoutFlags.HasFlag(ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_GCLayout_Empty))
+                {
+                    int cbGCRefMap = (actualSize / _contextReader.TargetPointerSize + 7) / 8;
+                    builder.Append(" GCLayout 0x");
+                    for (int i = 0; i < cbGCRefMap; i++)
+                    {
+                        builder.Append(ReadByte().ToString("X"));
+                    }
+                }
+                else
+                {
+                    builder.Append(" GCLayout 0x00 (Empty)");
+                }
+            }
         }
 
         /// <summary>
@@ -1641,6 +1658,10 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.Rethrow:
                     builder.Append("RETHROW");
+                    break;
+
+                case ReadyToRunHelper.ThrowExact:
+                    builder.Append("THROW_EXACT");
                     break;
 
                 case ReadyToRunHelper.Overflow:
@@ -2004,6 +2025,23 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.StackProbe:
                     builder.Append("STACK_PROBE");
+                    break;
+
+                case ReadyToRunHelper.AllocContinuation:
+                    builder.Append("ALLOC_CONTINUATION");
+                    break;
+                case ReadyToRunHelper.AllocContinuationMethod:
+                    builder.Append("ALLOC_CONTINUATION_METHOD");
+                    break;
+                case ReadyToRunHelper.AllocContinuationClass:
+                    builder.Append("ALLOC_CONTINUATION_CLASS");
+                    break;
+
+                case ReadyToRunHelper.InitClass:
+                    builder.Append("INIT_CLASS");
+                    break;
+                case ReadyToRunHelper.InitInstClass:
+                    builder.Append("INIT_INST_CLASS");
                     break;
 
                 default:

@@ -11,35 +11,40 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/rollup.config.js"
     "${CLR_SRC_NATIVE_DIR}/rollup.config.defines.js"
     "${CLR_SRC_NATIVE_DIR}/rollup.config.plugins.js"
+
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/libBrowserHost.footer.js"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Native.Browser.Utils.footer.js"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Native.Browser.extpost.js"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Native.Browser.footer.js"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.footer.js"
 
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/host.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/index.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/host/types.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/assets.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/bootstrap.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/config.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/cross-module.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/dotnet.d.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/dotnet.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/exit.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/host-builder.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/icu.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/index.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/lib-initializers.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/logging.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/per-module.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/polyfills.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/promise-completion-source.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/run.ts"
-    "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/loader/types.ts"
     "${CLR_SRC_NATIVE_DIR}/corehost/browserhost/types.ts"
-    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/ems-ambient/index.ts"
+
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/cross-module/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/ems-ambient/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/assets.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/cross-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/host.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/per-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/host/types.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/assets.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/bootstrap.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/config.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/cross-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/dotnet.d.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/dotnet.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/exit.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/host-builder.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/icu.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/lib-initializers.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/logging.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/per-module.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/polyfills.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/promise-completion-source.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/run.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/loader/types.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/per-module/index.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/consts.d.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/ems-ambient.ts"
@@ -52,8 +57,9 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/node.d.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/public-api.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/Common/JavaScript/types/v8.d.ts"
-    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/cross-module.ts"
+
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/console-proxy.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/cross-module.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/exit.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/index.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/diagnostics/per-module.ts"
@@ -76,6 +82,7 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/runtime-list.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/strings.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/types.ts"
+
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/cancelable-promise.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Runtime.InteropServices.JavaScript.Native/interop/cross-module.ts"
@@ -105,8 +112,6 @@ set(ROLLUP_OUTPUTS
     "${STATIC_LIB_DESTINATION}/dotnet.js"
     "${STATIC_LIB_DESTINATION}/dotnet.js.map"
     "${STATIC_LIB_DESTINATION}/dotnet.d.ts"
-    "${STATIC_LIB_DESTINATION}/libBrowserHost.js"
-    "${STATIC_LIB_DESTINATION}/libBrowserHost.js.map"
     "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js"
     "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js.map"
     "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js"
@@ -119,9 +124,19 @@ set(ROLLUP_OUTPUTS
     "${STATIC_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.js.map"
 )
 
+if(CMAKE_BUILD_RUNTIME_FLAVOR STREQUAL "CoreCLR")
+    LIST(APPEND ROLLUP_OUTPUTS
+        "${STATIC_LIB_DESTINATION}/libBrowserHost.js"
+        "${STATIC_LIB_DESTINATION}/libBrowserHost.js.map"
+    )
+else()
+    #error TODO Mono
+endif()
+
+
 add_custom_command(
     OUTPUT ${ROLLUP_OUTPUTS}
-    COMMAND npm run rollup:cmake -- "Configuration:${CMAKE_BUILD_TYPE},ProductVersion:${CMAKE_PRODUCT_VERSION},ContinuousIntegrationBuild:${CMAKE_CONTINUOUS_INTEGRATION_BUILD},StaticLibDestination:${STATIC_LIB_DESTINATION}"
+    COMMAND npm run rollup:cmake -- "Configuration:${CMAKE_BUILD_TYPE},ProductVersion:${CMAKE_PRODUCT_VERSION},ContinuousIntegrationBuild:${CMAKE_CONTINUOUS_INTEGRATION_BUILD},RuntimeFlavor:${CMAKE_BUILD_RUNTIME_FLAVOR},StaticLibDestination:${STATIC_LIB_DESTINATION}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../.."
     COMMENT "Running 'npm run rollup' to generate JavaScript bundles"
     DEPENDS ${ROLLUP_TS_SOURCES}

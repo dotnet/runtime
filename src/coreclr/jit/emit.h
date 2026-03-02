@@ -638,8 +638,9 @@ protected:
         bool              idCatchRet;    // Instruction is for a catch 'return'
         CORINFO_SIG_INFO* idCallSig;     // Used to report native call site signatures to the EE
         BasicBlock*       idTargetBlock; // Target block for branches
+
 #ifdef TARGET_WASM
-        int lclOffset; // Base index of the WASM locals being declared
+        int lclBaseIndex; // Base index of the WASM locals being declared
 #endif
     };
 
@@ -3554,10 +3555,32 @@ public:
         sectionType    dsType;
         var_types      dsDataType;
 
-        // variable-sized array used to store the constant data, BasicBlock*
-        // array in the block cases, or emitLocation for the asyncResumeInfo
-        // case.
-        BYTE dsCont[0];
+    private:
+        union
+        {
+            BYTE*         dsData;      // for data blobs
+            BasicBlock**  dsBlocks;    // for block-based sections
+            emitLocation* dsLocations; // for async resume info
+        };
+
+    public:
+        BYTE*& Data()
+        {
+            assert(dsType == sectionType::data);
+            return dsData;
+        }
+
+        BasicBlock**& Blocks()
+        {
+            assert((dsType == sectionType::blockAbsoluteAddr) || (dsType == sectionType::blockRelative32));
+            return dsBlocks;
+        }
+
+        emitLocation*& Locations()
+        {
+            assert(dsType == sectionType::asyncResumeInfo);
+            return dsLocations;
+        }
     };
 
     /* These describe the entire initialized/uninitialized data sections */

@@ -211,6 +211,7 @@ private:
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
+    void     AfterLowerArgsForCall(GenTreeCall* call);
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
     void LowerSpecialCopyArgs(GenTreeCall* call);
     void InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum);
@@ -395,9 +396,11 @@ private:
     GenTree* LowerMul(GenTreeOp* mul);
     bool     TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
     GenTree* LowerBinaryArithmetic(GenTreeOp* binOp);
-    bool     LowerUnsignedDivOrMod(GenTreeOp* divMod);
+    GenTree* LowerUnsignedDivOrMod(GenTreeOp* divMod);
+    bool     TryLowerConstIntUDivOrUMod(GenTreeOp* divMod);
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
+    void     LowerDivOrMod(GenTreeOp* divMod);
     void     LowerBlockStore(GenTreeBlk* blkNode);
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);

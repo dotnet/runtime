@@ -65,6 +65,24 @@ public class ElidedBoundsChecks
         return span[i & (span.Length - 1)];
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool IndexPlusConstLessThanLen(ReadOnlySpan<char> span)
+    {
+        // X64-NOT: CORINFO_HELP_RNGCHKFAIL
+        // ARM64-NOT: CORINFO_HELP_RNGCHKFAIL
+        for (int i = 0; i < span.Length; i++)
+        {
+            if (span[i] == '%' && (uint)(i + 2) < (uint)span.Length)
+            {
+                if (span[i + 1] == 'F' && span[i + 2] == 'F')
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -90,6 +108,15 @@ public class ElidedBoundsChecks
             return 0;
 
         if (AndByLength(255) != 4)
+            return 0;
+
+        if (IndexPlusConstLessThanLen("%FF".AsSpan()) != true)
+            return 0;
+
+        if (IndexPlusConstLessThanLen("%F".AsSpan()) != false)
+            return 0;
+
+        if (IndexPlusConstLessThanLen("hello".AsSpan()) != false)
             return 0;
 
         return 100;

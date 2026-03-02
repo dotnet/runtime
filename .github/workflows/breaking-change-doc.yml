@@ -66,7 +66,7 @@ jobs:
         GITHUB_MODELS_API_KEY: ${{ secrets.MODELS_TOKEN }}
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v7
       with:
         name: breaking-change-doc-artifacts-${{ inputs.pr_number || github.event.pull_request.number }}
         path: artifacts/docs/breakingChanges/

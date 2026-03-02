@@ -3,12 +3,28 @@
 
 import { _ems_ } from "../../Common/JavaScript/ems-ambient";
 
+export function SystemJS_MarkAsyncMain(): void {
+    _ems_.DOTNET.isAsyncMain = true;
+}
+
 export function SystemJS_ResolveMainPromise(exitCode: number): void {
+    if (_ems_.DOTNET.isAsyncMain) {
+        // ignore first synchronous call and keep running the event loop
+        // until AsyncHelpers.HandleAsyncEntryPoint calls it again with the real exit code
+        _ems_.DOTNET.isAsyncMain = false;
+        return;
+    }
+
     if (_ems_.dotnetLoaderExports.resolveRunMainPromise) {
         _ems_.dotnetLoaderExports.resolveRunMainPromise(exitCode);
     } else {
         // this is for corerun, which does not use the promise
-        _ems_.exitJS(exitCode, true);
+        _ems_.EXITSTATUS = exitCode;
+        _ems_.ABORT = true;
+        _ems_.dotnetBrowserUtilsExports.abortBackgroundTimers();
+        globalThis.setTimeout(() => {
+            _ems_.dotnetBrowserUtilsExports.abortPosix(exitCode, null, true);
+        }, 0);
     }
 }
 
@@ -21,6 +37,12 @@ export function SystemJS_RejectMainPromise(messagePtr: number, messageLength: nu
         _ems_.dotnetLoaderExports.rejectRunMainPromise(error);
     } else {
         // this is for corerun, which does not use the promise
+        _ems_.EXITSTATUS = -1;
+        _ems_.ABORT = true;
+        _ems_.dotnetBrowserUtilsExports.abortBackgroundTimers();
+        globalThis.setTimeout(() => {
+            _ems_.dotnetBrowserUtilsExports.abortPosix(-1, null, true);
+        }, 0);
         throw error;
     }
 }

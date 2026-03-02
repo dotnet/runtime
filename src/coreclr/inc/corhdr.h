@@ -869,6 +869,7 @@ typedef char * MDUTF8STR;
 //
 //*****************************************************************************
 
+
 typedef enum CorElementType
 {
     ELEMENT_TYPE_END            = 0x00,
@@ -912,6 +913,7 @@ typedef enum CorElementType
     ELEMENT_TYPE_CMOD_OPT       = 0x20,     // optional C modifier : E_T_CMOD_OPT <mdTypeRef/mdTypeDef>
 
     // This is for signatures generated internally (which will not be persisted in any way).
+    // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of ELEMENT_TYPE_INTERNAL and ELEMENT_TYPE_CMOD_INTERNAL.
     ELEMENT_TYPE_INTERNAL       = 0x21,     // INTERNAL <typehandle>
     ELEMENT_TYPE_CMOD_INTERNAL  = 0x22,     // CMOD_INTERNAL <required (1 byte: non-zero if required, 0 if optional)> <typehandle>
 
