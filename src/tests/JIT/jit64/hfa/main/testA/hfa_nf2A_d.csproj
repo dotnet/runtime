@@ -1,14 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- https://github.com/dotnet/runtime/issues/123946 -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWasm)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>full</DebugType>
     <Optimize>False</Optimize>
-    <!-- https://github.com/dotnet/runtime/issues/123946 -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWasm)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="hfa_testA.cs" />
@@ -18,5 +14,6 @@
     <ProjectReference Include="..\dll\hfa_nested_f32_common.csproj" />
     <ProjectReference Include="..\dll\hfa_nested_f32_interop_cpp.csproj" />
     <CMakeProjectReference Include="..\dll\CMakeLists.txt" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>
