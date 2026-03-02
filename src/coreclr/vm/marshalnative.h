@@ -35,6 +35,14 @@ public:
     //====================================================================
     static FCDECL0(FC_BOOL_RET, AreComObjectsAvailableForCleanup);
 #endif // FEATURE_COMINTEROP
+
+
+    enum class MarshalOperation : int32_t
+    {
+        Marshal,
+        Unmarshal,
+        Cleanup
+    };
 };
 
 extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD);
@@ -42,7 +50,7 @@ extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD);
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
 extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();
 
-extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, PCODE* pStructMarshalStub, SIZE_T* pSize);
+extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, StructMarshalStubs::MarshalOperation operation, PCODE* pStructMarshalStub, SIZE_T* pSize);
 extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL throwIfNotMarshalable);
 
 extern "C" void QCALLTYPE MarshalNative_GetDelegateForFunctionPointerInternal(PVOID FPtr, QCall::TypeHandle t, QCall::ObjectHandleOnStack retDelegate);

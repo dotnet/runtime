@@ -96,7 +96,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
     return ret;
 }
 
-extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, PCODE* pStructMarshalStub, SIZE_T* pSize)
+extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, MarshalNative::MarshalOperation operation, PCODE* pStructMarshalStub, SIZE_T* pSize)
 {
     QCALL_CONTRACT;
 
@@ -114,6 +114,41 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
     }
     else if (th.HasLayout())
     {
+        if (th.IsValueType())
+        {
+            // For value types instantiate and use StructureMarshaler<T> which will generate optimized IL for marshalling the struct.
+            BinderMethodID methodId = METHOD__NIL;
+            switch (operation)
+            {
+                case MarshalNative::MarshalOperation::Marshal:
+                    methodId = METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED;
+                    break;
+                case MarshalNative::MarshalOperation::Unmarshal:
+                    methodId = METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED;
+                    break;
+                case MarshalNative::MarshalOperation::Cleanup:
+                    methodId = METHOD__STRUCTURE_MARSHALER__FREE;
+                    break;
+                default:
+                    UNREACHABLE();
+            }
+
+            if (methodId != METHOD__NIL)
+            {
+                MethodDesc* pPrimaryMD = CoreLibBinder::GetMethod(methodId);
+                TypeHandle structureMarshalerType = TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1));
+                MethodDesc* pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                    pPrimaryMD,
+                    structureMarshalerType.GetMethodTable(),
+                    FALSE,
+                    Instantiation(),
+                    FALSE);
+                *pStructMarshalStub = pMD->GetSingleCallableAddrOfCode();
+                *pSize = 0;
+                ret = TRUE;
+            }
+        }
+
         MethodTable* pMT = th.GetMethodTable();
         MethodDesc* structMarshalStub = NULL;
 

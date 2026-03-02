@@ -251,19 +251,21 @@ namespace System.Runtime.InteropServices
             if (pMT->HasInstantiation)
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
 
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
+            delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> structMarshalStub;
             nuint size;
-            if (!TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size))
+            if (!TryGetStructMarshalStub((IntPtr)pMT, MarshalOperation.Marshal, &structMarshalStub, &size))
                 throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structure));
 
             if (structMarshalStub != null)
             {
                 if (fDeleteOld)
                 {
-                    structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement?>());
+                    delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> structCleanupStub;
+                    TryGetStructMarshalStub((IntPtr)pMT, MarshalOperation.Cleanup, &structCleanupStub, &size);
+                    structCleanupStub(ref structure.GetRawData(), (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
                 }
 
-                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Marshal, ref Unsafe.NullRef<CleanupWorkListElement?>());
+                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
             else
             {
@@ -283,12 +285,12 @@ namespace System.Runtime.InteropServices
 
             delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
             nuint size;
-            if (!TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size))
+            if (!TryGetStructMarshalStub((IntPtr)pMT, MarshalOperation.Unmarshal, &structMarshalStub, &size))
                 throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structure));
 
             if (structMarshalStub != null)
             {
-                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, MarshalOperation.Unmarshal, ref Unsafe.NullRef<CleanupWorkListElement?>());
+                structMarshalStub(ref structure.GetRawData(), (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
             else
             {
@@ -313,22 +315,22 @@ namespace System.Runtime.InteropServices
             if (rt.IsGenericType)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
 
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
+            delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> structMarshalStub;
             nuint size;
-            if (!TryGetStructMarshalStub(rt.GetUnderlyingNativeHandle(), &structMarshalStub, &size))
+            if (!TryGetStructMarshalStub(rt.GetUnderlyingNativeHandle(), MarshalOperation.Cleanup, &structMarshalStub, &size))
                 throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, nameof(structuretype));
 
             GC.KeepAlive(rt);
 
             if (structMarshalStub != null)
             {
-                structMarshalStub(ref Unsafe.NullRef<byte>(), (byte*)ptr, MarshalOperation.Cleanup, ref Unsafe.NullRef<CleanupWorkListElement?>());
+                structMarshalStub(ref Unsafe.NullRef<byte>(), (byte*)ptr, ref Unsafe.NullRef<CleanupWorkListElement?>());
             }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_TryGetStructMarshalStub")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool TryGetStructMarshalStub(IntPtr th, delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void>* structMarshalStub, nuint* size);
+        internal static unsafe partial bool TryGetStructMarshalStub(IntPtr th, int operation, delegate*<ref byte, byte*, ref CleanupWorkListElement?, void>* structMarshalStub, nuint* size);
 
         // Note: Callers are required to keep obj alive
         internal static unsafe bool IsPinnable(object? obj)
