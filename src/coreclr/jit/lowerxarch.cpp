@@ -10281,6 +10281,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_AVX512BMM_BitMultiplyMatrix16x16WithOrReduction:
                             case NI_AVX512BMM_BitMultiplyMatrix16x16WithXorReduction:
                             {
+                                // op1 is addend
+                                // op2 (left) and op3 (right) are commutative, so the order doesn't matter
+                                // If op2 is containable and op3 is not containable, swap op2 and op3 so the
+                                // containable op is in op3.
                                 bool supportsOp2RegOptional = false;
                                 bool supportsOp3RegOptional = false;
 
