@@ -408,6 +408,36 @@ namespace System.Linq
                     outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
+        [DynamicDependency("GroupJoin`3", typeof(Enumerable))]
+        public static IQueryable<IGrouping<TOuter, TInner>> GroupJoin<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+
+            return outer.Provider.CreateQuery<IGrouping<TOuter, TInner>>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, IQueryable<IGrouping<TOuter, TInner>>>(GroupJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector)));
+        }
+
+        [DynamicDependency("GroupJoin`3", typeof(Enumerable))]
+        public static IQueryable<IGrouping<TOuter, TInner>> GroupJoin<TOuter, TInner, TKey>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, IEqualityComparer<TKey>? comparer)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+
+            return outer.Provider.CreateQuery<IGrouping<TOuter, TInner>>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, IEqualityComparer<TKey>, IQueryable<IGrouping<TOuter, TInner>>>(GroupJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
+        }
+
         [DynamicDependency("GroupJoin`4", typeof(Enumerable))]
         public static IQueryable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, IEnumerable<TInner>, TResult>> resultSelector)
         {
