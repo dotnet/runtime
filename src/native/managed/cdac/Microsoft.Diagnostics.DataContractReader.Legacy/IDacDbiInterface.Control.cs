@@ -146,4 +146,103 @@ public unsafe interface IDacDbiInterfaceControl
 
     [PreserveSig]
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
+
+    [PreserveSig]
+    int GetILCodeAndSig(ulong vmDomainAssembly, uint functionToken, nint pCodeInfo, uint* pLocalSigToken);
+
+    [PreserveSig]
+    int GetNativeCodeInfo(ulong vmDomainAssembly, uint functionToken, nint pCodeInfo);
+
+    [PreserveSig]
+    int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken);
+
+    [PreserveSig]
+    int IsValueType(ulong th, int* pResult);
+
+    [PreserveSig]
+    int HasTypeParams(ulong th, int* pResult);
+
+    [PreserveSig]
+    int GetClassInfo(ulong vmAppDomain, ulong thExact, nint pData);
+
+    [PreserveSig]
+    int GetInstantiationFieldInfo(ulong vmDomainAssembly, ulong vmThExact, ulong vmThApprox, nint pFieldList, nuint* pObjectSize);
+
+    [PreserveSig]
+    int GetObjectExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong addr, nint pTypeInfo);
+
+    [PreserveSig]
+    int GetObjectExpandedTypeInfoFromID(int boxed, ulong vmAppDomain, nint id, nint pTypeInfo);
+
+    [PreserveSig]
+    int TypeHandleToExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong vmTypeHandle, nint pTypeInfo);
+
+    [PreserveSig]
+    int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal);
+
+    [PreserveSig]
+    int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal);
+
+    [PreserveSig]
+    int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* vmTypeHandle);
+
+    [PreserveSig]
+    int GetMethodDescParams(ulong vmAppDomain, ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams);
+
+    [PreserveSig]
+    int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal);
+
+    [PreserveSig]
+    int GetCollectibleTypeStaticAddress(ulong vmField, ulong vmAppDomain, ulong* pRetVal);
+
+    [PreserveSig]
+    int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, int* pfStatic);
+
+    [PreserveSig]
+    int GetTypeHandleParams(ulong vmAppDomain, ulong vmTypeHandle, nint pParams);
+
+    [PreserveSig]
+    int GetSimpleType(ulong vmAppDomain, int simpleType, uint* pMetadataToken, ulong* pVmModule, ulong* pVmDomainAssembly);
+
+    [PreserveSig]
+    int IsExceptionObject(ulong vmObject, int* pResult);
+
+    [PreserveSig]
+    int GetStackFramesFromException(ulong vmObject, nint dacStackFrames);
+
+    [PreserveSig]
+    int IsRcw(ulong vmObject, int* pResult);
+
+    [PreserveSig]
+    int IsDelegate(ulong vmObject, int* pResult);
+
+    [PreserveSig]
+    int GetDelegateType(ulong delegateObject, int* delegateType);
+
+    [PreserveSig]
+    int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionDomainAssembly, uint* pMethodDef);
+
+    [PreserveSig]
+    int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
+
+    [PreserveSig]
+    int GetLoaderHeapMemoryRanges(nint pRanges);
+
+    [PreserveSig]
+    int IsModuleMapped(ulong pModule, int* isModuleMapped);
+
+    [PreserveSig]
+    int MetadataUpdatesApplied(byte* pResult);
+
+    [PreserveSig]
+    int GetRcwCachedInterfaceTypes(ulong vmObject, ulong vmAppDomain, int bIInspectableOnly, nint pDacInterfaces);
+
+    [PreserveSig]
+    int GetRcwCachedInterfacePointers(ulong vmObject, int bIInspectableOnly, nint pDacItfPtrs);
+
+    [PreserveSig]
+    int GetCachedWinRTTypesForIIDs(ulong vmAppDomain, nint iids, nint pTypes);
+
+    [PreserveSig]
+    int GetCachedWinRTTypes(ulong vmAppDomain, nint piids, nint pTypes);
 }
