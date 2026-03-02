@@ -61,8 +61,6 @@ namespace System.IO
 
             internal int Read(MemoryStream outer, Span<byte> buffer)
             {
-                outer.EnsureNotClosed();
-
                 int n = Math.Min(outer._length - outer._position, buffer.Length);
                 if (n <= 0)
                     return 0;
@@ -74,8 +72,6 @@ namespace System.IO
 
             internal int ReadByte(MemoryStream outer)
             {
-                outer.EnsureNotClosed();
-
                 if (outer._position >= outer._length)
                     return -1;
 
@@ -84,9 +80,6 @@ namespace System.IO
 
             internal void Write(MemoryStream outer, ReadOnlySpan<byte> buffer)
             {
-                outer.EnsureNotClosed();
-                outer.EnsureWriteable();
-
                 int i = outer._position + buffer.Length;
                 if (i < 0)
                     throw new IOException(SR.IO_StreamTooLong);
@@ -109,9 +102,6 @@ namespace System.IO
 
             internal void WriteByte(MemoryStream outer, byte value)
             {
-                outer.EnsureNotClosed();
-                outer.EnsureWriteable();
-
                 if (outer._position >= outer._length)
                 {
                     int newLength = outer._position + 1;
@@ -129,11 +119,6 @@ namespace System.IO
 
             internal void SetLength(MemoryStream outer, long value)
             {
-                if (value < 0 || value > MemStreamMaxLength)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
-
-                outer.EnsureWriteable();
-
                 int newLength = (int)value;
                 if (newLength > _memory.Length)
                     throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
@@ -158,15 +143,11 @@ namespace System.IO
 
             internal void WriteTo(MemoryStream outer, Stream stream)
             {
-                ArgumentNullException.ThrowIfNull(stream);
-                outer.EnsureNotClosed();
                 stream.Write(_memory.Span.Slice(0, outer._length));
             }
 
             internal void CopyTo(MemoryStream outer, Stream destination)
             {
-                outer.EnsureNotClosed();
-
                 int remaining = outer._length - outer._position;
                 if (remaining > 0)
                 {
@@ -177,8 +158,6 @@ namespace System.IO
 
             internal Task CopyToAsync(MemoryStream outer, Stream destination, CancellationToken cancellationToken)
             {
-                outer.EnsureNotClosed();
-
                 if (cancellationToken.IsCancellationRequested)
                     return Task.FromCanceled(cancellationToken);
 
@@ -195,8 +174,6 @@ namespace System.IO
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal ReadOnlySpan<byte> InternalReadSpan(MemoryStream outer, int count)
             {
-                outer.EnsureNotClosed();
-
                 int origPos = outer._position;
                 int newPos = origPos + count;
 

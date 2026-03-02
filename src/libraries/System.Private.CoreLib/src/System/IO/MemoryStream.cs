@@ -226,10 +226,10 @@ namespace System.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpan<byte> InternalReadSpan(int count)
         {
+            EnsureNotClosed();
+
             if (_memoryData is not null)
                 return _memoryData.InternalReadSpan(this, count);
-
-            EnsureNotClosed();
 
             int origPos = _position;
             int newPos = origPos + count;
@@ -266,16 +266,15 @@ namespace System.IO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpan<byte> InternalRead(int count)
         {
+            EnsureNotClosed();
+
             if (_memoryData is not null)
             {
-                EnsureNotClosed();
                 int n = Math.Min(_length - _position, count);
                 if (n <= 0)
                     return default;
                 return _memoryData.InternalReadSpan(this, n);
             }
-
-            EnsureNotClosed();
 
             int available = _length - _position;
             if (available > count)
@@ -362,11 +361,10 @@ namespace System.IO
         public override int Read(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
+            EnsureNotClosed();
 
             if (_memoryData is not null)
                 return _memoryData.Read(this, new Span<byte>(buffer, offset, count));
-
-            EnsureNotClosed();
 
             int n = _length - _position;
             if (n > count)
@@ -399,10 +397,10 @@ namespace System.IO
                 return base.Read(buffer);
             }
 
+            EnsureNotClosed();
+
             if (_memoryData is not null)
                 return _memoryData.Read(this, buffer);
-
-            EnsureNotClosed();
 
             int n = Math.Min(_length - _position, buffer.Length);
             if (n <= 0)
@@ -475,10 +473,10 @@ namespace System.IO
 
         public override int ReadByte()
         {
+            EnsureNotClosed();
+
             if (_memoryData is not null)
                 return _memoryData.ReadByte(this);
-
-            EnsureNotClosed();
 
             if (_position >= _length)
                 return -1;
@@ -500,14 +498,13 @@ namespace System.IO
 
             // Validate the arguments the same way Stream does for back-compat.
             ValidateCopyToArguments(destination, bufferSize);
+            EnsureNotClosed();
 
             if (_memoryData is not null)
             {
                 _memoryData.CopyTo(this, destination);
                 return;
             }
-
-            EnsureNotClosed();
 
             int originalPosition = _position;
 
@@ -528,11 +525,10 @@ namespace System.IO
             // This implementation offers better performance compared to the base class version.
 
             ValidateCopyToArguments(destination, bufferSize);
+            EnsureNotClosed();
 
             if (_memoryData is not null)
                 return _memoryData.CopyToAsync(this, destination, cancellationToken);
-
-            EnsureNotClosed();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to ReadAsync() which a subclass might have overridden.
@@ -610,16 +606,16 @@ namespace System.IO
         //
         public override void SetLength(long value)
         {
+            if (value < 0 || value > MemStreamMaxLength)
+                throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
+
+            EnsureWriteable();
+
             if (_memoryData is not null)
             {
                 _memoryData.SetLength(this, value);
                 return;
             }
-
-            if (value < 0 || value > MemStreamMaxLength)
-                throw new ArgumentOutOfRangeException(nameof(value), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
-
-            EnsureWriteable();
 
             // Origin wasn't publicly exposed above.
             Debug.Assert(MemStreamMaxLength == Array.MaxLength);  // Check parameter validation logic in this method if this fails.
@@ -650,15 +646,14 @@ namespace System.IO
         public override void Write(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
+            EnsureNotClosed();
+            EnsureWriteable();
 
             if (_memoryData is not null)
             {
                 _memoryData.Write(this, new ReadOnlySpan<byte>(buffer, offset, count));
                 return;
             }
-
-            EnsureNotClosed();
-            EnsureWriteable();
 
             int i = _position + count;
             // Check for overflow
@@ -708,14 +703,14 @@ namespace System.IO
                 return;
             }
 
+            EnsureNotClosed();
+            EnsureWriteable();
+
             if (_memoryData is not null)
             {
                 _memoryData.Write(this, buffer);
                 return;
             }
-
-            EnsureNotClosed();
-            EnsureWriteable();
 
             // Check for overflow
             int i = _position + buffer.Length;
@@ -800,14 +795,14 @@ namespace System.IO
 
         public override void WriteByte(byte value)
         {
+            EnsureNotClosed();
+            EnsureWriteable();
+
             if (_memoryData is not null)
             {
                 _memoryData.WriteByte(this, value);
                 return;
             }
-
-            EnsureNotClosed();
-            EnsureWriteable();
 
             if (_position >= _length)
             {
@@ -833,15 +828,14 @@ namespace System.IO
         // Writes this MemoryStream to another stream.
         public virtual void WriteTo(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+            EnsureNotClosed();
+
             if (_memoryData is not null)
             {
                 _memoryData.WriteTo(this, stream);
                 return;
             }
-
-            ArgumentNullException.ThrowIfNull(stream);
-
-            EnsureNotClosed();
 
             stream.Write(_buffer, _origin, _length - _origin);
         }
