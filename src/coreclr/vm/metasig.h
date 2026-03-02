@@ -427,6 +427,11 @@ DEFINE_METASIG_T(SM(PtrResolver_PtrInt_PtrClass_PtrException_RetVoid, P(C(RESOLV
 DEFINE_METASIG_T(SM(PtrResolver_PtrInt_PtrInt_PtrInt_PtrArrByte_PtrException_RetVoid, P(C(RESOLVER)) P(i) P(i) P(i) P(a(b)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrResolver_PtrArrByte_PtrException_RetVoid, P(C(RESOLVER)) P(a(b)) P(C(EXCEPTION)), v))
 DEFINE_METASIG_T(SM(PtrResolver_Int_PtrStr_PtrException_RetVoid, P(C(RESOLVER)) i P(s) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrObj_PtrObj_PtrException_RetVoid, P(j) P(j) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrObj_PtrStr_PtrException_RetVoid, P(j) P(s) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrException_PtrException_RetVoid, P(C(EXCEPTION)) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrChar_PtrException_PtrObj_PtrException_RetVoid, P(u) P(C(EXCEPTION)) P(j) P(C(EXCEPTION)), v))
+DEFINE_METASIG_T(SM(PtrChar_PtrStr_PtrException_RetVoid, P(u) P(s) P(C(EXCEPTION)), v))
 
 // fields - e.g.:
 // DEFINE_METASIG(Fld(PtrVoid, P(v)))
