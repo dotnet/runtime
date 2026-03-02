@@ -137,6 +137,8 @@ export function dotnetUpdateInternalsSubscriber() {
             abortStartup: table[15],
             quitNow: table[16],
             normalizeException: table[17],
+            fetchSatelliteAssemblies: table[18],
+            fetchLazyAssembly: table[19],
         };
         Object.assign(dotnetLoaderExports, loaderExportsLocal);
         Object.assign(logger, loggerLocal);

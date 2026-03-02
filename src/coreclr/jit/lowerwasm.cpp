@@ -97,6 +97,7 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
     assert(mul->OperIs(GT_MUL));
+    LowerBinaryArithmetic(mul);
     ContainCheckMul(mul);
     return mul->gtNext;
 }

@@ -1093,85 +1093,12 @@ void ConfigDoubleArray::Dump()
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
-void Counter::dump(FILE* output)
+void Counter::dump(FILE* output) const
 {
     fprintf(output, "%lld\n", (long long)Value);
 }
 
-/*****************************************************************************
- *  Histogram class.
- */
-
-Histogram::Histogram(const unsigned* const sizeTable)
-    : m_sizeTable(sizeTable)
-{
-    unsigned sizeCount = 0;
-    do
-    {
-        sizeCount++;
-    } while ((sizeTable[sizeCount] != 0) && (sizeCount < 1000));
-
-    assert(sizeCount < HISTOGRAM_MAX_SIZE_COUNT - 1);
-
-    m_sizeCount = sizeCount;
-
-    memset(m_counts, 0, (m_sizeCount + 1) * sizeof(*m_counts));
-}
-
-void Histogram::dump(FILE* output)
-{
-    unsigned t = 0;
-    for (unsigned i = 0; i < m_sizeCount; i++)
-    {
-        t += m_counts[i];
-    }
-
-    for (unsigned c = 0, i = 0; i <= m_sizeCount; i++)
-    {
-        if (i == m_sizeCount)
-        {
-            if (m_counts[i] == 0)
-            {
-                break;
-            }
-
-            fprintf(output, "      >    %7u", m_sizeTable[i - 1]);
-        }
-        else
-        {
-            if (i == 0)
-            {
-                fprintf(output, "     <=    ");
-            }
-            else
-            {
-                fprintf(output, "%7u .. ", m_sizeTable[i - 1] + 1);
-            }
-
-            fprintf(output, "%7u", m_sizeTable[i]);
-        }
-
-        c += static_cast<unsigned>(m_counts[i]);
-
-        fprintf(output, " ===> %7u count (%3u%% of total)\n", static_cast<unsigned>(m_counts[i]), (int)(100.0 * c / t));
-    }
-}
-
-void Histogram::record(unsigned size)
-{
-    unsigned i;
-    for (i = 0; i < m_sizeCount; i++)
-    {
-        if (m_sizeTable[i] >= size)
-        {
-            break;
-        }
-    }
-
-    InterlockedAdd(&m_counts[i], 1);
-}
-
-void NodeCounts::dump(FILE* output)
+void NodeCounts::dump(FILE* output) const
 {
     struct Entry
     {
@@ -1219,13 +1146,13 @@ void NodeCounts::record(genTreeOps oper)
 
 struct DumpOnShutdownEntry
 {
-    const char*     Name;
-    class Dumpable* Dumpable;
+    const char*           Name;
+    const class Dumpable* Dumpable;
 };
 
 static DumpOnShutdownEntry s_dumpOnShutdown[16];
 
-DumpOnShutdown::DumpOnShutdown(const char* name, Dumpable* dumpable)
+DumpOnShutdown::DumpOnShutdown(const char* name, const Dumpable* dumpable)
 {
     for (DumpOnShutdownEntry& entry : s_dumpOnShutdown)
     {

@@ -1371,12 +1371,184 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetHandleEnum(void** ppHandleEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetHandleEnum(ppHandleEnum) : HResults.E_NOTIMPL;
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSHandleEnum : ISOSHandleEnum
+    {
+        private readonly Target _target;
+        private readonly SOSHandleData[] _handles;
+        private readonly ISOSHandleEnum? _legacyHandleEnum;
+        private uint _index;
+
+        public SOSHandleEnum(Target target, HandleType[] types, ISOSHandleEnum? legacyHandleEnum)
+        {
+            _target = target;
+            _legacyHandleEnum = legacyHandleEnum;
+            _handles = GetHandles(types);
+        }
+
+        private SOSHandleData[] GetHandles(HandleType[] types)
+        {
+            IGC gc = _target.Contracts.GC;
+            List<HandleData> handles = gc.GetHandles(types);
+
+            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+            ClrDataAddress appDomainClrAddress = appDomain.ToClrDataAddress(_target);
+
+            SOSHandleData[] sosHandles = new SOSHandleData[handles.Count];
+            for (int i = 0; i < handles.Count; i++)
+            {
+                HandleData h = handles[i];
+                sosHandles[i] = new SOSHandleData
+                {
+                    AppDomain = appDomainClrAddress,
+                    Handle = h.Handle.ToClrDataAddress(_target),
+                    Secondary = h.Secondary.ToClrDataAddress(_target),
+                    Type = h.Type,
+                    StrongReference = h.StrongReference ? 1 : 0,
+                    RefCount = h.RefCount,
+                    JupiterRefCount = h.JupiterRefCount,
+                    IsPegged = h.IsPegged ? 1 : 0,
+                };
+            }
+
+            return sosHandles;
+        }
+
+        int ISOSHandleEnum.Next(uint count, SOSHandleData[] handles, uint* pNeeded)
+        {
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pNeeded is null || handles is null)
+                    throw new NullReferenceException();
+
+                uint written = 0;
+                while (written < count && _index < _handles.Length)
+                    handles[written++] = _handles[(int)_index++];
+
+                *pNeeded = written;
+                hr = _index < _handles.Length ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+#if DEBUG
+            if (_legacyHandleEnum is not null)
+            {
+                SOSHandleData[] handlesLocal = new SOSHandleData[count];
+                uint neededLocal;
+                int hrLocal = _legacyHandleEnum.Next(count, handlesLocal, &neededLocal);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+                {
+                    Debug.Assert(*pNeeded == neededLocal, $"cDAC: {*pNeeded}, DAC: {neededLocal}");
+                    for (int i = 0; i < neededLocal; i++)
+                    {
+                        Debug.Assert(handles[i].AppDomain == handlesLocal[i].AppDomain, $"cDAC: {handles[i].AppDomain:x}, DAC: {handlesLocal[i].AppDomain:x}");
+                        Debug.Assert(handles[i].Handle == handlesLocal[i].Handle, $"cDAC: {handles[i].Handle:x}, DAC: {handlesLocal[i].Handle:x}");
+                        Debug.Assert(handles[i].Secondary == handlesLocal[i].Secondary, $"cDAC: {handles[i].Secondary:x}, DAC: {handlesLocal[i].Secondary:x}");
+                        Debug.Assert(handles[i].Type == handlesLocal[i].Type, $"cDAC: {handles[i].Type}, DAC: {handlesLocal[i].Type}");
+                        Debug.Assert(handles[i].StrongReference == handlesLocal[i].StrongReference, $"cDAC: {handles[i].StrongReference}, DAC: {handlesLocal[i].StrongReference}");
+                        Debug.Assert(handles[i].RefCount == handlesLocal[i].RefCount, $"cDAC: {handles[i].RefCount}, DAC: {handlesLocal[i].RefCount}");
+                        Debug.Assert(handles[i].JupiterRefCount == handlesLocal[i].JupiterRefCount, $"cDAC: {handles[i].JupiterRefCount}, DAC: {handlesLocal[i].JupiterRefCount}");
+                        Debug.Assert(handles[i].IsPegged == handlesLocal[i].IsPegged, $"cDAC: {handles[i].IsPegged}, DAC: {handlesLocal[i].IsPegged}");
+                    }
+                }
+            }
+#endif
+            return hr;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _index += count;
+#if DEBUG
+            _legacyHandleEnum?.Skip(count);
+#endif
+            return HResults.S_OK;
+        }
+        int ISOSEnum.Reset()
+        {
+            _index = 0;
+#if DEBUG
+            _legacyHandleEnum?.Reset();
+#endif
+            return HResults.S_OK;
+        }
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            if (pCount is null) return HResults.E_POINTER;
+            *pCount = (uint)_handles.Length;
+#if DEBUG
+            if (_legacyHandleEnum is not null)
+            {
+                uint countLocal;
+                _legacyHandleEnum.GetCount(&countLocal);
+                Debug.Assert(countLocal == (uint)_handles.Length);
+            }
+#endif
+            return HResults.S_OK;
+        }
+    }
+
+    int ISOSDacInterface.GetHandleEnum(out ISOSHandleEnum? ppHandleEnum)
+    {
+        int hr = HResults.S_OK;
+        ppHandleEnum = default;
+        try
+        {
+            IGC gc = _target.Contracts.GC;
+            HandleType[] supportedHandleTypes = gc.GetSupportedHandleTypes();
+            ISOSHandleEnum? legacyHandleEnum = null;
+#if DEBUG
+            if (_legacyImpl is not null)
+            {
+                int hrLocal = _legacyImpl.GetHandleEnum(out legacyHandleEnum);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            }
+#endif
+            ppHandleEnum = new SOSHandleEnum(_target, supportedHandleTypes, legacyHandleEnum);
+            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
+            // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
+            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        return hr;
+    }
     int ISOSDacInterface.GetHandleEnumForGC(uint gen, void** ppHandleEnum)
         => _legacyImpl is not null ? _legacyImpl.GetHandleEnumForGC(gen, ppHandleEnum) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetHandleEnumForTypes([In, MarshalUsing(CountElementName = "count")] uint[] types, uint count, void** ppHandleEnum)
-        => _legacyImpl is not null ? _legacyImpl.GetHandleEnumForTypes(types, count, ppHandleEnum) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetHandleEnumForTypes([In, MarshalUsing(CountElementName = "count")] uint[] types, uint count, out ISOSHandleEnum? ppHandleEnum)
+    {
+        int hr = HResults.S_OK;
+        ppHandleEnum = null;
+        try
+        {
+            ISOSHandleEnum? legacyHandleEnum = null;
+#if DEBUG
+            if (_legacyImpl is not null)
+            {
+                int hrLocal = _legacyImpl.GetHandleEnumForTypes(types, count, out legacyHandleEnum);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            }
+#endif
+            IGC gc = _target.Contracts.GC;
+            HandleType[] handleTypes = gc.GetHandleTypes(types);
+            ppHandleEnum = new SOSHandleEnum(_target, handleTypes, legacyHandleEnum);
+            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
+            // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
+            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        return hr;
+    }
     int ISOSDacInterface.GetHeapAllocData(uint count, void* data, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetHeapAllocData(count, data, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapAnalyzeData(ClrDataAddress addr, DacpGcHeapAnalyzeData* data)
@@ -2641,7 +2813,77 @@ public sealed unsafe partial class SOSDacImpl
     }
 
     int ISOSDacInterface.GetObjectClassName(ClrDataAddress obj, uint count, char* className, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetObjectClassName(obj, count, className, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (obj == 0)
+                throw new ArgumentException();
+
+            Contracts.IObject objectContract = _target.Contracts.Object;
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+
+            TargetPointer mt = objectContract.GetMethodTableAddress(obj.ToTargetPointer(_target));
+            Contracts.TypeHandle typeHandle = rts.GetTypeHandle(mt);
+
+            TargetPointer modulePointer = rts.GetModule(typeHandle);
+            if (modulePointer == TargetPointer.Null)
+            {
+                OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, "<Unloaded Type>");
+            }
+            else
+            {
+                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePointer);
+                if (!loader.TryGetLoadedImageContents(moduleHandle, out _, out _, out _))
+                {
+                    OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, "<Unloaded Type>");
+                }
+                else
+                {
+                    StringBuilder classNameBuilder = new();
+                    try
+                    {
+                        TypeNameBuilder.AppendType(_target, classNameBuilder, typeHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+                    }
+                    catch
+                    {
+                        string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt);
+                        if (fallbackName != null)
+                        {
+                            classNameBuilder.Clear();
+                            classNameBuilder.Append(fallbackName);
+                        }
+                    }
+                    OutputBufferHelpers.CopyStringToBuffer(className, count, pNeeded, classNameBuilder.ToString());
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            char[] classNameLocal = new char[count];
+            uint neededLocal;
+            int hrLocal;
+            fixed (char* ptr = classNameLocal)
+            {
+                hrLocal = _legacyImpl.GetObjectClassName(obj, count, ptr, &neededLocal);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
+                Debug.Assert(className == null || new ReadOnlySpan<char>(classNameLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(className)));
+            }
+        }
+#endif
+        return hr;
+    }
 
     int ISOSDacInterface.GetObjectData(ClrDataAddress objAddr, DacpObjectData* data)
     {
@@ -2714,9 +2956,9 @@ public sealed unsafe partial class SOSDacImpl
 
             // Populate COM data if this is a COM object
             if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0
-                && objectContract.GetBuiltInComData(objPtr, out TargetPointer rcw, out TargetPointer ccw))
+                && objectContract.GetBuiltInComData(objPtr, out TargetPointer rcw, out TargetPointer ccw, out _))
             {
-                data->RCW = rcw;
+                data->RCW = rcw & ~(_rcwMask);
                 data->CCW = ccw;
             }
 
@@ -3177,10 +3419,122 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetSyncBlockCleanupData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockCleanupData(addr, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetSyncBlockData(uint number, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetSyncBlockData(number, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetThreadAllocData(thread, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetSyncBlockData(uint number, DacpSyncBlockData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (data == null)
+                throw new ArgumentException();
+            *data = default;
+            data->bFree = Interop.BOOL.TRUE;
+
+            ISyncBlock syncBlock = _target.Contracts.SyncBlock;
+            uint syncBlockCount = syncBlock.GetSyncBlockCount();
+            data->SyncBlockCount = syncBlockCount;
+            if (syncBlockCount > 0 && number <= syncBlockCount)
+            {
+                data->bFree = syncBlock.IsSyncBlockFree(number) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                if (data->bFree == Interop.BOOL.FALSE)
+                {
+                    TargetPointer obj = syncBlock.GetSyncBlockObject(number);
+                    data->Object = obj.ToClrDataAddress(_target);
+                    if (syncBlock.GetSyncBlock(number) is TargetPointer syncBlockAddr && syncBlockAddr != TargetPointer.Null)
+                    {
+                        data->SyncBlockPointer = syncBlockAddr.ToClrDataAddress(_target);
+                        IObject objContract = _target.Contracts.Object;
+                        if (objContract.GetBuiltInComData(obj, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf))
+                        {
+                            data->COMFlags = (rcw & ~(_rcwMask)) != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasRCW : 0;
+                            data->COMFlags |= ccw != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasCCW : 0;
+                            data->COMFlags |= ccf != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasCCF : 0;
+                        }
+                        bool monitorHeld = syncBlock.TryGetLockInfo(syncBlockAddr, out uint owningThreadId, out uint recursion);
+                        data->MonitorHeld = monitorHeld ? (uint)1 : 0;
+                        if (monitorHeld)
+                        {
+                            data->Recursion = recursion + 1;
+                            IThread thread = _target.Contracts.Thread;
+                            TargetPointer threadPtr = thread.IdToThread(owningThreadId);
+                            data->HoldingThread = threadPtr.ToClrDataAddress(_target);
+                        }
+
+                        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+                        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+                        data->appDomainPtr = appDomain.ToClrDataAddress(_target);
+
+                        data->AdditionalThreadCount = syncBlock.GetAdditionalThreadCount(syncBlockAddr);
+
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpSyncBlockData dataLocal;
+            int hrLocal = _legacyImpl.GetSyncBlockData(number, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->Object == dataLocal.Object, $"cDAC: {data->Object:x}, DAC: {dataLocal.Object:x}");
+                Debug.Assert(data->bFree == dataLocal.bFree, $"cDAC: {data->bFree}, DAC: {dataLocal.bFree}");
+                Debug.Assert(data->SyncBlockPointer == dataLocal.SyncBlockPointer, $"cDAC: {data->SyncBlockPointer:x}, DAC: {dataLocal.SyncBlockPointer:x}");
+                Debug.Assert(data->COMFlags == dataLocal.COMFlags, $"cDAC: {data->COMFlags}, DAC: {dataLocal.COMFlags}");
+                Debug.Assert(data->MonitorHeld == dataLocal.MonitorHeld, $"cDAC: {data->MonitorHeld}, DAC: {dataLocal.MonitorHeld}");
+                if (data->MonitorHeld != 0)
+                {
+                    Debug.Assert(data->Recursion == dataLocal.Recursion, $"cDAC: {data->Recursion}, DAC: {dataLocal.Recursion}");
+                    Debug.Assert(data->HoldingThread == dataLocal.HoldingThread, $"cDAC: {data->HoldingThread:x}, DAC: {dataLocal.HoldingThread:x}");
+                }
+                Debug.Assert(data->AdditionalThreadCount == dataLocal.AdditionalThreadCount, $"cDAC: {data->AdditionalThreadCount}, DAC: {dataLocal.AdditionalThreadCount}");
+                Debug.Assert(data->appDomainPtr == dataLocal.appDomainPtr, $"cDAC: {data->appDomainPtr:x}, DAC: {dataLocal.appDomainPtr:x}");
+                Debug.Assert(data->SyncBlockCount == dataLocal.SyncBlockCount, $"cDAC: {data->SyncBlockCount}, DAC: {dataLocal.SyncBlockCount}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+    int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, DacpAllocData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (thread == 0)
+                throw new ArgumentException();
+            if (data is null)
+                throw new NullReferenceException();
+
+            Contracts.IThread contract = _target.Contracts.Thread;
+            contract.GetThreadAllocContext(thread.ToTargetPointer(_target), out long allocBytes, out long allocBytesLoh);
+            data->allocBytes = (ClrDataAddress)(ulong)allocBytes;
+            data->allocBytesLoh = (ClrDataAddress)(ulong)allocBytesLoh;
+        }
+        catch (global::System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpAllocData dataLocal = default;
+            int hrLocal = _legacyImpl.GetThreadAllocData(thread, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->allocBytes == dataLocal.allocBytes, $"cDAC: {data->allocBytes:x}, DAC: {dataLocal.allocBytes:x}");
+                Debug.Assert(data->allocBytesLoh == dataLocal.allocBytesLoh, $"cDAC: {data->allocBytesLoh:x}, DAC: {dataLocal.allocBytesLoh:x}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     int ISOSDacInterface.GetThreadData(ClrDataAddress thread, DacpThreadData* data)
     {

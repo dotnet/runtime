@@ -643,6 +643,19 @@ namespace System.Runtime.CompilerServices
         }
 
         [UnmanagedCallersOnly]
+        internal static unsafe void CallToString(object* pObj, string* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = pObj->ToString();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
         internal static unsafe void CallDefaultConstructor(object* pObj, delegate*<object, void> pCtor, Exception* pException)
         {
             try
