@@ -417,7 +417,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
         {
             if (this.IsGenericTypeDefinition)
-                throw new InvalidOperationException(SR.Format(SR.FunctionPointer_ReturnTypeInvalid, this.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.FunctionPointer_ReturnTypeInvalid, this));
 
             parameterTypes ??= [];
             RuntimeTypeInfo[] runtimeParameterTypes = new RuntimeTypeInfo[parameterTypes.Length];
@@ -431,7 +431,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     return Type.MakeFunctionPointerSignatureType(this.ToType(), parameterTypes, isUnmanaged);
 
                 if (rtType == typeof(void) || rtType.IsGenericTypeDefinition)
-                    throw new ArgumentException(string.Format(SR.FunctionPointer_ParameterInvalid, rtType.ToString()), nameof(parameterTypes));
+                    throw new ArgumentException(SR.Format(SR.FunctionPointer_ParameterInvalid, rtType), nameof(parameterTypes));
 
                 runtimeParameterTypes[i] = rtType.GetRuntimeTypeInfo();
             }
