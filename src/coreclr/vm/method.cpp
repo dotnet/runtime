@@ -2474,6 +2474,18 @@ BOOL MethodDesc::ShouldCallPrestub()
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+void MethodDesc::ResetPortableEntryPoint()
+{
+    PCODE tempEntry = GetTemporaryEntryPointIfExists();
+    if (tempEntry != (PCODE)NULL)
+    {
+        PortableEntryPoint* pep = PortableEntryPoint::ToPortableEntryPoint(tempEntry);
+        pep->Init(this);  // Re-initializes: clears _pActualCode, _pInterpreterData, _flags
+    }
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 //*******************************************************************************
 void MethodDesc::Reset()
 {
@@ -2490,10 +2502,12 @@ void MethodDesc::Reset()
     // Reset any flags relevant to the old code
     ClearFlagsOnUpdate();
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    ResetPortableEntryPoint();
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     _ASSERTE(HasPrecode());
     GetPrecode()->Reset();
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     if (HasNativeCodeSlot())
     {
@@ -3276,6 +3290,10 @@ void MethodDesc::ResetCodeEntryPoint()
     ClearInterpreterCodePointer();
 #endif
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    ResetPortableEntryPoint();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
     if (MayHaveEntryPointSlotsToBackpatch())
     {
         BackpatchToResetEntryPointSlots();
@@ -3313,7 +3331,9 @@ void MethodDesc::ResetCodeEntryPointForEnC()
 #endif
 
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s\n", this, m_pszDebugClassName, m_pszDebugMethodName));
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    ResetPortableEntryPoint();
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: HasPrecode():%s, HasNativeCodeSlot():%s\n",
         (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
     if (HasPrecode())
