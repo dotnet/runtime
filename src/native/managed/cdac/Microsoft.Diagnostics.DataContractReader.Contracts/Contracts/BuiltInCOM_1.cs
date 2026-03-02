@@ -123,7 +123,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
                 Data.ComMethodTable comMethodTable = _target.ProcessedData.GetOrAdd<Data.ComMethodTable>(comMethodTableAddr);
 
                 // Skip interfaces whose vtable layout is not yet complete
-                if ((comMethodTable.Flags & (ulong)ComMethodTableFlags.LayoutComplete) == 0)
+                if ((comMethodTable.Flags.Value & (ulong)ComMethodTableFlags.LayoutComplete) == 0)
                     continue;
 
                 // slotAddr is the address of m_rgpIPtr[i] in the CCW struct (= InterfacePointer)
