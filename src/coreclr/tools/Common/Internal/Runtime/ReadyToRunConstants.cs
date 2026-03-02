@@ -363,10 +363,10 @@ namespace Internal.ReadyToRunConstants
         AllocContinuationMethod     = 0x122,
         AsyncCaptureContexts        = 0x123,
         AsyncRestoreContexts        = 0x124,
-        AsyncCaptureExecCtx         = 0x125,
-        AsyncRestoreExecCtx         = 0x126,
-        AsyncRestoreCtxOnSusp       = 0x127,
-        AsyncCaptureContinCtx       = 0x128,
+        AsyncCaptureExecutionContext  = 0x125,
+        AsyncRestoreExecutionContext  = 0x126,
+        AsyncRestoreContextsOnSuspension = 0x127,
+        AsyncCaptureContinuationContext  = 0x128,
 
         // **********************************************************************************************
         //
