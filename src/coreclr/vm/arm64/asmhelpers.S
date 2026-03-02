@@ -738,18 +738,45 @@ LOCAL_LABEL(HaveInterpThreadContext):
     mov x23, x9 // Save CallStubHeader* for later use
     add x10, x9, #OFFSETOF__CallStubHeader__Routines
     ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
+#ifdef TARGET_APPLE
+    str xzr, [sp, #0]
+#endif
     // x19 contains IR bytecode address
     // Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
     ldr x11, [x10], #8
     blr x11
+
+    // Swift-specific epilog handling. There are three cases to consider:
+    //
+    // - Swift return lowering:
+    //    If HasSwiftReturnLowering is set, the return value was lowered and x2
+    //    may already contains the return data. In that case, do not load the
+    //    ContinuationContext from the stack.
+    //
+    // - Swift error set in UnmanagedCallersOnly:
+    //    If [sp, #0] is non-zero, a Swift error was set.
+    //    Restore x21 and return via the Swift-error epilog.
+    //
+    // - Swift error set in direct P/Invoke:
+    //    If HasSwiftError is set, use the Swift-error epilog.
+    //    Otherwise, use the normal epilog.
+
+    ldrb w11, [x23, #OFFSETOF__CallStubHeader__HasSwiftReturnLowering]
+    cbnz x11, LOCAL_LABEL(InterpreterStub_SkipSwiftReturnLowering)
     // Fill in the ContinuationContext register
     ldr x2, [sp, #(__PWTB_ArgumentRegister_FirstArg + 16)]
+LOCAL_LABEL(InterpreterStub_SkipSwiftReturnLowering):
 
-    // Check if this stub has Swift error handling
-    ldrb w11, [x23, #OFFSETOF__CallStubHeader__HasSwiftError]
-    cbz x11, LOCAL_LABEL(InterpreterStub_NoSwiftError)
+    ldr x11, [sp, #0]
+    cbz x11, LOCAL_LABEL(InterpreterStub_SkipStoreSwiftError)
+    mov x21, x11
     EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
-LOCAL_LABEL(InterpreterStub_NoSwiftError):
+LOCAL_LABEL(InterpreterStub_SkipStoreSwiftError):
+
+    ldrb w11, [x23, #OFFSETOF__CallStubHeader__HasSwiftError]
+    cbz x11, LOCAL_LABEL(InterpreterStub_Epilog)
+    EPILOG_WITH_TRANSITION_BLOCK_RETURN_SKIP_SWIFT_ERROR
+LOCAL_LABEL(InterpreterStub_Epilog):
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
 NESTED_END InterpreterStub, _TEXT
@@ -1010,6 +1037,29 @@ NESTED_ENTRY InterpreterStubRet4Vector128, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END InterpreterStubRet4Vector128, _TEXT
 
+#ifdef TARGET_APPLE
+// Swift lowered return handler for reverse PInvoke callbacks
+NESTED_ENTRY SwiftReverseReturnLoweredHandler, _TEXT, NoHandler
+    str x10, [sp, #8] // Save routines pointer
+    PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED   fp, lr, -16
+    // The +16 is for the fp, lr above
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19 // the IR bytecode pointer
+    mov x2, xzr
+    bl C_FUNC(ExecuteInterpretedMethod)
+    mov x9, x0 // x0 is pointer to result struct on interpreter stack
+    ldr x10, [sp, #24] // restore x10
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+NESTED_END SwiftReverseReturnLoweredHandler, _TEXT
+
+// Terminator for reverse PInvoke Swift lowered return
+LEAF_ENTRY SwiftReverseReturnLoweredTerminator
+    ldp fp, lr, [sp], #16
+    ret
+LEAF_END SwiftReverseReturnLoweredTerminator
+#endif // TARGET_APPLE
+
 // Copy arguments from the processor stack to the interpreter stack
 // The CPU stack slots are aligned to pointer size.
 
@@ -1195,11 +1245,31 @@ LEAF_ENTRY Load_SwiftError
     EPILOG_BRANCH_REG x11
 LEAF_END Load_SwiftError
 
+LEAF_ENTRY Store_SwiftError
+    sub x11, fp, #__PWTB_StackAlloc
+    str x11, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_SwiftError
+
 LEAF_ENTRY Load_SwiftIndirectResult
     ldr x8, [x9], #8
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Load_SwiftIndirectResult
+
+LEAF_ENTRY Store_SwiftSelf
+    ldr x11, [fp, #24] // x20 was overwritten by INLINE_GETTHREAD; load original from [fp + 24]
+    str x11, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_SwiftSelf
+
+LEAF_ENTRY Store_SwiftIndirectResult
+    str x8, [x9], #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_SwiftIndirectResult
 
 .macro SwiftLoad_AtOffset reg
     ldr x12, [x10], #8       // Load offset|struct_size
@@ -1298,10 +1368,52 @@ LEAF_ENTRY Load_Stack_AtOffset
     EPILOG_BRANCH_REG x11
 LEAF_END Load_Stack_AtOffset
 
-.macro SwiftStore_AtOffset reg
+.macro Store_Stack_AtOffset_Prolog
+    ldr x12, [x10], #8       // Load offset|structSize|stackOffset
+    and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
+    lsr x14, x12, #32        // Extract stackOffset (upper 32 bits)
+    add x14, sp, x14         // sp + stackOffset
+    add x14, x14, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
+.endm
+
+.macro Store_Stack_AtOffset_Epilog
+    str x13, [x9, x11]       // Store 8 bytes to [x9 + offset]
+    ubfx x12, x12, #16, #16  // Extract structSize (bits 16-31)
+    add x9, x9, x12          // Advance x9 by structSize
     ldr x11, [x10], #8
-    and w11, w11, #0xFFFF
-    str \reg, [x9, x11]
+    EPILOG_BRANCH_REG x11
+.endm
+
+LEAF_ENTRY Store_Stack_AtOffset
+    Store_Stack_AtOffset_Prolog
+    ldr x13, [x14]
+    Store_Stack_AtOffset_Epilog
+LEAF_END Store_Stack_AtOffset
+
+LEAF_ENTRY Store_Stack_4B_AtOffset
+    Store_Stack_AtOffset_Prolog
+    ldr w13, [x14]
+    Store_Stack_AtOffset_Epilog
+LEAF_END Store_Stack_4B_AtOffset
+
+LEAF_ENTRY Store_Stack_2B_AtOffset
+    Store_Stack_AtOffset_Prolog
+    ldrh w13, [x14]
+    Store_Stack_AtOffset_Epilog
+LEAF_END Store_Stack_2B_AtOffset
+
+LEAF_ENTRY Store_Stack_1B_AtOffset
+    Store_Stack_AtOffset_Prolog
+    ldrb w13, [x14]
+    Store_Stack_AtOffset_Epilog
+LEAF_END Store_Stack_1B_AtOffset
+
+.macro SwiftStore_AtOffset reg
+    ldr x12, [x10], #8       // Load offset|struct_size
+    and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
+    str \reg, [x9, x11]      // Store to [x9 + offset]
+    lsr x12, x12, #16        // Shift to get struct_size
+    add x9, x9, x12          // Advance x9 by struct_size (no-op if zero)
     ldr x11, [x10], #8
     br x11
 .endm
@@ -1322,10 +1434,28 @@ LEAF_ENTRY Store_X3_AtOffset
     SwiftStore_AtOffset x3
 LEAF_END Store_X3_AtOffset
 
+LEAF_ENTRY Store_X4_AtOffset
+    SwiftStore_AtOffset x4
+LEAF_END Store_X4_AtOffset
+
+LEAF_ENTRY Store_X5_AtOffset
+    SwiftStore_AtOffset x5
+LEAF_END Store_X5_AtOffset
+
+LEAF_ENTRY Store_X6_AtOffset
+    SwiftStore_AtOffset x6
+LEAF_END Store_X6_AtOffset
+
+LEAF_ENTRY Store_X7_AtOffset
+    SwiftStore_AtOffset x7
+LEAF_END Store_X7_AtOffset
+
 .macro SwiftStoreFloat_AtOffset reg
-    ldr x11, [x10], #8
-    and w11, w11, #0xFFFF
-    str \reg, [x9, x11]
+    ldr x12, [x10], #8       // Load offset|struct_size
+    and w11, w12, #0xFFFF    // Extract offset (lower 16 bits)
+    str \reg, [x9, x11]      // Store to [x9 + offset]
+    lsr x12, x12, #16        // Shift to get struct_size
+    add x9, x9, x12          // Advance x9 by struct_size (no-op if zero)
     ldr x11, [x10], #8
     br x11
 .endm
@@ -1345,6 +1475,22 @@ LEAF_END Store_D2_AtOffset
 LEAF_ENTRY Store_D3_AtOffset
     SwiftStoreFloat_AtOffset d3
 LEAF_END Store_D3_AtOffset
+
+LEAF_ENTRY Store_D4_AtOffset
+    SwiftStoreFloat_AtOffset d4
+LEAF_END Store_D4_AtOffset
+
+LEAF_ENTRY Store_D5_AtOffset
+    SwiftStoreFloat_AtOffset d5
+LEAF_END Store_D5_AtOffset
+
+LEAF_ENTRY Store_D6_AtOffset
+    SwiftStoreFloat_AtOffset d6
+LEAF_END Store_D6_AtOffset
+
+LEAF_ENTRY Store_D7_AtOffset
+    SwiftStoreFloat_AtOffset d7
+LEAF_END Store_D7_AtOffset
 
 #endif // TARGET_APPLE
 
@@ -3281,10 +3427,10 @@ LOCAL_LABEL(CallJittedMethodRetSwiftLowered_Epilog):
 NESTED_END CallJittedMethodRetSwiftLowered, _TEXT
 
 // Terminator routine branches back to the epilog
-LEAF_ENTRY SwiftLoweredReturnTerminator
+LEAF_ENTRY SwiftReturnLoweredTerminator
     ldr x11, [fp, #32]
     br x11
-LEAF_END SwiftLoweredReturnTerminator
+LEAF_END SwiftReturnLoweredTerminator
 
 #endif // TARGET_APPLE
 // ------------------------------------------------------------------

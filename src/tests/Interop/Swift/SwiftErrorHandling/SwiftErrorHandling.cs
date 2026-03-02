@@ -130,7 +130,6 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static unsafe void TestUnmanagedCallersOnly()
     {
         SwiftError error;
@@ -146,7 +145,6 @@ public class ErrorHandlingTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static unsafe void TestUnmanagedCallersOnlyWithReturn()
     {
         SwiftError error;
