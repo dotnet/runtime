@@ -226,17 +226,52 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         private static uint ComputeSize(Target target, Data.MethodDesc desc)
         {
-            // Size of the MethodDesc is variable, read it from the targets lookup table
-            // See MethodDesc::SizeOf in method.cpp for details
-            TargetPointer methodDescSizeTable = target.ReadGlobalPointer(Constants.Globals.MethodDescSizeTable);
+            // See s_ClassificationSizeTable in method.cpp in the runtime for how the size is determined based on the method classification and flags.
+            uint baseSize;
+            switch ((MethodClassification)(desc.Flags & (ushort)MethodDescFlags_1.MethodDescFlags.ClassificationMask))
+            {
+                case MethodClassification.IL:
+                    baseSize = target.GetTypeInfo(DataType.MethodDesc).Size ?? throw new InvalidOperationException("MethodDesc type size must be known");
+                    break;
+                case MethodClassification.FCall:
+                    baseSize = target.GetTypeInfo(DataType.FCallMethodDesc).Size ?? throw new InvalidOperationException("FCallMethodDesc type size must be known");
+                    break;
+                case MethodClassification.PInvoke:
+                    baseSize = target.GetTypeInfo(DataType.PInvokeMethodDesc).Size ?? throw new InvalidOperationException("PInvokeMethodDesc type size must be known");
+                    break;
+                case MethodClassification.EEImpl:
+                    baseSize = target.GetTypeInfo(DataType.EEImplMethodDesc).Size ?? throw new InvalidOperationException("EEImplMethodDesc type size must be known");
+                    break;
+                case MethodClassification.Array:
+                    baseSize = target.GetTypeInfo(DataType.ArrayMethodDesc).Size ?? throw new InvalidOperationException("ArrayMethodDesc type size must be known");
+                    break;
+                case MethodClassification.Instantiated:
+                    baseSize = target.GetTypeInfo(DataType.InstantiatedMethodDesc).Size ?? throw new InvalidOperationException("InstantiatedMethodDesc type size must be known");
+                    break;
+                case MethodClassification.ComInterop:
+                    baseSize = target.GetTypeInfo(DataType.CLRToCOMCallMethodDesc).Size ?? throw new InvalidOperationException("CLRToCOMCallMethodDesc type size must be known");
+                    break;
+                case MethodClassification.Dynamic:
+                    baseSize = target.GetTypeInfo(DataType.DynamicMethodDesc).Size ?? throw new InvalidOperationException("DynamicMethodDesc type size must be known");
+                    break;
+                default:
+                    throw new InvalidOperationException("Invalid method classification");
+            }
 
-            ushort arrayOffset = (ushort)(desc.Flags & (ushort)(
-                MethodDescFlags_1.MethodDescFlags.ClassificationMask |
-                MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot |
-                MethodDescFlags_1.MethodDescFlags.HasMethodImpl |
-                MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot |
-                MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData));
-            return target.Read<byte>(methodDescSizeTable + arrayOffset);
+            MethodDescFlags_1.MethodDescFlags flags = (MethodDescFlags_1.MethodDescFlags)desc.Flags;
+            if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot))
+                baseSize += target.GetTypeInfo(DataType.NonVtableSlot).Size ?? throw new InvalidOperationException("NonVtableSlot type size must be known");
+
+            if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasMethodImpl))
+                baseSize += target.GetTypeInfo(DataType.MethodImpl).Size ?? throw new InvalidOperationException("MethodImpl type size must be known");
+
+            if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot))
+                baseSize += target.GetTypeInfo(DataType.NativeCodeSlot).Size ?? throw new InvalidOperationException("NativeCodeSlot type size must be known");
+
+            if (flags.HasFlag(MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData))
+                baseSize += target.GetTypeInfo(DataType.AsyncMethodData).Size ?? throw new InvalidOperationException("AsyncMethodData type size must be known");
+
+            return baseSize;
         }
 
         public MethodClassification Classification => (MethodClassification)((int)_desc.Flags & (int)MethodDescFlags_1.MethodDescFlags.ClassificationMask);
@@ -696,8 +731,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             switch (methodTable.Flags.GetFlag(MethodTableFlags_1.WFLAGS_HIGH.Category_Mask))
             {
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_Array:
-                    TargetPointer clsPtr = GetClassPointer(typeHandle);
-                    rank = _target.ProcessedData.GetOrAdd<Data.ArrayClass>(clsPtr).Rank;
+                    // Multidim array: BaseSize = ArrayBaseSize + Rank * sizeof(uint) * 2
+                    uint arrayBaseSize = _target.ReadGlobal<uint>(Constants.Globals.ArrayBaseSize);
+                    uint boundsSize = methodTable.Flags.BaseSize - arrayBaseSize;
+                    rank = boundsSize / (sizeof(uint) * 2);
                     return true;
 
                 case MethodTableFlags_1.WFLAGS_HIGH.Category_Array | MethodTableFlags_1.WFLAGS_HIGH.Category_IfArrayThenSzArray:
@@ -1649,5 +1686,45 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return (uint)fieldDef.GetRelativeVirtualAddress();
         }
         return fieldDesc.DWord2 & (uint)FieldDescFlags2.OffsetMask;
+    }
+
+    TargetPointer IRuntimeTypeSystem.GetFieldDescByName(TypeHandle typeHandle, string fieldName)
+    {
+        if (!typeHandle.IsMethodTable())
+            return TargetPointer.Null;
+
+        TargetPointer modulePtr = GetModule(typeHandle);
+        if (modulePtr == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        uint typeDefToken = GetTypeDefToken(typeHandle);
+        if (typeDefToken == 0)
+            return TargetPointer.Null;
+
+        EntityHandle entityHandle = MetadataTokens.EntityHandle((int)typeDefToken);
+        if (entityHandle.Kind != HandleKind.TypeDefinition)
+            return TargetPointer.Null;
+
+        TypeDefinitionHandle typeDefHandle = (TypeDefinitionHandle)entityHandle;
+
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? md = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (md is null)
+            return TargetPointer.Null;
+
+        TargetPointer fieldDefToDescMap = loader.GetLookupTables(moduleHandle).FieldDefToDesc;
+        foreach (FieldDefinitionHandle fieldDefHandle in md.GetTypeDefinition(typeDefHandle).GetFields())
+        {
+            FieldDefinition fieldDef = md.GetFieldDefinition(fieldDefHandle);
+            if (md.GetString(fieldDef.Name) == fieldName)
+            {
+                uint fieldDefToken = (uint)MetadataTokens.GetToken(fieldDefHandle);
+                TargetPointer fieldDescPtr = loader.GetModuleLookupMapElement(fieldDefToDescMap, fieldDefToken, out _);
+                return fieldDescPtr;
+            }
+        }
+
+        return TargetPointer.Null;
     }
 }

@@ -1193,24 +1193,16 @@ namespace System.Text.RegularExpressions
                     return alternation;
                 }
 
-                // Only handle the case where each branch is a concatenation
-                foreach (RegexNode child in children)
-                {
-                    if (child.Kind != RegexNodeKind.Concatenate || child.ChildCount() < 2)
-                    {
-                        return alternation;
-                    }
-                }
-
                 for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
                 {
-                    Debug.Assert(children[startingIndex].Children is List<RegexNode> { Count: >= 2 });
-
                     // Only handle the case where each branch begins with the same One, Notone, Set (individual or loop), or Anchor.
                     // Note that while we can do this for individual characters, fixed length loops, and atomic loops, doing
                     // it for non-atomic variable length loops could change behavior as each branch could otherwise have a
                     // different number of characters consumed by the loop based on what's after it.
-                    RegexNode required = children[startingIndex].Child(0);
+                    // A branch may be either a Concatenation (get its first child) or a single node (e.g., a Set
+                    // that was reduced from a single-child Concatenation after prior prefix extraction).
+                    RegexNode startingNode = children[startingIndex];
+                    RegexNode required = startingNode.Kind == RegexNodeKind.Concatenate ? startingNode.Child(0) : startingNode;
                     switch (required.Kind)
                     {
                         case RegexNodeKind.One or RegexNodeKind.Notone or RegexNodeKind.Set:
@@ -1230,7 +1222,8 @@ namespace System.Text.RegularExpressions
                     int endingIndex = startingIndex + 1;
                     for (; endingIndex < children.Count; endingIndex++)
                     {
-                        RegexNode other = children[endingIndex].Child(0);
+                        RegexNode endingNode = children[endingIndex];
+                        RegexNode other = endingNode.Kind == RegexNodeKind.Concatenate ? endingNode.Child(0) : endingNode;
                         if (required.Kind != other.Kind ||
                             required.Options != other.Options ||
                             required.M != other.M ||
@@ -1252,8 +1245,16 @@ namespace System.Text.RegularExpressions
                     var newAlternate = new RegexNode(RegexNodeKind.Alternate, alternation.Options);
                     for (int i = startingIndex; i < endingIndex; i++)
                     {
-                        ((List<RegexNode>)children[i].Children!).RemoveAt(0);
-                        newAlternate.AddChild(children[i]);
+                        if (children[i].Kind == RegexNodeKind.Concatenate)
+                        {
+                            ((List<RegexNode>)children[i].Children!).RemoveAt(0);
+                            newAlternate.AddChild(children[i]);
+                        }
+                        else
+                        {
+                            // The entire branch was the extracted prefix; what remains is Empty.
+                            newAlternate.AddChild(new RegexNode(RegexNodeKind.Empty, children[i].Options));
+                        }
                     }
 
                     // If this alternation is wrapped as atomic, we need to do the same for the new alternation.

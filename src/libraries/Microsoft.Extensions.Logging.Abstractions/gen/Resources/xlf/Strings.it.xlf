@@ -33,13 +33,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
-        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="translated">L'argomento "{0}" usa il modificatore di parametro out non supportato</target>
+        <source>Argument '{0}' is using the unsupported 'out' parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported 'out' parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
-        <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="translated">L'argomento utilizza il modificatore di parametro out non supportato</target>
+        <source>Argument is using the unsupported 'out' parameter modifier</source>
+        <target state="new">Argument is using the unsupported 'out' parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -47,24 +47,24 @@
         <target state="translated">I metodi di registrazione non possono avere un corpo</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingMethodIsGenericMessage">
-        <source>Logging methods cannot be generic</source>
-        <target state="translated">I metodi di registrazione non possono essere generici</target>
+      <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
+        <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
+        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
-        <source>Logging methods must be partial</source>
-        <target state="translated">I metodi di registrazione devono essere parziali</target>
+        <source>Logging methods must be 'partial'</source>
+        <target state="new">Logging methods must be 'partial'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
-        <source>Logging methods must return void</source>
-        <target state="translated">I metodi di registrazione devono restituire void</target>
+        <source>Logging methods must return 'void'</source>
+        <target state="new">Logging methods must return 'void'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
-        <source>Logging methods must be static</source>
-        <target state="translated">I metodi di registrazione devono essere statici</target>
+        <source>Logging methods must be 'static'</source>
+        <target state="new">Logging methods must be 'static'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
@@ -143,8 +143,8 @@
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
-        <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="translated">Rimuovere il qualificatore ridondante (Informazioni:, Avviso:, Errore: e così via) dal messaggio di registrazione perché è implicito nel livello di log specificato.</target>
+        <source>Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</source>
+        <target state="new">Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
@@ -200,6 +200,26 @@
       <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
         <source>Logging template has no corresponding method argument</source>
         <target state="translated">Il modello di registrazione non ha alcun argomento del metodo corrispondente</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
+        <source>Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</source>
+        <target state="new">Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
+        <source>Argument is using the unsupported 'params' or 'scoped' parameter modifier</source>
+        <target state="new">Argument is using the unsupported 'params' or 'scoped' parameter modifier</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
+        <source>Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</source>
+        <target state="new">Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
+        <source>Logging method parameter is a 'ref struct'</source>
+        <target state="new">Logging method parameter is a 'ref struct'</target>
         <note />
       </trans-unit>
     </body>

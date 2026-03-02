@@ -154,9 +154,9 @@ public:
     {
         m_compiler->fgUsedSharedTemps = m_prevUsedSharedTemps;
 
-        for (int i = 0; i < m_usedSharedTemps.Height(); i++)
+        for (unsigned const temp : m_usedSharedTemps.TopDownOrder())
         {
-            m_compiler->fgAvailableOutgoingArgTemps->setBit((indexType)m_usedSharedTemps.Top(i));
+            m_compiler->fgAvailableOutgoingArgTemps->setBit((indexType)temp);
         }
     }
 };
@@ -7131,6 +7131,22 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 }
             }
 #endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
+
+#if defined(TARGET_WASM)
+            if (tree->gtOverflow())
+            {
+                // For long multiply with overflow, call the helper.
+                if (tree->TypeIs(TYP_LONG))
+                {
+                    helper = tree->IsUnsigned() ? CORINFO_HELP_ULMUL_OVF : CORINFO_HELP_LMUL_OVF;
+                    goto USE_HELPER_FOR_ARITH;
+                }
+                else
+                {
+                    // TODO-WASM_CQ: Transform to a long multiply and then a checked cast?
+                }
+            }
+#endif
             break;
 
         case GT_ARR_LENGTH:
@@ -12938,7 +12954,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
     if (block->KindIs(BBJ_COND))
     {
-        noway_assert(block->bbStmtList != nullptr && block->bbStmtList->GetPrevStmt() != nullptr);
+        noway_assert(block->firstStmt() != nullptr && block->firstStmt()->GetPrevStmt() != nullptr);
 
         Statement* lastStmt = block->lastStmt();
 
@@ -13016,7 +13032,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
     }
     else if (block->KindIs(BBJ_SWITCH))
     {
-        noway_assert(block->bbStmtList != nullptr && block->bbStmtList->GetPrevStmt() != nullptr);
+        noway_assert(block->firstStmt() != nullptr && block->firstStmt()->GetPrevStmt() != nullptr);
 
         Statement* lastStmt = block->lastStmt();
 

@@ -13707,8 +13707,6 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     {
         // Ignore the Wasm shadow stack pointer argument.
         //
-        // The Wasm shadow stack pointer is not counted in VNFuncArity
-        // so nArgs does not need adjusting.
         curArg = curArg->GetNext();
     }
 #endif // defined(TARGET_WASM)
@@ -13790,7 +13788,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
                 curArg = curArg->GetNext();
                 assert(nArgs == 3); // Our current maximum.
-                assert(curArg == nullptr);
+                assert((curArg == nullptr) || (curArg->GetWellKnownArg() == WellKnownArg::WasmPortableEntryPoint));
                 if (generateUniqueVN)
                 {
                     call->gtVNPair = vnStore->VNPairForFunc(call->TypeGet(), vnf, vnp0, vnp1, vnp2, vnpUniq);
@@ -13804,8 +13802,17 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         // Add the accumulated exceptions.
         call->gtVNPair = vnStore->VNPWithExc(call->gtVNPair, vnpExc);
     }
-    assert(curArg == nullptr || generateUniqueVN); // All arguments should be processed or we generate unique VN and do
-                                                   // not care.
+
+#if defined(TARGET_WASM)
+    if (!generateUniqueVN && (curArg != nullptr))
+    {
+        // We should have processed all arguments except for the PE arg, which we can ignore
+        assert(curArg->GetWellKnownArg() == WellKnownArg::WasmPortableEntryPoint);
+    }
+#else
+    // All arguments should be processed or we generate unique VN and do not care.
+    assert(curArg == nullptr || generateUniqueVN);
+#endif
 }
 
 //--------------------------------------------------------------------------------

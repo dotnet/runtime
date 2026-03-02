@@ -14,7 +14,7 @@ public class PInvokes
     public static bool IsWindowsX86Process => OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86;
     public static bool IsNotWindowsX86Process => !IsWindowsX86Process;
 
-    [ConditionalFact(nameof(IsNotWindowsX86Process))]
+    [ConditionalFact(typeof(PInvokes), nameof(IsNotWindowsX86Process))]
     public static void StructWithDefaultNonBlittableFields_Bool()
     {
         short s = 42;
@@ -24,7 +24,7 @@ public class PInvokes
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBool(s, b), s, b));
     }
 
-    [ConditionalFact(nameof(IsNotWindowsX86Process))]
+    [ConditionalFact(typeof(PInvokes), nameof(IsNotWindowsX86Process))]
     [SkipOnMono("Mono doesn't support marshalling a .NET Char to a C char (only a char16_t).")]
     public static void StructWithDefaultNonBlittableFields_Char()
     {
@@ -36,7 +36,7 @@ public class PInvokes
 
     }
 
-    [ConditionalFact(nameof(IsNotWindowsX86Process))]
+    [ConditionalFact(typeof(PInvokes), nameof(IsNotWindowsX86Process))]
     public static void StructWithDefaultNonBlittableFields_Bool_MarshalAsInfo()
     {
         short s = 41;
@@ -45,7 +45,7 @@ public class PInvokes
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBoolWithMarshalAs(s, b), s, b));
     }
 
-    [ConditionalFact(nameof(IsNotWindowsX86Process))]
+    [ConditionalFact(typeof(PInvokes), nameof(IsNotWindowsX86Process))]
     [SkipOnMono("Mono doesn't support marshalling a .NET Char to a C char (only a char16_t).")]
     public static void StructWithDefaultNonBlittableFields_Char_MarshalAsInfo()
     {
@@ -56,7 +56,7 @@ public class PInvokes
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithWCharAndShortWithMarshalAs(s, c), s, c));
     }
 
-    [ConditionalFact(nameof(IsWindowsX86Process))]
+    [ConditionalFact(typeof(PInvokes), nameof(IsWindowsX86Process))]
     public static void EntryPoint_With_StructWithDefaultNonBlittableFields_NotFound()
     {
         short s = 42;

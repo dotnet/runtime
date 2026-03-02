@@ -11,7 +11,7 @@ public interface IObject : IContract
     TargetPointer GetMethodTableAddress(TargetPointer address) => throw new NotImplementedException();
     string GetStringValue(TargetPointer address) => throw new NotImplementedException();
     TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds) => throw new NotImplementedException();
-    bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw) => throw new NotImplementedException();
+    bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf) => throw new NotImplementedException();
 }
 
 public readonly struct Object : IObject

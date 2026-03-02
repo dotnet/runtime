@@ -774,6 +774,9 @@
   <data name="Arg_SetMethNotFnd" xml:space="preserve">
     <value>Property set method not found.</value>
   </data>
+  <data name="Arg_SpanMustHaveElementsForColor" xml:space="preserve">
+    <value>Span must have at least 4 elements for color components.</value>
+  </data>
   <data name="Arg_StackOverflowException" xml:space="preserve">
     <value>Operation caused a stack overflow.</value>
   </data>
@@ -2017,6 +2020,9 @@
   </data>
   <data name="BadImageFormat_BadILFormat" xml:space="preserve">
     <value>Bad IL format.</value>
+  </data>
+  <data name="BadImageFormat_EmptyAssembly" xml:space="preserve">
+    <value>Assembly image is empty. The stream or byte array must contain a valid PE file.</value>
   </data>
   <data name="BadImageFormat_InvalidType" xml:space="preserve">
     <value>Corrupt .resources file.  The specified type doesn't exist.</value>

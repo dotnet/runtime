@@ -20,7 +20,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Yield();
         }
 
-        [ConditionalFact(nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124072", typeof(PlatformDetection), nameof(PlatformDetection.IsInterpreter))]
         public void RuntimeAsync_TaskCompleted()
         {
