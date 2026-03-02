@@ -27,7 +27,9 @@ namespace System.Net.Http
             SearchValues.Create(" '()+,-./0123456789:=?ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
         private readonly List<HttpContent> _nestedContent;
-        private readonly string _boundary;
+        private readonly string _startBoundary;   // "--{boundary}\r\n"
+        private readonly string _endBoundary;     // "\r\n--{boundary}--\r\n"
+        private readonly int _boundaryLength;
 
         #endregion Fields
 
@@ -46,7 +48,9 @@ namespace System.Net.Http
             ArgumentException.ThrowIfNullOrWhiteSpace(subtype);
             ValidateBoundary(boundary);
 
-            _boundary = boundary;
+            _startBoundary = "--" + boundary + CrLf;
+            _endBoundary = CrLf + "--" + boundary + "--" + CrLf;
+            _boundaryLength = boundary.Length;
 
             string quotedBoundary = boundary;
             if (!quotedBoundary.StartsWith('\"'))
@@ -159,7 +163,7 @@ namespace System.Net.Http
             try
             {
                 // Write start boundary.
-                WriteToStream(stream, "--" + _boundary + CrLf);
+                WriteToStream(stream, _startBoundary);
 
                 // Write each nested content.
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
@@ -171,7 +175,7 @@ namespace System.Net.Http
                 }
 
                 // Write footer boundary.
-                WriteToStream(stream, CrLf + "--" + _boundary + "--" + CrLf);
+                WriteToStream(stream, _endBoundary);
             }
             catch (Exception ex)
             {
@@ -203,7 +207,7 @@ namespace System.Net.Http
             try
             {
                 // Write start boundary.
-                await EncodeStringToStreamAsync(stream, "--" + _boundary + CrLf, cancellationToken).ConfigureAwait(false);
+                await EncodeStringToStreamAsync(stream, _startBoundary, cancellationToken).ConfigureAwait(false);
 
                 // Write each nested content.
                 var output = new MemoryStream();
@@ -221,7 +225,7 @@ namespace System.Net.Http
                 }
 
                 // Write footer boundary.
-                await EncodeStringToStreamAsync(stream, CrLf + "--" + _boundary + "--" + CrLf, cancellationToken).ConfigureAwait(false);
+                await EncodeStringToStreamAsync(stream, _endBoundary, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -254,7 +258,7 @@ namespace System.Net.Http
                 int streamIndex = 0;
 
                 // Start boundary.
-                streams[streamIndex++] = EncodeStringToNewStream("--" + _boundary + CrLf);
+                streams[streamIndex++] = EncodeStringToNewStream(_startBoundary);
 
                 // Each nested content.
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
@@ -292,7 +296,7 @@ namespace System.Net.Http
                 }
 
                 // Footer boundary.
-                streams[streamIndex] = EncodeStringToNewStream(CrLf + "--" + _boundary + "--" + CrLf);
+                streams[streamIndex] = EncodeStringToNewStream(_endBoundary);
 
                 return new ContentReadStream(streams);
             }
@@ -308,9 +312,8 @@ namespace System.Net.Http
             // Add divider.
             if (writeDivider) // Write divider for all but the first content.
             {
-                WriteToStream(stream, CrLf + "--"); // const strings
-                WriteToStream(stream, _boundary);
                 WriteToStream(stream, CrLf);
+                WriteToStream(stream, _startBoundary);
             }
 
             // Add headers.
@@ -358,12 +361,12 @@ namespace System.Net.Http
         protected internal override bool TryComputeLength(out long length)
         {
             // Start Boundary.
-            long currentLength = DashDashLength + _boundary.Length + CrLfLength;
+            long currentLength = DashDashLength + _boundaryLength + CrLfLength;
 
             if (_nestedContent.Count > 1)
             {
                 // Internal boundaries
-                currentLength += (_nestedContent.Count - 1) * (CrLfLength + DashDashLength + _boundary.Length + CrLfLength);
+                currentLength += (_nestedContent.Count - 1) * (CrLfLength + DashDashLength + _boundaryLength + CrLfLength);
             }
 
             foreach (HttpContent content in _nestedContent)
@@ -402,7 +405,7 @@ namespace System.Net.Http
             }
 
             // Terminating boundary.
-            currentLength += CrLfLength + DashDashLength + _boundary.Length + DashDashLength + CrLfLength;
+            currentLength += CrLfLength + DashDashLength + _boundaryLength + DashDashLength + CrLfLength;
 
             length = currentLength;
             return true;
