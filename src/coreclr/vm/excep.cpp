@@ -5006,7 +5006,7 @@ exit:
             // we should maintain the original exception point's bucket details.
             if (pUEWatsonBucketTracker->RetrieveWatsonBucketIp() != NULL)
             {
-                _ASSERTE(pUEWatsonBucketTracker->CapturedForThreadAbort() || pUEWatsonBucketTracker->CapturedAtADTransition());
+                _ASSERTE(pUEWatsonBucketTracker->CapturedForThreadAbort());
                 fClearUEWatsonBucketTracker = FALSE;
             }
 #ifdef _DEBUG
@@ -7025,57 +7025,6 @@ LONG NotifyOfCHFFilterWrapper(
     return ret;
 } // LONG NotifyOfCHFFilterWrapper()
 
-// This filter will be used process exceptions escaping out of AD transition boundaries
-// that are not at the base of the managed thread. Those are handled in ThreadBaseRedirectingFilter.
-// This will be invoked when an exception is going unhandled from the called AppDomain.
-//
-// This can be used to do last moment work before the exception gets caught by the EX_CATCH setup
-// at the AD transition point.
-LONG AppDomainTransitionExceptionFilter(
-    EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
-    PVOID               pParam)
-{
-    // Ideally, we would be NOTHROW here. However, NotifyOfCHFFilterWrapper calls into
-    // NotifyOfCHFFilter that is THROWS. Thus, to prevent contract violation,
-    // we abide by the rules and be THROWS.
-    //
-    // Same rationale for GC_TRIGGERS as well.
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        MODE_ANY;
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    ULONG ret = EXCEPTION_CONTINUE_SEARCH;
-
-    // First, call into NotifyOfCHFFilterWrapper
-    ret = NotifyOfCHFFilterWrapper(pExceptionInfo, pParam);
-
-#ifndef TARGET_UNIX
-    // Setup the watson bucketing details if the escaping
-    // exception is preallocated.
-    if (SetupWatsonBucketsForEscapingPreallocatedExceptions())
-    {
-        // Set the flag that these were captured at AD Transition
-        DEBUG_STMT(GetThread()->GetExceptionState()->GetUEWatsonBucketTracker()->SetCapturedAtADTransition());
-    }
-
-    // Attempt to capture buckets for non-preallocated exceptions just before the AppDomain transition boundary
-    {
-        GCX_COOP();
-        OBJECTREF oThrowable = GetThread()->GetThrowable();
-        if ((oThrowable != NULL) && (CLRException::IsPreallocatedExceptionObject(oThrowable) == FALSE))
-        {
-            SetupWatsonBucketsForNonPreallocatedExceptions();
-        }
-    }
-#endif // !TARGET_UNIX
-
-    return ret;
-} // LONG AppDomainTransitionExceptionFilter()
-
 // This filter will be used process exceptions escaping out of dynamic reflection invocation as
 // unhandled and will eventually be caught in the VM to be made as inner exception of
 // TargetInvocationException that will be thrown from the VM.
@@ -7988,25 +7937,7 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
 doValidation:
     _ASSERTE(pWBTracker != NULL);
 
-    // Incase of an OOM, we may not have an IP in the Watson bucket tracker. A scenario
-    // would be default domain calling to AD 2 that calls into AD 3.
-    //
-    // AD 3 has an exception that is represented by a preallocated exception object. The
-    // exception goes unhandled and reaches AD2/AD3 transition boundary. The bucketing details
-    // from AD3 are copied to UETracker and once the exception is reraised in AD2, we will
-    // enter SetupInitialThrowBucketingDetails to copy the bucketing details to the active
-    // exception tracker.
-    //
-    // This copy operation could fail due to OOM and the active exception tracker in AD 2,
-    // for the preallocated exception object, will not have any bucketing details. If the
-    // exception remains unhandled in AD 2, then just before it reaches DefDomain/AD2 boundary,
-    // we will attempt to capture the bucketing details in AppDomainTransitionExceptionFilter,
-    // that will bring us here.
-    //
-    // In such a case, the active exception tracker will not have any bucket details for the
-    // preallocated exception. In such a case, if the IP does not exist, we will return NULL
-    // indicating that we couldnt find the Watson bucket tracker, since returning a tracker
-    // that does not have any bucketing details will be of no use to the caller.
+    // Incase of an OOM, we may not have an IP in the Watson bucket tracker.
     if (pWBTracker->RetrieveWatsonBucketIp() != NULL)
     {
         // Check if the buckets exist or not..
@@ -8398,11 +8329,6 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
 
     // If we are here, then this was a new exception raised
     // from outside the managed EH clauses (fault/finally/catch).
-    //
-    // The throwable *may* have the bucketing details already
-    // if this exception was raised when it was crossing over
-    // an AD transition boundary. Those are stored in UE watson bucket
-    // tracker by AppDomainTransitionExceptionFilter.
     if (fIsPreallocatedException)
     {
         PTR_EHWatsonBucketTracker pUEWatsonBucketTracker = pExState->GetUEWatsonBucketTracker();
@@ -8428,10 +8354,8 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
                 }
             }
 #endif // _DEBUG
-            // These should have been captured at AD transition OR
-            // could be bucketing details of preallocated [rude] thread abort exception.
-            _ASSERTE(pUEWatsonBucketTracker->CapturedAtADTransition() ||
-                     ((fIsThreadAbortException || fIsPreallocatedOOMExceptionForTA) && pUEWatsonBucketTracker->CapturedForThreadAbort()));
+            // These could be bucketing details of preallocated [rude] thread abort exception.
+            _ASSERTE((fIsThreadAbortException || fIsPreallocatedOOMExceptionForTA) && pUEWatsonBucketTracker->CapturedForThreadAbort());
 
             if (!fIsThreadAbortException)
             {
@@ -8517,7 +8441,7 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
             if (ip != NULL)
             {
                 // Confirm that we had the buckets captured for thread abort
-                _ASSERTE(pUEWatsonBucketTracker->CapturedForThreadAbort() || pUEWatsonBucketTracker->CapturedAtADTransition());
+                _ASSERTE(pUEWatsonBucketTracker->CapturedForThreadAbort());
 
                 if (pUEWatsonBucketTracker->RetrieveWatsonBuckets() != NULL)
                 {
