@@ -13,4 +13,7 @@
   <ItemGroup>
     <Compile Include="WindowsEventLog.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

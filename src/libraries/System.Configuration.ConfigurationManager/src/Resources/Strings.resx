@@ -245,7 +245,7 @@
     <value>Configuration system failed to initialize</value>
   </data>
   <data name="Config_client_config_too_many_configsections_elements" xml:space="preserve">
-    <value>Only one &lt;configSections&gt; element allowed per config file and if present must be the first child of the root &lt;configuration&gt; element.</value>
+    <value>Only one &lt;configSections&gt; element allowed per config file and if present must be the first child of the root &lt;configuration&gt; element. Tag name: '{0}'.</value>
   </data>
   <data name="Config_configmanager_open_noexe" xml:space="preserve">
     <value>exePath must be specified when not running inside a stand alone exe.</value>

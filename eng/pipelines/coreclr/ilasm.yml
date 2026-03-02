@@ -8,6 +8,7 @@ pr:
     include:
     - src/coreclr/ilasm/*
     - src/coreclr/ildasm/*
+    - src/tools/ilasm/*
 
 schedules:
 - cron: "0 19 * * 6"
@@ -34,3 +35,20 @@ extends:
     - windows_x86
     - windows_arm64
     testGroup: ilasm
+
+    stages:
+      - stage: Managed_ILAsm
+        displayName: Managed IL Assembler Tests
+        dependsOn: []
+        jobs:
+          - template: /eng/pipelines/common/platform-matrix.yml
+            parameters:
+              jobTemplate: /eng/pipelines/common/global-build-job.yml
+              buildConfig: Debug
+              platforms:
+              - windows_x64
+              jobParameters:
+                nameSuffix: ILAsm
+                buildArgs: -s tools.ilasm -c $(_BuildConfig) -test
+                timeoutInMinutes: 120
+        condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))

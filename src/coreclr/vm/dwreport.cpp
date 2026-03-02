@@ -1,13 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // FILE: dwreport.cpp
 //
-
-//
-
-//
-// ============================================================================
 
 #include "common.h"
 
@@ -23,9 +19,7 @@
 #include "utilcode.h"
 #include "../dlls/mscorrc/resource.h"   // for resource ids
 
-#ifdef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif
 
 EFaultRepRetVal DoReportFault(EXCEPTION_POINTERS * pExceptionInfo);
 
@@ -1005,109 +999,4 @@ VOID WINAPI DoFaultReportDoFavorCallback(LPVOID pFaultReportInfoAsVoid)
         WaitForSingleObject(hThread, INFINITE);
         CloseHandle(hThread);
     }
-}
-
-// look at the type of the contract failure.  if it's a precondition then we want to blame the caller
-// of the method that originated the ContractException not just the first non-contract runtime frame.
-// if this isn't a ContractException then we default to Invariant which won't skip the extra frame.
-ContractFailureKind GetContractFailureKind(OBJECTREF obj)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(obj != NULL);
-    }
-    CONTRACTL_END;
-
-    PTR_MethodTable pMT = obj->GetMethodTable();
-
-    if (CoreLibBinder::IsException(pMT, kContractException))
-        return CONTRACTEXCEPTIONREF(obj)->GetContractFailureKind();
-
-    // there are cases where the code contracts rewriter will use a ContractException
-    // type that's compiled into the user's assembly.  if we get here then this is
-    // one of those cases.  we will make a best guess if this is a ContractException
-    // so that we can return the value in the _Kind field.
-
-    // NOTE: this really isn't meant to be a general-purpose solution for identifying ContractException types.
-    // we're making a few assumptions here since we're being called in context of WER bucket parameter generation.
-
-    // just return anything that isn't precondition so that an extra frame won't be skipped.
-    ContractFailureKind result = CONTRACT_FAILURE_INVARIANT;
-
-    // first compare the exception name.
-    PTR_MethodTable pContractExceptionMT = CoreLibBinder::GetClassIfExist(CLASS__CONTRACTEXCEPTION);
-    _ASSERTE(pContractExceptionMT);
-
-    if (pContractExceptionMT)
-    {
-        LPCUTF8 contractExceptionNamespace = NULL;
-        LPCUTF8 contractExceptionName = pContractExceptionMT->GetFullyQualifiedNameInfo(&contractExceptionNamespace);
-        _ASSERTE(contractExceptionName);
-
-        LPCUTF8 incomingExceptionNamespace = NULL;
-        LPCUTF8 incomingExceptionName = pMT->GetFullyQualifiedNameInfo(&incomingExceptionNamespace);
-        _ASSERTE(incomingExceptionName);
-
-        // NOTE: we can't compare the namespaces since sometimes it comes back as an empty string
-        if (contractExceptionName && incomingExceptionName && strcmp(incomingExceptionName, contractExceptionName) == 0)
-        {
-            WORD requiredNumFields = pContractExceptionMT->GetNumInstanceFields();
-            WORD numFields = pMT->GetNumInstanceFields();
-
-            // now see if this exception object has the required number of fields
-            if (numFields == requiredNumFields)
-            {
-                // getting closer, now look for all three fields on ContractException
-                const int requiredFieldMatches = 3;
-
-                PTR_EEClass pEEClass = pMT->GetClass();
-
-                PTR_FieldDesc pFD = pEEClass->GetFieldDescList();
-                PTR_FieldDesc pFDEnd = pFD + numFields;
-                PTR_FieldDesc pKindFD = NULL;
-
-                int numMatchedFields = 0;
-                while ((pFD < pFDEnd) && (numMatchedFields != requiredFieldMatches))
-                {
-                    CorElementType fieldType = pFD->GetFieldType();
-                    if (fieldType == ELEMENT_TYPE_I4)
-                    {
-                        // found the _Kind field
-                        LPCUTF8 name = NULL;
-                        HRESULT hr = pFD->GetName_NoThrow(&name);
-                        if (SUCCEEDED(hr) && name && (strcmp(name, "_Kind") == 0))
-                        {
-                            // found the _Kind field, remember this FieldDesc in case we have a match
-                            pKindFD = pFD;
-                            ++numMatchedFields;
-                        }
-                    }
-                    else if (fieldType == ELEMENT_TYPE_CLASS)
-                    {
-                        LPCUTF8 name = NULL;
-                        HRESULT hr = pFD->GetName_NoThrow(&name);
-                        if (SUCCEEDED(hr) && name && ((strcmp(name, "_UserMessage") == 0) || (strcmp(name, "_Condition") == 0)))
-                        {
-                            // found another matching field
-                            ++numMatchedFields;
-                        }
-                    }
-
-                    ++pFD;
-                }
-
-                if (numMatchedFields == requiredFieldMatches)
-                {
-                    _ASSERTE(pKindFD != NULL);
-                    ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-                    pKindFD->GetInstanceField(obj, reinterpret_cast<void*>(&result));
-                }
-            }
-        }
-    }
-
-    return result;
 }

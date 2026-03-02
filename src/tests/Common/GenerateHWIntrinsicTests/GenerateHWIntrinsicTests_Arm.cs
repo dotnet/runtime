@@ -22,6 +22,65 @@ using System.Linq;
 //    * outputDirectory   - This should be somewhere under the obj folder for the project and is where generated tests are written
 //    * testListFileName  - This should likewise be somewhere under the obj folder and is where the list of generated tests is written
 
+public struct TestGroup
+{
+    public string Isa { get; set; }
+    public string LoadIsa { get; set; }
+    public (TemplateConfig TemplateConfig, Dictionary<string, string> KeyValuePairs)[] Tests { get; set; }
+
+    public TestGroup(string Isa, string LoadIsa, (TemplateConfig, Dictionary<string, string>)[] Tests)
+    {
+        this.Isa = Isa;
+        this.LoadIsa = LoadIsa;
+        this.Tests = Tests;
+    }
+
+    public (TemplateConfig, Dictionary<string, string>)[] GetTests()
+    {
+        var self = this;
+        return Tests.Select(t =>
+        {
+            var kvp = new Dictionary<string, string>(t.KeyValuePairs);
+            if (!string.IsNullOrEmpty(self.Isa)) kvp["Isa"] = self.Isa;
+            if (!string.IsNullOrEmpty(self.LoadIsa)) kvp["LoadIsa"] = self.LoadIsa;
+            kvp["Namespace"] = $"JIT.HardwareIntrinsics.Arm._{self.Isa}";
+            return (t.TemplateConfig, kvp);
+        }).ToArray();
+    }
+}
+
+public struct TemplateConfig
+{
+    public string Filename { get; }
+    public Dictionary<string, string> KeyValuePairs { get; }
+
+    public TemplateConfig(
+        string filename,
+        string configurationName = null,
+        string templateValidationLogic = null,
+        string templateValidationLogicForCndSel = null,
+        string templateValidationLogicForCndSel_FalseValue = null,
+        string templateValidationLogicForCndSelMask = null)
+    {
+        Filename = filename;
+        KeyValuePairs = new Dictionary<string, string>();
+        if (!string.IsNullOrEmpty(configurationName))
+            KeyValuePairs["TemplateName"] = configurationName;
+
+        if (!string.IsNullOrEmpty(templateValidationLogic))
+            KeyValuePairs["TemplateValidationLogic"] = templateValidationLogic;
+
+        if (!string.IsNullOrEmpty(templateValidationLogicForCndSel))
+            KeyValuePairs["TemplateValidationLogicForCndSel"] = templateValidationLogicForCndSel;
+
+        if (!string.IsNullOrEmpty(templateValidationLogicForCndSel_FalseValue))
+            KeyValuePairs["TemplateValidationLogicForCndSel_FalseValue"] = templateValidationLogicForCndSel_FalseValue;
+
+        if (!string.IsNullOrEmpty(templateValidationLogicForCndSelMask))
+            KeyValuePairs["TemplateValidationLogicForCndSelMask"] = templateValidationLogicForCndSelMask;
+    }
+}
+
 class GenerateHWIntrinsicTests_Arm
 {
     static void Main(string[] args)
@@ -31,25 +90,25 @@ class GenerateHWIntrinsicTests_Arm
         string outputDirectory = args[2];
         string testListFileName = args[3];
 
-        ProcessInputs("AdvSimd", AdvSimdTests.AdvSimdInputs);
-        ProcessInputs("AdvSimd.Arm64", AdvSimdTests.AdvSimd_Arm64Inputs);
-        ProcessInputs("Aes", AdvSimdTests.AesInputs);
-        ProcessInputs("ArmBase", BaseTests.ArmBaseInputs);
-        ProcessInputs("ArmBase.Arm64", BaseTests.ArmBase_Arm64Inputs);
-        ProcessInputs("Crc32", BaseTests.Crc32Inputs);
-        ProcessInputs("Crc32.Arm64", BaseTests.Crc32_Arm64Inputs);
-        ProcessInputs("Dp", AdvSimdTests.DpInputs);
-        ProcessInputs("Rdm", AdvSimdTests.RdmInputs);
-        ProcessInputs("Rdm.Arm64", AdvSimdTests.Rdm_Arm64Inputs);
-        ProcessInputs("Sha1", AdvSimdTests.Sha1Inputs);
-        ProcessInputs("Sha256", AdvSimdTests.Sha256Inputs);
-        ProcessInputs("Sha256", AdvSimdTests.Sha256Inputs);
-        ProcessInputs("Sve", SveTests.SveInputs);
-        ProcessInputs("Sve2", Sve2Tests.Sve2Inputs);
+        ProcessInputs(AdvSimdTests.AdvSimdInputs);
+        ProcessInputs(AdvSimdTests.AdvSimd_Arm64Inputs);
+        ProcessInputs(AdvSimdTests.AesInputs);
+        ProcessInputs(BaseTests.Crc32_Arm64Inputs);
+        ProcessInputs(AdvSimdTests.DpInputs);
+        ProcessInputs(AdvSimdTests.RdmInputs);
+        ProcessInputs(AdvSimdTests.Rdm_Arm64Inputs);
+        ProcessInputs(AdvSimdTests.Sha1Inputs);
+        ProcessInputs(AdvSimdTests.Sha256Inputs);
+        ProcessInputs(AdvSimdTests.Sha256Inputs);
+        ProcessInputs(BaseTests.ArmBaseInputs);
+        ProcessInputs(BaseTests.ArmBase_Arm64Inputs);
+        ProcessInputs(BaseTests.Crc32Inputs);
+        ProcessInputs(SveTests.SveInputs);
+        ProcessInputs(Sve2Tests.Sve2Inputs);
 
-        void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
+        void ProcessInputs(TestGroup testGroup)
         {
-            if (!projectName.Equals($"{groupName}_r") && !projectName.Equals($"{groupName}_ro"))
+            if (!projectName.Equals($"{testGroup.Isa}_r") && !projectName.Equals($"{testGroup.Isa}_ro"))
             {
                 return;
             }
@@ -58,41 +117,30 @@ class GenerateHWIntrinsicTests_Arm
 
             using (var testListFile = new StreamWriter(testListFileName, append: false))
             {
-                foreach (var input in inputs)
+                foreach (var test in testGroup.GetTests())
                 {
-                    ProcessInput(testListFile, groupName, input);
+                    ProcessTest(testListFile, test);
                 }
             }
         }
-        void ProcessInput(StreamWriter testListFile, string groupName, (string templateFileName, Dictionary<string, string> templateData) input)
+
+        void ProcessTest(StreamWriter testListFile, (TemplateConfig templateConfig, Dictionary<string, string> keyValuePairs) test)
         {
-            var testName = input.templateData["TestName"];
+            var testName = test.keyValuePairs["TestName"];
             var fileName = Path.Combine(outputDirectory, $"{testName.Replace('_', '.')}.cs");
-
-            var matchingTemplate = TestTemplates.Templates.Where((t) => t.outputTemplateName.Equals(input.templateFileName)).SingleOrDefault();
             var template = string.Empty;
+            string templateFilePath = Path.Combine(templateDirectory, test.templateConfig.Filename);
+            template = File.ReadAllText(templateFilePath);
 
-            if (matchingTemplate.templateFileName is null)
-            {
-                string templateFileName = Path.Combine(templateDirectory, input.templateFileName);
-                template = File.ReadAllText(templateFileName);
-            }
-            else
-            {
-                string templateFileName = Path.Combine(templateDirectory, matchingTemplate.templateFileName);
-                template = File.ReadAllText(templateFileName);
-
-                foreach (var kvp in matchingTemplate.templateData)
-                {
-                    template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
-                }
-            }
-
-            foreach (var kvp in input.templateData)
+            foreach (var kvp in test.templateConfig.KeyValuePairs)
             {
                 template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
             }
-            template = template.Replace("namespace JIT.HardwareIntrinsics.Arm", $"namespace JIT.HardwareIntrinsics.Arm._{groupName}");
+
+            foreach (var kvp in test.keyValuePairs)
+            {
+                template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
+            }
 
             testListFile.WriteLine(fileName);
             File.WriteAllText(fileName, template);

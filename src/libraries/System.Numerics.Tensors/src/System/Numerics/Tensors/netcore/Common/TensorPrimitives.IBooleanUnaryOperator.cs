@@ -36,26 +36,9 @@ namespace System.Numerics.Tensors
 
             public static bool ShouldEarlyExit(bool result) => result;
 
-#if NET10_0_OR_GREATER
             public static bool ShouldEarlyExit(Vector128<T> result) => Vector128.AnyWhereAllBitsSet(result);
             public static bool ShouldEarlyExit(Vector256<T> result) => Vector256.AnyWhereAllBitsSet(result);
             public static bool ShouldEarlyExit(Vector512<T> result) => Vector512.AnyWhereAllBitsSet(result);
-#else
-            public static bool ShouldEarlyExit(Vector128<T> result) =>
-                typeof(T) == typeof(float) ? Vector128.EqualsAny(result.AsUInt32(), Vector128<uint>.AllBitsSet) :
-                typeof(T) == typeof(double) ? Vector128.EqualsAny(result.AsUInt64(), Vector128<ulong>.AllBitsSet) :
-                Vector128.EqualsAny(result, Vector128<T>.AllBitsSet);
-
-            public static bool ShouldEarlyExit(Vector256<T> result) =>
-                typeof(T) == typeof(float) ? Vector256.EqualsAny(result.AsUInt32(), Vector256<uint>.AllBitsSet) :
-                typeof(T) == typeof(double) ? Vector256.EqualsAny(result.AsUInt64(), Vector256<ulong>.AllBitsSet) :
-                Vector256.EqualsAny(result, Vector256<T>.AllBitsSet);
-
-            public static bool ShouldEarlyExit(Vector512<T> result) =>
-                typeof(T) == typeof(float) ? Vector512.EqualsAny(result.AsUInt32(), Vector512<uint>.AllBitsSet) :
-                typeof(T) == typeof(double) ? Vector512.EqualsAny(result.AsUInt64(), Vector512<ulong>.AllBitsSet) :
-                Vector512.EqualsAny(result, Vector512<T>.AllBitsSet);
-#endif
         }
 
         private readonly struct AllAggregator<T> : IAnyAllAggregator<T>

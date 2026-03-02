@@ -51,7 +51,7 @@ namespace ILCompiler
 
             public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
             {
-                sb.Append(nameMangler.NodeMangler.ExternVariable(_blobName));
+                sb.Append(nameMangler.NodeMangler.ExternVariable(new Utf8String(_blobName)));
             }
 
             public override ObjectNodeSection GetSection(NodeFactory factory) =>

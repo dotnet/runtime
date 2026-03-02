@@ -73,10 +73,6 @@ EXTERN  g_GCShadowEnd:DWORD
 INVALIDGCVALUE equ 0CCCCCCCDh
 endif
 
-ifndef FEATURE_EH_FUNCLETS
-EXTERN _COMPlusEndCatch@20:PROC
-endif
-
 .686P
 .XMM
 ; The following macro is needed because of a MASM issue with the
@@ -1075,37 +1071,6 @@ _JIT_PatchedCodeLast@0 endp
 _JIT_PatchedCodeEnd@0 proc public
 ret
 _JIT_PatchedCodeEnd@0 endp
-
-
-ifndef FEATURE_EH_FUNCLETS
-; Note that the debugger skips this entirely when doing SetIP,
-; since COMPlusCheckForAbort should always return 0.  Excep.cpp:LeaveCatch
-; asserts that to be true.  If this ends up doing more work, then the
-; debugger may need additional support.
-; void __stdcall JIT_EndCatch();
-JIT_EndCatch PROC stdcall public
-
-    ; make temp storage for return address, and push the address of that
-    ; as the last arg to COMPlusEndCatch
-    mov     ecx, [esp]
-    push    ecx;
-    push    esp;
-
-    ; push the rest of COMPlusEndCatch's args, right-to-left
-    push    esi
-    push    edi
-    push    ebx
-    push    ebp
-
-    call    _COMPlusEndCatch@20 ; returns old esp value in eax, stores jump address
-    ; now eax = new esp, [esp] = new eip
-
-    pop     edx         ; edx = new eip
-    mov     esp, eax    ; esp = new esp
-    jmp     edx         ; eip = new eip
-
-JIT_EndCatch ENDP
-endif
 
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath esp down to the one pointed to by eax.

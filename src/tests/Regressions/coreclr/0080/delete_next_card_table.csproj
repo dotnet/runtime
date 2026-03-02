@@ -10,4 +10,7 @@
   <ItemGroup>
     <Compile Include="delete_next_card_table.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

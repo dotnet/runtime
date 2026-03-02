@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="..\Common\IsExternalInit.cs" />
-    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib\src\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -16,12 +17,11 @@
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
       <!-- .NETCoreApp -->
-      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(MSBuildProjectName)*"
-                      TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)$(NetCoreAppToolCurrent)\$(MSBuildProjectName)*" TargetPath="tasks\$(NetCoreAppToolCurrent)" />
 
       <!-- For .NETFramework we need all the dependent assemblies too, so copy from the publish folder -->
-      <FilesToPackage Include="$(OutputPath)$(NetFrameworkToolCurrent)\*"
-                      TargetPath="tasks\$(NetFrameworkToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)$(NetFrameworkToolCurrent)\*" TargetPath="tasks\$(NetFrameworkToolCurrent)" />
     </ItemGroup>
   </Target>
+
 </Project>

@@ -1,2 +1,2 @@
 # MSBuild repository local tasks
-This directory contains MSBuild tasks that are only relevant to dotnet/runtime. Reusable tasks used during the build live in https://github.com/dotnet/arcade.
+This directory contains shipping MSBuild tasks and non-shipping tasks which don't contribute to restore inputs. Custom reusable tasks used during the build live in https://github.com/dotnet/arcade.

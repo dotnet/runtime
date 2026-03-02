@@ -172,7 +172,30 @@ namespace System.Text.Json.Nodes
             else
             {
                 writer.WriteStartObject();
+                WriteContentsTo(writer, options);
+                writer.WriteEndObject();
+            }
+        }
 
+        /// <summary>
+        /// Writes the properties of this JsonObject to the writer without the surrounding braces.
+        /// This is used for extension data serialization where the properties should be flattened
+        /// into the parent object.
+        /// </summary>
+        internal void WriteContentsTo(Utf8JsonWriter writer, JsonSerializerOptions? options)
+        {
+            GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
+
+            if (dictionary is null && jsonElement.HasValue)
+            {
+                // Write properties from the underlying JsonElement without converting to nodes.
+                foreach (JsonProperty property in jsonElement.Value.EnumerateObject())
+                {
+                    property.WriteTo(writer);
+                }
+            }
+            else
+            {
                 foreach (KeyValuePair<string, JsonNode?> entry in Dictionary)
                 {
                     writer.WritePropertyName(entry.Key);
@@ -186,8 +209,6 @@ namespace System.Text.Json.Nodes
                         entry.Value.WriteTo(writer, options);
                     }
                 }
-
-                writer.WriteEndObject();
             }
         }
 
@@ -249,7 +270,7 @@ namespace System.Text.Json.Nodes
                 if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
                     path.Append("['");
-                    path.Append(propertyName);
+                    path.AppendEscapedPropertyName(propertyName);
                     path.Append("']");
                 }
                 else

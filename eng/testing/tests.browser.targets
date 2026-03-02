@@ -20,6 +20,10 @@
       ReadWasmNativeAssetsFromFileSystem;
       UpdateWasmNativeAssetOriginalItemSpec
     </ResolveWasmOutputsDependsOn>
+    <ResolveWasmOutputsDependsOn Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+      $(ResolveWasmOutputsDependsOn);
+      AddTestRunnersToReferenceCopyLocalPaths
+    </ResolveWasmOutputsDependsOn>
 
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'emsdk'))</EMSDK_PATH>
@@ -48,9 +52,21 @@
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <WasmTestSupport>true</WasmTestSupport>
+    <WasmTestExitOnUnhandledError>true</WasmTestExitOnUnhandledError>
+    <WasmTestAppendElementOnExit>true</WasmTestAppendElementOnExit>
+    <WasmTestLogExitCode>true</WasmTestLogExitCode>
+  </PropertyGroup>
+
+  <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120248 (CoreCLR on wasm defaults) -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <WasmEnableWebcil>false</WasmEnableWebcil>
+  </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="$(MonoProjectRoot)browser\test-main.js" Link="wwwroot\test-main.js" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
+    <Content Include="$(MonoProjectRoot)browser\test-main.mjs" Link="wwwroot\test-main.mjs" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
     <Content Include="$(MonoProjectRoot)browser\test-index.html" Link="wwwroot\index.html" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
   </ItemGroup>
 
@@ -108,7 +124,7 @@
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
     <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
-    <!-- help unit test with PlatformDetection.IsThreadingSupported via IsBrowserThreadingSupported env variable -->
+    <!-- help unit test with PlatformDetection.IsMultithreadingSupported via IsBrowserThreadingSupported env variable -->
     <WasmXHarnessMonoArgs Condition="'$(WasmEnableThreads)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsBrowserThreadingSupported=true</WasmXHarnessMonoArgs>
     <WasmXHarnessMaxParallelThreads Condition="'$(WasmEnableThreads)' == 'true' and '$(WasmXHarnessMaxParallelThreads)' == ''">8</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>
@@ -173,6 +189,24 @@
       <WasmNativeAsset Update="@(WasmNativeAsset)">
         <OriginalItemSpec>%(Identity)</OriginalItemSpec>
       </WasmNativeAsset>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddTestRunnersToReferenceCopyLocalPaths"
+          AfterTargets=""
+          Condition="'$(TestFramework)' == 'xunit'">
+    <ItemGroup>
+      <_runnerFilesToBuild Include="$(WasmTestRunnerDir)*" />
+
+      <!-- Remove runner files that already exist in ReferenceCopyLocalPaths to avoid double Building -->
+      <_resolvedFilesToBuildToFileName Include="@(ReferenceCopyLocalPaths -> '%(FileName)%(Extension)')" />
+
+      <_runnerFilesToBuildToFileName Include="@(_runnerFilesToBuild -> '%(FileName)%(Extension)')">
+        <OriginalIdentity>%(Identity)</OriginalIdentity>
+      </_runnerFilesToBuildToFileName>
+      <_runnerFilesToBuildToFileName Remove="@(_resolvedFilesToBuildToFileName)" />
+
+      <ReferenceCopyLocalPaths Include="@(_runnerFilesToBuildToFileName -> '%(OriginalIdentity)')" RelativePath="%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
     </ItemGroup>
   </Target>
 
@@ -294,7 +328,7 @@
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\browser\test-main.js</WasmMainJSPath>
+      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\browser\test-main.mjs</WasmMainJSPath>
       <WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</WasmMainJSFileName>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>

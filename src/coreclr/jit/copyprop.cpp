@@ -404,7 +404,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
         // SSA renaming process.
         for (GenTree* const tree : stmt->TreeList())
         {
-            treeLifeUpdater.UpdateLife(tree);
+            treeLifeUpdater.UpdateLife<false>(tree);
 
             if (tree->OperIsSsaDef())
             {

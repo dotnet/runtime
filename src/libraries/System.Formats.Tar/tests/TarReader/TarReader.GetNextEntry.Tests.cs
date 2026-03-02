@@ -245,7 +245,7 @@ namespace System.Formats.Tar.Tests
                 oldStream = entry.DataStream;
 
                 entry.DataStream = new MemoryStream(); // Substitution, setter should dispose the previous stream
-                using(StreamWriter streamWriter = new StreamWriter(entry.DataStream, leaveOpen: true))
+                using (StreamWriter streamWriter = new StreamWriter(entry.DataStream, leaveOpen: true))
                 {
                     streamWriter.WriteLine("Substituted");
                 }
@@ -299,6 +299,171 @@ namespace System.Formats.Tar.Tests
 
             e = reader.GetNextEntry(copyData);
             Assert.Null(e);
+        }
+
+        [Fact]
+        public void GetNextEntry_UnseekableArchive_DisposedDataStream_DoesNotThrow()
+        {
+            using var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, leaveOpen: true))
+            {
+                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file1.txt");
+                entry1.DataStream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
+                writer.WriteEntry(entry1);
+
+                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "file2.txt");
+                entry2.DataStream = new MemoryStream(new byte[] { 6, 7, 8, 9, 10 });
+                writer.WriteEntry(entry2);
+            }
+
+            archive.Position = 0;
+            using var unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
+            using var reader = new TarReader(unseekable);
+
+            TarEntry entry = reader.GetNextEntry(copyData: false);
+            Assert.NotNull(entry);
+            Assert.Equal("file1.txt", entry.Name);
+
+            Stream dataStream = entry.DataStream;
+            Assert.NotNull(dataStream);
+
+            byte[] buffer = new byte[5];
+            int bytesRead = dataStream.Read(buffer, 0, buffer.Length);
+            Assert.Equal(5, bytesRead);
+
+            dataStream.Dispose();
+
+            TarEntry nextEntry = reader.GetNextEntry(copyData: false);
+            Assert.NotNull(nextEntry);
+            Assert.Equal("file2.txt", nextEntry.Name);
+
+            Assert.Null(reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void GetNextEntry_UnseekableArchive_DisposedDataStream_PartiallyRead_DoesNotThrow()
+        {
+            using var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, leaveOpen: true))
+            {
+                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file1.txt");
+                entry1.DataStream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+                writer.WriteEntry(entry1);
+
+                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "file2.txt");
+                entry2.DataStream = new MemoryStream(new byte[] { 11, 12, 13, 14, 15 });
+                writer.WriteEntry(entry2);
+            }
+
+            archive.Position = 0;
+            using var unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
+            using var reader = new TarReader(unseekable);
+
+            TarEntry entry = reader.GetNextEntry(copyData: false);
+            Assert.NotNull(entry);
+            Assert.Equal("file1.txt", entry.Name);
+
+            Stream dataStream = entry.DataStream;
+            Assert.NotNull(dataStream);
+
+            byte[] buffer = new byte[3];
+            int bytesRead = dataStream.Read(buffer, 0, buffer.Length);
+            Assert.Equal(3, bytesRead);
+
+            dataStream.Dispose();
+
+            TarEntry nextEntry = reader.GetNextEntry(copyData: false);
+            Assert.NotNull(nextEntry);
+            Assert.Equal("file2.txt", nextEntry.Name);
+
+            Assert.Null(reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void GetNextEntry_UnseekableArchive_DisposedDataStream_NotRead_DoesNotThrow()
+        {
+            using var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, leaveOpen: true))
+            {
+                var entry1 = new PaxTarEntry(TarEntryType.RegularFile, "file1.txt");
+                entry1.DataStream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
+                writer.WriteEntry(entry1);
+
+                var entry2 = new PaxTarEntry(TarEntryType.RegularFile, "file2.txt");
+                entry2.DataStream = new MemoryStream(new byte[] { 6, 7, 8, 9, 10 });
+                writer.WriteEntry(entry2);
+            }
+
+            archive.Position = 0;
+            using var unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
+            using var reader = new TarReader(unseekable);
+
+            TarEntry entry = reader.GetNextEntry(copyData: false);
+            Assert.NotNull(entry);
+            Assert.Equal("file1.txt", entry.Name);
+
+            Stream dataStream = entry.DataStream;
+            Assert.NotNull(dataStream);
+
+            dataStream.Dispose();
+
+            TarEntry nextEntry = reader.GetNextEntry(copyData: false);
+            Assert.NotNull(nextEntry);
+            Assert.Equal("file2.txt", nextEntry.Name);
+
+            Assert.Null(reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void Read_Archive_With_Unsupported_EntryType()
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+
+            byte[] header = new byte[512];
+
+            byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes("unsupported_entry");
+            nameBytes.CopyTo(header.AsSpan(0, nameBytes.Length));
+
+            // Set mode field (octal 644 = rw-r--r--)
+            System.Text.Encoding.UTF8.GetBytes("0000644 ").CopyTo(header.AsSpan(100, 8));
+            // Set uid field
+            System.Text.Encoding.UTF8.GetBytes("0000000 ").CopyTo(header.AsSpan(108, 8));
+            // Set gid field
+            System.Text.Encoding.UTF8.GetBytes("0000000 ").CopyTo(header.AsSpan(116, 8));
+            // Set size field
+            System.Text.Encoding.UTF8.GetBytes("00000000000 ").CopyTo(header.AsSpan(124, 12));
+            // Set mtime field
+            System.Text.Encoding.UTF8.GetBytes("00000000000 ").CopyTo(header.AsSpan(136, 12));
+
+            header[156] = (byte)TarEntryType.SparseFile; // Unsupported entry type
+
+            System.Text.Encoding.UTF8.GetBytes("ustar ").CopyTo(header.AsSpan(257, 6));
+            System.Text.Encoding.UTF8.GetBytes(" \0").CopyTo(header.AsSpan(263, 2));
+
+            // Calculate checksum - the checksum field itself should be treated as spaces
+            int checksum = 0;
+            for (int i = 0; i < header.Length; i++)
+            {
+                if (i >= 148 && i < 156)
+                {
+                    checksum += (byte)' ';
+                }
+                else
+                {
+                    checksum += header[i];
+                }
+            }
+
+            string checksumStr = Convert.ToString(checksum, 8).PadLeft(6, '0') + "\0 ";
+            System.Text.Encoding.UTF8.GetBytes(checksumStr).CopyTo(header.AsSpan(148, 8));
+
+            archiveStream.Write(header);
+            archiveStream.Write(new byte[1024]);
+
+            archiveStream.Seek(0, SeekOrigin.Begin);
+
+            using TarReader reader = new TarReader(archiveStream);
+            Assert.Throws<NotSupportedException>(() => reader.GetNextEntry());
         }
     }
 }

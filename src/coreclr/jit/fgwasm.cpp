@@ -107,9 +107,13 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
     JITDUMP("Determining Wasm DFS entry points\n");
 
     // All funclets are entries. For now we assume finallys are funclets.
+    // We walk from outer->inner order, so that for mutual protect trys
+    // the "first" handler is visited last and ends up earlier in RPO.
     //
-    for (EHblkDsc* const ehDsc : EHClauses(comp))
+    for (int XTnum = comp->compHndBBtabCount - 1; XTnum >= 0; XTnum--)
     {
+        EHblkDsc* const ehDsc = &comp->compHndBBtab[XTnum];
+
         JITDUMP(FMT_BB " is handler entry\n", ehDsc->ebdHndBeg->bbNum);
         entryBlocks.push_back(ehDsc->ebdHndBeg);
         if (ehDsc->HasFilter())
@@ -190,7 +194,7 @@ class Scc
 private:
 
     FgWasm*              m_fgWasm;
-    Compiler*            m_comp;
+    Compiler*            m_compiler;
     FlowGraphDfsTree*    m_dfsTree;
     BitVecTraits*        m_traits;
     BitVec               m_blocks;
@@ -213,7 +217,7 @@ public:
     //
     Scc(FgWasm* fgWasm, BasicBlock* block)
         : m_fgWasm(fgWasm)
-        , m_comp(fgWasm->Comp())
+        , m_compiler(fgWasm->Comp())
         , m_dfsTree(fgWasm->GetDfsTree())
         , m_traits(fgWasm->GetTraits())
         , m_blocks(BitVecOps::UninitVal())
@@ -295,7 +299,7 @@ public:
                         assert(m_enclosingHndIndex == block->bbHndIndex);
 
                         // But possibly different try regions
-                        m_enclosingTryIndex = m_comp->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
+                        m_enclosingTryIndex = m_compiler->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
                     }
                 }
             }
@@ -381,7 +385,6 @@ public:
         JITDUMP("digraph SCC_%u {\n", m_num);
         BitVecOps::Iter iterator(m_traits, m_blocks);
         unsigned int    poNum;
-        bool            first = true;
         while (iterator.NextElem(&poNum))
         {
             BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
@@ -411,7 +414,7 @@ public:
                 }
             }
 
-            WasmSuccessorEnumerator successors(m_comp, block, /* useProfile */ true);
+            WasmSuccessorEnumerator successors(m_compiler, block, /* useProfile */ true);
             for (BasicBlock* const succ : successors)
             {
                 JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
@@ -450,7 +453,7 @@ public:
 
         // Build a new postorder for the nested blocks
         //
-        BasicBlock** postOrder = new (m_comp, CMK_WasmSccTransform) BasicBlock*[nestedCount];
+        BasicBlock** postOrder = new (m_compiler, CMK_WasmSccTransform) BasicBlock*[nestedCount];
 
         auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {};
 
@@ -463,19 +466,18 @@ public:
 #ifdef DEBUG
         // Dump subgraph as dot
         //
-        if (m_comp->verbose)
+        if (m_compiler->verbose)
         {
             JITDUMP("digraph scc_%u_nested_subgraph%u {\n", m_num, nestedCount);
             BitVecOps::Iter iterator(m_traits, nestedBlocks);
             unsigned int    poNum;
-            bool            first = true;
             while (iterator.NextElem(&poNum))
             {
                 BasicBlock* const block = m_dfsTree->GetPostOrder(poNum);
 
                 JITDUMP(FMT_BB ";\n", block->bbNum);
 
-                WasmSuccessorEnumerator successors(m_comp, block, /* useProfile */ true);
+                WasmSuccessorEnumerator successors(m_compiler, block, /* useProfile */ true);
                 for (BasicBlock* const succ : successors)
                 {
                     JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
@@ -498,7 +500,7 @@ public:
 
         // Use that to find the nested Sccs
         //
-        ArrayStack<Scc*> nestedSccs(m_comp->getAllocator(CMK_WasmSccTransform));
+        ArrayStack<Scc*> nestedSccs(m_compiler->getAllocator(CMK_WasmSccTransform));
         m_fgWasm->WasmFindSccsCore(nestedBlocks, nestedSccs, postOrder, nestedCount);
 
         const unsigned nNested = nestedSccs.Height();
@@ -542,7 +544,7 @@ public:
     //   * The switch in the dispatcher transfers control to the headers based on on the control var value.
     //
     //   ** if we have an edge pred->header such that pred has no other successors
-    //      we hoist the assingnment into pred.
+    //      we hoist the assignment into pred.
     //
     //   TODO: if the source of an edge to a header is dominated by that header,
     //   the edge can be left as is. (requires dominators)
@@ -563,12 +565,13 @@ public:
 
             // Split edges, rewire flow, and add control var assignments
             //
-            const unsigned   controlVarNum = m_comp->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
-            LclVarDsc* const controlVarDsc = m_comp->lvaGetDesc(controlVarNum);
+            const unsigned controlVarNum =
+                m_compiler->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
+            LclVarDsc* const controlVarDsc = m_compiler->lvaGetDesc(controlVarNum);
             controlVarDsc->lvType          = TYP_INT;
             BasicBlock*      dispatcher    = nullptr;
-            FlowEdge** const succs         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
-            FlowEdge** const cases         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
+            FlowEdge** const succs         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
+            FlowEdge** const cases         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
             unsigned         headerNumber  = 0;
             BitVecOps::Iter  iterator(m_traits, m_entries);
             unsigned int     poHeaderNumber = 0;
@@ -596,8 +599,8 @@ public:
                     {
                         JITDUMP("Dispatch header needs to go in method region\n");
                     }
-                    dispatcher = m_comp->fgNewBBinRegion(BBJ_SWITCH, EnclosingTryIndex(), EnclosingHndIndex(),
-                                                         /* nearBlk */ nullptr);
+                    dispatcher = m_compiler->fgNewBBinRegion(BBJ_SWITCH, EnclosingTryIndex(), EnclosingHndIndex(),
+                                                             /* nearBlk */ nullptr);
                     dispatcher->setBBProfileWeight(TotalEntryWeight());
                 }
 
@@ -616,7 +619,7 @@ public:
                     // is preferable; the assignment should be cheap.
                     //
                     // For now we just check if the pred has only this header as successor.
-                    // We also don't putcode into BBJ_CALLFINALLYRET (note that restriction
+                    // We also don't put code into BBJ_CALLFINALLYRET (note that restriction
                     // is perhaps no longer needed).
                     //
                     if (pred->HasTarget() && (pred->GetTarget() == header) && !pred->isBBCallFinallyPairTail())
@@ -629,20 +632,36 @@ public:
                     else
                     {
                         assert(!pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHFINALLYRET));
-                        transferBlock = m_comp->fgSplitEdge(pred, header);
+                        transferBlock = m_compiler->fgSplitEdge(pred, header);
                     }
 
-                    GenTree* const   targetIndex     = m_comp->gtNewIconNode(headerNumber);
-                    GenTree* const   storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
-                    Statement* const assignStmt      = m_comp->fgNewStmtNearEnd(transferBlock, storeControlVar);
+                    GenTree* const targetIndex     = m_compiler->gtNewIconNode(headerNumber);
+                    GenTree* const storeControlVar = m_compiler->gtNewStoreLclVarNode(controlVarNum, targetIndex);
 
-                    m_comp->gtSetStmtInfo(assignStmt);
-                    m_comp->fgSetStmtSeq(assignStmt);
+                    if (transferBlock->IsLIR())
+                    {
+                        LIR::Range range = LIR::SeqTree(m_compiler, storeControlVar);
 
-                    m_comp->fgReplaceJumpTarget(transferBlock, header, dispatcher);
+                        if (transferBlock->isEmpty())
+                        {
+                            LIR::AsRange(transferBlock).InsertAtEnd(std::move(range));
+                        }
+                        else
+                        {
+                            LIR::InsertBeforeTerminator(transferBlock, std::move(range));
+                        }
+                    }
+                    else
+                    {
+                        Statement* const assignStmt = m_compiler->fgNewStmtNearEnd(transferBlock, storeControlVar);
+                        m_compiler->gtSetStmtInfo(assignStmt);
+                        m_compiler->fgSetStmtSeq(assignStmt);
+                    }
+
+                    m_compiler->fgReplaceJumpTarget(transferBlock, header, dispatcher);
                 }
 
-                FlowEdge* const dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
+                FlowEdge* const dispatchToHeaderEdge = m_compiler->fgAddRefPred(header, dispatcher);
 
                 // Since all flow to header now goes through dispatch, we know the likelihood
                 // of the dispatch targets. If all profile data is zero just divide evenly.
@@ -672,15 +691,26 @@ public:
             //
             JITDUMP("Dispatch header is " FMT_BB "; %u cases\n", dispatcher->bbNum, numHeaders);
             BBswtDesc* const swtDesc =
-                new (m_comp, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, true);
+                new (m_compiler, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, true);
             dispatcher->SetSwitch(swtDesc);
 
-            GenTree* const   controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
-            GenTree* const   switchNode = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
-            Statement* const switchStmt = m_comp->fgNewStmtAtEnd(dispatcher, switchNode);
+            GenTree* const controlVar = m_compiler->gtNewLclvNode(controlVarNum, TYP_INT);
+            GenTree* const switchNode = m_compiler->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
 
-            m_comp->gtSetStmtInfo(switchStmt);
-            m_comp->fgSetStmtSeq(switchStmt);
+            assert(dispatcher->isEmpty());
+
+            if (dispatcher->IsLIR())
+            {
+                LIR::Range range = LIR::SeqTree(m_compiler, switchNode);
+                LIR::AsRange(dispatcher).InsertAtEnd(std::move(range));
+            }
+            else
+            {
+                Statement* const switchStmt = m_compiler->fgNewStmtAtEnd(dispatcher, switchNode);
+
+                m_compiler->gtSetStmtInfo(switchStmt);
+                m_compiler->fgSetStmtSeq(switchStmt);
+            }
         }
 
         // Handle nested Sccs
@@ -1003,7 +1033,7 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 // not need a new interval for the branch. Because we're walking front to back, we will have already
 // recorded an interval that starts earlier.
 //
-// We then scan the intervals in non-decreasing start order, lookin for earlier intervals that contain
+// We then scan the intervals in non-decreasing start order, looking for earlier intervals that contain
 // the start of the current interval but not the end. When we find one, the start of the current interval
 // will need to decrease so the earlier interval can nest inside. That is, if we have a:[0, 4] and b:[2,6] we
 // will need to decrease the start of b to match a and then reorder, and emit them as b:[0,6], a[0,4].
@@ -1044,6 +1074,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     if (hasBlocksOnlyReachableViaEH)
     {
         JITDUMP("\nThere are blocks only reachable via EH, bailing out for now\n");
+        NYI_WASM("Method has blocks only reachable via EH");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -1076,13 +1107,15 @@ PhaseStatus Compiler::fgWasmControlFlow()
     fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
     assert(numBlocks == dfsCount);
 
-    // Splice in a fake BB0
+    // Splice in a fake BB0. Heap-allocated because it is published
+    // in fgIndexToBlockMap and accessed during codegen.
     //
-    BasicBlock bb0;
-    INDEBUG(bb0.bbNum = 0;);
-    bb0.bbPreorderNum        = numBlocks;
-    bb0.bbPostorderNum       = dfsTree->GetPostOrderCount();
-    initialLayout[numBlocks] = &bb0;
+    BasicBlock* bb0 = new (this, CMK_WasmCfgLowering) BasicBlock();
+    INDEBUG(bb0->bbNum = 0;);
+    bb0->SetFlagsRaw(BBF_EMPTY);
+    bb0->bbPreorderNum       = numBlocks;
+    bb0->bbPostorderNum      = dfsTree->GetPostOrderCount();
+    initialLayout[numBlocks] = bb0;
 
     // -----------------------------------------------
     // (2) Build the intervals
@@ -1143,9 +1176,10 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
-            // Branch to next needs no block, unless this is a switch
+            // Branch to next needs no block, unless this is a switch or next is a throw helper.
+            // We may need to branch to a throw helper mid-block, so can't always fall through.
             //
-            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH))
+            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH) && !(succ->HasFlag(BBF_THROW_HELPER)))
             {
                 continue;
             }
@@ -1310,11 +1344,12 @@ PhaseStatus Compiler::fgWasmControlFlow()
             return false;
         }
 
-        // Tiebreaker
+        // Tiebreaker: loops before blocks, but equal elements must return false
+        // to satisfy strict weak ordering.
         //
-        if (i1->IsLoop())
+        if (i1->IsLoop() != i2->IsLoop())
         {
-            return true;
+            return i1->IsLoop();
         }
 
         return false;
@@ -1363,6 +1398,17 @@ PhaseStatus Compiler::fgWasmControlFlow()
         {
             fgUnlinkBlock(block);
             fgInsertBBafter(lastBlock, block);
+
+            // If the last block was the end of a handler, we may need
+            // to update the enclosing region endpoint.
+            //
+            // Because we are not keeping try regions contiguous,
+            // we can't and don't need to do the same for a try.
+            //
+            if (ehIsBlockHndLast(lastBlock) && block->hasHndIndex() && BasicBlock::sameHndRegion(lastBlock, block))
+            {
+                fgSetHndEnd(ehGetBlockHndDsc(block), block);
+            }
             lastBlock = block;
         }
 
@@ -1374,41 +1420,54 @@ PhaseStatus Compiler::fgWasmControlFlow()
             const unsigned trueNum  = block->GetTrueTarget()->bbPreorderNum;
             const unsigned falseNum = block->GetFalseTarget()->bbPreorderNum;
 
-            // We don't expect degenerate BBJ_COND
-            //
-            assert(trueNum != falseNum);
-
-            // If the true target is the next block, reverse the branch
-            //
-            const bool reverseCondition = trueNum == (cursor + 1);
-
-            if (reverseCondition)
+            if (trueNum == falseNum)
             {
-                JITDUMP("Reversing condition in " FMT_BB " to allow fall through to " FMT_BB "\n", block->bbNum,
-                        block->GetTrueTarget()->bbNum);
-
-                GenTree* const test = block->GetLastLIRNode();
-                assert(test->OperIs(GT_JTRUE));
-                {
-                    GenTree* const cond = gtReverseCond(test->AsOp()->gtOp1);
-                    // Ensure `gtReverseCond` did not create a new node.
-                    assert(cond == test->AsOp()->gtOp1);
-                    test->AsOp()->gtOp1 = cond;
-                }
-
-                // Rewire the flow
-                //
-                std::swap(block->TrueEdgeRef(), block->FalseEdgeRef());
+                // If branch is degenerate update to BBJ_ALWAYS
+                fgRemoveConditionalJump(block);
             }
             else
             {
-                JITDUMP("NOT Reversing condition in " FMT_BB "\n", block->bbNum);
+                // If the true target is the next block, reverse the branch
+                //
+                const bool reverseCondition = trueNum == (cursor + 1);
+
+                if (reverseCondition)
+                {
+                    JITDUMP("Reversing condition in " FMT_BB " to allow fall through to " FMT_BB "\n", block->bbNum,
+                            block->GetTrueTarget()->bbNum);
+
+                    GenTree* const test = block->GetLastLIRNode();
+                    assert(test->OperIs(GT_JTRUE));
+                    {
+                        GenTree* const cond = gtReverseCond(test->AsOp()->gtOp1);
+                        // Ensure `gtReverseCond` did not create a new node.
+                        assert(cond == test->AsOp()->gtOp1);
+                        test->AsOp()->gtOp1 = cond;
+                    }
+
+                    // Rewire the flow
+                    //
+                    std::swap(block->TrueEdgeRef(), block->FalseEdgeRef());
+                }
+                else
+                {
+                    JITDUMP("NOT Reversing condition in " FMT_BB "\n", block->bbNum);
+                }
             }
         }
     }
 
+    // Publish the index to block map for use during codegen.
+    //
+    fgIndexToBlockMap = initialLayout;
+
     JITDUMPEXEC(fgDumpWasmControlFlow());
     JITDUMPEXEC(fgDumpWasmControlFlowDot());
+
+    // By publishing the index to block map, we are also indicating
+    // that try regions may no longer be contiguous.
+    //
+    assert(fgTrysNotContiguous());
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

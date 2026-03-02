@@ -6,6 +6,7 @@
 #pragma hdrstop
 #endif
 #include "regalloc.h"
+#include "regallocimpl.h"
 
 #if DOUBLE_ALIGN
 DWORD Compiler::getCanDoubleAlign()
@@ -256,9 +257,10 @@ void Compiler::raMarkStkVars()
 
         noway_assert((varDsc->lvType != TYP_UNDEF) && (varDsc->lvType != TYP_VOID) && (varDsc->lvType != TYP_UNKNOWN));
 #if FEATURE_FIXED_OUT_ARGS
-        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || (lvaLclStackHomeSize(lclNum) != 0));
+        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || varTypeHasUnknownSize(varDsc) ||
+                     (lvaLclStackHomeSize(lclNum) != 0));
 #else  // FEATURE_FIXED_OUT_ARGS
-        noway_assert(lvaLclStackHomeSize(lclNum) != 0);
+        noway_assert(varTypeHasUnknownSize(varDsc) || lvaLclStackHomeSize(lclNum) != 0);
 #endif // FEATURE_FIXED_OUT_ARGS
 
         varDsc->lvOnFrame = true; // Our prediction is that the final home for this local variable will be in the
@@ -312,4 +314,151 @@ void Compiler::raMarkStkVars()
         }
 #endif
     }
+}
+
+//------------------------------------------------------------------------
+// isRegCandidate: Determine whether a local is eligible for register allocation.
+//
+// Arguments:
+//    varDsc - The local's descriptor
+//
+// Return Value:
+//    Whether the variable represented by "varDsc" may be allocated in
+//    a register, or needs to live on the stack.
+//
+bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
+{
+    if (!willEnregisterLocalVars())
+    {
+        return false;
+    }
+    Compiler* compiler = m_compiler;
+    assert(compiler->compEnregLocals());
+
+    if (!varDsc->lvTracked)
+    {
+        return false;
+    }
+
+#if LOWER_DECOMPOSE_LONGS
+    if (varDsc->lvType == TYP_LONG)
+    {
+        // Long variables should not be register candidates.
+        // Lowering will have split any candidate lclVars into lo/hi vars.
+        return false;
+    }
+#endif // LOWER_DECOMPOSE_LONGS
+
+    // If we have JMP, reg args must be put on the stack
+
+    if (compiler->compJmpOpUsed && varDsc->lvIsRegArg)
+    {
+        return false;
+    }
+
+    // Don't allocate registers for dependently promoted struct fields
+    if (compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+    {
+        return false;
+    }
+
+    // Don't enregister if the ref count is zero.
+    if (varDsc->lvRefCnt() == 0)
+    {
+        varDsc->setLvRefCntWtd(0);
+        return false;
+    }
+
+    // Variables that are address-exposed are never enregistered, or tracked.
+    // A struct may be promoted, and a struct that fits in a register may be fully enregistered.
+    // Pinned variables may not be tracked (a condition of the GCInfo representation)
+    // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
+    // references when using the general GC encoding.
+    unsigned lclNum = compiler->lvaGetLclNum(varDsc);
+    if (varDsc->IsAddressExposed() || !varDsc->IsEnregisterableType() ||
+        (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
+    {
+#ifdef DEBUG
+        DoNotEnregisterReason dner;
+        if (varDsc->IsAddressExposed())
+        {
+            dner = DoNotEnregisterReason::AddrExposed;
+        }
+        else if (!varDsc->IsEnregisterableType())
+        {
+            dner = DoNotEnregisterReason::NotRegSizeStruct;
+        }
+        else
+        {
+            dner = DoNotEnregisterReason::DontEnregStructs;
+        }
+#endif // DEBUG
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(dner));
+        return false;
+    }
+    else if (varDsc->lvPinned)
+    {
+        varDsc->lvTracked = 0;
+#ifdef JIT32_GCENCODER
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
+#endif // JIT32_GCENCODER
+        return false;
+    }
+
+    //  Are we not optimizing and we have exception handlers?
+    //   if so mark all args and locals as volatile, so that they
+    //   won't ever get enregistered.
+    //
+    if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
+    {
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+    }
+
+    if (varDsc->lvDoNotEnregister)
+    {
+        return false;
+    }
+
+    switch (genActualType(varDsc->TypeGet()))
+    {
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return !compiler->opts.compDbgCode;
+
+        case TYP_INT:
+        case TYP_LONG:
+        case TYP_REF:
+        case TYP_BYREF:
+            break;
+
+#ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        case TYP_SIMD64:
+#endif // TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+        case TYP_MASK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
+        {
+            return !varDsc->lvPromoted;
+        }
+#endif // FEATURE_SIMD
+
+        case TYP_STRUCT:
+        {
+            // TODO-1stClassStructs: support vars with GC pointers. The issue is that such
+            // vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
+            // but if the variable is tracked the prolog generator would expect it to be in liveIn set,
+            // so an assert in `genFnProlog` will fire.
+            return compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
+        }
+
+        default:
+            return false;
+    }
+
+    return true;
 }

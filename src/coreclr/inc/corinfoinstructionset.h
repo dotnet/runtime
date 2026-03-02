@@ -27,27 +27,29 @@ enum CORINFO_InstructionSet
     InstructionSet_Atomics=9,
     InstructionSet_Vector64=10,
     InstructionSet_Vector128=11,
-    InstructionSet_Dczva=12,
-    InstructionSet_Rcpc=13,
-    InstructionSet_VectorT128=14,
-    InstructionSet_Rcpc2=15,
-    InstructionSet_Sve=16,
-    InstructionSet_Sve2=17,
-    InstructionSet_ArmBase_Arm64=18,
-    InstructionSet_AdvSimd_Arm64=19,
-    InstructionSet_Aes_Arm64=20,
-    InstructionSet_Crc32_Arm64=21,
-    InstructionSet_Dp_Arm64=22,
-    InstructionSet_Rdm_Arm64=23,
-    InstructionSet_Sha1_Arm64=24,
-    InstructionSet_Sha256_Arm64=25,
-    InstructionSet_Sve_Arm64=26,
-    InstructionSet_Sve2_Arm64=27,
+    InstructionSet_VectorT=12,
+    InstructionSet_Dczva=13,
+    InstructionSet_Rcpc=14,
+    InstructionSet_VectorT128=15,
+    InstructionSet_Rcpc2=16,
+    InstructionSet_Sve=17,
+    InstructionSet_Sve2=18,
+    InstructionSet_ArmBase_Arm64=19,
+    InstructionSet_AdvSimd_Arm64=20,
+    InstructionSet_Aes_Arm64=21,
+    InstructionSet_Crc32_Arm64=22,
+    InstructionSet_Dp_Arm64=23,
+    InstructionSet_Rdm_Arm64=24,
+    InstructionSet_Sha1_Arm64=25,
+    InstructionSet_Sha256_Arm64=26,
+    InstructionSet_Sve_Arm64=27,
+    InstructionSet_Sve2_Arm64=28,
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
     InstructionSet_RiscV64Base=1,
     InstructionSet_Zba=2,
     InstructionSet_Zbb=3,
+    InstructionSet_Zbs=4,
 #endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
     InstructionSet_X86Base=1,
@@ -371,6 +373,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Vector64);
         if (resultflags.HasInstructionSet(InstructionSet_Vector128) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd))
             resultflags.RemoveInstructionSet(InstructionSet_Vector128);
+        if (resultflags.HasInstructionSet(InstructionSet_VectorT) && !resultflags.HasInstructionSet(InstructionSet_Sve))
+            resultflags.RemoveInstructionSet(InstructionSet_VectorT);
         if (resultflags.HasInstructionSet(InstructionSet_VectorT128) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd))
             resultflags.RemoveInstructionSet(InstructionSet_VectorT128);
         if (resultflags.HasInstructionSet(InstructionSet_Sve) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd))
@@ -383,6 +387,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Zbb);
         if (resultflags.HasInstructionSet(InstructionSet_Zba) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
             resultflags.RemoveInstructionSet(InstructionSet_Zba);
+        if (resultflags.HasInstructionSet(InstructionSet_Zbs) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
+            resultflags.RemoveInstructionSet(InstructionSet_Zbs);
 #endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
         if (resultflags.HasInstructionSet(InstructionSet_X86Base) && !resultflags.HasInstructionSet(InstructionSet_X86Base_X64))
@@ -629,6 +635,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Vector64";
         case InstructionSet_Vector128 :
             return "Vector128";
+        case InstructionSet_VectorT :
+            return "VectorT";
         case InstructionSet_Dczva :
             return "Dczva";
         case InstructionSet_Rcpc :
@@ -653,6 +661,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Zba";
         case InstructionSet_Zbb :
             return "Zbb";
+        case InstructionSet_Zbs :
+            return "Zbs";
 #endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
         case InstructionSet_X86Base :
@@ -844,6 +854,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_RiscV64Base: return InstructionSet_RiscV64Base;
         case READYTORUN_INSTRUCTION_Zba: return InstructionSet_Zba;
         case READYTORUN_INSTRUCTION_Zbb: return InstructionSet_Zbb;
+        case READYTORUN_INSTRUCTION_Zbs: return InstructionSet_Zbs;
 #endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;

@@ -9,7 +9,31 @@ using System.Runtime.InteropServices;
 
 using Xunit;
 
-struct Struct { }
+struct Struct
+{
+    public Type Value;
+    private void SetType(Type type)
+    {
+        Value = type;
+    }
+    private void SetType<T>()
+    {
+        Value = typeof(T);
+    }
+}
+
+struct GenericStruct<T>
+{
+    public Type Value;
+    private void SetType(Type type)
+    {
+        Value = type;
+    }
+    private void SetType<U>()
+    {
+        Value = typeof(U);
+    }
+}
 
 interface I1 { }
 
@@ -112,6 +136,12 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessage")]
         public extern static string CreateMessage(GenericBase<V> b, V v);
 
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SetType")]
+        public extern static void SetType(ref GenericStruct<V> s, Type type);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SetType")]
+        public extern static void SetType<U>(ref GenericStruct<V> s);
+
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ElementType")]
         public extern static Type ElementType(MyList<V> l);
 
@@ -126,6 +156,15 @@ public static unsafe class UnsafeAccessorsTestsGenerics
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=MyList<int>.StaticGenericFieldName)]
         public extern static ref V GetPrivateStaticField(MyList<V> d);
+    }
+
+    static class Accessors
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SetType")]
+        public extern static void SetType<U>(ref Struct s);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SetType")]
+        public extern static void SetType(ref Struct s, Type type);
     }
 
     [Fact]
@@ -456,6 +495,68 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.False(Accessors<Struct>.CanUseElementType<int>(null, 1));
             Assert.False(Accessors<Struct>.CanUseElementType<string>(null, string.Empty));
             Assert.True(Accessors<Struct>.CanUseElementType<Struct>(null, new Struct()));
+        }
+    }
+
+    [Fact]
+    public static void Verify_Generic_Structs()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_Structs)}");
+
+        {
+            Struct s = new();
+            Accessors.SetType(ref s, typeof(int));
+            Assert.Equal(typeof(int), s.Value);
+            Accessors.SetType(ref s, typeof(string));
+            Assert.Equal(typeof(string), s.Value);
+            Accessors.SetType(ref s, typeof(Struct));
+            Assert.Equal(typeof(Struct), s.Value);
+            Accessors.SetType(ref s, typeof(GenericStruct<int>));
+            Assert.Equal(typeof(GenericStruct<int>), s.Value);
+            Accessors.SetType(ref s, typeof(GenericStruct<string>));
+            Assert.Equal(typeof(GenericStruct<string>), s.Value);
+        }
+
+        {
+            Struct s = new();
+            Accessors.SetType<int>(ref s);
+            Assert.Equal(typeof(int), s.Value);
+            Accessors.SetType<string>(ref s);
+            Assert.Equal(typeof(string), s.Value);
+            Accessors.SetType<Struct>(ref s);
+            Assert.Equal(typeof(Struct), s.Value);
+            Accessors.SetType<GenericStruct<int>>(ref s);
+            Assert.Equal(typeof(GenericStruct<int>), s.Value);
+            Accessors.SetType<GenericStruct<string>>(ref s);
+            Assert.Equal(typeof(GenericStruct<string>), s.Value);
+        }
+
+        {
+            GenericStruct<int> s = new();
+            Accessors<int>.SetType(ref s, typeof(int));
+            Assert.Equal(typeof(int), s.Value);
+            Accessors<int>.SetType<string>(ref s);
+            Assert.Equal(typeof(string), s.Value);
+            Accessors<int>.SetType<Struct>(ref s);
+            Assert.Equal(typeof(Struct), s.Value);
+            Accessors<int>.SetType<GenericStruct<int>>(ref s);
+            Assert.Equal(typeof(GenericStruct<int>), s.Value);
+            Accessors<int>.SetType<GenericStruct<string>>(ref s);
+            Assert.Equal(typeof(GenericStruct<string>), s.Value);
+        }
+
+        {
+            GenericStruct<string> s = new();
+            Accessors<string>.SetType(ref s, typeof(int));
+            Assert.Equal(typeof(int), s.Value);
+            Accessors<string>.SetType<string>(ref s);
+            Assert.Equal(typeof(string), s.Value);
+            Accessors<string>.SetType<Struct>(ref s);
+            Assert.Equal(typeof(Struct), s.Value);
+            Accessors<string>.SetType<GenericStruct<int>>(ref s);
+            Assert.Equal(typeof(GenericStruct<int>), s.Value);
+            Accessors<string>.SetType<GenericStruct<string>>(ref s);
+            Assert.Equal(typeof(GenericStruct<string>), s.Value);
         }
     }
 

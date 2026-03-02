@@ -419,6 +419,19 @@ namespace System.Collections.Frozen.Tests
 
             Assert.All(expected, kvp => actual.ContainsKey(kvp.Key));
         }
+
+        [Fact]
+        [OuterLoop]
+        public void ToFrozenDictionary_WithExtremelyLargeStrings()
+        {
+            // Test case with extremely large strings that exceed length bucket boundaries.
+            var keys = new[] { "", new string('a', 0X7FFFFFC7 / 4) };
+            var frozen = keys.ToFrozenDictionary(s => s, GetKeyIEqualityComparer());
+            Assert.Equal(keys.Length, frozen.Count);
+            Assert.Equal(keys.Length, frozen.Keys.Length);
+            Assert.Equal(keys.Length, frozen.Values.Length);
+            Assert.All(keys, key => frozen.ContainsKey(key));
+        }
     }
 
     public class FrozenDictionary_Generic_Tests_string_string_Default : FrozenDictionary_Generic_Tests_string_string

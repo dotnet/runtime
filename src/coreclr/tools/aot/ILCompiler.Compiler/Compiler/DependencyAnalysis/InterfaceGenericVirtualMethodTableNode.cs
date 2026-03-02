@@ -15,9 +15,8 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map between reflection metadata and generated method bodies.
     /// </summary>
-    public sealed class InterfaceGenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class InterfaceGenericVirtualMethodTableNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
         private Dictionary<MethodDesc, HashSet<object>> _interfaceGvmSlots;
         private Dictionary<object, Dictionary<TypeDesc, HashSet<int>>> _interfaceImpls;
@@ -33,7 +32,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__interface_gvm_table"u8);
         }
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -223,8 +221,6 @@ namespace ILCompiler.DependencyAnalysis
             _interfaceGvmSlots = null;
 
             byte[] streamBytes = nativeFormatWriter.Save();
-
-            _size = streamBytes.Length;
 
             return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

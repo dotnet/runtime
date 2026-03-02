@@ -101,7 +101,7 @@ LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
         str         r12, [sp, #-4]
 
         // jump to universal transition thunk
-        b           C_FUNC(RhpUniversalTransition_DebugStepTailCall)
+        b           C_FUNC(RhpUniversalTransitionTailCall)
 LEAF_END RhpInterfaceDispatchSlow, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

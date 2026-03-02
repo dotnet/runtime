@@ -35,16 +35,12 @@ namespace System
             public TimeSpan TotalTime => UserTime + PrivilegedTime;
         }
 
-        public static int ProcessorCount { get; } = GetProcessorCount();
-
         /// <summary>
         /// Gets whether the current machine has only a single processor.
         /// </summary>
-#if !FEATURE_SINGLE_THREADED
-        internal static bool IsSingleProcessor => ProcessorCount == 1;
-#else
-        internal const bool IsSingleProcessor = true;
-#endif
+        internal static bool IsSingleProcessor => RuntimeFeature.IsMultithreadingSupported ? ProcessorCount == 1 : true;
+        public static int ProcessorCount { get; } = RuntimeFeature.IsMultithreadingSupported ? GetProcessorCount() : 1;
+
         private static volatile sbyte s_privilegedProcess;
 
         /// <summary>

@@ -3,6 +3,9 @@
     <Compile Include="punning.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="punninglib.ilproj" />
   </ItemGroup>
 </Project>

@@ -136,10 +136,24 @@ namespace Wasm.Build.Tests
             CurrentProcess.ErrorDataReceived += errorHandler;
             CurrentProcess.OutputDataReceived += outputHandler;
 
-            var completionTask = CurrentProcess.StartAndWaitForExitAsync();
-            CurrentProcess.BeginOutputReadLine();
-            CurrentProcess.BeginErrorReadLine();
-            await completionTask;
+            try
+            {
+                var completionTask = CurrentProcess.StartAndWaitForExitAsync();
+                CurrentProcess.BeginOutputReadLine();
+                CurrentProcess.BeginErrorReadLine();
+                await completionTask;
+            }
+            catch (Exception ex)
+            {
+                // If process start (inside of StartAndWaitForExitAsync) fails,
+                // the `Process` object is in a state "don't touch me"
+                // (calling almost everything results in "No process associated with this object"),
+                // therefore we just set it to null to avoid hiding the root exception.
+                CurrentProcess = null;
+
+                _testOutput.WriteLine($"[{_label}] Exception running command: {ex}");
+                throw;
+            }
 
             CurrentProcess.ErrorDataReceived -= errorHandler;
             CurrentProcess.OutputDataReceived -= outputHandler;

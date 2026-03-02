@@ -261,4 +261,88 @@ public:
 
 };
 
+//*****************************************************************************
+// Helper class to pack and unpack lengths.
+//*****************************************************************************
+struct CPackedLen
+{
+    enum {MAX_LEN = 0x1fffffff};
+    static int Size(ULONG len)
+    {
+        LIMITED_METHOD_CONTRACT;
+        // Smallest.
+        if (len <= 0x7F)
+            return 1;
+        // Medium.
+        if (len <= 0x3FFF)
+            return 2;
+        // Large (too large?).
+        _ASSERTE(len <= MAX_LEN);
+        return 4;
+    }
+
+    // Get a pointer to the data, and store the length.
+    static void const *GetData(void const *pData, ULONG *pLength);
+
+    // Get the length value encoded at *pData.  Update ppData to point past data.
+    static ULONG GetLength(void const *pData, void const **ppData=0);
+
+    // Get the length value encoded at *pData, and the size of that encoded value.
+    static ULONG GetLength(void const *pData, int *pSizeOfLength);
+
+    // Pack a length at *pData; return a pointer to the next byte.
+    static void* PutLength(void *pData, ULONG len);
+
+    // This is used for just getting an encoded length, and verifies that
+    // there is no buffer or integer overflow.
+    static HRESULT SafeGetLength(       // S_OK, or error
+        void const  *pDataSource,       // First byte of length.
+        void const  *pDataSourceEnd,    // End of valid source data memory
+        ULONG       *pLength,           // Encoded value
+        void const **ppDataNext);       // Pointer immediately following encoded length
+
+    static HRESULT SafeGetLength(       // S_OK, or error
+        BYTE const  *pDataSource,       // First byte of length.
+        BYTE const  *pDataSourceEnd,    // End of valid source data memory
+        ULONG       *pLength,           // Encoded value
+        BYTE const **ppDataNext)        // Pointer immediately following encoded length
+    {
+        return SafeGetLength(
+            reinterpret_cast<void const *>(pDataSource),
+            reinterpret_cast<void const *>(pDataSourceEnd),
+            pLength,
+            reinterpret_cast<void const **>(ppDataNext));
+    }
+
+    // This performs the same tasks as GetLength above in addition to checking
+    // that the value in *pcbData does not extend *ppData beyond pDataSourceEnd
+    // and does not cause an integer overflow.
+    static HRESULT SafeGetData(
+        void const  *pDataSource,       // First byte of length.
+        void const  *pDataSourceEnd,    // End of valid source data memory
+        ULONG       *pcbData,           // Length of data
+        void const **ppData);           // Start of data
+
+    static HRESULT SafeGetData(
+        BYTE const  *pDataSource,       // First byte of length.
+        BYTE const  *pDataSourceEnd,    // End of valid source data memory
+        ULONG       *pcbData,           // Length of data
+        BYTE const **ppData)            // Start of data
+    {
+        return SafeGetData(
+            reinterpret_cast<void const *>(pDataSource),
+            reinterpret_cast<void const *>(pDataSourceEnd),
+            pcbData,
+            reinterpret_cast<void const **>(ppData));
+    }
+
+    // This is the same as GetData above except it takes a byte count instead
+    // of pointer to determine the source data length.
+    static HRESULT SafeGetData(         // S_OK, or error
+        void const  *pDataSource,       // First byte of data
+        ULONG        cbDataSource,      // Count of valid bytes in data source
+        ULONG       *pcbData,           // Length of data
+        void const **ppData);           // Start of data
+};
+
 #endif // __MDFileFormat_h__

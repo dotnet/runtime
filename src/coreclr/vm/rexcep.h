@@ -241,7 +241,6 @@ DEFINE_EXCEPTION(g_ReflectionNS,       TargetParameterCountException,  false,  C
 DEFINE_EXCEPTION(g_ThreadingNS,        ThreadAbortException,           false,  COR_E_THREADABORTED)
 DEFINE_EXCEPTION(g_ThreadingNS,        ThreadInterruptedException,     false,  COR_E_THREADINTERRUPTED)
 DEFINE_EXCEPTION(g_ThreadingNS,        ThreadStateException,           false,  COR_E_THREADSTATE)
-DEFINE_EXCEPTION(g_ThreadingNS,        ThreadStartException,           false,  COR_E_THREADSTART)
 DEFINE_EXCEPTION(g_SystemNS,           TypeAccessException,            false,  COR_E_TYPEACCESS)
 DEFINE_EXCEPTION(g_SystemNS,           TypeInitializationException,    false,  COR_E_TYPEINITIALIZATION)
 

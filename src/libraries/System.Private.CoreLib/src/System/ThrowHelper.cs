@@ -102,6 +102,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowSpanTooShortForColor(string? paramName = null)
+        {
+            throw new ArgumentException(SR.Arg_SpanMustHaveElementsForColor, paramName);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_InvalidTimeSpanStyles()
         {
             throw new ArgumentException(SR.Argument_InvalidTimeSpanStyles, "styles");
@@ -333,18 +339,6 @@ namespace System
         internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument)
         {
             throw GetArgumentException(resource, argument);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentException_HandleNotSync(string paramName)
-        {
-            throw new ArgumentException(SR.Arg_HandleNotSync, paramName);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentException_HandleNotAsync(string paramName)
-        {
-            throw new ArgumentException(SR.Arg_HandleNotAsync, paramName);
         }
 
         [DoesNotReturn]

@@ -6,7 +6,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using Xunit;
+using TestLibrary;
 
+[PlatformSpecific(TestPlatforms.AnyApple)]
 public unsafe class SwiftIndirectResultTests
 {
     private struct NonFrozenStruct
@@ -45,6 +47,7 @@ public unsafe class SwiftIndirectResultTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120049", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestSumReturnedNonFrozenStruct()
     {
         int result = SumReturnedNonFrozenStruct(&ReversePInvokeReturnNonFrozenStruct, null);

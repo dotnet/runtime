@@ -668,7 +668,7 @@ void __stdcall GarbageCollectionStartedCallback(int generation, BOOL induced)
     // Mark that we are starting a GC.  This will allow profilers to do limited object inspection
     // during callbacks that occur while a GC is happening.
     //
-    g_profControlBlock.fGCInProgress = TRUE;
+    g_profControlBlock.fGCInProgress = true;
 
     // Notify the profiler of start of the collection
     {
@@ -712,7 +712,7 @@ void __stdcall GarbageCollectionFinishedCallback()
     }
 
     // Mark that GC is finished.
-    g_profControlBlock.fGCInProgress = FALSE;
+    g_profControlBlock.fGCInProgress = false;
 #endif // PROFILING_SUPPORTED
 }
 
@@ -6840,7 +6840,7 @@ HRESULT ProfToEEInterfaceImpl::SuspendRuntime()
     }
 
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
-    g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
+    g_profControlBlock.fProfilerRequestedRuntimeSuspend = true;
     return S_OK;
 }
 
@@ -6878,7 +6878,7 @@ HRESULT ProfToEEInterfaceImpl::ResumeRuntime()
         return CORPROF_E_UNSUPPORTED_CALL_SEQUENCE;
     }
 
-    g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
+    g_profControlBlock.fProfilerRequestedRuntimeSuspend = false;
     ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     return S_OK;
 }
@@ -7672,13 +7672,13 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
         // arbitrarily long inside SuspendEE() for other threads to complete their own
         // suspensions.
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
-        g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
+        g_profControlBlock.fProfilerRequestedRuntimeSuspend = true;
         ownEESuspension = TRUE;
     }
 
     // Suspending EE ensures safe object inspection. We permit the GC Heap walk callback to
     // invoke ICorProfilerInfo APIs guarded by AllowObjectInspection by toggling fGCInProgress.
-    g_profControlBlock.fGCInProgress = TRUE;
+    g_profControlBlock.fGCInProgress = true;
 
     HRESULT hr = S_OK;
     _ASSERTE(m_pProfilerInfo->pProfInterface.Load() != NULL);
@@ -7700,11 +7700,11 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
 
     }
 
-    g_profControlBlock.fGCInProgress = FALSE;
+    g_profControlBlock.fGCInProgress = false;
 
     if (ownEESuspension)
     {
-        g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
+        g_profControlBlock.fProfilerRequestedRuntimeSuspend = false;
         ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     }
 
@@ -8022,10 +8022,7 @@ typedef struct _PROFILER_STACK_WALK_DATA
     ULONG32 infoFlags;
     ULONG32 contextFlags;
     void *clientData;
-
-#ifdef FEATURE_EH_FUNCLETS
     StackFrame sfParent;
-#endif
 } PROFILER_STACK_WALK_DATA;
 
 
@@ -8057,7 +8054,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     CONTEXT builtContext;
 #endif
 
-#ifdef FEATURE_EH_FUNCLETS
     //
     // Skip all managed exception handling functions
     //
@@ -8068,7 +8064,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     {
         return SWA_CONTINUE;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     //
     // For Unmanaged-to-managed transitions we get a NativeMarker back, which we want
@@ -8088,7 +8083,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
         return SWA_CONTINUE;
     }
 
-#ifdef FEATURE_EH_FUNCLETS
     if (!pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
     {
         // Skip new exception handling helpers
@@ -8100,7 +8094,6 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
             return SWA_CONTINUE;
         }
     }
-#endif // FEATURE_EH_FUNCLETS
 
     //
     // If this is not a transition of any sort and not a managed
@@ -8877,9 +8870,8 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
     data.infoFlags = infoFlags;
     data.contextFlags = 0;
     data.clientData = clientData;
-#ifdef FEATURE_EH_FUNCLETS
+
     data.sfParent.Clear();
-#endif
 
     // workaround: The ForbidTypeLoad book keeping in the stackwalker is not robust against exceptions.
     // Unfortunately, it is hard to get it right in the stackwalker since it has to be exception

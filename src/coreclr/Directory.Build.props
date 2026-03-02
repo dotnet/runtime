@@ -20,10 +20,9 @@
     <IntermediateOutputPath Condition="'$(PlatformName)' == 'AnyCPU'">$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
     <IntermediateOutputPath Condition="'$(PlatformName)' != 'AnyCPU'">$(BaseIntermediateOutputPath)$(TargetOS).$(TargetArchitecture).$(Configuration)\</IntermediateOutputPath>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
-    <RuntimeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</RuntimeBinDir>
+    <RuntimeBinDir>$(CoreclrRuntimeBinDir)</RuntimeBinDir>
 
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <SignAssembly Condition="'$(UsingMicrosoftNETSdk)' != 'true'">false</SignAssembly>
-    <CL_MPCount>$(NumberOfCores)</CL_MPCount>
   </PropertyGroup>
 </Project>

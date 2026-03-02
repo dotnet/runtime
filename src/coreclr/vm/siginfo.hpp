@@ -1208,6 +1208,8 @@ BOOL CompareTypeDefsForEquivalence(mdToken tk1, mdToken tk2, Module *pModule1, M
 BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule);
 BOOL IsTypeDefExternallyVisible(mdToken tk, Module *pModule, DWORD dwAttrs);
 
+CorInfoCallConvExtension GetUnmanagedCallConvExtension(MetaSig* pSig);
+
 void ReportPointersFromValueType(promote_func *fn, ScanContext *sc, PTR_MethodTable pMT, PTR_VOID pSrc);
 
 #endif /* _H_SIGINFO */

@@ -90,12 +90,12 @@ namespace System.Diagnostics
         // rgiLineNumber and rgiColumnNumber fields using the portable PDB reader if not already
         // done by GetStackFramesInternal (on Windows for old PDB format).
         //
-
         internal void InitializeSourceInfo(bool fNeedFileInfo, Exception? exception)
         {
             StackTrace.GetStackFramesInternal(this, fNeedFileInfo, exception);
 
-            if (!fNeedFileInfo)
+
+            if (!StackTrace.IsLineNumberSupported || !fNeedFileInfo)
                 return;
 
             // Check if this function is being reentered because of an exception in the code below

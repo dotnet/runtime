@@ -14,10 +14,10 @@ try {
 
     const { setModuleImports, getAssemblyExports, runMain } = await dotnet
         .withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
-        .withElementOnExit()
-        .withExitCodeLogging()
-        .withExitOnUnhandledError()
         .withConfig({
+            appendElementOnExit: true,
+            exitOnUnhandledError: true,
+            logExitCode: true,
             jsThreadBlockingMode: "WarnWhenBlockingWait",
         })
         .create();

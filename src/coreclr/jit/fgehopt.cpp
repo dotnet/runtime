@@ -181,9 +181,6 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                         postTryFinallyBlock->increaseBBProfileWeight(currentBlock->bbWeight);
                     }
 
-                    // Cleanup the postTryFinallyBlock
-                    fgCleanupContinuation(postTryFinallyBlock);
-
                     // Make sure iteration isn't going off the deep end.
                     assert(leaveBlock != endCallFinallyRangeBlock);
                 }
@@ -308,7 +305,10 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         const bool inHnd     = add->acdHndIndex > 0;
         const bool inTry     = add->acdTryIndex > 0;
         const bool inThisHnd = inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum);
-        const bool inThisFlt = inHnd && ((unsigned)(add->acdHndIndex - 1) == XTnum);
+
+        // Filters are tracked via the handler index, so inThisFlt == inThisHnd;
+        // the filter vs handler distinction is made by acdKeyDsg.
+        const bool inThisFlt = inThisHnd;
         const bool inThisTry = inTry && ((unsigned)(add->acdTryIndex - 1) == XTnum);
 
         // If this ACD is in the filter of this region, it is no longer needed
@@ -392,7 +392,7 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         bool const removed = map->Remove(oldKey);
         assert(removed);
 
-        // Compute the new key an see if there's an existing
+        // Compute the new key and see if there's an existing
         // ACD with that key.
         //
         AddCodeDscKey newKey(add);
@@ -545,62 +545,36 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             continue;
         }
 
-        if (UsesCallFinallyThunks())
+        // Look for blocks that are always jumps to a call finally
+        // pair that targets the finally
+        if (!firstTryBlock->KindIs(BBJ_ALWAYS))
         {
-            // Look for blocks that are always jumps to a call finally
-            // pair that targets the finally
-            if (!firstTryBlock->KindIs(BBJ_ALWAYS))
-            {
-                JITDUMP("EH#%u first try block " FMT_BB " not jump to a callfinally; skipping.\n", XTnum,
-                        firstTryBlock->bbNum);
-                XTnum++;
-                continue;
-            }
-
-            callFinally = firstTryBlock->GetTarget();
-
-            // Look for call finally pair. Note this will also disqualify
-            // empty try removal in cases where the finally doesn't
-            // return.
-            if (!callFinally->isBBCallFinallyPair() || !callFinally->TargetIs(firstHandlerBlock))
-            {
-                JITDUMP("EH#%u first try block " FMT_BB " always jumps but not to a callfinally; skipping.\n", XTnum,
-                        firstTryBlock->bbNum);
-                XTnum++;
-                continue;
-            }
-
-            // Try itself must be a single block.
-            if (firstTryBlock != lastTryBlock)
-            {
-                JITDUMP("EH#%u first try block " FMT_BB " not only block in try; skipping.\n", XTnum,
-                        firstTryBlock->Next()->bbNum);
-                XTnum++;
-                continue;
-            }
+            JITDUMP("EH#%u first try block " FMT_BB " not jump to a callfinally; skipping.\n", XTnum,
+                    firstTryBlock->bbNum);
+            XTnum++;
+            continue;
         }
-        else
+
+        callFinally = firstTryBlock->GetTarget();
+
+        // Look for call finally pair. Note this will also disqualify
+        // empty try removal in cases where the finally doesn't
+        // return.
+        if (!callFinally->isBBCallFinallyPair() || !callFinally->TargetIs(firstHandlerBlock))
         {
-            // Look for call finally pair within the try itself. Note this
-            // will also disqualify empty try removal in cases where the
-            // finally doesn't return.
-            if (!firstTryBlock->isBBCallFinallyPair() || !firstTryBlock->TargetIs(firstHandlerBlock))
-            {
-                JITDUMP("EH#%u first try block " FMT_BB " not a callfinally; skipping.\n", XTnum, firstTryBlock->bbNum);
-                XTnum++;
-                continue;
-            }
+            JITDUMP("EH#%u first try block " FMT_BB " always jumps but not to a callfinally; skipping.\n", XTnum,
+                    firstTryBlock->bbNum);
+            XTnum++;
+            continue;
+        }
 
-            callFinally = firstTryBlock;
-
-            // Try must be a callalways pair of blocks.
-            if (!firstTryBlock->NextIs(lastTryBlock))
-            {
-                JITDUMP("EH#%u block " FMT_BB " not last block in try; skipping.\n", XTnum,
-                        firstTryBlock->Next()->bbNum);
-                XTnum++;
-                continue;
-            }
+        // Try itself must be a single block.
+        if (firstTryBlock != lastTryBlock)
+        {
+            JITDUMP("EH#%u first try block " FMT_BB " not only block in try; skipping.\n", XTnum,
+                    firstTryBlock->Next()->bbNum);
+            XTnum++;
+            continue;
         }
 
         JITDUMP("EH#%u has empty try, removing the try region and promoting the finally.\n", XTnum);
@@ -687,15 +661,10 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         callFinally->SetKind(BBJ_ALWAYS);
         callFinally->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
-        // (4) Cleanup the continuation
-        fgCleanupContinuation(continuation);
-
-        // (5) Update the directly contained handler blocks' handler index.
+        // (4) Update the directly contained handler blocks' handler index.
         // Handler index of any nested blocks will update when we
         // remove the EH table entry.  Change handler exits to jump to
         // the continuation.  Clear catch type on handler entry.
-        //
-        // GT_END_LFIN no longer need updates here, now their gtVal1 fields refer to EH IDs.
         //
         for (BasicBlock* const block : Blocks(firstHandlerBlock, lastHandlerBlock))
         {
@@ -733,17 +702,17 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             }
         }
 
-        // (6) Update any impacted ACDs.
+        // (5) Update any impacted ACDs.
         //
         fgUpdateACDsBeforeEHTableEntryRemoval(XTnum);
 
-        // (7) Remove the try-finally EH region. This will compact the
+        // (6) Remove the try-finally EH region. This will compact the
         // EH table so XTnum now points at the next entry and will update
         // the EH region indices of any nested EH in the (former) handler.
         //
         fgRemoveEHTableEntry(XTnum);
 
-        // (8) The handler entry has an artificial extra ref count. Remove it.
+        // (7) The handler entry has an artificial extra ref count. Remove it.
         // There also should be one normal ref, from the try, and the handler
         // may contain internal branches back to its start. So the ref count
         // should currently be at least 2.
@@ -894,7 +863,7 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatchOrTryFault()
 
         JITDUMP("EH#%u try has no statements that can throw\n", XTnum);
 
-        // Since there are no tested trys, XTnum should be the try index of
+        // Since there are no nested tries, XTnum should be the try index of
         // all blocks in the try region.
         //
         assert(firstTryBlock->getTryIndex() == XTnum);
@@ -1264,26 +1233,19 @@ PhaseStatus Compiler::fgCloneFinally()
         {
             BasicBlock* jumpDest = nullptr;
 
-            if (UsesCallFinallyThunks())
+            // Blocks that transfer control to callfinallies are usually
+            // BBJ_ALWAYS blocks, but the last block of a try may fall
+            // through to a callfinally, or could be the target of a BBJ_CALLFINALLYRET,
+            // indicating a chained callfinally.
+
+            if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET))
             {
-                // Blocks that transfer control to callfinallies are usually
-                // BBJ_ALWAYS blocks, but the last block of a try may fall
-                // through to a callfinally, or could be the target of a BBJ_CALLFINALLYRET,
-                // indicating a chained callfinally.
-
-                if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET))
-                {
-                    jumpDest = block->GetTarget();
-                }
-
-                if (jumpDest == nullptr)
-                {
-                    continue;
-                }
+                jumpDest = block->GetTarget();
             }
-            else
+
+            if (jumpDest == nullptr)
             {
-                jumpDest = block;
+                continue;
             }
 
             // The jumpDest must be a callfinally that in turn invokes the
@@ -1351,28 +1313,18 @@ PhaseStatus Compiler::fgCloneFinally()
                 isUpdate                = true;
             }
 
-            if (UsesCallFinallyThunks())
-            {
-                // When there are callfinally thunks, we don't expect to see the
-                // callfinally within a handler region either.
-                assert(!jumpDest->hasHndIndex());
+            // When there are callfinally thunks, we don't expect to see the
+            // callfinally within a handler region either.
+            assert(!jumpDest->hasHndIndex());
 
-                // Update the clone insertion point to just after the
-                // call always pair.
-                cloneInsertAfter = finallyReturnBlock;
+            // Update the clone insertion point to just after the
+            // call always pair.
+            cloneInsertAfter = finallyReturnBlock;
 
-                JITDUMP("%s path to clone: try block " FMT_BB " jumps to callfinally at " FMT_BB ";"
-                        " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
-                        isUpdate ? "Updating" : "Choosing", block->bbNum, jumpDest->bbNum, finallyReturnBlock->bbNum,
-                        postTryFinallyBlock->bbNum);
-            }
-            else
-            {
-                JITDUMP("%s path to clone: try block " FMT_BB " is a callfinally;"
-                        " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
-                        isUpdate ? "Updating" : "Choosing", block->bbNum, finallyReturnBlock->bbNum,
-                        postTryFinallyBlock->bbNum);
-            }
+            JITDUMP("%s path to clone: try block " FMT_BB " jumps to callfinally at " FMT_BB ";"
+                    " the call returns to " FMT_BB " which jumps to " FMT_BB "\n",
+                    isUpdate ? "Updating" : "Choosing", block->bbNum, jumpDest->bbNum, finallyReturnBlock->bbNum,
+                    postTryFinallyBlock->bbNum);
 
             // For non-pgo just take the first one we find.
             // For pgo, keep searching in case we find one we like better.
@@ -1621,9 +1573,6 @@ PhaseStatus Compiler::fgCloneFinally()
         BasicBlock* firstClonedBlock = blockMap[firstBlock];
         firstClonedBlock->bbCatchTyp = BBCT_NONE;
 
-        // Cleanup the continuation
-        fgCleanupContinuation(normalCallFinallyReturn);
-
         // If we have profile data, compute how the weights split,
         // and update the weights in both the clone and the original.
         //
@@ -1709,8 +1658,8 @@ PhaseStatus Compiler::fgCloneFinally()
 // pass through the finally. This checker attempts to verify that by
 // looking at the control flow graph.
 //
-// Each path that exits the try of a try-finally (including try-faults
-// that were optimized into try-finallys by fgCloneFinally) should
+// Each path that exits the try of a try-finally (including try-finallys
+// that were optimized into try-faults by fgCloneFinally) should
 // thus either execute a callfinally to the associated finally or else
 // jump to a block with the BBF_CLONED_FINALLY_BEGIN flag set.
 //
@@ -1770,7 +1719,7 @@ void Compiler::fgDebugCheckTryFinallyExits()
                 // logically "belong" to a child region and the exit
                 // path validity will be checked when looking at the
                 // try blocks in that region.
-                if (UsesCallFinallyThunks() && block->KindIs(BBJ_CALLFINALLY))
+                if (block->KindIs(BBJ_CALLFINALLY))
                 {
                     continue;
                 }
@@ -1784,23 +1733,17 @@ void Compiler::fgDebugCheckTryFinallyExits()
                 // There are various ways control can properly leave a
                 // try-finally (or try-fault-was-finally):
                 //
-                // (a1) via a jump to a callfinally (only for finallys, only for call finally thunks)
-                // (a2) via a callfinally (only for finallys, only for !call finally thunks)
+                // (a) via a jump to a callfinally (only for finallys)
                 // (b) via a jump to a begin finally clone block
                 // (c) via a jump to an empty block to (b)
                 // (d) via the callfinallyret half of a callfinally pair
                 // (e) via an always jump clonefinally exit
                 bool isCallToFinally = false;
 
-                if (UsesCallFinallyThunks() && succBlock->KindIs(BBJ_CALLFINALLY))
+                if (succBlock->KindIs(BBJ_CALLFINALLY))
                 {
-                    // case (a1)
+                    // case (a)
                     isCallToFinally = isFinally && succBlock->TargetIs(finallyBlock);
-                }
-                else if (!UsesCallFinallyThunks() && block->KindIs(BBJ_CALLFINALLY))
-                {
-                    // case (a2)
-                    isCallToFinally = isFinally && block->TargetIs(finallyBlock);
                 }
 
                 bool isJumpToClonedFinally = false;
@@ -1867,58 +1810,6 @@ void Compiler::fgDebugCheckTryFinallyExits()
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// fgCleanupContinuation: cleanup a finally continuation after a
-// finally is removed or converted to normal control flow.
-//
-// Notes:
-//    The continuation is the block targeted by the second half of
-//    a callfinally pair.
-//
-//    Used by finally cloning, empty try removal, and empty
-//    finally removal.
-//
-void Compiler::fgCleanupContinuation(BasicBlock* continuation)
-{
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!UsesFunclets())
-    {
-        // The continuation may be a finalStep block.
-        // It is now a normal block, so clear the special keep
-        // always flag.
-        continuation->RemoveFlags(BBF_KEEP_BBJ_ALWAYS);
-
-        // Remove the GT_END_LFIN from the continuation,
-        // Note we only expect to see one such statement.
-        //
-        bool foundEndLFin = false;
-        bool isEmpty      = true;
-        for (Statement* const stmt : continuation->Statements())
-        {
-            isEmpty       = false;
-            GenTree* expr = stmt->GetRootNode();
-            if (expr->OperIs(GT_END_LFIN))
-            {
-                assert(!foundEndLFin);
-                fgRemoveStmt(continuation, stmt);
-                foundEndLFin = true;
-            }
-        }
-
-        // If the continuation is unreachable, morph may
-        // have changed the continuation to an empty BBJ_THROW.
-        // Tolerate.
-        //
-        if (isEmpty && continuation->KindIs(BBJ_THROW))
-        {
-            return;
-        }
-
-        assert(foundEndLFin);
-    }
-#endif // FEATURE_EH_WINDOWS_X86
-}
-
-//------------------------------------------------------------------------
 // fgMergeFinallyChains: tail merge finally invocations
 //
 // Returns:
@@ -1954,35 +1845,6 @@ PhaseStatus Compiler::fgMergeFinallyChains()
     if (opts.compDbgCode)
     {
         JITDUMP("Method compiled with debug codegen, no merging.\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    bool enableMergeFinallyChains = true;
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-    if (!UsesFunclets())
-    {
-        // For non-funclet models (x86) the callfinallys may contain
-        // statements and the continuations contain GT_END_LFINs.  So no
-        // merging is possible until the GT_END_LFIN blocks can be merged
-        // and merging is not safe unless the callfinally blocks are split.
-        JITDUMP("EH using non-funclet model; merging not yet implemented.\n");
-        enableMergeFinallyChains = false;
-    }
-#endif // FEATURE_EH_WINDOWS_X86
-
-    if (!UsesCallFinallyThunks())
-    {
-        // For non-thunk EH models (x86) the callfinallys may contain
-        // statements, and merging is not safe unless the callfinally
-        // blocks are split.
-        JITDUMP("EH using non-callfinally thunk model; merging not yet implemented.\n");
-        enableMergeFinallyChains = false;
-    }
-
-    if (!enableMergeFinallyChains)
-    {
-        JITDUMP("fgMergeFinallyChains disabled\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -2475,7 +2337,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 //         Map will be modified to contain keys and for the blocks cloned
 //         Visited will include bits for each newly cloned block
 //         m_ehRegionShift will describe number of EH regions added
-//      insertAfter will point at the lexcially last block cloned
+//      insertAfter will point at the lexically last block cloned
 //
 // Notes:
 //   * if insertAfter is non null, map must also be non null
@@ -2609,27 +2471,6 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 else if (block->KindIs(BBJ_CALLFINALLYRET) && block->Prev()->TargetIs(ebd->ebdHndBeg))
                 {
                     addBlockToClone(block, "callfinallyret");
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-
-                    // For non-funclet X86 we must also clone the next block after the callfinallyret.
-                    // (it will contain an END_LFIN). But if this block is also a CALLFINALLY we
-                    // bail out, since we can't clone it in isolation, but we need to clone it.
-                    // (a proper fix would be to split the block, perhaps).
-                    //
-                    if (!UsesFunclets())
-                    {
-                        BasicBlock* const lfin = block->GetTarget();
-
-                        if (lfin->KindIs(BBJ_CALLFINALLY))
-                        {
-                            JITDUMP("Can't clone, as an END_LFIN is contained in CALLFINALLY block " FMT_BB "\n",
-                                    lfin->bbNum);
-                            return nullptr;
-                        }
-                        addBlockToClone(lfin, "lfin-continuation");
-                    }
-#endif
                 }
             }
         }
@@ -2766,7 +2607,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     }
 
     // Once we call fgTryAddEHTableEntries with deferCloning = false,
-    // all the EH indicies at or above insertBeforeIndex will shift,
+    // all the EH indices at or above insertBeforeIndex will shift,
     // and the EH table may reallocate.
     //
     // This addition may also fail, if the table would become too large...
@@ -2846,7 +2687,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     assert(clonedOutermostRegionIndex > outermostTryIndex);
     unsigned const indexShift = clonedOutermostRegionIndex - outermostTryIndex;
 
-    // Copy over the EH table entries and adjust their enclosing indicies.
+    // Copy over the EH table entries and adjust their enclosing indices.
     // We will adjust the block references below.
     //
     unsigned const clonedLowestRegionIndex = clonedOutermostRegionIndex - regionCount + 1;
@@ -2917,7 +2758,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
 
     // Update the cloned block regions and impacted EH clauses
     //
-    // Here we are assuming that the cloned try is always placed lexically *after* thge
+    // Here we are assuming that the cloned try is always placed lexically *after* the
     // original, so that if the original try ended at the same point as an enclosing try,
     // the new end point of the enclosing try is in the cloned try.
     //
@@ -3017,22 +2858,6 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 newBlock->bbRefs++;
             }
         }
-
-#if defined(FEATURE_EH_WINDOWS_X86)
-        // Update the EH ID for any cloned GT_END_LFIN.
-        //
-        for (Statement* const stmt : newBlock->Statements())
-        {
-            GenTree* const rootNode = stmt->GetRootNode();
-            if (rootNode->OperIs(GT_END_LFIN))
-            {
-                GenTreeVal* const endNode = rootNode->AsVal();
-                EHblkDsc* const   oldEbd  = ehFindEHblkDscById((unsigned short)endNode->gtVal1);
-                EHblkDsc* const   newEbd  = oldEbd + indexShift;
-                endNode->gtVal1           = newEbd->ebdID;
-            }
-        }
-#endif
     }
     JITDUMP("Done fixing region indices\n");
 
@@ -3061,7 +2886,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     //
     if (fgHasAddCodeDscMap())
     {
-        AddCodeDscMap* const    map = fgGetAddCodeDscMap();
+        AddCodeDscMap* const    acdMap = fgGetAddCodeDscMap();
         ArrayStack<AddCodeDsc*> cloned(getAllocator(CMK_TryRegionClone));
 
         assert(clonedLowestRegionIndex >= indexShift);
@@ -3070,7 +2895,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         unsigned const originalLowestRegionIndex    = clonedLowestRegionIndex - indexShift;
         unsigned const originalOutermostRegionIndex = clonedOutermostRegionIndex - indexShift;
 
-        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
+        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(acdMap))
         {
             bool needsCloningForTry = false;
             bool needsCloningForHnd = false;
@@ -3153,7 +2978,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         {
             AddCodeDsc* const clone = cloned.Pop();
             AddCodeDscKey     key(clone);
-            map->Set(key, clone);
+            acdMap->Set(key, clone);
             JITDUMP("Added clone: ");
             JITDUMPEXEC(clone->Dump());
         }
