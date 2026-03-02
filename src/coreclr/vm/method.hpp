@@ -1878,6 +1878,18 @@ public:
         _ASSERTE(dac_cast<TADDR>(m_interpreterCode) != INTERPRETER_CODE_POISON);
         VolatileStore(&m_interpreterCode, interpreterCode);
     }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    const PTR_InterpByteCodeStart GetInterpreterCodeWithPrestub()
+    {
+        InterpByteCodeStart* targetIp = GetInterpreterCode();
+        if (targetIp != NULL)
+            return targetIp;
+
+        GCX_PREEMP();
+        (void)DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+        return GetInterpreterCode();
+    }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     // Call this if the m_interpreterCode will never be set to a valid value
     void PoisonInterpreterCode()
