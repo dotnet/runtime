@@ -14158,6 +14158,10 @@ namespace System.Runtime.CompilerServices
         public static bool IsDynamicCodeCompiled { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
         public static bool IsDynamicCodeSupported { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported")]
+        [Runtime.Versioning.UnsupportedOSPlatformGuard("browser")]
+        [Runtime.Versioning.UnsupportedOSPlatformGuard("wasi")]
+        public static bool IsMultithreadingSupported { get { throw null; } }
         public static bool IsSupported(string feature) { throw null; }
     }
     public static partial class RuntimeHelpers

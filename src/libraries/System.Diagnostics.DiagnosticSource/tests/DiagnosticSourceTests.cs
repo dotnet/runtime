@@ -371,7 +371,7 @@ namespace System.Diagnostics.Tests
         /// Stresses the Subscription routine by having many threads subscribe and
         /// unsubscribe concurrently
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void MultiSubscriberStress()
         {
             using (DiagnosticListener listener = new DiagnosticListener("MultiSubscriberStressTest"))
@@ -532,7 +532,7 @@ namespace System.Diagnostics.Tests
         /// Stresses the AllListeners by having many threads be adding and removing.
         /// </summary>
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(100, 100)] // run multiple times to stress it further
         [InlineData(100, 101)]
         [InlineData(100, 102)]

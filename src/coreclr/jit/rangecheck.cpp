@@ -977,7 +977,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         return;
     }
 
-    if (!comp->optAssertionHasAssertionsForVN(normalLclVN))
+    if (normalLclVN == ValueNumStore::NoVN)
     {
         return;
     }
@@ -1163,6 +1163,9 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             }
             else if (normalLclVN == lenVN)
             {
+                ValueNum indexOp1VN;
+                int      indexOp2Cns;
+
                 if (comp->vnStore->IsVNInt32Constant(indexVN))
                 {
                     // We have "Const < arr.Length" assertion, it means that "arr.Length > Const"
@@ -1176,6 +1179,14 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     {
                         continue;
                     }
+                }
+                // arr[arr.Length - CNS] means arr.Length >= CNS, so we can deduce "normalLclVN >= CNS"
+                // On the VN level it's VNF_ADD(normalLclVN, -CNS).
+                else if (comp->vnStore->IsVNBinFuncWithConst(indexVN, VNF_ADD, &indexOp1VN, &indexOp2Cns) &&
+                         (indexOp1VN == normalLclVN) && (indexOp2Cns < 0) && (indexOp2Cns > INT32_MIN))
+                {
+                    cmpOper = GT_GE;
+                    limit   = Limit(Limit::keConstant, -indexOp2Cns);
                 }
                 else
                 {

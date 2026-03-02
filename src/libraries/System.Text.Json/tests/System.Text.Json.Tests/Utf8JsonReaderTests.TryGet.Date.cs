@@ -152,7 +152,9 @@ namespace System.Text.Json.Tests
         // https://github.com/dotnet/runtime/issues/30095
         public static void TestingDateTimeMinValue_UtcOffsetGreaterThan0()
         {
-            string jsonString = @"""0001-01-01T00:00:00""";
+            string jsonString = """
+                "0001-01-01T00:00:00"
+                """;
             string expectedString = "0001-01-01T00:00:00";
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
@@ -179,7 +181,9 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void TestingDateTimeMaxValue()
         {
-            string jsonString = @"""9999-12-31T23:59:59""";
+            string jsonString = """
+                "9999-12-31T23:59:59"
+                """;
             string expectedString = "9999-12-31T23:59:59";
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
@@ -254,8 +258,12 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData(@"""\u001c\u0001""")]
-        [InlineData(@"""\u001c\u0001\u0001""")]
+        [InlineData("""
+            "\u001c\u0001"
+            """)]
+        [InlineData("""
+            "\u001c\u0001\u0001"
+            """)]
         public static void TryGetDateTimeAndOffset_InvalidPropertyValue(string testString)
         {
             var dataUtf8 = Encoding.UTF8.GetBytes(testString);

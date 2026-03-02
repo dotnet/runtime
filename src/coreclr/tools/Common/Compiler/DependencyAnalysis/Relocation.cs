@@ -637,17 +637,14 @@ namespace ILCompiler.DependencyAnalysis
                     PutRiscV64AuipcCombo((uint*)location, value, isStype);
                     break;
 
-                case RelocType.WASM_FUNCTION_INDEX_LEB:
-                case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_TYPE_INDEX_LEB:
                 case RelocType.WASM_GLOBAL_INDEX_LEB:
-                    // These wasm relocs do not have offsets, just targets
-                    return;
-
+                case RelocType.WASM_FUNCTION_INDEX_LEB:
                 case RelocType.WASM_MEMORY_ADDR_LEB:
                     DwarfHelper.WritePaddedULEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), checked((ulong)value));
                     return;
 
+                case RelocType.WASM_TABLE_INDEX_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                     DwarfHelper.WritePaddedSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
                     return;
@@ -658,6 +655,9 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public static readonly int MaxSize = 8;
+        // Note: Please update the above field if the max size
+        // changes when adding a new case to this method.
         public static int GetSize(RelocType relocType)
         {
             return relocType switch
@@ -681,6 +681,14 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT => 8,
                 RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I => 8,
                 RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S => 8,
+
+                RelocType.WASM_FUNCTION_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_TABLE_INDEX_SLEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_TYPE_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_GLOBAL_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_MEMORY_ADDR_LEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_MEMORY_ADDR_SLEB => WASM_PADDED_RELOC_SIZE_32,
+
                 _ => throw new NotSupportedException(),
             };
         }

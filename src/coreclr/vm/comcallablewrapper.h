@@ -1032,6 +1032,13 @@ private:
 
     // Pointer to the next wrapper.
     PTR_ComCallWrapper      m_pNext;
+    friend struct ::cdac_data<ComCallWrapper>;
+};
+
+template<>
+struct cdac_data<ComCallWrapper>
+{
+    static constexpr size_t SimpleWrapper = offsetof(ComCallWrapper, m_pSimpleWrapper);
 };
 
 FORCEINLINE void CCWRelease(ComCallWrapper* p)
@@ -1598,7 +1605,15 @@ private:
     // This maintains the 32-bit COM refcount in 64-bits
     // to enable also tracking the Cleanup sentinel. See code:CLEANUP_SENTINEL
     LONGLONG                        m_llRefCount;
- };
+    friend struct ::cdac_data<SimpleComCallWrapper>;
+};
+
+template<>
+struct cdac_data<SimpleComCallWrapper>
+{
+    static constexpr size_t RefCount = offsetof(SimpleComCallWrapper, m_llRefCount);
+    static constexpr size_t Flags = offsetof(SimpleComCallWrapper, m_flags);
+};
 
 //--------------------------------------------------------------------------------
 // ComCallWrapper* ComCallWrapper::InlineGetWrapper(OBJECTREF* ppObj)
