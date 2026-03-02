@@ -4419,51 +4419,9 @@ void emitter::emitIns_Mov(
             break;
         }
 
-        case INS_sve_mov:
-        {
-            if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
-            {
-                assert((opt == INS_OPTS_SCALABLE_B) || insOptsNone(opt));
-                opt  = INS_OPTS_SCALABLE_B;
-                attr = EA_SCALABLE;
-
-                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
-                {
-                    return;
-                }
-                fmt = IF_SVE_CZ_4A_L;
-            }
-            else if (isVectorRegister(dstReg) && isVectorRegister(srcReg))
-            {
-                assert(insOptsScalable(opt));
-
-                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
-                {
-                    return;
-                }
-                fmt = IF_SVE_AU_3A;
-            }
-            else if (isVectorRegister(dstReg) && isGeneralRegisterOrSP(srcReg))
-            {
-                assert(insOptsScalable(opt));
-                if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
-                {
-                    return;
-                }
-                srcReg = encodingSPtoZR(srcReg);
-                fmt    = IF_SVE_CB_2A;
-            }
-            else
-            {
-                unreached();
-            }
-
-            break;
-        }
         default:
-        {
-            unreached();
-        }
+            // fallback to emit SVE instructions.
+            return emitInsSve_Mov(ins, attr, dstReg, srcReg, canSkip, opt);
     }
 
     assert(fmt != IF_NONE);
@@ -6087,12 +6045,36 @@ void emitter::emitIns_R_R_R(instruction     ins,
                             insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
     emitAttr  size     = EA_SIZE(attr);
+    emitAttr  dstsize  = size;
     emitAttr  elemsize = EA_UNKNOWN;
     insFormat fmt      = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_aesd:
+        case INS_aese:
+        case INS_fcvtn2:
+        case INS_fcvtxn2:
+        case INS_sha1su1:
+        case INS_sha256su0:
+        case INS_sqxtn2:
+        case INS_sqxtun2:
+        case INS_uqxtn2:
+        case INS_xtn2:
+            // Instructions with 16-byte destination only
+            dstsize = EA_16BYTE;
+            FALLTHROUGH;
+
+        case INS_sadalp:
+        case INS_suqadd:
+        case INS_uadalp:
+        case INS_usqadd:
+            // RMW instructions
+            emitIns_Mov(INS_mov, dstsize, reg1, reg2, /* canSkip */ true);
+            emitIns_R_R(ins, attr, reg1, reg3, opt, sopt);
+            return;
+
         case INS_mul:
         case INS_smull:
         case INS_umull:
@@ -6943,6 +6925,26 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_ins:
+        case INS_rshrn2:
+        case INS_shrn2:
+        case INS_sli:
+        case INS_sqrshrn2:
+        case INS_sqrshrun2:
+        case INS_sqshrn2:
+        case INS_sqshrun2:
+        case INS_sri:
+        case INS_srsra:
+        case INS_ssra:
+        case INS_uqrshrn2:
+        case INS_uqshrn2:
+        case INS_ursra:
+        case INS_usra:
+            // RMW instructions
+            emitIns_Mov(INS_mov, attr, reg1, reg2, /* canSkip */ true);
+            emitIns_R_R_I(ins, attr, reg1, reg3, imm, opt, sopt);
+            return;
+
         case INS_extr:
             assert(insOptsNone(opt));
             assert(isValidGeneralDatasize(size));
@@ -7402,8 +7404,21 @@ void emitter::emitIns_R_R_R_I_I(instruction ins,
                                 ssize_t     imm2,
                                 insOpts     opt)
 {
-    // Currently, only SVE instructions use this format.
-    emitInsSve_R_R_R_I_I(ins, attr, reg1, reg2, reg3, imm1, imm2, opt);
+    emitAttr size    = EA_SIZE(attr);
+    emitAttr dstsize = size;
+
+    switch (ins)
+    {
+        case INS_ins:
+            // RMW instructions
+            emitIns_Mov(INS_mov, dstsize, reg1, reg2, /* canSkip */ true);
+            emitIns_R_R_I_I(ins, attr, reg1, reg3, imm1, imm2, opt);
+            return;
+
+        // Fallback handles emitting the SVE instructions.
+        default:
+            return emitInsSve_R_R_R_I_I(ins, attr, reg1, reg2, reg3, imm1, imm2, opt);
+    }
 }
 
 /*****************************************************************************
@@ -7520,7 +7535,7 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
  */
 
 void emitter::emitIns_R_R_I_I(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt)
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm1, ssize_t imm2, insOpts opt)
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
@@ -7530,8 +7545,8 @@ void emitter::emitIns_R_R_I_I(
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
-        int        lsb;
-        int        width;
+        ssize_t    lsb;
+        ssize_t    width;
         bitMaskImm bmi;
         unsigned   registerListSize;
 
@@ -7658,12 +7673,76 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
                               insOpts         opt /* = INS_OPTS_NONE*/,
                               insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
-    emitAttr  size = EA_SIZE(attr);
-    insFormat fmt  = IF_NONE;
+    emitAttr  size    = EA_SIZE(attr);
+    emitAttr  dstsize = size;
+    insFormat fmt     = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_sqdmlal:
+        case INS_sqdmlsl:
+            dstsize = EA_16BYTE;
+            FALLTHROUGH;
+
+        case INS_sqrdmlah:
+        case INS_sqrdmlsh:
+            if (!insOptsAnyArrangement(opt))
+            {
+                // For the scalar variant, move the whole 8-byte vector
+                // since we return the whole Vector64 in the API.
+                dstsize = EA_8BYTE;
+            }
+            emitIns_Mov(INS_mov, dstsize, reg1, reg2, /* canSkip */ true);
+            emitIns_R_R_R(ins, attr, reg1, reg3, reg4, opt);
+            return;
+
+        case INS_addhn2:
+        case INS_raddhn2:
+        case INS_rsubhn2:
+        case INS_sabal:
+        case INS_sabal2:
+        case INS_sha1c:
+        case INS_sha1m:
+        case INS_sha1p:
+        case INS_sha1su0:
+        case INS_sha256h:
+        case INS_sha256h2:
+        case INS_sha256su1:
+        case INS_smlal:
+        case INS_smlal2:
+        case INS_smlsl:
+        case INS_smlsl2:
+        case INS_sqdmlal2:
+        case INS_sqdmlsl2:
+        case INS_subhn2:
+        case INS_uabal:
+        case INS_uabal2:
+        case INS_umlal:
+        case INS_umlal2:
+        case INS_umlsl:
+        case INS_umlsl2:
+            // Instructions with 16-byte destination only
+            dstsize = EA_16BYTE;
+            FALLTHROUGH;
+
+        case INS_fmla:
+        case INS_fmls:
+        case INS_mla:
+        case INS_mls:
+        case INS_saba:
+        case INS_sdot:
+        case INS_tbx:
+        case INS_tbx_2regs:
+        case INS_tbx_3regs:
+        case INS_tbx_4regs:
+        case INS_uaba:
+        case INS_udot:
+            // RMW instructions
+            emitIns_Mov(INS_mov, dstsize, reg1, reg2, /* canSkip */ true);
+            emitIns_R_R_R(ins, attr, reg1, reg3, reg4, opt, sopt);
+            return;
+
         case INS_madd:
         case INS_msub:
             assert(isValidGeneralDatasize(size));
@@ -7764,8 +7843,57 @@ void emitter::emitIns_R_R_R_R_I(instruction ins,
                                 ssize_t     imm,
                                 insOpts     opt /* = INS_OPT_NONE*/)
 {
-    // Currently, only SVE instructions use this format.
-    emitInsSve_R_R_R_R_I(ins, attr, reg1, reg2, reg3, reg4, imm, opt);
+    emitAttr size    = EA_SIZE(attr);
+    emitAttr dstsize = size;
+
+    switch (ins)
+    {
+        case INS_sqdmlal:
+        case INS_sqdmlsl:
+            dstsize = EA_16BYTE;
+            FALLTHROUGH;
+
+        case INS_sqrdmlah:
+        case INS_sqrdmlsh:
+            if (!insOptsAnyArrangement(opt))
+            {
+                // For the scalar variant, move the whole 8-byte vector
+                // since we return the whole Vector64 in the API.
+                dstsize = EA_8BYTE;
+            }
+            emitIns_Mov(INS_mov, dstsize, reg1, reg2, /* canSkip */ true);
+            emitIns_R_R_R_I(ins, attr, reg1, reg3, reg4, imm, opt);
+            return;
+
+        case INS_smlal:
+        case INS_smlal2:
+        case INS_smlsl:
+        case INS_smlsl2:
+        case INS_sqdmlal2:
+        case INS_sqdmlsl2:
+        case INS_umlal:
+        case INS_umlal2:
+        case INS_umlsl:
+        case INS_umlsl2:
+            // Instructions with 16-byte destination only
+            dstsize = EA_16BYTE;
+            FALLTHROUGH;
+
+        case INS_fmla:
+        case INS_fmls:
+        case INS_mla:
+        case INS_mls:
+        case INS_sdot:
+        case INS_udot:
+            // RMW instructions
+            emitIns_Mov(INS_mov, dstsize, reg1, reg2, /* canSkip */ true);
+            emitIns_R_R_R_I(ins, attr, reg1, reg3, reg4, imm, opt);
+            return;
+
+        // Fallback handles emitting the SVE instructions.
+        default:
+            return emitInsSve_R_R_R_R_I(ins, attr, reg1, reg2, reg3, reg4, imm, opt);
+    }
 }
 
 /*****************************************************************************
@@ -17019,6 +17147,7 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_uxtb:
         case INS_uxth:
         case INS_sve_mov:
+        case INS_sve_movprfx:
         {
             return true;
         }
@@ -17067,12 +17196,17 @@ bool emitter::IsMovInstruction(instruction ins)
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
 {
-    assert((ins == INS_mov) || (ins == INS_sve_mov));
+    assert((ins == INS_mov) || (ins == INS_sve_mov) || (ins == INS_sve_movprfx));
 
     if (canSkip && (dst == src))
     {
         // These elisions used to be explicit even when optimizations were disabled
         return true;
+    }
+
+    if (ins == INS_sve_movprfx)
+    {
+        return false;
     }
 
     if (!m_compiler->opts.OptimizationEnabled())
