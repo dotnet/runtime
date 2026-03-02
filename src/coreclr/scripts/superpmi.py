@@ -3590,7 +3590,17 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
         metrics_with_diffs.add(metric)
         pcts = [compute_pct(base[metric], diff[metric]) for (_, base, diff) in significant_diffs
                 if base[metric] != 0]
-        if pcts:
+        all_base_zero = all(base[metric] == 0 for (_, base, _) in significant_diffs)
+        if all_base_zero:
+            all_positive = all(diff[metric] > 0 for (_, _, diff) in significant_diffs)
+            all_negative = all(diff[metric] < 0 for (_, _, diff) in significant_diffs)
+            if all_positive:
+                header = "{} (+\u221e)".format(metric)
+            elif all_negative:
+                header = "{} (-\u221e)".format(metric)
+            else:
+                header = "{} (\u00b1\u221e)".format(metric)
+        elif pcts:
             min_pct_str = format_pct(min(pcts))
             max_pct_str = format_pct(max(pcts))
             if min_pct_str == max_pct_str:
