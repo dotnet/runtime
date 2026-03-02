@@ -4165,8 +4165,6 @@ void InterpCompiler::EmitCanAccessCallout(CORINFO_RESOLVED_TOKEN *pResolvedToken
 
 void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllowed, CORINFO_HELPER_DESC* calloutDesc)
 {
-// WASM-TODO: https://github.com/dotnet/runtime/issues/121955
-#ifndef TARGET_WASM
     if (accessAllowed == CORINFO_ACCESS_ILLEGAL)
     {
         int32_t svars[CORINFO_ACCESS_ALLOWED_MAX_ARGS];
@@ -4237,7 +4235,6 @@ void InterpCompiler::EmitCallsiteCallout(CorInfoIsAccessAllowedResult accessAllo
         }
         m_pLastNewIns->data[0] = GetDataForHelperFtn(calloutDesc->helperNum);
     }
-#endif // !TARGET_WASM
 }
 
 static OpcodePeepElement peepRuntimeAsyncCall[] = {
@@ -4619,6 +4616,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     }
     else
     {
+        const uint8_t* origIP = m_ip;
         if (!newObj && m_methodInfo->args.isAsyncCall() && AsyncCallPeeps.FindAndApplyPeep(this))
         {
             resolvedCallToken = m_resolvedAsyncCallToken;
@@ -4644,14 +4642,34 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
 
-        if (callInfo.sig.isVarArg())
-        {
-            BADCODE("Vararg methods are not supported in interpreted code");
-        }
-
         if (continuationContextHandling != ContinuationContextHandling::None && !callInfo.sig.isAsyncCall())
         {
             BADCODE("We're trying to emit an async call, but the async resolved context didn't find one");
+        }
+
+        if (continuationContextHandling != ContinuationContextHandling::None && callInfo.kind == CORINFO_CALL)
+        {
+            bool isSyncCallThunk;
+            m_compHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
+            if (!isSyncCallThunk)
+            {
+                // The async variant that we got is a thunk. Switch back to the
+                // non-async task-returning call. There is no reason to create
+                // and go through the thunk.
+                ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedCallToken);
+
+                // Reset back to the IP after the original call instruction.
+                // FindAndApplyPeep above modified it to be after the "Await"
+                // call, but now we want to process the await separately.
+                m_ip = origIP + 5;
+                continuationContextHandling = ContinuationContextHandling::None;
+                m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+            }
+        }
+
+        if (callInfo.sig.isVarArg())
+        {
+            BADCODE("Vararg methods are not supported in interpreted code");
         }
 
         if (isJmp)
@@ -6816,9 +6834,7 @@ int InterpCompiler::ApplyLdftnDelegateCtorPeep(const uint8_t* ip, OpcodePeepElem
 
 bool InterpCompiler::ResolveAsyncCallToken(const uint8_t* ip)
 {
-    CorInfoTokenKind tokenKind =
-        ip[0] == CEE_CALL ? CORINFO_TOKENKIND_Await : CORINFO_TOKENKIND_AwaitVirtual;
-    ResolveToken(getU4LittleEndian(ip + 1), tokenKind, &m_resolvedAsyncCallToken);
+    ResolveToken(getU4LittleEndian(ip + 1), CORINFO_TOKENKIND_Await, &m_resolvedAsyncCallToken);
     return m_resolvedAsyncCallToken.hMethod != NULL;
 }
 
