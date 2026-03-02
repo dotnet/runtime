@@ -34,7 +34,7 @@ The test depends on a native C/C++ library built from a CMake project. The nativ
 binary must be discoverable in the test's output directory, which is not guaranteed
 when tests are merged into a shared runner folder.
 
-### 5. Project includes `<Content>` items copied to the output directory
+### 5. Project copies files to the output directory
 
 If the project copies files to its output directory (via `<Content>` or `<None>` with
 `CopyToOutputDirectory`), those files may conflict with files from other tests or may
@@ -169,12 +169,12 @@ Tests that depend on the framework itself being compiled with non-default settin
 (e.g., `UseSystemResourceKeys`) must run in a process whose runtime matches those
 settings.
 
-## Summary of Property-Based Triggers
+## Summary of Project-File-Based Triggers
 
-If the project file contains **any** of the following properties, set
+If the project file contains **any** of the following MSBuild properties or items, set
 `<RequiresProcessIsolation>true</RequiresProcessIsolation>`:
 
-| Property | Reason |
+| Property/Item | Reason |
 |---|---|
 | `CLRTestEnvironmentVariable` | Process-wide env vars |
 | `CLRTestBatchEnvironmentVariable` | Process-wide env vars |
