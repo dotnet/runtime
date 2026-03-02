@@ -29,8 +29,9 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemJS_ExecuteBackgroundJobCallback: () => void;
     _SystemJS_ExecuteFinalizationCallback: () => void;
     _BrowserHost_CreateHostContract: () => VoidPtr;
-    _BrowserHost_InitializeCoreCLR: (propertiesCount: number, propertyKeys: CharPtrPtr, propertyValues: CharPtrPtr) => number;
+    _BrowserHost_InitializeDotnet: (propertiesCount: number, propertyKeys: CharPtrPtr, propertyValues: CharPtrPtr) => number;
     _BrowserHost_ExecuteAssembly: (mainAssemblyNamePtr: number, argsLength: number, argsPtr: number) => number;
+    _BrowserHost_ShutdownDotnet: (exitCode: number) => number;
     _wasm_load_icu_data: (dataPtr: VoidPtr) => number;
     _SystemInteropJS_GetManagedStackTrace: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_CallDelegate: (args: JSMarshalerArguments) => void;
@@ -38,7 +39,6 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemInteropJS_ReleaseJSOwnedObjectByGCHandle: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_BindAssemblyExports: (args: JSMarshalerArguments) => void;
     _SystemInteropJS_CallJSExport: (methodHandle: CSFnHandle, args: JSMarshalerArguments) => void;
-    _corerun_shutdown: (code: number) => void;
 
     FS: {
         createPath: (parent: string, path: string, canRead?: boolean, canWrite?: boolean) => string;
@@ -47,9 +47,19 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     }
     ENV: any;
 
-    DOTNET: any;
-    DOTNET_INTEROP: any;
-    BROWSER_HOST: any;
+    DOTNET: {
+        lastScheduledTimerId?: number;
+        lastScheduledThreadPoolId?: number;
+        lastScheduledFinalizationId?: number;
+        cryptoWarnOnce?: boolean;
+        isAborting?: boolean;
+        isAsyncMain?: boolean;
+        gitHash?: string;
+    }
+    DOTNET_INTEROP: {
+        gitHash?: string;
+    };
+    BROWSER_HOST: {};
 
     Module: EmscriptenModuleInternal;
     ENVIRONMENT_IS_NODE: boolean;
@@ -74,6 +84,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _exit: (exitCode: number, implicit?: boolean) => void;
     abort: (reason: any) => void;
     ___trap: () => void;
+    ___funcs_on_exit: () => void;
     safeSetTimeout: (func: Function, timeout: number) => number;
     exitJS: (status: number, implicit?: boolean | number) => void;
     runtimeKeepalivePop: () => void;
@@ -82,4 +93,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     writeI53ToI64(ptr: MemOffset, value: number): void;
     readI53FromI64(ptr: MemOffset): number;
     readI53FromU64(ptr: MemOffset): number;
+
+    wasmMemory: WebAssembly.Memory;
+    wasmTable: WebAssembly.Table;
 }

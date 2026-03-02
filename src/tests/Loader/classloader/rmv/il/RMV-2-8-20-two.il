@@ -17,7 +17,7 @@ give the loader a zero sized value class.
 
 .class public value sealed Foo extends [mscorlib]System.ValueType{}
 
-
+.class public auto ansi Program {
 .method public static int32 main(){
 	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 	    01 00 00 00
@@ -30,4 +30,5 @@ give the loader a zero sized value class.
 	ldc.i4	100
 	ret
 
+}
 }

@@ -1550,7 +1550,7 @@ public:
 
         for (uintptr_t i = 0; i < entriesPerMapLevel; i++)
         {
-            if (level[i].IsNull())
+            if (!level[i].IsNull())
             {
                 EnumMemoryRangeSectionMapLevel(flags, *level[i].VolatileLoad(pLockState), pLockState);
             }

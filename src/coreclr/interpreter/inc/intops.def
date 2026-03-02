@@ -450,6 +450,7 @@ OPDEF(INTOP_HANDLE_CONTINUATION_RESUME, "handle.continuation.resume", 2, 0, 0, I
 OPDEF(INTOP_CHECK_FOR_CONTINUATION, "check.for.continuation", 3, 0, 1, InterpOpNoArgs)
 OPDEF(INTOP_CAPTURE_CONTEXT_ON_SUSPEND, "capture.context.on.suspend", 4, 1, 1, InterpOpHandleContinuationPt2)
 OPDEF(INTOP_RESTORE_CONTEXTS_ON_SUSPEND, "restore.contexts.on.suspend", 6, 1, 3, InterpOpHandleContinuationPt2)
+OPDEF(INTOP_RET_EXISTING_CONTINUATION, "ret.existing.continuation", 1, 0, 0, InterpOpNoArgs)
 
 // Intrinsics
 OPDEF(INTOP_COMPARE_EXCHANGE_U1, "compare.exchange.u1", 5, 1, 3, InterpOpNoArgs)

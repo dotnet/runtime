@@ -370,7 +370,13 @@ struct RangeOps
     {
         if (!r1.IsConstantRange() || !r2.IsConstantRange())
         {
-            return Limit(Limit::keUnknown);
+            Range result = Limit(Limit::keUnknown);
+            // Propagate the "dependent" property if either of the limits is dependent.
+            result.lLimit = r1.LowerLimit().IsDependent() || r2.LowerLimit().IsDependent() ? Limit(Limit::keDependent)
+                                                                                           : Limit(Limit::keUnknown);
+            result.uLimit = r1.UpperLimit().IsDependent() || r2.UpperLimit().IsDependent() ? Limit(Limit::keDependent)
+                                                                                           : Limit(Limit::keUnknown);
+            return result;
         }
 
         int r1lo = r1.LowerLimit().GetConstant();

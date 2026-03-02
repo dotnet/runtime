@@ -48,30 +48,46 @@ namespace System.Buffers.Tests
             Assert.True(NativeRange.End.IsFromEnd);
         }
 
-        [Fact]
-        public static void GetOffsetAndLengthTest()
+        [Theory]
+        [InlineData(5, false, 0, true, 20, 5, 15)]
+        [InlineData(5, false, 0, true, 5, 5, 0)]
+        [InlineData(5, false, 0, true, -10, 5, -15)]
+        [InlineData(0, false, 4, false, 20, 0, 4)]
+        public static void GetOffsetAndLengthTest(nint startValue, bool startFromEnd, nint endValue, bool endFromEnd, nint length, nint expectedOffset, nint expectedLength)
         {
-            NRange NativeRange = NRange.StartAt(new NIndex(5));
-            (nint offset, nint length) = NativeRange.GetOffsetAndLength(20);
-            Assert.Equal(5, offset);
-            Assert.Equal(15, length);
+            NRange range = new NRange(new NIndex(startValue, startFromEnd), new NIndex(endValue, endFromEnd));
+            (nint offset, nint actualLength) = range.GetOffsetAndLength(length);
+            Assert.Equal(expectedOffset, offset);
+            Assert.Equal(expectedLength, actualLength);
+        }
 
-            (offset, length) = NativeRange.GetOffsetAndLength(5);
-            Assert.Equal(5, offset);
-            Assert.Equal(0, length);
+        [Theory]
+        [InlineData(5, false, 0, true, 4)]
+        [InlineData(0, false, 4, false, 1)]
+        public static void GetOffsetAndLengthThrowsTest(nint startValue, bool startFromEnd, nint endValue, bool endFromEnd, nint length)
+        {
+            NRange range = new NRange(new NIndex(startValue, startFromEnd), new NIndex(endValue, endFromEnd));
+            Assert.Throws<ArgumentOutOfRangeException>(() => range.GetOffsetAndLength(length));
+        }
 
-            // we don't validate the length in the GetOffsetAndLength so passing negative length will just return the regular calculation according to the length value.
-            (offset, length) = NativeRange.GetOffsetAndLength(-10);
-            Assert.Equal(5, offset);
-            Assert.Equal(-15, length);
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(5, false, 0, true, (long)uint.MaxValue + 20, 5, (long)uint.MaxValue + 15)]
+        [InlineData(0, false, (long)uint.MaxValue + 5, false, (long)uint.MaxValue + 20, 0, (long)uint.MaxValue + 5)]
+        public static void GetOffsetAndLengthTest64(long startValue, bool startFromEnd, long endValue, bool endFromEnd, long length, long expectedOffset, long expectedLength)
+        {
+            NRange range = new NRange(new NIndex((nint)startValue, startFromEnd), new NIndex((nint)endValue, endFromEnd));
+            (nint offset, nint actualLength) = range.GetOffsetAndLength((nint)length);
+            Assert.Equal((nint)expectedOffset, offset);
+            Assert.Equal((nint)expectedLength, actualLength);
+        }
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => NativeRange.GetOffsetAndLength(4));
-
-            NativeRange = NRange.EndAt(new NIndex(4));
-            (offset, length) = NativeRange.GetOffsetAndLength(20);
-            Assert.Equal(0, offset);
-            Assert.Equal(4, length);
-            Assert.Throws<ArgumentOutOfRangeException>(() => NativeRange.GetOffsetAndLength(1));
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData((long)uint.MaxValue + 1, false, 2, false, (long)uint.MaxValue + 3)]
+        [InlineData((long)uint.MaxValue + 5, false, 0, true, (long)uint.MaxValue + 1)]
+        public static void GetOffsetAndLengthThrowsTest64(long startValue, bool startFromEnd, long endValue, bool endFromEnd, long length)
+        {
+            NRange range = new NRange(new NIndex((nint)startValue, startFromEnd), new NIndex((nint)endValue, endFromEnd));
+            Assert.Throws<ArgumentOutOfRangeException>(() => range.GetOffsetAndLength((nint)length));
         }
 
         [Fact]
