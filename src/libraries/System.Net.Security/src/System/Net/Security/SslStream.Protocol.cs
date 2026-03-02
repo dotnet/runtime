@@ -18,8 +18,11 @@ namespace System.Net.Security
     {
         private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
         private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
+        private const string EnableServerAIADownloadsCtxSwitch = "System.Net.Security.EnableServerAIADownloads";
+        private const string EnableServerAIADownloadsEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_ENABLESERVERAIADOWNLOADS";
 
         private static volatile int s_disableTlsResume = -1;
+        private static volatile int s_enableServerAIADownloads = -1;
 
         internal static bool DisableTlsResume
         {
@@ -45,6 +48,33 @@ namespace System.Net.Security
                 }
 
                 return s_disableTlsResume != 0;
+            }
+        }
+
+        internal static bool EnableServerAIADownloads
+        {
+            get
+            {
+                int enableServerAIADownloads = s_enableServerAIADownloads;
+                if (enableServerAIADownloads != -1)
+                {
+                    return enableServerAIADownloads != 0;
+                }
+
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(EnableServerAIADownloadsCtxSwitch, out bool value))
+                {
+                    s_enableServerAIADownloads = value ? 1 : 0;
+                }
+                else
+                {
+                    // AppContext switch wasn't used. Check the environment variable.
+                    s_enableServerAIADownloads =
+                        Environment.GetEnvironmentVariable(EnableServerAIADownloadsEnvironmentVariable) is string envVar &&
+                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                }
+
+                return s_enableServerAIADownloads != 0;
             }
         }
 
@@ -1086,6 +1116,11 @@ namespace System.Net.Security
                     {
                         chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
                         chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+
+                        if (_sslAuthenticationOptions.IsServer && !EnableServerAIADownloads)
+                        {
+                            chain.ChainPolicy.DisableCertificateDownloads = true;
+                        }
 
                         if (trust != null)
                         {

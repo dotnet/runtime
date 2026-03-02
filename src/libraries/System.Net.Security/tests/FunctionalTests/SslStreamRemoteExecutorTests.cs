@@ -83,5 +83,52 @@ namespace System.Net.Security.Tests
                 Assert.True(File.ReadAllText(tempFile).Length == 0);
             }
         }
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SslStream_ServerDisablesCertificateDownloads_DefaultAndCompatSwitch(bool enableAIADownloads)
+        {
+            await RemoteExecutor.Invoke(async (enableAIADownloadsStr) =>
+            {
+                if (bool.Parse(enableAIADownloadsStr))
+                {
+                    AppContext.SetSwitch("System.Net.Security.EnableServerAIADownloads", true);
+                }
+
+                bool disableCertificateDownloadsObserved = false;
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                using (clientStream)
+                using (serverStream)
+                using (var client = new SslStream(clientStream))
+                using (var server = new SslStream(serverStream, false, (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    disableCertificateDownloadsObserved = chain!.ChainPolicy.DisableCertificateDownloads;
+                    return true;
+                }))
+                using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+                using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+                {
+                    SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
+                    {
+                        RemoteCertificateValidationCallback = delegate { return true; },
+                        ClientCertificates = new X509Certificate2Collection(clientCertificate),
+                        TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false),
+                    };
+
+                    SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = certificate,
+                        ClientCertificateRequired = true,
+                    };
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    bool expectDisabled = !bool.Parse(enableAIADownloadsStr);
+                    Assert.Equal(expectDisabled, disableCertificateDownloadsObserved);
+                }
+            }, enableAIADownloads.ToString()).DisposeAsync();
+        }
     }
 }
