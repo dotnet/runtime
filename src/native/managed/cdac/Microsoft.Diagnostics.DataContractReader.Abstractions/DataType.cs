@@ -124,6 +124,7 @@ public enum DataType
     DynamicILBlobTable,
     EEJitManager,
     PatchpointInfo,
+    VirtualCallStubManager,
     PortableEntryPoint,
 
     TransitionBlock,

@@ -21,6 +21,7 @@
 
 #include "configure.h"
 
+#include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
 #include "patchpointinfo.h"
 

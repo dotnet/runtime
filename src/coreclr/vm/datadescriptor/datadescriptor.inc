@@ -246,9 +246,29 @@ CDAC_TYPE_INDETERMINATE(LoaderAllocator)
 CDAC_TYPE_FIELD(LoaderAllocator, /*uint32*/, ReferenceCount, cdac_data<LoaderAllocator>::ReferenceCount)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, HighFrequencyHeap, cdac_data<LoaderAllocator>::HighFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StaticsHeap, cdac_data<LoaderAllocator>::StaticsHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ExecutableHeap, cdac_data<LoaderAllocator>::ExecutableHeap)
+#ifdef HAS_FIXUP_PRECODE
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, FixupPrecodeHeap, cdac_data<LoaderAllocator>::FixupPrecodeHeap)
+#endif // HAS_FIXUP_PRECODE
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, NewStubPrecodeHeap, cdac_data<LoaderAllocator>::NewStubPrecodeHeap)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, DynamicHelpersStubHeap, cdac_data<LoaderAllocator>::DynamicHelpersStubHeap)
+#endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
+CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, VirtualCallStubManager, cdac_data<LoaderAllocator>::VirtualCallStubManager)
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
 CDAC_TYPE_END(LoaderAllocator)
+
+CDAC_TYPE_BEGIN(VirtualCallStubManager)
+CDAC_TYPE_INDETERMINATE(VirtualCallStubManager)
+CDAC_TYPE_FIELD(VirtualCallStubManager, /*pointer*/, IndcellHeap, cdac_data<VirtualCallStubManager>::IndcellHeap)
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+CDAC_TYPE_FIELD(VirtualCallStubManager, /*pointer*/, CacheEntryHeap, cdac_data<VirtualCallStubManager>::CacheEntryHeap)
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+CDAC_TYPE_END(VirtualCallStubManager)
 
 CDAC_TYPE_BEGIN(PEAssembly)
 CDAC_TYPE_INDETERMINATE(PEAssembly)
