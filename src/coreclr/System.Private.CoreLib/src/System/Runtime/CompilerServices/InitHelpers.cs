@@ -52,7 +52,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [UnmanagedCallersOnly]
-        internal static void CallClassConstructor(void* cctor, MethodTable* instantiatingArg, Exception* pException)
+        internal static void CallClassConstructor(void* cctor, void* instantiatingArg, Exception* pException)
         {
             try
             {
