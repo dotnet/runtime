@@ -766,19 +766,19 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_EXECUTION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncCaptureExecCtx;
+                    id = ReadyToRunHelper.AsyncCaptureExecutionContext;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncRestoreExecCtx;
+                    id = ReadyToRunHelper.AsyncRestoreExecutionContext;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION:
-                    id = ReadyToRunHelper.AsyncRestoreCtxOnSusp;
+                    id = ReadyToRunHelper.AsyncRestoreContextsOnSuspension;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncCaptureContinCtx;
+                    id = ReadyToRunHelper.AsyncCaptureContinuationContext;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:

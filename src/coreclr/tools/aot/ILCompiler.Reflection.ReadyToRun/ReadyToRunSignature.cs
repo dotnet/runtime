@@ -2043,16 +2043,16 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case ReadyToRunHelper.AsyncRestoreContexts:
                     builder.Append("ASYNC_RESTORE_CONTEXTS");
                     break;
-                case ReadyToRunHelper.AsyncCaptureExecCtx:
+                case ReadyToRunHelper.AsyncCaptureExecutionContext:
                     builder.Append("ASYNC_CAPTURE_EXECUTION_CONTEXT");
                     break;
-                case ReadyToRunHelper.AsyncRestoreExecCtx:
+                case ReadyToRunHelper.AsyncRestoreExecutionContext:
                     builder.Append("ASYNC_RESTORE_EXECUTION_CONTEXT");
                     break;
-                case ReadyToRunHelper.AsyncRestoreCtxOnSusp:
+                case ReadyToRunHelper.AsyncRestoreContextsOnSuspension:
                     builder.Append("ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION");
                     break;
-                case ReadyToRunHelper.AsyncCaptureContinCtx:
+                case ReadyToRunHelper.AsyncCaptureContinuationContext:
                     builder.Append("ASYNC_CAPTURE_CONTINUATION_CONTEXT");
                     break;
 
