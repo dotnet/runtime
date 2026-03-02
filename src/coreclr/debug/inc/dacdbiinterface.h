@@ -17,6 +17,8 @@
 // existing V2 interfaces
 #include "dbgipcevents.h"
 
+EXTERN_C const IID IID_IDacDbiInterface;
+
 //-----------------------------------------------------------------------------
 // Deallocation function for memory allocated with the global IAllocator object.
 //

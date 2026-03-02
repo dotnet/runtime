@@ -66,6 +66,7 @@
 // Global allocator for DD. Access is protected under the g_dacMutex lock.
 IDacDbiInterface::IAllocator * g_pAllocator = NULL;
 extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+EXTERN_C const IID IID_IDacDbiInterface = { 0xb7a6d3f5, 0x6b46, 0x4dd4, { 0x8a, 0xf1, 0x0d, 0x4a, 0x2a, 0xfb, 0x98, 0xc1 } };
 
 //---------------------------------------------------------------------------------------
 //
@@ -361,15 +362,12 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::QueryInterface(REFIID interfaceId, PVOID* iface)
 {
-    static const GUID IID_IDacDbiInterfaceGuid =
-    { 0xb7a6d3f5, 0x6b46, 0x4dd4, { 0x8a, 0xf1, 0x0d, 0x4a, 0x2a, 0xfb, 0x98, 0xc1 } };
-
     if (iface == NULL)
     {
         return E_INVALIDARG;
     }
 
-    if (IsEqualIID(interfaceId, IID_IDacDbiInterfaceGuid))
+    if (IsEqualIID(interfaceId, IID_IDacDbiInterface))
     {
         ClrDataAccess::AddRef();
         *iface = static_cast<IDacDbiInterface*>(this);
