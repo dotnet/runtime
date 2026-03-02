@@ -227,6 +227,7 @@ namespace System.Collections.Frozen.Tests
 
         [Theory]
         [MemberData(nameof(LookupItems_AllItemsFoundAsExpected_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void LookupItems_AllItemsFoundAsExpected(bool useToFrozenDictionary, int size, IEqualityComparer<TKey> comparer, bool specifySameComparer)
         {
             Dictionary<TKey, TValue> original =
@@ -284,6 +285,7 @@ namespace System.Collections.Frozen.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void EqualButPossiblyDifferentKeys_Found(bool fromDictionary)
         {
             Dictionary<TKey, TValue> original =
@@ -308,6 +310,7 @@ namespace System.Collections.Frozen.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void MultipleValuesSameKey_LastInSourceWins(bool useToFrozenDictionary)
         {
             TKey[] keys = GenerateUniqueKeyValuePairs(2).Select(pair => pair.Key).ToArray();

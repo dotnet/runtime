@@ -28,6 +28,7 @@ namespace System.Linq.Expressions.Tests
             b.Compile(useInterpreter).DynamicInvoke();
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public static void NoWriteBackToInstance()
         {

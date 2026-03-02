@@ -322,6 +322,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Contains_Rune_StringComparison_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Contains_Rune_StringComparison(string s, Rune value, StringComparison comparisonType, bool expected)
         {
             Assert.Equal(expected, s.Contains(value, comparisonType));

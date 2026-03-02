@@ -1022,6 +1022,7 @@ namespace System.Collections.Tests
 
         #region ICollection
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void ICollection_NonGeneric_CopyTo(int count)

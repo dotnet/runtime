@@ -30,9 +30,11 @@ public class EdgeCaseTests : ReadTests
         Assert.Equal("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", classRecord.GetString("AssemblyName"));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Theory]
     [InlineData(FormatterTypeStyle.TypesAlways)]
     [InlineData(FormatterTypeStyle.TypesAlways | FormatterTypeStyle.XsdString)]
+    [SkipOnPlatform(TestPlatforms.Browser, "BinaryFormatter is not supported on Browser")]
     public void ArraysOfStringsCanContainMemberReferences(FormatterTypeStyle typeFormat)
     {
         // it has to be the same object, not just the same value
@@ -88,9 +90,11 @@ public class EdgeCaseTests : ReadTests
     }
 
 #pragma warning disable SYSLIB0011 // Type or member is obsolete
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Theory]
     [InlineData(FormatterTypeStyle.TypesWhenNeeded)]
     [InlineData(FormatterTypeStyle.XsdString)]
+    [SkipOnPlatform(TestPlatforms.Browser, "BinaryFormatter is not supported on Browser")]
     public void FormatterTypeStyleOtherThanTypesAlwaysAreNotSupportedByDesign(FormatterTypeStyle typeFormat)
     {
         using MemoryStream ms = new();

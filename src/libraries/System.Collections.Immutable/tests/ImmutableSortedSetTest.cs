@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Tests;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -255,6 +256,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void UnionOptimizationsTest()
         {
             ImmutableSortedSet<int> set = ImmutableSortedSet.Create(1, 2, 3);

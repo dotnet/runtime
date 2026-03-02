@@ -14,6 +14,7 @@ using Xunit;
 namespace System.Runtime.Intrinsics.Wasm.Tests
 {
     [PlatformSpecific(TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
     public sealed class PackedSimdTests
     {
         [Fact]

@@ -212,6 +212,7 @@ namespace System.Text.Json.Tests
             JsonTestHelper.AssertContents("\"\u2020\\\"\"", output);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         [MemberData(nameof(EscapingTestData))]
         public void EscapingTestWhileWriting(char replacementChar, JavaScriptEncoder encoder, bool requiresEscaping)
@@ -403,6 +404,7 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         [MemberData(nameof(EscapingTestData_NonAscii))]
         public unsafe void WriteString_NonAscii(char replacementChar, JavaScriptEncoder encoder, bool requiresEscaping)
@@ -1510,6 +1512,7 @@ namespace System.Text.Json.Tests
             Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteNumberValue((ulong)12345678901));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
         public async Task WriteLargeToStream(JsonWriterOptions options)
@@ -4825,6 +4828,7 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
         [OuterLoop("Too slow", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
@@ -5707,6 +5711,7 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [MemberData(nameof(WriteValue_TestData))]
@@ -6217,6 +6222,7 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         [MemberData(nameof(WriteValue_TestData))]
         public void WriteDateTimesValue(JsonWriterOptions options, string keyString)
@@ -6273,6 +6279,7 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         [MemberData(nameof(WriteValue_TestData))]
         public void WriteDateTimeOffsetsValue(JsonWriterOptions options, string keyString)

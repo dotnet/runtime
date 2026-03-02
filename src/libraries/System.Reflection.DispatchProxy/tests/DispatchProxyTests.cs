@@ -207,6 +207,7 @@ namespace DispatchProxyTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void Create_Using_PrivateProxyAndInternalServiceWithExternalGenericArgument()
         {
             Assert.NotNull(TestType_PrivateProxy.Proxy<TestType_InternalInterfaceWithNonPublicExternalGenericArgument>());
@@ -244,6 +245,7 @@ namespace DispatchProxyTests
             Assert.NotNull(CreateHelper<TestType_InternalInterfaceImplementsNonPublicExternalType, TestDispatchProxy>(useGenericCreate));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

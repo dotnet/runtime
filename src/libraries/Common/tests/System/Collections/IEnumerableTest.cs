@@ -80,6 +80,7 @@ namespace Tests.Collections
             RepeatTest((e, i, it) => testCode(e, i), iters);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void MoveNextHitsAllItems()
         {
@@ -115,6 +116,7 @@ namespace Tests.Collections
                 });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void MoveNextFalseAfterEndOfCollection()
         {
@@ -244,6 +246,7 @@ namespace Tests.Collections
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ModifyCollectionWithNewEnumerator()
         {
             IEnumerable enumerable =
@@ -293,6 +296,7 @@ namespace Tests.Collections
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void EnumerateEntireCollectionThenModify()
         {
             object[] items = GenerateItems(EnumerableSize);

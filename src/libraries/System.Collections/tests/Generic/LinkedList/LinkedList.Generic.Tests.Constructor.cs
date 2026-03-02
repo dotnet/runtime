@@ -8,6 +8,7 @@ namespace System.Collections.Tests
 {
     public abstract partial class LinkedList_Generic_Tests<T> : ICollection_Generic_Tests<T>
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void CtorTest()
         {

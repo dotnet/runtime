@@ -11,6 +11,7 @@ namespace System.Collections.Generic.Tests
 {
     public class ComparerTests
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [MemberData(nameof(IComparableComparisonsData))]
         [MemberData(nameof(UInt64EnumComparisonsData))]

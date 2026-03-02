@@ -291,6 +291,7 @@ namespace System.Collections.Tests
         protected abstract Type ExpectedInternalComparerTypeAfterCollisionThreshold { get; }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ComparerImplementations_Dictionary_WithWellKnownStringComparers()
         {
             TCollection collection = CreateCollection();

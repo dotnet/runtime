@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Tests;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -273,6 +274,7 @@ namespace System.Collections.Frozen.Tests
 
         [Theory]
         [MemberData(nameof(Int32StringData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void FrozenSet_Int32String(Dictionary<int, string> source)
         {
             FrozenSetWorker(source);

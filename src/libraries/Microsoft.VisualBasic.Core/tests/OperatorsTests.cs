@@ -4832,6 +4832,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         [Theory]
         [MemberData(nameof(SubtractObject_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void SubtractObject_Invoke_ReturnsExpected(object left, object right, object expected)
         {
             Assert.Equal(expected, Operators.SubtractObject(left, right));

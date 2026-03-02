@@ -624,6 +624,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_ListGenericRoot()
     {
         List<string> x = new List<string>();
@@ -639,6 +640,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_ListGenericMembers()
     {
         TypeWithListGenericMembers x = new TypeWithListGenericMembers();
@@ -1021,6 +1023,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_SuspensionManager()
     {
         var dict2 = new Dictionary<string, object> { { "Key2-0", "Value2-0" } };
@@ -1183,6 +1186,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_WithListOfXElement()
     {
         var original = new WithListOfXElement(true);
@@ -1311,6 +1315,7 @@ public static partial class DataContractJsonSerializerTests
 
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_Nullables()
     {
         // Arrange
@@ -1472,6 +1477,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_TypeWithGenericDictionaryAsKnownType()
     {
         TypeWithGenericDictionaryAsKnownType value = new TypeWithGenericDictionaryAsKnownType { };
@@ -1487,6 +1493,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_TypeWithKnownTypeAttributeAndInterfaceMember()
     {
         TypeWithKnownTypeAttributeAndInterfaceMember value = new TypeWithKnownTypeAttributeAndInterfaceMember();
@@ -1498,6 +1505,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_TypeWithKnownTypeAttributeAndListOfInterfaceMember()
     {
         TypeWithKnownTypeAttributeAndListOfInterfaceMember value = new TypeWithKnownTypeAttributeAndListOfInterfaceMember();
@@ -1728,6 +1736,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_UseSimpleDictionaryFormat()
     {
         Dictionary<string, string> dict = new Dictionary<string, string>();
@@ -2621,6 +2630,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_VerifyDateTimeForFormatStringDCJsonSerSettings()
     {
         var jsonTypes = new JsonTypes();
@@ -2754,6 +2764,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_VerifyDictionaryTypes()
     {
         var dcjsSettings = new DataContractJsonSerializerSettings()
@@ -2793,6 +2804,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_VerifyDictionaryFormat()
     {
         var jsonTypes = new JsonTypes();
@@ -2849,6 +2861,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     public static void DCJS_VerifyIndentation()
     {
         var testClass = new TestClass()

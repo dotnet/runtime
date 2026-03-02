@@ -66,6 +66,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentNullException>("writer", () => EncodingExtensions.Convert(decoder, ReadOnlySpan<byte>.Empty, (IBufferWriter<char>)null, true, out _, out _));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void Convert_Decoder_ReadOnlySpan_IBufferWriter()
         {
