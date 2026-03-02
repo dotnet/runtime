@@ -402,7 +402,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
         // branches we may end up importing the entire try even though
         // execution starts in the middle.
         //
-        // Note it is common in both cases for the ends of trys (and
+        // Note it is common in both cases for the ends of tries (and
         // associated handlers) to end up not getting imported, so if
         // the try region is not removed, we always check if we need
         // to trim the ends.
@@ -572,7 +572,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
     // add the appropriate step block logic.
     //
     unsigned addedBlocks = 0;
-    bool     addedTemps  = 0;
+    bool     addedTemps  = false;
 
     if (opts.IsOSR())
     {
@@ -797,7 +797,7 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
     // If target has multiple incoming edges, we can still compact if block is empty.
     // However, not if it is the beginning of a handler.
     //
-    if (target->countOfInEdges() != 1 && (!block->isEmpty() || (block->bbCatchTyp != BBCT_NONE)))
+    if (target->countOfInEdges() != 1 && (!block->isEmpty() || !block->CatchTypeIs(BBCT_NONE)))
     {
         return false;
     }
@@ -957,8 +957,8 @@ void Compiler::fgCompactBlock(BasicBlock* block)
                     blkFirst->SetPrevStmt(targetLastPhi);
                 }
 
-                // Now update the bbStmtList of "target".
-                target->bbStmtList = targetNonPhi1;
+                // Now update the first statement of "target".
+                target->SetFirstStmt(targetNonPhi1);
                 if (targetNonPhi1 != nullptr)
                 {
                     targetNonPhi1->SetPrevStmt(targetLast);
@@ -970,7 +970,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
                 {
                     // First, targetPhis at start of block.
                     Statement* blkLast = blkFirst->GetPrevStmt();
-                    block->bbStmtList  = targetFirst;
+                    block->SetFirstStmt(targetFirst);
                     // Now, rest of "block" (if it exists) after last phi of "target".
                     Statement* targetLastPhi =
                         (targetNonPhi1 != nullptr) ? targetNonPhi1->GetPrevStmt() : targetFirst->GetPrevStmt();
@@ -978,8 +978,8 @@ void Compiler::fgCompactBlock(BasicBlock* block)
                     targetFirst->SetPrevStmt(blkLast);
                     targetLastPhi->SetNextStmt(blkFirst);
                     blkFirst->SetPrevStmt(targetLastPhi);
-                    // Now update the bbStmtList of "target"
-                    target->bbStmtList = targetNonPhi1;
+                    // Now update the first statement of "target"
+                    target->SetFirstStmt(targetNonPhi1);
                     if (targetNonPhi1 != nullptr)
                     {
                         targetNonPhi1->SetPrevStmt(targetLast);
@@ -998,7 +998,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
         {
             Statement* stmtLast1 = block->lastStmt();
 
-            /* The second block may be a GOTO statement or something with an empty bbStmtList */
+            /* The second block may be a GOTO statement or something with an empty statement list */
             if (stmtList2 != nullptr)
             {
                 Statement* stmtLast2 = target->lastStmt();
@@ -1013,7 +1013,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
         else
         {
             /* block was formerly empty and now has target's statements */
-            block->bbStmtList = stmtList2;
+            block->SetFirstStmt(stmtList2);
         }
     }
 
@@ -1042,7 +1042,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     }
     else if (target->bbCodeOffs != BAD_IL_OFFSET)
     {
-        // The are both valid offsets; compare them.
+        // They are both valid offsets; compare them.
         if (block->bbCodeOffs > target->bbCodeOffs)
         {
             block->bbCodeOffs = target->bbCodeOffs;
@@ -1055,7 +1055,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     }
     else if (target->bbCodeOffsEnd != BAD_IL_OFFSET)
     {
-        // The are both valid offsets; compare them.
+        // They are both valid offsets; compare them.
         if (block->bbCodeOffsEnd < target->bbCodeOffsEnd)
         {
             block->bbCodeOffsEnd = target->bbCodeOffsEnd;
@@ -1153,12 +1153,6 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     assert(block->KindIs(target->GetKind()));
 
 #if DEBUG
-    if (verbose && 0)
-    {
-        printf("\nAfter compacting:\n");
-        fgDispBasicBlocks(false);
-    }
-
     if (JitConfig.JitSlowDebugChecksEnabled() != 0)
     {
         // Make sure that the predecessor lists are accurate
@@ -1213,20 +1207,20 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
         // Anyway, remove any phis.
 
         Statement* firstNonPhi = block->FirstNonPhiDef();
-        if (block->bbStmtList != firstNonPhi)
+        if (block->firstStmt() != firstNonPhi)
         {
             if (firstNonPhi != nullptr)
             {
                 firstNonPhi->SetPrevStmt(block->lastStmt());
             }
-            block->bbStmtList = firstNonPhi;
+            block->SetFirstStmt(firstNonPhi);
         }
 
         for (Statement* const stmt : block->Statements())
         {
             fgRemoveStmt(block, stmt);
         }
-        noway_assert(block->bbStmtList == nullptr);
+        noway_assert(block->firstStmt() == nullptr);
     }
 
     // Mark the block as removed
@@ -1898,8 +1892,7 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
         return false;
     }
 
-    Statement* const lastStmt  = block->lastStmt();
-    Statement* const firstStmt = block->FirstNonPhiDef();
+    Statement* const lastStmt = block->lastStmt();
 
     if (lastStmt == nullptr)
     {
@@ -2588,8 +2581,8 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     bool     rareDest           = bDest->isRunRarely();
     bool     rareNext           = trueTarget->isRunRarely();
 
-    // If we have profile data then we calculate the number of time
-    // the loop will iterate into loopIterations
+    // If we have profile data then we can adjust the duplication
+    // threshold based on relative weights of the blocks
     if (fgIsUsingProfileWeights())
     {
         // Only rely upon the profile weight when all three of these blocks
@@ -2726,7 +2719,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
     else
     {
-        bJump->bbStmtList = newStmtList;
+        bJump->SetFirstStmt(newStmtList);
         newStmtList->SetPrevStmt(newLastStmt);
     }
 
@@ -2930,8 +2923,6 @@ bool Compiler::fgExpandRarelyRunBlocks()
     {
         printf("\n*************** In fgExpandRarelyRunBlocks()\n");
     }
-
-    const char* reason = nullptr;
 #endif
 
     // Helper routine to figure out the lexically earliest predecessor
@@ -4700,7 +4691,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
             }
 
             assert(!bbIsTryBeg(block));
-            noway_assert(block->bbCatchTyp == BBCT_NONE);
+            noway_assert(block->CatchTypeIs(BBCT_NONE));
 
             /* Remove unreachable blocks
              *
@@ -5212,9 +5203,8 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             bool        haveNoSplitVictim     = false;
             bool        haveFallThroughVictim = false;
 
-            for (int j = 0; j < matchedPredInfo.Height(); j++)
+            for (PredInfo& info : matchedPredInfo.TopDownOrder())
             {
-                PredInfo&         info      = matchedPredInfo.TopRef(j);
                 Statement* const  stmt      = info.m_stmt;
                 BasicBlock* const predBlock = info.m_block;
 
@@ -5287,9 +5277,8 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
             // Do the cross jumping
             //
-            for (int j = 0; j < matchedPredInfo.Height(); j++)
+            for (PredInfo& info : matchedPredInfo.TopDownOrder())
             {
-                PredInfo&         info      = matchedPredInfo.TopRef(j);
                 BasicBlock* const predBlock = info.m_block;
                 Statement* const  stmt      = info.m_stmt;
 
@@ -5452,9 +5441,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     }
 
     predInfo.Reset();
-    for (int i = 0; i < retOrThrowBlocks.Height(); i++)
+    for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
     {
-        predInfo.Push(PredInfo(retOrThrowBlocks.Bottom(i), retOrThrowBlocks.Bottom(i)->lastStmt()));
+        predInfo.Push(PredInfo(block, block->lastStmt()));
     }
 
     tailMergePreds(nullptr);

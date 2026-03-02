@@ -18,6 +18,7 @@ extern "C" void assertAbort(const char* why, const char* file, unsigned line);
 
 #include "gcinfohelpers.h"
 #include <stdint.h>
+#include "contract.h"
 #include "iallocator.h"
 #include "gcinfoarraylist.h"
 #include "safemath.h"

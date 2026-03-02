@@ -8,6 +8,8 @@
 
 #include "regallocwasm.h"
 
+#include "lower.h" // for LowerRange()
+
 RegAllocInterface* GetRegisterAllocator(Compiler* compiler)
 {
     return new (compiler->getAllocator(CMK_LSRA)) WasmRegAlloc(compiler);
@@ -48,12 +50,6 @@ void WasmRegAlloc::dumpLsraStatsSummary(FILE* file)
 }
 #endif // TRACK_LSRA_STATS
 
-bool WasmRegAlloc::isContainableMemoryOp(GenTree* node)
-{
-    NYI_WASM("isContainableMemoryOp");
-    return false;
-}
-
 //------------------------------------------------------------------------
 // CurrentRange: Get the LIR range under current processing.
 //
@@ -91,7 +87,7 @@ void WasmRegAlloc::IdentifyCandidates()
         }
     }
 
-    if (anyFrameLocals)
+    if (anyFrameLocals || m_compiler->compLocallocUsed)
     {
         AllocateFramePointer();
     }
@@ -272,10 +268,21 @@ void WasmRegAlloc::CollectReferences()
 void WasmRegAlloc::CollectReferencesForBlock(BasicBlock* block)
 {
     m_currentBlock = block;
-    for (GenTree* node : LIR::AsRange(block))
+
+    // We may modify the range while iterating.
+    //
+    // For now, we assume reordering happens only for already visited
+    // nodes, and any newly introduced nodes do not need collection.
+    //
+    GenTree* node = LIR::AsRange(block).FirstNode();
+
+    while (node != nullptr)
     {
+        GenTree* nextNode = node->gtNext;
         CollectReferencesForNode(node);
+        node = nextNode;
     }
+
     m_currentBlock = nullptr;
 }
 
@@ -316,6 +323,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForDivMod(node->AsOp());
             break;
 
+        case GT_LCLHEAP:
+            CollectReferencesForLclHeap(node->AsOp());
+            break;
+
         case GT_CALL:
             CollectReferencesForCall(node->AsCall());
             break;
@@ -328,6 +339,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
         case GT_SUB:
         case GT_MUL:
             CollectReferencesForBinop(node->AsOp());
+            break;
+
+        case GT_STORE_BLK:
+            CollectReferencesForBlockStore(node->AsBlk());
             break;
 
         default:
@@ -350,6 +365,25 @@ void WasmRegAlloc::CollectReferencesForDivMod(GenTreeOp* divModNode)
 {
     ConsumeTemporaryRegForOperand(divModNode->gtGetOp2() DEBUGARG("div-by-zero / overflow check"));
     ConsumeTemporaryRegForOperand(divModNode->gtGetOp1() DEBUGARG("div-by-zero / overflow check"));
+}
+
+//------------------------------------------------------------------------
+// CollectReferencesForLclHeap: Collect virtual register references for a LCLHEAP.
+//
+// Reserves internal register for unknown-sized LCLHEAP operations
+//
+// Arguments:
+//    lclHeapNode - The LCLHEAP node
+//
+void WasmRegAlloc::CollectReferencesForLclHeap(GenTreeOp* lclHeapNode)
+{
+    // Known-sized allocations have contained size operand, so they don't require internal register.
+    if (!lclHeapNode->gtGetOp1()->isContainedIntOrIImmed())
+    {
+        regNumber internalReg = RequestInternalRegister(lclHeapNode, TYP_I_IMPL);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -417,6 +451,21 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
     ConsumeTemporaryRegForOperand(binopNode->gtGetOp1() DEBUGARG("binop overflow check"));
 }
 
+// CollectReferencesForBlockStore: Collect virtual register references for a block store.
+//
+// Arguments:
+//    node - The GT_STORE_BLK node
+//
+void WasmRegAlloc::CollectReferencesForBlockStore(GenTreeBlk* node)
+{
+    GenTree* src = node->Data();
+    if (src->OperIs(GT_IND))
+        src = src->gtGetOp1();
+
+    ConsumeTemporaryRegForOperand(src DEBUGARG("block store source"));
+    ConsumeTemporaryRegForOperand(node->Addr() DEBUGARG("block store destination"));
+}
+
 //------------------------------------------------------------------------
 // CollectReferencesForLclVar: Collect virtual register references for a LCL_VAR.
 //
@@ -476,6 +525,9 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     CurrentRange().InsertAfter(lclNode, store);
     CurrentRange().Remove(lclNode);
     CurrentRange().InsertBefore(insertionPoint, lclNode);
+
+    LIR::ReadOnlyRange storeRange(store, store);
+    m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
 }
 
 //------------------------------------------------------------------------
@@ -539,6 +591,7 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
     // Note how due to the fact we're processing nodes in stack order,
     // we don't need to maintain free/busy sets, only a simple stack.
     regNumber reg = AllocateTemporaryRegister(genActualType(node));
+    assert((node->GetRegNum() == REG_NA) && "Trying to double-assign a temporary register");
     node->SetRegNum(reg);
 }
 
@@ -561,7 +614,7 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
     }
 
     regNumber reg = ReleaseTemporaryRegister(genActualType(operand));
-    assert(reg == operand->GetRegNum());
+    assert((reg == operand->GetRegNum()) && "Temporary reg being consumed out of order");
     CollectReference(operand);
 
     operand->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
@@ -605,7 +658,7 @@ void WasmRegAlloc::ResolveReferences()
     {
         TemporaryRegStack& temporaryRegs          = m_temporaryRegs[static_cast<unsigned>(type)];
         TemporaryRegBank&  allocatedTemporaryRegs = temporaryRegMap[static_cast<unsigned>(type)];
-        assert(temporaryRegs.Count == 0);
+        assert((temporaryRegs.Count == 0) && "Some temporary regs were not consumed/released");
 
         allocatedTemporaryRegs.Count = temporaryRegs.MaxCount;
         if (allocatedTemporaryRegs.Count == 0)

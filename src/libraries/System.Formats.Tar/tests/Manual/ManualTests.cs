@@ -39,7 +39,7 @@ public class ManualTests : TarTestsBase
 
         using (TarWriter writer = new(s, leaveOpen: true))
         {
-            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, entryFormat is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, "foo");
+            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, GetRegularFileEntryTypeForFormat(entryFormat), "foo");
             writeEntry.DataStream = new SimulatedDataStream(size);
             writer.WriteEntry(writeEntry);
         }
