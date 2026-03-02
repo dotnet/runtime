@@ -19,9 +19,9 @@
     <Compile Include="TypeTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="$(CommonTestPath)Data\TinyAssembly.dll">
-      <Link>TinyAssembly.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Reference Include="TinyAssembly">
+      <HintPath>$(CommonTestPath)Data\TinyAssembly.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
 </Project>

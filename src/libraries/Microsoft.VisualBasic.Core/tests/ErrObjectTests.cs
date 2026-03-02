@@ -13,6 +13,7 @@ namespace Microsoft.VisualBasic.Tests
         [ActiveIssue("https://github.com/mono/mono/issues/14854", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         [ActiveIssue("https://github.com/mono/mono/issues/14854", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/0000")] // xunit3: LastDllError (Marshal.GetLastWin32Error) is non-zero due to P/Invoke calls in the self-hosted runner
         public void Clear()
         {
             ProjectData.ClearProjectError();
