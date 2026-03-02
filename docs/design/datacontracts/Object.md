@@ -14,8 +14,8 @@ string GetStringValue(TargetPointer address);
 // Get the pointer to the data corresponding to a managed array object. Error if address does not represent a array.
 TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
 
-// Get built-in COM data for the object if available. Returns false, if address does not represent a COM object using built-in COM
-bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
+// Get built-in COM data for the object if available. Returns false if address does not represent a COM object using built-in COM.
+bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf);
 ```
 
 ## Version 1
@@ -26,6 +26,7 @@ Data descriptors used:
 | `Array` | `m_NumComponents` | Number of items in the array |
 | `InteropSyncBlockInfo` | `RCW` | Pointer to the RCW for the object (if it exists) |
 | `InteropSyncBlockInfo` | `CCW` | Pointer to the CCW for the object (if it exists) |
+| `InteropSyncBlockInfo` | `CCF` | Pointer to the COM class factory for the object (if it exists) |
 | `Object` | `m_pMethTab` | Method table for the object |
 | `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string (encoded in UTF-16) |
 | `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
@@ -105,7 +106,7 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
     return address + dataOffset;
 }
 
-bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
+bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf)
 {
     uint syncBlockValue = target.Read<uint>(address - _target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
 
@@ -125,8 +126,12 @@ bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetP
     if (interopInfo == TargetPointer.Null)
         return false;
 
-    rcw = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::RCW offset */);
-    ccw = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::CCW offset */);
-    return rcw != TargetPointer.Null && ccw != TargetPointer.Null;
+    TargetPointer rcw1 = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::RCW offset */);
+    rcw = rcw1 & ~1ul;
+    TargetPointer ccw1 = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::CCW offset */);
+    ccw = (ccw1 == 1) ? TargetPointer.Null : ccw1;
+    TargetPointer ccf1 = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::CCF offset */);
+    ccf = (ccf1 == 1) ? TargetPointer.Null : ccf1;
+    return rcw != TargetPointer.Null || ccw != TargetPointer.Null || ccf != TargetPointer.Null;
 }
 ```

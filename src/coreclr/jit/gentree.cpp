@@ -2050,13 +2050,12 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 //                               helper call.
 //
 // Arguments:
-//    tree           - The array allocation helper call.
-//    block          - tree's basic block.
+//    tree - The array allocation helper call.
 //
 // Return Value:
 //    Return the array length node.
 
-GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block))
+GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
 {
     assert(tree != nullptr);
 
@@ -2252,7 +2251,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
     // Consider array allocators side-effect free for constant length (if it's not negative and fits into i32)
     if (helperProperties.IsAllocator(helper))
     {
-        GenTree* arrLen = compiler->getArrayLengthFromAllocation((GenTree*)this DEBUGARG(nullptr));
+        GenTree* arrLen = compiler->getArrayLengthFromAllocation((GenTree*)this);
         // if arrLen is nullptr it means it wasn't an array allocator
         if ((arrLen != nullptr) && arrLen->IsIntCnsFitsInI32())
         {
@@ -12843,6 +12842,12 @@ void Compiler::gtDispTree(GenTree*                    tree,
                         printf(" (Loop)");
                         break;
 
+#ifdef TARGET_WASM
+                    case GenTreeBlk::BlkOpKindNativeOpcode:
+                        printf(" (memory.copy|fill)");
+                        break;
+#endif
+
                     default:
                         unreached();
                 }
@@ -13340,6 +13345,10 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "exec ctx";
         case WellKnownArg::AsyncSynchronizationContext:
             return "sync ctx";
+        case WellKnownArg::WasmShadowStackPointer:
+            return "wasm sp";
+        case WellKnownArg::WasmPortableEntryPoint:
+            return "wasm pep";
         default:
             return nullptr;
     }

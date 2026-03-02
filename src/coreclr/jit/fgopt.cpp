@@ -402,7 +402,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
         // branches we may end up importing the entire try even though
         // execution starts in the middle.
         //
-        // Note it is common in both cases for the ends of trys (and
+        // Note it is common in both cases for the ends of tries (and
         // associated handlers) to end up not getting imported, so if
         // the try region is not removed, we always check if we need
         // to trim the ends.
@@ -572,7 +572,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
     // add the appropriate step block logic.
     //
     unsigned addedBlocks = 0;
-    bool     addedTemps  = 0;
+    bool     addedTemps  = false;
 
     if (opts.IsOSR())
     {
@@ -1042,7 +1042,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     }
     else if (target->bbCodeOffs != BAD_IL_OFFSET)
     {
-        // The are both valid offsets; compare them.
+        // They are both valid offsets; compare them.
         if (block->bbCodeOffs > target->bbCodeOffs)
         {
             block->bbCodeOffs = target->bbCodeOffs;
@@ -1055,7 +1055,7 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     }
     else if (target->bbCodeOffsEnd != BAD_IL_OFFSET)
     {
-        // The are both valid offsets; compare them.
+        // They are both valid offsets; compare them.
         if (block->bbCodeOffsEnd < target->bbCodeOffsEnd)
         {
             block->bbCodeOffsEnd = target->bbCodeOffsEnd;
@@ -1153,12 +1153,6 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     assert(block->KindIs(target->GetKind()));
 
 #if DEBUG
-    if (verbose && 0)
-    {
-        printf("\nAfter compacting:\n");
-        fgDispBasicBlocks(false);
-    }
-
     if (JitConfig.JitSlowDebugChecksEnabled() != 0)
     {
         // Make sure that the predecessor lists are accurate
@@ -1746,6 +1740,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         GenTree* switchVal = switchTree->AsOp()->gtOp1;
         noway_assert(genActualTypeIsIntOrI(switchVal->TypeGet()));
 
+#if !defined(TARGET_WASM)
         // If we are in LIR, remove the jump table from the block.
         if (block->IsLIR())
         {
@@ -1753,6 +1748,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             assert(jumpTable->OperIs(GT_JMPTABLE));
             blockRange->Remove(jumpTable);
         }
+#endif // !defined(TARGET_WASM)
 
         // Change the GT_SWITCH(switchVal) into GT_JTRUE(GT_EQ(switchVal==0)).
         // Also mark the node as GTF_DONT_CSE as further down JIT is not capable of handling it.
@@ -1793,6 +1789,70 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 
         return true;
     }
+    else if (block->GetSwitchTargets()->GetSuccCount() == 2 && block->GetSwitchTargets()->HasDefaultCase() &&
+             !block->IsLIR() && fgNodeThreading == NodeThreading::AllTrees)
+    {
+        // If all non-default cases jump to the same target and the default jumps to a different target,
+        // replace the switch with an unsigned comparison against the max case index:
+        //   GT_SWITCH(switchVal) -> GT_JTRUE(GT_LT(switchVal, caseCount))
+
+        BBswtDesc* switchDesc = block->GetSwitchTargets();
+
+        FlowEdge*   defaultEdge   = switchDesc->GetDefaultCase();
+        BasicBlock* defaultDest   = defaultEdge->getDestinationBlock();
+        FlowEdge*   firstCaseEdge = switchDesc->GetCase(0);
+        BasicBlock* caseDest      = firstCaseEdge->getDestinationBlock();
+
+        // Optimize only when all non-default cases share the same target, distinct from the default target.
+        // Only the default case targets defaultDest.
+        if (defaultEdge->getDupCount() != 1)
+        {
+            return modified;
+        }
+
+        JITDUMP("\nConverting a switch (" FMT_BB ") where all non-default cases target the same block to a "
+                "conditional branch. Before:\n",
+                block->bbNum);
+        DISPNODE(switchTree);
+
+        // Use GT_LT (e.g., switchVal < caseCount), so true (in range) goes to the shared case target and false (out of
+        // range) goes to the default case.
+        switchTree->ChangeOper(GT_JTRUE);
+        GenTree* switchVal = switchTree->AsOp()->gtOp1;
+        noway_assert(genActualTypeIsIntOrI(switchVal->TypeGet()));
+        const unsigned caseCount = firstCaseEdge->getDupCount();
+        GenTree*       iconNode  = gtNewIconNode(caseCount, genActualType(switchVal->TypeGet()));
+        GenTree*       condNode  = gtNewOperNode(GT_LT, TYP_INT, switchVal, iconNode);
+        condNode->SetUnsigned();
+        switchTree->AsOp()->gtOp1 = condNode;
+        switchTree->AsOp()->gtOp1->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+
+        gtSetStmtInfo(switchStmt);
+        fgSetStmtSeq(switchStmt);
+
+        // Fix up dup counts: multiple switch cases originally pointed to the same
+        // successor, but the conditional branch has exactly one edge per target.
+        const unsigned caseDupCount = firstCaseEdge->getDupCount();
+        if (caseDupCount > 1)
+        {
+            firstCaseEdge->decrementDupCount(caseDupCount - 1);
+            caseDest->bbRefs -= (caseDupCount - 1);
+        }
+
+        block->SetCond(firstCaseEdge, defaultEdge);
+
+        JITDUMP("After:\n");
+        DISPNODE(switchTree);
+
+        if (fgFoldCondToReturnBlock(block))
+        {
+            JITDUMP("Folded conditional return into branchless return. After:\n");
+            DISPNODE(switchTree);
+        }
+
+        return true;
+    }
+
     return modified;
 }
 
@@ -1832,8 +1892,7 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
         return false;
     }
 
-    Statement* const lastStmt  = block->lastStmt();
-    Statement* const firstStmt = block->FirstNonPhiDef();
+    Statement* const lastStmt = block->lastStmt();
 
     if (lastStmt == nullptr)
     {
@@ -2522,8 +2581,8 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     bool     rareDest           = bDest->isRunRarely();
     bool     rareNext           = trueTarget->isRunRarely();
 
-    // If we have profile data then we calculate the number of time
-    // the loop will iterate into loopIterations
+    // If we have profile data then we can adjust the duplication
+    // threshold based on relative weights of the blocks
     if (fgIsUsingProfileWeights())
     {
         // Only rely upon the profile weight when all three of these blocks
@@ -2864,8 +2923,6 @@ bool Compiler::fgExpandRarelyRunBlocks()
     {
         printf("\n*************** In fgExpandRarelyRunBlocks()\n");
     }
-
-    const char* reason = nullptr;
 #endif
 
     // Helper routine to figure out the lexically earliest predecessor
