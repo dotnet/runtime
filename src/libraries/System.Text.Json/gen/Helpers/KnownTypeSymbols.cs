@@ -228,6 +228,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? JsonNumberHandlingAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonNumberHandlingAttribute", ref _JsonNumberHandlingAttributeType);
         private Option<INamedTypeSymbol?> _JsonNumberHandlingAttributeType;
 
+        public INamedTypeSymbol? JsonNamingPolicyAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonNamingPolicyAttribute", ref _JsonNamingPolicyAttributeType);
+        private Option<INamedTypeSymbol?> _JsonNamingPolicyAttributeType;
+
         public INamedTypeSymbol? JsonObjectCreationHandlingAttributeType => GetOrResolveType("System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute", ref _JsonObjectCreationHandlingAttributeType);
         private Option<INamedTypeSymbol?> _JsonObjectCreationHandlingAttributeType;
 
