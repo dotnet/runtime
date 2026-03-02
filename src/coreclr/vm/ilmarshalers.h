@@ -1492,13 +1492,8 @@ protected:
         EmitLoadManagedValue(pslILEmit);
     }
 
-    void EmitKeepAliveManagedValue()
+    void EmitKeepAliveManagedValue(ILCodeStream* pslILEmit)
     {
-        // Don't use the cleanup work list to avoid any extra allocations.
-        m_pslPInvoke->SetCleanupNeeded();
-
-        ILCodeStream* pslILEmit = m_pslPInvoke->GetCleanupCodeStream();
-
         ILCodeLabel* pNoManagedValueLabel = nullptr;
         if (IsFieldMarshal(m_dwMarshalFlags))
         {
@@ -1899,6 +1894,17 @@ protected:
     LocalDesc GetManagedType() override;
     void EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit) override;
     void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit) override;
+
+    bool NeedsClearNative() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsCLRToNative(m_dwMarshalFlags) && IsIn(m_dwMarshalFlags);
+    }
+
+    void EmitClearNative(ILCodeStream* pslILEmit) override
+    {
+        EmitKeepAliveManagedValue(pslILEmit);
+    }
 };
 
 class ILReflectionObjectMarshaler : public ILMarshaler
@@ -1918,6 +1924,18 @@ protected:
     virtual BinderFieldID GetStructureFieldID() { LIMITED_METHOD_CONTRACT; return (BinderFieldID)0; }
     virtual BinderFieldID GetObjectFieldID() = 0;
     virtual BinderClassID GetManagedTypeBinderID() = 0;
+
+    bool NeedsClearNative() override
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsCLRToNative(m_dwMarshalFlags) && IsIn(m_dwMarshalFlags);
+    }
+
+    void EmitClearNative(ILCodeStream* pslILEmit) override
+    {
+        EmitKeepAliveManagedValue(pslILEmit);
+    }
+
     void EmitLoadValueToKeepAlive(ILCodeStream* pslILEmit) override
     {
         BinderFieldID structField = GetStructureFieldID();

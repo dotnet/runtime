@@ -74,11 +74,6 @@ void ILReflectionObjectMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* p
     EmitStoreNativeValue(pslILEmit);
 
     pslILEmit->EmitLabel(pNullLabel);
-
-    if (IsCLRToNative(m_dwMarshalFlags))
-    {
-        EmitKeepAliveManagedValue();
-    }
 }
 
 void ILReflectionObjectMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -117,11 +112,6 @@ void ILDelegateMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitCALL(METHOD__MARSHAL__GET_FUNCTION_POINTER_FOR_DELEGATE, 1, 1);
     EmitStoreNativeValue(pslILEmit);
-
-    if (IsCLRToNative(m_dwMarshalFlags))
-    {
-        EmitKeepAliveManagedValue();
-    }
 
     pslILEmit->EmitLabel(pNullLabel);
 }
