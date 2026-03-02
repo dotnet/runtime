@@ -753,11 +753,11 @@ interface IMemoryView extends IDisposable {
 }
 declare function exit(exitCode: number, reason?: any): void;
 declare const dotnet: DotnetHostBuilder;
+
+declare const createDotnetRuntime: CreateDotnetRuntimeType;
 declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
-
-declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
 export type { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, LoaderConfig, ModuleAPI, RuntimeAPI };
