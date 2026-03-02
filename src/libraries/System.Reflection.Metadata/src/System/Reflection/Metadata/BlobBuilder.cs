@@ -105,8 +105,14 @@ namespace System.Reflection.Metadata
         /// The byte array underpinning the <see cref="BlobBuilder"/>.
         /// </summary>
         /// <remarks>
-        /// This can only be called on the head of a chain of <see cref="BlobBuilder"/> instances.
-        /// Calling the setter will reset the <see cref="Length"/> to zero.
+        /// <para>
+        /// This property can only be accessed on the head of a chain of <see cref="BlobBuilder"/> instances,
+        /// and should be accessed only within the context of overriding <see cref="AllocateChunk"/> and
+        /// <see cref="FreeChunk"/>.
+        /// </para>
+        /// <para>
+        /// Setting this property will reset the chunk's length to zero.
+        /// </para>
         /// </remarks>
         protected internal byte[] Buffer
         {
@@ -143,8 +149,7 @@ namespace System.Reflection.Metadata
         /// <see cref="BlobBuilder"/> is not the head of a chain of <see cref="BlobBuilder"/>
         /// instances.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The value is set to less than
-        /// the current <see cref="Length"/>.</exception>
-        /// <seealso cref="SetCapacity"/>
+        /// the value of <see cref="Count"/>.</exception>
         public int Capacity
         {
             get
@@ -161,13 +166,23 @@ namespace System.Reflection.Metadata
                 {
                     Throw.InvalidOperationBuilderAlreadyLinked();
                 }
-                if (value < Length)
+                if (value < Count)
                 {
                     Throw.ArgumentOutOfRange(nameof(value));
                 }
                 if (value != _previousLengthOrFrozenSuffixLengthDelta + _buffer.Length)
                 {
-                    SetCapacity(value);
+                    // If the chunk is full, allocate a new chunk instead of resizing it in place.
+                    // We could also expand it if it's "almost full", but setting the capacity usually happend
+                    // at the beginning of using the builder, so it would not likely have a big impact.
+                    if (FreeBytes == 0)
+                    {
+                        Expand(value - Count);
+                    }
+                    else
+                    {
+                        ResizeChunk(value - _previousLengthOrFrozenSuffixLengthDelta);
+                    }
                 }
             }
         }
@@ -193,24 +208,22 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <param name="other">The other <see cref="BlobBuilder"/> instance that gets linked.</param>
         /// <remarks>
+        /// <para>
         /// Derived types can override this method to detect when a link is being made between two different types of
         /// <see cref="BlobBuilder"/> and take appropriate action. It is called before the underlying buffers are
         /// linked, for both the current and the target instance.
+        /// </para>
+        /// <para>
+        /// Because the <see cref="Buffer"/> objects between <see cref="BlobBuilder"/> instances may be swapped under
+        /// certain circumstances, if <see cref="AllocateChunk"/> is overridden to return a <see cref="BlobBuilder"/>
+        /// backed by a pooled buffer, it should check that <paramref name="other"/> uses the same pool, and throw an
+        /// exception otherwise. Applications that use such custom builders must ensure that the builders with different
+        /// buffer management strategies are not mixed together.
+        /// </para>
         /// </remarks>
         protected virtual void OnLinking(BlobBuilder other)
         {
             // nop
-        }
-
-        /// <summary>
-        /// Changes the size of the byte array underpinning the <see cref="BlobBuilder"/>.
-        /// Derived types can override this method to control the allocation strategy.
-        /// </summary>
-        /// <param name="capacity">The array's new size.</param>
-        /// <seealso cref="Capacity"/>
-        protected virtual void SetCapacity(int capacity)
-        {
-            Array.Resize(ref _buffer, Math.Max(MinChunkSize, capacity));
         }
 
         public void Clear()
@@ -680,6 +693,30 @@ namespace System.Reflection.Metadata
             return new ArraySegment<byte>(_buffer, Length, FreeBytes);
         }
 
+        private BlobBuilder AllocateChunkHelper(int newLength)
+        {
+            BlobBuilder newChunk = AllocateChunk(Math.Max(newLength, MinChunkSize));
+            if (newChunk.ChunkCapacity < newLength)
+            {
+                // The overridden allocator didn't provide large enough buffer:
+                throw new InvalidOperationException(SR.Format(SR.ReturnedBuilderSizeTooSmall, GetType(), nameof(AllocateChunk)));
+            }
+            return newChunk;
+        }
+
+        private void ResizeChunk(int newLength)
+        {
+            BlobBuilder newChunk = AllocateChunkHelper(newLength);
+            OnLinking(this, newChunk);
+            byte[] newBuffer = newChunk._buffer;
+            Array.Copy(_buffer, 0, newBuffer, 0, Length);
+            // Swap the buffers with the newly allocated BlobBuilder.
+            newChunk._buffer = _buffer;
+            _buffer = newBuffer;
+            // Free the new chunk that now contains the old buffer.
+            newChunk.ClearAndFreeChunk();
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void Expand(int newLength)
         {
@@ -692,12 +729,7 @@ namespace System.Reflection.Metadata
                 Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
-            var newChunk = AllocateChunk(Math.Max(newLength, MinChunkSize));
-            if (newChunk.ChunkCapacity < newLength)
-            {
-                // The overridden allocator didn't provide large enough buffer:
-                throw new InvalidOperationException(SR.Format(SR.ReturnedBuilderSizeTooSmall, GetType(), nameof(AllocateChunk)));
-            }
+            BlobBuilder newChunk = AllocateChunkHelper(newLength);
 
             OnLinking(this, newChunk);
             var newBuffer = newChunk._buffer;

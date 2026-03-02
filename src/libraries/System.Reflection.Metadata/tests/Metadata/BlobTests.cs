@@ -1120,21 +1120,24 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        public void SetCapacityGetsCalled()
+        public void SetCapacity()
         {
-            var b = new BlobBuilderWithEvents();
-            bool called = false;
-            b.SettingCapacity += SettingCapacityHandler;
+            var builder = new FixedChunkBlobBuilder(16);
+            Assert.Equal(16, builder.Capacity);
+            builder.WriteBytes(1, 15);
+            Assert.Equal(Enumerable.Repeat((byte)1, 15), builder.ToArray());
+            builder.Capacity = 32;
+            Assert.Equal(32, builder.Capacity);
+            Assert.Equal(Enumerable.Repeat((byte)1, 15), builder.ToArray());
 
-            b.Capacity = 1024;
-            Assert.True(called);
-
-            void SettingCapacityHandler(int c)
-            {
-                Assert.Equal(1024, c);
-                Assert.False(called);
-                called = true;
-            }
+            builder = new FixedChunkBlobBuilder(16);
+            builder.WriteBytes(1, 32);
+            Assert.Equal(Enumerable.Repeat((byte)1, 32), builder.ToArray());
+            Assert.Throws<ArgumentOutOfRangeException>(() => builder.Capacity = 16);
+            builder.Capacity = 64;
+            Assert.Equal(Enumerable.Repeat((byte)1, 32), builder.ToArray());
+            builder.Capacity = 32;
+            Assert.Equal(Enumerable.Repeat((byte)1, 32), builder.ToArray());
         }
 
         [Fact]
@@ -1181,8 +1184,6 @@ namespace System.Reflection.Metadata.Tests
         {
             public event Action<BlobBuilder>? Linking;
 
-            public event Action<int>? SettingCapacity;
-
             public BlobBuilderWithEvents() { }
 
             public BlobBuilderWithEvents(byte[] bytes, int maxChunkSize = 0) : base(bytes, maxChunkSize) { }
@@ -1191,12 +1192,6 @@ namespace System.Reflection.Metadata.Tests
             {
                 Linking?.Invoke(builder);
                 base.OnLinking(builder);
-            }
-
-            protected override void SetCapacity(int capacity)
-            {
-                SettingCapacity?.Invoke(capacity);
-                base.SetCapacity(capacity);
             }
         }
     }

@@ -246,7 +246,6 @@ namespace System.Reflection.Metadata
         protected virtual void OnLinking(System.Reflection.Metadata.BlobBuilder other) { }
         public void PadTo(int position) { }
         public System.Reflection.Metadata.Blob ReserveBytes(int byteCount) { throw null; }
-        protected virtual void SetCapacity(int capacity) { throw null; }
         public byte[] ToArray() { throw null; }
         public byte[] ToArray(int start, int byteCount) { throw null; }
         public System.Collections.Immutable.ImmutableArray<byte> ToImmutableArray() { throw null; }
