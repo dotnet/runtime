@@ -3895,7 +3895,7 @@ public sealed unsafe partial class SOSDacImpl
         }
         else
         {
-            Debug.Assert(false, $"Unexpected RCW address {rcwAddr:x} or context {ctx:x}");
+            Debug.Fail($"Unexpected RCW address {rcwAddr:x} or context {ctx:x}");
         }
         return Interop.BOOL.TRUE;
     }
