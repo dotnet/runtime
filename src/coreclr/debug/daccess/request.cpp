@@ -3846,7 +3846,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
 HRESULT
 ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyncBlockCleanupData *syncBlockCData)
 {
-    if (syncBlock == 0 || syncBlockCData == NULL)
+    if (syncBlockCData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();

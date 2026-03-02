@@ -61,6 +61,9 @@ public static class Constants
         public const string SyncBlockMaskLockThreadId = nameof(SyncBlockMaskLockThreadId);
         public const string SyncBlockMaskLockRecursionLevel = nameof(SyncBlockMaskLockRecursionLevel);
         public const string SyncBlockRecursionLevelShift = nameof(SyncBlockRecursionLevelShift);
+        public const string SyncBlockIsHashOrSyncBlockIndex = nameof(SyncBlockIsHashOrSyncBlockIndex);
+        public const string SyncBlockIsHashCode = nameof(SyncBlockIsHashCode);
+        public const string SyncBlockIndexMask = nameof(SyncBlockIndexMask);
 
         public const string ArrayBoundsZero = nameof(ArrayBoundsZero);
         public const string CoreLib = nameof(CoreLib);

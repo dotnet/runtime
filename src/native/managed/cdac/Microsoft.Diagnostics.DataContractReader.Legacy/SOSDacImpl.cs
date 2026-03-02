@@ -3417,8 +3417,60 @@ public sealed unsafe partial class SOSDacImpl
         return HResults.S_OK;
     }
 
-    int ISOSDacInterface.GetSyncBlockCleanupData(ClrDataAddress addr, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetSyncBlockCleanupData(addr, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetSyncBlockCleanupData(ClrDataAddress addr, DacpSyncBlockCleanupData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (data == null)
+                throw new ArgumentException();
+            *data = default;
+
+            ISyncBlock syncBlockContract = _target.Contracts.SyncBlock;
+            TargetPointer syncBlockPtr;
+            if (addr == 0)
+            {
+                syncBlockPtr = syncBlockContract.GetSyncBlockFromCleanupList();
+            }
+            else
+            {
+                syncBlockPtr = addr.ToTargetPointer(_target);
+            }
+
+            if (syncBlockPtr != TargetPointer.Null)
+            {
+                data->SyncBlockPointer = syncBlockPtr.ToClrDataAddress(_target);
+                data->nextSyncBlock = syncBlockContract.GetNextSyncBlock(syncBlockPtr).ToClrDataAddress(_target);
+                if (syncBlockContract.GetBuiltInComData(syncBlockPtr, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf))
+                {
+                    data->blockRCW = rcw.ToClrDataAddress(_target);
+                    data->blockClassFactory = ccf.ToClrDataAddress(_target);
+                    data->blockCCW = ccw.ToClrDataAddress(_target);
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpSyncBlockCleanupData dataLocal;
+            int hrLocal = _legacyImpl.GetSyncBlockCleanupData(addr, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->SyncBlockPointer == dataLocal.SyncBlockPointer, $"cDAC: {data->SyncBlockPointer:x}, DAC: {dataLocal.SyncBlockPointer:x}");
+                Debug.Assert(data->nextSyncBlock == dataLocal.nextSyncBlock, $"cDAC: {data->nextSyncBlock:x}, DAC: {dataLocal.nextSyncBlock:x}");
+                Debug.Assert(data->blockRCW == dataLocal.blockRCW, $"cDAC: {data->blockRCW:x}, DAC: {dataLocal.blockRCW:x}");
+                Debug.Assert(data->blockClassFactory == dataLocal.blockClassFactory, $"cDAC: {data->blockClassFactory:x}, DAC: {dataLocal.blockClassFactory:x}");
+                Debug.Assert(data->blockCCW == dataLocal.blockCCW, $"cDAC: {data->blockCCW:x}, DAC: {dataLocal.blockCCW:x}");
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetSyncBlockData(uint number, DacpSyncBlockData* data)
     {
         int hr = HResults.S_OK;
@@ -3442,8 +3494,7 @@ public sealed unsafe partial class SOSDacImpl
                     if (syncBlock.GetSyncBlock(number) is TargetPointer syncBlockAddr && syncBlockAddr != TargetPointer.Null)
                     {
                         data->SyncBlockPointer = syncBlockAddr.ToClrDataAddress(_target);
-                        IObject objContract = _target.Contracts.Object;
-                        if (objContract.GetBuiltInComData(obj, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf))
+                        if (syncBlock.GetBuiltInComData(syncBlockAddr, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf))
                         {
                             data->COMFlags = (rcw & ~(_rcwMask)) != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasRCW : 0;
                             data->COMFlags |= ccw != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasCCW : 0;

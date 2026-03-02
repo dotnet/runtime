@@ -771,6 +771,7 @@ template<>
 struct cdac_data<SyncBlockCache>
 {
     static constexpr size_t FreeSyncTableIndex = offsetof(SyncBlockCache, m_FreeSyncTableIndex);
+    static constexpr size_t CleanupBlockList = offsetof(SyncBlockCache, m_pCleanupBlockList);
 };
 
 // See code:#SyncBlockOverView for more

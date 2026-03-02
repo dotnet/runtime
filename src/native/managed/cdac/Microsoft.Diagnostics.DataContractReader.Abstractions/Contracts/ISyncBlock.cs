@@ -13,6 +13,9 @@ public interface ISyncBlock : IContract
     uint GetSyncBlockCount() => throw new NotImplementedException();
     bool TryGetLockInfo(TargetPointer syncBlock, out uint owningThreadId, out uint recursion) => throw new NotImplementedException();
     uint GetAdditionalThreadCount(TargetPointer syncBlock) => throw new NotImplementedException();
+    TargetPointer GetSyncBlockFromCleanupList() => throw new NotImplementedException();
+    TargetPointer GetNextSyncBlock(TargetPointer syncBlock) => throw new NotImplementedException();
+    bool GetBuiltInComData(TargetPointer syncBlock, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf) => throw new NotImplementedException();
 }
 
 public readonly struct SyncBlock : ISyncBlock
