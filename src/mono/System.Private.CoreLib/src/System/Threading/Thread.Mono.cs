@@ -65,7 +65,7 @@ namespace System.Threading
         private StartHelper? _startHelper;
         internal ExecutionContext? _executionContext;
         internal SynchronizationContext? _synchronizationContext;
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+#if (TARGET_UNIX || TARGET_BROWSER || TARGET_WASI) && !FEATURE_SINGLE_THREADED
         internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
 #endif
 
@@ -139,10 +139,13 @@ namespace System.Threading
             }
         }
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+#pragma warning disable CA1822
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
+#pragma warning restore CA1822
         {
             get
             {
+#if !FEATURE_SINGLE_THREADED
                 return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
 
                 WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
@@ -150,6 +153,9 @@ namespace System.Threading
                     Interlocked.CompareExchange(ref _waitInfo, new WaitSubsystem.ThreadWaitInfo(this), null!);
                     return _waitInfo;
                 }
+#else
+                throw new PlatformNotSupportedException();
+#endif
             }
         }
 #endif
@@ -183,7 +189,7 @@ namespace System.Threading
 
         public void Interrupt()
         {
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI // TODO: https://github.com/dotnet/runtime/issues/49521
+#if (TARGET_UNIX || TARGET_BROWSER || TARGET_WASI) && !FEATURE_SINGLE_THREADED // TODO: https://github.com/dotnet/runtime/issues/49521
             WaitSubsystem.Interrupt(this);
 #endif
             InterruptInternal(this);
@@ -287,7 +293,7 @@ namespace System.Threading
 
         private static void OnThreadExiting(Thread thread)
         {
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+#if (TARGET_UNIX || TARGET_BROWSER || TARGET_WASI) && !FEATURE_SINGLE_THREADED
             thread.WaitInfo.OnThreadExiting();
 #endif
         }

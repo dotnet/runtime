@@ -435,7 +435,9 @@ namespace System.Threading
         public void Interrupt()
         {
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+#if !FEATURE_SINGLE_THREADED
             WaitSubsystem.Interrupt(this);
+#endif
 #else
             Interrupt(GetNativeHandle());
             GC.KeepAlive(this);
@@ -552,10 +554,13 @@ namespace System.Threading
         }
 
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+#pragma warning disable CA1822
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
+#pragma warning restore CA1822
         {
             get
             {
+#if !FEATURE_SINGLE_THREADED
                 return Volatile.Read(ref _waitInfo) ?? AllocateWaitInfo();
 
                 WaitSubsystem.ThreadWaitInfo AllocateWaitInfo()
@@ -563,6 +568,9 @@ namespace System.Threading
                     Interlocked.CompareExchange(ref _waitInfo, new WaitSubsystem.ThreadWaitInfo(this), null!);
                     return _waitInfo;
                 }
+#else
+                throw new PlatformNotSupportedException();
+#endif
             }
         }
 #endif
@@ -575,7 +583,7 @@ namespace System.Threading
             // so that any threads waiting on this thread to end will correctly see that it is stopped
             // when we set the join handle.
             _isDead = true;
-#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+#if (TARGET_UNIX || TARGET_BROWSER || TARGET_WASI) && !FEATURE_SINGLE_THREADED
             // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
             // the thread.
             _waitInfo?.OnThreadExiting();

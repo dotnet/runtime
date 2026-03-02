@@ -264,6 +264,24 @@ internal static class ObjectHeader
         return false;
     }
 
+#if FEATURE_SINGLE_THREADED
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool TryEnterInflatedFast(scoped ref MonoThreadsSync mon, int small_id)
+    {
+        uint old_status = SyncBlock.Status(ref mon);
+        if (MonitorStatus.GetOwner(old_status) == 0)
+        {
+            SyncBlock.Status(ref mon) = MonitorStatus.SetOwner(old_status, small_id);
+            return true;
+        }
+        if (MonitorStatus.GetOwner(old_status) == small_id)
+        {
+            SyncBlock.IncrementNest(ref mon);
+            return true;
+        }
+        return false;
+    }
+#else
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool TryEnterInflatedFast(scoped ref MonoThreadsSync mon, int small_id)
     {
@@ -292,9 +310,44 @@ internal static class ObjectHeader
             return false;
         }
     }
+#endif
 
     // returns false if we should fall back to the slow path
     // returns true if the lock was taken
+#if FEATURE_SINGLE_THREADED
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryEnterFast(object? o)
+    {
+        Debug.Assert(o != null);
+        ObjectHeaderOnStack h = ObjectHeaderOnStack.Create(ref o);
+        LockWord lw = GetLockWord(h);
+        if (!lw.IsInflated && lw.HasHash)
+            return false;
+        int owner = Thread.CurrentThread.GetSmallId();
+        if (lw.IsFree)
+        {
+            h.Header.synchronization = LockWord.NewFlat(owner).AsIntPtr;
+            return true;
+        }
+        else if (lw.IsInflated)
+        {
+            return TryEnterInflatedFast(ref lw.GetInflatedLock(), owner);
+        }
+        else if (lw.IsFlat)
+        {
+            if (lw.GetOwner() == owner)
+            {
+                if (lw.IsNestMax)
+                    return false;
+                h.Header.synchronization = lw.IncrementNest().AsIntPtr;
+                return true;
+            }
+            return false;
+        }
+        Debug.Assert(lw.HasHash);
+        return false;
+    }
+#else
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryEnterFast(object? o)
     {
@@ -345,6 +398,7 @@ internal static class ObjectHeader
         Debug.Assert(lw.HasHash);
         return false;
     }
+#endif
 
     // true if obj is owned by the current thread
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -381,6 +435,21 @@ internal static class ObjectHeader
         return false;
     }
 
+#if FEATURE_SINGLE_THREADED
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool TryExitInflated(scoped ref MonoThreadsSync mon)
+    {
+        if (SyncBlock.TryDecrementNest(ref mon))
+            return true;
+
+        ref uint status = ref SyncBlock.Status(ref mon);
+        uint old_status = status;
+        if (MonitorStatus.HaveWaiters(old_status))
+            return false;
+        status = MonitorStatus.SetOwner(old_status, 0);
+        return true;
+    }
+#else
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool TryExitInflated(scoped ref MonoThreadsSync mon)
     {
@@ -400,7 +469,22 @@ internal static class ObjectHeader
         else
             return false; // we need to retry, but maybe a waiter arrived, fall back to the slow path
     }
+#endif
 
+#if FEATURE_SINGLE_THREADED
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool TryExitFlat(ObjectHeaderOnStack h, LockWord lw)
+    {
+        Debug.Assert(!lw.IsInflated);
+        LockWord nlw;
+        if (lw.IsNested)
+            nlw = lw.DecrementNest();
+        else
+            nlw = default;
+        h.Header.synchronization = nlw.AsIntPtr;
+        return true;
+    }
+#else
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool TryExitFlat(ObjectHeaderOnStack h, LockWord lw)
     {
@@ -419,6 +503,7 @@ internal static class ObjectHeader
 
         return false;
     }
+#endif
 
 
     // checks that obj is locked by the current thread

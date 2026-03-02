@@ -10,6 +10,26 @@ namespace System.Threading
 {
     public sealed partial class Mutex
     {
+#if FEATURE_SINGLE_THREADED
+#pragma warning disable CA1822, IDE0060
+        private void CreateMutexCore(bool initiallyOwned) => throw new PlatformNotSupportedException();
+
+        private void CreateMutexCore(
+            bool initiallyOwned,
+            string? name,
+            NamedWaitHandleOptionsInternal options,
+            out bool createdNew) =>
+            throw new PlatformNotSupportedException();
+
+        private static OpenExistingResult OpenExistingWorker(
+            string name,
+            NamedWaitHandleOptionsInternal options,
+            out Mutex? result) =>
+            throw new PlatformNotSupportedException();
+
+        public void ReleaseMutex() => throw new PlatformNotSupportedException();
+#pragma warning restore CA1822, IDE0060
+#else
         private void CreateMutexCore(bool initiallyOwned) => SafeWaitHandle = WaitSubsystem.NewMutex(initiallyOwned);
 
         private void CreateMutexCore(
@@ -49,22 +69,6 @@ namespace System.Threading
             return status;
         }
 
-        private static string BuildNameForOptions(string name, NamedWaitHandleOptionsInternal options)
-        {
-            if (options.WasSpecified)
-            {
-                name = options.GetNameWithSessionPrefix(name);
-            }
-
-            if (name.StartsWith(NamedWaitHandleOptionsInternal.CurrentSessionPrefix) &&
-                name.Length > NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length)
-            {
-                name = name.Substring(NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length);
-            }
-
-            return name;
-        }
-
         public void ReleaseMutex()
         {
             // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
@@ -84,6 +88,23 @@ namespace System.Threading
             {
                 waitHandle.DangerousRelease();
             }
+        }
+#endif
+
+        private static string BuildNameForOptions(string name, NamedWaitHandleOptionsInternal options)
+        {
+            if (options.WasSpecified)
+            {
+                name = options.GetNameWithSessionPrefix(name);
+            }
+
+            if (name.StartsWith(NamedWaitHandleOptionsInternal.CurrentSessionPrefix) &&
+                name.Length > NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length)
+            {
+                name = name.Substring(NamedWaitHandleOptionsInternal.CurrentSessionPrefix.Length);
+            }
+
+            return name;
         }
     }
 }

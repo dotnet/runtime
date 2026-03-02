@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !FEATURE_SINGLE_THREADED
+
 using System.Diagnostics;
 using System.IO;
 
@@ -780,3 +782,16 @@ namespace System.Threading
         }
     }
 }
+
+#else // FEATURE_SINGLE_THREADED
+
+namespace System.Threading
+{
+    // Minimal stub to keep WaitSubsystem.ThreadWaitInfo type available for Thread field layout.
+    internal static partial class WaitSubsystem
+    {
+        public sealed class ThreadWaitInfo { }
+    }
+}
+
+#endif // !FEATURE_SINGLE_THREADED

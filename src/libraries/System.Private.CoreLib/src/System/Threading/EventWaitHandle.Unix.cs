@@ -10,6 +10,35 @@ namespace System.Threading
 {
     public partial class EventWaitHandle
     {
+#if FEATURE_SINGLE_THREADED
+#pragma warning disable CA1822, IDE0060
+        private void CreateEventCore(bool initialState, EventResetMode mode)
+        {
+            ValidateMode(mode);
+            throw new PlatformNotSupportedException();
+        }
+
+        private void CreateEventCore(
+            bool initialState,
+            EventResetMode mode,
+            string? name,
+            NamedWaitHandleOptionsInternal options,
+            out bool createdNew) =>
+            throw new PlatformNotSupportedException();
+
+        private static OpenExistingResult OpenExistingWorker(
+            string name,
+            NamedWaitHandleOptionsInternal options,
+            out EventWaitHandle? result) =>
+            throw new PlatformNotSupportedException();
+
+        public bool Reset() => throw new PlatformNotSupportedException();
+
+        public bool Set() => throw new PlatformNotSupportedException();
+
+        internal static bool Set(SafeWaitHandle waitHandle) => throw new PlatformNotSupportedException();
+#pragma warning restore CA1822, IDE0060
+#else
         private void CreateEventCore(bool initialState, EventResetMode mode)
         {
             ValidateMode(mode);
@@ -85,6 +114,7 @@ namespace System.Threading
                 waitHandle.DangerousRelease();
             }
         }
+#endif
 
         private SafeWaitHandle ValidateHandle()
         {
