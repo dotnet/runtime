@@ -3,6 +3,7 @@ Wasm.Build.Tests.EnvVariablesTests
 Wasm.Build.Tests.FilesToIncludeInFileSystemTests
 Wasm.Build.Tests.HttpTests
 Wasm.Build.Tests.LazyLoadingTests
+Wasm.Build.Tests.MaxParallelDownloadsTests
 Wasm.Build.Tests.ModuleConfigTests
 Wasm.Build.Tests.PreloadingTests
 Wasm.Build.Tests.RebuildTests
