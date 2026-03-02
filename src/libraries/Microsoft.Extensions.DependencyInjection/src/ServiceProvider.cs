@@ -175,12 +175,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <remarks>
         /// Prefer calling <see cref="DisposeAsync"/> over this method. If any resolved service implements
         /// <see cref="IAsyncDisposable"/> but not <see cref="IDisposable"/>, this method throws an
-        /// <see cref="InvalidOperationException"/> (or an <see cref="AggregateException"/> if multiple such
-        /// services are resolved). Use <see cref="DisposeAsync"/> to properly handle all disposable services,
-        /// or explicitly perform sync-over-async on the caller side if synchronous disposal is required.
+        /// <see cref="InvalidOperationException"/>. Use <see cref="DisposeAsync"/> to properly handle all
+        /// disposable services, or explicitly perform sync-over-async on the caller side if synchronous
+        /// disposal is required.
         /// </remarks>
-        /// <exception cref="InvalidOperationException">A resolved service implements <see cref="IAsyncDisposable"/> but not <see cref="IDisposable"/>.</exception>
-        /// <exception cref="AggregateException">Multiple resolved services implement <see cref="IAsyncDisposable"/> but not <see cref="IDisposable"/>.</exception>
         public void Dispose()
         {
             DisposeCore();
@@ -190,10 +188,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Asynchronously disposes the service provider and all resolved services that implement <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/>.
         /// </summary>
-        /// <remarks>
-        /// This is the preferred disposal method. Unlike <see cref="Dispose"/>, this method handles services that implement
-        /// only <see cref="IAsyncDisposable"/> without throwing.
-        /// </remarks>
         /// <returns>A value task that represents the asynchronous operation.</returns>
         public ValueTask DisposeAsync()
         {

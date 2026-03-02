@@ -19,8 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// If the scope implementation also implements <see cref="System.IAsyncDisposable"/>, prefer calling
     /// <see cref="System.IAsyncDisposable.DisposeAsync"/> over <see cref="System.IDisposable.Dispose"/>. If
     /// any resolved service implements <see cref="System.IAsyncDisposable"/> but not <see cref="System.IDisposable"/>,
-    /// calling <see cref="System.IDisposable.Dispose"/> will throw an <see cref="System.InvalidOperationException"/>
-    /// (or an <see cref="System.AggregateException"/> if multiple such services are resolved).
+    /// calling <see cref="System.IDisposable.Dispose"/> will throw an <see cref="System.InvalidOperationException"/>.
     /// Consider using <see cref="AsyncServiceScope"/> to ensure <see cref="System.IAsyncDisposable.DisposeAsync"/> is always called.
     /// </para>
     /// </remarks>
