@@ -13,6 +13,7 @@
 .EXAMPLE
     .\Get-PrTriageData.ps1 -Label "area-CodeGen-coreclr"
 #>
+[CmdletBinding()]
 param(
     [string]$Label,
     [string]$Author,
@@ -58,9 +59,9 @@ try {
             $areaOwners[$areaName] = $people
         }
     }
-    Write-Host "Loaded $($areaOwners.Count) area owners from docs/area-owners.md" -ForegroundColor Cyan
+    Write-Verbose "Loaded $($areaOwners.Count) area owners from docs/area-owners.md"
 } catch {
-    Write-Host "Warning: could not fetch area-owners.md, using empty owner table" -ForegroundColor Yellow
+    Write-Verbose "Warning: could not fetch area-owners.md, using empty owner table"
 }
 
 $communityTriagers = @("a74nh","am11","clamp03","Clockwork-Muse","filipnavara",
@@ -68,7 +69,7 @@ $communityTriagers = @("a74nh","am11","clamp03","Clockwork-Muse","filipnavara",
     "SingleAccretion","teo-tsirpanis","tmds","vcsjones","xoofx")
 
 # --- Step 1: List PRs ---
-Write-Host "Fetching PR list..." -ForegroundColor Cyan
+Write-Verbose "Fetching PR list..."
 $listArgs = @("pr","list","--repo",$Repo,"--state","open","--limit",$Limit,
     "--json","number,title,author,labels,mergeable,isDraft,createdAt,updatedAt,changedFiles,additions,deletions,assignees")
 if ($Label) { $listArgs += @("--label",$Label) }
@@ -125,10 +126,10 @@ if ($PrNumber) {
 
 $excludedDrafts = if ($IncludeDrafts) { 0 } else { $drafts.Count }
 $excludedBots = $bots.Count
-Write-Host "Scanned $($prsRaw.Count) -> $($candidates.Count) candidates ($excludedDrafts drafts, $excludedBots bots, $($needsAuthor.Count) needs-author, $($stale.Count) stale excluded)" -ForegroundColor Cyan
+Write-Verbose "Scanned $($prsRaw.Count) -> $($candidates.Count) candidates ($excludedDrafts drafts, $excludedBots bots, $($needsAuthor.Count) needs-author, $($stale.Count) stale excluded)"
 
 if ($candidates.Count -eq 0) {
-    Write-Host "No candidates to analyze." -ForegroundColor Yellow
+    Write-Verbose "No candidates to analyze."
     @{ scanned = $prsRaw.Count; analyzed = 0; prs = @() } | ConvertTo-Json -Depth 5
     return
 }
@@ -148,7 +149,7 @@ foreach ($pr in $candidates) {
 }
 if ($batch.Count -gt 0) { [void]$batches.Add([long[]]$batch.ToArray()) }
 
-Write-Host "Fetching details in $($batches.Count) GraphQL batch(es)..." -ForegroundColor Cyan
+Write-Verbose "Fetching details in $($batches.Count) GraphQL batch(es)..."
 foreach ($b in $batches) {
     $parts = @()
     for ($i = 0; $i -lt $b.Count; $i++) {
@@ -315,7 +316,7 @@ foreach ($pr in $candidates) {
                        else { 0.0 }
 
     # Composite: weighted sum normalized to 0-10 scale
-    $rawMax = 20.5
+    $rawMax = 20.0
     $rawScore = ($ciScore * 3) + ($conflictScore * 3) + ($maintScore * 3) +
         ($feedbackScore * 2) + ($approvalScore * 2) + ($stalenessScore * 1.5) +
         ($discussionScore * 1.5) +
@@ -430,7 +431,7 @@ foreach ($pr in $candidates) {
     $results += [PSCustomObject]@{
         number = $n
         title = $pr.title.Substring(0, [Math]::Min(70, $pr.title.Length))
-        author = if ($isCommunity) { "🌐$($pr.author.login)" } else { $pr.author.login }
+        author = $pr.author.login
         score = $composite
         ci = $baConclusion
         ci_detail = "$passed/$failed/$running"
@@ -532,6 +533,7 @@ if ($OutputCsv) {
     $lines = @($header)
     foreach ($r in $results) {
         $t = ($r.title -replace "`t"," ").Substring(0, [Math]::Min(70, $r.title.Length))
+        if ($t.Length -gt 0 -and $t[0] -in '=','+','-','@') { $t = "'$t" }
         $lines += "$($r.number)`t$t`t$($r.author)`t$($r.score)`t$($r.ci)`t$($r.ci_detail)`t$($r.unresolved_threads)`t$($r.total_threads)`t$($r.total_comments)`t$($r.distinct_commenters)`t$($r.mergeable)`t$($r.approval_count)`t$(if ($r.is_community) {1} else {0})`t$($r.age_days)`t$($r.days_since_update)`t$($r.changed_files)`t$($r.lines_changed)`t$($r.next_action)`t$($r.who)`t$($r.blockers)`t$($r.why)"
     }
     $lines -join "`n"
