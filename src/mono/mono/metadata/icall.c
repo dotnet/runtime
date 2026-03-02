@@ -6228,7 +6228,7 @@ ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHa
 
 	if (!MONO_HANDLE_IS_NULL (message)) {
 		char *msg = mono_string_handle_to_utf8 (message, error);
-		g_warning_dont_trim (msg);
+		g_warning_dont_trim ("%s", msg);
 		g_free (msg);
 	}
 

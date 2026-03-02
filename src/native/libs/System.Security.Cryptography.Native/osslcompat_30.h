@@ -57,7 +57,11 @@ struct ossl_param_st
 
 void ERR_new(void);
 void ERR_set_debug(const char *file, int line, const char *func);
-void ERR_set_error(int lib, int reason, const char *fmt, ...);
+void ERR_set_error(int lib, int reason, const char *fmt, ...)
+#ifdef __GNUC__
+    __attribute__ ((__format__(__printf__, 3, 4)))
+#endif
+;
 int EVP_CIPHER_get_nid(const EVP_CIPHER *e);
 
 EVP_KDF* EVP_KDF_fetch(OSSL_LIB_CTX *libctx, const char *algorithm, const char *properties);
