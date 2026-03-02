@@ -158,6 +158,9 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
                 yield break;
 
+            if (realCodeHeader.EHInfo == TargetPointer.Null)
+                yield break;
+
             // number of EH clauses is stored in a pointer sized integer just before the EHInfo array
             TargetNUInt ehClauseCount = Target.ReadNUInt(realCodeHeader.EHInfo - (uint)Target.PointerSize);
             uint ehClauseSize = Target.GetTypeInfo(DataType.EEILExceptionClause).Size ?? throw new InvalidOperationException("EEILExceptionClause size is not known");

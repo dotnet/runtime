@@ -321,7 +321,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     bool IExecutionManager.IsFunclet(CodeBlockHandle codeInfoHandle)
     {
-        return ((IExecutionManager)this).GetStartAddress(codeInfoHandle) ==
+        return ((IExecutionManager)this).GetStartAddress(codeInfoHandle) !=
                ((IExecutionManager)this).GetFuncletStartAddress(codeInfoHandle);
     }
 
