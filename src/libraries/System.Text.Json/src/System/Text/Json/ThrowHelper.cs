@@ -237,7 +237,7 @@ namespace System.Text.Json
             currentDepth &= JsonConstants.RemoveFlagsBitMask;
             if (currentDepth != 0)
             {
-                return GetInvalidOperationException(SR.Format(SR.ZeroDepthAtEnd, currentDepth));
+                return GetInvalidOperationException(SR.ZeroDepthAtEnd);
             }
             else
             {

@@ -627,6 +627,59 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void SaveInterfaceOverrideWithCustomModifier()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyName name = new("TestAssembly");
+                PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(name);
+                ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
+
+                TypeBuilder tb = mb.DefineType("IMethodWithModifiersImpl", TypeAttributes.Class | TypeAttributes.Public);
+                tb.AddInterfaceImplementation(typeof(IMethodWithModifiers));
+                MethodInfo mRun = typeof(IMethodWithModifiers).GetMethod(nameof(IMethodWithModifiers.Run));
+                MethodBuilder m = tb.DefineMethod("IMethodWithModifiers.Run",
+                    MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
+                    CallingConventions.Standard,
+                    returnType: mRun.ReturnParameter.GetModifiedParameterType(),
+                    returnTypeRequiredCustomModifiers: null,
+                    returnTypeOptionalCustomModifiers: null,
+                    // The first parameter will have modreqs specified from parameterTypeRequiredCustomModifiers, and the second from parameterTypes.
+                    parameterTypes: mRun.GetParameters().Select((x, i) => i == 0 ? x.ParameterType : x.GetModifiedParameterType()).ToArray(),
+                    parameterTypeRequiredCustomModifiers: [[typeof(InAttribute)], null],
+                    parameterTypeOptionalCustomModifiers: null);
+                tb.DefineMethodOverride(m, mRun);
+                ParameterBuilder pb = m.DefineParameter(1, ParameterAttributes.In, "x");
+                pb.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: []), []));
+                m.GetILGenerator().Emit(OpCodes.Ret);
+                MethodInfo mRun2 = typeof(IMethodWithModifiers).GetMethod(nameof(IMethodWithModifiers.Run2));
+                MethodBuilder m2 = tb.DefineMethod("IMethodWithModifiers.Run2",
+                    MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
+                    CallingConventions.Standard,
+                    returnType: mRun2.ReturnParameter.GetModifiedParameterType(),
+                    returnTypeRequiredCustomModifiers: null,
+                    returnTypeOptionalCustomModifiers: null,
+                    parameterTypes: mRun2.GetParameters().Select(x => x.GetModifiedParameterType()).ToArray(),
+                    // Test that passing null gets modreqs from the parameter types.
+                    parameterTypeRequiredCustomModifiers: null,
+                    parameterTypeOptionalCustomModifiers: null);
+                tb.DefineMethodOverride(m2, mRun2);
+                ParameterBuilder pb2 = m2.DefineParameter(1, ParameterAttributes.In, "x");
+                pb2.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: []), []));
+                m2.GetILGenerator().Emit(OpCodes.Ret);
+
+                tb.CreateType();
+                assemblyBuilder.Save(file.Path);
+
+                TestAssemblyLoadContext context = new();
+                // Load the assembly and check that loading the type does not throw.
+                Assembly loadedAsm = context.LoadFromAssemblyPath(file.Path);
+                _ = loadedAsm.GetType(tb.Name, throwOnError: true);
+                context.Unload();
+            }
+        }
+
+        [Fact]
         public void SaveMultipleGenericTypeParametersToEnsureSortingWorks()
         {
             using (TempFile file = TempFile.Create())
@@ -870,7 +923,7 @@ namespace System.Reflection.Emit.Tests
             // public unsafe class Container
             // {
             //     public static delegate*<int, int, int> Method;
-            // 
+            //
             //     public static int Add(int a, int b) => a + b;
             //     public static void Init() => Method = &Add;
             // }
@@ -981,6 +1034,12 @@ namespace System.Reflection.Emit.Tests
     public interface IOneMethod
     {
         object Func(string a, short b);
+    }
+
+    public interface IMethodWithModifiers
+    {
+        unsafe void Run(in int x, delegate*<in long, void> f);
+        void Run2(in int x);
     }
 
     public struct EmptyStruct

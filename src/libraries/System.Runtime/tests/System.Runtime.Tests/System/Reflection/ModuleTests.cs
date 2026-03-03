@@ -92,7 +92,11 @@ namespace System.Reflection.Tests
             // Browser will include the path (/), so strip it
             if (PlatformDetection.IsBrowser && loc.Length > 1)
             {
-                loc = loc.Substring(1);
+                const string browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
+                if (loc.StartsWith(browserVirtualAppBase, StringComparison.Ordinal))
+                {
+                    loc = loc.Substring(browserVirtualAppBase.Length);
+                }
             }
 
             Assert.Equal(loc, Module.FullyQualifiedName);

@@ -177,6 +177,60 @@ One interesting thing to point out is that the coupling of the compiler with the
 
 Example of such alternative base class library is [Test.CoreLib](../../../../src/coreclr/nativeaot/Test.CoreLib/). The `Test.CoreLib` library provides a very minimal API surface. This, coupled with the fact that it requires almost no initialization, makes it a great assistant in bringing NativeAOT to new platforms.
 
+## Compiling generics
+
+### Shared generics and canonicalization
+
+When a program uses the same generic method or type with multiple reference type arguments (e.g. `List<string>` and `List<object>`), ILC compiles a single *canonical* form of the code shared across all compatible instantiations. All reference types share a canonical representation known as `__Canon`. For instance, `List<string>` and `List<object>` both use the code compiled for `List<__Canon>`.
+
+This sharing only applies to reference type instantiations. Value type instantiations (e.g. `List<int>`) require separate native code bodies because differences such as size affect code generation. When type arguments are themselves generic types with mixed value/reference components, the canonical form reflects this. For example, `List<KeyValuePair<int, string>>` canonicalizes to `List<KeyValuePair<int, __Canon>>`.
+
+When the dependency graph includes a method like `List<string>.Add`, ILC adds a dependency on the canonical method body `List<__Canon>.Add` and generates a *[generic dictionary](shared-generics.md)* for the `List<string>` instantiation. When ILC invokes RyuJIT to compile a method, it passes the canonical form (e.g. `List<__Canon>.Add`).
+
+### Runtime-determined types
+
+Neither the canonical form nor the uninstantiated form of a type alone is sufficient for dependency analysis of shared generic code. The canonical form loses parameter identity (both `T` and `U` become `__Canon`), while the uninstantiated form with signature variables (`!!0`, `!!1`) lacks concrete type information needed for operations like `sizeof(T)`.
+
+To solve this, ILC uses *runtime-determined types* (`RuntimeDeterminedType`) to represent types that will only be resolved at runtime. A `RuntimeDeterminedType` captures both the canonical type and the generic parameter it originated from: internally it holds a reference to both the `DefType` (e.g. `__Canon`) and the `GenericParameterDesc` (e.g. `T` from `Foo<T>`).
+
+For example, when analyzing `Foo<T>.Method()` that references `List<T>`, ILC represents this as `List<T_System.__Canon>` where the type argument is a `RuntimeDeterminedType` pairing `__Canon` with `T`.
+
+### Generic virtual methods
+
+Generic virtual methods (GVMs) require resolving both the method pointer and the generic dictionary at runtime, since the target implementation depends on the object's runtime type. Consider:
+
+```csharp
+abstract class Base
+{
+    public abstract void Method<T>();
+}
+
+class Derived : Base
+{
+    public override void Method<T>() { }
+}
+```
+
+At a call site like `baseRef.Method<string>()`, the runtime needs both the runtime type of `baseRef`, and the type argument info, to determine which implementation to call.
+
+ILC handles GVMs using *dynamic dependencies* in the dependency graph. When the compiler sees a GVM call, it creates a `GVMDependenciesNode` for the canonical form of the called method. This node has dynamic dependencies - it observes which types are constructed in the program and, for each type that could potentially override the GVM, ensures the appropriate implementations are compiled.
+
+For example, if `GVMDependenciesNode` for `Base.Method<__Canon>` sees that `Derived` is constructed, it will add dependencies on `Derived.Method<__Canon>` and ensure the mapping from the base slot to the derived implementation is recorded. At runtime, a GVM table allows lookup of the correct implementation given the object's type and the method's instantiation.
+
+This is one of the few places in ILC where dynamic dependencies are used, because the set of possible GVM implementations cannot be determined by examining any single node in isolation.
+
+### Shadow method nodes
+
+"Shadow" method nodes represent partially or fully instantiated generic methods for the purposes of dependency tracking only. These nodes on their own do not produce code.
+
+Code generation is always done for the canonical form of a method (such as `List<__Canon>.Add`). However, the compiler may need to produce instantiation-specific dependencies if there is a call to `List<string>.Add` or `List<object>.Add`. Shadow method nodes represent these specific method instantiations for dependency tracking purposes even though they don't contribute separate code.
+
+Both `ShadowConcreteMethodNode` and `ShadowNonConcreteMethodNode` extend `ShadowMethodNode`, which works by examining the canonical method's dependencies. Dependencies that implement `INodeWithRuntimeDeterminedDependencies` are *instantiated* with the shadow node's type/method arguments, converting abstract dependencies (e.g. "MethodTable for `List<T>`") into concrete ones (e.g. "MethodTable for `List<string>`"). This allows shadow nodes to contribute dependencies required for generic dictionaries to the object file. The generic dictionary nodes cannot report their dependencies directly, because the compiler doesn't know all of the dependencies until it has discovered all methods using the same dictionary. The shadow methods allow growing the graph incrementally with each compiled method.
+
+`ShadowConcreteMethodNode` represents fully instantiated methods like `List<string>.Add` for dependency analysis.
+
+`ShadowNonConcreteMethodNode` represents partially instantiated methods that are still shared. For example, `Foo<string>.Bar<__Canon>()` is backed by `Foo<__Canon>.Bar<__Canon>()`, but knows that `T` is `string`. This allows resolving dependencies that only involve the type's type parameters (e.g. `typeof(T)`, `new T[]`) even when the method's type parameters remain open.
+
 ## Compiler-generated method bodies
 Besides compiling the code provided by the user in the form of input assemblies, the compiler also needs to compile various helpers generated within the compiler. The helpers are used to lower some of the higher-level .NET constructs into concepts that the underlying code generation backend understands. These helpers are emitted as IL code on the fly, without being physically backed by IL in an assembly on disk. Having the higher level concepts expressed as regular IL helps avoid having to implement the higher-level concept in each code generation backend (we only must do it once because IL is the thing all backends understand).
 

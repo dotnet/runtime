@@ -395,7 +395,7 @@ private:
                 // If we end up swapping type we may need to retype the tree:
                 if (retType != newType)
                 {
-                    if ((retType == TYP_BYREF) && tree->OperIs(GT_IND))
+                    if ((retType == TYP_BYREF) && inlineCandidate->OperIs(GT_IND))
                     {
                         // - in an RVA static if we've reinterpreted it as a byref;
                         assert(newType == TYP_I_IMPL);
@@ -498,7 +498,7 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // AssignStructInlineeToVar: Store the struct inlinee to a temp local.
+    // StoreStructInlineeToVar: Store the struct inlinee to a temp local.
     //
     // Arguments:
     //    inlinee   - The inlinee of the RET_EXPR node
@@ -605,7 +605,7 @@ private:
 
                 CORINFO_METHOD_HANDLE  method                 = call->gtLateDevirtualizationInfo->methodHnd;
                 CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
-                InlineContext*         inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
+                InlineContext*         inlinersContext        = call->gtInlineContext;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
                 const bool             explicitTailCall       = call->IsTailPrefixedCall();
@@ -640,7 +640,8 @@ private:
                         // we can inline it directly without creating a RET_EXPR.
                         if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
-                            Statement* stmt = m_compiler->gtNewStmt(call);
+                            DebugInfo  di(call->gtInlineContext, call->gtLateDevirtualizationInfo->ilLocation);
+                            Statement* stmt = m_compiler->gtNewStmt(call, di);
                             m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
                             if (m_firstNewStmt == nullptr)
                             {
@@ -1214,7 +1215,7 @@ Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWal
     GenTree* tree = *pTree;
     if (tree->OperIs(GT_CALL))
     {
-        Compiler*    compiler = data->compiler;
+        Compiler*    compiler = data->m_compiler;
         Statement*   stmt     = (Statement*)data->pCallbackData;
         GenTreeCall* call     = tree->AsCall();
 
@@ -1480,7 +1481,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // The inlining attempt cannot be failed starting from this point.
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    // We've successfully obtain the list of inlinee's basic blocks.
+    // We've successfully obtained the list of inlinee's basic blocks.
     // Let's insert it to inliner's basic block list.
     fgInsertInlineeBlocks(&inlineInfo);
 
@@ -1534,7 +1535,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     Statement*   iciStmt  = pInlineInfo->iciStmt;
     BasicBlock*  iciBlock = pInlineInfo->iciBlock;
 
-    noway_assert(iciBlock->bbStmtList != nullptr);
+    noway_assert(iciBlock->firstStmt() != nullptr);
     noway_assert(iciStmt->GetRootNode() != nullptr);
     assert(iciStmt->GetRootNode() == iciCall);
     noway_assert(iciCall->OperIs(GT_CALL));
@@ -1582,7 +1583,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         if (InlineeCompiler->fgFirstBB->KindIs(BBJ_RETURN))
         {
             // Inlinee contains just one BB. So just insert its statement list to topBlock.
-            if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
+            if (InlineeCompiler->fgFirstBB->firstStmt() != nullptr)
             {
                 JITDUMP("\nInserting inlinee code into " FMT_BB "\n", iciBlock->bbNum);
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
@@ -1648,7 +1649,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         bottomBlock->RemoveFlags(BBF_DONT_REMOVE);
 
         // If the inlinee has EH, merge the EH tables, and figure out how much of
-        // a shift we need to make in the inlinee blocks EH indicies.
+        // a shift we need to make in the inlinee blocks EH indices.
         //
         unsigned const inlineeRegionCount = InlineeCompiler->compHndBBtabCount;
         const bool     inlineeHasEH       = inlineeRegionCount > 0;
@@ -1738,7 +1739,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             //
             // We just need to add in and fix up the new entries from the inlinee.
             //
-            // Fetch the new enclosing try/handler table indicies.
+            // Fetch the new enclosing try/handler table indices.
             //
             const unsigned enclosingTryIndex =
                 iciBlock->hasTryIndex() ? iciBlock->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
@@ -1773,7 +1774,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             }
         }
 
-        // Fetch the new enclosing try/handler indicies for blocks.
+        // Fetch the new enclosing try/handler indices for blocks.
         // Note these are represented differently than the EH table indices.
         //
         const unsigned blockEnclosingTryIndex = iciBlock->hasTryIndex() ? iciBlock->getTryIndex() + 1 : 0;
@@ -1926,7 +1927,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     else if (InlineeCompiler->fgPgoFailReason != nullptr)
     {
         // Single block inlinees may not have probes
-        // when we've ensabled minimal profiling (which
+        // when we've enabled minimal profiling (which
         // is now the default).
         //
         if (InlineeCompiler->fgBBcount == 1)
@@ -2033,12 +2034,16 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     // Note that if the root method needs GS cookie then this has already been taken care of.
     if (!getNeedsGSSecurityCookie() && InlineeCompiler->getNeedsGSSecurityCookie())
     {
-        setNeedsGSSecurityCookie();
-        const unsigned dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
-        LclVarDsc*     gsCookieDummy = lvaGetDesc(dummy);
-        gsCookieDummy->lvType        = TYP_INT;
-        gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
-        lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        bool canHaveCookie = setNeedsGSSecurityCookie();
+
+        if (canHaveCookie)
+        {
+            const unsigned dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
+            LclVarDsc*     gsCookieDummy = lvaGetDesc(dummy);
+            gsCookieDummy->lvType        = TYP_INT;
+            gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
+            lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        }
     }
 
     //
@@ -2262,7 +2267,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     // The only reason we move it here is for calling "impInlineFetchArg(0,..." to reserve a temp
     // for the "this" pointer.
     // Note: Here we no longer do the optimization that was done by thisDereferencedFirst in the old inliner.
-    // However the assetionProp logic will remove any unnecessary null checks that we may have added
+    // However the assertionProp logic will remove any unnecessary null checks that we may have added
     //
     GenTree* nullcheck = nullptr;
 

@@ -2114,7 +2114,7 @@
     }
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
         string('Depends on implicit tailcalls to be performed')
-        int32(0x1E) // AnyJitStress
+      int32(0x11E) // AnyJitOptimizationStress
     }
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnMonoAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
         string('Depends on RyuJIT-specific tail-call expectations')
