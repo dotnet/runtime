@@ -119,31 +119,4 @@ public class BuiltInCOMDumpTests : DumpTestBase
                 $"Expected positive ref count for CCW at 0x{ccwPtr:X}, got {refCount}");
         }
     }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    [SkipOnOS(IncludeOnly = "windows", Reason = "BuiltInCOM contract is only available on Windows")]
-    public void BuiltInCOM_RCWCleanupList_HasEntries(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        IBuiltInCOM contract = Target.Contracts.BuiltInCOM;
-        Assert.NotNull(contract);
-
-        List<RCWCleanupInfo> items = contract.GetRCWCleanupList(TargetPointer.Null).ToList();
-
-        // The STA thread created Shell.Link COM objects with eager cleanup disabled,
-        // so the cleanup list must be non-empty.
-        Assert.NotEmpty(items);
-
-        foreach (RCWCleanupInfo info in items)
-        {
-            // Every cleanup entry must have a valid RCW address.
-            Assert.NotEqual(TargetPointer.Null, info.RCW);
-
-            // Shell.Link is an STA-affiliated, non-free-threaded COM object,
-            // so the STA thread pointer must be set and IsFreeThreaded must be false.
-            Assert.False(info.IsFreeThreaded);
-            Assert.NotEqual(TargetPointer.Null, info.STAThread);
-        }
-    }
 }

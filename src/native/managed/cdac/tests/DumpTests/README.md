@@ -36,6 +36,7 @@ features and then calls `Environment.FailFast()` to produce a crash dump.
 | VarargPInvoke | Vararg P/Invoke via __arglist (sprintf) | Full |
 | SyncBlock | Sync block locks | Full |
 | CCWInterfaces | COM callable wrappers (CCW) on Windows | Full |
+| RCWCleanupList | STA-context RCW entries in g_pRCWCleanupList on Windows | Full |
 
 The dump type is configured per-debuggee via the `DumpTypes` property in each debuggee's
 `.csproj` (default: `Heap`, set in `Debuggees/Directory.Build.props`). Debuggees that
@@ -60,6 +61,7 @@ use. Tests are `[ConditionalTheory]` methods parameterized by `TestConfiguration
 | VarargPInvokeDumpTests | StackWalk + RTS | VarargPInvoke |
 | SyncBlockDumpTests | SyncBlock | SyncBlock |
 | BuiltInCOMDumpTests | BuiltInCOM | CCWInterfaces |
+| RCWCleanupListDumpTests | BuiltInCOM | RCWCleanupList |
 
 ### Runtime Versions
 
