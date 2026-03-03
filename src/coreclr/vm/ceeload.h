@@ -1731,6 +1731,7 @@ struct cdac_data<Module>
 #endif // FEATURE_CODE_VERSIONING
     static constexpr size_t DynamicILBlobTable = offsetof(Module, m_debuggerSpecificData.m_pDynamicILBlobTable);
     static constexpr size_t DomainAssembly = offsetof(Module, m_pDomainAssembly);
+    static constexpr size_t SimpleName = offsetof(Module, m_pSimpleName);
 };
 
 //

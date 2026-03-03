@@ -222,6 +222,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToILCodeVersioningStateMap, cdac_d
 #endif // FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicILBlobTable, cdac_data<Module>::DynamicILBlobTable)
 CDAC_TYPE_FIELD(Module, /*pointer*/, DomainAssembly, cdac_data<Module>::DomainAssembly)
+CDAC_TYPE_FIELD(Module, /*pointer*/, SimpleName, cdac_data<Module>::SimpleName)
 CDAC_TYPE_END(Module)
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)

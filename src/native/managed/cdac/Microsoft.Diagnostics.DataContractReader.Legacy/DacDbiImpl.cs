@@ -132,7 +132,12 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return StringHolderAssignCopy(pStrName, name);
     }
 
-    public int GetModuleSimpleName(ulong vmModule, nint pStrFilename) => _legacy is not null ? _legacy.GetModuleSimpleName(vmModule, pStrFilename) : HResults.E_NOTIMPL;
+    public int GetModuleSimpleName(ulong vmModule, nint pStrFilename)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(new TargetPointer(vmModule));
+        string name = _target.ReadUtf8String(module.SimpleName.Value);
+        return StringHolderAssignCopy(pStrFilename, name);
+    }
 
     public int GetAssemblyPath(ulong vmAssembly, nint pStrFilename, int* pResult)
     {
