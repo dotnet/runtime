@@ -4882,7 +4882,33 @@ public sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface13
     int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback)
-        => _legacyImpl13 is not null ? _legacyImpl13.TraverseLoaderHeap(loaderHeapAddr, kind, pCallback) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (loaderHeapAddr == 0)
+                throw new ArgumentException();
+            if (pCallback is null)
+                throw new ArgumentException();
+
+            Contracts.IGC gc = _target.Contracts.GC;
+            TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
+            TargetPointer block = gc.GetFirstLoaderHeapBlock(heapAddr);
+            while (block != TargetPointer.Null)
+            {
+                Contracts.LoaderHeapBlockData blockData = gc.GetLoaderHeapBlockData(block);
+                Interop.BOOL cont = pCallback(blockData.VirtualAddress.Value, (nuint)blockData.VirtualSize.Value);
+                if (cont == Interop.BOOL.FALSE)
+                    break;
+                block = gc.GetNextLoaderHeapBlock(block);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+        return hr;
+    }
     int ISOSDacInterface13.GetDomainLoaderAllocator(ClrDataAddress domainAddress, ClrDataAddress* pLoaderAllocator)
     {
         int hr = HResults.S_OK;

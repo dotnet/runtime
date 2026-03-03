@@ -278,6 +278,28 @@ internal readonly struct GC_1 : IGC
         allocLimit = eeAllocContext.GCAllocationContext.Limit;
     }
 
+    TargetPointer IGC.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
+    {
+        Data.LoaderHeap heap = _target.ProcessedData.GetOrAdd<Data.LoaderHeap>(loaderHeap);
+        return heap.FirstBlock;
+    }
+
+    LoaderHeapBlockData IGC.GetLoaderHeapBlockData(TargetPointer block)
+    {
+        Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
+        return new LoaderHeapBlockData
+        {
+            VirtualAddress = blockData.VirtualAddress,
+            VirtualSize = blockData.VirtualSize,
+        };
+    }
+
+    TargetPointer IGC.GetNextLoaderHeapBlock(TargetPointer block)
+    {
+        Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
+        return blockData.Next;
+    }
+
     private GCType GetGCType()
     {
         string[] identifiers = ((IGC)this).GetGCIdentifiers();

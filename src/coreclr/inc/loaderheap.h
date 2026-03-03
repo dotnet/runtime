@@ -99,6 +99,8 @@ struct TaggedMemAllocPtr
 
 #define VIRTUAL_ALLOC_RESERVE_GRANULARITY (64*1024)    // 0x10000  (64 KB)
 
+template<typename T> struct cdac_data;
+
 typedef DPTR(struct LoaderHeapBlock) PTR_LoaderHeapBlock;
 
 struct LoaderHeapBlock
@@ -143,6 +145,13 @@ struct LoaderHeapBlock
 #endif
 };
 
+template<>
+struct cdac_data<LoaderHeapBlock>
+{
+    static constexpr size_t Next = offsetof(LoaderHeapBlock, pNext);
+    static constexpr size_t VirtualAddress = offsetof(LoaderHeapBlock, pVirtualAddress);
+    static constexpr size_t VirtualSize = offsetof(LoaderHeapBlock, dwVirtualSize);
+};
 
 struct LoaderHeapFreeBlock;
 
@@ -199,6 +208,14 @@ typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase
 protected:
     // Linked list of ClrVirtualAlloc'd pages
     PTR_LoaderHeapBlock m_pFirstBlock;
+
+    friend struct ::cdac_data<UnlockedLoaderHeapBaseTraversable>;
+};
+
+template<>
+struct cdac_data<UnlockedLoaderHeapBaseTraversable>
+{
+    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock);
 };
 
 //===============================================================================
