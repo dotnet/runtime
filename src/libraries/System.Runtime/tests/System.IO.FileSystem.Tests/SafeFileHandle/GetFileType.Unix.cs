@@ -19,7 +19,7 @@ namespace System.IO.Tests
 
             using SafeFileHandle handle = Interop.Sys.Open(path, Interop.Sys.OpenFlags.O_RDONLY, 0);
             Assert.False(handle.IsInvalid);
-            Assert.Equal(FileType.Directory, handle.GetFileType());
+            Assert.Equal(FileHandleType.Directory, handle.Type);
         }
 
         [Fact]
@@ -31,11 +31,11 @@ namespace System.IO.Tests
             Task readerTask = Task.Run(() =>
             {
                 using SafeFileHandle reader = File.OpenHandle(pipePath, FileMode.Open, FileAccess.Read);
-                Assert.Equal(FileType.Pipe, reader.GetFileType());
+                Assert.Equal(FileHandleType.Pipe, reader.Type);
             });
 
             using SafeFileHandle writer = File.OpenHandle(pipePath, FileMode.Open, FileAccess.Write);
-            Assert.Equal(FileType.Pipe, writer.GetFileType());
+            Assert.Equal(FileHandleType.Pipe, writer.Type);
 
             await readerTask;
         }
@@ -49,10 +49,10 @@ namespace System.IO.Tests
             File.CreateSymbolicLink(linkPath, targetPath);
 
             using SafeFileHandle handle = Interop.Sys.Open(linkPath, Interop.Sys.OpenFlags.O_RDONLY | Interop.Sys.OpenFlags.O_NOFOLLOW, 0);
-            
+
             if (!handle.IsInvalid)
             {
-                Assert.Equal(FileType.SymbolicLink, handle.GetFileType());
+                Assert.Equal(FileHandleType.SymbolicLink, handle.Type);
             }
         }
 
@@ -85,7 +85,7 @@ namespace System.IO.Tests
                     throw new SkipTestException($"Could not open {blockDevice}");
                 }
 
-                Assert.Equal(FileType.BlockDevice, handle.GetFileType());
+                Assert.Equal(FileHandleType.BlockDevice, handle.Type);
             }
             catch (UnauthorizedAccessException)
             {

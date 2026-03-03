@@ -25,7 +25,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool IsNoBuffering => (GetFileOptions() & NoBuffering) != 0;
 
-        internal bool CanSeek => !IsClosed && GetFileType() == System.IO.FileType.RegularFile;
+        internal bool CanSeek => !IsClosed && Type == System.IO.FileHandleType.RegularFile;
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
@@ -253,49 +253,49 @@ namespace Microsoft.Win32.SafeHandles
             return _fileOptions = result;
         }
 
-        internal unsafe System.IO.FileType GetFileTypeCore()
+        internal unsafe System.IO.FileHandleType GetFileTypeCore()
         {
             int cachedType = _cachedFileType;
             if (cachedType != -1)
             {
-                return (System.IO.FileType)cachedType;
+                return (System.IO.FileHandleType)cachedType;
             }
 
             int kernelFileType = Interop.Kernel32.GetFileType(this);
 
-            System.IO.FileType result = kernelFileType switch
+            System.IO.FileHandleType result = kernelFileType switch
             {
-                Interop.Kernel32.FileTypes.FILE_TYPE_CHAR => System.IO.FileType.CharacterDevice,
+                Interop.Kernel32.FileTypes.FILE_TYPE_CHAR => System.IO.FileHandleType.CharacterDevice,
                 Interop.Kernel32.FileTypes.FILE_TYPE_PIPE => GetPipeOrSocketType(),
                 Interop.Kernel32.FileTypes.FILE_TYPE_DISK => GetDiskBasedType(),
-                _ => System.IO.FileType.Unknown
+                _ => System.IO.FileHandleType.Unknown
             };
 
             _cachedFileType = (int)result;
             return result;
         }
 
-        private unsafe System.IO.FileType GetPipeOrSocketType()
+        private unsafe System.IO.FileHandleType GetPipeOrSocketType()
         {
             // Try to call GetNamedPipeInfo to determine if it's a pipe or socket
             uint flags;
             if (Interop.Kernel32.GetNamedPipeInfo(this, &flags, null, null, null))
             {
-                return System.IO.FileType.Pipe;
+                return System.IO.FileHandleType.Pipe;
             }
 
             // If GetNamedPipeInfo fails, it's likely a socket
-            return System.IO.FileType.Socket;
+            return System.IO.FileHandleType.Socket;
         }
 
-        private unsafe System.IO.FileType GetDiskBasedType()
+        private unsafe System.IO.FileHandleType GetDiskBasedType()
         {
             // First check if it's a directory using GetFileInformationByHandle
             if (Interop.Kernel32.GetFileInformationByHandle(this, out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInfo))
             {
                 if ((fileInfo.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0)
                 {
-                    return System.IO.FileType.Directory;
+                    return System.IO.FileHandleType.Directory;
                 }
             }
 
@@ -305,11 +305,11 @@ namespace Microsoft.Win32.SafeHandles
             {
                 if ((basicInfo.FileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0)
                 {
-                    return System.IO.FileType.SymbolicLink;
+                    return System.IO.FileHandleType.SymbolicLink;
                 }
             }
 
-            return System.IO.FileType.RegularFile;
+            return System.IO.FileHandleType.RegularFile;
         }
 
         internal long GetFileLength()

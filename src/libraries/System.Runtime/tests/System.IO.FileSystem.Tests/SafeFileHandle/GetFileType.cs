@@ -18,14 +18,14 @@ namespace System.IO.Tests
             File.WriteAllText(path, "test");
 
             using SafeFileHandle handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read);
-            Assert.Equal(FileType.RegularFile, handle.GetFileType());
+            Assert.Equal(FileHandleType.RegularFile, handle.Type);
         }
 
         [Fact]
         public void GetFileType_NullDevice()
         {
             using SafeFileHandle handle = File.OpenNullHandle();
-            Assert.Equal(FileType.CharacterDevice, handle.GetFileType());
+            Assert.Equal(FileHandleType.CharacterDevice, handle.Type);
         }
 
         [Fact]
@@ -34,11 +34,11 @@ namespace System.IO.Tests
         {
             using AnonymousPipeServerStream server = new(PipeDirection.Out);
             using SafeFileHandle serverHandle = new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), ownsHandle: false);
-            
-            Assert.Equal(FileType.Pipe, serverHandle.GetFileType());
+
+            Assert.Equal(FileHandleType.Pipe, serverHandle.Type);
 
             using SafeFileHandle clientHandle = new SafeFileHandle(server.ClientSafePipeHandle.DangerousGetHandle(), ownsHandle: false);
-            Assert.Equal(FileType.Pipe, clientHandle.GetFileType());
+            Assert.Equal(FileHandleType.Pipe, clientHandle.Type);
         }
 
         [Fact]
@@ -57,8 +57,8 @@ namespace System.IO.Tests
             using SafeFileHandle serverHandle = new SafeFileHandle(server.Handle, ownsHandle: false);
             using SafeFileHandle clientHandle = new SafeFileHandle(client.Handle, ownsHandle: false);
 
-            Assert.Equal(FileType.Socket, serverHandle.GetFileType());
-            Assert.Equal(FileType.Socket, clientHandle.GetFileType());
+            Assert.Equal(FileHandleType.Socket, serverHandle.Type);
+            Assert.Equal(FileHandleType.Socket, clientHandle.Type);
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace System.IO.Tests
             SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write);
             handle.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => handle.GetFileType());
+            Assert.Throws<ObjectDisposedException>(() => handle.Type);
         }
 
         [Fact]
@@ -77,12 +77,12 @@ namespace System.IO.Tests
             File.WriteAllText(path, "test");
 
             using SafeFileHandle handle = File.OpenHandle(path, FileMode.Open, FileAccess.Read);
-            
-            FileType firstCall = handle.GetFileType();
-            FileType secondCall = handle.GetFileType();
+
+            FileHandleType firstCall = handle.Type;
+            FileHandleType secondCall = handle.Type;
 
             Assert.Equal(firstCall, secondCall);
-            Assert.Equal(FileType.RegularFile, firstCall);
+            Assert.Equal(FileHandleType.RegularFile, firstCall);
         }
     }
 }

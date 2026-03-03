@@ -25,12 +25,15 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         /// Gets the type of the file that this handle represents.
         /// </summary>
-        /// <returns>The type of the file.</returns>
+        /// <value>The type of the file.</value>
         /// <exception cref="ObjectDisposedException">The handle is closed.</exception>
-        public System.IO.FileType GetFileType()
+        public System.IO.FileHandleType Type
         {
-            ObjectDisposedException.ThrowIf(IsClosed, this);
-            return GetFileTypeCore();
+            get
+            {
+                ObjectDisposedException.ThrowIf(IsClosed, this);
+                return GetFileTypeCore();
+            }
         }
     }
 }

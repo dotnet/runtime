@@ -28,7 +28,7 @@ namespace System.IO.Tests
                 IntPtr.Zero);
 
             Assert.False(handle.IsInvalid);
-            Assert.Equal(FileType.Directory, handle.GetFileType());
+            Assert.Equal(FileHandleType.Directory, handle.Type);
         }
 
         [Fact]
@@ -36,7 +36,7 @@ namespace System.IO.Tests
         {
             string pipeName = Path.GetRandomFileName();
             using NamedPipeServerStream server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-            
+
             Task serverTask = Task.Run(async () => await server.WaitForConnectionAsync());
 
             using NamedPipeClientStream client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None);
@@ -44,10 +44,10 @@ namespace System.IO.Tests
             serverTask.Wait();
 
             using SafeFileHandle serverHandle = new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), ownsHandle: false);
-            Assert.Equal(FileType.Pipe, serverHandle.GetFileType());
+            Assert.Equal(FileHandleType.Pipe, serverHandle.Type);
 
             using SafeFileHandle clientHandle = new SafeFileHandle(client.SafePipeHandle.DangerousGetHandle(), ownsHandle: false);
-            Assert.Equal(FileType.Pipe, clientHandle.GetFileType());
+            Assert.Equal(FileHandleType.Pipe, clientHandle.Type);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -56,9 +56,9 @@ namespace System.IO.Tests
             if (!Console.IsInputRedirected)
             {
                 using SafeFileHandle handle = Console.OpenStandardInputHandle();
-                FileType type = handle.GetFileType();
-                
-                Assert.True(type == FileType.CharacterDevice || type == FileType.Pipe || type == FileType.RegularFile,
+                FileHandleType type = handle.Type;
+
+                Assert.True(type == FileHandleType.CharacterDevice || type == FileHandleType.Pipe || type == FileHandleType.RegularFile,
                     $"Expected CharacterDevice, Pipe, or RegularFile but got {type}");
             }
         }
@@ -82,7 +82,7 @@ namespace System.IO.Tests
 
             if (!handle.IsInvalid)
             {
-                Assert.Equal(FileType.SymbolicLink, handle.GetFileType());
+                Assert.Equal(FileHandleType.SymbolicLink, handle.Type);
             }
         }
     }

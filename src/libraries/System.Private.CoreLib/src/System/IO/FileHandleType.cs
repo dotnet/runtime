@@ -6,7 +6,7 @@ namespace System.IO
     /// <summary>
     /// Specifies the type of a file.
     /// </summary>
-    public enum FileType
+    public enum FileHandleType
     {
         /// <summary>
         /// The file type is unknown.
