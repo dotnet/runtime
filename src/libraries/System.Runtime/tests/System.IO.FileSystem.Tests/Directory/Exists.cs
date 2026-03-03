@@ -302,7 +302,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void NotReadyDriveAsPath_ReturnsFalse()
         {
@@ -319,7 +318,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void SubdirectoryOnNotReadyDriveAsPath_ReturnsFalse()
         {

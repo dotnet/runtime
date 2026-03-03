@@ -20,7 +20,6 @@ namespace System.IO.Tests
         private static bool s_pass = true;
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/14378")]
         [PlatformSpecific(TestPlatforms.Windows)] // testing mounting volumes and reparse points
         public static void runTest()
         {
