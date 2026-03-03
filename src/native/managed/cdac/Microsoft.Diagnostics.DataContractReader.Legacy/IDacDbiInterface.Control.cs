@@ -97,408 +97,408 @@ public unsafe interface IDacDbiInterfaceControl
     int EnumerateAppDomains(nint fpCallback, nint pUserData);
 
     [PreserveSig]
-    int EnumerateAssembliesInAppDomain(ulong p0, nint p1, nint p2);
+    int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData);
 
     [PreserveSig]
-    int EnumerateModulesInAssembly(ulong p0, nint p1, nint p2);
+    int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData);
 
     [PreserveSig]
     int RequestSyncAtEvent();
 
     [PreserveSig]
-    int SetSendExceptionsOutsideOfJMC(int p0);
+    int SetSendExceptionsOutsideOfJMC(int sendExceptionsOutsideOfJMC);
 
     [PreserveSig]
     int MarkDebuggerAttachPending();
 
     [PreserveSig]
-    int MarkDebuggerAttached(int p0);
+    int MarkDebuggerAttached(int fAttached);
 
     [PreserveSig]
-    int Hijack(ulong p0, uint p1, nint p2, nint p3, uint p4, nint p5, nint p6, nint p7);
+    int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr);
 
     [PreserveSig]
-    int EnumerateThreads(nint p0, nint p1);
+    int EnumerateThreads(nint fpCallback, nint pUserData);
 
     [PreserveSig]
-    int IsThreadMarkedDead(ulong p0, nint p1);
+    int IsThreadMarkedDead(ulong vmThread, byte* pResult);
 
     [PreserveSig]
-    int GetThreadHandle(ulong p0, nint p1);
+    int GetThreadHandle(ulong vmThread, nint pRetVal);
 
     [PreserveSig]
-    int GetThreadObject(ulong p0, nint p1);
+    int GetThreadObject(ulong vmThread, ulong* pRetVal);
 
     [PreserveSig]
-    int GetThreadAllocInfo(ulong p0, nint p1);
+    int GetThreadAllocInfo(ulong vmThread, nint pThreadAllocInfo);
 
     [PreserveSig]
-    int SetDebugState(ulong p0, int p1);
+    int SetDebugState(ulong vmThread, int debugState);
 
     [PreserveSig]
-    int HasUnhandledException(ulong p0, nint p1);
+    int HasUnhandledException(ulong vmThread, int* pResult);
 
     [PreserveSig]
-    int GetUserState(ulong p0, nint p1);
+    int GetUserState(ulong vmThread, int* pRetVal);
 
     [PreserveSig]
-    int GetPartialUserState(ulong p0, nint p1);
+    int GetPartialUserState(ulong vmThread, int* pRetVal);
 
     [PreserveSig]
-    int GetConnectionID(ulong p0, nint p1);
+    int GetConnectionID(ulong vmThread, uint* pRetVal);
 
     [PreserveSig]
-    int GetTaskID(ulong p0, nint p1);
+    int GetTaskID(ulong vmThread, ulong* pRetVal);
 
     [PreserveSig]
-    int TryGetVolatileOSThreadID(ulong p0, nint p1);
+    int TryGetVolatileOSThreadID(ulong vmThread, uint* pRetVal);
 
     [PreserveSig]
-    int GetUniqueThreadID(ulong p0, nint p1);
+    int GetUniqueThreadID(ulong vmThread, uint* pRetVal);
 
     [PreserveSig]
-    int GetCurrentException(ulong p0, nint p1);
+    int GetCurrentException(ulong vmThread, ulong* pRetVal);
 
     [PreserveSig]
-    int GetObjectForCCW(ulong p0, nint p1);
+    int GetObjectForCCW(ulong ccwPtr, ulong* pRetVal);
 
     [PreserveSig]
-    int GetCurrentCustomDebuggerNotification(ulong p0, nint p1);
+    int GetCurrentCustomDebuggerNotification(ulong vmThread, ulong* pRetVal);
 
     [PreserveSig]
-    int GetCurrentAppDomain(nint p0);
+    int GetCurrentAppDomain(ulong* pRetVal);
 
     [PreserveSig]
-    int ResolveAssembly(ulong p0, uint p1, nint p2);
+    int ResolveAssembly(ulong vmScope, uint tkAssemblyRef, ulong* pRetVal);
 
     [PreserveSig]
-    int GetNativeCodeSequencePointsAndVarInfo(ulong p0, ulong p1, int p2, nint p3, nint p4);
+    int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, int fCodeAvailable, nint pNativeVarData, nint pSequencePoints);
 
     [PreserveSig]
-    int GetManagedStoppedContext(ulong p0, nint p1);
+    int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal);
 
     [PreserveSig]
-    int CreateStackWalk(ulong p0, nint p1, nint p2);
+    int CreateStackWalk(ulong vmThread, nint pInternalContextBuffer, nint ppSFIHandle);
 
     [PreserveSig]
-    int DeleteStackWalk(ulong p0);
+    int DeleteStackWalk(ulong ppSFIHandle);
 
     [PreserveSig]
-    int GetStackWalkCurrentContext(ulong p0, nint p1);
+    int GetStackWalkCurrentContext(ulong pSFIHandle, nint pContext);
 
     [PreserveSig]
-    int SetStackWalkCurrentContext(ulong p0, ulong p1, int p2, nint p3);
+    int SetStackWalkCurrentContext(ulong vmThread, ulong pSFIHandle, int flag, nint pContext);
 
     [PreserveSig]
-    int UnwindStackWalkFrame(ulong p0, nint p1);
+    int UnwindStackWalkFrame(ulong pSFIHandle, int* pResult);
 
     [PreserveSig]
-    int CheckContext(ulong p0, nint p1);
+    int CheckContext(ulong vmThread, nint pContext);
 
     [PreserveSig]
-    int GetStackWalkCurrentFrameInfo(ulong p0, nint p1, nint p2);
+    int GetStackWalkCurrentFrameInfo(ulong pSFIHandle, nint pFrameData, int* pRetVal);
 
     [PreserveSig]
-    int GetCountOfInternalFrames(ulong p0, nint p1);
+    int GetCountOfInternalFrames(ulong vmThread, uint* pRetVal);
 
     [PreserveSig]
-    int EnumerateInternalFrames(ulong p0, nint p1, nint p2);
+    int EnumerateInternalFrames(ulong vmThread, nint fpCallback, nint pUserData);
 
     [PreserveSig]
-    int IsMatchingParentFrame(ulong p0, ulong p1, nint p2);
+    int IsMatchingParentFrame(ulong fpToCheck, ulong fpParent, int* pResult);
 
     [PreserveSig]
-    int GetStackParameterSize(ulong p0, nint p1);
+    int GetStackParameterSize(ulong controlPC, uint* pRetVal);
 
     [PreserveSig]
-    int GetFramePointer(ulong p0, nint p1);
+    int GetFramePointer(ulong pSFIHandle, ulong* pRetVal);
 
     [PreserveSig]
-    int IsLeafFrame(ulong p0, nint p1, nint p2);
+    int IsLeafFrame(ulong vmThread, nint pContext, int* pResult);
 
     [PreserveSig]
-    int GetContext(ulong p0, nint p1);
+    int GetContext(ulong vmThread, nint pContextBuffer);
 
     [PreserveSig]
-    int ConvertContextToDebuggerRegDisplay(nint p0, nint p1, int p2);
+    int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, int fActive);
 
     [PreserveSig]
-    int IsDiagnosticsHiddenOrLCGMethod(ulong p0, nint p1);
+    int IsDiagnosticsHiddenOrLCGMethod(ulong vmMethodDesc, int* pRetVal);
 
     [PreserveSig]
-    int GetVarArgSig(ulong p0, nint p1, nint p2);
+    int GetVarArgSig(ulong VASigCookieAddr, ulong* pArgBase, nint pRetVal);
 
     [PreserveSig]
-    int RequiresAlign8(ulong p0, nint p1);
+    int RequiresAlign8(ulong thExact, int* pResult);
 
     [PreserveSig]
-    int ResolveExactGenericArgsToken(uint p0, nint p1, nint p2);
+    int ResolveExactGenericArgsToken(uint dwExactGenericArgsTokenIndex, ulong rawToken, ulong* pRetVal);
 
     [PreserveSig]
-    int GetILCodeAndSig(ulong p0, uint p1, nint p2, nint p3);
+    int GetILCodeAndSig(ulong vmDomainAssembly, uint functionToken, nint pCodeInfo, uint* pLocalSigToken);
 
     [PreserveSig]
-    int GetNativeCodeInfo(ulong p0, uint p1, nint p2);
+    int GetNativeCodeInfo(ulong vmDomainAssembly, uint functionToken, nint pCodeInfo);
 
     [PreserveSig]
-    int GetNativeCodeInfoForAddr(ulong p0, nint p1, nint p2, nint p3);
+    int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken);
 
     [PreserveSig]
-    int IsValueType(ulong p0, nint p1);
+    int IsValueType(ulong th, int* pResult);
 
     [PreserveSig]
-    int HasTypeParams(ulong p0, nint p1);
+    int HasTypeParams(ulong th, int* pResult);
 
     [PreserveSig]
-    int GetClassInfo(ulong p0, ulong p1, nint p2);
+    int GetClassInfo(ulong vmAppDomain, ulong thExact, nint pData);
 
     [PreserveSig]
-    int GetInstantiationFieldInfo(ulong p0, ulong p1, ulong p2, nint p3, nint p4);
+    int GetInstantiationFieldInfo(ulong vmDomainAssembly, ulong vmThExact, ulong vmThApprox, nint pFieldList, nuint* pObjectSize);
 
     [PreserveSig]
-    int TypeHandleToExpandedTypeInfo(nint p0, ulong p1, ulong p2, nint p3);
+    int TypeHandleToExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong vmTypeHandle, nint pTypeInfo);
 
     [PreserveSig]
-    int GetObjectExpandedTypeInfo(nint p0, ulong p1, ulong p2, nint p3);
+    int GetObjectExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong addr, nint pTypeInfo);
 
     [PreserveSig]
-    int GetObjectExpandedTypeInfoFromID(nint p0, ulong p1, nint p2, nint p3);
+    int GetObjectExpandedTypeInfoFromID(int boxed, ulong vmAppDomain, nint id, nint pTypeInfo);
 
     [PreserveSig]
-    int GetTypeHandle(ulong p0, nint p1, nint p2);
+    int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal);
 
     [PreserveSig]
-    int GetApproxTypeHandle(nint p0, nint p1);
+    int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal);
 
     [PreserveSig]
-    int GetExactTypeHandle(nint p0, nint p1, nint p2);
+    int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* vmTypeHandle);
 
     [PreserveSig]
-    int GetMethodDescParams(ulong p0, ulong p1, nint p2, nint p3, nint p4);
+    int GetMethodDescParams(ulong vmAppDomain, ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams);
 
     [PreserveSig]
-    int GetThreadStaticAddress(ulong p0, ulong p1, nint p2);
+    int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal);
 
     [PreserveSig]
-    int GetCollectibleTypeStaticAddress(ulong p0, ulong p1, nint p2);
+    int GetCollectibleTypeStaticAddress(ulong vmField, ulong vmAppDomain, ulong* pRetVal);
 
     [PreserveSig]
-    int GetEnCHangingFieldInfo(nint p0, nint p1, nint p2);
+    int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, int* pfStatic);
 
     [PreserveSig]
-    int GetTypeHandleParams(ulong p0, ulong p1, nint p2);
+    int GetTypeHandleParams(ulong vmAppDomain, ulong vmTypeHandle, nint pParams);
 
     [PreserveSig]
-    int GetSimpleType(ulong p0, int p1, nint p2, nint p3, nint p4);
+    int GetSimpleType(ulong vmAppDomain, int simpleType, uint* pMetadataToken, ulong* pVmModule, ulong* pVmDomainAssembly);
 
     [PreserveSig]
-    int IsExceptionObject(ulong p0, nint p1);
+    int IsExceptionObject(ulong vmObject, int* pResult);
 
     [PreserveSig]
-    int GetStackFramesFromException(ulong p0, nint p1);
+    int GetStackFramesFromException(ulong vmObject, nint dacStackFrames);
 
     [PreserveSig]
-    int IsRcw(ulong p0, nint p1);
+    int IsRcw(ulong vmObject, int* pResult);
 
     [PreserveSig]
-    int GetRcwCachedInterfaceTypes(ulong p0, ulong p1, int p2, nint p3);
+    int GetRcwCachedInterfaceTypes(ulong vmObject, ulong vmAppDomain, int bIInspectableOnly, nint pDacInterfaces);
 
     [PreserveSig]
-    int GetRcwCachedInterfacePointers(ulong p0, int p1, nint p2);
+    int GetRcwCachedInterfacePointers(ulong vmObject, int bIInspectableOnly, nint pDacItfPtrs);
 
     [PreserveSig]
-    int GetCachedWinRTTypesForIIDs(ulong p0, nint p1, nint p2);
+    int GetCachedWinRTTypesForIIDs(ulong vmAppDomain, nint iids, nint pTypes);
 
     [PreserveSig]
-    int GetCachedWinRTTypes(ulong p0, nint p1, nint p2);
+    int GetCachedWinRTTypes(ulong vmAppDomain, nint piids, nint pTypes);
 
     [PreserveSig]
-    int GetTypedByRefInfo(ulong p0, ulong p1, nint p2);
+    int GetTypedByRefInfo(ulong pTypedByRef, ulong vmAppDomain, nint pObjectData);
 
     [PreserveSig]
-    int GetStringData(ulong p0, nint p1);
+    int GetStringData(ulong objectAddress, nint pObjectData);
 
     [PreserveSig]
-    int GetArrayData(ulong p0, nint p1);
+    int GetArrayData(ulong objectAddress, nint pObjectData);
 
     [PreserveSig]
-    int GetBasicObjectInfo(ulong p0, int p1, ulong p2, nint p3);
+    int GetBasicObjectInfo(ulong objectAddress, int type, ulong vmAppDomain, nint pObjectData);
 
     [PreserveSig]
-    int TestCrst(ulong p0);
+    int TestCrst(ulong vmCrst);
 
     [PreserveSig]
-    int TestRWLock(ulong p0);
+    int TestRWLock(ulong vmRWLock);
 
     [PreserveSig]
-    int GetDebuggerControlBlockAddress(nint p0);
+    int GetDebuggerControlBlockAddress(ulong* pRetVal);
 
     [PreserveSig]
-    int GetObjectFromRefPtr(ulong p0, nint p1);
+    int GetObjectFromRefPtr(ulong ptr, ulong* pRetVal);
 
     [PreserveSig]
-    int GetObject(ulong p0, nint p1);
+    int GetObject(ulong ptr, ulong* pRetVal);
 
     [PreserveSig]
-    int EnableNGENPolicy(int p0);
+    int EnableNGENPolicy(int ePolicy);
 
     [PreserveSig]
-    int SetNGENCompilerFlags(uint p0);
+    int SetNGENCompilerFlags(uint dwFlags);
 
     [PreserveSig]
-    int GetNGENCompilerFlags(nint p0);
+    int GetNGENCompilerFlags(uint* pdwFlags);
 
     [PreserveSig]
-    int GetVmObjectHandle(ulong p0, nint p1);
+    int GetVmObjectHandle(ulong handleAddress, ulong* pRetVal);
 
     [PreserveSig]
-    int IsVmObjectHandleValid(ulong p0, nint p1);
+    int IsVmObjectHandleValid(ulong vmHandle, int* pResult);
 
     [PreserveSig]
-    int IsWinRTModule(ulong p0, nint p1);
+    int IsWinRTModule(ulong vmModule, int* isWinRT);
 
     [PreserveSig]
-    int GetAppDomainIdFromVmObjectHandle(ulong p0, nint p1);
+    int GetAppDomainIdFromVmObjectHandle(ulong vmHandle, uint* pRetVal);
 
     [PreserveSig]
-    int GetHandleAddressFromVmHandle(ulong p0, nint p1);
+    int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
 
     [PreserveSig]
-    int GetObjectContents(ulong p0, nint p1);
+    int GetObjectContents(ulong obj, nint pRetVal);
 
     [PreserveSig]
-    int GetThreadOwningMonitorLock(ulong p0, nint p1);
+    int GetThreadOwningMonitorLock(ulong vmObject, nint pRetVal);
 
     [PreserveSig]
-    int EnumerateMonitorEventWaitList(ulong p0, nint p1, nint p2);
+    int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData);
 
     [PreserveSig]
-    int GetAttachStateFlags(nint p0);
+    int GetAttachStateFlags(int* pRetVal);
 
     [PreserveSig]
-    int GetMetaDataFileInfoFromPEFile(ulong p0, nint p1, nint p2, nint p3, nint p4);
+    int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, byte* pResult);
 
     [PreserveSig]
-    int IsThreadSuspendedOrHijacked(ulong p0, nint p1);
+    int IsThreadSuspendedOrHijacked(ulong vmThread, byte* pResult);
 
     [PreserveSig]
-    int AreGCStructuresValid(nint p0);
+    int AreGCStructuresValid(byte* pResult);
 
     [PreserveSig]
-    int CreateHeapWalk(nint p0);
+    int CreateHeapWalk(nuint* pHandle);
 
     [PreserveSig]
-    int DeleteHeapWalk(ulong p0);
+    int DeleteHeapWalk(nuint handle);
 
     [PreserveSig]
-    int WalkHeap(ulong p0, uint p1, nint p2, nint p3);
+    int WalkHeap(nuint handle, uint count, nint objects, uint* fetched);
 
     [PreserveSig]
-    int GetHeapSegments(nint p0);
+    int GetHeapSegments(nint pSegments);
 
     [PreserveSig]
-    int IsValidObject(ulong p0, nint p1);
+    int IsValidObject(ulong obj, byte* pResult);
 
     [PreserveSig]
-    int GetAppDomainForObject(ulong p0, nint p1, nint p2, nint p3, nint p4);
+    int GetAppDomainForObject(ulong obj, ulong* pApp, ulong* pModule, ulong* pDomainAssembly, byte* pResult);
 
     [PreserveSig]
-    int CreateRefWalk(nint p0, int p1, int p2, uint p3);
+    int CreateRefWalk(nuint* pHandle, int walkStacks, int walkFQ, uint handleWalkMask);
 
     [PreserveSig]
-    int DeleteRefWalk(ulong p0);
+    int DeleteRefWalk(nuint handle);
 
     [PreserveSig]
-    int WalkRefs(ulong p0, uint p1, nint p2, nint p3);
+    int WalkRefs(nuint handle, uint count, nint refs, uint* pFetched);
 
     [PreserveSig]
-    int GetTypeID(ulong p0, nint p1);
+    int GetTypeID(ulong obj, nint pType);
 
     [PreserveSig]
-    int GetTypeIDForType(ulong p0, nint p1);
+    int GetTypeIDForType(ulong vmTypeHandle, nint pId);
 
     [PreserveSig]
-    int GetObjectFields(nint p0, uint p1, nint p2, nint p3);
+    int GetObjectFields(nint id, uint celt, nint layout, uint* pceltFetched);
 
     [PreserveSig]
-    int GetTypeLayout(nint p0, nint p1);
+    int GetTypeLayout(nint id, nint pLayout);
 
     [PreserveSig]
-    int GetArrayLayout(nint p0, nint p1);
+    int GetArrayLayout(nint id, nint pLayout);
 
     [PreserveSig]
-    int GetGCHeapInformation(nint p0);
+    int GetGCHeapInformation(nint pHeapInfo);
 
     [PreserveSig]
-    int GetPEFileMDInternalRW(ulong p0, nint p1);
+    int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW);
 
     [PreserveSig]
-    int GetReJitInfo(ulong p0, uint p1, nint p2);
+    int GetReJitInfo(ulong vmModule, uint methodTk, ulong* pReJitInfo);
 
     [PreserveSig]
-    int GetReJitInfo(ulong p0, ulong p1, nint p2);
+    int GetReJitInfo(ulong vmMethod, ulong codeStartAddress, ulong* pReJitInfo);
 
     [PreserveSig]
-    int GetSharedReJitInfo(ulong p0, nint p1);
+    int GetSharedReJitInfo(ulong vmReJitInfo, ulong* pSharedReJitInfo);
 
     [PreserveSig]
-    int GetSharedReJitInfoData(ulong p0, nint p1);
+    int GetSharedReJitInfoData(ulong sharedReJitInfo, nint pData);
 
     [PreserveSig]
-    int AreOptimizationsDisabled(ulong p0, uint p1, nint p2);
+    int AreOptimizationsDisabled(ulong vmModule, uint methodTk, int* pOptimizationsDisabled);
 
     [PreserveSig]
-    int GetDefinesBitField(nint p0);
+    int GetDefinesBitField(uint* pDefines);
 
     [PreserveSig]
-    int GetMDStructuresVersion(nint p0);
+    int GetMDStructuresVersion(uint* pMDStructuresVersion);
 
     [PreserveSig]
-    int GetActiveRejitILCodeVersionNode(ulong p0, uint p1, nint p2);
+    int GetActiveRejitILCodeVersionNode(ulong vmModule, uint methodTk, ulong* pVmILCodeVersionNode);
 
     [PreserveSig]
-    int GetNativeCodeVersionNode(ulong p0, ulong p1, nint p2);
+    int GetNativeCodeVersionNode(ulong vmMethod, ulong codeStartAddress, ulong* pVmNativeCodeVersionNode);
 
     [PreserveSig]
-    int GetILCodeVersionNode(ulong p0, nint p1);
+    int GetILCodeVersionNode(ulong vmNativeCodeVersionNode, ulong* pVmILCodeVersionNode);
 
     [PreserveSig]
-    int GetILCodeVersionNodeData(ulong p0, nint p1);
+    int GetILCodeVersionNodeData(ulong ilCodeVersionNode, nint pData);
 
     [PreserveSig]
-    int EnableGCNotificationEvents(int p0);
+    int EnableGCNotificationEvents(int fEnable);
 
     [PreserveSig]
-    int IsDelegate(ulong p0, nint p1);
+    int IsDelegate(ulong vmObject, int* pResult);
 
     [PreserveSig]
-    int GetDelegateType(ulong p0, nint p1);
+    int GetDelegateType(ulong delegateObject, int* delegateType);
 
     [PreserveSig]
-    int GetDelegateFunctionData(int p0, ulong p1, nint p2, nint p3);
+    int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionDomainAssembly, uint* pMethodDef);
 
     [PreserveSig]
-    int GetDelegateTargetObject(int p0, ulong p1, nint p2, nint p3);
+    int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
 
     [PreserveSig]
-    int GetLoaderHeapMemoryRanges(nint p0);
+    int GetLoaderHeapMemoryRanges(nint pRanges);
 
     [PreserveSig]
-    int IsModuleMapped(ulong p0, nint p1);
+    int IsModuleMapped(ulong pModule, int* isModuleMapped);
 
     [PreserveSig]
-    int MetadataUpdatesApplied(nint p0);
+    int MetadataUpdatesApplied(byte* pResult);
 
     [PreserveSig]
-    int GetDomainAssemblyFromModule(ulong p0, nint p1);
+    int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly);
 
     [PreserveSig]
-    int ParseContinuation(ulong p0, nint p1, nint p2, nint p3);
+    int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState);
 
     [PreserveSig]
-    int GetAsyncLocals(ulong p0, ulong p1, uint p2, nint p3);
+    int GetAsyncLocals(ulong vmMethod, ulong codeAddr, uint state, nint pAsyncLocals);
 
     [PreserveSig]
-    int GetGenericArgTokenIndex(ulong p0, nint p1);
+    int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);
 
 }

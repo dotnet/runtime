@@ -66,274 +66,274 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterfaceControl
 
     public int EnumerateAppDomains(nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateAppDomains(fpCallback, pUserData) : HResults.E_NOTIMPL;
 
-    public int EnumerateAssembliesInAppDomain(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
-    public int EnumerateModulesInAssembly(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.EnumerateModulesInAssembly(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateModulesInAssembly(vmAssembly, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int RequestSyncAtEvent() => _legacy is not null ? _legacy.RequestSyncAtEvent() : HResults.E_NOTIMPL;
 
-    public int SetSendExceptionsOutsideOfJMC(int p0) => _legacy is not null ? _legacy.SetSendExceptionsOutsideOfJMC(p0) : HResults.E_NOTIMPL;
+    public int SetSendExceptionsOutsideOfJMC(int sendExceptionsOutsideOfJMC) => _legacy is not null ? _legacy.SetSendExceptionsOutsideOfJMC(sendExceptionsOutsideOfJMC) : HResults.E_NOTIMPL;
 
     public int MarkDebuggerAttachPending() => _legacy is not null ? _legacy.MarkDebuggerAttachPending() : HResults.E_NOTIMPL;
 
-    public int MarkDebuggerAttached(int p0) => _legacy is not null ? _legacy.MarkDebuggerAttached(p0) : HResults.E_NOTIMPL;
+    public int MarkDebuggerAttached(int fAttached) => _legacy is not null ? _legacy.MarkDebuggerAttached(fAttached) : HResults.E_NOTIMPL;
 
-    public int Hijack(ulong p0, uint p1, nint p2, nint p3, uint p4, nint p5, nint p6, nint p7) => _legacy is not null ? _legacy.Hijack(p0, p1, p2, p3, p4, p5, p6, p7) : HResults.E_NOTIMPL;
+    public int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr) => _legacy is not null ? _legacy.Hijack(vmThread, dwThreadId, pRecord, pOriginalContext, cbSizeContext, reason, pUserData, pRemoteContextAddr) : HResults.E_NOTIMPL;
 
-    public int EnumerateThreads(nint p0, nint p1) => _legacy is not null ? _legacy.EnumerateThreads(p0, p1) : HResults.E_NOTIMPL;
+    public int EnumerateThreads(nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateThreads(fpCallback, pUserData) : HResults.E_NOTIMPL;
 
-    public int IsThreadMarkedDead(ulong p0, nint p1) => _legacy is not null ? _legacy.IsThreadMarkedDead(p0, p1) : HResults.E_NOTIMPL;
+    public int IsThreadMarkedDead(ulong vmThread, byte* pResult) => _legacy is not null ? _legacy.IsThreadMarkedDead(vmThread, pResult) : HResults.E_NOTIMPL;
 
-    public int GetThreadHandle(ulong p0, nint p1) => _legacy is not null ? _legacy.GetThreadHandle(p0, p1) : HResults.E_NOTIMPL;
+    public int GetThreadHandle(ulong vmThread, nint pRetVal) => _legacy is not null ? _legacy.GetThreadHandle(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetThreadObject(ulong p0, nint p1) => _legacy is not null ? _legacy.GetThreadObject(p0, p1) : HResults.E_NOTIMPL;
+    public int GetThreadObject(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetThreadObject(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetThreadAllocInfo(ulong p0, nint p1) => _legacy is not null ? _legacy.GetThreadAllocInfo(p0, p1) : HResults.E_NOTIMPL;
+    public int GetThreadAllocInfo(ulong vmThread, nint pThreadAllocInfo) => _legacy is not null ? _legacy.GetThreadAllocInfo(vmThread, pThreadAllocInfo) : HResults.E_NOTIMPL;
 
-    public int SetDebugState(ulong p0, int p1) => _legacy is not null ? _legacy.SetDebugState(p0, p1) : HResults.E_NOTIMPL;
+    public int SetDebugState(ulong vmThread, int debugState) => _legacy is not null ? _legacy.SetDebugState(vmThread, debugState) : HResults.E_NOTIMPL;
 
-    public int HasUnhandledException(ulong p0, nint p1) => _legacy is not null ? _legacy.HasUnhandledException(p0, p1) : HResults.E_NOTIMPL;
+    public int HasUnhandledException(ulong vmThread, int* pResult) => _legacy is not null ? _legacy.HasUnhandledException(vmThread, pResult) : HResults.E_NOTIMPL;
 
-    public int GetUserState(ulong p0, nint p1) => _legacy is not null ? _legacy.GetUserState(p0, p1) : HResults.E_NOTIMPL;
+    public int GetUserState(ulong vmThread, int* pRetVal) => _legacy is not null ? _legacy.GetUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetPartialUserState(ulong p0, nint p1) => _legacy is not null ? _legacy.GetPartialUserState(p0, p1) : HResults.E_NOTIMPL;
+    public int GetPartialUserState(ulong vmThread, int* pRetVal) => _legacy is not null ? _legacy.GetPartialUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetConnectionID(ulong p0, nint p1) => _legacy is not null ? _legacy.GetConnectionID(p0, p1) : HResults.E_NOTIMPL;
+    public int GetConnectionID(ulong vmThread, uint* pRetVal) => _legacy is not null ? _legacy.GetConnectionID(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetTaskID(ulong p0, nint p1) => _legacy is not null ? _legacy.GetTaskID(p0, p1) : HResults.E_NOTIMPL;
+    public int GetTaskID(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetTaskID(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int TryGetVolatileOSThreadID(ulong p0, nint p1) => _legacy is not null ? _legacy.TryGetVolatileOSThreadID(p0, p1) : HResults.E_NOTIMPL;
+    public int TryGetVolatileOSThreadID(ulong vmThread, uint* pRetVal) => _legacy is not null ? _legacy.TryGetVolatileOSThreadID(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetUniqueThreadID(ulong p0, nint p1) => _legacy is not null ? _legacy.GetUniqueThreadID(p0, p1) : HResults.E_NOTIMPL;
+    public int GetUniqueThreadID(ulong vmThread, uint* pRetVal) => _legacy is not null ? _legacy.GetUniqueThreadID(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetCurrentException(ulong p0, nint p1) => _legacy is not null ? _legacy.GetCurrentException(p0, p1) : HResults.E_NOTIMPL;
+    public int GetCurrentException(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetCurrentException(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetObjectForCCW(ulong p0, nint p1) => _legacy is not null ? _legacy.GetObjectForCCW(p0, p1) : HResults.E_NOTIMPL;
+    public int GetObjectForCCW(ulong ccwPtr, ulong* pRetVal) => _legacy is not null ? _legacy.GetObjectForCCW(ccwPtr, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetCurrentCustomDebuggerNotification(ulong p0, nint p1) => _legacy is not null ? _legacy.GetCurrentCustomDebuggerNotification(p0, p1) : HResults.E_NOTIMPL;
+    public int GetCurrentCustomDebuggerNotification(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetCurrentCustomDebuggerNotification(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetCurrentAppDomain(nint p0) => _legacy is not null ? _legacy.GetCurrentAppDomain(p0) : HResults.E_NOTIMPL;
+    public int GetCurrentAppDomain(ulong* pRetVal) => _legacy is not null ? _legacy.GetCurrentAppDomain(pRetVal) : HResults.E_NOTIMPL;
 
-    public int ResolveAssembly(ulong p0, uint p1, nint p2) => _legacy is not null ? _legacy.ResolveAssembly(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int ResolveAssembly(ulong vmScope, uint tkAssemblyRef, ulong* pRetVal) => _legacy is not null ? _legacy.ResolveAssembly(vmScope, tkAssemblyRef, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetNativeCodeSequencePointsAndVarInfo(ulong p0, ulong p1, int p2, nint p3, nint p4) => _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(p0, p1, p2, p3, p4) : HResults.E_NOTIMPL;
+    public int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, int fCodeAvailable, nint pNativeVarData, nint pSequencePoints) => _legacy is not null ? _legacy.GetNativeCodeSequencePointsAndVarInfo(vmMethodDesc, startAddress, fCodeAvailable, pNativeVarData, pSequencePoints) : HResults.E_NOTIMPL;
 
-    public int GetManagedStoppedContext(ulong p0, nint p1) => _legacy is not null ? _legacy.GetManagedStoppedContext(p0, p1) : HResults.E_NOTIMPL;
+    public int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetManagedStoppedContext(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int CreateStackWalk(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.CreateStackWalk(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int CreateStackWalk(ulong vmThread, nint pInternalContextBuffer, nint ppSFIHandle) => _legacy is not null ? _legacy.CreateStackWalk(vmThread, pInternalContextBuffer, ppSFIHandle) : HResults.E_NOTIMPL;
 
-    public int DeleteStackWalk(ulong p0) => _legacy is not null ? _legacy.DeleteStackWalk(p0) : HResults.E_NOTIMPL;
+    public int DeleteStackWalk(ulong ppSFIHandle) => _legacy is not null ? _legacy.DeleteStackWalk(ppSFIHandle) : HResults.E_NOTIMPL;
 
-    public int GetStackWalkCurrentContext(ulong p0, nint p1) => _legacy is not null ? _legacy.GetStackWalkCurrentContext(p0, p1) : HResults.E_NOTIMPL;
+    public int GetStackWalkCurrentContext(ulong pSFIHandle, nint pContext) => _legacy is not null ? _legacy.GetStackWalkCurrentContext(pSFIHandle, pContext) : HResults.E_NOTIMPL;
 
-    public int SetStackWalkCurrentContext(ulong p0, ulong p1, int p2, nint p3) => _legacy is not null ? _legacy.SetStackWalkCurrentContext(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int SetStackWalkCurrentContext(ulong vmThread, ulong pSFIHandle, int flag, nint pContext) => _legacy is not null ? _legacy.SetStackWalkCurrentContext(vmThread, pSFIHandle, flag, pContext) : HResults.E_NOTIMPL;
 
-    public int UnwindStackWalkFrame(ulong p0, nint p1) => _legacy is not null ? _legacy.UnwindStackWalkFrame(p0, p1) : HResults.E_NOTIMPL;
+    public int UnwindStackWalkFrame(ulong pSFIHandle, int* pResult) => _legacy is not null ? _legacy.UnwindStackWalkFrame(pSFIHandle, pResult) : HResults.E_NOTIMPL;
 
-    public int CheckContext(ulong p0, nint p1) => _legacy is not null ? _legacy.CheckContext(p0, p1) : HResults.E_NOTIMPL;
+    public int CheckContext(ulong vmThread, nint pContext) => _legacy is not null ? _legacy.CheckContext(vmThread, pContext) : HResults.E_NOTIMPL;
 
-    public int GetStackWalkCurrentFrameInfo(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.GetStackWalkCurrentFrameInfo(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetStackWalkCurrentFrameInfo(ulong pSFIHandle, nint pFrameData, int* pRetVal) => _legacy is not null ? _legacy.GetStackWalkCurrentFrameInfo(pSFIHandle, pFrameData, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetCountOfInternalFrames(ulong p0, nint p1) => _legacy is not null ? _legacy.GetCountOfInternalFrames(p0, p1) : HResults.E_NOTIMPL;
+    public int GetCountOfInternalFrames(ulong vmThread, uint* pRetVal) => _legacy is not null ? _legacy.GetCountOfInternalFrames(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int EnumerateInternalFrames(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.EnumerateInternalFrames(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int EnumerateInternalFrames(ulong vmThread, nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateInternalFrames(vmThread, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
-    public int IsMatchingParentFrame(ulong p0, ulong p1, nint p2) => _legacy is not null ? _legacy.IsMatchingParentFrame(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int IsMatchingParentFrame(ulong fpToCheck, ulong fpParent, int* pResult) => _legacy is not null ? _legacy.IsMatchingParentFrame(fpToCheck, fpParent, pResult) : HResults.E_NOTIMPL;
 
-    public int GetStackParameterSize(ulong p0, nint p1) => _legacy is not null ? _legacy.GetStackParameterSize(p0, p1) : HResults.E_NOTIMPL;
+    public int GetStackParameterSize(ulong controlPC, uint* pRetVal) => _legacy is not null ? _legacy.GetStackParameterSize(controlPC, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetFramePointer(ulong p0, nint p1) => _legacy is not null ? _legacy.GetFramePointer(p0, p1) : HResults.E_NOTIMPL;
+    public int GetFramePointer(ulong pSFIHandle, ulong* pRetVal) => _legacy is not null ? _legacy.GetFramePointer(pSFIHandle, pRetVal) : HResults.E_NOTIMPL;
 
-    public int IsLeafFrame(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.IsLeafFrame(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int IsLeafFrame(ulong vmThread, nint pContext, int* pResult) => _legacy is not null ? _legacy.IsLeafFrame(vmThread, pContext, pResult) : HResults.E_NOTIMPL;
 
-    public int GetContext(ulong p0, nint p1) => _legacy is not null ? _legacy.GetContext(p0, p1) : HResults.E_NOTIMPL;
+    public int GetContext(ulong vmThread, nint pContextBuffer) => _legacy is not null ? _legacy.GetContext(vmThread, pContextBuffer) : HResults.E_NOTIMPL;
 
-    public int ConvertContextToDebuggerRegDisplay(nint p0, nint p1, int p2) => _legacy is not null ? _legacy.ConvertContextToDebuggerRegDisplay(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, int fActive) => _legacy is not null ? _legacy.ConvertContextToDebuggerRegDisplay(pInContext, pOutDRD, fActive) : HResults.E_NOTIMPL;
 
-    public int IsDiagnosticsHiddenOrLCGMethod(ulong p0, nint p1) => _legacy is not null ? _legacy.IsDiagnosticsHiddenOrLCGMethod(p0, p1) : HResults.E_NOTIMPL;
+    public int IsDiagnosticsHiddenOrLCGMethod(ulong vmMethodDesc, int* pRetVal) => _legacy is not null ? _legacy.IsDiagnosticsHiddenOrLCGMethod(vmMethodDesc, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetVarArgSig(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.GetVarArgSig(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetVarArgSig(ulong VASigCookieAddr, ulong* pArgBase, nint pRetVal) => _legacy is not null ? _legacy.GetVarArgSig(VASigCookieAddr, pArgBase, pRetVal) : HResults.E_NOTIMPL;
 
-    public int RequiresAlign8(ulong p0, nint p1) => _legacy is not null ? _legacy.RequiresAlign8(p0, p1) : HResults.E_NOTIMPL;
+    public int RequiresAlign8(ulong thExact, int* pResult) => _legacy is not null ? _legacy.RequiresAlign8(thExact, pResult) : HResults.E_NOTIMPL;
 
-    public int ResolveExactGenericArgsToken(uint p0, nint p1, nint p2) => _legacy is not null ? _legacy.ResolveExactGenericArgsToken(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int ResolveExactGenericArgsToken(uint dwExactGenericArgsTokenIndex, ulong rawToken, ulong* pRetVal) => _legacy is not null ? _legacy.ResolveExactGenericArgsToken(dwExactGenericArgsTokenIndex, rawToken, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetILCodeAndSig(ulong p0, uint p1, nint p2, nint p3) => _legacy is not null ? _legacy.GetILCodeAndSig(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int GetILCodeAndSig(ulong vmDomainAssembly, uint functionToken, nint pCodeInfo, uint* pLocalSigToken) => _legacy is not null ? _legacy.GetILCodeAndSig(vmDomainAssembly, functionToken, pCodeInfo, pLocalSigToken) : HResults.E_NOTIMPL;
 
-    public int GetNativeCodeInfo(ulong p0, uint p1, nint p2) => _legacy is not null ? _legacy.GetNativeCodeInfo(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetNativeCodeInfo(ulong vmDomainAssembly, uint functionToken, nint pCodeInfo) => _legacy is not null ? _legacy.GetNativeCodeInfo(vmDomainAssembly, functionToken, pCodeInfo) : HResults.E_NOTIMPL;
 
-    public int GetNativeCodeInfoForAddr(ulong p0, nint p1, nint p2, nint p3) => _legacy is not null ? _legacy.GetNativeCodeInfoForAddr(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken) => _legacy is not null ? _legacy.GetNativeCodeInfoForAddr(codeAddress, pCodeInfo, pVmModule, pFunctionToken) : HResults.E_NOTIMPL;
 
-    public int IsValueType(ulong p0, nint p1) => _legacy is not null ? _legacy.IsValueType(p0, p1) : HResults.E_NOTIMPL;
+    public int IsValueType(ulong th, int* pResult) => _legacy is not null ? _legacy.IsValueType(th, pResult) : HResults.E_NOTIMPL;
 
-    public int HasTypeParams(ulong p0, nint p1) => _legacy is not null ? _legacy.HasTypeParams(p0, p1) : HResults.E_NOTIMPL;
+    public int HasTypeParams(ulong th, int* pResult) => _legacy is not null ? _legacy.HasTypeParams(th, pResult) : HResults.E_NOTIMPL;
 
-    public int GetClassInfo(ulong p0, ulong p1, nint p2) => _legacy is not null ? _legacy.GetClassInfo(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetClassInfo(ulong vmAppDomain, ulong thExact, nint pData) => _legacy is not null ? _legacy.GetClassInfo(vmAppDomain, thExact, pData) : HResults.E_NOTIMPL;
 
-    public int GetInstantiationFieldInfo(ulong p0, ulong p1, ulong p2, nint p3, nint p4) => _legacy is not null ? _legacy.GetInstantiationFieldInfo(p0, p1, p2, p3, p4) : HResults.E_NOTIMPL;
+    public int GetInstantiationFieldInfo(ulong vmDomainAssembly, ulong vmThExact, ulong vmThApprox, nint pFieldList, nuint* pObjectSize) => _legacy is not null ? _legacy.GetInstantiationFieldInfo(vmDomainAssembly, vmThExact, vmThApprox, pFieldList, pObjectSize) : HResults.E_NOTIMPL;
 
-    public int TypeHandleToExpandedTypeInfo(nint p0, ulong p1, ulong p2, nint p3) => _legacy is not null ? _legacy.TypeHandleToExpandedTypeInfo(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int TypeHandleToExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong vmTypeHandle, nint pTypeInfo) => _legacy is not null ? _legacy.TypeHandleToExpandedTypeInfo(boxed, vmAppDomain, vmTypeHandle, pTypeInfo) : HResults.E_NOTIMPL;
 
-    public int GetObjectExpandedTypeInfo(nint p0, ulong p1, ulong p2, nint p3) => _legacy is not null ? _legacy.GetObjectExpandedTypeInfo(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int GetObjectExpandedTypeInfo(int boxed, ulong vmAppDomain, ulong addr, nint pTypeInfo) => _legacy is not null ? _legacy.GetObjectExpandedTypeInfo(boxed, vmAppDomain, addr, pTypeInfo) : HResults.E_NOTIMPL;
 
-    public int GetObjectExpandedTypeInfoFromID(nint p0, ulong p1, nint p2, nint p3) => _legacy is not null ? _legacy.GetObjectExpandedTypeInfoFromID(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int GetObjectExpandedTypeInfoFromID(int boxed, ulong vmAppDomain, nint id, nint pTypeInfo) => _legacy is not null ? _legacy.GetObjectExpandedTypeInfoFromID(boxed, vmAppDomain, id, pTypeInfo) : HResults.E_NOTIMPL;
 
-    public int GetTypeHandle(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.GetTypeHandle(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal) => _legacy is not null ? _legacy.GetTypeHandle(vmModule, metadataToken, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetApproxTypeHandle(nint p0, nint p1) => _legacy is not null ? _legacy.GetApproxTypeHandle(p0, p1) : HResults.E_NOTIMPL;
+    public int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal) => _legacy is not null ? _legacy.GetApproxTypeHandle(pTypeData, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetExactTypeHandle(nint p0, nint p1, nint p2) => _legacy is not null ? _legacy.GetExactTypeHandle(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetExactTypeHandle(nint pTypeData, nint pArgInfo, ulong* vmTypeHandle) => _legacy is not null ? _legacy.GetExactTypeHandle(pTypeData, pArgInfo, vmTypeHandle) : HResults.E_NOTIMPL;
 
-    public int GetMethodDescParams(ulong p0, ulong p1, nint p2, nint p3, nint p4) => _legacy is not null ? _legacy.GetMethodDescParams(p0, p1, p2, p3, p4) : HResults.E_NOTIMPL;
+    public int GetMethodDescParams(ulong vmAppDomain, ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams, nint pGenericTypeParams) => _legacy is not null ? _legacy.GetMethodDescParams(vmAppDomain, vmMethodDesc, genericsToken, pcGenericClassTypeParams, pGenericTypeParams) : HResults.E_NOTIMPL;
 
-    public int GetThreadStaticAddress(ulong p0, ulong p1, nint p2) => _legacy is not null ? _legacy.GetThreadStaticAddress(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetThreadStaticAddress(ulong vmField, ulong vmRuntimeThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetThreadStaticAddress(vmField, vmRuntimeThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetCollectibleTypeStaticAddress(ulong p0, ulong p1, nint p2) => _legacy is not null ? _legacy.GetCollectibleTypeStaticAddress(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetCollectibleTypeStaticAddress(ulong vmField, ulong vmAppDomain, ulong* pRetVal) => _legacy is not null ? _legacy.GetCollectibleTypeStaticAddress(vmField, vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetEnCHangingFieldInfo(nint p0, nint p1, nint p2) => _legacy is not null ? _legacy.GetEnCHangingFieldInfo(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, int* pfStatic) => _legacy is not null ? _legacy.GetEnCHangingFieldInfo(pEnCFieldInfo, pFieldData, pfStatic) : HResults.E_NOTIMPL;
 
-    public int GetTypeHandleParams(ulong p0, ulong p1, nint p2) => _legacy is not null ? _legacy.GetTypeHandleParams(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetTypeHandleParams(ulong vmAppDomain, ulong vmTypeHandle, nint pParams) => _legacy is not null ? _legacy.GetTypeHandleParams(vmAppDomain, vmTypeHandle, pParams) : HResults.E_NOTIMPL;
 
-    public int GetSimpleType(ulong p0, int p1, nint p2, nint p3, nint p4) => _legacy is not null ? _legacy.GetSimpleType(p0, p1, p2, p3, p4) : HResults.E_NOTIMPL;
+    public int GetSimpleType(ulong vmAppDomain, int simpleType, uint* pMetadataToken, ulong* pVmModule, ulong* pVmDomainAssembly) => _legacy is not null ? _legacy.GetSimpleType(vmAppDomain, simpleType, pMetadataToken, pVmModule, pVmDomainAssembly) : HResults.E_NOTIMPL;
 
-    public int IsExceptionObject(ulong p0, nint p1) => _legacy is not null ? _legacy.IsExceptionObject(p0, p1) : HResults.E_NOTIMPL;
+    public int IsExceptionObject(ulong vmObject, int* pResult) => _legacy is not null ? _legacy.IsExceptionObject(vmObject, pResult) : HResults.E_NOTIMPL;
 
-    public int GetStackFramesFromException(ulong p0, nint p1) => _legacy is not null ? _legacy.GetStackFramesFromException(p0, p1) : HResults.E_NOTIMPL;
+    public int GetStackFramesFromException(ulong vmObject, nint dacStackFrames) => _legacy is not null ? _legacy.GetStackFramesFromException(vmObject, dacStackFrames) : HResults.E_NOTIMPL;
 
-    public int IsRcw(ulong p0, nint p1) => _legacy is not null ? _legacy.IsRcw(p0, p1) : HResults.E_NOTIMPL;
+    public int IsRcw(ulong vmObject, int* pResult) => _legacy is not null ? _legacy.IsRcw(vmObject, pResult) : HResults.E_NOTIMPL;
 
-    public int GetRcwCachedInterfaceTypes(ulong p0, ulong p1, int p2, nint p3) => _legacy is not null ? _legacy.GetRcwCachedInterfaceTypes(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int GetRcwCachedInterfaceTypes(ulong vmObject, ulong vmAppDomain, int bIInspectableOnly, nint pDacInterfaces) => _legacy is not null ? _legacy.GetRcwCachedInterfaceTypes(vmObject, vmAppDomain, bIInspectableOnly, pDacInterfaces) : HResults.E_NOTIMPL;
 
-    public int GetRcwCachedInterfacePointers(ulong p0, int p1, nint p2) => _legacy is not null ? _legacy.GetRcwCachedInterfacePointers(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetRcwCachedInterfacePointers(ulong vmObject, int bIInspectableOnly, nint pDacItfPtrs) => _legacy is not null ? _legacy.GetRcwCachedInterfacePointers(vmObject, bIInspectableOnly, pDacItfPtrs) : HResults.E_NOTIMPL;
 
-    public int GetCachedWinRTTypesForIIDs(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.GetCachedWinRTTypesForIIDs(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetCachedWinRTTypesForIIDs(ulong vmAppDomain, nint iids, nint pTypes) => _legacy is not null ? _legacy.GetCachedWinRTTypesForIIDs(vmAppDomain, iids, pTypes) : HResults.E_NOTIMPL;
 
-    public int GetCachedWinRTTypes(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.GetCachedWinRTTypes(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetCachedWinRTTypes(ulong vmAppDomain, nint piids, nint pTypes) => _legacy is not null ? _legacy.GetCachedWinRTTypes(vmAppDomain, piids, pTypes) : HResults.E_NOTIMPL;
 
-    public int GetTypedByRefInfo(ulong p0, ulong p1, nint p2) => _legacy is not null ? _legacy.GetTypedByRefInfo(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetTypedByRefInfo(ulong pTypedByRef, ulong vmAppDomain, nint pObjectData) => _legacy is not null ? _legacy.GetTypedByRefInfo(pTypedByRef, vmAppDomain, pObjectData) : HResults.E_NOTIMPL;
 
-    public int GetStringData(ulong p0, nint p1) => _legacy is not null ? _legacy.GetStringData(p0, p1) : HResults.E_NOTIMPL;
+    public int GetStringData(ulong objectAddress, nint pObjectData) => _legacy is not null ? _legacy.GetStringData(objectAddress, pObjectData) : HResults.E_NOTIMPL;
 
-    public int GetArrayData(ulong p0, nint p1) => _legacy is not null ? _legacy.GetArrayData(p0, p1) : HResults.E_NOTIMPL;
+    public int GetArrayData(ulong objectAddress, nint pObjectData) => _legacy is not null ? _legacy.GetArrayData(objectAddress, pObjectData) : HResults.E_NOTIMPL;
 
-    public int GetBasicObjectInfo(ulong p0, int p1, ulong p2, nint p3) => _legacy is not null ? _legacy.GetBasicObjectInfo(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int GetBasicObjectInfo(ulong objectAddress, int type, ulong vmAppDomain, nint pObjectData) => _legacy is not null ? _legacy.GetBasicObjectInfo(objectAddress, type, vmAppDomain, pObjectData) : HResults.E_NOTIMPL;
 
-    public int TestCrst(ulong p0) => _legacy is not null ? _legacy.TestCrst(p0) : HResults.E_NOTIMPL;
+    public int TestCrst(ulong vmCrst) => _legacy is not null ? _legacy.TestCrst(vmCrst) : HResults.E_NOTIMPL;
 
-    public int TestRWLock(ulong p0) => _legacy is not null ? _legacy.TestRWLock(p0) : HResults.E_NOTIMPL;
+    public int TestRWLock(ulong vmRWLock) => _legacy is not null ? _legacy.TestRWLock(vmRWLock) : HResults.E_NOTIMPL;
 
-    public int GetDebuggerControlBlockAddress(nint p0) => _legacy is not null ? _legacy.GetDebuggerControlBlockAddress(p0) : HResults.E_NOTIMPL;
+    public int GetDebuggerControlBlockAddress(ulong* pRetVal) => _legacy is not null ? _legacy.GetDebuggerControlBlockAddress(pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetObjectFromRefPtr(ulong p0, nint p1) => _legacy is not null ? _legacy.GetObjectFromRefPtr(p0, p1) : HResults.E_NOTIMPL;
+    public int GetObjectFromRefPtr(ulong ptr, ulong* pRetVal) => _legacy is not null ? _legacy.GetObjectFromRefPtr(ptr, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetObject(ulong p0, nint p1) => _legacy is not null ? _legacy.GetObject(p0, p1) : HResults.E_NOTIMPL;
+    public int GetObject(ulong ptr, ulong* pRetVal) => _legacy is not null ? _legacy.GetObject(ptr, pRetVal) : HResults.E_NOTIMPL;
 
-    public int EnableNGENPolicy(int p0) => _legacy is not null ? _legacy.EnableNGENPolicy(p0) : HResults.E_NOTIMPL;
+    public int EnableNGENPolicy(int ePolicy) => _legacy is not null ? _legacy.EnableNGENPolicy(ePolicy) : HResults.E_NOTIMPL;
 
-    public int SetNGENCompilerFlags(uint p0) => _legacy is not null ? _legacy.SetNGENCompilerFlags(p0) : HResults.E_NOTIMPL;
+    public int SetNGENCompilerFlags(uint dwFlags) => _legacy is not null ? _legacy.SetNGENCompilerFlags(dwFlags) : HResults.E_NOTIMPL;
 
-    public int GetNGENCompilerFlags(nint p0) => _legacy is not null ? _legacy.GetNGENCompilerFlags(p0) : HResults.E_NOTIMPL;
+    public int GetNGENCompilerFlags(uint* pdwFlags) => _legacy is not null ? _legacy.GetNGENCompilerFlags(pdwFlags) : HResults.E_NOTIMPL;
 
-    public int GetVmObjectHandle(ulong p0, nint p1) => _legacy is not null ? _legacy.GetVmObjectHandle(p0, p1) : HResults.E_NOTIMPL;
+    public int GetVmObjectHandle(ulong handleAddress, ulong* pRetVal) => _legacy is not null ? _legacy.GetVmObjectHandle(handleAddress, pRetVal) : HResults.E_NOTIMPL;
 
-    public int IsVmObjectHandleValid(ulong p0, nint p1) => _legacy is not null ? _legacy.IsVmObjectHandleValid(p0, p1) : HResults.E_NOTIMPL;
+    public int IsVmObjectHandleValid(ulong vmHandle, int* pResult) => _legacy is not null ? _legacy.IsVmObjectHandleValid(vmHandle, pResult) : HResults.E_NOTIMPL;
 
-    public int IsWinRTModule(ulong p0, nint p1) => _legacy is not null ? _legacy.IsWinRTModule(p0, p1) : HResults.E_NOTIMPL;
+    public int IsWinRTModule(ulong vmModule, int* isWinRT) => _legacy is not null ? _legacy.IsWinRTModule(vmModule, isWinRT) : HResults.E_NOTIMPL;
 
-    public int GetAppDomainIdFromVmObjectHandle(ulong p0, nint p1) => _legacy is not null ? _legacy.GetAppDomainIdFromVmObjectHandle(p0, p1) : HResults.E_NOTIMPL;
+    public int GetAppDomainIdFromVmObjectHandle(ulong vmHandle, uint* pRetVal) => _legacy is not null ? _legacy.GetAppDomainIdFromVmObjectHandle(vmHandle, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetHandleAddressFromVmHandle(ulong p0, nint p1) => _legacy is not null ? _legacy.GetHandleAddressFromVmHandle(p0, p1) : HResults.E_NOTIMPL;
+    public int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal) => _legacy is not null ? _legacy.GetHandleAddressFromVmHandle(vmHandle, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetObjectContents(ulong p0, nint p1) => _legacy is not null ? _legacy.GetObjectContents(p0, p1) : HResults.E_NOTIMPL;
+    public int GetObjectContents(ulong obj, nint pRetVal) => _legacy is not null ? _legacy.GetObjectContents(obj, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetThreadOwningMonitorLock(ulong p0, nint p1) => _legacy is not null ? _legacy.GetThreadOwningMonitorLock(p0, p1) : HResults.E_NOTIMPL;
+    public int GetThreadOwningMonitorLock(ulong vmObject, nint pRetVal) => _legacy is not null ? _legacy.GetThreadOwningMonitorLock(vmObject, pRetVal) : HResults.E_NOTIMPL;
 
-    public int EnumerateMonitorEventWaitList(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.EnumerateMonitorEventWaitList(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateMonitorEventWaitList(vmObject, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
-    public int GetAttachStateFlags(nint p0) => _legacy is not null ? _legacy.GetAttachStateFlags(p0) : HResults.E_NOTIMPL;
+    public int GetAttachStateFlags(int* pRetVal) => _legacy is not null ? _legacy.GetAttachStateFlags(pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetMetaDataFileInfoFromPEFile(ulong p0, nint p1, nint p2, nint p3, nint p4) => _legacy is not null ? _legacy.GetMetaDataFileInfoFromPEFile(p0, p1, p2, p3, p4) : HResults.E_NOTIMPL;
+    public int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, byte* pResult) => _legacy is not null ? _legacy.GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwTimeStamp, dwImageSize, pStrFilename, pResult) : HResults.E_NOTIMPL;
 
-    public int IsThreadSuspendedOrHijacked(ulong p0, nint p1) => _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(p0, p1) : HResults.E_NOTIMPL;
+    public int IsThreadSuspendedOrHijacked(ulong vmThread, byte* pResult) => _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
 
-    public int AreGCStructuresValid(nint p0) => _legacy is not null ? _legacy.AreGCStructuresValid(p0) : HResults.E_NOTIMPL;
+    public int AreGCStructuresValid(byte* pResult) => _legacy is not null ? _legacy.AreGCStructuresValid(pResult) : HResults.E_NOTIMPL;
 
-    public int CreateHeapWalk(nint p0) => _legacy is not null ? _legacy.CreateHeapWalk(p0) : HResults.E_NOTIMPL;
+    public int CreateHeapWalk(nuint* pHandle) => _legacy is not null ? _legacy.CreateHeapWalk(pHandle) : HResults.E_NOTIMPL;
 
-    public int DeleteHeapWalk(ulong p0) => _legacy is not null ? _legacy.DeleteHeapWalk(p0) : HResults.E_NOTIMPL;
+    public int DeleteHeapWalk(nuint handle) => _legacy is not null ? _legacy.DeleteHeapWalk(handle) : HResults.E_NOTIMPL;
 
-    public int WalkHeap(ulong p0, uint p1, nint p2, nint p3) => _legacy is not null ? _legacy.WalkHeap(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int WalkHeap(nuint handle, uint count, nint objects, uint* fetched) => _legacy is not null ? _legacy.WalkHeap(handle, count, objects, fetched) : HResults.E_NOTIMPL;
 
-    public int GetHeapSegments(nint p0) => _legacy is not null ? _legacy.GetHeapSegments(p0) : HResults.E_NOTIMPL;
+    public int GetHeapSegments(nint pSegments) => _legacy is not null ? _legacy.GetHeapSegments(pSegments) : HResults.E_NOTIMPL;
 
-    public int IsValidObject(ulong p0, nint p1) => _legacy is not null ? _legacy.IsValidObject(p0, p1) : HResults.E_NOTIMPL;
+    public int IsValidObject(ulong obj, byte* pResult) => _legacy is not null ? _legacy.IsValidObject(obj, pResult) : HResults.E_NOTIMPL;
 
-    public int GetAppDomainForObject(ulong p0, nint p1, nint p2, nint p3, nint p4) => _legacy is not null ? _legacy.GetAppDomainForObject(p0, p1, p2, p3, p4) : HResults.E_NOTIMPL;
+    public int GetAppDomainForObject(ulong obj, ulong* pApp, ulong* pModule, ulong* pDomainAssembly, byte* pResult) => _legacy is not null ? _legacy.GetAppDomainForObject(obj, pApp, pModule, pDomainAssembly, pResult) : HResults.E_NOTIMPL;
 
-    public int CreateRefWalk(nint p0, int p1, int p2, uint p3) => _legacy is not null ? _legacy.CreateRefWalk(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int CreateRefWalk(nuint* pHandle, int walkStacks, int walkFQ, uint handleWalkMask) => _legacy is not null ? _legacy.CreateRefWalk(pHandle, walkStacks, walkFQ, handleWalkMask) : HResults.E_NOTIMPL;
 
-    public int DeleteRefWalk(ulong p0) => _legacy is not null ? _legacy.DeleteRefWalk(p0) : HResults.E_NOTIMPL;
+    public int DeleteRefWalk(nuint handle) => _legacy is not null ? _legacy.DeleteRefWalk(handle) : HResults.E_NOTIMPL;
 
-    public int WalkRefs(ulong p0, uint p1, nint p2, nint p3) => _legacy is not null ? _legacy.WalkRefs(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int WalkRefs(nuint handle, uint count, nint refs, uint* pFetched) => _legacy is not null ? _legacy.WalkRefs(handle, count, refs, pFetched) : HResults.E_NOTIMPL;
 
-    public int GetTypeID(ulong p0, nint p1) => _legacy is not null ? _legacy.GetTypeID(p0, p1) : HResults.E_NOTIMPL;
+    public int GetTypeID(ulong obj, nint pType) => _legacy is not null ? _legacy.GetTypeID(obj, pType) : HResults.E_NOTIMPL;
 
-    public int GetTypeIDForType(ulong p0, nint p1) => _legacy is not null ? _legacy.GetTypeIDForType(p0, p1) : HResults.E_NOTIMPL;
+    public int GetTypeIDForType(ulong vmTypeHandle, nint pId) => _legacy is not null ? _legacy.GetTypeIDForType(vmTypeHandle, pId) : HResults.E_NOTIMPL;
 
-    public int GetObjectFields(nint p0, uint p1, nint p2, nint p3) => _legacy is not null ? _legacy.GetObjectFields(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int GetObjectFields(nint id, uint celt, nint layout, uint* pceltFetched) => _legacy is not null ? _legacy.GetObjectFields(id, celt, layout, pceltFetched) : HResults.E_NOTIMPL;
 
-    public int GetTypeLayout(nint p0, nint p1) => _legacy is not null ? _legacy.GetTypeLayout(p0, p1) : HResults.E_NOTIMPL;
+    public int GetTypeLayout(nint id, nint pLayout) => _legacy is not null ? _legacy.GetTypeLayout(id, pLayout) : HResults.E_NOTIMPL;
 
-    public int GetArrayLayout(nint p0, nint p1) => _legacy is not null ? _legacy.GetArrayLayout(p0, p1) : HResults.E_NOTIMPL;
+    public int GetArrayLayout(nint id, nint pLayout) => _legacy is not null ? _legacy.GetArrayLayout(id, pLayout) : HResults.E_NOTIMPL;
 
-    public int GetGCHeapInformation(nint p0) => _legacy is not null ? _legacy.GetGCHeapInformation(p0) : HResults.E_NOTIMPL;
+    public int GetGCHeapInformation(nint pHeapInfo) => _legacy is not null ? _legacy.GetGCHeapInformation(pHeapInfo) : HResults.E_NOTIMPL;
 
-    public int GetPEFileMDInternalRW(ulong p0, nint p1) => _legacy is not null ? _legacy.GetPEFileMDInternalRW(p0, p1) : HResults.E_NOTIMPL;
+    public int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW) => _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
 
-    public int GetReJitInfo(ulong p0, uint p1, nint p2) => _legacy is not null ? _legacy.GetReJitInfo(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetReJitInfo(ulong vmModule, uint methodTk, ulong* pReJitInfo) => _legacy is not null ? _legacy.GetReJitInfo(vmModule, methodTk, pReJitInfo) : HResults.E_NOTIMPL;
 
-    public int GetReJitInfo(ulong p0, ulong p1, nint p2) => _legacy is not null ? _legacy.GetReJitInfo(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetReJitInfo(ulong vmMethod, ulong codeStartAddress, ulong* pReJitInfo) => _legacy is not null ? _legacy.GetReJitInfo(vmMethod, codeStartAddress, pReJitInfo) : HResults.E_NOTIMPL;
 
-    public int GetSharedReJitInfo(ulong p0, nint p1) => _legacy is not null ? _legacy.GetSharedReJitInfo(p0, p1) : HResults.E_NOTIMPL;
+    public int GetSharedReJitInfo(ulong vmReJitInfo, ulong* pSharedReJitInfo) => _legacy is not null ? _legacy.GetSharedReJitInfo(vmReJitInfo, pSharedReJitInfo) : HResults.E_NOTIMPL;
 
-    public int GetSharedReJitInfoData(ulong p0, nint p1) => _legacy is not null ? _legacy.GetSharedReJitInfoData(p0, p1) : HResults.E_NOTIMPL;
+    public int GetSharedReJitInfoData(ulong sharedReJitInfo, nint pData) => _legacy is not null ? _legacy.GetSharedReJitInfoData(sharedReJitInfo, pData) : HResults.E_NOTIMPL;
 
-    public int AreOptimizationsDisabled(ulong p0, uint p1, nint p2) => _legacy is not null ? _legacy.AreOptimizationsDisabled(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int AreOptimizationsDisabled(ulong vmModule, uint methodTk, int* pOptimizationsDisabled) => _legacy is not null ? _legacy.AreOptimizationsDisabled(vmModule, methodTk, pOptimizationsDisabled) : HResults.E_NOTIMPL;
 
-    public int GetDefinesBitField(nint p0) => _legacy is not null ? _legacy.GetDefinesBitField(p0) : HResults.E_NOTIMPL;
+    public int GetDefinesBitField(uint* pDefines) => _legacy is not null ? _legacy.GetDefinesBitField(pDefines) : HResults.E_NOTIMPL;
 
-    public int GetMDStructuresVersion(nint p0) => _legacy is not null ? _legacy.GetMDStructuresVersion(p0) : HResults.E_NOTIMPL;
+    public int GetMDStructuresVersion(uint* pMDStructuresVersion) => _legacy is not null ? _legacy.GetMDStructuresVersion(pMDStructuresVersion) : HResults.E_NOTIMPL;
 
-    public int GetActiveRejitILCodeVersionNode(ulong p0, uint p1, nint p2) => _legacy is not null ? _legacy.GetActiveRejitILCodeVersionNode(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetActiveRejitILCodeVersionNode(ulong vmModule, uint methodTk, ulong* pVmILCodeVersionNode) => _legacy is not null ? _legacy.GetActiveRejitILCodeVersionNode(vmModule, methodTk, pVmILCodeVersionNode) : HResults.E_NOTIMPL;
 
-    public int GetNativeCodeVersionNode(ulong p0, ulong p1, nint p2) => _legacy is not null ? _legacy.GetNativeCodeVersionNode(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetNativeCodeVersionNode(ulong vmMethod, ulong codeStartAddress, ulong* pVmNativeCodeVersionNode) => _legacy is not null ? _legacy.GetNativeCodeVersionNode(vmMethod, codeStartAddress, pVmNativeCodeVersionNode) : HResults.E_NOTIMPL;
 
-    public int GetILCodeVersionNode(ulong p0, nint p1) => _legacy is not null ? _legacy.GetILCodeVersionNode(p0, p1) : HResults.E_NOTIMPL;
+    public int GetILCodeVersionNode(ulong vmNativeCodeVersionNode, ulong* pVmILCodeVersionNode) => _legacy is not null ? _legacy.GetILCodeVersionNode(vmNativeCodeVersionNode, pVmILCodeVersionNode) : HResults.E_NOTIMPL;
 
-    public int GetILCodeVersionNodeData(ulong p0, nint p1) => _legacy is not null ? _legacy.GetILCodeVersionNodeData(p0, p1) : HResults.E_NOTIMPL;
+    public int GetILCodeVersionNodeData(ulong ilCodeVersionNode, nint pData) => _legacy is not null ? _legacy.GetILCodeVersionNodeData(ilCodeVersionNode, pData) : HResults.E_NOTIMPL;
 
-    public int EnableGCNotificationEvents(int p0) => _legacy is not null ? _legacy.EnableGCNotificationEvents(p0) : HResults.E_NOTIMPL;
+    public int EnableGCNotificationEvents(int fEnable) => _legacy is not null ? _legacy.EnableGCNotificationEvents(fEnable) : HResults.E_NOTIMPL;
 
-    public int IsDelegate(ulong p0, nint p1) => _legacy is not null ? _legacy.IsDelegate(p0, p1) : HResults.E_NOTIMPL;
+    public int IsDelegate(ulong vmObject, int* pResult) => _legacy is not null ? _legacy.IsDelegate(vmObject, pResult) : HResults.E_NOTIMPL;
 
-    public int GetDelegateType(ulong p0, nint p1) => _legacy is not null ? _legacy.GetDelegateType(p0, p1) : HResults.E_NOTIMPL;
+    public int GetDelegateType(ulong delegateObject, int* delegateType) => _legacy is not null ? _legacy.GetDelegateType(delegateObject, delegateType) : HResults.E_NOTIMPL;
 
-    public int GetDelegateFunctionData(int p0, ulong p1, nint p2, nint p3) => _legacy is not null ? _legacy.GetDelegateFunctionData(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionDomainAssembly, uint* pMethodDef) => _legacy is not null ? _legacy.GetDelegateFunctionData(delegateType, delegateObject, ppFunctionDomainAssembly, pMethodDef) : HResults.E_NOTIMPL;
 
-    public int GetDelegateTargetObject(int p0, ulong p1, nint p2, nint p3) => _legacy is not null ? _legacy.GetDelegateTargetObject(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain) => _legacy is not null ? _legacy.GetDelegateTargetObject(delegateType, delegateObject, ppTargetObj, ppTargetAppDomain) : HResults.E_NOTIMPL;
 
-    public int GetLoaderHeapMemoryRanges(nint p0) => _legacy is not null ? _legacy.GetLoaderHeapMemoryRanges(p0) : HResults.E_NOTIMPL;
+    public int GetLoaderHeapMemoryRanges(nint pRanges) => _legacy is not null ? _legacy.GetLoaderHeapMemoryRanges(pRanges) : HResults.E_NOTIMPL;
 
-    public int IsModuleMapped(ulong p0, nint p1) => _legacy is not null ? _legacy.IsModuleMapped(p0, p1) : HResults.E_NOTIMPL;
+    public int IsModuleMapped(ulong pModule, int* isModuleMapped) => _legacy is not null ? _legacy.IsModuleMapped(pModule, isModuleMapped) : HResults.E_NOTIMPL;
 
-    public int MetadataUpdatesApplied(nint p0) => _legacy is not null ? _legacy.MetadataUpdatesApplied(p0) : HResults.E_NOTIMPL;
+    public int MetadataUpdatesApplied(byte* pResult) => _legacy is not null ? _legacy.MetadataUpdatesApplied(pResult) : HResults.E_NOTIMPL;
 
-    public int GetDomainAssemblyFromModule(ulong p0, nint p1) => _legacy is not null ? _legacy.GetDomainAssemblyFromModule(p0, p1) : HResults.E_NOTIMPL;
+    public int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly) => _legacy is not null ? _legacy.GetDomainAssemblyFromModule(vmModule, pVmDomainAssembly) : HResults.E_NOTIMPL;
 
-    public int ParseContinuation(ulong p0, nint p1, nint p2, nint p3) => _legacy is not null ? _legacy.ParseContinuation(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState) => _legacy is not null ? _legacy.ParseContinuation(continuationAddress, pDiagnosticIP, pNextContinuation, pState) : HResults.E_NOTIMPL;
 
-    public int GetAsyncLocals(ulong p0, ulong p1, uint p2, nint p3) => _legacy is not null ? _legacy.GetAsyncLocals(p0, p1, p2, p3) : HResults.E_NOTIMPL;
+    public int GetAsyncLocals(ulong vmMethod, ulong codeAddr, uint state, nint pAsyncLocals) => _legacy is not null ? _legacy.GetAsyncLocals(vmMethod, codeAddr, state, pAsyncLocals) : HResults.E_NOTIMPL;
 
-    public int GetGenericArgTokenIndex(ulong p0, nint p1) => _legacy is not null ? _legacy.GetGenericArgTokenIndex(p0, p1) : HResults.E_NOTIMPL;
+    public int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex) => _legacy is not null ? _legacy.GetGenericArgTokenIndex(vmMethod, pIndex) : HResults.E_NOTIMPL;
 
 }
