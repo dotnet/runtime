@@ -3554,15 +3554,6 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
     def fmt_val(v):
         return "{:,.2f}".format(v) if isinstance(v, float) else "{:,d}".format(v)
 
-    def fmt_pct(base_val, diff_val):
-        if base_val == 0:
-            if diff_val > 0:
-                return html_color("red", "+\u221e")
-            elif diff_val < 0:
-                return html_color("green", "-\u221e")
-            return "0.00%"
-        return compute_and_format_pct(base_val, diff_val)
-
     write_jit_options(base_jit_options, diff_jit_options, write_fh)
 
     # Collect the union of all metrics across all collections
@@ -3609,7 +3600,7 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
             for mch_file, base, diff in significant_diffs:
                 write_fh.write("|{}|{}|{}|{}|\n".format(
                     mch_file, fmt_val(base[metric]), fmt_val(diff[metric]),
-                    fmt_pct(base[metric], diff[metric])))
+                    compute_and_format_pct(base[metric], diff[metric])))
 
     if not any_significant:
         if include_details:
@@ -3634,7 +3625,7 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
                         for mch_file, base_val, diff_val in rows:
                             write_fh.write("|{}|{}|{}|{}|\n".format(
                                 mch_file, fmt_val(base_val), fmt_val(diff_val),
-                                fmt_pct(base_val, diff_val)))
+                                compute_and_format_pct(base_val, diff_val)))
 
 ################################################################################
 # Argument handling helpers
