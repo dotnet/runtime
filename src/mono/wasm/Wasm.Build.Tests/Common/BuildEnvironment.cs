@@ -27,6 +27,7 @@ namespace Wasm.Build.Tests
 
         public bool UseWebcil { get; init; }
         public bool IsWorkloadWithMultiThreadingForDefaultFramework { get; init; }
+        public bool IsMonoRuntime { get; init; }
         public bool IsRunningOnCI => EnvironmentVariables.IsRunningOnCI;
 
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
@@ -112,6 +113,7 @@ namespace Wasm.Build.Tests
             }
 
             UseWebcil = EnvironmentVariables.UseWebcil;
+            IsMonoRuntime = EnvironmentVariables.RuntimeFlavor == "Mono";
 
             if (EnvironmentVariables.BuiltNuGetsPath is null || !Directory.Exists(EnvironmentVariables.BuiltNuGetsPath))
                 throw new Exception($"Cannot find 'BUILT_NUGETS_PATH={EnvironmentVariables.BuiltNuGetsPath}'");
