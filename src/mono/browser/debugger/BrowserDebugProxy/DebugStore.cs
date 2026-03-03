@@ -894,7 +894,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 try
                 {
-                    // First try to read it as a PE file, otherwise try it as a WebCIL file
+                    // First try to read it as a PE file, otherwise try it as a Webcil file
                     var peReader = new PEReader(asmStream);
                     if (!peReader.HasMetadata)
                         throw new BadImageFormatException();
@@ -970,6 +970,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             LoadAssemblyInfo(peReader, name, asmMetadataReader, summary, logger);
         }
+
         private void FromWebcilReader(MonoProxy monoProxy, SessionId sessionId, WebcilReader wcReader, byte[] pdb, ILogger logger, CancellationToken token)
         {
             var debugProvider = new WebcilDebugMetadataProvider(wcReader);

@@ -45,7 +45,7 @@ namespace Tracing.UserEvents.Tests.Activity
             ActivityEventSource.Log.QueryStop();
         }
 
-        private static readonly Func<EventPipeEventSource, bool> s_traceValidator = source =>
+        private static readonly Func<int, EventPipeEventSource, bool> s_traceValidator = (traceePid, source) =>
         {
             Guid firstWorkActivityId = Guid.Empty;
             Guid secondWorkActivityId = Guid.Empty;
@@ -60,8 +60,16 @@ namespace Tracing.UserEvents.Tests.Activity
             Guid secondWorkQuery1RelatedActivityId = Guid.Empty;
             Guid secondWorkQuery2RelatedActivityId = Guid.Empty;
 
+            int eventsFromOtherProcesses = 0;
+
             source.Dynamic.All += e =>
             {
+                if (e.ProcessID != traceePid)
+                {
+                    eventsFromOtherProcesses++;
+                    return;
+                }
+
                 if (!string.Equals(e.ProviderName, "DemoActivityIDs", StringComparison.Ordinal))
                 {
                     return;
@@ -114,9 +122,14 @@ namespace Tracing.UserEvents.Tests.Activity
 
             source.Process();
 
+            if (eventsFromOtherProcesses > 0)
+            {
+                Console.WriteLine($"Ignored {eventsFromOtherProcesses} events from processes other than tracee (PID {traceePid}).");
+            }
+
             if (firstWorkActivityId == Guid.Empty || secondWorkActivityId == Guid.Empty)
             {
-                Console.Error.WriteLine("The trace did not contain two WorkStart events with ActivityIds for RequestA and RequestB.");
+                Console.Error.WriteLine($"The trace did not contain two WorkStart events with ActivityIds for RequestA and RequestB from tracee PID {traceePid}.");
                 return false;
             }
 
@@ -152,7 +165,8 @@ namespace Tracing.UserEvents.Tests.Activity
                 args,
                 "activity",
                 ActivityTracee,
-                s_traceValidator);
+                s_traceValidator,
+                ActivityEventSource.Log);
         }
     }
 

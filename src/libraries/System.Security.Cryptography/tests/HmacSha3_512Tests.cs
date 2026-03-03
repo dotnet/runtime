@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Tests
         {
         }
 
-        [ConditionalTheory(nameof(IsSupported))]
+        [ConditionalTheory(typeof(HmacSha3_512Tests), nameof(IsSupported))]
         [MemberData(nameof(TestCaseIds))]
         public void HmacSha3_512_VerifyTestCases(int caseId)
         {
@@ -160,19 +160,19 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(HmacSha3_512Tests), nameof(IsSupported))]
         public void HmacSha3_512_Rfc2104_2()
         {
             VerifyHmacRfc2104_2();
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(HmacSha3_512Tests), nameof(IsSupported))]
         public void HmacSha3_512_ThrowsArgumentNullForNullConstructorKey()
         {
             AssertExtensions.Throws<ArgumentNullException>("key", () => new HMACSHA3_512(null));
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(HmacSha3_512Tests), nameof(IsSupported))]
         public void HmacSha3_512_EmptyKey()
         {
             VerifyRepeating(
@@ -183,7 +183,7 @@ namespace System.Security.Cryptography.Tests
                         "98792648C97886B3DD9E63AB962581C67DA5EE04F2B15263555B1796782CB556");
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(HmacSha3_512Tests), nameof(IsSupported))]
         public void HmacSha3_512_Stream_MultipleOf4096()
         {
             // Verified with:
@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.Tests
                         "317D9014C429DB18E5A6BFD811F7B484922471085F17ED31F6A7EB4E07BFFA97");
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(HmacSha3_512Tests), nameof(IsSupported))]
         public void HmacSha3_512_Stream_NotMultipleOf4096()
         {
             // Verified with:
@@ -209,7 +209,7 @@ namespace System.Security.Cryptography.Tests
                         "E86DECE850D50DE76386CB293FA832778C7D6607A4F00AD666DA3EFFD6143E70");
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(HmacSha3_512Tests), nameof(IsSupported))]
         public void HmacSha3_512_Stream_Empty()
         {
             // Verified with:
@@ -222,7 +222,7 @@ namespace System.Security.Cryptography.Tests
                         "CA58633748DC80D4615E3D21228BB3A5F535FA1CB963DF463CC28ABAF1A9B2D1");
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(HmacSha3_512Tests), nameof(IsSupported))]
         public async Task HmacSha3_512_Stream_MultipleOf4096_Async()
         {
             // Verified with:
@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.Tests
                         "317D9014C429DB18E5A6BFD811F7B484922471085F17ED31F6A7EB4E07BFFA97");
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(HmacSha3_512Tests), nameof(IsSupported))]
         public async Task HmacSha3_512_Stream_NotMultipleOf4096_Async()
         {
             // Verified with:
@@ -248,7 +248,7 @@ namespace System.Security.Cryptography.Tests
                         "E86DECE850D50DE76386CB293FA832778C7D6607A4F00AD666DA3EFFD6143E70");
         }
 
-        [ConditionalFact(nameof(IsSupported))]
+        [ConditionalFact(typeof(HmacSha3_512Tests), nameof(IsSupported))]
         public async Task HmacSha3_512_Stream_Empty_Async()
         {
             // Verified with:

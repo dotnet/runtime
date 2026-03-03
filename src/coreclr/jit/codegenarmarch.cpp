@@ -501,7 +501,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CATCH_ARG:
 
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->bbCatchTyp));
+            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
 
             /* Catch arguments get passed in a register. genCodeForBBlist()
                would have marked it as holding a GC object, but not used. */
@@ -4120,7 +4120,7 @@ void CodeGen::genCodeForMulLong(GenTreeOp* mul)
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_R_R_R_R(ins, EA_4BYTE, mul->GetRegNum(), mul->AsMultiRegOp()->gtOtherReg, srcReg1, srcReg2);
 #else
-    GetEmitter()->emitIns_R_R_R(ins, EA_4BYTE, mul->GetRegNum(), srcReg1, srcReg2);
+    GetEmitter()->emitIns_R_R_R(ins, EA_8BYTE, mul->GetRegNum(), srcReg1, srcReg2);
 #endif
 
     genProduceReg(mul);
