@@ -76,7 +76,7 @@ namespace System.Reflection.Metadata
         /// <param name="buffer">The array that underpins the <see cref="BlobBuilder"/>.</param>
         /// <param name="maxChunkSize">The size of chunks to split large writes into.</param>
         /// <exception cref="ArgumentException"><paramref name="buffer"/> is less than 16 bytes long.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxChunkSize"/> is negative.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxChunkSize"/> is less than 16.</exception>
         protected BlobBuilder(byte[] buffer, int maxChunkSize = 0)
         {
             if (buffer is null)
@@ -177,7 +177,7 @@ namespace System.Reflection.Metadata
                 if (value != _previousLengthOrFrozenSuffixLengthDelta + _buffer.Length)
                 {
                     // If the chunk is full, allocate a new chunk instead of resizing it in place.
-                    // We could also expand it if it's "almost full", but setting the capacity usually happend
+                    // We could also expand it if it's "almost full", but setting the capacity usually happens
                     // at the beginning of using the builder, so it would not likely have a big impact.
                     if (FreeBytes == 0)
                     {
@@ -711,6 +711,8 @@ namespace System.Reflection.Metadata
         private void ResizeChunk(int newLength)
         {
             BlobBuilder newChunk = AllocateChunkHelper(newLength);
+            // While we are not strictly speaking "linking chunks", we call it to make sure that the blob builders
+            // are compatible with each other, as we are going to swap their buffers.
             OnLinking(this, newChunk);
             byte[] newBuffer = newChunk._buffer;
             Array.Copy(_buffer, 0, newBuffer, 0, Length);

@@ -230,7 +230,7 @@ namespace System.Reflection.Metadata
         protected BlobBuilder(byte[] buffer, int maxChunkSize = 0) { }
         public BlobBuilder(int capacity = 256) { }
         protected internal int ChunkCapacity { get { throw null; } }
-        protected byte[] Buffer { get { throw null; } set { } }
+        protected internal byte[] Buffer { get { throw null; } set { } }
         public int Capacity { get { throw null; } set { } }
         public int Count { get { throw null; } }
         protected int FreeBytes { get { throw null; } }
