@@ -519,7 +519,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(HasNotReadyDrive))]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
         public void NotReadyDriveAsPath_ThrowsDirectoryNotFoundException()
         {   // Behavior is suspect, should really have thrown IOException similar to the SubDirectory case
@@ -531,7 +531,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(HasNotReadyDrive))]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
         public void SubdirectoryOnNotReadyDriveAsPath_ThrowsIOException()
         {
@@ -545,7 +545,6 @@ namespace System.IO.Tests
         }
 
         private static readonly string? s_notReadyDrive = IOServices.GetNotReadyDrive();
-        private static bool HasNotReadyDrive => s_notReadyDrive is not null;
 
 #if !TEST_WINRT // Cannot set current directory to root from appcontainer with it's default ACL
         /*

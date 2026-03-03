@@ -24,10 +24,10 @@ namespace System.IO.Tests
         private delegate void ExceptionCode();
         private static bool s_pass = true;
 
-        private static bool IsPrivilegedAndNtfs =>
-            PlatformDetection.IsPrivilegedProcess && FileSystemDebugInfo.IsCurrentDriveNTFS();
+        private static bool IsNtfs =>
+            FileSystemDebugInfo.IsCurrentDriveNTFS();
 
-        [ConditionalFact(nameof(IsPrivilegedAndNtfs))]
+        [ConditionalFact(nameof(IsNtfs))]
         [PlatformSpecific(TestPlatforms.Windows)] // testing volumes / mounts / drive letters
         public static void RunTest()
         {

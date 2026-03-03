@@ -302,7 +302,7 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
-        [ConditionalFact(nameof(HasNotReadyDrive))]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void NotReadyDriveAsPath_ReturnsFalse()
         {
@@ -313,7 +313,7 @@ namespace System.IO.Tests
             Assert.False(result);
         }
 
-        [ConditionalFact(nameof(HasNotReadyDrive))]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void SubdirectoryOnNotReadyDriveAsPath_ReturnsFalse()
         {
@@ -325,7 +325,6 @@ namespace System.IO.Tests
         }
 
         private static readonly string? s_notReadyDrive = IOServices.GetNotReadyDrive();
-        private static bool HasNotReadyDrive => s_notReadyDrive is not null;
 
         // Not all drives may be accessible (locked, no rights, etc.), and as such would return false.
         // eg. Create a new volume, bitlocker it, and lock it. This new volume is no longer accessible
