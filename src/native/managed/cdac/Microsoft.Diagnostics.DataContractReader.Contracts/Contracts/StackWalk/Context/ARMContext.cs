@@ -62,55 +62,55 @@ internal struct ARMContext : IPlatformContext
 
     #region General registers
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 0)]
     [FieldOffset(0x4)]
     public uint R0;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 1)]
     [FieldOffset(0x8)]
     public uint R1;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 2)]
     [FieldOffset(0xc)]
     public uint R2;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 3)]
     [FieldOffset(0x10)]
     public uint R3;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 4)]
     [FieldOffset(0x14)]
     public uint R4;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 5)]
     [FieldOffset(0x18)]
     public uint R5;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 6)]
     [FieldOffset(0x1c)]
     public uint R6;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 7)]
     [FieldOffset(0x20)]
     public uint R7;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 8)]
     [FieldOffset(0x24)]
     public uint R8;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 9)]
     [FieldOffset(0x28)]
     public uint R9;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 10)]
     [FieldOffset(0x2c)]
     public uint R10;
 
-    [Register(RegisterType.General | RegisterType.FramePointer)]
+    [Register(RegisterType.General | RegisterType.FramePointer, RegisterNumber = 11)]
     [FieldOffset(0x30)]
     public uint R11;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 12)]
     [FieldOffset(0x34)]
     public uint R12;
 
@@ -118,15 +118,15 @@ internal struct ARMContext : IPlatformContext
 
     #region Control Registers
 
-    [Register(RegisterType.Control | RegisterType.StackPointer)]
+    [Register(RegisterType.Control | RegisterType.StackPointer, RegisterNumber = 13)]
     [FieldOffset(0x38)]
     public uint Sp;
 
-    [Register(RegisterType.Control)]
+    [Register(RegisterType.Control, RegisterNumber = 14)]
     [FieldOffset(0x3c)]
     public uint Lr;
 
-    [Register(RegisterType.Control | RegisterType.ProgramCounter)]
+    [Register(RegisterType.Control | RegisterType.ProgramCounter, RegisterNumber = 15)]
     [FieldOffset(0x40)]
     public uint Pc;
 
