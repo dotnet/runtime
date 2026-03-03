@@ -96,7 +96,20 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     int  offset    = lclOffset + offs;
     noway_assert(offset >= 0); // WASM address modes are unsigned.
 
-    emitIns_I(ins, attr, offset);
+    instrDesc* id  = emitNewInstrSC(attr, offset);
+    insFormat  fmt = emitInsFormat(ins);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    if (m_debugInfoSize > 0)
+    {
+        id->idDebugOnlyInfo()->idLclNum    = (unsigned)varx;
+        id->idDebugOnlyInfo()->idLclOffset = (unsigned)offs;
+    }
+
+    dispIns(id);
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
@@ -807,6 +820,21 @@ void emitter::emitDispIns(
         }
     };
 
+    auto dispLclVarInfoIfAny = [this, id]() {
+        if (m_debugInfoSize > 0)
+        {
+            unsigned const lclNum = id->idDebugOnlyInfo()->idLclNum;
+            if (lclNum != BAD_VAR_NUM)
+            {
+                printf("      ;; V%02u", lclNum);
+                if (id->idDebugOnlyInfo()->idLclOffset != 0)
+                {
+                    printf("+%u", id->idDebugOnlyInfo()->idLclOffset);
+                }
+            }
+        }
+    };
+
     // The reference for the following style of display is wasm-objdump output.
     //
     switch (fmt)
@@ -832,6 +860,7 @@ void emitter::emitDispIns(
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
             dispHandleIfAny();
+            dispLclVarInfoIfAny();
         }
         break;
 
@@ -881,6 +910,7 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %lli", (int64_t)imm);
+            dispLclVarInfoIfAny();
         }
         break;
 
@@ -899,6 +929,7 @@ void emitter::emitDispIns(
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
             printf(" %u %llu", log2align, (uint64_t)offset);
+            dispLclVarInfoIfAny();
         }
         break;
 
