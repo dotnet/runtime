@@ -9,7 +9,4 @@
   <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(TestLibraryProjectPath)" />
-  </ItemGroup>
 </Project>
