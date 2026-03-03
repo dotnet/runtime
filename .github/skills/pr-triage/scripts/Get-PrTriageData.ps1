@@ -10,6 +10,9 @@
     Maximum PRs to return from gh pr list (default 500)
 .PARAMETER Repo
     Repository (default "dotnet/runtime")
+.PARAMETER Maintainers
+    Optional list of usernames to treat as area owners (fallback when
+    area-owners.md is missing or has no match for a PR's labels).
 .EXAMPLE
     .\Get-PrTriageData.ps1 -Label "area-CodeGen-coreclr"
 #>
@@ -36,6 +39,7 @@ param(
     [int]$Top = 0,
     [int]$Limit = 500,
     [string]$Repo = "dotnet/runtime",
+    [string[]]$Maintainers = @(),
     [switch]$OutputCsv
 )
 
@@ -224,9 +228,10 @@ foreach ($pr in $candidates) {
     $gql = $graphqlData[$n]
     $labelNames = @($pr.labels | ForEach-Object { $_.name })
 
-    # Per-PR owners (use label-specific or fallback to filter-level)
+    # Per-PR owners (use label-specific or fallback to filter-level, then -Maintainers)
     $prOwners = Get-OwnersForPr $labelNames
     if ($prOwners.Count -eq 0) { $prOwners = $owners }
+    if ($prOwners.Count -eq 0 -and $Maintainers.Count -gt 0) { $prOwners = $Maintainers }
 
     # For bot-authored PRs, find the human who triggered it (non-Copilot assignee)
     $botTrigger = $null
