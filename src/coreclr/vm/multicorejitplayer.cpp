@@ -450,7 +450,7 @@ bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit)
         return false;
     }
 
-    if (pPEAssembly->GetPath().IsEmpty()) // Ignore in-memory modules
+    if (!pPEAssembly->GetPEImage()->IsInBundle() && pPEAssembly->GetPath().IsEmpty()) // Ignore in-memory modules
     {
         return false;
     }
@@ -1037,7 +1037,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 
         HeaderRecord header;
 
-        size_t cbRead = fread(&header, sizeof(header), 1, fp);
+        size_t cbRead = fread(&header, 1, sizeof(header), fp);
 
         if (cbRead != sizeof(header))
         {

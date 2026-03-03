@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Threading.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static class ManualResetEventCancellationTests
     {
         [Fact]

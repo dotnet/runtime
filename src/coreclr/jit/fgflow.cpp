@@ -232,7 +232,8 @@ void Compiler::fgRemoveRefPred(FlowEdge* edge)
         // Splice out the predecessor edge in succBlock's pred list, since it's no longer necessary.
         FlowEdge** ptrToPred;
         FlowEdge*  pred = fgGetPredForBlock(succBlock, predBlock, &ptrToPred);
-        *ptrToPred      = pred->getNextPredEdge();
+        assert(pred == edge);
+        *ptrToPred = pred->getNextPredEdge();
 
         // Any changes to the flow graph invalidate the dominator sets.
         fgModified = true;
@@ -379,6 +380,11 @@ void Compiler::fgRedirectEdge(FlowEdge*& edge, BasicBlock* newTarget)
 {
     assert(edge != nullptr);
     assert(newTarget != nullptr);
+
+    if (edge->getDestinationBlock() == newTarget)
+    {
+        return;
+    }
 
     BasicBlock* const block    = edge->getSourceBlock();
     const unsigned    dupCount = edge->getDupCount();

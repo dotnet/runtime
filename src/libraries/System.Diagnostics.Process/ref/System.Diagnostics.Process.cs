@@ -268,6 +268,17 @@ namespace System.Diagnostics
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string WorkingDirectory { get { throw null; } set { } }
     }
+    public sealed partial class ProcessStartOptions
+    {
+        public ProcessStartOptions(string fileName) { }
+        public System.Collections.Generic.IList<string> Arguments { get { throw null; } set { } }
+        public bool CreateNewProcessGroup { get { throw null; } set { } }
+        public System.Collections.Generic.IDictionary<string, string?> Environment { get { throw null; } }
+        public string FileName { get { throw null; } }
+        public System.Collections.Generic.IList<System.Runtime.InteropServices.SafeHandle> InheritedHandles { get { throw null; } set { } }
+        public bool KillOnParentExit { get { throw null; } set { } }
+        public string? WorkingDirectory { get { throw null; } set { } }
+    }
     [System.ComponentModel.DesignerAttribute("System.Diagnostics.Design.ProcessThreadDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessThread : System.ComponentModel.Component
     {

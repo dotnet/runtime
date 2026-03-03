@@ -250,10 +250,11 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
             SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
             break;
 
-#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) ||          \
+    defined(TARGET_WASM)
         case GT_DIV:
         case GT_UDIV:
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
         case GT_MOD:
         case GT_UMOD:
 #endif
@@ -286,7 +287,15 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 #if defined(TARGET_WASM)
         // TODO-WASM: add other opers that imply null checks
         case GT_NULLCHECK:
+        case GT_STORE_BLK:
             SetThrowHelperBlock(SCK_NULL_CHECK, block);
+            break;
+
+        case GT_CALL:
+            if (node->AsCall()->NeedsNullCheck())
+            {
+                SetThrowHelperBlock(SCK_NULL_CHECK, block);
+            }
             break;
 #endif // defined(TARGET_WASM)
 

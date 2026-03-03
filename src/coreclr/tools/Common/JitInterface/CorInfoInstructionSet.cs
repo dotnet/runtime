@@ -28,6 +28,7 @@ namespace Internal.JitInterface
         ARM64_Atomics = InstructionSet_ARM64.Atomics,
         ARM64_Vector64 = InstructionSet_ARM64.Vector64,
         ARM64_Vector128 = InstructionSet_ARM64.Vector128,
+        ARM64_VectorT = InstructionSet_ARM64.VectorT,
         ARM64_Dczva = InstructionSet_ARM64.Dczva,
         ARM64_Rcpc = InstructionSet_ARM64.Rcpc,
         ARM64_VectorT128 = InstructionSet_ARM64.VectorT128,
@@ -154,22 +155,23 @@ namespace Internal.JitInterface
         Atomics = 9,
         Vector64 = 10,
         Vector128 = 11,
-        Dczva = 12,
-        Rcpc = 13,
-        VectorT128 = 14,
-        Rcpc2 = 15,
-        Sve = 16,
-        Sve2 = 17,
-        ArmBase_Arm64 = 18,
-        AdvSimd_Arm64 = 19,
-        Aes_Arm64 = 20,
-        Crc32_Arm64 = 21,
-        Dp_Arm64 = 22,
-        Rdm_Arm64 = 23,
-        Sha1_Arm64 = 24,
-        Sha256_Arm64 = 25,
-        Sve_Arm64 = 26,
-        Sve2_Arm64 = 27,
+        VectorT = 12,
+        Dczva = 13,
+        Rcpc = 14,
+        VectorT128 = 15,
+        Rcpc2 = 16,
+        Sve = 17,
+        Sve2 = 18,
+        ArmBase_Arm64 = 19,
+        AdvSimd_Arm64 = 20,
+        Aes_Arm64 = 21,
+        Crc32_Arm64 = 22,
+        Dp_Arm64 = 23,
+        Rdm_Arm64 = 24,
+        Sha1_Arm64 = 25,
+        Sha256_Arm64 = 26,
+        Sve_Arm64 = 27,
+        Sve2_Arm64 = 28,
     }
 
     public enum InstructionSet_RiscV64
@@ -409,6 +411,7 @@ namespace Internal.JitInterface
                 {
                 case InstructionSet.ARM64_Vector64: return InstructionSet.ARM64_AdvSimd;
                 case InstructionSet.ARM64_Vector128: return InstructionSet.ARM64_AdvSimd;
+                case InstructionSet.ARM64_VectorT: return InstructionSet.ARM64_Sve;
                 }
                 break;
             case TargetArchitecture.X64:
@@ -500,6 +503,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Vector128))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_VectorT))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_VectorT128))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
@@ -770,6 +775,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Vector64);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Vector128);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT128);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
@@ -1011,6 +1018,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("lse", "", InstructionSet.ARM64_Atomics, true);
                     yield return new InstructionSetInfo("Vector64", "", InstructionSet.ARM64_Vector64, false);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.ARM64_Vector128, false);
+                    yield return new InstructionSetInfo("VectorT", "", InstructionSet.ARM64_VectorT, false);
                     yield return new InstructionSetInfo("Dczva", "", InstructionSet.ARM64_Dczva, false);
                     yield return new InstructionSetInfo("rcpc", "", InstructionSet.ARM64_Rcpc, true);
                     yield return new InstructionSetInfo("vectort128", "", InstructionSet.ARM64_VectorT128, true);

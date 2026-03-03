@@ -60,7 +60,7 @@ void Compiler::fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt)
     if (stmt->IsPhiDefnStmt())
     {
         // The new tree will now be the first one of the block.
-        block->bbStmtList = stmt;
+        block->SetFirstStmt(stmt);
         stmt->SetNextStmt(firstStmt);
 
         // Are there any statements in the block?
@@ -143,7 +143,7 @@ void Compiler::fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt)
     else
     {
         // The block is completely empty.
-        block->bbStmtList = stmt;
+        block->SetFirstStmt(stmt);
         stmt->SetPrevStmt(stmt);
     }
 }
@@ -223,7 +223,7 @@ void Compiler::fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt)
         if (firstStmt == lastStmt)
         {
             // There is only one stmt in the block.
-            block->bbStmtList = stmt;
+            block->SetFirstStmt(stmt);
             stmt->SetPrevStmt(lastStmt);
         }
         else
@@ -272,7 +272,7 @@ Statement* Compiler::fgNewStmtNearEnd(BasicBlock* block, GenTree* tree, const De
 //
 void Compiler::fgInsertStmtAfter(BasicBlock* block, Statement* insertionPoint, Statement* stmt)
 {
-    assert(block->bbStmtList != nullptr);
+    assert(block->firstStmt() != nullptr);
     assert(fgBlockContainsStatementBounded(block, insertionPoint));
     assert(!fgBlockContainsStatementBounded(block, stmt, false));
 
@@ -286,8 +286,8 @@ void Compiler::fgInsertStmtAfter(BasicBlock* block, Statement* insertionPoint, S
 
         // Update the backward link of the first statement of the block
         // to point to the new last statement.
-        assert(block->bbStmtList->GetPrevStmt() == insertionPoint);
-        block->bbStmtList->SetPrevStmt(stmt);
+        assert(block->firstStmt()->GetPrevStmt() == insertionPoint);
+        block->firstStmt()->SetPrevStmt(stmt);
     }
     else
     {
@@ -312,11 +312,11 @@ void Compiler::fgInsertStmtAfter(BasicBlock* block, Statement* insertionPoint, S
 //
 void Compiler::fgInsertStmtBefore(BasicBlock* block, Statement* insertionPoint, Statement* stmt)
 {
-    assert(block->bbStmtList != nullptr);
+    assert(block->firstStmt() != nullptr);
     assert(fgBlockContainsStatementBounded(block, insertionPoint));
     assert(!fgBlockContainsStatementBounded(block, stmt, false));
 
-    if (insertionPoint == block->bbStmtList)
+    if (insertionPoint == block->firstStmt())
     {
         // We're inserting before the first statement in the block.
         Statement* first = block->firstStmt();
@@ -325,7 +325,7 @@ void Compiler::fgInsertStmtBefore(BasicBlock* block, Statement* insertionPoint, 
         stmt->SetNextStmt(first);
         stmt->SetPrevStmt(last);
 
-        block->bbStmtList = stmt;
+        block->SetFirstStmt(stmt);
         first->SetPrevStmt(stmt);
     }
     else
@@ -366,7 +366,7 @@ Statement* Compiler::fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAft
     {
         stmtAfter->SetNextStmt(stmtList);
         stmtList->SetPrevStmt(stmtAfter);
-        block->bbStmtList->SetPrevStmt(stmtLast);
+        block->firstStmt()->SetPrevStmt(stmtLast);
     }
     else
     {
@@ -377,7 +377,7 @@ Statement* Compiler::fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAft
         stmtNext->SetPrevStmt(stmtLast);
     }
 
-    noway_assert(block->bbStmtList == nullptr || block->bbStmtList->GetPrevStmt()->GetNextStmt() == nullptr);
+    noway_assert(block->firstStmt() == nullptr || block->firstStmt()->GetPrevStmt()->GetNextStmt() == nullptr);
 
     return stmtLast;
 }
@@ -480,18 +480,18 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
             assert(firstStmt == block->lastStmt());
 
             /* this is the only statement - basic block becomes empty */
-            block->bbStmtList = nullptr;
+            block->SetFirstStmt(nullptr);
         }
         else
         {
-            block->bbStmtList = firstStmt->GetNextStmt();
-            block->bbStmtList->SetPrevStmt(firstStmt->GetPrevStmt());
+            block->SetFirstStmt(firstStmt->GetNextStmt());
+            block->firstStmt()->SetPrevStmt(firstStmt->GetPrevStmt());
         }
     }
     else if (stmt == block->lastStmt()) // Is it the last statement in the list?
     {
         stmt->GetPrevStmt()->SetNextStmt(nullptr);
-        block->bbStmtList->SetPrevStmt(stmt->GetPrevStmt());
+        block->firstStmt()->SetPrevStmt(stmt->GetPrevStmt());
     }
     else // The statement is in the middle.
     {
@@ -510,7 +510,7 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
 #ifdef DEBUG
     if (verbose)
     {
-        if (block->bbStmtList == nullptr)
+        if (block->firstStmt() == nullptr)
         {
             printf("\n" FMT_BB " becomes empty\n", block->bbNum);
         }
@@ -548,7 +548,7 @@ inline bool OperIsControlFlow(genTreeOps oper)
 }
 
 /******************************************************************************
- *  Tries to throw away a stmt. The statement can be anywhere in block->bbStmtList.
+ *  Tries to throw away a stmt. The statement can be anywhere in block's statement list.
  *  Returns true if it did remove the statement.
  */
 

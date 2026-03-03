@@ -1228,6 +1228,11 @@ public:
     // LIR flags
     //   These helper methods, along with the flag values they manipulate, are defined in lir.h
     //
+#ifdef TARGET_WASM
+    // Asks the register allocator to allocate a dedicated register for this node so we can use its value multiple
+    // times.
+    inline void SetMultiplyUsed();
+#endif
     // UnusedValue indicates that, although this node produces a value, it is unused.
     inline void SetUnusedValue();
     inline void ClearUnusedValue();
@@ -1983,6 +1988,8 @@ public:
     inline GenTree* gtEffectiveVal();
 
     inline GenTree* gtCommaStoreVal();
+
+    GenTree* gtFirstNodeInOperandOrder();
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
@@ -3033,9 +3040,8 @@ class GenTreeUseEdgeIterator final
         CALL_ARGS         = 0,
         CALL_LATE_ARGS    = 1,
         CALL_CONTROL_EXPR = 2,
-        CALL_COOKIE       = 3,
-        CALL_ADDRESS      = 4,
-        CALL_TERMINAL     = 5,
+        CALL_ADDRESS      = 3,
+        CALL_TERMINAL     = 4,
     };
 
     typedef void (GenTreeUseEdgeIterator::*AdvanceFn)();
@@ -5818,8 +5824,8 @@ struct GenTreeCall final : public GenTree
 
     union
     {
-        // only used for CALLI unmanaged calls (CT_INDIRECT)
-        GenTree* gtCallCookie;
+        // The serialized CALLI unmanaged call (CT_INDIRECT) cookie; reified into argument IR in morph
+        CORINFO_CONST_LOOKUP* gtCallCookie;
 
         // gtInlineCandidateInfo is only used when inlining methods
         InlineCandidateInfo* gtInlineCandidateInfo;
@@ -8099,6 +8105,9 @@ public:
         BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
+#ifdef TARGET_WASM
+        BlkOpKindNativeOpcode,
+#endif
     } gtBlkOpKind;
 
     bool gtBlkOpGcUnsafe;

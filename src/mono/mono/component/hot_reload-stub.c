@@ -190,7 +190,7 @@ gboolean
 hot_reload_stub_update_enabled (int *modifiable_assemblies_out)
 {
 	if (modifiable_assemblies_out)
-		*modifiable_assemblies_out = MONO_MODIFIABLE_ASSM_NONE;
+		*modifiable_assemblies_out = MONO_MODIFIABLE_ASSM_UNSET;
 	return false;
 }
 

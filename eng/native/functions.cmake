@@ -223,7 +223,7 @@ function(preprocess_file inputFilename outputFilename)
   if (MSVC)
     add_custom_command(
         OUTPUT ${outputFilename}
-        COMMAND ${CMAKE_CXX_COMPILER} ${PREPROCESS_INCLUDE_DIRECTORIES} /P /EP /TC ${PREPROCESS_DEFINITIONS}  /Fi${outputFilename}  ${inputFilename} /nologo
+        COMMAND "${CMAKE_CXX_COMPILER}" ${PREPROCESS_INCLUDE_DIRECTORIES} /P /EP /TC ${PREPROCESS_DEFINITIONS}  /Fi${outputFilename}  ${inputFilename} /nologo
         DEPENDS ${inputFilename}
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
@@ -233,7 +233,7 @@ function(preprocess_file inputFilename outputFilename)
     endif()
     add_custom_command(
         OUTPUT ${outputFilename}
-        COMMAND ${CMAKE_CXX_COMPILER} ${_LOCAL_CROSS_TARGET} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
+        COMMAND "${CMAKE_CXX_COMPILER}" ${_LOCAL_CROSS_TARGET} -E -P ${PREPROCESS_DEFINITIONS} ${PREPROCESS_INCLUDE_DIRECTORIES} -o ${outputFilename} -x c ${inputFilename}
         DEPENDS ${inputFilename}
         COMMENT "Preprocessing ${inputFilename}. Outputting to ${outputFilename}"
     )
@@ -315,7 +315,7 @@ function(generate_exports_file)
 
     add_custom_command(
       OUTPUT ${outputFilename}
-      COMMAND ${SCRIPT_NAME} ${INPUT_LIST} >${outputFilename}
+      COMMAND "${SCRIPT_NAME}" ${INPUT_LIST} >${outputFilename}
       DEPENDS ${INPUT_LIST} ${SCRIPT_NAME}
       COMMENT "Generating exports file ${outputFilename}"
     )
@@ -351,7 +351,7 @@ function(generate_exports_file_prefix inputFilename outputFilename prefix)
   else()
     add_custom_command(
       OUTPUT ${outputFilename}
-      COMMAND ${SCRIPT_NAME} ${inputFilename} ${EXTRA_ARGS} >${outputFilename}
+      COMMAND "${SCRIPT_NAME}" "${inputFilename}" ${EXTRA_ARGS} >${outputFilename}
       DEPENDS ${inputFilename} ${SCRIPT_NAME}
       COMMENT "Generating exports file ${outputFilename}"
     )
@@ -399,7 +399,7 @@ function(strip_symbols targetName outputFilename)
         message(FATAL_ERROR "strip not found")
       endif()
 
-      set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file})
+      set(strip_command "${STRIP}" -no_code_signature_warning -S ${strip_source_file})
 
       if (CLR_CMAKE_TARGET_OSX)
         # codesign release build
@@ -410,7 +410,7 @@ function(strip_symbols targetName outputFilename)
       endif ()
 
       execute_process(
-        COMMAND ${DSYMUTIL} --help
+        COMMAND "${DSYMUTIL}" --help
         OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
       )
 
@@ -426,7 +426,7 @@ function(strip_symbols targetName outputFilename)
         POST_BUILD
         VERBATIM
         COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
-        COMMAND ${DSYMUTIL} ${DSYMUTIL_OPTS} ${strip_source_file}
+        COMMAND "${DSYMUTIL}" ${DSYMUTIL_OPTS} "${strip_source_file}"
         COMMAND ${strip_command}
         )
     else (CLR_CMAKE_TARGET_APPLE)
@@ -437,9 +437,9 @@ function(strip_symbols targetName outputFilename)
           POST_BUILD
           VERBATIM
           COMMAND powershell -C "echo Stripping symbols from $(Split-Path -Path '${strip_source_file}' -Leaf) into $(Split-Path -Path '${strip_destination_file}' -Leaf)"
-          COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-          COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
-          COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+          COMMAND "${CMAKE_OBJCOPY}" --only-keep-debug "${strip_source_file}" "${strip_destination_file}"
+          COMMAND "${CMAKE_OBJCOPY}" --strip-debug --strip-unneeded "${strip_source_file}"
+          COMMAND "${CMAKE_OBJCOPY}" "--add-gnu-debuglink=${strip_destination_file}" "${strip_source_file}"
         )
       else()
         add_custom_command(
@@ -447,9 +447,9 @@ function(strip_symbols targetName outputFilename)
           POST_BUILD
           VERBATIM
           COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
-          COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-          COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
-          COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
+          COMMAND "${CMAKE_OBJCOPY}" --only-keep-debug "${strip_source_file}" "${strip_destination_file}"
+          COMMAND "${CMAKE_OBJCOPY}" --strip-debug --strip-unneeded "${strip_source_file}"
+          COMMAND "${CMAKE_OBJCOPY}" "--add-gnu-debuglink=${strip_destination_file}" "${strip_source_file}"
         )
       endif()
     endif (CLR_CMAKE_TARGET_APPLE)
@@ -619,7 +619,7 @@ function(disable_pax_mprotect targetName)
         TARGET ${targetName}
         POST_BUILD
         VERBATIM
-        COMMAND ${PAXCTL} -c -m $<TARGET_FILE:${targetName}>
+        COMMAND "${PAXCTL}" -c -m $<TARGET_FILE:${targetName}>
         )
     endif()
   endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)

@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
+        [ConditionalFact(typeof(DsaCngTests), nameof(SupportsFips186_3))]
         public static void TestImportV2Key()
         {
             using (CngKey key = CngKey.Import(TestData.Key_DSA2048Key, CngKeyBlobFormat.GenericPrivateBlob))
