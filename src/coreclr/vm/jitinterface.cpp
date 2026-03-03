@@ -8844,7 +8844,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
                 pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
 
-            if (pDevirtMD->GetMethodTable()->IsSharedByGenericInstantiations())
+            if (TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetClassInstantiation()))
             {
                 // If we end up with a shared MethodTable that is not exact,
                 // we can't devirtualize since it's not possible to compute the instantiation argument as a runtime lookup.
@@ -8852,7 +8852,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 return false;
             }
 
-            const bool requiresRuntimeLookup = pDevirtMD->IsSharedByGenericMethodInstantiations();
+            const bool requiresRuntimeLookup = TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation());
             if (requiresRuntimeLookup)
             {
                 if (info->pResolvedTokenVirtualMethod == nullptr)
