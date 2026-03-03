@@ -248,13 +248,15 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
                 if (flags != 0)
                 {
-                    normSpOffset = _reader.DecodeVarLengthSigned(TTraits.STACK_SLOT_DELTA_ENCBASE, ref _bitOffset);
+                    // When previous flags were non-zero, the next slot uses a FULL offset (not delta)
+                    normSpOffset = _reader.DecodeVarLengthSigned(TTraits.STACK_SLOT_ENCBASE, ref _bitOffset);
                     spOffset = TTraits.DenormalizeStackSlot(normSpOffset);
                     flags = (GcSlotFlags)_reader.ReadBits(2, ref _bitOffset);
                 }
                 else
                 {
-                    normSpOffset += _reader.DecodeVarLengthSigned(TTraits.STACK_SLOT_DELTA_ENCBASE, ref _bitOffset) + 1;
+                    int normSpOffsetDelta = (int)_reader.DecodeVarLengthUnsigned(TTraits.STACK_SLOT_DELTA_ENCBASE, ref _bitOffset);
+                    normSpOffset += normSpOffsetDelta;
                     spOffset = TTraits.DenormalizeStackSlot(normSpOffset);
                 }
 
@@ -278,13 +280,15 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
                 if (flags != 0)
                 {
-                    normSpOffset = _reader.DecodeVarLengthSigned(TTraits.STACK_SLOT_DELTA_ENCBASE, ref _bitOffset);
+                    // When previous flags were non-zero, the next slot uses a FULL offset (not delta)
+                    normSpOffset = _reader.DecodeVarLengthSigned(TTraits.STACK_SLOT_ENCBASE, ref _bitOffset);
                     spOffset = TTraits.DenormalizeStackSlot(normSpOffset);
                     flags = (GcSlotFlags)_reader.ReadBits(2, ref _bitOffset);
                 }
                 else
                 {
-                    normSpOffset += _reader.DecodeVarLengthSigned(TTraits.STACK_SLOT_DELTA_ENCBASE, ref _bitOffset) + 1;
+                    int normSpOffsetDelta = (int)_reader.DecodeVarLengthUnsigned(TTraits.STACK_SLOT_DELTA_ENCBASE, ref _bitOffset);
+                    normSpOffset += normSpOffsetDelta;
                     spOffset = TTraits.DenormalizeStackSlot(normSpOffset);
                 }
 
@@ -826,6 +830,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         Debug.Assert(slotIndex < _slots.Count);
         GcSlotDesc slot = _slots[(int)slotIndex];
         uint gcFlags = (uint)slot.Flags & ((uint)GcSlotFlags.GC_SLOT_INTERIOR | (uint)GcSlotFlags.GC_SLOT_PINNED);
+
         reportSlot(slotIndex, slot, gcFlags);
     }
 
