@@ -49,14 +49,14 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     //   3. Address is a direct ComCallWrapper pointer     → use directly
     // After resolving, if the wrapper is linked (not the start), navigate to the start
     // wrapper via SimpleComCallWrapper.MainWrapper.
-    private TargetPointer GetCCWFromAddress(TargetPointer address)
+    public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer)
     {
         int pointerSize = _target.PointerSize;
-        TargetPointer ccw = address;
+        TargetPointer ccw = interfacePointer;
 
-        // Try to interpret address as a COM interface pointer (IP).
+        // Try to interpret interfacePointer as a COM interface pointer (IP).
         // Read the vtable pointer stored at the address, then read AddRef (slot 1) from that vtable.
-        if (_target.TryReadPointer(address, out TargetPointer vtable) && vtable != TargetPointer.Null
+        if (_target.TryReadPointer(interfacePointer, out TargetPointer vtable) && vtable != TargetPointer.Null
             && _target.TryReadCodePointer(vtable + (ulong)pointerSize, out TargetCodePointer addRefValue))
         {
 
@@ -69,7 +69,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             if (addRefValue == tearOffAddRef)
             {
                 // Standard CCW IP: apply ThisMask to get the aligned ComCallWrapper pointer.
-                ccw = new TargetPointer(address & thisMask);
+                ccw = new TargetPointer(interfacePointer & thisMask);
             }
             else if (addRefValue == tearOffSimple || addRefValue == tearOffSimpleInner)
             {
@@ -80,7 +80,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 
                 Target.TypeInfo sccwTypeInfo = _target.GetTypeInfo(DataType.SimpleComCallWrapper);
                 ulong vtablePtrOffset = (ulong)sccwTypeInfo.Fields[nameof(Data.SimpleComCallWrapper.VTablePtr)].Offset;
-                TargetPointer sccwAddr = address - (ulong)(interfaceKind * pointerSize) - vtablePtrOffset;
+                TargetPointer sccwAddr = interfacePointer - (ulong)(interfaceKind * pointerSize) - vtablePtrOffset;
                 Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(sccwAddr);
                 ccw = sccw.MainWrapper;
             }
@@ -103,10 +103,8 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         // LinkedWrapperTerminator = (PTR_ComCallWrapper)-1: all pointer-sized bits set
         TargetPointer linkedWrapperTerminator = pointerSize == 8 ? TargetPointer.Max64Bit : TargetPointer.Max32Bit;
 
-        TargetPointer startCCW = GetCCWFromAddress(ccw);
-
         bool isFirst = true;
-        TargetPointer current = startCCW;
+        TargetPointer current = ccw;
         while (current != TargetPointer.Null)
         {
             Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(current);

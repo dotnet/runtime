@@ -60,7 +60,8 @@ public class BuiltInCOMDumpTests : DumpTestBase
 
         foreach (TargetPointer ccwPtr in ccwPtrs)
         {
-            List<COMInterfacePointerData> interfaces = builtInCOM.GetCCWInterfaces(ccwPtr).ToList();
+            TargetPointer startCCW = builtInCOM.GetCCWFromInterfacePointer(ccwPtr);
+            List<COMInterfacePointerData> interfaces = builtInCOM.GetCCWInterfaces(startCCW).ToList();
 
             Assert.True(interfaces.Count > 0,
                 $"Expected at least one interface entry for CCW at 0x{ccwPtr:X}");
@@ -84,7 +85,8 @@ public class BuiltInCOMDumpTests : DumpTestBase
 
         foreach (TargetPointer ccwPtr in ccwPtrs)
         {
-            foreach (COMInterfacePointerData iface in builtInCOM.GetCCWInterfaces(ccwPtr))
+            TargetPointer startCCW = builtInCOM.GetCCWFromInterfacePointer(ccwPtr);
+            foreach (COMInterfacePointerData iface in builtInCOM.GetCCWInterfaces(startCCW))
             {
                 if (iface.MethodTable == TargetPointer.Null)
                     continue;

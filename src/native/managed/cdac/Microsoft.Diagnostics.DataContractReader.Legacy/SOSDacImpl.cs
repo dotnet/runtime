@@ -585,8 +585,9 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             Contracts.IBuiltInCOM builtInCOMContract = _target.Contracts.BuiltInCOM;
+            TargetPointer startCCW = builtInCOMContract.GetCCWFromInterfacePointer(ccw.ToTargetPointer(_target));
             IEnumerable<Contracts.COMInterfacePointerData> result =
-                builtInCOMContract.GetCCWInterfaces(ccw.ToTargetPointer(_target));
+                builtInCOMContract.GetCCWInterfaces(startCCW);
 
             if (interfaces == null)
             {
@@ -619,12 +620,20 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            DacpCOMInterfacePointerData[]? interfacesLocal = count > 0 && interfaces != null ? new DacpCOMInterfacePointerData[(int)count] : null;
+            DacpCOMInterfacePointerData[]? interfacesLocal = null;
             uint neededLocal = 0;
             int hrLocal;
-            fixed (DacpCOMInterfacePointerData* interfacesLocalPtr = interfacesLocal)
+            if (interfaces is null || count == 0)
             {
-                hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocalPtr, &neededLocal);
+                hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, null, &neededLocal);
+            }
+            else
+            {
+                interfacesLocal = new DacpCOMInterfacePointerData[(int)count];
+                fixed (DacpCOMInterfacePointerData* interfacesLocalPtr = interfacesLocal)
+                {
+                    hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocalPtr, &neededLocal);
+                }
             }
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)

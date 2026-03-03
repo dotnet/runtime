@@ -378,9 +378,13 @@ public class BuiltInCOMTests
 
         Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
 
-        // Pass the address of the SECOND (linked) wrapper; should navigate to the start (ccw1)
+        // Pass the address of the SECOND (linked) wrapper to GetCCWFromInterfacePointer;
+        // it should navigate to the start (ccw1).
+        TargetPointer startCCW = target.Contracts.BuiltInCOM.GetCCWFromInterfacePointer(new TargetPointer(ccw2Frag.Address));
+        Assert.Equal(ccw1Frag.Address, startCCW.Value);
+
         List<COMInterfacePointerData> interfaces =
-            target.Contracts.BuiltInCOM.GetCCWInterfaces(new TargetPointer(ccw2Frag.Address)).ToList();
+            target.Contracts.BuiltInCOM.GetCCWInterfaces(startCCW).ToList();
 
         // Both wrappers' interfaces are enumerated, starting from ccw1
         Assert.Equal(2, interfaces.Count);
@@ -464,10 +468,18 @@ public class BuiltInCOMTests
         // (alignedCCWAddr + P) & thisMask = alignedCCWAddr (since P < alignment).
         ulong comIPAddr = alignedCCWAddr + (ulong)P;
 
+        // GetCCWFromInterfacePointer resolves the COM IP to the start CCW pointer.
+        TargetPointer startCCWFromIP = target.Contracts.BuiltInCOM.GetCCWFromInterfacePointer(new TargetPointer(comIPAddr));
+        Assert.Equal(ccwFrag.Address, startCCWFromIP.Value);
+
+        // Direct CCW pointer also resolves to itself (it's already the start wrapper).
+        TargetPointer startCCWDirect = target.Contracts.BuiltInCOM.GetCCWFromInterfacePointer(new TargetPointer(ccwFrag.Address));
+        Assert.Equal(ccwFrag.Address, startCCWDirect.Value);
+
         List<COMInterfacePointerData> ifacesDirect =
-            target.Contracts.BuiltInCOM.GetCCWInterfaces(new TargetPointer(ccwFrag.Address)).ToList();
+            target.Contracts.BuiltInCOM.GetCCWInterfaces(startCCWDirect).ToList();
         List<COMInterfacePointerData> ifacesFromIP =
-            target.Contracts.BuiltInCOM.GetCCWInterfaces(new TargetPointer(comIPAddr)).ToList();
+            target.Contracts.BuiltInCOM.GetCCWInterfaces(startCCWFromIP).ToList();
 
         // Both paths should produce the same interfaces
         Assert.Equal(ifacesDirect.Count, ifacesFromIP.Count);
@@ -476,5 +488,64 @@ public class BuiltInCOMTests
             Assert.Equal(ifacesDirect[i].InterfacePointer.Value, ifacesFromIP[i].InterfacePointer.Value);
             Assert.Equal(ifacesDirect[i].MethodTable.Value, ifacesFromIP[i].MethodTable.Value);
         }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetCCWFromInterfacePointer_SCCWIp_ResolvesToStartCCW(MockTarget.Architecture arch)
+    {
+        var helpers = new TargetTestHelpers(arch);
+        var builder = new MockMemorySpace.Builder(helpers);
+        int P = helpers.PointerSize;
+
+        var allocator = builder.CreateAllocator(AllocationStart, AllocationEnd);
+
+        // SimpleComCallWrapper:
+        //   Offset  0: RefCount (8 bytes)
+        //   Offset  8: Flags (4 bytes)
+        //   Offset 12: MainWrapper (pointer)
+        //   Offset 12+P: VTablePtr array (at least two pointer-sized slots: kinds 0 and 1)
+        var sccwFrag = allocator.Allocate((ulong)(12 + 3 * P), "SimpleComCallWrapper");
+        builder.AddHeapFragment(sccwFrag);
+
+        // ComCallWrapper (start wrapper, no interfaces, Next = terminator)
+        var ccwFrag = allocator.Allocate((ulong)(7 * P), "ComCallWrapper");
+        builder.AddHeapFragment(ccwFrag);
+
+        // Vtable data for interfaceKind = 1:
+        //   [descBase = vtableAddr - P: stores interfaceKind as int32]
+        //   [vtable[0]: QI slot (unused)]
+        //   [vtable[1]: AddRef = TearOffAddRefSimpleAddr]
+        int interfaceKind = 1;
+        var vtableDataFrag = allocator.Allocate((ulong)(3 * P), "VtableData");
+        builder.AddHeapFragment(vtableDataFrag);
+        ulong vtableAddr = vtableDataFrag.Address + (ulong)P; // vtable = frag + P
+
+        // Write SCCW: MainWrapper = ccw, VTablePtr slot 1 = vtableAddr
+        ulong vtablePtrBase = sccwFrag.Address + 12 + (ulong)P; // = sccw.VTablePtr
+        Span<byte> sccwData = builder.BorrowAddressRange(sccwFrag.Address, 12 + 3 * P);
+        helpers.WritePointer(sccwData.Slice(12, P), ccwFrag.Address);           // MainWrapper
+        helpers.WritePointer(sccwData.Slice(12 + P, P), 0);                    // kind 0 vtable (unused)
+        helpers.WritePointer(sccwData.Slice(12 + 2 * P, P), vtableAddr);       // kind 1 vtable
+
+        // Write vtable descriptor: interfaceKind at descBase, TearOffAddRefSimple at slot 1
+        Span<byte> vtableData = builder.BorrowAddressRange(vtableDataFrag.Address, 3 * P);
+        helpers.Write(vtableData.Slice(0, 4), interfaceKind);                   // descBase: kind = 1
+        helpers.WritePointer(vtableData.Slice(P, P), 0);                       // vtable[0]: QI
+        helpers.WritePointer(vtableData.Slice(2 * P, P), TearOffAddRefSimpleAddr); // vtable[1]: AddRef
+
+        // Write CCW: SimpleWrapper = sccw, all IP slots null, Next = terminator
+        Span<byte> ccwData = builder.BorrowAddressRange(ccwFrag.Address, 7 * P);
+        helpers.WritePointer(ccwData.Slice(0, P), sccwFrag.Address);           // SimpleWrapper
+        helpers.WritePointer(ccwData.Slice(6 * P, P), LinkedWrapperTerminator); // Next = terminator
+
+        Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
+
+        // SCCW IP for interfaceKind=1 is the address of the vtable pointer slot in the SCCW.
+        // Reading *sccwIP gives vtableAddr; reading *(vtableAddr + P) gives TearOffAddRefSimple.
+        ulong sccwIP = vtablePtrBase + (ulong)(interfaceKind * P);
+
+        TargetPointer startCCW = target.Contracts.BuiltInCOM.GetCCWFromInterfacePointer(new TargetPointer(sccwIP));
+        Assert.Equal(ccwFrag.Address, startCCW.Value);
     }
 }

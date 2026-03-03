@@ -8,15 +8,18 @@ This contract is for getting information related to built-in COM.
 public ulong GetRefCount(TargetPointer ccw);
 // Check whether the COM wrappers handle is weak.
 public bool IsHandleWeak(TargetPointer ccw);
-// Enumerate the COM interfaces exposed by a CCW (or COM interface pointer into a CCW).
-public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccwOrIp);
+// Resolves a COM interface pointer (or direct CCW pointer) to the start ComCallWrapper.
+// Returns TargetPointer.Null if the address cannot be resolved.
+public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer);
+// Enumerate the COM interfaces exposed by the given start ComCallWrapper.
+public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw);
 ```
 
 where `COMInterfacePointerData` is:
 ``` csharp
 public struct COMInterfacePointerData
 {
-    // Address of the interface pointer slot in the ComCallWrapper (the interface pointer).
+    // Address of the slot in ComCallWrapper that holds the COM interface pointer.
     public TargetPointer InterfacePointer;
     // MethodTable for this interface, or TargetPointer.Null for slot 0 (IUnknown/IDispatch).
     public TargetPointer MethodTable;
@@ -83,12 +86,11 @@ public bool IsHandleWeak(TargetPointer address)
 
 // Mirrors ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
 // Resolves a COM IP or direct CCW pointer to the start ComCallWrapper.
-private TargetPointer GetCCWFromAddress(TargetPointer address) { ... }
+public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer) { ... }
 
-public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccwOrIp)
+public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
 {
-    // Resolve the address to the start ComCallWrapper via GetCCWFromAddress.
-    // Walk the linked list of ComCallWrapper nodes.
+    // Walk the linked list of ComCallWrapper nodes starting at ccw.
     // For each node, iterate the IPtrs[] slots:
     //   - skip null slots
     //   - skip slots where ComMethodTable.Flags does not have LayoutComplete set
