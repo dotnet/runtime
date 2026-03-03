@@ -252,13 +252,13 @@ CDAC_TYPE_END(LoaderAllocator)
 
 CDAC_TYPE_BEGIN(LoaderHeap)
 CDAC_TYPE_INDETERMINATE(LoaderHeap)
-CDAC_TYPE_FIELD(LoaderHeap, /*pointer*/, FirstBlock, cdac_data<UnlockedLoaderHeapBaseTraversable>::FirstBlock)
+CDAC_TYPE_FIELD(LoaderHeap, /*pointer*/, FirstBlock, offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock))
 CDAC_TYPE_END(LoaderHeap)
 
 CDAC_TYPE_BEGIN(LoaderHeapBlock)
-CDAC_TYPE_FIELD(LoaderHeapBlock, /*pointer*/, Next, cdac_data<LoaderHeapBlock>::Next)
-CDAC_TYPE_FIELD(LoaderHeapBlock, /*pointer*/, VirtualAddress, cdac_data<LoaderHeapBlock>::VirtualAddress)
-CDAC_TYPE_FIELD(LoaderHeapBlock, /*nuint*/, VirtualSize, cdac_data<LoaderHeapBlock>::VirtualSize)
+CDAC_TYPE_FIELD(LoaderHeapBlock, /*pointer*/, Next, offsetof(LoaderHeapBlock, pNext))
+CDAC_TYPE_FIELD(LoaderHeapBlock, /*pointer*/, VirtualAddress, offsetof(LoaderHeapBlock, pVirtualAddress))
+CDAC_TYPE_FIELD(LoaderHeapBlock, /*nuint*/, VirtualSize, offsetof(LoaderHeapBlock, dwVirtualSize))
 CDAC_TYPE_END(LoaderHeapBlock)
 
 CDAC_TYPE_BEGIN(PEAssembly)

@@ -145,14 +145,6 @@ struct LoaderHeapBlock
 #endif
 };
 
-template<>
-struct cdac_data<LoaderHeapBlock>
-{
-    static constexpr size_t Next = offsetof(LoaderHeapBlock, pNext);
-    static constexpr size_t VirtualAddress = offsetof(LoaderHeapBlock, pVirtualAddress);
-    static constexpr size_t VirtualSize = offsetof(LoaderHeapBlock, dwVirtualSize);
-};
-
 struct LoaderHeapFreeBlock;
 
 // Collection of methods for helping in debugging heap corruptions
@@ -208,14 +200,6 @@ typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase
 protected:
     // Linked list of ClrVirtualAlloc'd pages
     PTR_LoaderHeapBlock m_pFirstBlock;
-
-    friend struct ::cdac_data<UnlockedLoaderHeapBaseTraversable>;
-};
-
-template<>
-struct cdac_data<UnlockedLoaderHeapBaseTraversable>
-{
-    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock);
 };
 
 //===============================================================================
