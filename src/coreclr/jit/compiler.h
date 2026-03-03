@@ -7498,8 +7498,7 @@ public:
                                              unsigned               methodAttr,
                                              unsigned               classAttr,
                                              unsigned               likelihood,
-                                             bool                   arrayInterface,
-                                             bool                   instantiatingStub,
+                                             CORINFO_LOOKUP         instParamLookup,
                                              CORINFO_METHOD_HANDLE  originalMethodHandle,
                                              CORINFO_CONTEXT_HANDLE originalContextHandle);
 

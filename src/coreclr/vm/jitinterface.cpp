@@ -8598,7 +8598,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     info->detail = CORINFO_DEVIRTUALIZATION_UNKNOWN;
     memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
-    memset(&info->instParamLookup, 0, sizeof(info->instParamLookup));
+    info->instParamLookup.lookupKind.needsRuntimeLookup = false;
     info->instParamLookup.constLookup.accessType = IAT_VALUE;
     info->instParamLookup.constLookup.handle = NULL;
 
