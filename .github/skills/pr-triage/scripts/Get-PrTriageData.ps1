@@ -144,7 +144,7 @@ if ($candidates.Count -eq 0) {
 }
 
 # --- Step 3: Batched GraphQL (reviews, threads, Build Analysis, thread authors) ---
-$fragment = 'number comments{totalCount} reviews(last:10){nodes{author{login}state}} reviewThreads(first:50){nodes{isResolved comments(first:5){nodes{author{login}}}}} commits(last:1){nodes{commit{statusCheckRollup{contexts(first:100){nodes{...on CheckRun{name conclusion status}}}}}}}'
+$fragment = 'number comments{totalCount} reviews(last:10){nodes{author{login}state commit{oid}}} reviewThreads(first:50){nodes{isResolved comments(first:5){nodes{author{login}}}}} commits(last:1){nodes{commit{oid statusCheckRollup{contexts(first:100){nodes{...on CheckRun{name conclusion status}}}}}}}'
 
 $graphqlData = @{}
 $batches = [System.Collections.ArrayList]@()
@@ -248,7 +248,9 @@ foreach ($pr in $candidates) {
     # Extract Build Analysis
     $checks = @()
     $baConclusion = "ABSENT"
+    $headCommitOid = $null
     if ($gql -and $gql.commits.nodes.Count -gt 0) {
+        $headCommitOid = $gql.commits.nodes[0].commit.oid
         $rollup = $gql.commits.nodes[0].commit.statusCheckRollup
         if ($rollup -and $rollup.contexts.nodes) {
             $checks = @($rollup.contexts.nodes | Where-Object { $_.name })
@@ -299,6 +301,7 @@ foreach ($pr in $candidates) {
     $hasOwnerApproval = $false
     $hasTriagerApproval = $false
     $hasAnyApproval = $false
+    $hasStaleApproval = $false
     $approvalCount = 0
     $reviewerLogins = @()
     $approverLogins = @()
@@ -309,6 +312,9 @@ foreach ($pr in $candidates) {
             $approvalCount++
             $hasAnyApproval = $true
             $approverLogins += $login
+            # Check if approval is on the current head commit
+            $isStale = $headCommitOid -and $rev.commit -and $rev.commit.oid -and ($rev.commit.oid -ne $headCommitOid)
+            if ($isStale) { $hasStaleApproval = $true }
             if ($prOwners -contains $login) { $hasOwnerApproval = $true }
             elseif ($communityTriagers -contains $login) { $hasTriagerApproval = $true }
         }
@@ -351,11 +357,13 @@ foreach ($pr in $candidates) {
     $totalLines = $pr.additions + $pr.deletions
     $sizeScore = if ($pr.changedFiles -le 5 -and $totalLines -le 200) { 1.0 } elseif ($pr.changedFiles -le 20 -and $totalLines -le 500) { 0.5 } else { 0.0 }
     $communityScore = if ($isCommunity) { 0.5 } else { 1.0 }
+    # Stale approval: reduce approval score if approval is not on current commit
     $approvalScore = if ($approvalCount -ge 2 -and $hasOwnerApproval) { 1.0 }
                      elseif ($hasOwnerApproval -or ($hasTriagerApproval -and $approvalCount -ge 2)) { 0.75 }
                      elseif ($hasTriagerApproval -or $approvalCount -ge 2) { 0.5 }
                      elseif ($approvalCount -ge 1) { 0.5 }
                      else { 0.0 }
+    if ($hasStaleApproval -and $approvalScore -gt 0) { $approvalScore = [Math]::Max(0, $approvalScore - 0.25) }
     $velocityScore = if ($reviews.Count -eq 0) { if ($ageInDays -le 14) { 0.5 } else { 0.0 } }
                      elseif ($daysSinceUpdate -le 7) { 1.0 } elseif ($daysSinceUpdate -le 14) { 0.5 } else { 0.0 }
     # Discussion complexity: many threads/commenters = harder to push forward
@@ -378,23 +386,25 @@ foreach ($pr in $candidates) {
     $prNextAction = ""
     $who = @()
 
+    $authorLogin = $pr.author.login
+
     if ($pr.mergeable -eq "CONFLICTING") {
-        $prNextAction = "Author: resolve conflicts"
-        $who = @($pr.author.login)
+        $prNextAction = "@$($authorLogin): resolve conflicts"
+        $who = @($authorLogin)
     }
     elseif ($baConclusion -eq "FAILURE") {
-        $prNextAction = "Author: fix CI failures"
-        $who = @($pr.author.login)
+        $prNextAction = "@$($authorLogin): fix CI failures"
+        $who = @($authorLogin)
     }
     elseif ($hasNeedsAuthorAction) {
-        $prNextAction = "Author: address feedback (needs-author-action)"
-        $who = @($pr.author.login)
+        $prNextAction = "@$($authorLogin): address feedback (needs-author-action)"
+        $who = @($authorLogin)
     }
     elseif ($unresolvedThreads -gt 0) {
-        $prNextAction = "Author: respond to $unresolvedThreads thread(s)"
-        $who = @($pr.author.login)
+        $prNextAction = "@$($authorLogin): respond to $unresolvedThreads thread(s)"
+        $who = @($authorLogin)
         # Note who's waiting on them (thread authors)
-        $waitingOn = @($threadAuthors | Where-Object { $_ -ne $pr.author.login }) | Select-Object -First 2
+        $waitingOn = @($threadAuthors | Where-Object { $_ -ne $authorLogin }) | Select-Object -First 2
         if ($waitingOn.Count -gt 0) {
             $prNextAction += " from @$($waitingOn -join ', @')"
         }
@@ -409,8 +419,8 @@ foreach ($pr in $candidates) {
         }
     }
     elseif ($daysSinceUpdate -gt 14) {
-        $prNextAction = "Author: merge main (stale $([int]$daysSinceUpdate)d)"
-        $who = @($pr.author.login)
+        $prNextAction = "@$($authorLogin): merge main (stale $([int]$daysSinceUpdate)d)"
+        $who = @($authorLogin)
     }
     elseif ($ciScore -eq 1 -and $conflictScore -eq 1 -and $maintScore -ge 0.75 -and $feedbackScore -eq 1) {
         $prNextAction = "Ready to merge"
@@ -431,7 +441,7 @@ foreach ($pr in $candidates) {
     }
     elseif ($baConclusion -eq "IN_PROGRESS" -or $baConclusion -eq "ABSENT") {
         $prNextAction = "Wait for CI"
-        $who = @($pr.author.login)
+        $who = @($authorLogin)
     }
     else {
         $prNextAction = "Maintainer: review/merge"
@@ -461,6 +471,7 @@ foreach ($pr in $candidates) {
     if (-not $hasAnyReview) { $blockers += "No review" }
     elseif (-not $hasOwnerApproval -and -not $hasTriagerApproval) { $blockers += "No owner approval" }
     if ($daysSinceUpdate -gt 14) { $blockers += "Stale $([int]$daysSinceUpdate)d" }
+    if ($hasStaleApproval) { $blockers += "Approval not on latest commit" }
     if ($copilotReviewFailed) { $blockers += "Copilot review errored" }
     $blockersStr = if ($blockers.Count -gt 0) { $blockers -join ", " } else { "—" }
 
@@ -470,9 +481,10 @@ foreach ($pr in $candidates) {
     if ($conflictScore -eq 0) { $why += "⚠️ has conflicts" }
     if ($hasOwnerApproval) { $why += "👍 owner approved" }
     elseif ($hasTriagerApproval) { $why += "👍 triager approved" }
-    elseif ($hasAnyApproval) { $why += "👍 approved (non-owner)" }
+    elseif ($hasAnyApproval) { $why += "👍 community reviewed" }
     elseif ($hasAnyReview) { $why += "👀 reviewed, not approved" }
     else { $why += "🔍 no review yet" }
+    if ($hasStaleApproval) { $why += "⚠️ approval on older commit" }
     if ($unresolvedThreads -gt 0) { $why += "💬 $unresolvedThreads unresolved" }
     if ($totalThreads -gt 15) { $why += "🗨️ busy ($totalThreads threads, $distinctCommenters people)" }
     elseif ($totalThreads -gt 5) { $why += "🗨️ active ($totalThreads threads)" }
