@@ -460,7 +460,9 @@ void WasmRegAlloc::CollectReferencesForBlockStore(GenTreeBlk* node)
 {
     GenTree* src = node->Data();
     if (src->OperIs(GT_IND))
+    {
         src = src->gtGetOp1();
+    }
 
     ConsumeTemporaryRegForOperand(src DEBUGARG("block store source"));
     ConsumeTemporaryRegForOperand(node->Addr() DEBUGARG("block store destination"));
