@@ -193,7 +193,9 @@ void* MemPoolAllocator::Alloc(size_t sz) const
     {
         sz = sizeof(void*); // Arena allocator does not support zero-length allocations, so allocate something of minimum size instead.
     }
-    return ((InterpAllocator*)&m_allocator)->allocate<int8_t>(sz);
+
+    InterpAllocator allocatorCopy = m_allocator;
+    return allocatorCopy.allocate<int8_t>(sz);
 }
 void MemPoolAllocator::Free(void* ptr) const { /* no-op */ }
 

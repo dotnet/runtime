@@ -53,10 +53,10 @@ struct InterpSectionRef
     InterpMethodDataSection section;
     uint32_t offset;  // Offset within the section
 
-    InterpSectionRef() : section(InterpMethodDataSection::Header), offset(0) {}
+    InterpSectionRef() : section(InterpMethodDataSection::Count), offset(0) {}
     InterpSectionRef(InterpMethodDataSection s, uint32_t o) : section(s), offset(o) {}
 
-    bool IsNull() const { return section == InterpMethodDataSection::Header && offset == 0; }
+    bool IsNull() const { return section == InterpMethodDataSection::Count; }
 };
 
 // Tracks data for a single section during building

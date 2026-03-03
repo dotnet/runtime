@@ -1039,7 +1039,7 @@ private:
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*, MemPoolAllocator> *relocs);
     void PatchRelocations(TArray<Reloc*, MemPoolAllocator> *relocs);
     void PrepareInterpMethod();
-    void UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *pByteCodeStart);
+
     void CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
     void InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
     void CreateLeaveChainIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB);
