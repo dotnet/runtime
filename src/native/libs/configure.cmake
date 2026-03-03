@@ -1035,7 +1035,7 @@ if (CLR_CMAKE_TARGET_OPENBSD)
     set(HeimdalGssApi ON)
 endif()
 
-if (HeimdalGssApi OR CLR_CMAKE_TARGET_OPENBSD)
+if (HeimdalGssApi)
    check_include_files(
        gssapi/gssapi.h
        HAVE_HEIMDAL_HEADERS)
