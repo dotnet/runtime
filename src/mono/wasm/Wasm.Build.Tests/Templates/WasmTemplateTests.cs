@@ -22,7 +22,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [Theory, TestCategory("no-fingerprinting")]
+        [Theory, TestCategory("no-fingerprinting"), TestCategory("workload")]
         [InlineData(Configuration.Debug)]
         [InlineData(Configuration.Release)]
         public void BrowserBuildThenPublish(Configuration config)
@@ -70,7 +70,7 @@ namespace Wasm.Build.Tests
             return data;
         }
 
-        [Theory, TestCategory("no-fingerprinting")]
+        [Theory, TestCategory("no-fingerprinting"), TestCategory("workload")]
         [MemberData(nameof(TestDataForAppBundleDir))]
         public async Task RunWithDifferentAppBundleLocations(bool runOutsideProjectDirectory, string extraProperties)
             => await BrowserRunTwiceWithAndThenWithoutBuildAsync(Configuration.Release, extraProperties, runOutsideProjectDirectory);
@@ -134,6 +134,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(BrowserBuildAndRunTestData))]
+        [TestCategory("workload")]
         public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             Configuration config = Configuration.Debug;
@@ -165,6 +166,7 @@ namespace Wasm.Build.Tests
         [InlineData(Configuration.Debug, /*appendRID*/ true, /*useArtifacts*/ true)]
         [InlineData(Configuration.Debug, /*appendRID*/ false, /*useArtifacts*/ true)]
         [InlineData(Configuration.Debug, /*appendRID*/ false, /*useArtifacts*/ false)]
+        [TestCategory("workload")]
         public async Task BuildAndRunForDifferentOutputPaths(Configuration config, bool appendRID, bool useArtifacts)
         {
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false);
@@ -198,6 +200,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData("", true)] // Default case
         [InlineData("false", false)] // the other case
+        [TestCategory("native"), TestCategory("workload")]
         public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
         {
             Configuration config = Configuration.Release;
@@ -276,6 +279,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [TestCategory("workload")]
         public void PublishPdb(bool copyOutputSymbolsToPublishDirectory)
         {
             Configuration config = Configuration.Release;
@@ -323,6 +327,7 @@ namespace Wasm.Build.Tests
         [InlineData(Configuration.Release, true)]
         [InlineData(Configuration.Debug, false)]
         [InlineData(Configuration.Release, false)]
+        [TestCategory("workload")]
         public void TypeScriptDefinitionsCopiedToWwwrootOnBuild(Configuration config, bool emitTypeScriptDts)
         {
             string shouldEmit = emitTypeScriptDts ? "true" : "false";
@@ -354,6 +359,7 @@ namespace Wasm.Build.Tests
         [InlineData("true", false)]
         [InlineData("false", true)]
         [InlineData("", false)] // Default case
+        [TestCategory("workload")]
         public void UseMonoRuntimeParameter(string useMonoRuntimeArg, bool expectUseMonoRuntimeProperty)
         {
             Configuration config = Configuration.Debug;

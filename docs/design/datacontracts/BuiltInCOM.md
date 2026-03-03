@@ -24,6 +24,9 @@ public struct COMInterfacePointerData
     // MethodTable for this interface, or TargetPointer.Null for slot 0 (IUnknown/IDispatch).
     public TargetPointer MethodTable;
 }
+// Enumerate entries in the RCW cleanup list.
+// If cleanupListPtr is Null, the global g_pRCWCleanupList is used.
+public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr);
 ```
 
 ## Version 1
@@ -40,6 +43,13 @@ Data descriptors used:
 | `SimpleComCallWrapper` | `Flags` | Bit flags for wrapper properties |
 | `SimpleComCallWrapper` | `MainWrapper` | Pointer back to the first (start) `ComCallWrapper` in the chain |
 | `SimpleComCallWrapper` | `VTablePtr` | Base address of the standard interface vtable pointer array (used for SCCW IP resolution) |
+| `RCWCleanupList` | `FirstBucket` | Head of the bucket linked list |
+| `RCW` | `NextCleanupBucket` | Next bucket in the cleanup list |
+| `RCW` | `NextRCW` | Next RCW in the same bucket |
+| `RCW` | `Flags` | Combined flags DWORD (contains `MarshalingType` bits) |
+| `RCW` | `CtxCookie` | COM context cookie for the RCW |
+| `RCW` | `CtxEntry` | Pointer to `CtxEntry` (bit 0 is a synchronization flag; must be masked off before use) |
+| `CtxEntry` | `STAThread` | STA thread pointer for the context entry |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -50,6 +60,13 @@ Global variables used:
 | `TearOffAddRef` | pointer | Address of `Unknown_AddRef`; identifies standard CCW interface pointers |
 | `TearOffAddRefSimple` | pointer | Address of `Unknown_AddRefSpecial`; identifies `SimpleComCallWrapper` interface pointers |
 | `TearOffAddRefSimpleInner` | pointer | Address of `Unknown_AddRefInner`; identifies inner `SimpleComCallWrapper` interface pointers |
+| `RCWCleanupList` | `pointer` | Pointer to the global `g_pRCWCleanupList` instance |
+
+### Contract Constants:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `MarshalingTypeShift` | `int` | Bit position of `m_MarshalingType` within `RCW::RCWFlags::m_dwFlags` | `7` |
+| `MarshalingTypeFreeThreaded` | `int` | Enum value for marshaling type within `RCW::RCWFlags::m_dwFlags` | `2` |
 
 Contracts used:
 | Contract Name |
@@ -68,6 +85,10 @@ private enum ComMethodTableFlags : ulong
 {
     LayoutComplete = 0x10,
 }
+// MarshalingTypeShift = 7 matches the bit position of m_MarshalingType in RCW::RCWFlags::m_dwFlags
+private const int MarshalingTypeShift = 7;
+private const uint MarshalingTypeMask = 0x3u << MarshalingTypeShift;
+private const uint MarshalingTypeFreeThreaded = 2u; // matches RCW::MarshalingType_FreeThreaded
 
 public ulong GetRefCount(TargetPointer address)
 {
@@ -96,6 +117,41 @@ public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
     //   - skip slots where ComMethodTable.Flags does not have LayoutComplete set
     //   - yield COMInterfacePointerData { InterfacePointer = address of slot, MethodTable }
     //   - slot 0 of the first wrapper (IUnknown/IDispatch) yields null MethodTable
+}
+
+public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr)
+{
+    // Resolve the cleanup list address.
+    TargetPointer listAddress = cleanupListPtr != TargetPointer.Null
+        ? cleanupListPtr
+        : _target.ReadPointer(_target.ReadGlobalPointer("RCWCleanupList"));
+
+    if (listAddress == TargetPointer.Null)
+        yield break;
+
+    // Walk bucket chain. Each bucket is a linked list of RCWs sharing the same context.
+    TargetPointer bucketPtr = _target.ReadPointer(listAddress + /* RCWCleanupList::FirstBucket offset */);
+    while (bucketPtr != TargetPointer.Null)
+    {
+        uint flags = _target.Read<uint>(bucketPtr + /* RCW::Flags offset */);
+        bool isFreeThreaded = (flags & MarshalingTypeMask) == MarshalingTypeFreeThreaded << MarshalingTypeShift;
+        TargetPointer ctxCookie = _target.ReadPointer(bucketPtr + /* RCW::CtxCookie offset */);
+
+        // m_pCtxEntry uses bit 0 for synchronization; strip it before dereferencing.
+        TargetPointer ctxEntry = _target.ReadPointer(bucketPtr + /* RCW::CtxEntry offset */) & ~(ulong)1;
+        TargetPointer staThread = ctxEntry != TargetPointer.Null
+            ? _target.ReadPointer(ctxEntry + /* CtxEntry::STAThread offset */)
+            : TargetPointer.Null;
+
+        TargetPointer rcwPtr = bucketPtr;
+        while (rcwPtr != TargetPointer.Null)
+        {
+            yield return new RCWCleanupInfo(rcwPtr, ctxCookie, staThread, isFreeThreaded);
+            rcwPtr = _target.ReadPointer(rcwPtr + /* RCW::NextRCW offset */);
+        }
+
+        bucketPtr = _target.ReadPointer(bucketPtr + /* RCW::NextCleanupBucket offset */);
+    }
 }
 ```
 

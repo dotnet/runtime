@@ -11,6 +11,12 @@ public readonly struct COMInterfacePointerData
     public TargetPointer InterfacePointerAddress { get; init; }
     public TargetPointer MethodTable { get; init; }
 }
+/// <summary>Data for a single RCW entry in the RCW cleanup list.</summary>
+public record struct RCWCleanupInfo(
+    TargetPointer RCW,
+    TargetPointer Context,
+    TargetPointer STAThread,
+    bool IsFreeThreaded);
 
 public interface IBuiltInCOM : IContract
 {
@@ -23,6 +29,7 @@ public interface IBuiltInCOM : IContract
     // Enumerates COM interfaces exposed by the start ComCallWrapper.
     // ccw must be the start ComCallWrapper; call GetCCWFromInterfacePointer first to resolve an interface pointer.
     IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw) => throw new NotImplementedException();
+    IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr) => throw new NotImplementedException();
 }
 
 public readonly struct BuiltInCOM : IBuiltInCOM

@@ -22,6 +22,10 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     {
         Slot_Basic = 0,
     }
+    // Matches the bit position of m_MarshalingType within RCW::RCWFlags::m_dwFlags.
+    private const int MarshalingTypeShift = 7;
+    private const uint MarshalingTypeMask = 0x3u << MarshalingTypeShift;
+    private const uint MarshalingTypeFreeThreaded = 2u;
 
     internal BuiltInCOM_1(Target target)
     {
@@ -144,5 +148,51 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             // LinkedWrapperTerminator = all-bits-set sentinel means end of list
             current = wrapper.Next == linkedWrapperTerminator ? TargetPointer.Null : wrapper.Next;
         }
+    }
+    public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr)
+    {
+        TargetPointer listAddress;
+        if (cleanupListPtr != TargetPointer.Null)
+        {
+            listAddress = cleanupListPtr;
+        }
+        else
+        {
+            TargetPointer globalPtr = _target.ReadGlobalPointer(Constants.Globals.RCWCleanupList);
+            listAddress = _target.ReadPointer(globalPtr);
+        }
+
+        if (listAddress == TargetPointer.Null)
+            yield break;
+
+        Data.RCWCleanupList list = _target.ProcessedData.GetOrAdd<Data.RCWCleanupList>(listAddress);
+        TargetPointer bucketPtr = list.FirstBucket;
+        while (bucketPtr != TargetPointer.Null)
+        {
+            Data.RCW bucket = _target.ProcessedData.GetOrAdd<Data.RCW>(bucketPtr);
+            bool isFreeThreaded = (bucket.Flags & MarshalingTypeMask) == MarshalingTypeFreeThreaded << MarshalingTypeShift;
+            TargetPointer ctxCookie = bucket.CtxCookie;
+            TargetPointer staThread = GetSTAThread(bucket);
+
+            TargetPointer rcwPtr = bucketPtr;
+            while (rcwPtr != TargetPointer.Null)
+            {
+                Data.RCW rcw = _target.ProcessedData.GetOrAdd<Data.RCW>(rcwPtr);
+                yield return new RCWCleanupInfo(rcwPtr, ctxCookie, staThread, isFreeThreaded);
+                rcwPtr = rcw.NextRCW;
+            }
+
+            bucketPtr = bucket.NextCleanupBucket;
+        }
+    }
+
+    private TargetPointer GetSTAThread(Data.RCW rcw)
+    {
+        TargetPointer ctxEntryPtr = rcw.CtxEntry & ~(ulong)1;
+        if (ctxEntryPtr == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        Data.CtxEntry ctxEntry = _target.ProcessedData.GetOrAdd<Data.CtxEntry>(ctxEntryPtr);
+        return ctxEntry.STAThread;
     }
 }
