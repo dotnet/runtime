@@ -716,13 +716,13 @@ namespace System.IO.Compression
     internal sealed class CrcValidatingReadStream : Stream
     {
         private readonly Stream _baseStream;
-        private uint _runningCrc;
+        private uint _runningCrc;       // CRC32 computed incrementally over bytes read
         private readonly uint _expectedCrc;
         private long _totalBytesRead;
         private readonly long _expectedLength;
         private bool _isDisposed;
-        private bool _crcValidated;
-        private bool _crcAbandoned;
+        private bool _crcValidated;     // Whether CRC check has been performed
+        private bool _crcAbandoned;     // Set when seeking makes CRC validation unreliable
 
         public CrcValidatingReadStream(Stream baseStream, uint expectedCrc, long expectedLength)
         {
@@ -750,8 +750,16 @@ namespace System.IO.Compression
                 ThrowIfDisposed();
                 ThrowIfCantSeek();
 
-                _crcAbandoned = true;
                 _baseStream.Position = value;
+
+                if (value == 0)
+                {
+                    ResetCrcState();
+                }
+                else
+                {
+                    _crcAbandoned = true;
+                }
             }
         }
 
@@ -823,15 +831,24 @@ namespace System.IO.Compression
 
         private void ValidateCrc()
         {
-            if (_crcValidated)
+            if (_crcValidated || _crcAbandoned)
                 return;
 
-            _crcValidated = true;
-
-            if (_totalBytesRead == _expectedLength && _runningCrc != _expectedCrc)
-            {
+            if (_runningCrc != _expectedCrc)
                 throw new InvalidDataException(SR.CrcMismatch);
-            }
+
+            _crcValidated = true;  // only mark validated on success
+        }
+
+        /// <summary>
+        /// Resets CRC tracking state so validation can be recomputed from the beginning of the stream.
+        /// </summary>
+        private void ResetCrcState()
+        {
+            _runningCrc = 0;
+            _totalBytesRead = 0;
+            _crcAbandoned = false;
+            _crcValidated = false;
         }
 
         public override void Write(byte[] buffer, int offset, int count)
@@ -857,9 +874,18 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             ThrowIfCantSeek();
 
-            _crcAbandoned = true;
+            long newPosition = _baseStream.Seek(offset, origin);
 
-            return _baseStream.Seek(offset, origin);
+            if (newPosition == 0)
+            {
+                ResetCrcState();
+            }
+            else
+            {
+                _crcAbandoned = true;
+            }
+
+            return newPosition;
         }
 
         public override void SetLength(long value)
