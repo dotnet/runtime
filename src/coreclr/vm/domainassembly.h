@@ -7,6 +7,8 @@
 #ifndef _DOMAINASSEMBLY_H_
 #define _DOMAINASSEMBLY_H_
 
+template<typename T> struct cdac_data;
+
 // --------------------------------------------------------------------------------
 // DomainAssembly represents an assembly loaded (or being loaded) into an app domain.  It
 // is guaranteed to be unique per file per app domain.
@@ -45,6 +47,14 @@ private:
     DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator, AllocMemTracker* memTracker);
 
     PTR_Assembly                m_pAssembly;
+
+    friend struct ::cdac_data<DomainAssembly>;
+};
+
+template<>
+struct cdac_data<DomainAssembly>
+{
+    static constexpr size_t Assembly = offsetof(DomainAssembly, m_pAssembly);
 };
 
 #endif  // _DOMAINASSEMBLY_H_

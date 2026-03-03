@@ -220,6 +220,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_data<Module>:
 CDAC_TYPE_FIELD(Module, /*pointer*/, MethodDefToILCodeVersioningStateMap, cdac_data<Module>::MethodDefToILCodeVersioningStateMap)
 #endif // FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicILBlobTable, cdac_data<Module>::DynamicILBlobTable)
+CDAC_TYPE_FIELD(Module, /*pointer*/, DomainAssembly, cdac_data<Module>::DomainAssembly)
 CDAC_TYPE_END(Module)
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)
@@ -283,6 +284,11 @@ CDAC_TYPE_BEGIN(ProbeExtensionResult)
 CDAC_TYPE_INDETERMINATE(ProbeExtensionResult)
 CDAC_TYPE_FIELD(ProbeExtensionResult, /*int32*/, Type, offsetof(ProbeExtensionResult, Type))
 CDAC_TYPE_END(ProbeExtensionResult)
+
+CDAC_TYPE_BEGIN(DomainAssembly)
+CDAC_TYPE_INDETERMINATE(DomainAssembly)
+CDAC_TYPE_FIELD(DomainAssembly, /*pointer*/, Assembly, cdac_data<DomainAssembly>::Assembly)
+CDAC_TYPE_END(DomainAssembly)
 
 CDAC_TYPE_BEGIN(AppDomain)
 CDAC_TYPE_INDETERMINATE(AppDomain)

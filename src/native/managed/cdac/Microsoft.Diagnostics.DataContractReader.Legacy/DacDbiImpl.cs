@@ -128,9 +128,25 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetModuleData(ulong vmModule, nint pData) => _legacy is not null ? _legacy.GetModuleData(vmModule, pData) : HResults.E_NOTIMPL;
 
-    public int GetDomainAssemblyData(ulong vmDomainAssembly, nint pData) => _legacy is not null ? _legacy.GetDomainAssemblyData(vmDomainAssembly, pData) : HResults.E_NOTIMPL;
+    public unsafe int GetDomainAssemblyData(ulong vmDomainAssembly, nint pData)
+    {
+        // DomainAssemblyInfo: { VMPTR_AppDomain vmAppDomain; VMPTR_DomainAssembly vmDomainAssembly; }
+        // Zero-init then fill
+        ulong* p = (ulong*)pData;
+        p[0] = _target.ReadGlobalPointer(Constants.Globals.AppDomain).Value;
+        p[1] = vmDomainAssembly;
+        return HResults.S_OK;
+    }
 
-    public int GetModuleForDomainAssembly(ulong vmDomainAssembly, ulong* pModule) => _legacy is not null ? _legacy.GetModuleForDomainAssembly(vmDomainAssembly, pModule) : HResults.E_NOTIMPL;
+    public unsafe int GetModuleForDomainAssembly(ulong vmDomainAssembly, ulong* pModule)
+    {
+        // DomainAssembly → Assembly → Module
+        Data.DomainAssembly da = _target.ProcessedData.GetOrAdd<Data.DomainAssembly>(new TargetPointer(vmDomainAssembly));
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle mh = loader.GetModuleHandleFromAssemblyPtr(da.Assembly);
+        *pModule = loader.GetModule(mh).Value;
+        return HResults.S_OK;
+    }
 
     public int GetAddressType(ulong address, int* pRetVal) => _legacy is not null ? _legacy.GetAddressType(address, pRetVal) : HResults.E_NOTIMPL;
 
@@ -152,9 +168,34 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return HResults.S_OK;
     }
 
-    public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
+    public unsafe int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData)
+    {
+        // Enumerate all loaded modules via ILoader and call back with each DomainAssembly
+        ILoader loader = _target.Contracts.Loader;
+        var flags = AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution;
+        foreach (ModuleHandle mh in loader.GetModuleHandles(new TargetPointer(vmAppDomain), flags))
+        {
+            TargetPointer moduleAddr = loader.GetModule(mh);
+            Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(moduleAddr);
+            ((delegate* unmanaged<ulong, nint, void>)fpCallback)(module.DomainAssembly.Value, pUserData);
+        }
+        return HResults.S_OK;
+    }
 
-    public int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateModulesInAssembly(vmAssembly, fpCallback, pUserData) : HResults.E_NOTIMPL;
+    public unsafe int EnumerateModulesInAssembly(ulong vmAssembly, nint fpCallback, nint pUserData)
+    {
+        // In .NET Core, each assembly has exactly one module. The callback receives
+        // the DomainAssembly pointer (same as input).
+        ILoader loader = _target.Contracts.Loader;
+        // Verify the assembly is loaded by reading the DomainAssembly → Assembly → Module chain
+        Data.DomainAssembly da = _target.ProcessedData.GetOrAdd<Data.DomainAssembly>(new TargetPointer(vmAssembly));
+        ModuleHandle mh = loader.GetModuleHandleFromAssemblyPtr(da.Assembly);
+        if (loader.IsAssemblyLoaded(mh))
+        {
+            ((delegate* unmanaged<ulong, nint, void>)fpCallback)(vmAssembly, pUserData);
+        }
+        return HResults.S_OK;
+    }
 
     public int RequestSyncAtEvent() => _legacy is not null ? _legacy.RequestSyncAtEvent() : HResults.E_NOTIMPL;
 
@@ -822,7 +863,12 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int MetadataUpdatesApplied(byte* pResult) => _legacy is not null ? _legacy.MetadataUpdatesApplied(pResult) : HResults.E_NOTIMPL;
 
-    public int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly) => _legacy is not null ? _legacy.GetDomainAssemblyFromModule(vmModule, pVmDomainAssembly) : HResults.E_NOTIMPL;
+    public unsafe int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(new TargetPointer(vmModule));
+        *pVmDomainAssembly = module.DomainAssembly.Value;
+        return HResults.S_OK;
+    }
 
     public int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState) => _legacy is not null ? _legacy.ParseContinuation(continuationAddress, pDiagnosticIP, pNextContinuation, pState) : HResults.E_NOTIMPL;
 
