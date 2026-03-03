@@ -141,71 +141,71 @@ internal struct AMD64Context : IPlatformContext
 
     #region General and control registers
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 0)]
     [FieldOffset(0x78)]
     public ulong Rax;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 1)]
     [FieldOffset(0x80)]
     public ulong Rcx;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 2)]
     [FieldOffset(0x88)]
     public ulong Rdx;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 3)]
     [FieldOffset(0x90)]
     public ulong Rbx;
 
-    [Register(RegisterType.Control | RegisterType.StackPointer)]
+    [Register(RegisterType.Control | RegisterType.StackPointer, RegisterNumber = 4)]
     [FieldOffset(0x98)]
     public ulong Rsp;
 
-    [Register(RegisterType.Control | RegisterType.FramePointer)]
+    [Register(RegisterType.Control | RegisterType.FramePointer, RegisterNumber = 5)]
     [FieldOffset(0xa0)]
     public ulong Rbp;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 6)]
     [FieldOffset(0xa8)]
     public ulong Rsi;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 7)]
     [FieldOffset(0xb0)]
     public ulong Rdi;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 8)]
     [FieldOffset(0xb8)]
     public ulong R8;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 9)]
     [FieldOffset(0xc0)]
     public ulong R9;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 10)]
     [FieldOffset(0xc8)]
     public ulong R10;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 11)]
     [FieldOffset(0xd0)]
     public ulong R11;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 12)]
     [FieldOffset(0xd8)]
     public ulong R12;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 13)]
     [FieldOffset(0xe0)]
     public ulong R13;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 14)]
     [FieldOffset(0xe8)]
     public ulong R14;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.General, RegisterNumber = 15)]
     [FieldOffset(0xf0)]
     public ulong R15;
 
-    [Register(RegisterType.Control | RegisterType.ProgramCounter)]
+    [Register(RegisterType.Control | RegisterType.ProgramCounter, RegisterNumber = 16)]
     [FieldOffset(0xf8)]
     public ulong Rip;
 
