@@ -195,11 +195,17 @@ namespace System.Text.RegularExpressions.Tests
             // At small depths, extraction should succeed. At very large depths, the stack guard
             // in TryGetOrdinalCaseInsensitiveString may bail out, which is fine — the important
             // thing is no crash.
-            string pattern = "ab";
+            // The pattern "ab" wrapped depth times as "(…(ab)ab…)ab" is equivalent to:
+            //   "(" repeated depth times + "ab" + ")ab" repeated depth times.
+            var sb = new StringBuilder(depth * 4 + 2);
+            sb.Append('(', depth);
+            sb.Append("ab");
             for (int i = 0; i < depth; i++)
             {
-                pattern = "(" + pattern + ")ab";
+                sb.Append(")ab");
             }
+
+            string pattern = sb.ToString();
 
             RegexFindOptimizations opts = ComputeOptimizations(pattern, RegexOptions.IgnoreCase);
             if (depth <= 5)

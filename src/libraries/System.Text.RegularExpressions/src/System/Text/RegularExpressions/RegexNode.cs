@@ -2955,9 +2955,12 @@ namespace System.Text.RegularExpressions
         /// actual matching logic.
         /// </param>
         /// <param name="unwrapCaptures">
-        /// Defaults to false. When true, Capture nodes are transparently unwrapped so the string inside a capture group
-        /// can be extracted. This must only be set to true for prefix analysis, not for the compiler/source generator,
-        /// as the compiler must not skip Capture nodes (they have side effects that need to be emitted).
+        /// Defaults to false. When true, Capture and Atomic nodes are transparently unwrapped so the string inside
+        /// these groups can be extracted. This must only be set to true for prefix analysis, not for the compiler/source
+        /// generator, as the compiler must not skip Capture nodes (they have side effects that need to be emitted).
+        /// Atomic groups are safe to unwrap here because prefix analysis only examines what characters must appear at a
+        /// given position; atomicity affects whether the engine can backtrack into the group, but does not change which
+        /// characters the group's content matches at that position.
         /// </param>
         /// <returns>true if a sequence was found; otherwise, false.</returns>
         public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false, bool unwrapCaptures = false)
@@ -2978,8 +2981,10 @@ namespace System.Text.RegularExpressions
                 // When used for prefix analysis (unwrapCaptures is true), unwrap capture
                 // groups and atomic groups so their contents can be examined. Capture unwrapping
                 // must not be done when used by the compiler/source generator, as it would cause
-                // capture side effects to be skipped. Atomic groups only affect backtracking, not
-                // what text is matched, so they are safe to unwrap for prefix analysis as well.
+                // capture side effects to be skipped. Atomic groups may change overall match
+                // results by preventing backtracking (e.g. (?>a|ab)c won't match "abc"), but
+                // they don't change what characters the group matches at its position, so they
+                // are safe to unwrap for prefix analysis.
                 if (unwrapCaptures)
                 {
                     while (child.Kind is RegexNodeKind.Capture or RegexNodeKind.Atomic)
