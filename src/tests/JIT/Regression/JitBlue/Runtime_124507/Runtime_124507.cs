@@ -10,6 +10,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_124507
 {
