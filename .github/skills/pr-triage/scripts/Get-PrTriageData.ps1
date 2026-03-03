@@ -44,6 +44,11 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# Handle comma-separated string from bash (e.g., "a,b,c" becomes one string element)
+if ($Maintainers.Count -eq 1 -and $Maintainers[0] -match ',') {
+    $Maintainers = $Maintainers[0] -split ','
+}
 $scriptStart = Get-Date
 
 # --- Area owners lookup (parsed from docs/area-owners.md) ---
