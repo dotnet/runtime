@@ -10455,7 +10455,6 @@ namespace System.IO
         CharacterDevice = 4,
         Directory = 5,
         SymbolicLink = 6,
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         BlockDevice = 7,
     }
     public sealed partial class FileInfo : System.IO.FileSystemInfo
