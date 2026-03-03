@@ -135,9 +135,19 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetPartialUserState(ulong vmThread, int* pRetVal) => _legacy is not null ? _legacy.GetPartialUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetConnectionID(ulong vmThread, uint* pRetVal) => _legacy is not null ? _legacy.GetConnectionID(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int GetConnectionID(ulong vmThread, uint* pRetVal)
+    {
+        // Native implementation always returns INVALID_CONNECTION_ID (0)
+        *pRetVal = 0;
+        return HResults.S_OK;
+    }
 
-    public int GetTaskID(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetTaskID(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int GetTaskID(ulong vmThread, ulong* pRetVal)
+    {
+        // Native implementation always returns INVALID_TASK_ID (0)
+        *pRetVal = 0;
+        return HResults.S_OK;
+    }
 
     public int TryGetVolatileOSThreadID(ulong vmThread, uint* pRetVal)
     {
@@ -316,21 +326,69 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetDebuggerControlBlockAddress(ulong* pRetVal) => _legacy is not null ? _legacy.GetDebuggerControlBlockAddress(pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetObjectFromRefPtr(ulong ptr, ulong* pRetVal) => _legacy is not null ? _legacy.GetObjectFromRefPtr(ptr, pRetVal) : HResults.E_NOTIMPL;
+    public int GetObjectFromRefPtr(ulong ptr, ulong* pRetVal)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            // Dereference the ObjectRef pointer to get the actual object address
+            TargetPointer objRef = _target.ReadPointer(new TargetPointer(ptr));
+            *pRetVal = objRef.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong resultLocal;
+            int hrLocal = _legacy.GetObjectFromRefPtr(ptr, &resultLocal);
+            Debug.Assert(hrLocal == hr, $"[DacDbi] GetObjectFromRefPtr cDAC hr: 0x{hr:x}, DAC hr: 0x{hrLocal:x}");
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                Debug.Assert(*pRetVal == resultLocal, $"[DacDbi] GetObjectFromRefPtr cDAC: 0x{*pRetVal:x}, DAC: 0x{resultLocal:x}");
+            }
+        }
+#endif
+        return hr;
+    }
 
-    public int GetObject(ulong ptr, ulong* pRetVal) => _legacy is not null ? _legacy.GetObject(ptr, pRetVal) : HResults.E_NOTIMPL;
+    public int GetObject(ulong ptr, ulong* pRetVal)
+    {
+        // Native implementation wraps the address directly as a VMPTR_Object
+        *pRetVal = ptr;
+        return HResults.S_OK;
+    }
 
-    public int EnableNGENPolicy(int ePolicy) => _legacy is not null ? _legacy.EnableNGENPolicy(ePolicy) : HResults.E_NOTIMPL;
+    public int EnableNGENPolicy(int ePolicy)
+    {
+        // Native implementation returns E_NOTIMPL
+        return HResults.E_NOTIMPL;
+    }
 
-    public int SetNGENCompilerFlags(uint dwFlags) => _legacy is not null ? _legacy.SetNGENCompilerFlags(dwFlags) : HResults.E_NOTIMPL;
+    public int SetNGENCompilerFlags(uint dwFlags)
+    {
+        // Native implementation returns CORDBG_E_NGEN_NOT_SUPPORTED
+        return unchecked((int)0x80131c14);
+    }
 
-    public int GetNGENCompilerFlags(uint* pdwFlags) => _legacy is not null ? _legacy.GetNGENCompilerFlags(pdwFlags) : HResults.E_NOTIMPL;
+    public int GetNGENCompilerFlags(uint* pdwFlags)
+    {
+        // Native implementation returns CORDBG_E_NGEN_NOT_SUPPORTED
+        return unchecked((int)0x80131c14);
+    }
 
     public int GetVmObjectHandle(ulong handleAddress, ulong* pRetVal) => _legacy is not null ? _legacy.GetVmObjectHandle(handleAddress, pRetVal) : HResults.E_NOTIMPL;
 
     public int IsVmObjectHandleValid(ulong vmHandle, int* pResult) => _legacy is not null ? _legacy.IsVmObjectHandleValid(vmHandle, pResult) : HResults.E_NOTIMPL;
 
-    public int IsWinRTModule(ulong vmModule, int* isWinRT) => _legacy is not null ? _legacy.IsWinRTModule(vmModule, isWinRT) : HResults.E_NOTIMPL;
+    public int IsWinRTModule(ulong vmModule, int* isWinRT)
+    {
+        // Native implementation always returns FALSE
+        *isWinRT = 0;
+        return HResults.S_OK;
+    }
 
     public int GetAppDomainIdFromVmObjectHandle(ulong vmHandle, uint* pRetVal) => _legacy is not null ? _legacy.GetAppDomainIdFromVmObjectHandle(vmHandle, pRetVal) : HResults.E_NOTIMPL;
 
