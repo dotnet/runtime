@@ -144,7 +144,13 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int SetCompilerFlags(ulong vmDomainAssembly, int fAllowJitOpts, int fEnableEnC) => _legacy is not null ? _legacy.SetCompilerFlags(vmDomainAssembly, fAllowJitOpts, fEnableEnC) : HResults.E_NOTIMPL;
 
-    public int EnumerateAppDomains(nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateAppDomains(fpCallback, pUserData) : HResults.E_NOTIMPL;
+    public int EnumerateAppDomains(nint fpCallback, nint pUserData)
+    {
+        // Single AppDomain in .NET Core - call callback once with the global AppDomain
+        TargetPointer appDomain = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        ((delegate* unmanaged<ulong, nint, void>)fpCallback)(appDomain.Value, pUserData);
+        return HResults.S_OK;
+    }
 
     public int EnumerateAssembliesInAppDomain(ulong vmAppDomain, nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(vmAppDomain, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
