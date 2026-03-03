@@ -45,6 +45,14 @@ struct PatchpointInfo
         m_keptAliveThisOffset     = -1;
         m_securityCookieOffset    = -1;
         m_monitorAcquiredOffset   = -1;
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        m_fpLrSaveOffset          = 0;
+        m_calleeSaveSpOffset      = 0;
+#endif
+#if defined(TARGET_ARM64)
+        m_calleeSaveSpDelta       = 0;
+        m_frameType               = 0;
+#endif
     }
 
     // Copy
@@ -56,6 +64,14 @@ struct PatchpointInfo
         m_keptAliveThisOffset = original->m_keptAliveThisOffset;
         m_securityCookieOffset = original->m_securityCookieOffset;
         m_monitorAcquiredOffset = original->m_monitorAcquiredOffset;
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        m_fpLrSaveOffset = original->m_fpLrSaveOffset;
+        m_calleeSaveSpOffset = original->m_calleeSaveSpOffset;
+#endif
+#if defined(TARGET_ARM64)
+        m_calleeSaveSpDelta = original->m_calleeSaveSpDelta;
+        m_frameType = original->m_frameType;
+#endif
 
         for (uint32_t i = 0; i < original->m_numberOfLocals; i++)
         {
@@ -216,6 +232,59 @@ struct PatchpointInfo
         m_tier0Version = ip;
     }
 
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // Offset from SP to saved FP/LR pair in the Tier0 frame.
+    // Used by OSR methods to restore FP/LR when directly jumping to OSR code.
+    int32_t FpLrSaveOffset() const
+    {
+        return m_fpLrSaveOffset;
+    }
+
+    void SetFpLrSaveOffset(int32_t offset)
+    {
+        m_fpLrSaveOffset = offset;
+    }
+
+    // Offset from SP to start of callee-saved registers area in the Tier0 frame.
+    // Used by OSR methods to restore callee saves when returning.
+    int32_t CalleeSaveSpOffset() const
+    {
+        return m_calleeSaveSpOffset;
+    }
+
+    void SetCalleeSaveSpOffset(int32_t offset)
+    {
+        m_calleeSaveSpOffset = offset;
+    }
+#endif
+
+#if defined(TARGET_ARM64)
+    // The amount of stack allocated for callee-saves in the Tier0 frame.
+    // Used together with CalleeSaveSpOffset to compute the correct offset
+    // for OSR epilog callee-save restoration.
+    int32_t CalleeSaveSpDelta() const
+    {
+        return m_calleeSaveSpDelta;
+    }
+
+    void SetCalleeSaveSpDelta(int32_t delta)
+    {
+        m_calleeSaveSpDelta = delta;
+    }
+
+    // Frame type used by the Tier0 method (1-5 on ARM64).
+    // This determines the layout of callee-saved registers.
+    int32_t FrameType() const
+    {
+        return m_frameType;
+    }
+
+    void SetFrameType(int32_t frameType)
+    {
+        m_frameType = frameType;
+    }
+#endif
+
 private:
     enum
     {
@@ -233,6 +302,14 @@ private:
     int32_t      m_monitorAcquiredOffset;
     int32_t      m_asyncExecutionContextOffset;
     int32_t      m_asyncSynchronizationContextOffset;
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    int32_t      m_fpLrSaveOffset;      // Offset from SP to saved FP/LR in Tier0 frame
+    int32_t      m_calleeSaveSpOffset;  // Offset from SP to callee-saved registers area in Tier0 frame
+#endif
+#if defined(TARGET_ARM64)
+    int32_t      m_calleeSaveSpDelta;   // Amount of stack allocated for callee-saves in Tier0 frame
+    int32_t      m_frameType;           // Frame type (1-5 on ARM64) determining callee-save layout
+#endif
     int32_t      m_offsetAndExposureData[];
 };
 

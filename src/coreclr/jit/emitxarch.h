@@ -1102,6 +1102,7 @@ void emitIns_IJ(emitAttr attr, regNumber reg, unsigned base);
 void emitIns_J_S(instruction ins, emitAttr attr, BasicBlock* dst, int varx, int offs);
 
 void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
+void emitIns_R_L(instruction ins, emitAttr attr, insGroup* dst, regNumber reg);
 
 void emitIns_R_D(instruction ins, emitAttr attr, unsigned offs, regNumber reg);
 

@@ -39,6 +39,7 @@ GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Addre
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
 GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)
 GTNODE(ASYNC_RESUME_INFO, GenTreeVal         ,0,0,GTK_LEAF)             // Address of async resume info for a state
+GTNODE(FTN_ENTRY        , GenTree            ,0,0,GTK_LEAF)             // Address of this function's entry point
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -103,6 +104,11 @@ GTNODE(BSWAP            , GenTreeOp          ,0,0,GTK_UNOP)               // Byt
 GTNODE(BSWAP16          , GenTreeOp          ,0,0,GTK_UNOP)               // Byte swap lower 16-bits and zero upper 16 bits
 
 GTNODE(LZCNT            , GenTreeOp          ,0,0,GTK_UNOP)               // Leading Zero Count - Only used for SIMD VN evaluation today
+
+GTNODE(NONLOCAL_JMP     , GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE)   // Non-local jump to specified address
+
+GTNODE(PATCHPOINT       , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE)  // OSR patchpoint - call helper and jump to returned address
+GTNODE(PATCHPOINT_FORCED, GenTreeOp          ,0,0,GTK_UNOP|GTK_NOVALUE)   // Forced OSR patchpoint (partial compilation)
 
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):

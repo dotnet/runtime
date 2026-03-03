@@ -540,6 +540,9 @@ inline bool OperIsControlFlow(genTreeOps oper)
         case GT_RETFILT:
         case GT_SWIFT_ERROR_RET:
         case GT_RETURN_SUSPEND:
+        case GT_NONLOCAL_JMP:
+        case GT_PATCHPOINT:
+        case GT_PATCHPOINT_FORCED:
             return true;
 
         default:

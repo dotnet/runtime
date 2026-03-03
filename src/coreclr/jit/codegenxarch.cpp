@@ -1935,6 +1935,18 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genReturnSuspend(treeNode->AsUnOp());
             break;
 
+        case GT_NONLOCAL_JMP:
+            genNonLocalJmp(treeNode->AsUnOp());
+            break;
+
+        case GT_PATCHPOINT:
+            genCodeForPatchpoint(treeNode->AsOp());
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            genCodeForPatchpointForced(treeNode->AsOp());
+            break;
+
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());
@@ -2140,6 +2152,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_ASYNC_RESUME_INFO:
             genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
+        case GT_FTN_ENTRY:
+            genFtnEntry(treeNode);
             break;
 
         case GT_STORE_BLK:
@@ -4284,6 +4300,53 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     GetEmitter()->emitIns_R(INS_i_jmp, emitTypeSize(TYP_I_IMPL), baseReg);
 }
 
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    genConsumeOperands(tree->AsOp());
+    inst_TT(INS_i_jmp, EA_PTRSIZE, tree->gtGetOp1());
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpoint: Generate code for GT_PATCHPOINT node
+//
+// Arguments:
+//    tree - the GT_PATCHPOINT node
+//
+// Notes:
+//    Emits a call to the patchpoint helper followed by a jump to the returned address.
+//    The helper returns OSR method address (to transition) or continuation address (to stay in Tier0).
+//
+void CodeGen::genCodeForPatchpoint(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+
+    // Call the patchpoint helper - result in RAX
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT, 0, EA_UNKNOWN);
+
+    // Jump to the returned address (jmp rax)
+    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
+}
+
+//------------------------------------------------------------------------
+// genCodeForPatchpointForced: Generate code for GT_PATCHPOINT_FORCED node
+//
+// Arguments:
+//    tree - the GT_PATCHPOINT_FORCED node
+//
+// Notes:
+//    Emits a call to the forced patchpoint helper followed by a jump to the returned OSR method address.
+//
+void CodeGen::genCodeForPatchpointForced(GenTreeOp* tree)
+{
+    genConsumeOperands(tree);
+
+    // Call the forced patchpoint helper - result in RAX
+    genEmitHelperCall(CORINFO_HELP_PATCHPOINT_FORCED, 0, EA_UNKNOWN);
+
+    // Jump to the returned OSR method address (jmp rax)
+    GetEmitter()->emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
+}
+
 // emits the table and an instruction to get the address of the first element
 void CodeGen::genJumpTable(GenTree* treeNode)
 {
@@ -4306,6 +4369,24 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {
     GetEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), treeNode->GetRegNum(),
                               genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1), 0);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genFtnEntry: emits address of the current function being compiled
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+// Notes:
+//   Uses emitIns_R_L directly with the prolog instruction group. This is
+//   cleaner than using a pseudo field handle because the lea instruction is
+//   inherently a PC-relative label reference, fitting naturally with the
+//   existing emitIns_R_L mechanism.
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTRSIZE, GetEmitter()->emitPrologIG, treeNode->GetRegNum());
     genProduceReg(treeNode);
 }
 
@@ -9963,13 +10044,14 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     // We must account for the post-callee-saves push SP movement
     // done by the Tier0 frame and by the OSR transition.
     //
-    // tier0FrameSize is the Tier0 FP-SP delta plus the fake call slot added by
-    // JIT_Patchpoint. We add one slot to account for the saved FP.
+    // tier0FrameSize is the Tier0 FP-SP delta plus the fake call slot we push in genFnProlog.
+    // We subtract the fake call slot since we will add it as unwind after the instruction itself.
+    // We then add back one slot to account for the saved FP.
     //
     // We then need to subtract off the size the Tier0 callee saves as SP
     // adjusts for those will have been modelled by the unwind pushes above.
     //
-    int const tier0FrameSize = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
+    int const tier0FrameSize = patchpointInfo->TotalFrameSize() - REGSIZE_BYTES + REGSIZE_BYTES;
     int const tier0NetSize   = tier0FrameSize - tier0IntCalleeSaveUsedSize;
     m_compiler->unwindAllocStack(tier0NetSize);
 }

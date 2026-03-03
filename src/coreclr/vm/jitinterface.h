@@ -91,8 +91,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                           BOOL mayUsePrecompiledPInvokeMethods = TRUE);
 
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
-EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
-EXTERN_C FCDECL1(void, JIT_PatchpointForced, int ilOffset);
+// Returns the address to jump to: either the OSR method address or the continuation address (after the jmp instruction).
+EXTERN_C FCDECL2(PCODE, JIT_Patchpoint, int* counter, int ilOffset);
+EXTERN_C FCDECL1(PCODE, JIT_PatchpointForced, int ilOffset);
 
 //
 // JIT HELPER ALIASING FOR PORTABILITY.

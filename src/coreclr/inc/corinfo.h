@@ -1796,8 +1796,8 @@ enum CorInfoContinuationFlags
     // pointer sized when present, apart from the result that has variable
     // size.
 
-    // Whether or not the continuation starts with an OSR IL offset.
-    CORINFO_CONTINUATION_HAS_OSR_ILOFFSET = 1,
+    // Whether or not the continuation starts with an OSR resumption address.
+    CORINFO_CONTINUATION_HAS_OSR_ADDRESS = 1,
     // If this bit is set the continuation resumes inside a try block and
     // thus if an exception is being propagated, needs to be resumed.
     CORINFO_CONTINUATION_HAS_EXCEPTION = 2,
