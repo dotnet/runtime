@@ -604,7 +604,7 @@ public sealed unsafe partial class SOSDacImpl
                         throw new ArgumentException();
 
                     interfaces[itemIndex].methodTable = item.MethodTable.ToClrDataAddress(_target);
-                    interfaces[itemIndex].interfacePtr = item.InterfacePointer.ToClrDataAddress(_target);
+                    interfaces[itemIndex].interfacePtr = item.InterfacePointerAddress.ToClrDataAddress(_target);
                     interfaces[itemIndex].comContext = 0;
                     itemIndex++;
                 }

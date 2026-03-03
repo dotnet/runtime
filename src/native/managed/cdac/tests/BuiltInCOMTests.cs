@@ -205,11 +205,11 @@ public class BuiltInCOMTests
         Assert.Equal(2, interfaces.Count);
 
         // Slot 0: IUnknown (first wrapper, index 0) => MethodTable = Null
-        Assert.Equal(ccwFrag.Address + (ulong)P, interfaces[0].InterfacePointer.Value);
+        Assert.Equal(ccwFrag.Address + (ulong)P, interfaces[0].InterfacePointerAddress.Value);
         Assert.Equal(TargetPointer.Null.Value, interfaces[0].MethodTable.Value);
 
         // Slot 2: at offset 3*P from CCW base (IPtr + 2*P)
-        Assert.Equal(ccwFrag.Address + (ulong)(3 * P), interfaces[1].InterfacePointer.Value);
+        Assert.Equal(ccwFrag.Address + (ulong)(3 * P), interfaces[1].InterfacePointerAddress.Value);
         Assert.Equal(expectedMethodTable2, interfaces[1].MethodTable.Value);
     }
 
@@ -298,15 +298,15 @@ public class BuiltInCOMTests
         Assert.Equal(3, interfaces.Count);
 
         // First wrapper, slot 0: IUnknown => MethodTable = Null
-        Assert.Equal(ccw1Frag.Address + (ulong)P, interfaces[0].InterfacePointer.Value);
+        Assert.Equal(ccw1Frag.Address + (ulong)P, interfaces[0].InterfacePointerAddress.Value);
         Assert.Equal(TargetPointer.Null.Value, interfaces[0].MethodTable.Value);
 
         // Second wrapper, slot 0: IClassX - has a MethodTable (not first wrapper)
-        Assert.Equal(ccw2Frag.Address + (ulong)P, interfaces[1].InterfacePointer.Value);
+        Assert.Equal(ccw2Frag.Address + (ulong)P, interfaces[1].InterfacePointerAddress.Value);
         Assert.Equal(expectedMT_slot0, interfaces[1].MethodTable.Value);
 
         // Second wrapper, slot 2
-        Assert.Equal(ccw2Frag.Address + (ulong)(3 * P), interfaces[2].InterfacePointer.Value);
+        Assert.Equal(ccw2Frag.Address + (ulong)(3 * P), interfaces[2].InterfacePointerAddress.Value);
         Assert.Equal(expectedMT_slot2, interfaces[2].MethodTable.Value);
     }
 
@@ -390,11 +390,11 @@ public class BuiltInCOMTests
         Assert.Equal(2, interfaces.Count);
 
         // ccw1 slot 0: IUnknown → MethodTable = Null (first wrapper, slot 0)
-        Assert.Equal(ccw1Frag.Address + (ulong)P, interfaces[0].InterfacePointer.Value);
+        Assert.Equal(ccw1Frag.Address + (ulong)P, interfaces[0].InterfacePointerAddress.Value);
         Assert.Equal(TargetPointer.Null.Value, interfaces[0].MethodTable.Value);
 
         // ccw2 slot 1
-        Assert.Equal(ccw2Frag.Address + (ulong)(2 * P), interfaces[1].InterfacePointer.Value);
+        Assert.Equal(ccw2Frag.Address + (ulong)(2 * P), interfaces[1].InterfacePointerAddress.Value);
         Assert.Equal(expectedMT, interfaces[1].MethodTable.Value);
     }
 
@@ -485,7 +485,7 @@ public class BuiltInCOMTests
         Assert.Equal(ifacesDirect.Count, ifacesFromIP.Count);
         for (int i = 0; i < ifacesDirect.Count; i++)
         {
-            Assert.Equal(ifacesDirect[i].InterfacePointer.Value, ifacesFromIP[i].InterfacePointer.Value);
+            Assert.Equal(ifacesDirect[i].InterfacePointerAddress.Value, ifacesFromIP[i].InterfacePointerAddress.Value);
             Assert.Equal(ifacesDirect[i].MethodTable.Value, ifacesFromIP[i].MethodTable.Value);
         }
     }

@@ -20,7 +20,7 @@ where `COMInterfacePointerData` is:
 public struct COMInterfacePointerData
 {
     // Address of the slot in ComCallWrapper that holds the COM interface pointer.
-    public TargetPointer InterfacePointer;
+    public TargetPointer InterfacePointerAddress;
     // MethodTable for this interface, or TargetPointer.Null for slot 0 (IUnknown/IDispatch).
     public TargetPointer MethodTable;
 }

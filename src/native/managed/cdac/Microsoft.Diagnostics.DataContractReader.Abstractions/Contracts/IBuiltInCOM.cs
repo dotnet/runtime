@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 public readonly struct COMInterfacePointerData
 {
-    public TargetPointer InterfacePointer { get; init; }
+    public TargetPointer InterfacePointerAddress { get; init; }
     public TargetPointer MethodTable { get; init; }
 }
 

@@ -123,7 +123,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
                 if ((comMethodTable.Flags.Value & (ulong)ComMethodTableFlags.LayoutComplete) == 0)
                     continue;
 
-                // slotAddr is the address of m_rgpIPtr[i] in the CCW struct (= InterfacePointer)
+                // slotAddr is the address of m_rgpIPtr[i] in the CCW struct (= InterfacePointerAddress)
                 TargetPointer slotAddr = wrapper.IPtr + (ulong)(i * pointerSize);
 
                 // Slot_Basic (index 0) of the first wrapper = IUnknown/IDispatch, no associated MethodTable
@@ -133,7 +133,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 
                 yield return new COMInterfacePointerData
                 {
-                    InterfacePointer = slotAddr,
+                    InterfacePointerAddress = slotAddr,
                     MethodTable = methodTable,
                 };
             }
