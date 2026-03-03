@@ -15,7 +15,8 @@
     <IsApplePlatform Condition="'$(TargetsOSX)' == 'true' or '$(IsiOSLike)' == 'true'">true</IsApplePlatform>
     <IsMobileLike Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(IsiOSLike)' == 'true' or '$(TargetsAndroid)' == 'true'">true</IsMobileLike>
     <SupportsArmIntrinsics Condition="'$(Platform)' == 'arm64'">true</SupportsArmIntrinsics>
-    <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm'">true</SupportsWasmIntrinsics>
+    <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm' and '$(FeatureMono)' == 'true'">true</SupportsWasmIntrinsics>
+    <SupportsWasmIntrinsics Condition="'$(SupportsWasmIntrinsics)' == ''">false</SupportsWasmIntrinsics>
     <SupportsX86Intrinsics Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'x86'">true</SupportsX86Intrinsics>
     <SupportsX86Intrinsics Condition="'$(Platform)' == 'x86' and '$(FeatureMono)' == 'true'">false</SupportsX86Intrinsics>
     <NotSupportedOnMono Condition="'$(FeatureMono)' == 'true'">.PlatformNotSupported</NotSupportedOnMono>
