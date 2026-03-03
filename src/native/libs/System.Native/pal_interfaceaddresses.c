@@ -188,10 +188,8 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
         char* result = if_indextoname(interfaceIndex, actualName);
         if (result == NULL)
         {
-            // On some platforms (e.g., Solaris/illumos), if_indextoname can fail
-            // for alias interfaces or interfaces without a valid index.
-            // Skip these interfaces rather than failing the entire enumeration.
-            continue;
+            freeifaddrs(headAddr);
+            return -1;
         }
 
         assert(result == actualName);
