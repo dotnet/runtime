@@ -72,7 +72,7 @@ namespace System.Text.Json.Nodes
                 return true;
             }
 
-            if (typeof(T) == typeof(string))
+            if (typeof(T) == typeof(string) || typeof(T) == typeof(object))
             {
                 string? result = JsonReaderHelper.TranscodeHelper(_value.Span);
 
@@ -156,7 +156,7 @@ namespace System.Text.Json.Nodes
                 return true;
             }
 
-            if (typeof(T) == typeof(bool) || typeof(T) == typeof(bool?))
+            if (typeof(T) == typeof(bool) || typeof(T) == typeof(bool?) || typeof(T) == typeof(object))
             {
                 value = (T)(object)_value;
                 return true;
@@ -197,7 +197,7 @@ namespace System.Text.Json.Nodes
         public override bool TryGetValue<T>([NotNullWhen(true)] out T? value)
             where T : default
         {
-            if (typeof(T) == typeof(JsonElement))
+            if (typeof(T) == typeof(JsonElement) || typeof(T) == typeof(object))
             {
                 value = (T)(object)JsonElement.Parse(_value);
                 return true;

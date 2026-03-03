@@ -113,6 +113,7 @@ namespace System.Text.Json.Nodes.Tests
             JsonValue jValue = JsonNode.Parse("\"MyString\"").AsValue();
 
             Assert.True(jValue.TryGetValue(out string _));
+            Assert.True(jValue.TryGetValue(out object _));
             Assert.False(jValue.TryGetValue(out char _));
             Assert.False(jValue.TryGetValue(out byte _));
             Assert.False(jValue.TryGetValue(out short _));
@@ -147,6 +148,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.True(jValue.TryGetValue(out float _));
             Assert.True(jValue.TryGetValue(out double _));
             Assert.True(jValue.TryGetValue(out decimal _));
+            Assert.True(jValue.TryGetValue(out object _));
             Assert.False(jValue.TryGetValue(out bool _));
             Assert.False(jValue.TryGetValue(out string _));
             Assert.False(jValue.TryGetValue(out char _));
@@ -211,6 +213,7 @@ namespace System.Text.Json.Nodes.Tests
             JsonValue jValue = JsonNode.Parse("true").AsValue();
 
             Assert.True(jValue.TryGetValue(out bool _));
+            Assert.True(jValue.TryGetValue(out object _));
             Assert.False(jValue.TryGetValue(out byte _));
             Assert.False(jValue.TryGetValue(out short _));
             Assert.False(jValue.TryGetValue(out int _));
@@ -227,6 +230,20 @@ namespace System.Text.Json.Nodes.Tests
             Assert.False(jValue.TryGetValue(out DateTime _));
             Assert.False(jValue.TryGetValue(out DateTimeOffset _));
             Assert.False(jValue.TryGetValue(out Guid _));
+        }
+
+        [Theory]
+        [InlineData("\"Hello World!\"", typeof(string))]
+        [InlineData("42", typeof(JsonElement))]
+        [InlineData("true", typeof(bool))]
+        [InlineData("false", typeof(bool))]
+        public static void GetValue_Object(string json, Type expectedType)
+        {
+            JsonValue jValue = JsonSerializer.Deserialize<JsonValue>(json);
+
+            object result = jValue.GetValue<object>();
+            Assert.NotNull(result);
+            Assert.IsType(expectedType, result);
         }
 
         [Theory]
