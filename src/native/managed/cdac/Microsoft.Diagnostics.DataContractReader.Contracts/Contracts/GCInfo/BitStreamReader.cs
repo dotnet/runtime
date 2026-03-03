@@ -14,7 +14,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 /// </summary>
 internal struct BitStreamReader
 {
-    private static readonly int BitsPerSize = IntPtr.Size * 8;
+    private readonly int _bitsPerSize;
 
     private readonly Target _target;
     private readonly TargetPointer _buffer;
@@ -37,6 +37,7 @@ internal struct BitStreamReader
             throw new ArgumentException("Buffer pointer cannot be null", nameof(buffer));
 
         _target = target;
+        _bitsPerSize = target.PointerSize * 8;
 
         // Align buffer to pointer size boundary (similar to native implementation)
         nuint pointerMask = (nuint)target.PointerSize - 1;
@@ -59,6 +60,7 @@ internal struct BitStreamReader
     public BitStreamReader(BitStreamReader other)
     {
         _target = other._target;
+        _bitsPerSize = other._bitsPerSize;
         _buffer = other._buffer;
         _initialRelPos = other._initialRelPos;
         _current = other._current;
@@ -74,18 +76,18 @@ internal struct BitStreamReader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public nuint Read(int numBits)
     {
-        Debug.Assert(numBits > 0 && numBits <= BitsPerSize);
+        Debug.Assert(numBits > 0 && numBits <= _bitsPerSize);
 
         nuint result = _currentValue;
         _currentValue >>= numBits;
         int newRelPos = _relPos + numBits;
 
-        if (newRelPos > BitsPerSize)
+        if (newRelPos > _bitsPerSize)
         {
             // Need to read from next word
             _current = new TargetPointer(_current.Value + (ulong)_target.PointerSize);
             nuint nextValue = ReadPointerSizedValue(_current);
-            newRelPos -= BitsPerSize;
+            newRelPos -= _bitsPerSize;
             nuint extraBits = nextValue << (numBits - newRelPos);
             result |= extraBits;
             _currentValue = nextValue >> newRelPos;
@@ -94,7 +96,7 @@ internal struct BitStreamReader
         _relPos = newRelPos;
 
         // Mask to get only the requested bits
-        nuint mask = (nuint.MaxValue >> (BitsPerSize - numBits));
+        nuint mask = (nuint.MaxValue >> (_bitsPerSize - numBits));
         result &= mask;
 
         return result;
@@ -108,7 +110,7 @@ internal struct BitStreamReader
     public nuint ReadOneFast()
     {
         // Check if we need to fetch the next word
-        if (_relPos == BitsPerSize)
+        if (_relPos == _bitsPerSize)
         {
             _current = new TargetPointer(_current.Value + (ulong)_target.PointerSize);
             _currentValue = ReadPointerSizedValue(_current);
@@ -130,7 +132,7 @@ internal struct BitStreamReader
     public nuint GetCurrentPos()
     {
         long wordOffset = ((long)_current.Value - (long)_buffer.Value) / _target.PointerSize;
-        return (nuint)(wordOffset * BitsPerSize + _relPos - _initialRelPos);
+        return (nuint)(wordOffset * _bitsPerSize + _relPos - _initialRelPos);
     }
 
     /// <summary>
@@ -141,8 +143,8 @@ internal struct BitStreamReader
     public void SetCurrentPos(nuint pos)
     {
         nuint adjPos = pos + (nuint)_initialRelPos;
-        nuint wordOffset = adjPos / (nuint)BitsPerSize;
-        int newRelPos = (int)(adjPos % (nuint)BitsPerSize);
+        nuint wordOffset = adjPos / (nuint)_bitsPerSize;
+        int newRelPos = (int)(adjPos % (nuint)_bitsPerSize);
 
         _current = new TargetPointer(_buffer.Value + wordOffset * (ulong)_target.PointerSize);
         _relPos = newRelPos;
@@ -160,8 +162,8 @@ internal struct BitStreamReader
         nuint newPos = (nuint)((nint)GetCurrentPos() + numBitsToSkip);
 
         nuint adjPos = newPos + (nuint)_initialRelPos;
-        nuint wordOffset = adjPos / (nuint)BitsPerSize;
-        int newRelPos = (int)(adjPos % (nuint)BitsPerSize);
+        nuint wordOffset = adjPos / (nuint)_bitsPerSize;
+        int newRelPos = (int)(adjPos % (nuint)_bitsPerSize);
 
         _current = new TargetPointer(_buffer.Value + wordOffset * (ulong)_target.PointerSize);
         _relPos = newRelPos;
@@ -173,7 +175,7 @@ internal struct BitStreamReader
         if (_relPos == 0)
         {
             _current = new TargetPointer(_current.Value - (ulong)_target.PointerSize);
-            _relPos = BitsPerSize;
+            _relPos = _bitsPerSize;
             _currentValue = 0;
         }
         else
@@ -190,7 +192,7 @@ internal struct BitStreamReader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public nuint DecodeVarLengthUnsigned(int baseValue)
     {
-        Debug.Assert(baseValue > 0 && baseValue < BitsPerSize);
+        Debug.Assert(baseValue > 0 && baseValue < _bitsPerSize);
 
         nuint result = Read(baseValue + 1);
         if ((result & ((nuint)1 << baseValue)) != 0)
@@ -208,14 +210,14 @@ internal struct BitStreamReader
     /// <returns>The additional bits for the decoded value</returns>
     private nuint DecodeVarLengthUnsignedMore(int baseValue)
     {
-        Debug.Assert(baseValue > 0 && baseValue < BitsPerSize);
+        Debug.Assert(baseValue > 0 && baseValue < _bitsPerSize);
 
         nuint numEncodings = (nuint)1 << baseValue;
         nuint result = numEncodings;
 
         for (int shift = baseValue; ; shift += baseValue)
         {
-            Debug.Assert(shift + baseValue <= BitsPerSize);
+            Debug.Assert(shift + baseValue <= _bitsPerSize);
 
             nuint currentChunk = Read(baseValue + 1);
             result ^= (currentChunk & (numEncodings - 1)) << shift;
@@ -235,14 +237,14 @@ internal struct BitStreamReader
     /// <returns>The decoded signed integer</returns>
     public nint DecodeVarLengthSigned(int baseValue)
     {
-        Debug.Assert(baseValue > 0 && baseValue < BitsPerSize);
+        Debug.Assert(baseValue > 0 && baseValue < _bitsPerSize);
 
         nuint numEncodings = (nuint)1 << baseValue;
         nint result = 0;
 
         for (int shift = 0; ; shift += baseValue)
         {
-            Debug.Assert(shift + baseValue <= BitsPerSize);
+            Debug.Assert(shift + baseValue <= _bitsPerSize);
 
             nuint currentChunk = Read(baseValue + 1);
             result |= (nint)(currentChunk & (numEncodings - 1)) << shift;
@@ -250,7 +252,7 @@ internal struct BitStreamReader
             if ((currentChunk & numEncodings) == 0)
             {
                 // Extension bit is not set, sign-extend and we're done
-                int signBits = BitsPerSize - (shift + baseValue);
+                int signBits = _bitsPerSize - (shift + baseValue);
                 result <<= signBits;
                 result >>= signBits; // Arithmetic right shift for sign extension
                 return result;

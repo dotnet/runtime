@@ -233,11 +233,12 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             uint exceptionInfoSize = nextEntry.ExceptionInfoRva - entry.ExceptionInfoRva;
             uint clauseSize = Target.GetTypeInfo(DataType.CorCompileExceptionClause).Size
                 ?? throw new InvalidOperationException("CorCompileExceptionClause size is not known");
+            Debug.Assert(exceptionInfoSize % clauseSize == 0);
             uint numClauses = exceptionInfoSize / clauseSize;
 
             for (uint i = 0; i < numClauses; i++)
             {
-                TargetPointer clauseAddress = imageBase + (i * clauseSize);
+                TargetPointer clauseAddress = imageBase + entry.ExceptionInfoRva + (i * clauseSize);
                 Data.CorCompileExceptionClause clause = Target.ProcessedData.GetOrAdd<Data.CorCompileExceptionClause>(clauseAddress);
                 yield return new EHClause()
                 {
