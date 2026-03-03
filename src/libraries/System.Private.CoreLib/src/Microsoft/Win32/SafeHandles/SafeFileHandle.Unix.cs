@@ -518,9 +518,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private static System.IO.FileType MapUnixFileTypeToFileType(int unixFileType)
-        {
-#pragma warning disable CA1416 // BlockDevice is only returned on Unix platforms
-            return unixFileType switch
+            => unixFileType switch
             {
                 Interop.Sys.FileTypes.S_IFREG => System.IO.FileType.RegularFile,
                 Interop.Sys.FileTypes.S_IFDIR => System.IO.FileType.Directory,
@@ -531,8 +529,6 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.Sys.FileTypes.S_IFBLK => System.IO.FileType.BlockDevice,
                 _ => System.IO.FileType.Unknown
             };
-#pragma warning restore CA1416
-        }
 
         internal long GetFileLength()
         {

@@ -23,7 +23,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void GetFileType_NamedPipe()
+        public async Task GetFileType_NamedPipe()
         {
             string pipePath = GetTestFilePath();
             Assert.Equal(0, Interop.Sys.MkFifo(pipePath, (int)UnixFileMode.UserRead | (int)UnixFileMode.UserWrite));
@@ -37,7 +37,7 @@ namespace System.IO.Tests
             using SafeFileHandle writer = File.OpenHandle(pipePath, FileMode.Open, FileAccess.Write);
             Assert.Equal(FileType.Pipe, writer.GetFileType());
 
-            readerTask.Wait();
+            await readerTask;
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
