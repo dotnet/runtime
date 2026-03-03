@@ -8872,7 +8872,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
         {
-            assert(!needsInstParam);
             derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
         }
         else
@@ -8880,7 +8879,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             // Generic virtual method devirt also returns a generic method.
             //
-            assert(call->IsGenericVirtual(this) || isArrayInterfaceDevirt);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
             derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
         }
