@@ -213,6 +213,10 @@ class PEDecoder
     CHECK CheckCorHeader() const;
     PTR_CVOID GetMetadata(COUNT_T *pSize = NULL) const;
 
+    // COR header — public for CorDecoderHelpers access
+    BOOL HasCorHeader() const;
+    IMAGE_COR20_HEADER *GetCorHeader() const;
+
     void GetPEKindAndMachine(DWORD * pdwPEKind, DWORD *pdwMachine);  // Returns CorPEKind flags
 
     // Compute size of IL blob. Assumes that the IL is within the bounds of the image - make sure
@@ -279,9 +283,6 @@ class PEDecoder
 
     void *GetWin32Resource(LPCWSTR lpName, LPCWSTR lpType, COUNT_T *pSize = NULL) const;
 
-    BOOL HasCorHeader() const;
-    IMAGE_COR20_HEADER *GetCorHeader() const;
-
     const void *GetResources(COUNT_T *pSize = NULL) const;
     CHECK CheckResource(COUNT_T offset) const;
     const void *GetResource(COUNT_T offset, COUNT_T *pSize = NULL) const;
@@ -344,13 +345,6 @@ class PEDecoder
     // ------------------------------------------------------------
     // Internal functions
     // ------------------------------------------------------------
-
-    enum METADATA_SECTION_TYPE
-    {
-        METADATA_SECTION_FULL,
-    };
-
-    IMAGE_DATA_DIRECTORY *GetMetaDataHelper(METADATA_SECTION_TYPE type) const;
 
     static PTR_IMAGE_SECTION_HEADER FindFirstSection(IMAGE_NT_HEADERS * pNTHeaders);
 

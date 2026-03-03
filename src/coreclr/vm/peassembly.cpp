@@ -42,9 +42,6 @@ static void ValidatePEFileMachineType(PEAssembly *pPEAssembly)
     if (actualMachineType == IMAGE_FILE_MACHINE_I386 && ((peKind & (peILonly | pe32BitRequired)) == peILonly))
         return;    // Image is marked CPU-agnostic.
 
-    if (actualMachineType == IMAGE_FILE_MACHINE_UNKNOWN && (peKind & peILonly))
-        return;    // Webcil or other platform-neutral IL-only image.
-
     if (actualMachineType != IMAGE_FILE_MACHINE_NATIVE && actualMachineType != IMAGE_FILE_MACHINE_NATIVE_NI)
     {
         // Image has required machine that doesn't match the CLR.

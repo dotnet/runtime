@@ -93,6 +93,36 @@ public:
     void Init(void *flatBase, COUNT_T size);
     void Reset();
 
+    // ------------------------------------------------------------
+    // COR header — public for CorDecoderHelpers access
+    // ------------------------------------------------------------
+
+    BOOL HasCorHeader() const;
+    CHECK CheckCorHeader() const;
+    IMAGE_COR20_HEADER *GetCorHeader() const;
+
+    // RVA operations — public for CorDecoderHelpers access
+    CHECK CheckRva(RVA rva, IsNullOK ok = NULL_NOT_OK) const;
+    CHECK CheckRva(RVA rva, COUNT_T size, int forbiddenFlags = 0, IsNullOK ok = NULL_NOT_OK) const;
+    TADDR GetRvaData(RVA rva, IsNullOK ok = NULL_NOT_OK) const;
+
+    // Directory entries — public for CorDecoderHelpers access
+    BOOL HasDirectoryEntry(int entry) const;
+    TADDR GetDirectoryEntryData(int entry, COUNT_T *pSize = NULL) const;
+
+    // COR header data accessors — delegate to CorDecoderHelpers
+    BOOL IsStrongNameSigned() const;
+    BOOL HasStrongNameSignature() const;
+    PTR_CVOID GetStrongNameSignature(COUNT_T *pSize = NULL) const;
+    PTR_CVOID GetMetadata(COUNT_T *pSize = NULL) const;
+    BOOL HasManagedEntryPoint() const;
+    ULONG GetEntryPointToken() const;
+    const void *GetResources(COUNT_T *pSize = NULL) const;
+    CHECK CheckResource(COUNT_T offset) const;
+    const void *GetResource(COUNT_T offset, COUNT_T *pSize = NULL) const;
+    PTR_IMAGE_DEBUG_DIRECTORY GetDebugDirectoryEntry(UINT index) const;
+    CHECK CheckILMethod(RVA rva);
+
 private:
 
     // ------------------------------------------------------------
@@ -135,34 +165,15 @@ private:
     CHECK CheckILOnlyFormat() const;
 
     // ------------------------------------------------------------
-    // COR header
-    // ------------------------------------------------------------
-
-    BOOL HasCorHeader() const;
-    CHECK CheckCorHeader() const;
-    IMAGE_COR20_HEADER *GetCorHeader() const;
-
-    // ------------------------------------------------------------
     // IL-only properties
     // ------------------------------------------------------------
 
     BOOL IsILOnly() const { return TRUE; }
-    BOOL IsStrongNameSigned() const;
-    BOOL HasStrongNameSignature() const;
-    PTR_CVOID GetStrongNameSignature(COUNT_T *pSize = NULL) const;
-
-    // ------------------------------------------------------------
-    // Metadata
-    // ------------------------------------------------------------
-
-    PTR_CVOID GetMetadata(COUNT_T *pSize = NULL) const;
 
     // ------------------------------------------------------------
     // Entry point
     // ------------------------------------------------------------
 
-    BOOL HasManagedEntryPoint() const;
-    ULONG GetEntryPointToken() const;
     BOOL HasNativeEntryPoint() const { return FALSE; }
     void *GetNativeEntryPoint() const { return NULL; }
 
@@ -177,12 +188,9 @@ private:
     PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize = NULL) const;
 
     // ------------------------------------------------------------
-    // RVA operations
+    // RVA operations (remaining private)
     // ------------------------------------------------------------
 
-    CHECK CheckRva(RVA rva, IsNullOK ok = NULL_NOT_OK) const;
-    CHECK CheckRva(RVA rva, COUNT_T size, int forbiddenFlags = 0, IsNullOK ok = NULL_NOT_OK) const;
-    TADDR GetRvaData(RVA rva, IsNullOK ok = NULL_NOT_OK) const;
     RVA GetDataRva(const TADDR data) const;
     BOOL PointerInPE(PTR_CVOID data) const;
 
@@ -217,31 +225,8 @@ private:
     void GetPEKindAndMachine(DWORD *pdwPEKind, DWORD *pdwMachine);
     BOOL IsPlatformNeutral() { return TRUE; }
 
-    // ------------------------------------------------------------
-    // Directory entries
-    // Webcil has no PE IMAGE_DATA_DIRECTORY array, but stores
-    // debug directory info (PeDebugRva/PeDebugSize) in the header.
-    // ------------------------------------------------------------
-
-    BOOL HasDirectoryEntry(int entry) const;
-    TADDR GetDirectoryEntryData(int entry, COUNT_T *pSize = NULL) const;
-
-    // Debug directory
-    PTR_IMAGE_DEBUG_DIRECTORY GetDebugDirectoryEntry(UINT index) const;
-
-    // ------------------------------------------------------------
-    // Resources
-    // ------------------------------------------------------------
-
-    const void *GetResources(COUNT_T *pSize = NULL) const;
-    CHECK CheckResource(COUNT_T offset) const;
-    const void *GetResource(COUNT_T offset, COUNT_T *pSize = NULL) const;
-
     // VTable fixups — not supported
     IMAGE_COR_VTABLEFIXUP *GetVTableFixups(COUNT_T *pCount = NULL) const { return NULL; }
-
-    // IL method validation
-    CHECK CheckILMethod(RVA rva);
 
     // Exports — not supported
     PTR_VOID GetExport(LPCSTR exportName) const { return NULL; }

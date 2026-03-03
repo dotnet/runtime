@@ -12,12 +12,7 @@
 
 #ifdef FEATURE_WEBCIL
 
-#include "corhlpr.h"
-
-typedef DPTR(COR_ILMETHOD_TINY) PTR_COR_ILMETHOD_TINY;
-typedef DPTR(COR_ILMETHOD_FAT) PTR_COR_ILMETHOD_FAT;
-typedef DPTR(COR_ILMETHOD_SECT_SMALL) PTR_COR_ILMETHOD_SECT_SMALL;
-typedef DPTR(COR_ILMETHOD_SECT_FAT) PTR_COR_ILMETHOD_SECT_FAT;
+#include "cordecoderhelpers.h"
 
 // ------------------------------------------------------------
 // Format detection (static)
@@ -370,25 +365,8 @@ IMAGE_COR20_HEADER *WebcilDecoder::GetCorHeader() const
 
 PTR_CVOID WebcilDecoder::GetMetadata(COUNT_T *pSize) const
 {
-    CONTRACT(PTR_CVOID)
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(HasCorHeader());
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->MetaData;
-
-    if (pSize != NULL)
-        *pSize = VAL32(pDir->Size);
-
-    RVA rva = VAL32(pDir->VirtualAddress);
-    if (rva == 0)
-        RETURN NULL;
-
-    RETURN dac_cast<PTR_VOID>(GetRvaData(rva));
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::GetMetadata(*this, pSize);
 }
 
 // ------------------------------------------------------------
@@ -397,54 +375,28 @@ PTR_CVOID WebcilDecoder::GetMetadata(COUNT_T *pSize) const
 
 BOOL WebcilDecoder::IsStrongNameSigned() const
 {
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
+    WRAPPER_NO_CONTRACT;
 
     if (!HasCorHeader())
         return FALSE;
 
-    return ((GetCorHeader()->Flags & VAL32(COMIMAGE_FLAGS_STRONGNAMESIGNED)) != 0);
+    return CorDecoderHelpers::IsStrongNameSigned(*this);
 }
 
 BOOL WebcilDecoder::HasStrongNameSignature() const
 {
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
+    WRAPPER_NO_CONTRACT;
 
     if (!HasCorHeader())
         return FALSE;
 
-    return (GetCorHeader()->StrongNameSignature.VirtualAddress != 0);
+    return CorDecoderHelpers::HasStrongNameSignature(*this);
 }
 
 PTR_CVOID WebcilDecoder::GetStrongNameSignature(COUNT_T *pSize) const
 {
-    CONTRACT(PTR_CVOID)
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(HasCorHeader());
-        PRECONDITION(HasStrongNameSignature());
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->StrongNameSignature;
-
-    if (pSize != NULL)
-        *pSize = VAL32(pDir->Size);
-
-    RETURN dac_cast<PTR_CVOID>(GetRvaData(VAL32(pDir->VirtualAddress)));
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::GetStrongNameSignature(*this, pSize);
 }
 
 // ------------------------------------------------------------
@@ -453,34 +405,18 @@ PTR_CVOID WebcilDecoder::GetStrongNameSignature(COUNT_T *pSize) const
 
 BOOL WebcilDecoder::HasManagedEntryPoint() const
 {
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
+    WRAPPER_NO_CONTRACT;
 
     if (!HasCorHeader())
         return FALSE;
 
-    ULONG flags = GetCorHeader()->Flags;
-    return (!(flags & VAL32(COMIMAGE_FLAGS_NATIVE_ENTRYPOINT)) &&
-            (!IsNilToken(GetEntryPointToken())));
+    return CorDecoderHelpers::HasManagedEntryPoint(*this);
 }
 
 ULONG WebcilDecoder::GetEntryPointToken() const
 {
-    CONTRACT(ULONG)
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(HasCorHeader());
-    }
-    CONTRACT_END;
-
-    RETURN VAL32(IMAGE_COR20_HEADER_FIELD(*GetCorHeader(), EntryPointToken));
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::GetEntryPointToken(*this);
 }
 
 // ------------------------------------------------------------
@@ -794,7 +730,7 @@ void WebcilDecoder::GetPEKindAndMachine(DWORD *pdwPEKind, DWORD *pdwMachine)
     if (pdwPEKind != NULL)
         *pdwPEKind = peILonly;
     if (pdwMachine != NULL)
-        *pdwMachine = IMAGE_FILE_MACHINE_UNKNOWN;
+        *pdwMachine = IMAGE_FILE_MACHINE_I386;
 }
 
 // ------------------------------------------------------------
@@ -847,34 +783,8 @@ TADDR WebcilDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
 
 PTR_IMAGE_DEBUG_DIRECTORY WebcilDecoder::GetDebugDirectoryEntry(UINT index) const
 {
-    CONTRACT(PTR_IMAGE_DEBUG_DIRECTORY)
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    if (!HasWebcilHeaders())
-        RETURN NULL;
-
-    const WebcilHeader *pHeader = (const WebcilHeader *)m_base;
-    if (pHeader->PeDebugRva == 0 || pHeader->PeDebugSize == 0)
-        RETURN NULL;
-
-    COUNT_T cbDebugDir;
-    TADDR taDebugDir = GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_DEBUG, &cbDebugDir);
-
-    if (taDebugDir == (TADDR)0)
-        RETURN NULL;
-
-    UINT cNumEntries = cbDebugDir / sizeof(IMAGE_DEBUG_DIRECTORY);
-    if (index >= cNumEntries)
-        RETURN NULL;
-
-    PTR_IMAGE_DEBUG_DIRECTORY pDebugEntry = dac_cast<PTR_IMAGE_DEBUG_DIRECTORY>(taDebugDir);
-    pDebugEntry += index;
-    RETURN pDebugEntry;
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::GetDebugDirectoryEntry(*this, index);
 }
 
 // ------------------------------------------------------------
@@ -883,90 +793,20 @@ PTR_IMAGE_DEBUG_DIRECTORY WebcilDecoder::GetDebugDirectoryEntry(UINT index) cons
 
 const void *WebcilDecoder::GetResources(COUNT_T *pSize) const
 {
-    CONTRACT(const void *)
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(HasCorHeader());
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->Resources;
-
-    if (pSize != NULL)
-        *pSize = VAL32(pDir->Size);
-
-    RVA rva = VAL32(pDir->VirtualAddress);
-    if (rva == 0)
-        RETURN NULL;
-
-    RETURN (void *)GetRvaData(rva);
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::GetResources(*this, pSize);
 }
 
 CHECK WebcilDecoder::CheckResource(COUNT_T offset) const
 {
-    CONTRACT_CHECK
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(HasCorHeader());
-    }
-    CONTRACT_CHECK_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->Resources;
-
-    CHECK(CheckOverflow(VAL32(pDir->VirtualAddress), offset));
-
-    RVA rva = VAL32(pDir->VirtualAddress) + offset;
-
-    // Need at least a length DWORD for the resource size
-    CHECK(CheckRva(rva, sizeof(DWORD)));
-
-    // Read the resource size
-    DWORD resourceSize = GET_UNALIGNED_VAL32((LPVOID)GetRvaData(rva));
-
-    // Compute start and end of the resource using overflow-checked arithmetic
-    S_UINT32 dataStartRva = S_UINT32(rva) + S_UINT32(sizeof(DWORD));
-    CHECK(!dataStartRva.IsOverflow());
-
-    S_UINT32 resourceEndRva = dataStartRva + S_UINT32(resourceSize);
-    CHECK(!resourceEndRva.IsOverflow());
-
-    // Compute end of the resources directory using overflow-checked arithmetic
-    S_UINT32 resourcesEnd = S_UINT32(VAL32(pDir->VirtualAddress)) + S_UINT32(VAL32(pDir->Size));
-    CHECK(!resourcesEnd.IsOverflow());
-
-    // Check resource is within resource section
-    CHECK(resourceEndRva.Value() <= resourcesEnd.Value());
-
-    CHECK_OK;
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::CheckResource(*this, offset);
 }
 
 const void *WebcilDecoder::GetResource(COUNT_T offset, COUNT_T *pSize) const
 {
-    CONTRACT(const void *)
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(HasCorHeader());
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->Resources;
-
-    if (CheckResource(offset) == FALSE)
-        RETURN NULL;
-
-    void *resourceBlob = (void *)GetRvaData(VAL32(pDir->VirtualAddress) + offset);
-    _ASSERTE(resourceBlob != NULL);
-
-    if (pSize != NULL)
-        *pSize = GET_UNALIGNED_VAL32(resourceBlob);
-
-    RETURN (const void *)((BYTE *)resourceBlob + sizeof(DWORD));
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::GetResource(*this, offset, pSize);
 }
 
 // ------------------------------------------------------------
@@ -975,77 +815,8 @@ const void *WebcilDecoder::GetResource(COUNT_T offset, COUNT_T *pSize) const
 
 CHECK WebcilDecoder::CheckILMethod(RVA rva)
 {
-    CONTRACT_CHECK
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_CHECK_END;
-
-    // Validate that the IL method body is within image bounds
-    CHECK(CheckRva(rva, sizeof(IMAGE_COR_ILMETHOD_TINY)));
-
-    TADDR pIL = GetRvaData(rva);
-
-    PTR_COR_ILMETHOD_TINY pMethodTiny = PTR_COR_ILMETHOD_TINY(pIL);
-
-    if (pMethodTiny->IsTiny())
-    {
-        CHECK(CheckRva(rva, sizeof(IMAGE_COR_ILMETHOD_TINY) + pMethodTiny->GetCodeSize()));
-        CHECK_OK;
-    }
-
-    CHECK(CheckRva(rva, sizeof(IMAGE_COR_ILMETHOD_FAT)));
-
-    PTR_COR_ILMETHOD_FAT pMethodFat = PTR_COR_ILMETHOD_FAT(pIL);
-    CHECK(pMethodFat->IsFat());
-
-    S_UINT32 codeEnd = S_UINT32(4) * S_UINT32(pMethodFat->GetSize()) + S_UINT32(pMethodFat->GetCodeSize());
-    CHECK(!codeEnd.IsOverflow());
-    CHECK(pMethodFat->GetSize() >= (sizeof(COR_ILMETHOD_FAT) / 4));
-    CHECK(CheckRva(rva, codeEnd.Value()));
-
-    if (!pMethodFat->More())
-        CHECK_OK;
-
-    TADDR pSect = AlignUp(pIL + codeEnd.Value(), 4);
-
-    while (true)
-    {
-        CHECK(CheckRva(rva, UINT32(pSect - pIL) + sizeof(IMAGE_COR_ILMETHOD_SECT_SMALL)));
-
-        PTR_COR_ILMETHOD_SECT_SMALL pSectSmall = PTR_COR_ILMETHOD_SECT_SMALL(pSect);
-
-        UINT32 sectSize;
-
-        if (pSectSmall->IsSmall())
-        {
-            sectSize = pSectSmall->DataSize;
-            if ((pSectSmall->Kind & CorILMethod_Sect_KindMask) == CorILMethod_Sect_EHTable)
-                sectSize = COR_ILMETHOD_SECT_EH_SMALL::Size(sectSize / sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL));
-        }
-        else
-        {
-            CHECK(CheckRva(rva, UINT32(pSect - pIL) + sizeof(IMAGE_COR_ILMETHOD_SECT_FAT)));
-
-            PTR_COR_ILMETHOD_SECT_FAT pSectFat = PTR_COR_ILMETHOD_SECT_FAT(pSect);
-            sectSize = pSectFat->GetDataSize();
-            if ((pSectSmall->Kind & CorILMethod_Sect_KindMask) == CorILMethod_Sect_EHTable)
-                sectSize = COR_ILMETHOD_SECT_EH_FAT::Size(sectSize / sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_FAT));
-        }
-
-        CHECK(sectSize > 0);
-
-        S_UINT32 sectEnd = S_UINT32(UINT32(pSect - pIL)) + S_UINT32(sectSize);
-        CHECK(!sectEnd.IsOverflow());
-        CHECK(CheckRva(rva, sectEnd.Value()));
-
-        if (!pSectSmall->More())
-            CHECK_OK;
-
-        pSect = AlignUp(pIL + sectEnd.Value(), 4);
-    }
+    WRAPPER_NO_CONTRACT;
+    return CorDecoderHelpers::CheckILMethod(*this, rva);
 }
 
 // ------------------------------------------------------------
