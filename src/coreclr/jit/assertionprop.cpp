@@ -5515,6 +5515,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 //
 ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const BasicBlock* blockPred) const
 {
+    assert(block != nullptr);
     if (blockPred->KindIs(BBJ_COND))
     {
         if (blockPred->TrueTargetIs(block))
@@ -5525,16 +5526,21 @@ ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const B
             }
             return BitVecOps::MakeEmpty(apTraits);
         }
+
+        // If block is not the false target either, the edge doesn't exist
+        // (e.g. a stale PHI arg pred after edge redirection by RBO).
+        // Return empty to avoid using assertions from an unrelated edge.
+        if (!blockPred->FalseTargetIs(block))
+        {
+            return BitVecOps::MakeEmpty(apTraits);
+        }
     }
 
-    // Return empty set if the edge doesn't exist
-    // (e.g. a stale PHI arg pred after edge redirection by RBO).
-    if (!blockPred->FalseTargetIs(block))
+    if (blockPred->GetUniqueSucc() == block)
     {
-        return BitVecOps::MakeEmpty(apTraits);
+        return blockPred->bbAssertionOut;
     }
-
-    return blockPred->bbAssertionOut;
+    return BitVecOps::MakeEmpty(apTraits);
 }
 
 #include "dataflow.h"
