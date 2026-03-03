@@ -69,6 +69,8 @@ internal static class GCHeapBuilderExtensions
         [
             new(nameof(Data.GCAllocContext.Pointer), DataType.pointer),
             new(nameof(Data.GCAllocContext.Limit), DataType.pointer),
+            new(nameof(Data.GCAllocContext.AllocBytes), DataType.int64),
+            new(nameof(Data.GCAllocContext.AllocBytesLoh), DataType.int64),
         ]
     };
 
@@ -299,6 +301,7 @@ internal static class GCHeapBuilderExtensions
         helpers.Write(maxGenGlobal.Data.AsSpan(0, sizeof(uint)), genCount - 1);
         memBuilder.AddHeapFragment(maxGenGlobal);
 
+        // Handle table globals required by GCFactory
         targetBuilder.AddTypes(types);
         targetBuilder.AddGlobals(
             (nameof(Constants.Globals.TotalGenerationCount), genCount),
@@ -307,6 +310,10 @@ internal static class GCHeapBuilderExtensions
             (nameof(Constants.Globals.CompactReasonsLength), 0UL),
             (nameof(Constants.Globals.ExpandMechanismsLength), 0UL),
             (nameof(Constants.Globals.InterestingMechanismBitsLength), 0UL),
+            (nameof(Constants.Globals.HandlesPerBlock), 32UL),
+            (nameof(Constants.Globals.BlockInvalid), 1UL),
+            (nameof(Constants.Globals.DebugDestroyedHandleValue), 0UL),
+            (nameof(Constants.Globals.HandleMaxInternalTypes), 12UL),
             (nameof(Constants.Globals.GCHeapMarkArray), markArrayGlobal.Address),
             (nameof(Constants.Globals.GCHeapNextSweepObj), nextSweepObjGlobal.Address),
             (nameof(Constants.Globals.GCHeapBackgroundMinSavedAddr), bgMinGlobal.Address),
@@ -390,6 +397,7 @@ internal static class GCHeapBuilderExtensions
         helpers.Write(maxGenGlobal.Data.AsSpan(0, sizeof(uint)), genCount - 1);
         memBuilder.AddHeapFragment(maxGenGlobal);
 
+        // Handle table globals required by GCFactory
         targetBuilder.AddTypes(types);
         targetBuilder.AddGlobals(
             (nameof(Constants.Globals.TotalGenerationCount), genCount),
@@ -398,6 +406,10 @@ internal static class GCHeapBuilderExtensions
             (nameof(Constants.Globals.CompactReasonsLength), 0UL),
             (nameof(Constants.Globals.ExpandMechanismsLength), 0UL),
             (nameof(Constants.Globals.InterestingMechanismBitsLength), 0UL),
+            (nameof(Constants.Globals.HandlesPerBlock), 32UL),
+            (nameof(Constants.Globals.BlockInvalid), 1UL),
+            (nameof(Constants.Globals.DebugDestroyedHandleValue), 0UL),
+            (nameof(Constants.Globals.HandleMaxInternalTypes), 12UL),
             (nameof(Constants.Globals.NumHeaps), numHeapsGlobal.Address),
             (nameof(Constants.Globals.Heaps), heapsGlobal.Address),
             (nameof(Constants.Globals.GCLowestAddress), lowestAddrGlobal.Address),

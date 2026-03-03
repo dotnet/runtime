@@ -4503,9 +4503,11 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             IGC gc = _target.Contracts.GC;
-            GCHeapData heapData = gc.GetHeapData();
-            uint totalGenerationCount = (uint)heapData.GenerationTable.Count;
-            *pGenerations = totalGenerationCount;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+            GCHeapData heapData = gcIdentifiers.Contains(GCIdentifiers.Server)
+                ? gc.GetHeapData(gc.GetGCHeaps().First())
+                : gc.GetHeapData();
+            *pGenerations = (uint)heapData.GenerationTable.Count;
         }
         catch (System.Exception ex)
         {
@@ -4578,7 +4580,7 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 if (hr == HResults.S_OK && pGenerationData is not null)
                 {
-                    for (int i = 0; i < (int)cGenerations; i++)
+                    for (int i = 0; i < (int)pNeededLocal; i++)
                     {
                         Debug.Assert(pGenDataLocal[i].start_segment == pGenerationData[i].start_segment);
                         Debug.Assert(pGenDataLocal[i].allocation_start == pGenerationData[i].allocation_start);
@@ -4639,7 +4641,7 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 if (hr == HResults.S_OK && pFinalizationFillPointers is not null)
                 {
-                    for (int i = 0; i < (int)cFillPointers; i++)
+                    for (int i = 0; i < (int)pNeededLocal; i++)
                     {
                         Debug.Assert(pFillPointersLocal[i] == pFinalizationFillPointers[i]);
                     }
@@ -4701,7 +4703,7 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 if (hr == HResults.S_OK && pGenerationData is not null)
                 {
-                    for (int i = 0; i < (int)cGenerations; i++)
+                    for (int i = 0; i < (int)pNeededLocal; i++)
                     {
                         Debug.Assert(pGenDataLocal[i].start_segment == pGenerationData[i].start_segment);
                         Debug.Assert(pGenDataLocal[i].allocation_start == pGenerationData[i].allocation_start);
@@ -4762,7 +4764,8 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 if (hr == HResults.S_OK && pFinalizationFillPointers is not null)
                 {
-                    for (int i = 0; i < (int)cFillPointers; i++)
+                    int fillPointersToCompare = (int)Math.Min(cFillPointers, pNeededLocal);
+                    for (int i = 0; i < fillPointersToCompare; i++)
                     {
                         Debug.Assert(pFillPointersLocal[i] == pFinalizationFillPointers[i]);
                     }

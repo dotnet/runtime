@@ -98,6 +98,18 @@ public unsafe class SOSDacInterface8Tests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetNumberGenerations_ServerGC_ReturnsCorrectCount(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface8 dac8 = CreateSvrDac8(arch, out _);
+
+        uint numGenerations;
+        int hr = dac8.GetNumberGenerations(&numGenerations);
+        Assert.Equal(S_OK, hr);
+        Assert.Equal((uint)s_generations.Length, numGenerations);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetGenerationTable_ReturnsCorrectData(MockTarget.Architecture arch)
     {
         ISOSDacInterface8 dac8 = CreateWksDac8(arch);
