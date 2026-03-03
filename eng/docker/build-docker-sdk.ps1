@@ -57,6 +57,8 @@ if ($buildWindowsContainers)
                      -Destination $dockerContext\targetingpacks.targets
   Copy-Item -Recurse -Path $REPO_ROOT_DIR\src\libraries\System.Net.Quic\src\System\Net\Quic\Interop `
                      -Destination $dockerContext\msquic-interop
+  Copy-Item          -Path $dockerFile `
+                     -Destination $dockerContext
 
   # In case of non-CI builds, testhost may already contain Microsoft.AspNetCore.App (see build-local.ps1 in HttpStress):
   $testHostAspNetCorePath="$dockerContext\testhost\net$VERSION-windows-$configuration-x64/shared/Microsoft.AspNetCore.App"
