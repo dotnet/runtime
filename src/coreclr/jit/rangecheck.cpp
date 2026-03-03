@@ -1050,7 +1050,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             else
             {
                 int cns;
-                if (comp->vnStore->IsVNIntegralConstant(checkedBoundVN, &cns) && (cns >= 0) && (cns < maxValue))
+                if (comp->vnStore->IsVNIntegralConstant(checkedBoundVN, &cns) && (cns >= 0))
                 {
                     maxValue = cns;
                 }
