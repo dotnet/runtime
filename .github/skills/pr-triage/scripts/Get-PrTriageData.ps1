@@ -149,15 +149,16 @@ foreach ($pr in $candidates) {
 }
 if ($batch.Count -gt 0) { [void]$batches.Add([long[]]$batch.ToArray()) }
 
+$repoParts = $Repo -split '/'
+$repoOwner = $repoParts[0]
+$repoName = $repoParts[1]
+
 Write-Verbose "Fetching details in $($batches.Count) GraphQL batch(es)..."
 foreach ($b in $batches) {
     $parts = @()
     for ($i = 0; $i -lt $b.Count; $i++) {
         $parts += "pr$($i): pullRequest(number:$($b[$i])) { $fragment }"
     }
-    $repoParts = $Repo -split '/'
-    $repoOwner = $repoParts[0]
-    $repoName = $repoParts[1]
     $query = "{ repository(owner:`"$repoOwner`",name:`"$repoName`") { $($parts -join ' ') } }"
     $result = gh api graphql -f query="$query" 2>&1 | ConvertFrom-Json
     for ($i = 0; $i -lt $b.Count; $i++) {
@@ -177,6 +178,41 @@ function Get-OwnersForPr($labelNames) {
         if ($areaOwners.ContainsKey($lbl)) { return $areaOwners[$lbl] }
     }
     return @()
+}
+
+# --- Step 4b: Detect Copilot review errors (targeted query, avoids fetching body for all reviews) ---
+$copilotErrorPRs = @{}
+$prsWithCopilotReview = @($candidates | Where-Object {
+    $gql = $graphqlData[$_.number]
+    $gql -and ($gql.reviews.nodes | Where-Object { $_.author.login -eq "copilot-pull-request-reviewer" })
+})
+if ($prsWithCopilotReview.Count -gt 0) {
+    # Use larger batches since this is a lightweight fragment (only fetches copilot review bodies)
+    $copilotBatches = [System.Collections.ArrayList]@()
+    $cb = [System.Collections.ArrayList]@()
+    foreach ($pr in $prsWithCopilotReview) {
+        [void]$cb.Add($pr.number)
+        if ($cb.Count -eq 50) { [void]$copilotBatches.Add([long[]]$cb.ToArray()); $cb = [System.Collections.ArrayList]@() }
+    }
+    if ($cb.Count -gt 0) { [void]$copilotBatches.Add([long[]]$cb.ToArray()) }
+    Write-Verbose "Checking $($prsWithCopilotReview.Count) PR(s) for Copilot review errors in $($copilotBatches.Count) batch(es)..."
+    foreach ($b in $copilotBatches) {
+        $parts = @()
+        for ($i = 0; $i -lt $b.Count; $i++) {
+            $parts += "pr$($i): pullRequest(number:$($b[$i])) { number reviews(last:5) { nodes { author{login} body } } }"
+        }
+        $query = "{ repository(owner:`"$repoOwner`",name:`"$repoName`") { $($parts -join ' ') } }"
+        $result = gh api graphql -f query="$query" 2>&1 | ConvertFrom-Json
+        for ($i = 0; $i -lt $b.Count; $i++) {
+            $prData = $result.data.repository."pr$i"
+            if ($prData -and ($prData.reviews.nodes | Where-Object {
+                $_.author.login -eq "copilot-pull-request-reviewer" -and $_.body -match "Copilot encountered an error"
+            })) {
+                $copilotErrorPRs[$b[$i]] = $true
+            }
+        }
+    }
+    Write-Verbose "Found $($copilotErrorPRs.Count) PR(s) with Copilot review errors"
 }
 
 # --- Step 5: Score each PR ---
@@ -212,6 +248,9 @@ foreach ($pr in $candidates) {
             }
         }
     }
+
+    # Detect Copilot review errors (from pre-computed lookup)
+    $copilotReviewFailed = $copilotErrorPRs.ContainsKey($n)
 
     # Extract reviews (skip copilot reviewer)
     $reviews = @()
@@ -394,6 +433,11 @@ foreach ($pr in $candidates) {
         $who = @($botTrigger)
     }
 
+    # Append Copilot re-request suggestion if its review errored
+    if ($copilotReviewFailed) {
+        $prNextAction += "; rerequest Copilot review"
+    }
+
     $whoStr = if ($who.Count -gt 0) { "@" + ($who -join ", @") } else { "—" }
 
     # Blockers
@@ -407,6 +451,7 @@ foreach ($pr in $candidates) {
     if (-not $hasAnyReview) { $blockers += "No review" }
     elseif (-not $hasOwnerApproval -and -not $hasTriagerApproval) { $blockers += "No owner approval" }
     if ($daysSinceUpdate -gt 14) { $blockers += "Stale $([int]$daysSinceUpdate)d" }
+    if ($copilotReviewFailed) { $blockers += "Copilot review errored" }
     $blockersStr = if ($blockers.Count -gt 0) { $blockers -join ", " } else { "—" }
 
     # Why
