@@ -675,11 +675,13 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             }
             else
             {
-                // Skip over safe point live state data
-                if (numBitsPerOffset != 0)
-                    bitOffset += (int)(_numSafePoints * numBitsPerOffset);
-                else
-                    bitOffset += (int)(_numSafePoints * numTracked);
+                // Skip over safe point live state data.
+                // NOTE: The native code always skips numSafePoints * numTracked here,
+                // even when numBitsPerOffset != 0 (indirect table). This is technically
+                // wrong for the indirect case, but the encoder never produces both
+                // indirect safe points AND interruptible ranges, so it's unreachable.
+                // Match the native behavior for consistency.
+                bitOffset += (int)(_numSafePoints * numTracked);
 
                 if (_numInterruptibleRanges == 0)
                     goto ReportUntracked;
@@ -845,6 +847,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         uint normBreakOffset = TTraits.NormalizeCodeOffset(codeOffset);
         uint numBitsPerOffset = CeilOfLog2(TTraits.NormalizeCodeOffset(_codeLength));
 
+        // TODO(stackref): The native FindSafePoint uses binary search (NarrowSafePointSearch)
+        // when numSafePoints > 32. This is a performance optimization only — no correctness impact.
         // Linear scan through safe point offsets from the saved position
         int scanOffset = _safePointBitOffset;
         for (uint i = 0; i < _numSafePoints; i++)
