@@ -143,4 +143,54 @@ public class VarargPInvokeDumpTests : DumpTestBase
 
         Assert.Fail("Expected to find an ILStub MethodDesc on the crashing thread stack");
     }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "VarargPInvoke debuggee uses msvcrt.dll (Windows only)")]
+    public unsafe void VarargPInvoke_GetCodeHeaderDataWithInvalidPrecodeAddress(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null);
+
+        ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
+        IEnumerable<IStackDataFrameHandle> frames = stackWalk.CreateStackWalk(crashingThread);
+
+        foreach (IStackDataFrameHandle frame in frames)
+        {
+            TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
+            if (methodDescPtr == TargetPointer.Null)
+                continue;
+
+            MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
+            TargetCodePointer entryPoint = rts.GetMethodEntryPointIfExists(mdHandle);
+            if (entryPoint == TargetCodePointer.Null)
+                continue;
+
+            // The entry point is a valid precode in a RangeList range section.
+            // First, validate that the entry point itself corresponds to a valid
+            // code header. If it does not, this frame does not meet the test
+            // preconditions, so skip it.
+            DacpCodeHeaderData codeHeaderData;
+            int hr = sosDac.GetCodeHeaderData(new ClrDataAddress(entryPoint.Value), &codeHeaderData);
+            if (hr != 0)
+                continue;
+
+            // Offset by 1 byte to create an address that is still in the same
+            // RangeList range but is not a valid precode. This is the same
+            // scenario that caused the original CI failure: GetCodeHeaderData
+            // calls NonVirtualEntry2MethodDesc, which calls GetMethodDescFromStubAddress,
+            // which throws InvalidOperationException for invalid precode bytes.
+            // The fix catches this and returns E_INVALIDARG (matching the DAC).
+            DacpCodeHeaderData invalidCodeHeaderData;
+            hr = sosDac.GetCodeHeaderData(new ClrDataAddress(entryPoint.Value + 1), &invalidCodeHeaderData);
+            AssertHResult(HResults.E_INVALIDARG, hr);
+
+            return;
+        }
+
+        Assert.Fail("Expected to find a frame with a valid entry point");
+    }
 }

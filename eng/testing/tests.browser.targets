@@ -215,7 +215,7 @@
   <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(TestTrimming)' != 'true'">
     <!-- StaticWebAssetsSDK expects all "files accessible from web" to be in wwwroot folder -->
     <!-- Here we are adding Link/TargetPath for all Content items and adding them to WasmFilesToIncludeInFileSystem -->
-    <LinkContentToWwwroot Content="@(Content)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
+    <LinkContentToWwwroot Content="@(Content)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)" VfsOutputPath="$(IntermediateOutputPath)vfs">
       <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
       <Output TaskParameter="ContentOut" ItemName="_LinkedContent" />
     </LinkContentToWwwroot>
@@ -255,7 +255,7 @@
       <_WasmFilesForVfs CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
-    <LinkContentToWwwroot Content="@(_WasmFilesForVfs->Distinct())" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
+    <LinkContentToWwwroot Content="@(_WasmFilesForVfs->Distinct())" MSBuildProjectDirectory="$(MSBuildProjectDirectory)" VfsOutputPath="$(IntermediateOutputPath)vfs">
       <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
       <Output TaskParameter="ContentOut" ItemName="_WasmFilesForVfsLinked" />
     </LinkContentToWwwroot>
