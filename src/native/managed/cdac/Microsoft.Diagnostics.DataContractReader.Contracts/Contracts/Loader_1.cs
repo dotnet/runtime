@@ -553,10 +553,15 @@ internal readonly struct Loader_1 : ILoader
         return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
 
-    TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
+    TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap, LoaderHeapKind kind)
     {
-        Data.LoaderHeap heap = _target.ProcessedData.GetOrAdd<Data.LoaderHeap>(loaderHeap);
-        return heap.FirstBlock;
+        return kind switch
+        {
+            LoaderHeapKind.Normal => _target.ProcessedData.GetOrAdd<Data.LoaderHeap>(loaderHeap).FirstBlock,
+            LoaderHeapKind.ExplicitControl => _target.ProcessedData.GetOrAdd<Data.ExplicitControlLoaderHeap>(loaderHeap).FirstBlock,
+            // NotImplementedException maps to E_NOTIMPL, matching native DAC behavior for unknown heap kinds.
+            _ => throw new NotImplementedException($"Unknown loader heap kind: {kind}"),
+        };
     }
 
     LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)

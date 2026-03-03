@@ -255,6 +255,11 @@ CDAC_TYPE_INDETERMINATE(LoaderHeap)
 CDAC_TYPE_FIELD(LoaderHeap, /*pointer*/, FirstBlock, offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock))
 CDAC_TYPE_END(LoaderHeap)
 
+CDAC_TYPE_BEGIN(ExplicitControlLoaderHeap)
+CDAC_TYPE_INDETERMINATE(ExplicitControlLoaderHeap)
+CDAC_TYPE_FIELD(ExplicitControlLoaderHeap, /*pointer*/, FirstBlock, offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock))
+CDAC_TYPE_END(ExplicitControlLoaderHeap)
+
 CDAC_TYPE_BEGIN(LoaderHeapBlock)
 CDAC_TYPE_FIELD(LoaderHeapBlock, /*pointer*/, Next, offsetof(LoaderHeapBlock, pNext))
 CDAC_TYPE_FIELD(LoaderHeapBlock, /*pointer*/, VirtualAddress, offsetof(LoaderHeapBlock, pVirtualAddress))

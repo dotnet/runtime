@@ -4900,14 +4900,6 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback)
     {
-        // Both LoaderHeapKindNormal (0) and LoaderHeapKindExplicitControl (1) use
-        // the same FirstBlock offset via UnlockedLoaderHeapBaseTraversable.
-        // Unknown kind values return E_NOTIMPL to match the native DAC behavior.
-        const int LoaderHeapKindNormal = 0;
-        const int LoaderHeapKindExplicitControl = 1;
-        if (kind != LoaderHeapKindNormal && kind != LoaderHeapKindExplicitControl)
-            return HResults.E_NOTIMPL;
-
         int hr = HResults.S_OK;
         try
         {
@@ -4918,7 +4910,7 @@ public sealed unsafe partial class SOSDacImpl
 
             Contracts.ILoader loader = _target.Contracts.Loader;
             TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
-            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
+            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr, (Contracts.LoaderHeapKind)kind);
             while (block != TargetPointer.Null)
             {
                 Contracts.LoaderHeapBlockData blockData = loader.GetLoaderHeapBlockData(block);
@@ -4941,7 +4933,7 @@ public sealed unsafe partial class SOSDacImpl
             {
                 Contracts.ILoader loader = _target.Contracts.Loader;
                 TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
-                TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
+                TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr, (Contracts.LoaderHeapKind)kind);
                 while (block != TargetPointer.Null)
                 {
                     Contracts.LoaderHeapBlockData blockData = loader.GetLoaderHeapBlockData(block);
