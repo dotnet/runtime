@@ -40,4 +40,8 @@ internal class ARM64GCInfoTraits : IGCInfoTraits
     public static int NUM_INTERRUPTIBLE_RANGES_ENCBASE => 1;
 
     public static bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA => true;
+
+    // Preserved (non-scratch): x19-x28
+    // Scratch: x0-x17, x29(FP), x30(LR)
+    public static bool IsScratchRegister(uint regNum) => regNum <= 17 || regNum >= 29;
 }

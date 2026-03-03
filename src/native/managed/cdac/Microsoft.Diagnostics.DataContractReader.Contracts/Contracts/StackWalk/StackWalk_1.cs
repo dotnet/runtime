@@ -87,6 +87,7 @@ internal partial class StackWalk_1 : IStackWalk
         IEnumerable<GCFrameData> gcFrames = Filter(frames);
 
         GcScanContext scanContext = new(_target, resolveInteriorPointers: false);
+        bool isFirstFramelessFrame = true;
 
         foreach (GCFrameData gcFrame in gcFrames)
         {
@@ -108,8 +109,15 @@ internal partial class StackWalk_1 : IStackWalk
                     {
                         if (!IsManaged(gcFrame.Frame.Context.InstructionPointer, out CodeBlockHandle? cbh))
                             throw new InvalidOperationException("Expected managed code");
+
+                        // The leaf (active) frame reports scratch registers; parent frames don't.
+                        GcScanner.CodeManagerFlags codeManagerFlags = isFirstFramelessFrame
+                            ? GcScanner.CodeManagerFlags.ActiveStackFrame
+                            : 0;
+                        isFirstFramelessFrame = false;
+
                         GcScanner gcScanner = new(_target);
-                        gcScanner.EnumGcRefs(gcFrame.Frame.Context, cbh.Value, 0, scanContext);
+                        gcScanner.EnumGcRefs(gcFrame.Frame.Context, cbh.Value, codeManagerFlags, scanContext);
                     }
                     else
                     {
