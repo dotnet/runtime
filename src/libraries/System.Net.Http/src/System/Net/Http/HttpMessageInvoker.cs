@@ -11,6 +11,8 @@ namespace System.Net.Http
     {
         private volatile bool _disposed;
         private readonly bool _disposeHandler;
+        // Do not make the _handler field public.
+        // Exposing it might interfere with HttpClientFactory handler recycling behavior.
         private readonly HttpMessageHandler _handler;
 
         public HttpMessageInvoker(HttpMessageHandler handler)
