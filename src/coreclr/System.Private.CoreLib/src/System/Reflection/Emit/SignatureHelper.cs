@@ -70,6 +70,7 @@ namespace System.Reflection.Emit
             sigHelp = new SignatureHelper(scope, intCall, cGenericParam, returnType,
                 requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers);
 
+            sigHelp.m_returnType = returnType;
             sigHelp.AddArguments(parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
 
             return sigHelp;
@@ -145,6 +146,7 @@ namespace System.Reflection.Emit
             }
 
             SignatureHelper sig = new(null, callConv);
+            sig.m_returnType = retType;
             sig.AddDynamicArgument(scope, retType, retTypeModReqs, retTypeModOpts, false);
             sig.AddArguments(scope, paramTypes, paramModReqs, paramModOpts);
             return sig;
@@ -224,6 +226,7 @@ namespace System.Reflection.Emit
         private ModuleBuilder? m_module;
         private bool m_sigDone;
         private int m_argCount; // tracking number of arguments in the signature
+        private Type? m_returnType;
         #endregion
 
         #region Constructor
@@ -242,6 +245,7 @@ namespace System.Reflection.Emit
             if (callingConvention == MdSigCallingConvention.Field)
                 throw new ArgumentException(SR.Argument_BadFieldSig);
 
+            m_returnType = returnType;
             AddOneArgTypeHelper(returnType, requiredCustomModifiers, optionalCustomModifiers);
         }
 
@@ -713,6 +717,7 @@ namespace System.Reflection.Emit
 
         #region Internal Members
         internal int ArgumentCount => m_argCount;
+        internal Type? ReturnType => m_returnType;
 
         internal static bool IsSimpleType(CorElementType type)
         {
