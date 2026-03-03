@@ -5443,7 +5443,7 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
 
     // Verify the set of phi-preds covers the set of block preds
     //
-    // We can just do BitVecOps::Equal(&traits, phiPreds, actualPreds), but
+    // We can just do BitVecOps::Equal(&traits, visitedBlocks, actualPreds), but
     // re-iterating the preds is cheaper.
     for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
     {
