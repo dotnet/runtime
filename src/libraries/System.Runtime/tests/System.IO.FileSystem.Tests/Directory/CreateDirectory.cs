@@ -10,7 +10,7 @@ namespace System.IO.Tests
 {
     public class Directory_CreateDirectory : FileSystemTest
     {
-        public static TheoryData<string> ReservedDeviceNames = IOInputs.GetReservedDeviceNames().ToTheoryData();
+        public static TheoryData<string> ReservedDeviceNames = Xunit.TheoryDataExtensions.ToTheoryData(IOInputs.GetReservedDeviceNames());
         #region Utilities
 
         public virtual DirectoryInfo Create(string path)
