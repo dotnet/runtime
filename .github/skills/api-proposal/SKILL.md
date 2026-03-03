@@ -203,7 +203,7 @@ public partial class JsonNamingPolicy
 }
 ```
 
-When existing members ARE needed for context (e.g., to show sibling overloads), comment them out with a `// EXISTING` marker. This makes it easy for the meeting chair to delete them when posting final approval notes:
+When existing members ARE needed for context (e.g., to show sibling overloads), comment out those existing members in the snippet and add a `// EXISTING` marker immediately above them. This makes it easy for the meeting chair to delete them when posting final approval notes:
 
 ```csharp
 namespace System.Text.Json;
