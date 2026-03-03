@@ -4003,19 +4003,9 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
     }
     else
     {
-        GenTree* operand = node;
-        JITDUMP("Checking if we can move node:\n");
-        DISPTREE(operand);
-        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsCFGCallArgInvariantInRange(operand, call))
-        {
-            JITDUMP("...yes, moving to after validator call\n");
-            BlockRange().Remove(operand);
-            BlockRange().InsertBefore(call, operand);
-        }
-        else
-        {
-            JITDUMP("...no, operand has side effects or is not invariant\n");
-        }
+        assert(!HAS_FIXED_REGISTER_SET);
+        // No moving necessary
+        return;
     }
 
     JITDUMP("Moving\n");

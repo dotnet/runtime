@@ -287,8 +287,15 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
 #if defined(TARGET_WASM)
         // TODO-WASM: add other opers that imply null checks
         case GT_NULLCHECK:
-        case GT_STORE_BLK:
             SetThrowHelperBlock(SCK_NULL_CHECK, block);
+            break;
+
+        case GT_STORE_BLK:
+            if (m_compiler->fgAddrCouldBeNull(node->AsBlk()->Addr()) ||
+                m_compiler->fgAddrCouldBeNull(node->AsBlk()->Data()))
+            {
+                SetThrowHelperBlock(SCK_NULL_CHECK, block);
+            }
             break;
 
         case GT_CALL:

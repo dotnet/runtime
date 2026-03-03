@@ -2610,12 +2610,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 //
 void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
-    GenTree*  dstAddr      = cpObjNode->Addr();
-    GenTree*  source       = cpObjNode->Data();
-    var_types srcAddrType  = TYP_BYREF;
-    regNumber dstReg       = GetMultiUseOperandReg(dstAddr);
-    unsigned  dstOffset    = 0;
-    bool      doNullChecks = ((cpObjNode->gtFlags & GTF_EXCEPT) != 0) && cpObjNode->OperMayThrow(m_compiler);
+    GenTree*  dstAddr     = cpObjNode->Addr();
+    GenTree*  source      = cpObjNode->Data();
+    var_types srcAddrType = TYP_BYREF;
+    regNumber dstReg      = GetMultiUseOperandReg(dstAddr);
+    unsigned  dstOffset   = 0;
     regNumber srcReg;
     unsigned  srcOffset;
 
@@ -2629,7 +2628,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         srcReg      = GetMultiUseOperandReg(source);
         srcOffset   = 0;
 
-        if (doNullChecks)
+        if (m_compiler->fgAddrCouldBeNull(source))
         {
             genEmitNullCheck(srcReg);
         }
@@ -2661,7 +2660,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     emitter* emit = GetEmitter();
 
-    if (doNullChecks)
+    if (m_compiler->fgAddrCouldBeNull(dstAddr))
     {
         genEmitNullCheck(dstReg);
     }
