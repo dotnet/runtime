@@ -3260,6 +3260,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @".$", "abc\n", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
                 yield return new object[] { engine, @".$", "abc\r", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
                 yield return new object[] { engine, @".$", "abc\r\n", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
+                yield return new object[] { engine, @".$", "abc\x0B", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
+                yield return new object[] { engine, @".$", "abc\x0C", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
                 yield return new object[] { engine, @".$", "abc\u0085", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
                 yield return new object[] { engine, @".$", "abc\u2028", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
                 yield return new object[] { engine, @".$", "abc\u2029", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
@@ -3277,6 +3279,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"line$", "line\n", RegexHelpers.RegexOptionAnyNewLine, true, "line" };
                 yield return new object[] { engine, @"line$", "line\r", RegexHelpers.RegexOptionAnyNewLine, true, "line" };
                 yield return new object[] { engine, @"line$", "line\r\n", RegexHelpers.RegexOptionAnyNewLine, true, "line" };
+                yield return new object[] { engine, @"line$", "line\x0B", RegexHelpers.RegexOptionAnyNewLine, true, "line" };
+                yield return new object[] { engine, @"line$", "line\x0C", RegexHelpers.RegexOptionAnyNewLine, true, "line" };
                 yield return new object[] { engine, @"line$", "line\u0085", RegexHelpers.RegexOptionAnyNewLine, true, "line" };
                 yield return new object[] { engine, @"line$", "line\u2028", RegexHelpers.RegexOptionAnyNewLine, true, "line" };
                 yield return new object[] { engine, @"line$", "line\u2029", RegexHelpers.RegexOptionAnyNewLine, true, "line" };
@@ -3286,6 +3290,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"foo$", "foo\nbar", RegexHelpers.RegexOptionAnyNewLine, false, "" };
                 yield return new object[] { engine, @"foo$", "foo\rbar", RegexHelpers.RegexOptionAnyNewLine, false, "" };
                 yield return new object[] { engine, @"foo$", "foo\r\nbar", RegexHelpers.RegexOptionAnyNewLine, false, "" };
+                yield return new object[] { engine, @"foo$", "foo\x0Bbar", RegexHelpers.RegexOptionAnyNewLine, false, "" };
+                yield return new object[] { engine, @"foo$", "foo\x0Cbar", RegexHelpers.RegexOptionAnyNewLine, false, "" };
                 yield return new object[] { engine, @"foo$", "foo\u0085bar", RegexHelpers.RegexOptionAnyNewLine, false, "" };
                 yield return new object[] { engine, @"foo$", "foo\u2028bar", RegexHelpers.RegexOptionAnyNewLine, false, "" };
                 yield return new object[] { engine, @"foo$", "foo\u2029bar", RegexHelpers.RegexOptionAnyNewLine, false, "" };
@@ -3304,6 +3310,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"$", "\r", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"$", "\n", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"$", "\r\n", RegexHelpers.RegexOptionAnyNewLine, true, "" };
+                yield return new object[] { engine, @"$", "\x0B", RegexHelpers.RegexOptionAnyNewLine, true, "" };
+                yield return new object[] { engine, @"$", "\x0C", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"$", "\u0085", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"$", "\u2028", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"$", "\u2029", RegexHelpers.RegexOptionAnyNewLine, true, "" };
@@ -3339,6 +3347,10 @@ namespace System.Text.RegularExpressions.Tests
                 // \Z with AnyNewLine matches before \r\n at end
                 yield return new object[] { engine, @".\Z", "abc\r\n", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
 
+                // \Z with AnyNewLine matches before VT and FF at end
+                yield return new object[] { engine, @".\Z", "abc\x0B", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
+                yield return new object[] { engine, @".\Z", "abc\x0C", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
+
                 // \Z with AnyNewLine matches at end of string
                 yield return new object[] { engine, @".\Z", "abc", RegexHelpers.RegexOptionAnyNewLine, true, "c" };
 
@@ -3358,6 +3370,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"a\Z", "a\rb", RegexHelpers.RegexOptionAnyNewLine, false, "" };
                 yield return new object[] { engine, @"a\Z", "a\nb", RegexHelpers.RegexOptionAnyNewLine, false, "" };
                 yield return new object[] { engine, @"a\Z", "a\r\nb", RegexHelpers.RegexOptionAnyNewLine, false, "" };
+                yield return new object[] { engine, @"a\Z", "a\x0Bb", RegexHelpers.RegexOptionAnyNewLine, false, "" };
+                yield return new object[] { engine, @"a\Z", "a\x0Cb", RegexHelpers.RegexOptionAnyNewLine, false, "" };
                 yield return new object[] { engine, @"a\Z", "a\u0085b", RegexHelpers.RegexOptionAnyNewLine, false, "" };
                 yield return new object[] { engine, @"a\Z", "a\u2028b", RegexHelpers.RegexOptionAnyNewLine, false, "" };
                 yield return new object[] { engine, @"a\Z", "a\u2029b", RegexHelpers.RegexOptionAnyNewLine, false, "" };
@@ -3377,6 +3391,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"\Z", "\r", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"\Z", "\n", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"\Z", "\r\n", RegexHelpers.RegexOptionAnyNewLine, true, "" };
+                yield return new object[] { engine, @"\Z", "\x0B", RegexHelpers.RegexOptionAnyNewLine, true, "" };
+                yield return new object[] { engine, @"\Z", "\x0C", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"\Z", "\u0085", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"\Z", "\u2029", RegexHelpers.RegexOptionAnyNewLine, true, "" };
             }
@@ -3410,6 +3426,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"\w+$", "foo\r\nbar", MA, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @"\w+$", "foo\rbar", MA, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @"\w+$", "foo\nbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\x0Bbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"\w+$", "foo\x0Cbar", MA, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @"\w+$", "foo\u0085bar", MA, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @"\w+$", "foo\u2028bar", MA, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @"\w+$", "foo\u2029bar", MA, new[] { "foo", "bar" } };
@@ -3507,6 +3525,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"^\w+", "foo\r\nbar", MA, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @"^\w+", "foo\rbar", MA, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @"^\w+", "foo\nbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"^\w+", "foo\x0Bbar", MA, new[] { "foo", "bar" } };
+                yield return new object[] { engine, @"^\w+", "foo\x0Cbar", MA, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @"^\w+", "foo\u0085bar", MA, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @"^\w+", "foo\u2028bar", MA, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @"^\w+", "foo\u2029bar", MA, new[] { "foo", "bar" } };
@@ -3605,6 +3625,10 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @".+", "abc\rdef", RegexHelpers.RegexOptionAnyNewLine, new[] { "abc", "def" } };
                 yield return new object[] { engine, @".+", "abc\ndef", RegexHelpers.RegexOptionAnyNewLine, new[] { "abc", "def" } };
                 yield return new object[] { engine, @".+", "abc\r\ndef", RegexHelpers.RegexOptionAnyNewLine, new[] { "abc", "def" } };
+
+                // . does not match VT or FF with AnyNewLine
+                yield return new object[] { engine, @".+", "abc\x0Bdef", RegexHelpers.RegexOptionAnyNewLine, new[] { "abc", "def" } };
+                yield return new object[] { engine, @".+", "abc\x0Cdef", RegexHelpers.RegexOptionAnyNewLine, new[] { "abc", "def" } };
 
                 // . does not match Unicode newlines with AnyNewLine
                 yield return new object[] { engine, @".+", "abc\u0085def", RegexHelpers.RegexOptionAnyNewLine, new[] { "abc", "def" } };
