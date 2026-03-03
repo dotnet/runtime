@@ -66,12 +66,6 @@ public readonly struct GCOomData
     public TargetNUInt AvailablePagefileMB { get; init; }
     public bool LohP { get; init; }
 }
-
-public readonly struct LoaderHeapBlockData
-{
-    public TargetPointer VirtualAddress { get; init; }
-    public TargetNUInt VirtualSize { get; init; }
-}
 ```
 
 ```csharp
@@ -122,12 +116,6 @@ public readonly struct LoaderHeapBlockData
     HandleType[] GetHandleTypes(uint[] types);
     // Gets the global allocation context pointer and limit
     void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit);
-    // Returns the first block of a loader heap's linked list of reserved memory blocks, or TargetPointer.Null if empty
-    TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap);
-    // Returns the address and size of virtual memory for the given loader heap block
-    LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block);
-    // Returns the next block in the loader heap linked list, or TargetPointer.Null if there are no more blocks
-    TargetPointer GetNextLoaderHeapBlock(TargetPointer block);
 ```
 
 ## Version 1
@@ -190,10 +178,6 @@ Data descriptors used:
 | `GCAllocContext` | AllocBytes | VM | Number of bytes allocated on SOH by this context |
 | `GCAllocContext` | AllocBytesLoh | VM | Number of bytes allocated not on SOH by this context |
 | `EEAllocContext` | GCAllocationContext | VM | The `GCAllocContext` struct within an `EEAllocContext` |
-| `LoaderHeap` | FirstBlock | VM | Pointer to the first `LoaderHeapBlock` in the linked list |
-| `LoaderHeapBlock` | Next | VM | Pointer to the next `LoaderHeapBlock` in the linked list |
-| `LoaderHeapBlock` | VirtualAddress | VM | Pointer to the start of the reserved virtual memory |
-| `LoaderHeapBlock` | VirtualSize | VM | Size in bytes of the reserved virtual memory region |
 
 Global variables used:
 | Global Name | Type | Source | Purpose |
@@ -757,30 +741,3 @@ void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointe
 }
 ```
 
-GetFirstLoaderHeapBlock
-```csharp
-TargetPointer IGC.GetFirstLoaderHeapBlock(TargetPointer loaderHeap)
-{
-    return target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */);
-}
-```
-
-GetLoaderHeapBlockData
-```csharp
-LoaderHeapBlockData IGC.GetLoaderHeapBlockData(TargetPointer block)
-{
-    return new LoaderHeapBlockData
-    {
-        VirtualAddress = target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */),
-        VirtualSize = target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */),
-    };
-}
-```
-
-GetNextLoaderHeapBlock
-```csharp
-TargetPointer IGC.GetNextLoaderHeapBlock(TargetPointer block)
-{
-    return target.ReadPointer(block + /* LoaderHeapBlock::Next offset */);
-}
-```

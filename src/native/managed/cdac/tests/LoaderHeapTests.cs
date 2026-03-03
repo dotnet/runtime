@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-public class GCLoaderHeapTests
+public class LoaderHeapTests
 {
     private const ulong DefaultAllocationRangeStart = 0x0005_0000;
     private const ulong DefaultAllocationRangeEnd = 0x0006_0000;
@@ -41,16 +41,9 @@ public class GCLoaderHeapTests
 
     private static Target CreateTarget(MockTarget.Architecture arch, Dictionary<DataType, Target.TypeInfo> types, MockMemorySpace.Builder builder)
     {
-        (string Name, ulong Value)[] globals =
-        [
-            (nameof(Constants.Globals.HandlesPerBlock), 1),
-            (nameof(Constants.Globals.BlockInvalid), 0xFF),
-            (nameof(Constants.Globals.DebugDestroyedHandleValue), 0),
-            (nameof(Constants.Globals.HandleMaxInternalTypes), 1),
-        ];
-        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, types, globals);
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, types);
         target.SetContracts(Mock.Of<ContractRegistry>(
-            c => c.GC == ((IContractFactory<IGC>)new GCFactory()).CreateContract(target, 1)));
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
         return target;
     }
 
@@ -70,9 +63,9 @@ public class GCLoaderHeapTests
         builder.AddHeapFragment(heapFragment);
 
         Target target = CreateTarget(arch, types, builder);
-        IGC gc = target.Contracts.GC;
+        ILoader loader = target.Contracts.Loader;
 
-        TargetPointer firstBlock = gc.GetFirstLoaderHeapBlock(heapFragment.Address);
+        TargetPointer firstBlock = loader.GetFirstLoaderHeapBlock(heapFragment.Address);
         Assert.Equal(TargetPointer.Null, firstBlock);
     }
 
@@ -103,16 +96,16 @@ public class GCLoaderHeapTests
         builder.AddHeapFragment(heapFragment);
 
         Target target = CreateTarget(arch, types, builder);
-        IGC gc = target.Contracts.GC;
+        ILoader loader = target.Contracts.Loader;
 
-        TargetPointer firstBlock = gc.GetFirstLoaderHeapBlock(heapFragment.Address);
+        TargetPointer firstBlock = loader.GetFirstLoaderHeapBlock(heapFragment.Address);
         Assert.Equal((TargetPointer)blockFragment.Address, firstBlock);
 
-        LoaderHeapBlockData data = gc.GetLoaderHeapBlockData(firstBlock);
+        LoaderHeapBlockData data = loader.GetLoaderHeapBlockData(firstBlock);
         Assert.Equal(virtualAddress, data.VirtualAddress.Value);
         Assert.Equal(virtualSize, data.VirtualSize.Value);
 
-        TargetPointer nextBlock = gc.GetNextLoaderHeapBlock(firstBlock);
+        TargetPointer nextBlock = loader.GetNextLoaderHeapBlock(firstBlock);
         Assert.Equal(TargetPointer.Null, nextBlock);
     }
 
@@ -152,16 +145,16 @@ public class GCLoaderHeapTests
         builder.AddHeapFragment(heapFragment);
 
         Target target = CreateTarget(arch, types, builder);
-        IGC gc = target.Contracts.GC;
+        ILoader loader = target.Contracts.Loader;
 
         // Traverse the heap blocks
         List<(ulong Address, ulong Size)> blocks = [];
-        TargetPointer block = gc.GetFirstLoaderHeapBlock(heapFragment.Address);
+        TargetPointer block = loader.GetFirstLoaderHeapBlock(heapFragment.Address);
         while (block != TargetPointer.Null)
         {
-            LoaderHeapBlockData data = gc.GetLoaderHeapBlockData(block);
+            LoaderHeapBlockData data = loader.GetLoaderHeapBlockData(block);
             blocks.Add((data.VirtualAddress.Value, data.VirtualSize.Value));
-            block = gc.GetNextLoaderHeapBlock(block);
+            block = loader.GetNextLoaderHeapBlock(block);
         }
 
         Assert.Equal(2, blocks.Count);

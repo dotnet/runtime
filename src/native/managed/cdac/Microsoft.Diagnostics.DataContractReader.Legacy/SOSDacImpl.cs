@@ -4916,16 +4916,16 @@ public sealed unsafe partial class SOSDacImpl
             if (pCallback is null)
                 throw new ArgumentException();
 
-            Contracts.IGC gc = _target.Contracts.GC;
+            Contracts.ILoader loader = _target.Contracts.Loader;
             TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
-            TargetPointer block = gc.GetFirstLoaderHeapBlock(heapAddr);
+            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
             while (block != TargetPointer.Null)
             {
-                Contracts.LoaderHeapBlockData blockData = gc.GetLoaderHeapBlockData(block);
+                Contracts.LoaderHeapBlockData blockData = loader.GetLoaderHeapBlockData(block);
                 Interop.BOOL cont = pCallback(blockData.VirtualAddress.Value, (nuint)blockData.VirtualSize.Value);
                 if (cont == Interop.BOOL.FALSE)
                     break;
-                block = gc.GetNextLoaderHeapBlock(block);
+                block = loader.GetNextLoaderHeapBlock(block);
             }
         }
         catch (System.Exception ex)
@@ -4939,14 +4939,14 @@ public sealed unsafe partial class SOSDacImpl
             List<(ulong VirtualAddress, nuint VirtualSize)> cdacBlocks = [];
             try
             {
-                Contracts.IGC gc = _target.Contracts.GC;
+                Contracts.ILoader loader = _target.Contracts.Loader;
                 TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
-                TargetPointer block = gc.GetFirstLoaderHeapBlock(heapAddr);
+                TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
                 while (block != TargetPointer.Null)
                 {
-                    Contracts.LoaderHeapBlockData blockData = gc.GetLoaderHeapBlockData(block);
+                    Contracts.LoaderHeapBlockData blockData = loader.GetLoaderHeapBlockData(block);
                     cdacBlocks.Add((blockData.VirtualAddress.Value, (nuint)blockData.VirtualSize.Value));
-                    block = gc.GetNextLoaderHeapBlock(block);
+                    block = loader.GetNextLoaderHeapBlock(block);
                 }
             }
             catch { }

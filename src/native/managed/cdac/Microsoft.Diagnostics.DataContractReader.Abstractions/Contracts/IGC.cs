@@ -98,12 +98,6 @@ public readonly struct GCOomData
     public bool LohP { get; init; }
 }
 
-public readonly struct LoaderHeapBlockData
-{
-    public TargetPointer VirtualAddress { get; init; }
-    public TargetNUInt VirtualSize { get; init; }
-}
-
 public interface IGC : IContract
 {
     static string IContract.Name { get; } = nameof(GC);
@@ -134,13 +128,6 @@ public interface IGC : IContract
     HandleType[] GetHandleTypes(uint[] types) => throw new NotImplementedException();
 
     void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit) => throw new NotImplementedException();
-
-    // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks
-    TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap) => throw new NotImplementedException();
-    // Returns the address and size of virtual memory for the given loader heap block
-    LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block) => throw new NotImplementedException();
-    // Returns the next block in the loader heap linked list, or TargetPointer.Null if there are no more blocks
-    TargetPointer GetNextLoaderHeapBlock(TargetPointer block) => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC
