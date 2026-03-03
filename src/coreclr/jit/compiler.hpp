@@ -5441,11 +5441,20 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
         BitVecOps::AddElemD(&traits, phiPreds, phiArg->gtPredBB->bbNum);
     }
 
-    if (!BitVecOps::Equal(&traits, phiPreds, actualPreds))
+    // We can just do BitVecOps::Equal(&traits, phiPreds, actualPreds), but
+    // re-iterating the preds is typically cheaper (phi args don't usually have many preds)
+    // while for BitVecOps::Equal we need to iterate over all the bits up to fgBBNumMax (can be many).
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
     {
-        // We missed examining a block pred. Fail the phi inference.
-        //
-        return AssertVisit::Abort;
+        if (!BitVecOps::IsMember(&traits, phiPreds, pred->bbNum))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
+                    ssaDef->GetBlock()->bbNum, pred->bbNum);
+
+            // We missed examining a block pred. Fail the phi inference.
+            //
+            return AssertVisit::Abort;
+        }
     }
 
     return AssertVisit::Continue;
