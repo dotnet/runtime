@@ -7922,7 +7922,7 @@ DONE_MORPHING_CHILDREN:
                 break;
             }
 
-            if (!op2->TypeIs(TYP_BYREF))
+            if (!op2->TypeIs(TYP_BYREF) && opts.Tier0OptimizationEnabled())
             {
                 /* Check for "op1 - cns2" , we change it to "op1 + (-cns2)" */
 
@@ -7931,7 +7931,7 @@ DONE_MORPHING_CHILDREN:
                     // Negate the constant and change the node to be "+",
                     // except when `op2` is a const byref.
 
-                    op2->AsIntConCommon()->SetIconValue(-op2->AsIntConCommon()->IconValue());
+                    op2->AsIntConCommon()->SetValueTruncating(-op2->AsIntConCommon()->IconValue());
                     op2->AsIntConRef().gtFieldSeq = nullptr;
                     fgUpdateConstTreeValueNumber(op2);
 
@@ -8180,7 +8180,7 @@ DONE_MORPHING_CHILDREN:
 
                         if (canTransform)
                         {
-                            op1op2->AsIntConCommon()->SetIconValue(-op1op2->AsIntConCommon()->IconValue());
+                            op1op2->AsIntConCommon()->SetValueTruncating(-op1op2->AsIntConCommon()->IconValue());
                             op1op2->AsIntConRef().gtFieldSeq = nullptr;
                         }
                     }
@@ -10618,7 +10618,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
 
             if (op2->IsCnsIntOrI())
             {
-                op2->AsIntConCommon()->SetIconValue(-op2->AsIntConCommon()->IconValue());
+                op2->AsIntConCommon()->SetValueTruncating(-op2->AsIntConCommon()->IconValue());
                 op2->AsIntConRef().gtFieldSeq = nullptr;
             }
             else
