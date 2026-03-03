@@ -41,7 +41,25 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal) => _legacy is not null ? _legacy.GetAppDomainObject(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetAssemblyFromDomainAssembly(ulong vmDomainAssembly, ulong* vmAssembly) => _legacy is not null ? _legacy.GetAssemblyFromDomainAssembly(vmDomainAssembly, vmAssembly) : HResults.E_NOTIMPL;
+    public int GetAssemblyFromDomainAssembly(ulong vmDomainAssembly, ulong* vmAssembly)
+    {
+        // In .NET Core, DomainAssembly is essentially Module.
+        // Use the Loader contract to read Module.Assembly.
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle handle = new ModuleHandle(new TargetPointer(vmDomainAssembly));
+        TargetPointer assembly = loader.GetAssembly(handle);
+        *vmAssembly = assembly.Value;
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong legacyResult;
+            int legacyHr = _legacy.GetAssemblyFromDomainAssembly(vmDomainAssembly, &legacyResult);
+            Debug.Assert(legacyHr == HResults.S_OK);
+            Debug.Assert(legacyResult == *vmAssembly, $"GetAssemblyFromDomainAssembly mismatch: cDAC={*vmAssembly:x} legacy={legacyResult:x}");
+        }
+#endif
+        return HResults.S_OK;
+    }
 
     public int IsAssemblyFullyTrusted(ulong vmDomainAssembly, int* pResult)
     {
@@ -539,9 +557,50 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int WalkRefs(nuint handle, uint count, nint refs, uint* pFetched) => _legacy is not null ? _legacy.WalkRefs(handle, count, refs, pFetched) : HResults.E_NOTIMPL;
 
-    public int GetTypeID(ulong obj, nint pType) => _legacy is not null ? _legacy.GetTypeID(obj, pType) : HResults.E_NOTIMPL;
+    public int GetTypeID(ulong obj, nint pType)
+    {
+        // COR_TYPEID: token1 = MethodTable address, token2 = 0
+        IObject objectContract = _target.Contracts.Object;
+        TargetPointer mt = objectContract.GetMethodTableAddress(new TargetPointer(obj));
+        // COR_TYPEID is { uint64 token1; uint64 token2; }
+        ulong* pTypeId = (ulong*)pType;
+        pTypeId[0] = mt.Value;
+        pTypeId[1] = 0;
+#if DEBUG
+        if (_legacy is not null)
+        {
+            // Allocate a COR_TYPEID-sized buffer for legacy comparison
+            ulong* legacyBuf = stackalloc ulong[2];
+            legacyBuf[0] = 0; legacyBuf[1] = 0;
+            int legacyHr = _legacy.GetTypeID(obj, (nint)legacyBuf);
+            Debug.Assert(legacyHr == HResults.S_OK);
+            Debug.Assert(legacyBuf[0] == pTypeId[0], $"GetTypeID mismatch: cDAC={pTypeId[0]:x} legacy={legacyBuf[0]:x}");
+        }
+#endif
+        return HResults.S_OK;
+    }
 
-    public int GetTypeIDForType(ulong vmTypeHandle, nint pId) => _legacy is not null ? _legacy.GetTypeIDForType(vmTypeHandle, pId) : HResults.E_NOTIMPL;
+    public int GetTypeIDForType(ulong vmTypeHandle, nint pId)
+    {
+        // COR_TYPEID.token1 = MethodTable address from TypeHandle, token2 = 0
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        TypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
+        TargetPointer mt = rts.GetCanonicalMethodTable(th);
+        ulong* pTypeId = (ulong*)pId;
+        pTypeId[0] = mt.Value;
+        pTypeId[1] = 0;
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong* legacyBuf = stackalloc ulong[2];
+            legacyBuf[0] = 0; legacyBuf[1] = 0;
+            int legacyHr = _legacy.GetTypeIDForType(vmTypeHandle, (nint)legacyBuf);
+            Debug.Assert(legacyHr == HResults.S_OK);
+            Debug.Assert(legacyBuf[0] == pTypeId[0], $"GetTypeIDForType mismatch: cDAC={pTypeId[0]:x} legacy={legacyBuf[0]:x}");
+        }
+#endif
+        return HResults.S_OK;
+    }
 
     public int GetObjectFields(nint id, uint celt, nint layout, uint* pceltFetched) => _legacy is not null ? _legacy.GetObjectFields(id, celt, layout, pceltFetched) : HResults.E_NOTIMPL;
 
@@ -553,13 +612,29 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW) => _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
 
-    public int GetReJitInfo(ulong vmModule, uint methodTk, ulong* pReJitInfo) => _legacy is not null ? _legacy.GetReJitInfo(vmModule, methodTk, pReJitInfo) : HResults.E_NOTIMPL;
+    public int GetReJitInfo(ulong vmModule, uint methodTk, ulong* pReJitInfo)
+    {
+        // Deprecated: "You shouldn't be calling this - use GetActiveRejitILCodeVersionNode instead"
+        return HResults.S_OK;
+    }
 
-    public int GetReJitInfo(ulong vmMethod, ulong codeStartAddress, ulong* pReJitInfo) => _legacy is not null ? _legacy.GetReJitInfo(vmMethod, codeStartAddress, pReJitInfo) : HResults.E_NOTIMPL;
+    public int GetReJitInfo(ulong vmMethod, ulong codeStartAddress, ulong* pReJitInfo)
+    {
+        // Deprecated: "You shouldn't be calling this - use GetNativeCodeVersionNode instead"
+        return HResults.S_OK;
+    }
 
-    public int GetSharedReJitInfo(ulong vmReJitInfo, ulong* pSharedReJitInfo) => _legacy is not null ? _legacy.GetSharedReJitInfo(vmReJitInfo, pSharedReJitInfo) : HResults.E_NOTIMPL;
+    public int GetSharedReJitInfo(ulong vmReJitInfo, ulong* pSharedReJitInfo)
+    {
+        // Deprecated: "You shouldn't be calling this - use GetILCodeVersionNode instead"
+        return HResults.S_OK;
+    }
 
-    public int GetSharedReJitInfoData(ulong sharedReJitInfo, nint pData) => _legacy is not null ? _legacy.GetSharedReJitInfoData(sharedReJitInfo, pData) : HResults.E_NOTIMPL;
+    public int GetSharedReJitInfoData(ulong sharedReJitInfo, nint pData)
+    {
+        // Deprecated: "You shouldn't be calling this - use GetILCodeVersionNodeData instead"
+        return HResults.S_OK;
+    }
 
     public int AreOptimizationsDisabled(ulong vmModule, uint methodTk, int* pOptimizationsDisabled) => _legacy is not null ? _legacy.AreOptimizationsDisabled(vmModule, methodTk, pOptimizationsDisabled) : HResults.E_NOTIMPL;
 
