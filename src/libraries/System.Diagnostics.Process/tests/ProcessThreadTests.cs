@@ -6,12 +6,14 @@ using System.Threading;
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using Xunit.Abstractions;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace System.Diagnostics.Tests
 {
-    public partial class ProcessThreadTests : ProcessTestBase
+    public partial class ProcessThreadTests(ITestOutputHelper _output) : ProcessTestBase
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestCommonPriorityAndTimeProperties()
@@ -108,6 +110,24 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        void PrintThreadsIds(IEnumerable<int> threadIds, string? message)
+        {
+            if (message is not null)
+                _output.WriteLine(message);
+
+            var i = 0;
+            foreach (var tid in threadIds)
+                _output.WriteLine($"Thread[{i++}] {tid}");
+        }
+
+        void LogWhenFailed(IEnumerable<int> previousIds, IEnumerable<int> currentIds, int newThreadId)
+        {
+            _output.WriteLine($"New thread id: {newThreadId}");
+
+            PrintThreadsIds(currentIds, "Ids after creating new thread");
+            PrintThreadsIds(currentIds.Except(previousIds), "Ids that were added");
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)] // OSX and FreeBSD throw PNSE from StartTime
         public async Task TestStartTimeProperty()
@@ -144,6 +164,8 @@ namespace System.Diagnostics.Tests
                 }
                 Assert.InRange(passed, 1, int.MaxValue);
 
+                var previousIds = p.Threads.Cast<ProcessThread>().Select(t => t.Id);
+
                 // Now add a thread, and from that thread, while it's still alive, verify
                 // that there's at least one thread greater than the current time we previously grabbed.
                 await Task.Factory.StartNew(() =>
@@ -151,11 +173,22 @@ namespace System.Diagnostics.Tests
                     p.Refresh();
 
                     int newThreadId = GetCurrentThreadId();
+                    var currentIds = p.Threads.Cast<ProcessThread>().Select(t => t.Id);
 
                     ProcessThread[] processThreads = p.Threads.Cast<ProcessThread>().ToArray();
-                    ProcessThread newThread = Assert.Single(processThreads, thread => thread.Id == newThreadId);
 
-                    Assert.InRange(newThread.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.Now.ToUniversalTime() + allowedWindow);
+                    try
+                    {
+                        ProcessThread newThread = Assert.Single(processThreads, thread => thread.Id == newThreadId);
+
+                        Assert.InRange(newThread.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.Now.ToUniversalTime() + allowedWindow);
+                    }
+                    catch
+                    {
+                        // LogWhenFailed(previousIds, currentIds, newThreadId);
+
+                        throw;
+                    }
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }
