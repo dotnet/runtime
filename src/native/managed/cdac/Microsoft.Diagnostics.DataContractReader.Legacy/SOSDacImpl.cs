@@ -3548,7 +3548,6 @@ public sealed unsafe partial class SOSDacImpl
 
                     if (hr == HResults.S_OK && sosRefs is not null)
                     {
-                        Debug.WriteLine($"GetStackReferences debug: cDAC={sosRefs.Length} refs, DAC={legacyFetched} refs");
                         Debug.Assert((uint)sosRefs.Length == legacyFetched, $"cDAC: {sosRefs.Length} refs, DAC: {legacyFetched} refs");
 
                         // Verify every DAC ref exists in the cDAC set (by Address which is unique per slot)
