@@ -58,11 +58,11 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public static async Task EquivalentSources_Regenerates()
+        public static async Task EquivalentSources_DoesNotRegenerate()
         {
-            // Unlike STJ, the Regex generator model includes Dictionary<string, string[]>
-            // for helper methods, which doesn't have value equality. Equivalent sources
-            // therefore produce Modified outputs rather than Unchanged.
+            // The Regex generator model uses ImmutableEquatableArray fields for deep value equality.
+            // When the attribute metadata (pattern, options) is unchanged, ForAttributeWithMetadataName
+            // caches the transform and all downstream steps are Cached.
             string source1 = @"
                 using System.Text.RegularExpressions;
                 partial class C
@@ -103,9 +103,9 @@ namespace System.Text.RegularExpressions.Tests
                 step =>
                 {
                     Assert.Collection(step.Inputs,
-                        source => Assert.Equal(IncrementalStepRunReason.Modified, source.Source.Outputs[source.OutputIndex].Reason));
+                        source => Assert.Equal(IncrementalStepRunReason.Cached, source.Source.Outputs[source.OutputIndex].Reason));
                     Assert.Collection(step.Outputs,
-                        output => Assert.Equal(IncrementalStepRunReason.Modified, output.Reason));
+                        output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
                 });
         }
 

@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
+using SourceGenerators;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -254,16 +255,47 @@ namespace System.Text.RegularExpressions.Generator
         internal sealed record RegexPatternAndSyntax(RegexType DeclaringType, bool IsProperty, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, CultureInfo Culture, CompilationData CompilationData);
 
         /// <summary>Data about a regex, including a fully parsed RegexTree and subsequent analysis.</summary>
-        internal sealed record RegexMethod(RegexType DeclaringType, bool IsProperty, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis, CompilationData CompilationData)
-        {
-            public string? GeneratedName { get; set; }
-            public bool IsDuplicate { get; set; }
-        }
+        internal sealed record RegexMethod(RegexType DeclaringType, bool IsProperty, string MemberName, string Modifiers, bool NullableRegex, string Pattern, RegexOptions Options, int? MatchTimeout, RegexTree Tree, AnalysisResults Analysis, CompilationData CompilationData);
 
         /// <summary>A type holding a regex method.</summary>
         internal sealed record RegexType(string Keyword, string Namespace, string Name)
         {
             public RegexType? Parent { get; set; }
         }
+
+        /// <summary>
+        /// Per-method data extracted from <see cref="RegexMethod"/> with all fields deeply equatable.
+        /// This is the incremental model used for source generation — it contains no references to
+        /// <see cref="RegexTree"/>, <see cref="AnalysisResults"/>, or Roslyn symbols.
+        /// </summary>
+        internal sealed record RegexMethodEntry(
+            RegexType DeclaringType,
+            bool IsProperty,
+            string MemberName,
+            string Modifiers,
+            bool NullableRegex,
+            string Pattern,
+            RegexOptions Options,
+            int? MatchTimeout,
+            CompilationData CompilationData,
+            string? GeneratedCode,
+            string? LimitedSupportReason,
+            string ExpressionDescription,
+            ImmutableEquatableArray<(int Key, int Value)>? CaptureNumberSparseMapping,
+            ImmutableEquatableArray<(string Key, int Value)>? CaptureNameToNumberMapping,
+            ImmutableEquatableArray<string>? CaptureNames,
+            int CaptureCount);
+
+        /// <summary>A named helper method (e.g. IsWordChar, IsBoundary) shared across regex implementations.</summary>
+        internal sealed record HelperMethod(string Name, ImmutableEquatableArray<string> Lines);
+
+        /// <summary>
+        /// The complete source generation model for all regex methods in a compilation.
+        /// All fields use <see cref="ImmutableEquatableArray{T}"/> for deep value equality,
+        /// enabling Roslyn's incremental pipeline to skip re-emission when the model is unchanged.
+        /// </summary>
+        internal sealed record RegexSourceGenerationResult(
+            ImmutableEquatableArray<RegexMethodEntry> Methods,
+            ImmutableEquatableArray<HelperMethod> Helpers);
     }
 }
