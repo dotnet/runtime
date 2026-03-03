@@ -21,10 +21,6 @@ namespace System.Text.RegularExpressions
         private const int MaxValueDiv10 = int.MaxValue / 10;
         private const int MaxValueMod10 = int.MaxValue % 10;
 
-        /// <summary>Character class for [\x0B\x0C\r\u0085\u2028\u2029] — VT, FF, CR plus Unicode newlines, used in $ and \Z lowering.</summary>
-        private const string CrUnicodeNewLineClass = "\x00\x06\x00\x0B\x0E\x85\x86\u2028\u202A";
-        /// <summary>Character class for [\n\x0B\x0C\u0085\u2028\u2029] — LF, VT, FF plus Unicode newlines, used in ^ lowering.</summary>
-        private const string NlUnicodeNewLineClass = "\x00\x06\x00\x0A\x0D\x85\x86\u2028\u202A";
 
         private RegexNode? _stack;
         private RegexNode? _group;
@@ -1703,7 +1699,7 @@ namespace System.Text.RegularExpressions
 
             // [\r\u0085\u2028\u2029]?\z — optional CR-or-Unicode-newline followed by end of string
             var crUniOptEnd = new RegexNode(RegexNodeKind.Concatenate, lookaheadOpts);
-            crUniOptEnd.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadOptsNoCase, CrUnicodeNewLineClass).MakeQuantifier(false, 0, 1));
+            crUniOptEnd.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadOptsNoCase, RegexCharClass.AnyNewLineExceptLfClass).MakeQuantifier(false, 0, 1));
             crUniOptEnd.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
 
             // (?=\r\n\z|[\r\u0085\u2028\u2029]?\z)
@@ -1753,7 +1749,7 @@ namespace System.Text.RegularExpressions
             // (?=[\r\u0085\u2028\u2029]|\z)
             // \r covers both \r\n and bare \r (lookahead only checks the first char)
             var innerAlt = new RegexNode(RegexNodeKind.Alternate, lookaheadOpts);
-            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadOptsNoCase, CrUnicodeNewLineClass));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadOptsNoCase, RegexCharClass.AnyNewLineExceptLfClass));
             innerAlt.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
             var lookahead1 = new RegexNode(RegexNodeKind.PositiveLookaround, lookaheadOpts);
             lookahead1.AddChild(innerAlt);
@@ -1795,7 +1791,7 @@ namespace System.Text.RegularExpressions
             // (?<=[\n\u0085\u2028\u2029]|\A)
             // \n covers both \r\n and bare \n (lookbehind only checks the last char)
             var innerAlt = new RegexNode(RegexNodeKind.Alternate, lookbehindOpts);
-            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookbehindOptsNoCase, NlUnicodeNewLineClass));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookbehindOptsNoCase, RegexCharClass.AnyNewLineExceptCrClass));
             innerAlt.AddChild(new RegexNode(RegexNodeKind.Beginning, lookbehindOpts));
             var lookbehind1 = new RegexNode(RegexNodeKind.PositiveLookaround, lookbehindOpts);
             lookbehind1.AddChild(innerAlt);
