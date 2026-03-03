@@ -637,7 +637,9 @@ struct LateDevirtualizationInfo
     CORINFO_METHOD_HANDLE  methodHnd;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
     ILLocation             ilLocation;
-    CORINFO_RESOLVED_TOKEN resolvedToken;
+    CORINFO_MODULE_HANDLE  tokenScope;
+    PCCOR_SIGNATURE        pMethodSpec;
+    uint32_t               cbMethodSpec;
 };
 
 // InlArgInfo describes inline candidate argument properties.

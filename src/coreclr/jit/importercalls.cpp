@@ -1288,7 +1288,9 @@ DONE:
             info->methodHnd                            = callInfo->hMethod;
             info->exactContextHnd                      = exactContextHnd;
             info->ilLocation                           = impCurStmtDI.GetLocation();
-            info->resolvedToken                        = *pResolvedToken;
+            info->tokenScope                           = pResolvedToken->tokenScope;
+            info->pMethodSpec                          = pResolvedToken->pMethodSpec;
+            info->cbMethodSpec                         = pResolvedToken->cbMethodSpec;
             call->AsCall()->gtLateDevirtualizationInfo = info;
         }
     }
@@ -7545,29 +7547,6 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
 }
 
 //------------------------------------------------------------------------
-// impDevirtualizedCallHasConstInstParam: check if the instantiation argument
-// is a compile-time lookup.
-//
-// Arguments:
-//   dvInfo - Devirtualization information returned by resolveVirtualMethod.
-//
-// Returns:
-//   true if instParamLookup describes a valid constant handle/address lookup.
-//
-bool Compiler::impDevirtualizedCallHasConstInstParam(const CORINFO_DEVIRTUALIZATION_INFO& dvInfo)
-{
-    if (dvInfo.instParamLookup.lookupKind.needsRuntimeLookup)
-    {
-        return false;
-    }
-
-    return ((dvInfo.instParamLookup.constLookup.accessType == IAT_VALUE &&
-             dvInfo.instParamLookup.constLookup.handle != nullptr) ||
-            (dvInfo.instParamLookup.constLookup.accessType == IAT_PVALUE &&
-             dvInfo.instParamLookup.constLookup.addr != nullptr));
-}
-
-//------------------------------------------------------------------------
 // considerGuardedDevirtualization: see if we can profitably guess at the
 //    class involved in an interface or virtual call.
 //
@@ -7701,10 +7680,13 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                     likelyHood += 100 - likelyHood * numExactClasses;
                 }
 
+                const bool needsCompileTimeLookup = !dvInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
+                                                    !(dvInfo.instParamLookup.constLookup.accessType == IAT_VALUE &&
+                                                      dvInfo.instParamLookup.constLookup.handle == nullptr);
+
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
                                                     clsAttrs, likelyHood, exactNeedsMethodContext,
-                                                    impDevirtualizedCallHasConstInstParam(dvInfo), baseMethod,
-                                                    originalContext);
+                                                    needsCompileTimeLookup, baseMethod, originalContext);
             }
 
             if (call->GetInlineCandidatesCount() == numExactClasses)
@@ -7777,7 +7759,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
             likelyContext      = dvInfo.exactContext;
             likelyMethod       = dvInfo.devirtualizedMethod;
             needsMethodContext = ((size_t)likelyContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD;
-            instantiatingStub  = impDevirtualizedCallHasConstInstParam(dvInfo);
+            instantiatingStub  = !dvInfo.instParamLookup.lookupKind.needsRuntimeLookup &&
+                                !(dvInfo.instParamLookup.constLookup.accessType == IAT_VALUE &&
+                                  dvInfo.instParamLookup.constLookup.handle == nullptr);
         }
         else
         {
@@ -8877,9 +8861,10 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     CORINFO_CLASS_HANDLE    derivedClass           = NO_CLASS_HANDLE;
     CORINFO_RESOLVED_TOKEN* pDerivedResolvedToken  = &dvInfo.resolvedTokenDevirtualizedMethod;
     const bool              needsRuntimeLookup     = dvInfo.instParamLookup.lookupKind.needsRuntimeLookup;
-    const bool              needsCompileTimeLookup = impDevirtualizedCallHasConstInstParam(dvInfo);
-    const bool              needsInstParam         = needsRuntimeLookup || needsCompileTimeLookup;
     const bool              isArrayInterfaceDevirt = (objClassAttribs & CORINFO_FLG_ARRAY) != 0;
+
+    const bool needsInstParam = needsRuntimeLookup || !(dvInfo.instParamLookup.constLookup.accessType == IAT_VALUE &&
+                                                        dvInfo.instParamLookup.constLookup.handle == nullptr);
 
     if (derivedMethod != nullptr)
     {
@@ -8911,34 +8896,31 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const char* instArg               = "";
 #endif
 
-    CORINFO_METHOD_HANDLE instantiatingStub = NO_METHOD_HANDLE;
+    CORINFO_METHOD_HANDLE instParam = NO_METHOD_HANDLE;
 
-    if (derivedMethod != nullptr && needsInstParam)
+    if (derivedMethod != nullptr && needsInstParam && !needsRuntimeLookup)
     {
-        if (needsCompileTimeLookup)
+        // We should only end up with generic methods that need a method context (eg. array interface, GVM).
+        //
+        assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
+
+        // If we don't know the array type exactly we may have the wrong interface type here.
+        // Bail out.
+        //
+        if (isArrayInterfaceDevirt && !isExact)
         {
-            // We should only end up with generic methods that need a method context (eg. array interface, GVM).
-            //
-            assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
-
-            // If we don't know the array type exactly we may have the wrong interface type here.
-            // Bail out.
-            //
-            if (isArrayInterfaceDevirt && !isExact)
-            {
-                JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
-                return;
-            }
-
-            // We don't expect R2R/NAOT to end up here for array interface devirtualization.
-            // For NAOT, it has Array<T> and normal devirtualization.
-            // For R2R, we don't (yet) support array interface devirtualization.
-            assert(call->IsGenericVirtual(this) || !IsAot());
-
-            instantiatingStub = (CORINFO_METHOD_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
+            JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
+            return;
         }
 
-        assert(!needsCompileTimeLookup || (instantiatingStub != NO_METHOD_HANDLE));
+        // We don't expect R2R/NAOT to end up here for array interface devirtualization.
+        // For NAOT, it has Array<T> and normal devirtualization.
+        // For R2R, we don't (yet) support array interface devirtualization.
+        assert(call->IsGenericVirtual(this) || !IsAot());
+
+        instParam = (CORINFO_METHOD_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
+
+        assert(instParam != NO_METHOD_HANDLE);
     }
 
     // If we failed to get a method handle, we can't directly devirtualize.
@@ -8971,7 +8953,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         }
         if (needsInstParam)
         {
-            instArg = needsCompileTimeLookup ? eeGetMethodFullName(instantiatingStub) : "runtime lookup";
+            instArg = needsRuntimeLookup ? "runtime lookup" : eeGetMethodFullName(instParam);
         }
 
         if (verbose || doPrint)
@@ -8980,7 +8962,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             if (verbose)
             {
                 printf("    devirt to %s -- %s%s%s\n", derivedMethodFullName, note,
-                       needsInstParam ? ", instantiating stub: " : "", instArg);
+                       needsInstParam ? ", instantiation: " : "", instArg);
                 gtDispTree(call);
             }
         }
@@ -9025,9 +9007,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         assert(call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam) == nullptr);
 
         CORINFO_METHOD_HANDLE compileTimeHandle = derivedMethod;
-        if (needsCompileTimeLookup)
+        if (!needsRuntimeLookup)
         {
-            compileTimeHandle = instantiatingStub;
+            compileTimeHandle = instParam;
         }
 
         GenTree* instParam = getLookupTree(&dvInfo.instParamLookup, GTF_ICON_METHOD_HDL, compileTimeHandle);

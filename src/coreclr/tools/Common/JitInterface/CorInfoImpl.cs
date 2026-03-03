@@ -1340,20 +1340,6 @@ namespace Internal.JitInterface
             return ObjectToHandle(m.OwningType);
         }
 
-        private static bool IsCanonicalSubtypeInstantiation(Instantiation instantiation)
-        {
-            foreach (TypeDesc type in instantiation)
-            {
-                if (type.IsCanonicalSubtype(CanonicalFormKind.Specific))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-
         private bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO* info)
         {
             // Initialize OUT fields
@@ -1496,7 +1482,7 @@ namespace Internal.JitInterface
 
             if (isGenericVirtual)
             {
-                if (IsCanonicalSubtypeInstantiation(originalImpl.OwningType.Instantiation))
+                if (originalImpl.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     // If we end up with a shared MethodTable that is not exact,
                     // we can't devirtualize since it's not possible to compute the instantiation argument as a runtime lookup.
@@ -1504,12 +1490,12 @@ namespace Internal.JitInterface
                     return false;
                 }
 
-                bool requiresRuntimeLookup = IsCanonicalSubtypeInstantiation(originalImpl.Instantiation);
+                bool requiresRuntimeLookup = originalImpl.IsSharedByGenericInstantiations;
                 if (requiresRuntimeLookup)
                 {
                     if (info->pResolvedTokenVirtualMethod == null)
                     {
-                        info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                        info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                         return false;
                     }
 
@@ -1523,7 +1509,7 @@ namespace Internal.JitInterface
                         ref info->instParamLookup);
 #else
                     // TODO: Implement generic virtual method devirtualization runtime lookup for NativeAOT
-                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                     return false;
 #endif
                 }

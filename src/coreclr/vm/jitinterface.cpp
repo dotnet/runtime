@@ -8599,6 +8599,8 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     memset(&info->resolvedTokenDevirtualizedMethod, 0, sizeof(info->resolvedTokenDevirtualizedMethod));
     memset(&info->resolvedTokenDevirtualizedUnboxedMethod, 0, sizeof(info->resolvedTokenDevirtualizedUnboxedMethod));
     memset(&info->instParamLookup, 0, sizeof(info->instParamLookup));
+    info->instParamLookup.constLookup.accessType = IAT_VALUE;
+    info->instParamLookup.constLookup.handle = NULL;
 
     MethodDesc* pBaseMD = GetMethod(info->virtualMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
@@ -8842,7 +8844,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
                 pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
 
-            if (TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetClassInstantiation()))
+            if (pDevirtMD->GetMethodTable()->IsSharedByGenericInstantiations())
             {
                 // If we end up with a shared MethodTable that is not exact,
                 // we can't devirtualize since it's not possible to compute the instantiation argument as a runtime lookup.
@@ -8850,7 +8852,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 return false;
             }
 
-            const bool requiresRuntimeLookup = TypeHandle::IsCanonicalSubtypeInstantiation(pDevirtMD->GetMethodInstantiation());
+            const bool requiresRuntimeLookup = pDevirtMD->IsSharedByGenericInstantiations();
             if (requiresRuntimeLookup)
             {
                 if (info->pResolvedTokenVirtualMethod == nullptr)

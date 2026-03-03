@@ -1153,6 +1153,7 @@ struct CORINFO_CONST_LOOKUP
     //     IAT_PVALUE    --> "addr" stores a pointer to a location which will hold the real handle
     //     IAT_RELPVALUE --> "addr" stores a relative pointer to a location which will hold the real handle
     //     IAT_PPVALUE   --> "addr" stores a double indirection to a location which will hold the real handle
+    // IAT_VALUE with a nullptr handle indicates no constant lookup is needed
 
     InfoAccessType              accessType;
     union
