@@ -219,7 +219,32 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetCurrentCustomDebuggerNotification(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetCurrentCustomDebuggerNotification(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetCurrentAppDomain(ulong* pRetVal) => _legacy is not null ? _legacy.GetCurrentAppDomain(pRetVal) : HResults.E_NOTIMPL;
+    public int GetCurrentAppDomain(ulong* pRetVal)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            *pRetVal = _target.ReadPointer(appDomainPointer).Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong resultLocal;
+            int hrLocal = _legacy.GetCurrentAppDomain(&resultLocal);
+            Debug.Assert(hrLocal == hr, $"[DacDbi] GetCurrentAppDomain cDAC hr: 0x{hr:x}, DAC hr: 0x{hrLocal:x}");
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                Debug.Assert(*pRetVal == resultLocal, $"[DacDbi] GetCurrentAppDomain cDAC: 0x{*pRetVal:x}, DAC: 0x{resultLocal:x}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int ResolveAssembly(ulong vmScope, uint tkAssemblyRef, ulong* pRetVal) => _legacy is not null ? _legacy.ResolveAssembly(vmScope, tkAssemblyRef, pRetVal) : HResults.E_NOTIMPL;
 
