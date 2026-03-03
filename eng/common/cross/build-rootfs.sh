@@ -611,11 +611,6 @@ elif [[ "$__CodeName" == "freebsd" ]]; then
     # shellcheck disable=SC2086
     INSTALL_AS_USER=$(whoami) "$__RootfsDir"/host/sbin/pkg -r "$__RootfsDir" -C "$__RootfsDir"/usr/local/etc/pkg.conf install --yes $__FreeBSDPackages
 elif [[ "$__CodeName" == "openbsd" ]]; then
-    # set defaults
-    ROOTFS="$__RootfsDir"
-
-    mkdir -p "$ROOTFS"
-
     # determine mirrors
     OPENBSD_MIRROR="https://cdn.openbsd.org/pub/OpenBSD/$__OpenBSDVersion/$__OpenBSDMachineArch"
 
