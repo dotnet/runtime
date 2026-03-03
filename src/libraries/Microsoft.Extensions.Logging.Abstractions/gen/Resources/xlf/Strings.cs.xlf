@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported 'out' parameter modifier</source>
-        <target state="needs-review-translation">Argument {0} používá nepodporovaný modifikátor výstupních parametrů.</target>
+        <target state="new">Argument '{0}' is using the unsupported 'out' parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported 'out' parameter modifier</source>
-        <target state="needs-review-translation">Argument používá nepodporovaný modifikátor výstupních parametrů</target>
+        <target state="new">Argument is using the unsupported 'out' parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -49,22 +49,22 @@
       </trans-unit>
       <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
         <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
-        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
+        <target state="translated">Metody protokolování nemůžou mít parametry typu s omezeními „allows ref struct“</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
         <source>Logging methods must be 'partial'</source>
-        <target state="needs-review-translation">Metody protokolování musí být částečné.</target>
+        <target state="new">Logging methods must be 'partial'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
         <source>Logging methods must return 'void'</source>
-        <target state="needs-review-translation">Metody protokolování musí vracet void.</target>
+        <target state="new">Logging methods must return 'void'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
         <source>Logging methods must be 'static'</source>
-        <target state="needs-review-translation">Metody protokolování musí být statické.</target>
+        <target state="new">Logging methods must be 'static'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
@@ -144,7 +144,7 @@
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="needs-review-translation">Odeberte redundantní kvalifikátor (Informace:, Upozornění:, Chyba: atd.) ze zprávy o protokolování, protože je na zadané úrovni protokolu implicitní.</target>
+        <target state="new">Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
