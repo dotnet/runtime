@@ -5515,13 +5515,24 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 //
 ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const BasicBlock* blockPred) const
 {
-    if ((blockPred->KindIs(BBJ_COND) && blockPred->TrueTargetIs(block)))
+    if (blockPred->KindIs(BBJ_COND))
     {
-        if (bbJtrueAssertionOut != nullptr)
+        if (blockPred->TrueTargetIs(block))
         {
-            return bbJtrueAssertionOut[blockPred->bbNum];
+            if (bbJtrueAssertionOut != nullptr)
+            {
+                return bbJtrueAssertionOut[blockPred->bbNum];
+            }
+            return BitVecOps::MakeEmpty(apTraits);
         }
-        return BitVecOps::MakeEmpty(apTraits);
+
+        // If block is not the false target either, the edge doesn't exist
+        // (e.g. a stale PHI arg pred after edge redirection by RBO).
+        // Return empty to avoid using assertions from an unrelated edge.
+        if (!blockPred->FalseTargetIs(block))
+        {
+            return BitVecOps::MakeEmpty(apTraits);
+        }
     }
     return blockPred->bbAssertionOut;
 }
