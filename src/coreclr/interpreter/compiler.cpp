@@ -1992,6 +1992,8 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
         currentAsyncOffset += sizeof(InterpAsyncSuspendData);
     }
 
+    _ASSERTE(currentAsyncOffset == GetSectionOffset(InterpMethodDataSection::AsyncSuspendData) + GetSectionSize(InterpMethodDataSection::AsyncSuspendData));
+    _ASSERTE(currentIntervalMapOffset == GetSectionOffset(InterpMethodDataSection::IntervalMaps) + GetSectionSize(InterpMethodDataSection::IntervalMaps));
     // Fix up data item pointers that reference async suspend data
     // These pointers were recorded during compilation and now need to point to the final locations
     if (numDataItems > 0)
