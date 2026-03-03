@@ -1288,9 +1288,7 @@ DONE:
             info->methodHnd                            = callInfo->hMethod;
             info->exactContextHnd                      = exactContextHnd;
             info->ilLocation                           = impCurStmtDI.GetLocation();
-            info->tokenScope                           = pResolvedToken->tokenScope;
-            info->pMethodSpec                          = pResolvedToken->pMethodSpec;
-            info->cbMethodSpec                         = pResolvedToken->cbMethodSpec;
+            info->resolvedToken                        = *pResolvedToken;
             call->AsCall()->gtLateDevirtualizationInfo = info;
         }
     }
