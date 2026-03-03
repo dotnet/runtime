@@ -1501,7 +1501,7 @@ void emitter::dispIns(instrDesc* id)
 void emitter::dispIns(instrDesc* id)
 {
 #ifdef DEBUG
-    emitInsSanityCheck(id);
+    //emitInsSanityCheck(id);
 
     if (emitComp->opts.dspCode)
     {
@@ -4332,11 +4332,12 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     is = emitOutputInstr(ig, id, dp);
 
 #if defined(DEBUG) || defined(LATE_DISASM)
-    float insExeCost = insEvaluateExecutionCost(id);
-    // All compPerfScore calculations must be performed using doubles
-    double insPerfScore = (double)(ig->igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
-    emitComp->Metrics.PerfScore += insPerfScore;
-    ig->igPerfScore += insPerfScore;
+//s390xmarker: we currently don't want to do perf calculations
+  //  float insExeCost = insEvaluateExecutionCost(id);
+  //  // All compPerfScore calculations must be performed using doubles
+  //  double insPerfScore = (double)(ig->igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
+  //  emitComp->Metrics.PerfScore += insPerfScore;
+  //  ig->igPerfScore += insPerfScore;
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
     // printf("[S=%02u]\n", emitCurStackLvl);
@@ -7226,7 +7227,6 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #if EMIT_TRACK_STACK_DEPTH
 
         /* Set the proper stack level if appropriate */
-
         if (ig->igStkLvl != emitCurStackLvl)
         {
             /* We are pushing stuff implicitly at this label */
@@ -7234,7 +7234,6 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
             assert((unsigned)ig->igStkLvl > (unsigned)emitCurStackLvl);
             emitStackPushN(cp, (ig->igStkLvl - (unsigned)emitCurStackLvl) / sizeof(int));
         }
-
 #endif
 
         /* Update current GC information for IG's that do not extend the previous IG */

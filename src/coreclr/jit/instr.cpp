@@ -79,13 +79,7 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrsarm64sve.h"
 
 #elif defined(TARGET_S390X)
-        #define INST1(id, nm, ldst, fmt, e1                                 ) nm,
-        #define INST2(id, nm, ldst, fmt, e1, e2                             ) nm,
-        #define INST3(id, nm, ldst, fmt, e1, e2, e3                         ) nm,
-        #define INST4(id, nm, ldst, fmt, e1, e2, e3, e4                     ) nm,
-        #define INST5(id, nm, ldst, fmt, e1, e2, e3, e4, e5                 ) nm,
-        #define INST6(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6             ) nm,
-        #define INST9(id, nm, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9 ) nm,
+	#define INST(id, nm, ldst, e1) nm,
         #include "instrs.h"
 
 #elif defined(TARGET_LOONGARCH64)
@@ -1844,6 +1838,25 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
             else
                 ins = INS_ldrsh;
         }
+#elif defined(TARGET_S390X)
+        if (!varTypeIsSmall(srcType))
+        {
+            ins = INS_l;
+        }
+        else if (varTypeIsByte(srcType))
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_llgc;
+            else
+                ins = INS_lgb;
+        }
+        else if (varTypeIsShort(srcType))
+        {
+            if (varTypeIsUnsigned(srcType))
+                ins = INS_llgh;
+            else
+                ins = INS_lgh;
+        }
 #elif defined(TARGET_LOONGARCH64)
         if (varTypeIsByte(srcType))
         {
@@ -2193,6 +2206,13 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
             ins = INS_strb;
         else if (varTypeIsShort(dstType))
             ins = INS_strh;
+#elif defined(TARGET_S390X)
+        if (!varTypeIsSmall(dstType))
+            ins = INS_st;
+        else if (varTypeIsByte(dstType))
+            ins = INS_stc;
+        else if (varTypeIsShort(dstType))
+            ins = INS_sth;
 #elif defined(TARGET_LOONGARCH64)
         if (varTypeIsByte(dstType))
             ins = aligned ? INS_stx_b : INS_st_b;
@@ -2254,6 +2274,8 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     }
 #elif defined(TARGET_ARM64)
     return INS_str;
+#elif defined(TARGET_S390X)
+   return INS_st;
 #elif defined(TARGET_ARM)
     assert(!varTypeIsSIMD(dstType));
     return INS_vstr;

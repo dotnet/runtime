@@ -633,6 +633,7 @@ protected:
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
 #elif defined (TARGET_S390X)
+#define INSTR_ENCODED_SIZE 4
 	static_assert_no_msg(INS_count <= 2048); //TODO: Giri : What should be the value of INS_count for s390x
         instruction _idIns : 11; // TODO: Giri: What is this ? 
 #else
@@ -1162,7 +1163,6 @@ protected:
         inline bool idIsEmptyAlign() const
         {
             //return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
-	    _ASSERTE("NYI"); 
             //return (idInsOpt() == INS_OPTS_NONE); //TODO : Giri , should be have INS_align? 
         }
 
@@ -1195,6 +1195,12 @@ protected:
                         size = 0;
                     }
                     break;
+		case IF_BR_1A:
+			size = 2;
+			break;
+		case IF_DI_1B:
+			size = 6;
+			break;
                 default:
                     break;
             }
@@ -1295,8 +1301,7 @@ protected:
         void idGCrefReg2(GCtype gctype)
         {
             assert(!idIsSmallDsc());
-	    _ASSERTE(!"NYI");
-            //idAddr()->_idGCref2 = gctype;
+            idAddr()->_idGCref2 = gctype;
         }
 #endif // TARGET_S390X
 #if defined (TARGET_ARM64)
@@ -1657,27 +1662,23 @@ protected:
         }
         insOpts idInsOpt() const
         {
-	    _ASSERTE(!"NYI");
-            //return (insOpts)_idInsOpt;
+            return (insOpts)_idInsOpt;
         }
         void idInsOpt(insOpts opt)
         {   
             _idInsOpt = opt;
             assert(opt == _idInsOpt);
-	    _ASSERTE(!"NYI");
         }   
             
         regNumber idReg3() const        {
             assert(!idIsSmallDsc());
-	    _ASSERTE(!"NYI");
-            //return idAddr()->_idReg3;
+            return idAddr()->_idReg3;
         }   
         void idReg3(regNumber reg)
         {
             assert(!idIsSmallDsc());
             idAddr()->_idReg3 = reg;            
 	    assert(reg == idAddr()->_idReg3);
-	    _ASSERTE(!"NYI");
         }   
         regNumber idReg4() const
         {
@@ -1890,13 +1891,11 @@ protected:
 #if defined(TARGET_S390X)
         bool idIsLclVar() const
         {
-	    _ASSERTE(!"NYI");
-            //return _idLclVar != 0;
+            return _idLclVar != 0;
         }
         bool idIsLclVarPair() const
         {
-	    _ASSERTE(!"NYI");
-            //return _idLclVarPair != 0;        
+            return _idLclVarPair != 0;        
         }
         void idSetIsLclVarPair()
         {
@@ -1906,7 +1905,6 @@ protected:
         void idSetIsLclVar()
         {
             _idLclVar = 1;
-	    _ASSERTE(!"NYI");
         }
 #endif
 #if defined(TARGET_ARM)
