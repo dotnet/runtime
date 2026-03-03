@@ -3774,9 +3774,28 @@ public sealed unsafe partial class SOSDacImpl
                 {
                     Debug.WriteLine($"GetStackReferences debug: cDAC={sosRefs.Length} refs, DAC={legacyFetched} refs");
 
-                    // Don't assert count equality yet — cDAC may miss Frame-based refs.
-                    // Once frame-gc-scan-roots is implemented, enable this:
-                    // Debug.Assert(sosRefs.Length == legacyFetched, $"cDAC: {sosRefs.Length} refs, DAC: {legacyFetched} refs");
+                    Debug.Assert((uint)sosRefs.Length == legacyFetched, $"cDAC: {sosRefs.Length} refs, DAC: {legacyFetched} refs");
+
+                    // Verify every DAC ref exists in the cDAC set (by Address which is unique per slot)
+                    for (uint i = 0; i < legacyFetched; i++)
+                    {
+                        SOSStackRefData dac = legacyRefs[i];
+                        bool found = false;
+                        for (int j = 0; j < sosRefs.Length; j++)
+                        {
+                            if (sosRefs[j].Address == dac.Address)
+                            {
+                                SOSStackRefData cdac = sosRefs[j];
+                                Debug.Assert(cdac.Object == dac.Object, $"Address {dac.Address:x}: Object cDAC: {cdac.Object:x}, DAC: {dac.Object:x}");
+                                Debug.Assert(cdac.SourceType == dac.SourceType, $"Address {dac.Address:x}: SourceType cDAC: {cdac.SourceType}, DAC: {dac.SourceType}");
+                                Debug.Assert(cdac.Source == dac.Source, $"Address {dac.Address:x}: Source cDAC: {cdac.Source:x}, DAC: {dac.Source:x}");
+                                Debug.Assert(cdac.Flags == dac.Flags, $"Address {dac.Address:x}: Flags cDAC: {cdac.Flags:x}, DAC: {dac.Flags:x}");
+                                found = true;
+                                break;
+                            }
+                        }
+                        Debug.Assert(found, $"DAC ref at Address {dac.Address:x} (Object {dac.Object:x}) not found in cDAC results");
+                    }
                 }
             }
         }

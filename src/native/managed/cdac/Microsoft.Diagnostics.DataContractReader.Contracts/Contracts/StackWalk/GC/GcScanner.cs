@@ -74,7 +74,14 @@ internal class GcScanner
                     };
 
                     TargetPointer addr = new(baseAddr.Value + (ulong)(long)spOffset);
-                    GcScanSlotLocation loc = new(0, spOffset, true);
+                    int regForBase = spBase switch
+                    {
+                        1 => 4,                          // GC_SP_REL → RSP (reg 4 on AMD64)
+                        2 => (int)stackBaseRegister,      // GC_FRAMEREG_REL → stack base register (e.g., RBP=5)
+                        0 => 4,                          // GC_CALLER_SP_REL → RSP
+                        _ => 0,
+                    };
+                    GcScanSlotLocation loc = new(regForBase, spOffset, true);
                     scanContext.GCEnumCallback(addr, scanFlags, loc);
                 }
             });
