@@ -18,7 +18,6 @@ InterpMethodDataBuilder::InterpMethodDataBuilder()
     m_sections[(int)InterpMethodDataSection::Bytecode].alignment = sizeof(int32_t);
     m_sections[(int)InterpMethodDataSection::InterpMethod].alignment = sizeof(void*);
     m_sections[(int)InterpMethodDataSection::DataItems].alignment = sizeof(void*);
-    m_sections[(int)InterpMethodDataSection::GenericLookups].alignment = sizeof(void*);
     m_sections[(int)InterpMethodDataSection::AsyncSuspendData].alignment = sizeof(void*);
     m_sections[(int)InterpMethodDataSection::IntervalMaps].alignment = sizeof(uint32_t);
 
@@ -119,11 +118,6 @@ InterpSectionRef InterpMethodDataBuilder::AllocateInterpMethod()
 InterpSectionRef InterpMethodDataBuilder::AllocateDataItems(int32_t count)
 {
     return AllocateInSection(InterpMethodDataSection::DataItems, count * sizeof(void*));
-}
-
-InterpSectionRef InterpMethodDataBuilder::AllocateGenericLookup()
-{
-    return AllocateInSection(InterpMethodDataSection::GenericLookups, sizeof(InterpGenericLookup));
 }
 
 InterpSectionRef InterpMethodDataBuilder::AllocateAsyncSuspendData()

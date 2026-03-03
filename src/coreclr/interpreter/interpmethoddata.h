@@ -26,8 +26,6 @@ struct InterpIntervalMapEntry;
 // ├────────────────────────────────────────┤
 // │ DataItems array (void*[])              │
 // ├────────────────────────────────────────┤
-// │ InterpGenericLookup structs            │
-// ├────────────────────────────────────────┤
 // │ InterpAsyncSuspendData structs         │
 // ├────────────────────────────────────────┤
 // │ InterpIntervalMapEntry arrays          │
@@ -40,7 +38,6 @@ enum class InterpMethodDataSection : uint8_t
     Bytecode,         // int32_t[] opcodes
     InterpMethod,     // InterpMethod struct
     DataItems,        // void*[] array
-    GenericLookups,   // InterpGenericLookup structs
     AsyncSuspendData, // InterpAsyncSuspendData structs
     IntervalMaps,     // InterpIntervalMapEntry arrays
     Count
@@ -115,9 +112,6 @@ public:
 
     // Helper: Allocate data items array
     InterpSectionRef AllocateDataItems(int32_t count);
-
-    // Helper: Allocate a generic lookup struct
-    InterpSectionRef AllocateGenericLookup();
 
     // Helper: Allocate async suspend data
     InterpSectionRef AllocateAsyncSuspendData();
