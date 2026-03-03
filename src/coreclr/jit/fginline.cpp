@@ -603,12 +603,12 @@ private:
                 }
 #endif // DEBUG
 
-                CORINFO_METHOD_HANDLE   method                 = call->gtLateDevirtualizationInfo->methodHnd;
-                CORINFO_CONTEXT_HANDLE  context                = call->gtLateDevirtualizationInfo->exactContextHnd;
-                InlineContext*          inlinersContext        = call->gtInlineContext;
-                unsigned                methodFlags            = 0;
-                const bool              isLateDevirtualization = true;
-                const bool              explicitTailCall       = call->IsTailPrefixedCall();
+                CORINFO_METHOD_HANDLE  method                 = call->gtLateDevirtualizationInfo->methodHnd;
+                CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
+                InlineContext*         inlinersContext        = call->gtInlineContext;
+                unsigned               methodFlags            = 0;
+                const bool             isLateDevirtualization = true;
+                const bool             explicitTailCall       = call->IsTailPrefixedCall();
 
                 CORINFO_RESOLVED_TOKEN resolvedToken{};
                 resolvedToken.tokenScope               = call->gtLateDevirtualizationInfo->tokenScope;
