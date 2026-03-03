@@ -208,7 +208,8 @@ namespace System.Reflection.Context.Tests
             Assert.Equal("test", result);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89157", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetInterfaceMap_ReturnsProjectedMapping()
         {
             TypeInfo listTypeInfo = typeof(List<int>).GetTypeInfo();
