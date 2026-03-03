@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported 'out' parameter modifier</source>
-        <target state="needs-review-translation">引数 '{0}' はサポートされていない out パラメーター修飾子を使用しています</target>
+        <target state="new">Argument '{0}' is using the unsupported 'out' parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported 'out' parameter modifier</source>
-        <target state="needs-review-translation">引数はサポートされていない out パラメーター修飾子を使用しています</target>
+        <target state="new">Argument is using the unsupported 'out' parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -54,17 +54,17 @@
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
         <source>Logging methods must be 'partial'</source>
-        <target state="needs-review-translation">ログ記録方法の一部が必要です</target>
+        <target state="new">Logging methods must be 'partial'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
         <source>Logging methods must return 'void'</source>
-        <target state="needs-review-translation">ログ メソッドは無効を返す必要があります</target>
+        <target state="new">Logging methods must return 'void'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
         <source>Logging methods must be 'static'</source>
-        <target state="needs-review-translation">ログ メソッドは静的である必要があります</target>
+        <target state="new">Logging methods must be 'static'</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
@@ -144,7 +144,7 @@
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="needs-review-translation">指定されたログ レベルでは暗黙的であるため、冗長な修飾子 (Info:、Warning:、Error: など) をログ メッセージから削除します。</target>
+        <target state="new">Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">

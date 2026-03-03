@@ -466,6 +466,8 @@ OPDEF(INTOP_EXCHANGEADD_I8, "exchangeadd.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SQRT_R4, "sqrt.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_SQRT_R8, "sqrt.r8", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_STORESTUBCONTEXT, "storestubcontext", 2, 1, 0, InterpOpNoArgs)
+OPDEF(INTOP_DEBUG_METHOD_ENTER, "debug.method.enter", 2, 0, 0, InterpOpInt)
+OPDEF(INTOP_DEBUG_SEQ_POINT, "debug.seq.point", 1, 0, 0, InterpOpNoArgs)
 
 // All instructions after this point are IROPS, instructions that are not emitted/executed
 OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)

@@ -339,6 +339,14 @@ public:
     static GenTree* FirstNode(GenTree* node1, GenTree* node2);
 };
 
+#ifdef TARGET_WASM
+inline void GenTree::SetMultiplyUsed()
+{
+    assert(gtType != TYP_STRUCT);
+    gtLIRFlags |= LIR::Flags::MultiplyUsed;
+}
+#endif
+
 inline void GenTree::SetUnusedValue()
 {
     gtLIRFlags |= LIR::Flags::UnusedValue;

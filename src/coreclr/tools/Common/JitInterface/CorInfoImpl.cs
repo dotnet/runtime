@@ -1557,6 +1557,27 @@ namespace Internal.JitInterface
             return null;
         }
 
+        private CORINFO_METHOD_STRUCT_* getAsyncOtherVariant(CORINFO_METHOD_STRUCT_* ftn, ref bool variantIsThunk)
+        {
+            MethodDesc method = HandleToObject(ftn);
+            if (method.IsAsyncVariant())
+            {
+                method = method.GetTargetOfAsyncVariant();
+            }
+            else if (method.Signature.ReturnsTaskOrValueTask())
+            {
+                method = method.GetAsyncVariant();
+            }
+            else
+            {
+                variantIsThunk = false;
+                return null;
+            }
+
+            variantIsThunk = method?.IsAsyncThunk() ?? false;
+            return ObjectToHandle(method);
+        }
+
         private CORINFO_CLASS_STRUCT_* getDefaultComparerClass(CORINFO_CLASS_STRUCT_* elemType)
         {
             TypeDesc comparand = HandleToObject(elemType);
@@ -1777,7 +1798,7 @@ namespace Internal.JitInterface
             if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
                 result = ((TypeDesc)result).MakeArrayType();
 
-            if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await or CorInfoTokenKind.CORINFO_TOKENKIND_AwaitVirtual)
+            if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
                 result = _compilation.TypeSystemContext.GetAsyncVariantMethod((MethodDesc)result);
 
             return result;
@@ -1867,7 +1888,7 @@ namespace Internal.JitInterface
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
 #endif
 
-                if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await or CorInfoTokenKind.CORINFO_TOKENKIND_AwaitVirtual)
+                if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
                 {
                     // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                     // we cannot resolve to an Async variant in such case.
@@ -1876,20 +1897,6 @@ namespace Internal.JitInterface
 
                     // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
                     allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
-
-#if !READYTORUN
-                    if (allowAsyncVariant)
-                    {
-                        bool isDirect = pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await || method.IsCallEffectivelyDirect();
-                        if (isDirect && !method.IsAsync)
-                        {
-                            // Async variant would be a thunk. Do not resolve direct calls
-                            // to async thunks. That just creates and JITs unnecessary
-                            // thunks, and the thunks are harder for the JIT to optimize.
-                            allowAsyncVariant = false;
-                        }
-                    }
-#endif
 
                     method = allowAsyncVariant
                         ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
