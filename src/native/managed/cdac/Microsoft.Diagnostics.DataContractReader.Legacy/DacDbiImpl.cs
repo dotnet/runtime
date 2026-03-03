@@ -794,7 +794,19 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int EnumerateMonitorEventWaitList(ulong vmObject, nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateMonitorEventWaitList(vmObject, fpCallback, pUserData) : HResults.E_NOTIMPL;
 
-    public int GetAttachStateFlags(int* pRetVal) => _legacy is not null ? _legacy.GetAttachStateFlags(pRetVal) : HResults.E_NOTIMPL;
+    public int GetAttachStateFlags(int* pRetVal)
+    {
+        // Read CLRJitAttachState global (ULONG at the pointer address)
+        if (_target.TryReadGlobalPointer("CLRJitAttachState", out TargetPointer? addr))
+        {
+            *pRetVal = (int)_target.Read<uint>(addr.Value.Value);
+        }
+        else
+        {
+            *pRetVal = 0;
+        }
+        return HResults.S_OK;
+    }
 
     public int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, byte* pResult) => _legacy is not null ? _legacy.GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwTimeStamp, dwImageSize, pStrFilename, pResult) : HResults.E_NOTIMPL;
 
@@ -1029,7 +1041,20 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return 1; // S_FALSE - no loaded image
     }
 
-    public int MetadataUpdatesApplied(byte* pResult) => _legacy is not null ? _legacy.MetadataUpdatesApplied(pResult) : HResults.E_NOTIMPL;
+    public int MetadataUpdatesApplied(byte* pResult)
+    {
+        // Read global pointer to g_metadataUpdatesApplied, then read the bool value
+        if (_target.TryReadGlobalPointer(Constants.Globals.MetadataUpdatesApplied, out TargetPointer? addr))
+        {
+            *pResult = _target.Read<byte>(addr.Value.Value);
+        }
+        else
+        {
+            // FEATURE_METADATA_UPDATER not enabled - metadata updates never applied
+            *pResult = 0;
+        }
+        return HResults.S_OK;
+    }
 
     public unsafe int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly)
     {
