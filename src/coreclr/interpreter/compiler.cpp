@@ -193,7 +193,7 @@ void* MemPoolAllocator::Alloc(size_t sz) const
     {
         sz = sizeof(void*); // Arena allocator does not support zero-length allocations, so allocate something of minimum size instead.
     }
-    return m_compiler->getAllocator(m_memKind).allocate<int8_t>(sz);
+    return ((InterpAllocator*)&m_allocator)->allocate<int8_t>(sz);
 }
 void MemPoolAllocator::Free(void* ptr) const { /* no-op */ }
 
@@ -2033,7 +2033,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData* pRetryData,
                                InterpArenaAllocator *arenaAllocator)
     : m_arenaAllocator(arenaAllocator)
-    , m_methodDataBuilder(GetMemPoolAllocator(IMK_MethodData))
+    , m_methodDataBuilder()
     , m_stackmapsByClass(getAllocator(IMK_StackMapHash))
     , m_pRetryData(pRetryData)
     , m_pInitLocalsIns(nullptr)

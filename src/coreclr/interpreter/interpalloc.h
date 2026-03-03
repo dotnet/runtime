@@ -63,14 +63,8 @@ class MemPoolAllocator
 public:
     MemPoolAllocator(InterpAllocator allocator)
         : m_allocator(allocator) {}
-    void* Alloc(size_t sz) const
-    {
-        if (sz == 0)
-            sz = 1; // TArray expects non-zero allocations
-        return ((InterpAllocator*)&m_allocator)->allocate<char>(sz);
-    }
-    void Free(void* ptr) const
-    { /* no-op */ }
+    void* Alloc(size_t sz) const;
+    void Free(void* ptr) const;
 };
 
 #endif // _INTERPALLOC_H_

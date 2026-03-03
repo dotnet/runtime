@@ -5,7 +5,6 @@
 #define _INTERPMETHODDATA_H_
 
 #include "interpalloc.h"
-#include "datastructs.h"
 
 // Forward declarations - actual definitions in interpretershared.h
 struct InterpMethod;
@@ -60,16 +59,6 @@ struct InterpSectionRef
     bool IsNull() const { return section == InterpMethodDataSection::Header && offset == 0; }
 };
 
-// Represents a relocation that needs to be applied at finalization
-// A pointer at (sourceSection, sourceOffset) should point to (targetSection, targetOffset)
-struct InterpReloc
-{
-    InterpMethodDataSection sourceSection;
-    uint32_t sourceOffset;    // Offset within source section where the pointer lives
-    InterpMethodDataSection targetSection;
-    uint32_t targetOffset;    // Offset within target section that the pointer should point to
-};
-
 // Tracks data for a single section during building
 struct InterpSectionData
 {
@@ -82,7 +71,6 @@ class InterpMethodDataBuilder
 {
 private:
     InterpSectionData m_sections[(int)InterpMethodDataSection::Count];
-    TArray<InterpReloc, MemPoolAllocator> m_relocs;
 
     // Cached section base addresses after finalization
     uint8_t* m_finalBaseAddress = nullptr;
@@ -91,14 +79,11 @@ private:
     static uint32_t AlignUp(uint32_t value, uint32_t alignment);
 
 public:
-    InterpMethodDataBuilder(MemPoolAllocator allocator);
+    InterpMethodDataBuilder();
     ~InterpMethodDataBuilder();
 
     // Allocate space in a section and return a reference to it
     InterpSectionRef AllocateInSection(InterpMethodDataSection section, uint32_t size, uint32_t alignment = 0);
-
-    // Add a relocation: pointer at sourceRef + offsetInSource should point to targetRef after finalization
-    void AddReloc(InterpSectionRef sourceRef, uint32_t offsetInSource, InterpSectionRef targetRef);
 
     // Set the bytecode section size (bytecodes are written directly by the compiler)
     void SetBytecodeSize(uint32_t sizeInBytes);
@@ -115,7 +100,7 @@ public:
     // Convert a section reference to a final pointer (only valid after Finalize)
     void* GetFinalPointer(InterpSectionRef ref) const;
 
-    // Finalize: apply all relocations
+    // Finalize the method data
     // baseAddressRW is the writable address, baseAddressRX is the executable address
     void Finalize(void* baseAddressRW, void* baseAddressRX);
 

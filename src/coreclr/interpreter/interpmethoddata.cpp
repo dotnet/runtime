@@ -9,8 +9,7 @@ uint32_t InterpMethodDataBuilder::AlignUp(uint32_t value, uint32_t alignment)
     return (value + alignment - 1) & ~(alignment - 1);
 }
 
-InterpMethodDataBuilder::InterpMethodDataBuilder(MemPoolAllocator allocator)
-    : m_relocs(allocator)
+InterpMethodDataBuilder::InterpMethodDataBuilder()
 {
     // Initialize section alignments
     m_sections[(int)InterpMethodDataSection::Header].alignment = sizeof(void*);
@@ -44,17 +43,6 @@ InterpSectionRef InterpMethodDataBuilder::AllocateInSection(InterpMethodDataSect
     sectionData.size = alignedOffset + size;
 
     return InterpSectionRef(section, alignedOffset);
-}
-
-void InterpMethodDataBuilder::AddReloc(InterpSectionRef sourceRef, uint32_t offsetInSource, InterpSectionRef targetRef)
-{
-    assert(!m_finalized);
-    InterpReloc reloc;
-    reloc.sourceSection = sourceRef.section;
-    reloc.sourceOffset = sourceRef.offset + offsetInSource;
-    reloc.targetSection = targetRef.section;
-    reloc.targetOffset = targetRef.offset;
-    m_relocs.Add(reloc);
 }
 
 void InterpMethodDataBuilder::SetBytecodeSize(uint32_t sizeInBytes)
@@ -106,25 +94,6 @@ void InterpMethodDataBuilder::Finalize(void* baseAddressRW, void* baseAddressRX)
 {
     assert(!m_finalized);
     m_finalBaseAddress = (uint8_t*)baseAddressRX;
-
-    uint8_t* rwBase = (uint8_t*)baseAddressRW;
-
-    // Apply all relocations
-    for (int i = 0; i < m_relocs.GetSize(); i++)
-    {
-        const InterpReloc& reloc = m_relocs.Get(i);
-
-        // Calculate target address (using RX base for final pointers)
-        void* targetAddr = m_finalBaseAddress +
-                           m_sections[(int)reloc.targetSection].finalOffset +
-                           reloc.targetOffset;
-
-        // Write to source location (using RW base)
-        void** sourcePtr = (void**)(rwBase +
-                                    m_sections[(int)reloc.sourceSection].finalOffset +
-                                    reloc.sourceOffset);
-        *sourcePtr = targetAddr;
-    }
 
     m_finalized = true;
 }
