@@ -163,17 +163,12 @@ PhaseStatus Compiler::SaveAsyncContexts()
     // For OSR, we did this in the tier0 method.
     if (!opts.IsOSR())
     {
-        GenTreeCall* captureCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
+        GenTreeCall* captureCall = gtNewHelperCallNode(CORINFO_HELP_ASYNC_CAPTURE_CONTEXTS, TYP_VOID);
         captureCall->gtArgs.PushFront(this,
                                       NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
         captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
         lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvHasLdAddrOp = true;
         lvaGetDesc(lvaAsyncExecutionContextVar)->lvHasLdAddrOp       = true;
-
-        CORINFO_CALL_INFO callInfo = {};
-        callInfo.hMethod           = captureCall->gtCallMethHnd;
-        callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-        impMarkInlineCandidate(captureCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
 
         Statement* captureStmt = fgNewStmtFromTree(captureCall);
         fgInsertStmtAtBeg(fgFirstBB, captureStmt);
@@ -196,7 +191,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
         resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
     }
 
-    GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    GenTreeCall* restoreCall = gtNewHelperCallNode(CORINFO_HELP_ASYNC_RESTORE_CONTEXTS, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
@@ -362,17 +357,11 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
         resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
     }
 
-    GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    GenTreeCall* restoreCall = gtNewHelperCallNode(CORINFO_HELP_ASYNC_RESTORE_CONTEXTS, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
-
-    // This restore is an inline candidate (unlike the fault one)
-    CORINFO_CALL_INFO callInfo = {};
-    callInfo.hMethod           = restoreCall->gtCallMethHnd;
-    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-    impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
 
     Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
     fgInsertStmtAtEnd(newReturnBB, restoreStmt);
@@ -2116,7 +2105,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
         GenTree*     contContextElementPlaceholder = m_compiler->gtNewZeroConNode(TYP_BYREF);
         GenTree*     flagsPlaceholder              = m_compiler->gtNewZeroConNode(TYP_BYREF);
         GenTreeCall* captureCall =
-            m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureContinuationContextMethHnd, TYP_VOID);
+            m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT, TYP_VOID);
 
         captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(flagsPlaceholder));
         captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(contContextElementPlaceholder));
@@ -2160,7 +2149,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
     if (layout.ExecutionContextOffset != UINT_MAX)
     {
         GenTreeCall* captureExecContext =
-            m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureExecutionContextMethHnd, TYP_REF);
+            m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_CAPTURE_EXECUTION_CONTEXT, TYP_REF);
 
         m_compiler->compCurBB = suspendBB;
         m_compiler->fgMorphTree(captureExecContext);
@@ -2202,7 +2191,7 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
     GenTree*     execContextPlaceholder = m_compiler->gtNewNull();
     GenTree*     syncContextPlaceholder = m_compiler->gtNewNull();
     GenTreeCall* restoreCall =
-        m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
+        m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION, TYP_VOID);
 
     restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(syncContextPlaceholder));
     restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(execContextPlaceholder));
@@ -2405,7 +2394,7 @@ void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& 
     {
         GenTree*     valuePlaceholder = m_compiler->gtNewZeroConNode(TYP_REF);
         GenTreeCall* restoreCall =
-            m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
+            m_compiler->gtNewHelperCallNode(CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT, TYP_VOID);
         restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(valuePlaceholder));
 
         m_compiler->compCurBB = resumeBB;

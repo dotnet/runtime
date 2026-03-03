@@ -593,9 +593,17 @@ enum CorInfoHelpFunc
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
+    // Helpers for runtime-async
     CORINFO_HELP_ALLOC_CONTINUATION,
     CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
     CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
+
+    CORINFO_HELP_ASYNC_CAPTURE_CONTEXTS,
+    CORINFO_HELP_ASYNC_RESTORE_CONTEXTS,
+    CORINFO_HELP_ASYNC_CAPTURE_EXECUTION_CONTEXT,
+    CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT,
+    CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION,
+    CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT,
 
     CORINFO_HELP_COUNT,
 };
@@ -1830,18 +1838,6 @@ struct CORINFO_ASYNC_INFO
     CORINFO_FIELD_HANDLE continuationStateFldHnd;
     // 'Flags' field
     CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
-    // Method handle for AsyncHelpers.CaptureExecutionContext, used during suspension
-    CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
-    // Method handle for AsyncHelpers.RestoreExecutionContext, used during resumption
-    CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
-    // Method handle for AsyncHelpers.CaptureContinuationContext, used during suspension
-    CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
-    // Method handle for AsyncHelpers.CaptureContexts, used at the beginning of async methods
-    CORINFO_METHOD_HANDLE captureContextsMethHnd;
-    // Method handle for AsyncHelpers.RestoreContexts, used before normal returns from async methods
-    CORINFO_METHOD_HANDLE restoreContextsMethHnd;
-    // Method handle for AsyncHelpers.RestoreContextsOnSuspension, used before suspending in async methods
-    CORINFO_METHOD_HANDLE restoreContextsOnSuspensionMethHnd;
 };
 
 // Flags passed from JIT to runtime.

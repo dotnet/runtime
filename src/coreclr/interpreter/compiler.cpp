@@ -4565,30 +4565,9 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         int32_t syncContextAddressVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
 
-        // Create a new dummy var to serve as the dVar of the call
-        // FIXME Consider adding special dVar type (ex -1), that is
-        // resolved to null offset. The opcode shouldn't really write to it
-        PushStackType(StackTypeI4, NULL);
-        m_pStackPointer--;
-        int32_t dVar = m_pStackPointer[0].var;
-
-        CORINFO_ASYNC_INFO asyncInfo;
-        m_compHnd->getAsyncInfo(&asyncInfo);
-
-        AddIns(INTOP_CALL);
-        m_pLastNewIns->data[0] = GetMethodDataItemIndex(asyncInfo.restoreContextsMethHnd);
-        m_pLastNewIns->SetDVar(dVar);
-        m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
-
-        m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-        m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
-        int32_t numArgs = 3;
-        int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
-        callArgs[0] = isStartedArg;
-        callArgs[1] = execContextAddressVar;
-        callArgs[2] = syncContextAddressVar;
-        callArgs[3] = CALL_ARGS_TERMINATOR;
-        m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+        AddIns(INTOP_CALL_HELPER_V_SSS);
+        m_pLastNewIns->SetSVars3(isStartedArg, execContextAddressVar, syncContextAddressVar);
+        m_pLastNewIns->data[0] = GetDataForHelperFtn(CORINFO_HELP_ASYNC_RESTORE_CONTEXTS);
 
         m_ip += 5;
         return;
@@ -5753,10 +5732,21 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
     InterpAsyncSuspendData* suspendData = (InterpAsyncSuspendData*)AllocMethodData(sizeof(InterpAsyncSuspendData));
     m_asyncSuspendDataItems.Add(suspendData);
-    CORINFO_ASYNC_INFO asyncInfo;
-    m_compHnd->getAsyncInfo(&asyncInfo);
-    
+
     GetDataForHelperFtn(CORINFO_HELP_ALLOC_CONTINUATION);
+    // Resolve method handles for helpers called at runtime from interpexec.cpp.
+    // These must be resolved at compile time to avoid GC-triggering CoreLibBinder
+    // lookups while raw OBJECTREFs are live on the execution stack.
+    CORINFO_CONST_LOOKUP unused;
+    CORINFO_METHOD_HANDLE captureContinuationCtxMH = NULL;
+    CORINFO_METHOD_HANDLE restoreExecCtxMH = NULL;
+    CORINFO_METHOD_HANDLE restoreCtxOnSuspMH = NULL;
+    m_compHnd->getHelperFtn(CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT, &unused, &captureContinuationCtxMH);
+    m_compHnd->getHelperFtn(CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT, &unused, &restoreExecCtxMH);
+    m_compHnd->getHelperFtn(CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION, &unused, &restoreCtxOnSuspMH);
+    suspendData->captureSyncContextMethod = captureContinuationCtxMH;
+    suspendData->restoreExecutionContextMethod = restoreExecCtxMH;
+    suspendData->restoreContextsOnSuspensionMethod = restoreCtxOnSuspMH;
     suspendData->continuationTypeHnd = continuationTypeHnd;
     AllocateIntervalMapData_ForVars(&suspendData->liveLocalsIntervals, liveVars);
     AllocateIntervalMapData_ForVars(&suspendData->zeroedLocalsIntervals, varsToZero);
@@ -5786,9 +5776,6 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
     suspendData->offsetIntoContinuationTypeForExecutionContext = execContextOffset + OFFSETOF__CORINFO_Continuation__data;
     suspendData->keepAliveOffset = keepAliveOffset + OFFSETOF__CORINFO_Continuation__data;
-    suspendData->captureSyncContextMethod = asyncInfo.captureContinuationContextMethHnd;
-    suspendData->restoreExecutionContextMethod = asyncInfo.restoreExecutionContextMethHnd;
-    suspendData->restoreContextsOnSuspensionMethod = asyncInfo.restoreContextsOnSuspensionMethHnd;
     suspendData->resumeInfo.Resume = (size_t)m_asyncResumeFuncPtr;
     suspendData->resumeInfo.DiagnosticIP = (size_t)NULL;
     suspendData->methodStartIP = 0; // This is filled in by logic later in emission once we know the final address of the method
@@ -8002,30 +7989,9 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         int32_t syncContextAddressVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
 
-        CORINFO_ASYNC_INFO asyncInfo;
-
-        m_compHnd->getAsyncInfo(&asyncInfo);
-
-        // Create a new dummy var to serve as the dVar of the call
-        // FIXME Consider adding special dVar type (ex -1), that is
-        // resolved to null offset. The opcode shouldn't really write to it
-        PushStackType(StackTypeI4, NULL);
-        m_pStackPointer--;
-        int32_t dVar = m_pStackPointer[0].var;
-
-        AddIns(INTOP_CALL);
-        m_pLastNewIns->data[0] = GetMethodDataItemIndex(asyncInfo.captureContextsMethHnd);
-        m_pLastNewIns->SetDVar(dVar);
-        m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
-
-        m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
-        m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
-        int32_t numArgs = 2;
-        int32_t *callArgs = getAllocator(IMK_CallInfo).allocate<int32_t>(numArgs + 1);
-        callArgs[0] = execContextAddressVar;
-        callArgs[1] = syncContextAddressVar;
-        callArgs[2] = CALL_ARGS_TERMINATOR;
-        m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+        AddIns(INTOP_CALL_HELPER_V_SS);
+        m_pLastNewIns->SetSVars2(execContextAddressVar, syncContextAddressVar);
+        m_pLastNewIns->data[0] = GetDataForHelperFtn(CORINFO_HELP_ASYNC_CAPTURE_CONTEXTS);
     }
 
     linkBBlocks = true;

@@ -4475,12 +4475,6 @@ void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
     value.continuationResumeInfoFldHnd = CastHandle(pAsyncInfo->continuationResumeInfoFldHnd);
     value.continuationStateFldHnd = CastHandle(pAsyncInfo->continuationStateFldHnd);
     value.continuationFlagsFldHnd = CastHandle(pAsyncInfo->continuationFlagsFldHnd);
-    value.captureExecutionContextMethHnd = CastHandle(pAsyncInfo->captureExecutionContextMethHnd);
-    value.restoreExecutionContextMethHnd = CastHandle(pAsyncInfo->restoreExecutionContextMethHnd);
-    value.captureContinuationContextMethHnd = CastHandle(pAsyncInfo->captureContinuationContextMethHnd);
-    value.captureContextsMethHnd = CastHandle(pAsyncInfo->captureContextsMethHnd);
-    value.restoreContextsMethHnd = CastHandle(pAsyncInfo->restoreContextsMethHnd);
-    value.restoreContextsOnSuspensionMethHnd = CastHandle(pAsyncInfo->restoreContextsOnSuspensionMethHnd);
 
     GetAsyncInfo->Add(0, value);
     DEBUG_REC(dmpGetAsyncInfo(0, value));
@@ -4500,12 +4494,6 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->continuationResumeInfoFldHnd = (CORINFO_FIELD_HANDLE)value.continuationResumeInfoFldHnd;
     pAsyncInfoOut->continuationStateFldHnd = (CORINFO_FIELD_HANDLE)value.continuationStateFldHnd;
     pAsyncInfoOut->continuationFlagsFldHnd = (CORINFO_FIELD_HANDLE)value.continuationFlagsFldHnd;
-    pAsyncInfoOut->captureExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureExecutionContextMethHnd;
-    pAsyncInfoOut->restoreExecutionContextMethHnd = (CORINFO_METHOD_HANDLE)value.restoreExecutionContextMethHnd;
-    pAsyncInfoOut->captureContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.captureContinuationContextMethHnd;
-    pAsyncInfoOut->captureContextsMethHnd = (CORINFO_METHOD_HANDLE)value.captureContextsMethHnd;
-    pAsyncInfoOut->restoreContextsMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsMethHnd;
-    pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = (CORINFO_METHOD_HANDLE)value.restoreContextsOnSuspensionMethHnd;
     DEBUG_REP(dmpGetAsyncInfo(0, value));
 }
 

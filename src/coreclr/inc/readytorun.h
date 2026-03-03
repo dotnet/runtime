@@ -469,12 +469,18 @@ enum ReadyToRunHelper
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
 
-    READYTORUN_HELPER_AllocContinuation = 0x113,
-    READYTORUN_HELPER_AllocContinuationClass = 0x114,
-    READYTORUN_HELPER_AllocContinuationMethod = 0x115,
-
     READYTORUN_HELPER_InitClass                 = 0x116,
     READYTORUN_HELPER_InitInstClass             = 0x117,
+
+    READYTORUN_HELPER_AllocContinuation         = 0x120,
+    READYTORUN_HELPER_AllocContinuationClass    = 0x121,
+    READYTORUN_HELPER_AllocContinuationMethod   = 0x122,
+    READYTORUN_HELPER_AsyncCaptureContexts      = 0x123,
+    READYTORUN_HELPER_AsyncRestoreContexts      = 0x124,
+    READYTORUN_HELPER_AsyncCaptureExecutionContext  = 0x125,
+    READYTORUN_HELPER_AsyncRestoreExecutionContext  = 0x126,
+    READYTORUN_HELPER_AsyncRestoreContextsOnSuspension = 0x127,
+    READYTORUN_HELPER_AsyncCaptureContinuationContext  = 0x128,
 };
 
 #include "readytoruninstructionset.h"

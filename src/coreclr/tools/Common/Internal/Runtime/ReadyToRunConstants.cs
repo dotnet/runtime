@@ -355,12 +355,18 @@ namespace Internal.ReadyToRunConstants
 
         GetCurrentManagedThreadId   = 0x112,
 
-        AllocContinuation           = 0x113,
-        AllocContinuationClass      = 0x114,
-        AllocContinuationMethod     = 0x115,
-
         InitClass                   = 0x116,
         InitInstClass               = 0x117,
+
+        AllocContinuation           = 0x120,
+        AllocContinuationClass      = 0x121,
+        AllocContinuationMethod     = 0x122,
+        AsyncCaptureContexts        = 0x123,
+        AsyncRestoreContexts        = 0x124,
+        AsyncCaptureExecutionContext  = 0x125,
+        AsyncRestoreExecutionContext  = 0x126,
+        AsyncRestoreContextsOnSuspension = 0x127,
+        AsyncCaptureContinuationContext  = 0x128,
 
         // **********************************************************************************************
         //

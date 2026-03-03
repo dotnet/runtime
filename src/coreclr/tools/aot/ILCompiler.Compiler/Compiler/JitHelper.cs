@@ -342,6 +342,30 @@ namespace ILCompiler
                     methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null);
                     break;
 
+                case ReadyToRunHelper.AsyncCaptureContexts:
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "CaptureContexts"u8, null);
+                    break;
+
+                case ReadyToRunHelper.AsyncRestoreContexts:
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "RestoreContexts"u8, null);
+                    break;
+
+                case ReadyToRunHelper.AsyncCaptureExecutionContext:
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "CaptureExecutionContext"u8, null);
+                    break;
+
+                case ReadyToRunHelper.AsyncRestoreExecutionContext:
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "RestoreExecutionContext"u8, null);
+                    break;
+
+                case ReadyToRunHelper.AsyncRestoreContextsOnSuspension:
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "RestoreContextsOnSuspension"u8, null);
+                    break;
+
+                case ReadyToRunHelper.AsyncCaptureContinuationContext:
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "CaptureContinuationContext"u8, null);
+                    break;
+
                 default:
                     throw new NotImplementedException(id.ToString());
             }
