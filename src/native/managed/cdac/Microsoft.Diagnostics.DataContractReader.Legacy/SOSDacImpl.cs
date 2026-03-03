@@ -1510,6 +1510,9 @@ public sealed unsafe partial class SOSDacImpl
             }
 #endif
             ppHandleEnum = new SOSHandleEnum(_target, supportedHandleTypes, legacyHandleEnum);
+            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
+            // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
+            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum);
         }
         catch (System.Exception ex)
         {
@@ -1536,6 +1539,9 @@ public sealed unsafe partial class SOSDacImpl
             IGC gc = _target.Contracts.GC;
             HandleType[] handleTypes = gc.GetHandleTypes(types);
             ppHandleEnum = new SOSHandleEnum(_target, handleTypes, legacyHandleEnum);
+            // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
+            // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
+            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum);
         }
         catch (System.Exception ex)
         {
@@ -2950,9 +2956,9 @@ public sealed unsafe partial class SOSDacImpl
 
             // Populate COM data if this is a COM object
             if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0
-                && objectContract.GetBuiltInComData(objPtr, out TargetPointer rcw, out TargetPointer ccw))
+                && objectContract.GetBuiltInComData(objPtr, out TargetPointer rcw, out TargetPointer ccw, out _))
             {
-                data->RCW = rcw;
+                data->RCW = rcw & ~(_rcwMask);
                 data->CCW = ccw;
             }
 
@@ -3413,8 +3419,86 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetSyncBlockCleanupData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockCleanupData(addr, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetSyncBlockData(uint number, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetSyncBlockData(number, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetSyncBlockData(uint number, DacpSyncBlockData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (data == null)
+                throw new ArgumentException();
+            *data = default;
+            data->bFree = Interop.BOOL.TRUE;
+
+            ISyncBlock syncBlock = _target.Contracts.SyncBlock;
+            uint syncBlockCount = syncBlock.GetSyncBlockCount();
+            data->SyncBlockCount = syncBlockCount;
+            if (syncBlockCount > 0 && number <= syncBlockCount)
+            {
+                data->bFree = syncBlock.IsSyncBlockFree(number) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+                if (data->bFree == Interop.BOOL.FALSE)
+                {
+                    TargetPointer obj = syncBlock.GetSyncBlockObject(number);
+                    data->Object = obj.ToClrDataAddress(_target);
+                    if (syncBlock.GetSyncBlock(number) is TargetPointer syncBlockAddr && syncBlockAddr != TargetPointer.Null)
+                    {
+                        data->SyncBlockPointer = syncBlockAddr.ToClrDataAddress(_target);
+                        IObject objContract = _target.Contracts.Object;
+                        if (objContract.GetBuiltInComData(obj, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf))
+                        {
+                            data->COMFlags = (rcw & ~(_rcwMask)) != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasRCW : 0;
+                            data->COMFlags |= ccw != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasCCW : 0;
+                            data->COMFlags |= ccf != TargetPointer.Null ? (uint)DacpSyncBlockData.COMFlagsEnum.HasCCF : 0;
+                        }
+                        bool monitorHeld = syncBlock.TryGetLockInfo(syncBlockAddr, out uint owningThreadId, out uint recursion);
+                        data->MonitorHeld = monitorHeld ? (uint)1 : 0;
+                        if (monitorHeld)
+                        {
+                            data->Recursion = recursion + 1;
+                            IThread thread = _target.Contracts.Thread;
+                            TargetPointer threadPtr = thread.IdToThread(owningThreadId);
+                            data->HoldingThread = threadPtr.ToClrDataAddress(_target);
+                        }
+
+                        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+                        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+                        data->appDomainPtr = appDomain.ToClrDataAddress(_target);
+
+                        data->AdditionalThreadCount = syncBlock.GetAdditionalThreadCount(syncBlockAddr);
+
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpSyncBlockData dataLocal;
+            int hrLocal = _legacyImpl.GetSyncBlockData(number, &dataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->Object == dataLocal.Object, $"cDAC: {data->Object:x}, DAC: {dataLocal.Object:x}");
+                Debug.Assert(data->bFree == dataLocal.bFree, $"cDAC: {data->bFree}, DAC: {dataLocal.bFree}");
+                Debug.Assert(data->SyncBlockPointer == dataLocal.SyncBlockPointer, $"cDAC: {data->SyncBlockPointer:x}, DAC: {dataLocal.SyncBlockPointer:x}");
+                Debug.Assert(data->COMFlags == dataLocal.COMFlags, $"cDAC: {data->COMFlags}, DAC: {dataLocal.COMFlags}");
+                Debug.Assert(data->MonitorHeld == dataLocal.MonitorHeld, $"cDAC: {data->MonitorHeld}, DAC: {dataLocal.MonitorHeld}");
+                if (data->MonitorHeld != 0)
+                {
+                    Debug.Assert(data->Recursion == dataLocal.Recursion, $"cDAC: {data->Recursion}, DAC: {dataLocal.Recursion}");
+                    Debug.Assert(data->HoldingThread == dataLocal.HoldingThread, $"cDAC: {data->HoldingThread:x}, DAC: {dataLocal.HoldingThread:x}");
+                }
+                Debug.Assert(data->AdditionalThreadCount == dataLocal.AdditionalThreadCount, $"cDAC: {data->AdditionalThreadCount}, DAC: {dataLocal.AdditionalThreadCount}");
+                Debug.Assert(data->appDomainPtr == dataLocal.appDomainPtr, $"cDAC: {data->appDomainPtr:x}, DAC: {dataLocal.appDomainPtr:x}");
+                Debug.Assert(data->SyncBlockCount == dataLocal.SyncBlockCount, $"cDAC: {data->SyncBlockCount}, DAC: {dataLocal.SyncBlockCount}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, DacpAllocData* data)
     {
@@ -3800,8 +3884,66 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, void* pCallback, void* token)
-        => _legacyImpl is not null ? _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, pCallback, token) : HResults.E_NOTIMPL;
+#if DEBUG
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    private static Interop.BOOL TraverseRCWCleanupListCallback(ulong rcwAddr, ulong ctx, ulong staThread, Interop.BOOL isFreeThreaded, void* expectedElements)
+    {
+        var expectedElementsDict = (Dictionary<ulong, ulong>)GCHandle.FromIntPtr((nint)expectedElements).Target!;
+        if (expectedElementsDict.TryGetValue(rcwAddr, out ulong expectedCtx) && expectedCtx == ctx)
+        {
+            expectedElementsDict[default]++; // Increment the count for verification
+        }
+        else
+        {
+            Debug.Fail($"Unexpected RCW address {rcwAddr:x} or context {ctx:x}");
+        }
+        return Interop.BOOL.TRUE;
+    }
+#endif
+    int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token)
+    {
+        int hr = HResults.S_OK;
+        IEnumerable<Contracts.RCWCleanupInfo> cleanupInfos = Enumerable.Empty<Contracts.RCWCleanupInfo>();
+        try
+        {
+            if (pCallback is null)
+                throw new ArgumentException();
+
+            Contracts.IBuiltInCOM contract = _target.Contracts.BuiltInCOM;
+            TargetPointer listPtr = cleanupListPtr.ToTargetPointer(_target);
+
+            cleanupInfos = contract.GetRCWCleanupList(listPtr);
+            foreach (Contracts.RCWCleanupInfo info in cleanupInfos)
+            {
+                pCallback(
+                    info.RCW.ToClrDataAddress(_target).Value,
+                    info.Context.ToClrDataAddress(_target).Value,
+                    info.STAThread.ToClrDataAddress(_target).Value,
+                    info.IsFreeThreaded ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                    token);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Dictionary<ulong, ulong> expectedElements = cleanupInfos.ToDictionary(info => info.RCW.ToClrDataAddress(_target).Value, info => info.Context.ToClrDataAddress(_target).Value);
+            expectedElements.Add(default, 0);
+            GCHandle expectedElementsHandle = GCHandle.Alloc(expectedElements);
+            void* tokenDebug = GCHandle.ToIntPtr(expectedElementsHandle).ToPointer();
+            delegate* unmanaged[Stdcall]<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> callbackDebugPtr = &TraverseRCWCleanupListCallback;
+
+            int hrLocal = _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, callbackDebugPtr, tokenDebug);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(expectedElements[default] == (ulong)cleanupInfos.Count(), $"cDAC: {cleanupInfos.Count()} elements, DAC: {expectedElements[default]} elements");
+            expectedElementsHandle.Free();
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, int heaptype, void* pCallback)
         => _legacyImpl is not null ? _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, pCallback) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface

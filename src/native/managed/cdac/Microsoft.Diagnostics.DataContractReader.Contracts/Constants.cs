@@ -53,9 +53,14 @@ public static class Constants
 
         public const string MethodDescAlignment = nameof(MethodDescAlignment);
         public const string ObjectHeaderSize = nameof(ObjectHeaderSize);
+        public const string ArrayBaseSize = nameof(ArrayBaseSize);
         public const string SyncBlockValueToObjectOffset = nameof(SyncBlockValueToObjectOffset);
 
         public const string SyncTableEntries = nameof(SyncTableEntries);
+        public const string SyncBlockCache = nameof(SyncBlockCache);
+        public const string SyncBlockMaskLockThreadId = nameof(SyncBlockMaskLockThreadId);
+        public const string SyncBlockMaskLockRecursionLevel = nameof(SyncBlockMaskLockRecursionLevel);
+        public const string SyncBlockRecursionLevelShift = nameof(SyncBlockRecursionLevelShift);
 
         public const string ArrayBoundsZero = nameof(ArrayBoundsZero);
         public const string CoreLib = nameof(CoreLib);
@@ -77,6 +82,7 @@ public static class Constants
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
         public const string ComRefcountMask = nameof(ComRefcountMask);
+        public const string RCWCleanupList = nameof(RCWCleanupList);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);

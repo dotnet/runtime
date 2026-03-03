@@ -463,6 +463,7 @@ private:
     GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
+    bool     TryInvertMask(GenTree* node, unsigned simdSize, var_types simdBaseType);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);

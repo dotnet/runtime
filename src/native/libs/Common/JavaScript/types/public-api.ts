@@ -409,7 +409,7 @@ export type AssetBehaviors = SingleAssetBehaviors |
     /**
      * Managed assembly packaged as Webcil v 1.0
      */
-    | "webcil10"
+    | "webcil"
     ;
 export declare const enum GlobalizationMode {
     /**
@@ -728,9 +728,6 @@ export declare function exit(exitCode: number, reason?: any): void;
 
 export declare const dotnet: DotnetHostBuilder;
 
-declare global {
-    function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
-}
 export declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 

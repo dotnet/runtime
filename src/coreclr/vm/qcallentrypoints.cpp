@@ -287,6 +287,7 @@ static const Entry s_QCall[] =
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
+    DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
@@ -416,6 +417,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjectNative_GetHashCodeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
     DllImportEntry(MetadataImport_Enum)
+    DllImportEntry(MetadataImport_GetMarshalAs)
     DllImportEntry(ReflectionInvocation_RunClassConstructor)
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)
     DllImportEntry(ReflectionInvocation_CompileMethod)
@@ -535,6 +537,7 @@ static const Entry s_QCall[] =
     DllImportEntry(VersionResilientHashCode_TypeHashCode)
     DllImportEntry(TailCallHelp_AllocTailCallArgBufferInternal)
 #ifdef TARGET_BROWSER
+    DllImportEntry(SystemJS_MarkAsyncMain)
     DllImportEntry(SystemJS_ResolveMainPromise)
     DllImportEntry(SystemJS_RejectMainPromise)
     DllImportEntry(SystemJS_ScheduleTimer)
