@@ -9,7 +9,7 @@ using System.Runtime.InteropServices.Marshalling;
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
-public sealed unsafe partial class ClrDataAppDomain: IXCLRDataAppDomain
+public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 {
     private readonly TargetPointer _appDomain;
     private readonly IXCLRDataAppDomain? _legacyImpl;
