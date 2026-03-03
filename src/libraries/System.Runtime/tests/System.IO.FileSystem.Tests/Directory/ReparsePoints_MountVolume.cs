@@ -10,6 +10,7 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -19,7 +20,10 @@ namespace System.IO.Tests
         private delegate void ExceptionCode();
         private static bool s_pass = true;
 
-        [Fact]
+        private static bool IsPrivilegedAndNtfs =>
+            PlatformDetection.IsPrivilegedProcess && FileSystemDebugInfo.IsCurrentDriveNTFS();
+
+        [ConditionalFact(nameof(IsPrivilegedAndNtfs))]
         [PlatformSpecific(TestPlatforms.Windows)] // testing mounting volumes and reparse points
         public static void runTest()
         {
