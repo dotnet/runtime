@@ -99,8 +99,6 @@ struct TaggedMemAllocPtr
 
 #define VIRTUAL_ALLOC_RESERVE_GRANULARITY (64*1024)    // 0x10000  (64 KB)
 
-template<typename T> struct cdac_data;
-
 typedef DPTR(struct LoaderHeapBlock) PTR_LoaderHeapBlock;
 
 struct LoaderHeapBlock
@@ -144,6 +142,7 @@ struct LoaderHeapBlock
     LoaderHeapBlock() {}
 #endif
 };
+
 
 struct LoaderHeapFreeBlock;
 
