@@ -48,123 +48,19 @@ namespace System.Text.RegularExpressions.Generator
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // Each entry in the pipeline is a tuple of:
-            // - Model: the incremental data (no Location/SyntaxTree references) — has value equality for caching.
-            // - DiagnosticLocation: a raw SourceLocation for creating diagnostics in later steps — NOT part of the model.
-            // - Diagnostics: accumulated raw Diagnostic objects with SourceLocation — NOT part of the model.
-            //
-            // The Model may be:
-            // - null in the case of a failure (diagnostics explain the error)
-            // - RegexPatternAndSyntax on initial parse success
-            // - RegexMethod after regex tree parsing
-            IncrementalValuesProvider<(object? Model, Location? DiagnosticLocation, ImmutableArray<Diagnostic> Diagnostics)> pipeline =
+            // The ForAttributeWithMetadataName transform validates the attribute, parses the regex,
+            // generates code, and extracts the result into deeply equatable types.
+            // Collect all per-method results into a single IncrementalValueProvider, then aggregate
+            // into one RegexSourceGenerationResult record (with deduplicated helpers) plus diagnostics.
+            IncrementalValueProvider<(RegexSourceGenerationResult Result, ImmutableArray<Diagnostic> Diagnostics)> collected =
                 context.SyntaxProvider
-
-                // Find all MethodDeclarationSyntax nodes attributed with GeneratedRegex and gather the required information.
-                // The predicate will be run once for every attributed node in the same file that's being modified.
-                // The transform will be run once for every attributed node in the compilation.
-                // Thus, both should do the minimal amount of work required and get out.  This should also have extracted
-                // everything from the target necessary to do all subsequent analysis and should return a model that's
-                // meaningfully comparable and that doesn't reference anything from the compilation: we want to ensure
-                // that any successful cached results are idempotent for the input such that they don't trigger downstream work
-                // if there are no changes.
                 .ForAttributeWithMetadataName(
                     GeneratedRegexAttributeName,
                     (node, _) => node is MethodDeclarationSyntax or PropertyDeclarationSyntax or IndexerDeclarationSyntax or AccessorDeclarationSyntax,
                     GetRegexMethodDataOrFailureDiagnostic)
-
-                // Filter out entries with no model and no diagnostics.
-                .Where(static m => m.Model is not null || !m.Diagnostics.IsDefaultOrEmpty)
-
-                // The model here will either be null (failure, diagnostics explain) or a RegexPatternAndSyntax.
-                // Parse the regex tree and create RegexMethod from successful entries.
-                .Select(((object? Model, Location? DiagnosticLocation, ImmutableArray<Diagnostic> Diagnostics) item, CancellationToken _) =>
-                {
-                    if (item.Model is RegexPatternAndSyntax method)
-                    {
-                        try
-                        {
-                            RegexTree regexTree = RegexParser.Parse(method.Pattern, method.Options | RegexOptions.Compiled, method.Culture); // make sure Compiled is included to get all optimizations applied to it
-                            AnalysisResults analysis = RegexTreeAnalyzer.Analyze(regexTree);
-                            return (Model: (object?)new RegexMethod(method.DeclaringType, method.IsProperty, method.MemberName, method.Modifiers, method.NullableRegex, method.Pattern, method.Options, method.MatchTimeout, regexTree, analysis, method.CompilationData), item.DiagnosticLocation, item.Diagnostics);
-                        }
-                        catch (Exception e)
-                        {
-                            return (Model: (object?)null, DiagnosticLocation: (Location?)null, Diagnostics: item.Diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, item.DiagnosticLocation, e.Message)));
-                        }
-                    }
-
-                    return item;
-                });
-
-            // Generate the RunnerFactory for each regex (if possible), extract all data from the RegexTree
-            // into deeply equatable types, and discard the tree. After this step, the model contains no
-            // references to RegexTree, AnalysisResults, or Roslyn symbols.
-            IncrementalValuesProvider<(RegexMethodEntry? Entry, ImmutableEquatableArray<HelperMethod> Helpers, ImmutableArray<Diagnostic> Diagnostics)> typedPipeline =
-                pipeline.Select(static ((object? Model, Location? DiagnosticLocation, ImmutableArray<Diagnostic> Diagnostics) item, CancellationToken _) =>
-                {
-                    if (item.Model is not RegexMethod regexMethod)
-                    {
-                        return (Entry: (RegexMethodEntry?)null, Helpers: ImmutableEquatableArray<HelperMethod>.Empty, item.Diagnostics);
-                    }
-
-                    // Pre-compute the XML expression description from the tree while we still have access to it.
-                    string expressionDescription = PreComputeExpressionDescription(regexMethod);
-
-                    // Extract capture metadata from the tree into equatable forms.
-                    ImmutableEquatableArray<(int Key, int Value)>? captureNumberSparseMapping = regexMethod.Tree.CaptureNumberSparseMapping is { } cnsm
-                        ? cnsm.Cast<Collections.DictionaryEntry>().Select(de => (Key: (int)de.Key, Value: (int)de.Value!)).OrderBy(p => p.Key).ToImmutableEquatableArray()
-                        : null;
-                    ImmutableEquatableArray<(string Key, int Value)>? captureNameToNumberMapping = regexMethod.Tree.CaptureNameToNumberMapping is { } cntnm
-                        ? cntnm.Cast<Collections.DictionaryEntry>().Select(de => (Key: (string)de.Key, Value: (int)de.Value!)).OrderBy(p => p.Key, StringComparer.Ordinal).ToImmutableEquatableArray()
-                        : null;
-                    ImmutableEquatableArray<string>? captureNames = regexMethod.Tree.CaptureNames?.ToImmutableEquatableArray();
-                    int captureCount = regexMethod.Tree.CaptureCount;
-
-                    // If we're unable to generate a full implementation for this regex, report a diagnostic.
-                    // We'll still output a limited implementation that just caches a new Regex(...).
-                    if (!SupportsCodeGeneration(regexMethod, regexMethod.CompilationData.LanguageVersion, out string? reason))
-                    {
-                        var limitedEntry = new RegexMethodEntry(
-                            regexMethod.DeclaringType, regexMethod.IsProperty, regexMethod.MemberName,
-                            regexMethod.Modifiers, regexMethod.NullableRegex, regexMethod.Pattern,
-                            regexMethod.Options, regexMethod.MatchTimeout, regexMethod.CompilationData,
-                            GeneratedCode: null, LimitedSupportReason: reason,
-                            expressionDescription, captureNumberSparseMapping, captureNameToNumberMapping,
-                            captureNames, captureCount);
-
-                        return (Entry: (RegexMethodEntry?)limitedEntry, Helpers: ImmutableEquatableArray<HelperMethod>.Empty,
-                            Diagnostics: item.Diagnostics.Add(Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, item.DiagnosticLocation)));
-                    }
-
-                    // Generate the core logic for the regex.
-                    Dictionary<string, string[]> requiredHelpers = new();
-                    var sw = new StringWriter();
-                    var writer = new IndentedTextWriter(sw);
-                    writer.Indent += 2;
-                    writer.WriteLine();
-                    EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers, regexMethod.CompilationData.CheckOverflow);
-                    writer.Indent -= 2;
-
-                    var fullEntry = new RegexMethodEntry(
-                        regexMethod.DeclaringType, regexMethod.IsProperty, regexMethod.MemberName,
-                        regexMethod.Modifiers, regexMethod.NullableRegex, regexMethod.Pattern,
-                        regexMethod.Options, regexMethod.MatchTimeout, regexMethod.CompilationData,
-                        GeneratedCode: sw.ToString(), LimitedSupportReason: null,
-                        expressionDescription, captureNumberSparseMapping, captureNameToNumberMapping,
-                        captureNames, captureCount);
-
-                    ImmutableEquatableArray<HelperMethod> helpers = requiredHelpers
-                        .Select(h => new HelperMethod(h.Key, h.Value.ToImmutableEquatableArray()))
-                        .ToImmutableEquatableArray();
-
-                    return (Entry: (RegexMethodEntry?)fullEntry, Helpers: helpers, item.Diagnostics);
-                });
-
-            // Collect all per-method results and aggregate into a single deeply equatable model
-            // containing all regex methods and their shared helpers (deduplicated).
-            IncrementalValueProvider<(RegexSourceGenerationResult Result, ImmutableArray<Diagnostic> Diagnostics)> collected =
-                typedPipeline.Collect().Select(static (items, _) =>
+                .Where(static m => m.Entry is not null || !m.Diagnostics.IsDefaultOrEmpty)
+                .Collect()
+                .Select(static (items, _) =>
                 {
                     var methods = new List<RegexMethodEntry>();
                     var helpersByName = new Dictionary<string, HelperMethod>(StringComparer.Ordinal);
@@ -223,14 +119,6 @@ namespace System.Text.RegularExpressions.Generator
                 collected.Select(static (t, _) => t.Diagnostics);
 
             context.RegisterSourceOutput(diagnosticResults, EmitDiagnostics);
-        }
-
-        /// <summary>Pre-computes the XML expression description from a <see cref="RegexMethod"/>'s tree.</summary>
-        private static string PreComputeExpressionDescription(RegexMethod regexMethod)
-        {
-            using var sw = new StringWriter();
-            DescribeExpressionAsXmlComment(sw, regexMethod.Tree.Root.Child(0), regexMethod);
-            return sw.ToString();
         }
 
         private static void EmitSource(SourceProductionContext context, RegexSourceGenerationResult result)

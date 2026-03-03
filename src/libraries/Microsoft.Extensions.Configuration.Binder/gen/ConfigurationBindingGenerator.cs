@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (tuple.Right is not CompilationData compilationData)
                     {
-                        return (null, default);
+                        return (null, ImmutableArray<Diagnostic>.Empty);
                     }
 
                     try

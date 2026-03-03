@@ -811,12 +811,14 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
             {
+                Diagnostic diagnostic = Diagnostic.Create(desc, location, messageArgs);
+
                 // Report immediately if callback is provided (preserves pragma suppression with original locations)
-                _reportDiagnostic?.Invoke(Diagnostic.Create(desc, location, messageArgs));
+                _reportDiagnostic?.Invoke(diagnostic);
 
                 // Also collect for scenarios that need the diagnostics list; in Roslyn 4.0+ incremental generators,
                 // this list is exposed via parser.Diagnostics and reported in the diagnostic pipeline.
-                Diagnostics.Add(Diagnostic.Create(desc, location, messageArgs));
+                Diagnostics.Add(diagnostic);
             }
 
             private static bool IsBaseOrIdentity(ITypeSymbol source, ITypeSymbol dest, Compilation compilation)
