@@ -103,7 +103,7 @@ public readonly struct LoaderHeapBlockData
     IEnumerable<TargetPointer> GetGCHeaps();
 
     // The following APIs have both a workstation and serer variant.
-    // The workstation variant implitly operates on the global heap.
+    // The workstation variant implicitly operates on the global heap.
     // The server variants allow passing in a heap pointer.
 
     // Gets data about a GC heap

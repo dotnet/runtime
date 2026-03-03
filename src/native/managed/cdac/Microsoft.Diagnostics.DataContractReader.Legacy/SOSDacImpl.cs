@@ -4881,8 +4881,33 @@ public sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface12
 
     #region ISOSDacInterface13
+#if DEBUG
+    [ThreadStatic]
+    private static List<(ulong VirtualAddress, nuint VirtualSize)>? _debugTraverseLoaderHeapBlocks;
+
+    [UnmanagedCallersOnly]
+    private static Interop.BOOL TraverseLoaderHeapDebugCallback(ulong virtualAddress, nuint virtualSize)
+    {
+        List<(ulong VirtualAddress, nuint VirtualSize)>? expected = _debugTraverseLoaderHeapBlocks;
+        if (expected is not null)
+        {
+            bool found = expected.Remove((virtualAddress, virtualSize));
+            Debug.Assert(found, $"Unexpected loader heap block: address={virtualAddress:x}, size={virtualSize:x}");
+        }
+        return Interop.BOOL.TRUE;
+    }
+#endif
+
     int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback)
     {
+        // Both LoaderHeapKindNormal (0) and LoaderHeapKindExplicitControl (1) use
+        // the same FirstBlock offset via UnlockedLoaderHeapBaseTraversable.
+        // Unknown kind values return E_NOTIMPL to match the native DAC behavior.
+        const int LoaderHeapKindNormal = 0;
+        const int LoaderHeapKindExplicitControl = 1;
+        if (kind != LoaderHeapKindNormal && kind != LoaderHeapKindExplicitControl)
+            return HResults.E_NOTIMPL;
+
         int hr = HResults.S_OK;
         try
         {
@@ -4907,6 +4932,34 @@ public sealed unsafe partial class SOSDacImpl
         {
             hr = ex.HResult;
         }
+#if DEBUG
+        if (_legacyImpl13 is not null)
+        {
+            // Collect expected blocks via a second cDAC traversal (not re-invoking the original callback).
+            List<(ulong VirtualAddress, nuint VirtualSize)> cdacBlocks = [];
+            try
+            {
+                Contracts.IGC gc = _target.Contracts.GC;
+                TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
+                TargetPointer block = gc.GetFirstLoaderHeapBlock(heapAddr);
+                while (block != TargetPointer.Null)
+                {
+                    Contracts.LoaderHeapBlockData blockData = gc.GetLoaderHeapBlockData(block);
+                    cdacBlocks.Add((blockData.VirtualAddress.Value, (nuint)blockData.VirtualSize.Value));
+                    block = gc.GetNextLoaderHeapBlock(block);
+                }
+            }
+            catch { }
+
+            _debugTraverseLoaderHeapBlocks = cdacBlocks;
+            delegate* unmanaged<ulong, nuint, Interop.BOOL> debugCallbackPtr = &TraverseLoaderHeapDebugCallback;
+            int hrLocal = _legacyImpl13.TraverseLoaderHeap(loaderHeapAddr, kind, debugCallbackPtr);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(_debugTraverseLoaderHeapBlocks!.Count == 0,
+                $"cDAC found {cdacBlocks.Count} blocks but DAC found {cdacBlocks.Count - _debugTraverseLoaderHeapBlocks.Count} matching blocks");
+            _debugTraverseLoaderHeapBlocks = null;
+        }
+#endif
         return hr;
     }
     int ISOSDacInterface13.GetDomainLoaderAllocator(ClrDataAddress domainAddress, ClrDataAddress* pLoaderAllocator)
