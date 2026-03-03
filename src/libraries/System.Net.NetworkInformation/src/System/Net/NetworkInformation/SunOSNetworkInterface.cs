@@ -129,12 +129,12 @@ namespace System.Net.NetworkInformation
         public override NetworkInterfaceType NetworkInterfaceType { get { return _interfaceType; } }
 
         // Future: implement via kstats
-        // Just return zero for now.
+        // Return zero when speed is unknown.
         public override long Speed
         {
             get
             {
-                return _speed;
+                return _speed < 0 ? 0 : _speed;
             }
         }
 
