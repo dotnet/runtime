@@ -51,9 +51,9 @@ try {
     foreach ($line in $areaOwnersMd -split "`n") {
         if ($line -match '^\|\s*(area-\S+)\s*\|\s*@(\S+)\s*\|\s*(.+?)\s*\|') {
             $areaName = $matches[1].Trim()
-            $lead = $matches[2].Trim()
+            $lead = $matches[2].Trim().TrimEnd(',', ';')
             $ownerField = $matches[3].Trim()
-            $people = @([regex]::Matches($ownerField, '@(\S+)') | ForEach-Object { $_.Groups[1].Value } |
+            $people = @([regex]::Matches($ownerField, '@(\S+)') | ForEach-Object { $_.Groups[1].Value.TrimEnd(',', ';') } |
                 Where-Object { $_ -notmatch '^dotnet/' })
             if ($people.Count -eq 0) { $people = @($lead) }
             $areaOwners[$areaName] = $people
