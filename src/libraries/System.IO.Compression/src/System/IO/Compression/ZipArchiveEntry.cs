@@ -50,10 +50,10 @@ namespace System.IO.Compression
         private readonly CompressionLevel _compressionLevel;
         private ZipCompressionMethod _headerCompressionMethod;
         private ushort? _aeVersion;
-        // Cached derived key material for encrypted entries to allow updating in place
-        // For WinZip AES: contains [salt][encryption key][HMAC key][password verifier]
-        // For ZipCrypto: contains [key0][key1][key2] as 12 bytes
-        private byte[]? _derivedEncryptionKeyMaterial;
+        // Cached derived key material for encrypted entries to allow updating in place.
+        // Only one of these is set at a time, depending on the encryption method.
+        private byte[]? _derivedZipCryptoKeyMaterial;
+        private WinZipAesKeyMaterial? _derivedAesKeyMaterial;
         internal const ushort WinZipAesMethod = 99;
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -677,7 +677,8 @@ namespace System.IO.Compression
                             _storedUncompressedData = null;
                             _currentlyOpenForWrite = false;
                             _everOpenedForWrite = false;
-                            _derivedEncryptionKeyMaterial = null;
+                            _derivedZipCryptoKeyMaterial = null;
+                            _derivedAesKeyMaterial = null;
                             throw;
                         }
                     }
@@ -1077,12 +1078,11 @@ namespace System.IO.Compression
                 compressedStream.Seek(-saltSize, SeekOrigin.Current);
 
                 // Derive key material from the provided password
-                byte[] keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
+                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
 
                 return WinZipAesStream.Create(
                     baseStream: compressedStream,
                     keyMaterial: keyMaterial,
-                    keySizeBits: keySizeBits,
                     totalStreamSize: _compressedSize,
                     encrypting: false);
             }
@@ -1090,6 +1090,7 @@ namespace System.IO.Compression
             // Not encrypted - return as-is
             return compressedStream;
         }
+
         private Stream GetDataDecompressor(Stream compressedStreamToRead)
         {
             Stream? uncompressedStream;
@@ -1201,12 +1202,11 @@ namespace System.IO.Compression
                 int keySizeBits = GetAesKeySizeBits(encryptionMethod);
 
                 // Derive key material from password with new random salt
-                byte[] keyMaterial = WinZipAesStream.CreateKey(password.AsMemory(), salt: null, keySizeBits);
+                WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password.AsMemory(), salt: null, keySizeBits);
 
                 targetStream = WinZipAesStream.Create(
                     baseStream: _archive.ArchiveStream,
                     keyMaterial: keyMaterial,
-                    keySizeBits: keySizeBits,
                     totalStreamSize: -1,
                     encrypting: true,
                     leaveOpen: true);
@@ -1297,7 +1297,7 @@ namespace System.IO.Compression
             // Derive and save key material for re-encryption
             if (IsZipCryptoEncrypted())
             {
-                _derivedEncryptionKeyMaterial = ZipCryptoStream.CreateKey(password.AsMemory());
+                _derivedZipCryptoKeyMaterial = ZipCryptoStream.CreateKey(password.AsMemory());
                 Encryption = EncryptionMethod.ZipCrypto;
             }
             else if (UseAesEncryption())
@@ -1309,7 +1309,7 @@ namespace System.IO.Compression
                 // Generate new salt and derive key material for AES
                 // This ensures each write uses a fresh random salt for security
                 int keySizeBits = GetAesKeySizeBits(Encryption);
-                _derivedEncryptionKeyMaterial = WinZipAesStream.CreateKey(password.AsMemory(), salt: null, keySizeBits);
+                _derivedAesKeyMaterial = WinZipAesStream.CreateKey(password.AsMemory(), salt: null, keySizeBits);
                 // Encryption is already set from constructor (parsed from central directory AES extra field)
             }
 
@@ -1689,81 +1689,58 @@ namespace System.IO.Compression
                     _uncompressedSize = _storedUncompressedData.Length;
 
                     // Check if we need to re-encrypt with ZipCrypto (only if we have cached key material)
-                    if (Encryption == EncryptionMethod.ZipCrypto && _derivedEncryptionKeyMaterial != null)
+                    if (Encryption == EncryptionMethod.ZipCrypto && _derivedZipCryptoKeyMaterial is not null)
                     {
-                        // Write local file header first (with encryption flag set)
-                        // Pass isEmptyFile: false because even empty encrypted files have the 12-byte header
                         WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
 
-                        // Record position before encryption data
                         long startPosition = _archive.ArchiveStream.Position;
 
                         ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
                         using (var encryptionStream = ZipCryptoStream.Create(
                             baseStream: _archive.ArchiveStream,
-                            keyBytes: _derivedEncryptionKeyMaterial,
+                            keyBytes: _derivedZipCryptoKeyMaterial,
                             passwordVerifierLow2Bytes: verifierLow2Bytes,
                             encrypting: true,
                             crc32: null,
                             leaveOpen: true))
                         {
-                            // Use GetDataCompressor which handles CRC calculation and compression
                             using (var crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream))
                             {
                                 _storedUncompressedData.Seek(0, SeekOrigin.Begin);
                                 _storedUncompressedData.CopyTo(crcStream);
                             }
-                            // CRC, uncompressed size are now set by GetDataCompressor callback
-                            // For empty files, ZipCryptoStream.Dispose() will write the 12-byte header
                         }
 
-                        // Calculate compressed size AFTER ZipCryptoStream is disposed
-                        // (includes 12-byte encryption header + compressed data)
                         _compressedSize = _archive.ArchiveStream.Position - startPosition;
 
-                        // Write data descriptor since we used streaming mode
                         WriteDataDescriptor();
 
                         _storedUncompressedData.Dispose();
                         _storedUncompressedData = null;
                     }
-                    else if (UseAesEncryption() && _derivedEncryptionKeyMaterial != null)
+                    else if (UseAesEncryption() && _derivedAesKeyMaterial is not null)
                     {
                         if (OperatingSystem.IsBrowser())
                         {
                             throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
                         }
 
-                        // For AES, we need to:
-                        // 1. Write header with CompressionMethod = Aes (99)
-                        // 2. Compress data with actual compression (Deflate/Stored)
-                        // 3. Keep CompressionMethod = Aes for central directory
-
-                        // WriteLocalFileHeader will set CompressionMethod = Aes
                         WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
 
-                        // Record position before encryption data
                         long startPosition = _archive.ArchiveStream.Position;
 
-                        int keySizeBits = GetAesKeySizeBits(Encryption);
-
-                        // Determine the actual compression method to use
-                        // The AES extra field stores the real compression method
                         bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
                         using (var encryptionStream = WinZipAesStream.Create(
                             baseStream: _archive.ArchiveStream,
-                            keyMaterial: _derivedEncryptionKeyMaterial,
-                            keySizeBits: keySizeBits,
+                            keyMaterial: _derivedAesKeyMaterial.Value,
                             totalStreamSize: -1,
                             encrypting: true,
                             leaveOpen: true))
                         {
-                            // Only compress/write if there's data
                             if (_storedUncompressedData.Length > 0)
                             {
-                                // Temporarily set CompressionMethod for GetDataCompressor
                                 ZipCompressionMethod savedMethod = CompressionMethod;
                                 CompressionMethod = useDeflate ? ZipCompressionMethod.Deflate : ZipCompressionMethod.Stored;
 
@@ -1773,23 +1750,17 @@ namespace System.IO.Compression
                                     _storedUncompressedData.CopyTo(crcStream);
                                 }
 
-                                // Restore CompressionMethod to Aes for central directory
                                 CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
                             }
                             else
                             {
-                                // Empty file: CRC is 0, uncompressed size is 0
                                 _crc32 = 0;
                                 _uncompressedSize = 0;
                             }
-                            // WinZipAesStream.Dispose() writes salt + verifier + HMAC even for empty files
                         }
 
-                        // Calculate compressed size AFTER WinZipAesStream is disposed
-                        // (includes salt + password verifier + encrypted data + HMAC)
                         _compressedSize = _archive.ArchiveStream.Position - startPosition;
 
-                        // Write data descriptor since we used streaming mode
                         WriteDataDescriptor();
 
                         _storedUncompressedData.Dispose();

@@ -325,7 +325,8 @@ public partial class ZipArchiveEntry
                         _storedUncompressedData = null;
                         _currentlyOpenForWrite = false;
                         _everOpenedForWrite = false;
-                        _derivedEncryptionKeyMaterial = null;
+                        _derivedZipCryptoKeyMaterial = null;
+                        _derivedAesKeyMaterial = null;
                         throw;
                     }
                 }
@@ -503,12 +504,11 @@ public partial class ZipArchiveEntry
             compressedStream.Seek(-saltSize, SeekOrigin.Current);
 
             // Derive key material from the provided password
-            byte[] keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
+            WinZipAesKeyMaterial keyMaterial = WinZipAesStream.CreateKey(password, salt, keySizeBits);
 
             return await WinZipAesStream.CreateAsync(
                 baseStream: compressedStream,
                 keyMaterial: keyMaterial,
-                keySizeBits: keySizeBits,
                 totalStreamSize: _compressedSize,
                 encrypting: false,
                 leaveOpen: false,
@@ -666,7 +666,7 @@ public partial class ZipArchiveEntry
                 _uncompressedSize = _storedUncompressedData.Length;
 
                 // Check if we need to re-encrypt with ZipCrypto (only if we have cached key material)
-                if (Encryption == EncryptionMethod.ZipCrypto && _derivedEncryptionKeyMaterial != null)
+                if (Encryption == EncryptionMethod.ZipCrypto && _derivedZipCryptoKeyMaterial != null)
                 {
                     // Write local file header first (with encryption flag set)
                     // Pass isEmptyFile: false because even empty encrypted files have the 12-byte header
@@ -679,7 +679,7 @@ public partial class ZipArchiveEntry
 
                     var encryptionStream = ZipCryptoStream.Create(
                         baseStream: _archive.ArchiveStream,
-                        keyBytes: _derivedEncryptionKeyMaterial,
+                        keyBytes: _derivedZipCryptoKeyMaterial,
                         passwordVerifierLow2Bytes: verifierLow2Bytes,
                         encrypting: true,
                         crc32: null,
@@ -707,7 +707,7 @@ public partial class ZipArchiveEntry
                     await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
                     _storedUncompressedData = null;
                 }
-                else if (UseAesEncryption() && _derivedEncryptionKeyMaterial != null)
+                else if (UseAesEncryption() && _derivedAesKeyMaterial != null)
                 {
 
                     if (OperatingSystem.IsBrowser())
@@ -733,11 +733,12 @@ public partial class ZipArchiveEntry
 
                     var encryptionStream = WinZipAesStream.Create(
                         baseStream: _archive.ArchiveStream,
-                        keyMaterial: _derivedEncryptionKeyMaterial,
-                        keySizeBits: keySizeBits,
+                        keyMaterial: _derivedAesKeyMaterial.Value,
                         totalStreamSize: -1,
                         encrypting: true,
                         leaveOpen: true);
+
+
                     await using (encryptionStream.ConfigureAwait(false))
                     {
                         // Only compress/write if there's data

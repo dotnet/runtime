@@ -1,8 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
@@ -11,22 +11,136 @@ using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
+    /// <summary>
+    /// Represents the parsed components of WinZip AES key material.
+    /// The key material layout is: [salt][encryption key][HMAC key][password verifier (2 bytes)].
+    /// </summary>
+    internal readonly struct WinZipAesKeyMaterial
+    {
+        public byte[] Salt { get; }
+        public byte[] EncryptionKey { get; }
+        public byte[] HmacKey { get; }
+        public byte[] PasswordVerifier { get; }
+        public int KeySizeBits { get; }
+        public int SaltSize { get; }
+
+        private WinZipAesKeyMaterial(byte[] salt, byte[] encryptionKey, byte[] hmacKey, byte[] passwordVerifier, int keySizeBits)
+        {
+            Salt = salt;
+            EncryptionKey = encryptionKey;
+            HmacKey = hmacKey;
+            PasswordVerifier = passwordVerifier;
+            KeySizeBits = keySizeBits;
+            SaltSize = GetSaltSize(keySizeBits);
+        }
+
+        /// <summary>
+        /// Parses raw key material bytes into their individual components.
+        /// Validates that the input length matches the expected layout for the given key size.
+        /// </summary>
+        internal static WinZipAesKeyMaterial Parse(byte[] keyMaterial, int keySizeBits)
+        {
+            int saltSize = GetSaltSize(keySizeBits);
+            int keySizeBytes = keySizeBits / 8;
+            int expectedSize = checked(saltSize + keySizeBytes + keySizeBytes + 2);
+
+            if (keyMaterial.Length != expectedSize)
+            {
+                throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+            }
+
+            int offset = 0;
+
+            byte[] salt = new byte[saltSize];
+            Array.Copy(keyMaterial, offset, salt, 0, saltSize);
+            offset += saltSize;
+
+            byte[] encryptionKey = new byte[keySizeBytes];
+            Array.Copy(keyMaterial, offset, encryptionKey, 0, keySizeBytes);
+            offset += keySizeBytes;
+
+            byte[] hmacKey = new byte[keySizeBytes];
+            Array.Copy(keyMaterial, offset, hmacKey, 0, keySizeBytes);
+            offset += keySizeBytes;
+
+            byte[] passwordVerifier = new byte[2];
+            Array.Copy(keyMaterial, offset, passwordVerifier, 0, 2);
+
+            return new WinZipAesKeyMaterial(salt, encryptionKey, hmacKey, passwordVerifier, keySizeBits);
+        }
+
+        /// <summary>
+        /// Derives key material from a password and optional salt using PBKDF2-SHA1.
+        /// </summary>
+        internal static WinZipAesKeyMaterial Create(ReadOnlyMemory<char> password, byte[]? salt, int keySizeBits)
+        {
+            int saltSize = GetSaltSize(keySizeBits);
+            int keySizeBytes = keySizeBits / 8;
+            int totalKeySize = checked(keySizeBytes + keySizeBytes + 2);
+
+            byte[] saltBytes;
+            if (salt is null)
+            {
+                saltBytes = new byte[saltSize];
+                RandomNumberGenerator.Fill(saltBytes);
+            }
+            else
+            {
+                if (salt.Length != saltSize)
+                {
+                    throw new ArgumentException($"Salt must be {saltSize} bytes for AES-{keySizeBits}.", nameof(salt));
+                }
+                saltBytes = salt;
+            }
+
+            int maxPasswordByteCount = Encoding.UTF8.GetMaxByteCount(password.Length);
+            byte[] rentedPasswordBytes = System.Buffers.ArrayPool<byte>.Shared.Rent(maxPasswordByteCount);
+            // totalKeySize is at most 66 bytes (AES-256: 32 + 32 + 2), safe for stackalloc
+            Span<byte> derivedKey = stackalloc byte[totalKeySize];
+
+            try
+            {
+                int actualByteCount = Encoding.UTF8.GetBytes(password.Span, rentedPasswordBytes);
+                Span<byte> passwordSpan = rentedPasswordBytes.AsSpan(0, actualByteCount);
+
+                Rfc2898DeriveBytes.Pbkdf2(
+                    passwordSpan,
+                    saltBytes,
+                    derivedKey,
+                    1000,
+                    HashAlgorithmName.SHA1);
+
+                byte[] rawMaterial = new byte[checked(saltSize + totalKeySize)];
+                saltBytes.CopyTo(rawMaterial, 0);
+                derivedKey.CopyTo(rawMaterial.AsSpan(saltSize));
+
+                return Parse(rawMaterial, keySizeBits);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(rentedPasswordBytes);
+                CryptographicOperations.ZeroMemory(derivedKey);
+                System.Buffers.ArrayPool<byte>.Shared.Return(rentedPasswordBytes);
+            }
+        }
+
+        internal static int GetSaltSize(int keySizeBits) => keySizeBits / 16;
+    }
+
     [UnsupportedOSPlatform("browser")]
     internal sealed class WinZipAesStream : Stream
     {
         private const int BlockSize = 16; // AES block size in bytes
         private const int KeystreamBufferSize = 4096; // Pre-generate 4KB of keystream (256 blocks)
+
         private readonly Stream _baseStream;
         private readonly bool _encrypting;
-        private readonly int _keySizeBits;
         private readonly Aes _aes;
         private ICryptoTransform? _aesEncryptor;
         private IncrementalHash? _hmac;
-        private readonly byte[] _counterBlock = new byte[BlockSize];
-        private byte[]? _key;
-        private byte[]? _hmacKey;
-        private byte[]? _salt;
-        private byte[]? _passwordVerifier;
+        private UInt128 _counter = 1;
+        private readonly byte[] _salt;
+        private readonly byte[] _passwordVerifier;
         private bool _headerWritten;
         private bool _disposed;
         private bool _authCodeValidated;
@@ -41,139 +155,50 @@ namespace System.IO.Compression
         private readonly byte[] _keystreamBuffer = new byte[KeystreamBufferSize];
         private int _keystreamOffset = KeystreamBufferSize; // Start depleted to force initial generation
 
-        internal static int GetSaltSize(int keySizeBits) => keySizeBits / 16;
-
-        //A byte array containing salt + derived key material
-        internal static byte[] CreateKey(ReadOnlyMemory<char> password, byte[]? salt, int keySizeBits)
-        {
-            int saltSize = GetSaltSize(keySizeBits);
-            int keySizeBytes = keySizeBits / 8;
-            int totalKeySize = keySizeBytes + keySizeBytes + 2; // encryption key + HMAC key + verifier
-
-            // Generate or validate salt
-            byte[] saltBytes;
-            if (salt == null)
-            {
-                saltBytes = new byte[saltSize];
-                RandomNumberGenerator.Fill(saltBytes);
-            }
-            else
-            {
-                if (salt.Length != saltSize)
-                {
-                    throw new ArgumentException($"Salt must be {saltSize} bytes for AES-{keySizeBits}.", nameof(salt));
-                }
-                saltBytes = salt;
-            }
-
-            // Derive keys using PBKDF2
-            int maxPasswordByteCount = Encoding.UTF8.GetMaxByteCount(password.Length);
-            Span<byte> passwordBytes = stackalloc byte[maxPasswordByteCount];
-            int actualByteCount = Encoding.UTF8.GetBytes(password.Span, passwordBytes);
-            Span<byte> passwordSpan = passwordBytes[..actualByteCount];
-
-            Span<byte> derivedKey = stackalloc byte[totalKeySize];
-
-            try
-            {
-                Rfc2898DeriveBytes.Pbkdf2(
-                    passwordSpan,
-                    saltBytes,
-                    derivedKey,
-                    1000,
-                    HashAlgorithmName.SHA1);
-
-                // Format: [salt][encryption key][HMAC key][password verifier]
-                byte[] result = new byte[saltSize + totalKeySize];
-                saltBytes.CopyTo(result, 0);
-                derivedKey.CopyTo(result.AsSpan(saltSize));
-
-                return result;
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(passwordBytes);
-                CryptographicOperations.ZeroMemory(derivedKey);
-            }
-        }
-
-        // Parses persisted key material into its components.
-        private static void ParseKeyMaterial(byte[] keyMaterial, int keySizeBits,
-            out byte[] salt, out byte[] encryptionKey, out byte[] hmacKey, out byte[] passwordVerifier)
-        {
-            int saltSize = GetSaltSize(keySizeBits);
-            int keySizeBytes = keySizeBits / 8;
-            int expectedSize = saltSize + keySizeBytes + keySizeBytes + 2;
-
-            Debug.Assert(keyMaterial.Length == expectedSize, "Key material length does not match expected size.");
-            int offset = 0;
-
-            salt = new byte[saltSize];
-            Array.Copy(keyMaterial, offset, salt, 0, saltSize);
-            offset += saltSize;
-
-            encryptionKey = new byte[keySizeBytes];
-            Array.Copy(keyMaterial, offset, encryptionKey, 0, keySizeBytes);
-            offset += keySizeBytes;
-
-            hmacKey = new byte[keySizeBytes];
-            Array.Copy(keyMaterial, offset, hmacKey, 0, keySizeBytes);
-            offset += keySizeBytes;
-
-            passwordVerifier = new byte[2];
-            Array.Copy(keyMaterial, offset, passwordVerifier, 0, 2);
-        }
+        internal static int GetSaltSize(int keySizeBits) => WinZipAesKeyMaterial.GetSaltSize(keySizeBits);
 
         /// <summary>
-        /// Creates a WinZipAesStream for decryption. Reads and validates the header synchronously.
+        /// Derives key material from a password and optional salt.
         /// </summary>
-        internal static WinZipAesStream Create(Stream baseStream, byte[] keyMaterial, int keySizeBits, long totalStreamSize, bool encrypting, bool leaveOpen = false)
+        internal static WinZipAesKeyMaterial CreateKey(ReadOnlyMemory<char> password, byte[]? salt, int keySizeBits)
+            => WinZipAesKeyMaterial.Create(password, salt, keySizeBits);
+
+        /// <summary>
+        /// Creates a WinZipAesStream synchronously. Reads and validates the header for decryption.
+        /// </summary>
+        internal static WinZipAesStream Create(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
-            ArgumentNullException.ThrowIfNull(keyMaterial);
 
             if (!encrypting)
             {
-                // Read and validate header before creating the stream
-                ReadAndValidateHeaderCore(isAsync: false, baseStream, keyMaterial, keySizeBits, CancellationToken.None).GetAwaiter().GetResult();
+                ReadAndValidateHeaderCore(isAsync: false, baseStream, keyMaterial, CancellationToken.None).GetAwaiter().GetResult();
             }
 
-            return new WinZipAesStream(baseStream, keyMaterial, keySizeBits, totalStreamSize, encrypting, leaveOpen);
+            return new WinZipAesStream(baseStream, keyMaterial, totalStreamSize, encrypting, leaveOpen);
         }
 
         /// <summary>
-        /// Creates a WinZipAesStream for decryption. Reads and validates the header asynchronously.
+        /// Creates a WinZipAesStream asynchronously. Reads and validates the header for decryption.
         /// </summary>
-        internal static async Task<WinZipAesStream> CreateAsync(Stream baseStream, byte[] keyMaterial, int keySizeBits, long totalStreamSize, bool encrypting, bool leaveOpen = false, CancellationToken cancellationToken = default)
+        internal static async Task<WinZipAesStream> CreateAsync(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen = false, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
-            ArgumentNullException.ThrowIfNull(keyMaterial);
 
             if (!encrypting)
             {
-                // Read and validate header before creating the stream
-                await ReadAndValidateHeaderCore(isAsync: true, baseStream, keyMaterial, keySizeBits, cancellationToken).ConfigureAwait(false);
-
+                await ReadAndValidateHeaderCore(isAsync: true, baseStream, keyMaterial, cancellationToken).ConfigureAwait(false);
             }
 
-            return new WinZipAesStream(baseStream, keyMaterial, keySizeBits, totalStreamSize, encrypting, leaveOpen);
+            return new WinZipAesStream(baseStream, keyMaterial, totalStreamSize, encrypting, leaveOpen);
         }
 
         /// <summary>
-        /// Reads and validates the WinZip AES header.
+        /// Reads and validates the WinZip AES header (salt + password verifier) from the stream.
         /// </summary>
-        private static async Task ReadAndValidateHeaderCore(bool isAsync, Stream baseStream, byte[] keyMaterial, int keySizeBits, CancellationToken cancellationToken)
+        private static async Task ReadAndValidateHeaderCore(bool isAsync, Stream baseStream, WinZipAesKeyMaterial keyMaterial, CancellationToken cancellationToken)
         {
-            int saltSize = GetSaltSize(keySizeBits);
-            int keySizeBytes = keySizeBits / 8;
-
-            // Parse the expected salt and password verifier from key material
-            byte[] expectedSalt = new byte[saltSize];
-            Array.Copy(keyMaterial, 0, expectedSalt, 0, saltSize);
-
-            byte[] expectedVerifier = new byte[2];
-            int verifierOffset = saltSize + keySizeBytes + keySizeBytes; // After salt + encryption key + HMAC key
-            Array.Copy(keyMaterial, verifierOffset, expectedVerifier, 0, 2);
+            int saltSize = keyMaterial.SaltSize;
 
             // Read salt from stream
             byte[] fileSalt = new byte[saltSize];
@@ -197,25 +222,29 @@ namespace System.IO.Compression
                 baseStream.ReadExactly(verifier);
             }
 
-            // Verify the salt matches
-            Debug.Assert(fileSalt.AsSpan().SequenceEqual(expectedSalt), "Salt mismatch - key material does not match this entry.");
+            // Verify the salt matches — use constant-time comparison because the salt is
+            // derived from secret key material and a timing side-channel could leak information.
+            if (!CryptographicOperations.FixedTimeEquals(fileSalt, keyMaterial.Salt))
+            {
+                throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+            }
 
-            // Verify the password verifier
-            if (!verifier.AsSpan().SequenceEqual(expectedVerifier))
+            // Verify the password verifier using constant-time comparison to prevent
+            // timing attacks that could distinguish a wrong password from a corrupt archive.
+            if (!CryptographicOperations.FixedTimeEquals(verifier, keyMaterial.PasswordVerifier))
             {
                 throw new InvalidDataException(SR.InvalidPassword);
             }
         }
 
         /// <summary>
-        /// Private constructor - used in Create/CreateAsync
-        /// For decryption, header must already be validated before calling this constructor.
+        /// Private constructor — used by Create/CreateAsync.
+        /// For decryption, the header must already be validated before calling this constructor.
         /// </summary>
-        private WinZipAesStream(Stream baseStream, byte[] keyMaterial, int keySizeBits, long totalStreamSize, bool encrypting, bool leaveOpen)
+        private WinZipAesStream(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen)
         {
             _baseStream = baseStream;
             _encrypting = encrypting;
-            _keySizeBits = keySizeBits;
             _totalStreamSize = totalStreamSize;
             _leaveOpen = leaveOpen;
 
@@ -223,11 +252,8 @@ namespace System.IO.Compression
             _aes.Mode = CipherMode.ECB;
             _aes.Padding = PaddingMode.None;
 
-            Array.Clear(_counterBlock, 0, 16);
-            _counterBlock[0] = 1;
-
-            // Parse the persisted key material
-            ParseKeyMaterial(keyMaterial, keySizeBits, out _salt!, out _key!, out _hmacKey!, out _passwordVerifier!);
+            _salt = keyMaterial.Salt;
+            _passwordVerifier = keyMaterial.PasswordVerifier;
 
             if (encrypting)
             {
@@ -236,8 +262,7 @@ namespace System.IO.Compression
             }
             else
             {
-                int saltSize = _keySizeBits / 16;
-                int headerSize = saltSize + 2; // Salt + Password Verifier
+                int headerSize = checked(keyMaterial.SaltSize + 2); // Salt + Password Verifier
                 const int hmacSize = 10; // 10-byte HMAC
 
                 _encryptedDataSize = _totalStreamSize - headerSize - hmacSize;
@@ -249,8 +274,9 @@ namespace System.IO.Compression
                 }
             }
 
-            _hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, _hmacKey!);
-            InitCipher();
+            _hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, keyMaterial.HmacKey);
+            _aes.Key = keyMaterial.EncryptionKey;
+            _aesEncryptor = _aes.CreateEncryptor();
         }
 
         private async Task ValidateAuthCodeCoreAsync(bool isAsync, CancellationToken cancellationToken)
@@ -279,7 +305,7 @@ namespace System.IO.Compression
             }
 
             // Compare the first 10 bytes of the expected hash
-            if (!storedAuth.AsSpan().SequenceEqual(expectedAuth.AsSpan(0, 10)))
+            if (!CryptographicOperations.FixedTimeEquals(storedAuth, expectedAuth.AsSpan(0, 10)))
             {
                 throw new InvalidDataException(SR.WinZipAuthCodeMismatch);
             }
@@ -297,21 +323,12 @@ namespace System.IO.Compression
             return ValidateAuthCodeCoreAsync(isAsync: true, cancellationToken);
         }
 
-        private void InitCipher()
-        {
-            Debug.Assert(_key is not null, "_key is not null");
-
-            _aes.Key = _key!;
-            _aesEncryptor = _aes.CreateEncryptor();
-        }
-
         private async Task WriteHeaderCoreAsync(bool isAsync, CancellationToken cancellationToken)
         {
             if (_headerWritten)
             {
                 return;
             }
-            Debug.Assert(_salt is not null && _passwordVerifier is not null, "Keys should have been generated before writing header");
 
             if (isAsync)
             {
@@ -323,10 +340,6 @@ namespace System.IO.Compression
                 _baseStream.Write(_salt);
                 _baseStream.Write(_passwordVerifier);
             }
-
-            // output to debug log
-            Debug.WriteLine($"Wrote salt: {BitConverter.ToString(_salt)}");
-            Debug.WriteLine($"Wrote password verifier: {BitConverter.ToString(_passwordVerifier)}");
 
             _headerWritten = true;
         }
@@ -364,20 +377,16 @@ namespace System.IO.Compression
                 Span<byte> dataSpan = buffer.Slice(processed, bytesToProcess);
                 ReadOnlySpan<byte> keystreamSpan = _keystreamBuffer.AsSpan(_keystreamOffset, bytesToProcess);
 
-                // For encryption: XOR first, then HMAC the ciphertext
                 if (_encrypting)
                 {
-                    // XOR the data with the keystream to create ciphertext
+                    // For encryption: XOR first, then HMAC the ciphertext
                     XorBytes(dataSpan, keystreamSpan);
-                    // HMAC is computed on the ciphertext (after XOR)
                     _hmac.AppendData(dataSpan);
                 }
-                // For decryption: HMAC first (on ciphertext), then XOR
                 else
                 {
-                    // HMAC is computed on the ciphertext (before XOR)
+                    // For decryption: HMAC first (on ciphertext), then XOR
                     _hmac.AppendData(dataSpan);
-                    // XOR the ciphertext with the keystream to recover plaintext
                     XorBytes(dataSpan, keystreamSpan);
                 }
 
@@ -385,15 +394,19 @@ namespace System.IO.Compression
                 processed += bytesToProcess;
             }
         }
+
         private void GenerateKeystreamBuffer()
         {
             Debug.Assert(_aesEncryptor is not null, "Cipher should have been initialized");
 
-            // Generate KeystreamBufferSize  bytes of keystream (256 blocks of 16 bytes each)
+            byte[] counterBlock = new byte[BlockSize];
+
+            // Generate KeystreamBufferSize bytes of keystream (256 blocks of 16 bytes each)
             for (int i = 0; i < KeystreamBufferSize; i += BlockSize)
             {
-                _aesEncryptor.TransformBlock(_counterBlock, 0, BlockSize, _keystreamBuffer, i);
-                IncrementCounter();
+                BinaryPrimitives.WriteUInt128LittleEndian(counterBlock, _counter);
+                _aesEncryptor.TransformBlock(counterBlock, 0, BlockSize, _keystreamBuffer, i);
+                _counter++;
             }
 
             _keystreamOffset = 0;
@@ -406,18 +419,6 @@ namespace System.IO.Compression
             for (int i = 0; i < dest.Length; i++)
             {
                 dest[i] ^= src[i];
-            }
-        }
-
-        private void IncrementCounter()
-        {
-            // WinZip AES treats the entire 16-byte block as a little-endian 128-bit integer
-            for (int i = 0; i < 16; i++)
-            {
-                if (++_counterBlock[i] != 0)
-                {
-                    break;
-                }
             }
         }
 
@@ -443,10 +444,9 @@ namespace System.IO.Compression
                 _baseStream.Write(authCode, 0, 10);
             }
 
-            Debug.WriteLine($"Wrote authentication code: {BitConverter.ToString(authCode, 0, 10)}");
-
             _authCodeValidated = true;
         }
+
         private void ThrowIfNotReadable()
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -799,7 +799,10 @@ namespace System.IO.Compression
                 _aes.Dispose();
                 _hmac?.Dispose();
 
-                if (!_leaveOpen) await _baseStream.DisposeAsync().ConfigureAwait(false);
+                if (!_leaveOpen)
+                {
+                    await _baseStream.DisposeAsync().ConfigureAwait(false);
+                }
             }
 
             _disposed = true;
@@ -830,20 +833,10 @@ namespace System.IO.Compression
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (_encrypting)
+            if (_baseStream.CanWrite)
             {
-                // First flush base stream to ensure header is written
-                if (_baseStream.CanWrite)
-                {
-                    await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-                }
+                await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
-
-            //// Finally flush base stream to ensure encrypted data is written
-            //if (_baseStream.CanWrite)
-            //{
-            //    await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-            //}
         }
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
