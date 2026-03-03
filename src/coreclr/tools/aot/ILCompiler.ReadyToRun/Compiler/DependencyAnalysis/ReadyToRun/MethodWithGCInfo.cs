@@ -276,7 +276,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
             }
 
-            if (factory.Target.Architecture is TargetArchitecture.Wasm32)
+            if (factory.Target.IsWasm)
             {
                 // All methods require an explicit signature declaration in Wasm which we materialize as a separate node,
                 // so we need to make sure this signature node is always created and marked as a dependency. 
