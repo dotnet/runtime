@@ -106,7 +106,7 @@ internal static class Entrypoints
 
         ComWrappers cw = new StrategyBasedComWrappers();
         object legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
-        if (legacyObj is not Legacy.IDacDbiInterfaceControl)
+        if (legacyObj is not Legacy.IDacDbiInterface)
         {
             *obj = IntPtr.Zero;
             return HResults.E_NOINTERFACE;

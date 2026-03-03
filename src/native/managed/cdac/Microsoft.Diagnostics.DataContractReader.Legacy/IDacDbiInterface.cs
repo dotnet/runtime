@@ -19,7 +19,7 @@ public struct DbiVersion
 [ComImport]
 [Guid("B7A6D3F5-6B46-4DD4-8AF1-0D4A2AFB98C1")]
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-public unsafe interface IDacDbiInterfaceControl
+public unsafe interface IDacDbiInterface
 {
     [PreserveSig]
     int CheckDbiVersion(DbiVersion* pVersion);

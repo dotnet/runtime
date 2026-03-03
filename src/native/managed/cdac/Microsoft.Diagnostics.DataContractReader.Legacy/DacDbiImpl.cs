@@ -6,14 +6,14 @@ using System.Runtime.InteropServices.Marshalling;
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
-public sealed unsafe class DacDbiImpl : IDacDbiInterfaceControl
+public sealed unsafe class DacDbiImpl : IDacDbiInterface
 {
-    private readonly IDacDbiInterfaceControl? _legacy;
+    private readonly IDacDbiInterface? _legacy;
 
     public DacDbiImpl(Target target, object? legacyObj)
     {
         _ = target;
-        _legacy = legacyObj as IDacDbiInterfaceControl;
+        _legacy = legacyObj as IDacDbiInterface;
     }
 
     public int CheckDbiVersion(DbiVersion* pVersion) => _legacy is not null ? _legacy.CheckDbiVersion(pVersion) : HResults.E_NOTIMPL;
