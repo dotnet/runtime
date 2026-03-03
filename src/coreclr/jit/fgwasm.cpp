@@ -1051,10 +1051,8 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 //
 // Still TODO
 // * Blocks only reachable via EH
-// * proper handling of BR_TABLE defaults
 // * tail calls (RETURN_CALL)
 // * Rethink need for BB0 (have m_end refer to end of last block in range, not start of first block after)
-// * During LaRPO formation, remember the position of the last block in the loop
 // * Compatibility of LaRPO with try region layout constraints (if any)
 //
 PhaseStatus Compiler::fgWasmControlFlow()
@@ -1133,16 +1131,20 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
         if (loop != nullptr)
         {
-            // Find the loop's lexical extent given our ordering
-            // (maybe memoize this during loop finding...)
+            // Loop bodies are contiguous in the LaRPO, so the end position
+            // is the header position plus the number of blocks in the loop.
             //
-            // Note that cursor may end up pointing at BB0
-            //
-            unsigned endCursor = cursor;
-            while ((endCursor < numBlocks) && loop->ContainsBlock(initialLayout[endCursor]))
+            unsigned endCursor = cursor + loop->NumLoopBlocks();
+            assert(endCursor <= numBlocks);
+
+#ifdef DEBUG
+            unsigned endCursorCheck = cursor;
+            while ((endCursorCheck < numBlocks) && loop->ContainsBlock(initialLayout[endCursorCheck]))
             {
-                endCursor++;
+                endCursorCheck++;
             }
+            assert(endCursor == endCursorCheck);
+#endif
 
             WasmInterval* const loopInterval = WasmInterval::NewLoop(this, block, initialLayout[endCursor]);
 
