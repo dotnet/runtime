@@ -499,22 +499,13 @@ namespace Microsoft.Win32.SafeHandles
 
         internal System.IO.FileHandleType GetFileTypeCore()
         {
-            int cachedType = _cachedFileType;
-            if (cachedType != -1)
-            {
-                return (System.IO.FileHandleType)cachedType;
-            }
-
-            // If we don't have a cached value, call FStat to get it
             int result = Interop.Sys.FStat(this, out Interop.Sys.FileStatus status);
             if (result != 0)
             {
                 throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
             }
 
-            System.IO.FileHandleType fileType = MapUnixFileTypeToFileType(status.Mode & Interop.Sys.FileTypes.S_IFMT);
-            _cachedFileType = (int)fileType;
-            return fileType;
+            return MapUnixFileTypeToFileType(status.Mode & Interop.Sys.FileTypes.S_IFMT);
         }
 
         private static System.IO.FileHandleType MapUnixFileTypeToFileType(int unixFileType)

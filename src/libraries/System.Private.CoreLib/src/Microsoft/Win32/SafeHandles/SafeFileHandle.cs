@@ -32,7 +32,14 @@ namespace Microsoft.Win32.SafeHandles
             get
             {
                 ObjectDisposedException.ThrowIf(IsClosed, this);
-                return GetFileTypeCore();
+
+                int cachedType = _cachedFileType;
+                if (cachedType == -1)
+                {
+                    cachedType = _cachedFileType = (int)GetFileTypeCore();
+                }
+
+                return (System.IO.FileHandleType)cachedType;
             }
         }
     }

@@ -255,24 +255,14 @@ namespace Microsoft.Win32.SafeHandles
 
         internal unsafe System.IO.FileHandleType GetFileTypeCore()
         {
-            int cachedType = _cachedFileType;
-            if (cachedType != -1)
-            {
-                return (System.IO.FileHandleType)cachedType;
-            }
-
             int kernelFileType = Interop.Kernel32.GetFileType(this);
-
-            System.IO.FileHandleType result = kernelFileType switch
+            return kernelFileType switch
             {
                 Interop.Kernel32.FileTypes.FILE_TYPE_CHAR => System.IO.FileHandleType.CharacterDevice,
                 Interop.Kernel32.FileTypes.FILE_TYPE_PIPE => GetPipeOrSocketType(),
                 Interop.Kernel32.FileTypes.FILE_TYPE_DISK => GetDiskBasedType(),
                 _ => System.IO.FileHandleType.Unknown
             };
-
-            _cachedFileType = (int)result;
-            return result;
         }
 
         private unsafe System.IO.FileHandleType GetPipeOrSocketType()
