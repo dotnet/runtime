@@ -160,7 +160,31 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr) => _legacy is not null ? _legacy.Hijack(vmThread, dwThreadId, pRecord, pOriginalContext, cbSizeContext, reason, pUserData, pRemoteContextAddr) : HResults.E_NOTIMPL;
 
-    public int EnumerateThreads(nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateThreads(fpCallback, pUserData) : HResults.E_NOTIMPL;
+    public int EnumerateThreads(nint fpCallback, nint pUserData)
+    {
+        const uint TS_Dead = 0x800;
+        const uint TS_Unstarted = 0x400;
+
+        IThread threadContract = _target.Contracts.Thread;
+        ThreadStoreData threadStore = threadContract.GetThreadStoreData();
+        TargetPointer currentThread = threadStore.FirstThread;
+
+        while (currentThread != TargetPointer.Null)
+        {
+            ThreadData threadData = threadContract.GetThreadData(currentThread);
+            bool isDead = (threadData.State & TS_Dead) != 0;
+            bool isUnstarted = (threadData.State & TS_Unstarted) != 0;
+
+            if (!isDead && !isUnstarted)
+            {
+                // Call native callback: void(*)(VMPTR_Thread vmThread, void* pUserData)
+                ((delegate* unmanaged<ulong, nint, void>)fpCallback)(currentThread.Value, pUserData);
+            }
+
+            currentThread = threadData.NextThread;
+        }
+        return HResults.S_OK;
+    }
 
     public int IsThreadMarkedDead(ulong vmThread, byte* pResult)
     {
