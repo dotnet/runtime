@@ -61,20 +61,20 @@ namespace System.Net.NetworkInformation
 
                 for (int i = 0; i < interfaceCount; i++)
                 {
-                    var lni = new SunOSNetworkInterface(Utf8StringMarshaller.ConvertToManaged(nii->Name)!, nii->InterfaceIndex);
-                    lni._interfaceType = (NetworkInterfaceType)nii->HardwareType;
-                    lni._speed = nii->Speed; // Note: not filled in (-1)
-                    lni._operationalStatus = (OperationalStatus)nii->OperationalState;
-                    lni._mtu = nii->Mtu;
-                    lni._supportsMulticast = nii->SupportsMulticast != 0;
+                    var sni = new SunOSNetworkInterface(Utf8StringMarshaller.ConvertToManaged(nii->Name)!, nii->InterfaceIndex);
+                    sni._interfaceType = (NetworkInterfaceType)nii->HardwareType;
+                    sni._speed = nii->Speed; // Note: not filled in (-1)
+                    sni._operationalStatus = (OperationalStatus)nii->OperationalState;
+                    sni._mtu = nii->Mtu;
+                    sni._supportsMulticast = nii->SupportsMulticast != 0;
 
                     if (nii->NumAddressBytes > 0)
                     {
-                        lni._physicalAddress = new PhysicalAddress(new ReadOnlySpan<byte>(nii->AddressBytes, nii->NumAddressBytes).ToArray());
+                        sni._physicalAddress = new PhysicalAddress(new ReadOnlySpan<byte>(nii->AddressBytes, nii->NumAddressBytes).ToArray());
                     }
 
-                    interfaces[i] = lni;
-                    interfacesByIndex.Add(nii->InterfaceIndex, lni);
+                    interfaces[i] = sni;
+                    interfacesByIndex.Add(nii->InterfaceIndex, sni);
                     nii++;
                 }
 
@@ -86,9 +86,9 @@ namespace System.Net.NetworkInformation
                         address.ScopeId = ai->InterfaceIndex;
                     }
 
-                    if (interfacesByIndex.TryGetValue(ai->InterfaceIndex, out SunOSNetworkInterface? lni))
+                    if (interfacesByIndex.TryGetValue(ai->InterfaceIndex, out SunOSNetworkInterface? sni))
                     {
-                        lni.AddAddress(address, ai->PrefixLength);
+                        sni.AddAddress(address, ai->PrefixLength);
                     }
 
                     ai++;
