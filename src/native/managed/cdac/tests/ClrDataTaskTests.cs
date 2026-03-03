@@ -39,6 +39,7 @@ public unsafe class ClrDataTaskTests
 
         Assert.Equal(HResults.S_OK, hr);
         Assert.NotNull(appDomain);
-        Assert.IsType<ClrDataAppDomain>(appDomain);
+        ClrDataAppDomain clrAppDomain = Assert.IsType<ClrDataAppDomain>(appDomain);
+        Assert.Equal(new TargetPointer(expectedAppDomain), clrAppDomain.Address);
     }
 }
