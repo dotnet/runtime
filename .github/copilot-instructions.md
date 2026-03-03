@@ -1,5 +1,5 @@
 ---
-excludeAgent: code-review-agent
+excludeAgent: code-review
 ---
 
 **Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**

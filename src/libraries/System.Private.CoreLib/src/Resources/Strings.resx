@@ -774,6 +774,9 @@
   <data name="Arg_SetMethNotFnd" xml:space="preserve">
     <value>Property set method not found.</value>
   </data>
+  <data name="Arg_SpanMustHaveElementsForColor" xml:space="preserve">
+    <value>Span must have at least 4 elements for color components.</value>
+  </data>
   <data name="Arg_StackOverflowException" xml:space="preserve">
     <value>Operation caused a stack overflow.</value>
   </data>

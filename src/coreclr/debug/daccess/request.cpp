@@ -3846,7 +3846,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
 HRESULT
 ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyncBlockCleanupData *syncBlockCData)
 {
-    if (syncBlock == 0 || syncBlockCData == NULL)
+    if (syncBlockCData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
@@ -3884,6 +3884,10 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
             syncBlockCData->blockCCW = (CLRDATA_ADDRESS) dac_cast<TADDR>(pBlock->m_pInteropInfo->GetCCW());
 #endif // FEATURE_COMINTEROP
     }
+
+    // Maintain backwards compatibility with old versions of CLRMD. They will not properly iterate, but at least it will not infinite loop.
+    if (syncBlock == 0)
+        return E_INVALIDARG;
 
     SOSDacLeave();
     return hr;

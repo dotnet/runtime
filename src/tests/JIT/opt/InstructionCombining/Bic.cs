@@ -115,6 +115,16 @@ namespace TestBic
                 fail = true;
             }
 
+            if (BicsUnsignedStaticBranchLe() != 0)
+            {
+                fail = true;
+            }
+
+            if (BicsUnsignedStaticBranchGt() == 0)
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -315,6 +325,39 @@ namespace TestBic
         {
             //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return (a & ~b) <= 0;
+        }
+
+        static uint s_a = 0xFFFFFFFFu;
+        static uint s_b = 0x12345678u;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int BicsUnsignedStaticBranchLe()
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, eq
+            uint left = s_a & ~s_b;
+            uint right = (ushort)(s_b % 1);
+
+            if (left <= right)
+            {
+                return 1;
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int BicsUnsignedStaticBranchGt()
+        {
+            //ARM64-FULL-LINE: bics {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, ne
+            uint left = s_a & ~s_b;
+            uint right = (ushort)(s_b % 1);
+
+            if (left > right)
+            {
+                return 1;
+            }
+            return 0;
         }
     }
 }

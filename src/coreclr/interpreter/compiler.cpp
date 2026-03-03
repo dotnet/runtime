@@ -906,6 +906,21 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 
     *ip++ = opcode;
 
+
+    if (opcode == INTOP_DEBUG_METHOD_ENTER)
+    {
+        // Save pointer to the operand slot (startIp[1]) so we can patch it
+        // with the first seq point's native offset once it's emitted.
+        m_pDebugMethodEnterSeqPointSlot = startIp + 1;
+    }
+    else if ((opcode == INTOP_DEBUG_SEQ_POINT) && (m_pDebugMethodEnterSeqPointSlot != nullptr))
+    {
+        // Patch the INTOP_DEBUG_METHOD_ENTER with the native offset of the first emitted sequence point,
+        // so that the debugger can recognize it as the method entry point.
+        *m_pDebugMethodEnterSeqPointSlot = ins->nativeOffset;
+        m_pDebugMethodEnterSeqPointSlot = nullptr;
+    }
+
     // Set to true if the instruction was completely reverted.
     bool isReverted = false;
 
@@ -7854,6 +7869,12 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         AddIns(INTOP_HALT);
 #endif
 
+    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+    {
+        InterpInst *methodEnter = AddIns(INTOP_DEBUG_METHOD_ENTER);
+        methodEnter->data[0] = -1; // placeholder, patched during emit when first seq point is found
+    }
+
     // We need to always generate this opcode because even if we have no IL locals, we may have
     //  global vars which contain managed pointers or interior pointers
     m_pInitLocalsIns = AddIns(INTOP_INITLOCALS);
@@ -8185,6 +8206,12 @@ retry_emit:
         switch (opcode)
         {
             case CEE_NOP:
+                // In debug builds, emit a sequence point so the debugger can bind
+                // breakpoints on IL offsets like opening `{` of a method body.
+                if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+                {
+                    AddIns(INTOP_DEBUG_SEQ_POINT);
+                }
                 m_ip++;
                 break;
             case CEE_LDC_I4_M1:
@@ -9300,6 +9327,13 @@ retry_emit:
                     EmitBranch(INTOP_BR, 5 + offset);
                     linkBBlocks = false;
                 }
+                else if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+                {
+                    // In debug builds, emit a sequence point for branches with offset 0 to create sequence point.
+                    // This allows debugger stepping to stop at "return;" statements that compile to
+                    // "br <next_instruction>" followed by "ret".
+                    AddIns(INTOP_DEBUG_SEQ_POINT);
+                }
                 m_ip += 5;
                 break;
             }
@@ -9310,6 +9344,13 @@ retry_emit:
                 {
                     EmitBranch(INTOP_BR, 2 + (int8_t)m_ip [1]);
                     linkBBlocks = false;
+                }
+                else if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
+                {
+                    // In debug builds, emit a sequence point for branches with offset 0 to create sequence point.
+                    // This allows debugger stepping to stop at "return;" statements that compile to
+                    // "br.s <next_instruction>" followed by "ret".
+                    AddIns(INTOP_DEBUG_SEQ_POINT);
                 }
                 m_ip += 2;
                 break;

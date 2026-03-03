@@ -12,7 +12,7 @@ const modulesUniqueQuery = queryIndex > 0 ? scriptUrlQuery.substring(queryIndex)
 const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 
-export async function validateWasmFeatures(): Promise<void> {
+export async function validateEngineFeatures(): Promise<void> {
     dotnetAssert.check(await exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     dotnetAssert.check(await simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     if (ENVIRONMENT_IS_NODE) {
