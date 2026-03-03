@@ -605,7 +605,7 @@ private:
 
                 CORINFO_METHOD_HANDLE   method                 = call->gtLateDevirtualizationInfo->methodHnd;
                 CORINFO_CONTEXT_HANDLE  context                = call->gtLateDevirtualizationInfo->exactContextHnd;
-                InlineContext*          inlinersContext        = call->gtLateDevirtualizationInfo->inlinersContext;
+                InlineContext*          inlinersContext        = call->gtInlineContext;
                 CORINFO_RESOLVED_TOKEN* pResolvedToken         = &call->gtLateDevirtualizationInfo->resolvedToken;
                 unsigned                methodFlags            = 0;
                 const bool              isLateDevirtualization = true;
@@ -641,7 +641,8 @@ private:
                         // we can inline it directly without creating a RET_EXPR.
                         if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
-                            Statement* stmt = m_compiler->gtNewStmt(call);
+                            DebugInfo  di(call->gtInlineContext, call->gtLateDevirtualizationInfo->ilLocation);
+                            Statement* stmt = m_compiler->gtNewStmt(call, di);
                             m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
                             if (m_firstNewStmt == nullptr)
                             {
@@ -1535,7 +1536,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     Statement*   iciStmt  = pInlineInfo->iciStmt;
     BasicBlock*  iciBlock = pInlineInfo->iciBlock;
 
-    noway_assert(iciBlock->bbStmtList != nullptr);
+    noway_assert(iciBlock->firstStmt() != nullptr);
     noway_assert(iciStmt->GetRootNode() != nullptr);
     assert(iciStmt->GetRootNode() == iciCall);
     noway_assert(iciCall->OperIs(GT_CALL));
@@ -1583,7 +1584,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         if (InlineeCompiler->fgFirstBB->KindIs(BBJ_RETURN))
         {
             // Inlinee contains just one BB. So just insert its statement list to topBlock.
-            if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
+            if (InlineeCompiler->fgFirstBB->firstStmt() != nullptr)
             {
                 JITDUMP("\nInserting inlinee code into " FMT_BB "\n", iciBlock->bbNum);
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
