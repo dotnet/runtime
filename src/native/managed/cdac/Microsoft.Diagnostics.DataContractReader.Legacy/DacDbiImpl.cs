@@ -15,6 +15,20 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
     private readonly Target _target;
     private readonly IDacDbiInterface? _legacy;
 
+    // Call IStringHolder::AssignCopy(const WCHAR* psz).
+    // IStringHolder vtable: slot 0 = AssignCopy (no virtual destructor).
+    private static int StringHolderAssignCopy(nint pStringHolder, string value)
+    {
+        fixed (char* pStr = value)
+        {
+            nint vtable = *(nint*)pStringHolder;
+            // On Linux x64: default calling convention, this is first arg.
+            // On Windows x64: same (x64 has uniform calling convention).
+            var assignCopy = (delegate* unmanaged<nint, char*, int>)(*(nint*)vtable);
+            return assignCopy(pStringHolder, pStr);
+        }
+    }
+
     public DacDbiImpl(Target target, object? legacyObj)
     {
         _target = target;
@@ -112,15 +126,45 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return HResults.S_OK;
     }
 
-    public int GetAppDomainFullName(ulong vmAppDomain, nint pStrName) => _legacy is not null ? _legacy.GetAppDomainFullName(vmAppDomain, pStrName) : HResults.E_NOTIMPL;
+    public int GetAppDomainFullName(ulong vmAppDomain, nint pStrName)
+    {
+        string name = _target.Contracts.Loader.GetAppDomainFriendlyName();
+        return StringHolderAssignCopy(pStrName, name);
+    }
 
     public int GetModuleSimpleName(ulong vmModule, nint pStrFilename) => _legacy is not null ? _legacy.GetModuleSimpleName(vmModule, pStrFilename) : HResults.E_NOTIMPL;
 
-    public int GetAssemblyPath(ulong vmAssembly, nint pStrFilename, int* pResult) => _legacy is not null ? _legacy.GetAssemblyPath(vmAssembly, pStrFilename, pResult) : HResults.E_NOTIMPL;
+    public int GetAssemblyPath(ulong vmAssembly, nint pStrFilename, int* pResult)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle mh = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
+        string path = loader.GetPath(mh);
+        int hr = StringHolderAssignCopy(pStrFilename, path ?? string.Empty);
+        if (hr < 0) return hr;
+        *pResult = string.IsNullOrEmpty(path) ? 0 : 1;
+        return HResults.S_OK;
+    }
 
     public int ResolveTypeReference(nint pTypeRefInfo, nint pTargetRefInfo) => _legacy is not null ? _legacy.ResolveTypeReference(pTypeRefInfo, pTargetRefInfo) : HResults.E_NOTIMPL;
 
-    public int GetModulePath(ulong vmModule, nint pStrFilename, int* pResult) => _legacy is not null ? _legacy.GetModulePath(vmModule, pStrFilename, pResult) : HResults.E_NOTIMPL;
+    public int GetModulePath(ulong vmModule, nint pStrFilename, int* pResult)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle mh = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+        string path = loader.GetPath(mh);
+        if (!string.IsNullOrEmpty(path))
+        {
+            int hr = StringHolderAssignCopy(pStrFilename, path);
+            if (hr < 0) return hr;
+            *pResult = 1; // TRUE
+        }
+        else
+        {
+            StringHolderAssignCopy(pStrFilename, string.Empty);
+            *pResult = 0; // FALSE
+        }
+        return HResults.S_OK;
+    }
 
     public int GetMetadata(ulong vmModule, nint pTargetBuffer) => _legacy is not null ? _legacy.GetMetadata(vmModule, pTargetBuffer) : HResults.E_NOTIMPL;
 
