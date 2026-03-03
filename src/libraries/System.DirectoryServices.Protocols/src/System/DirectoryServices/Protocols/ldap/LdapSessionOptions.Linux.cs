@@ -6,7 +6,6 @@ using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Diagnostics;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -18,13 +17,13 @@ namespace System.DirectoryServices.Protocols
         private void InitializeServerCertificateDelegate()
         {
             _serverCertificateRoutine = new LDAP_TLS_CONNECT_CB(SetOpenSslCallback);
+            _openSslVerifyRoutine ??= new Interop.OpenSsl.VerifyCallback(ProcessServerCertificate);
         }
 
         static partial void PALCertFreeCRLContext(IntPtr certPtr);
 
         private int SetOpenSslCallback(IntPtr ld, IntPtr ssl, IntPtr ctx, IntPtr arg)
         {
-            _openSslVerifyRoutine ??= new Interop.OpenSsl.VerifyCallback(ProcessServerCertificate);
             Interop.OpenSsl.SSL_set_verify(ssl, Interop.OpenSsl.SSL_VERIFY_PEER, _openSslVerifyRoutine);
 
             return 1; // continue the handshake
@@ -49,7 +48,6 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                Console.WriteLine($"Cert: {cert.Subject}, Depth: {depth}");
                 return _serverCertificateDelegate(_connection, cert) ? 1 : 0;
             }
             catch
@@ -172,23 +170,9 @@ namespace System.DirectoryServices.Protocols
                 if (value != null)
                 {
                     IntPtr functionPointer = Marshal.GetFunctionPointerForDelegate(_serverCertificateRoutine);
-                    //int error = LdapPal.SetServerCertOption(_connection._ldapHandle, LdapOption.LDAP_OPT_X_TLS_CONNECT_CB, functionPointer);
                     int error = Interop.Ldap.ldap_set_option_ptr_value(_connection._ldapHandle, LdapOption.LDAP_OPT_X_TLS_CONNECT_CB, functionPointer);
 
                     ErrorChecking.CheckAndSetLdapError(error);
-
-                    IntPtr expected = Marshal.GetFunctionPointerForDelegate(_serverCertificateRoutine);
-
-                    IntPtr actual = IntPtr.Zero;
-                    int getErr = Interop.Ldap.ldap_get_option_ptr(_connection._ldapHandle, LdapOption.LDAP_OPT_X_TLS_CONNECT_CB, ref actual);
-
-                    // If you have ErrorChecking/CheckAndSetLdapError, use it
-                    ErrorChecking.CheckAndSetLdapError(getErr);
-
-                    if (actual != expected)
-                    {
-                        throw new Exception($"TLS connect cb mismatch. expected={expected}, actual={actual}");
-                    }
                 }
 
                 _serverCertificateDelegate = value;

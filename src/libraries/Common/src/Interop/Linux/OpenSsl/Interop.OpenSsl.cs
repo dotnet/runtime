@@ -25,23 +25,25 @@ internal static partial class Interop
             int mode,
             VerifyCallback callback);
 
+        // Reserved for future use
         [LibraryImport(LibSsl, EntryPoint = "SSL_CTX_set_verify")]
         internal static partial void SSL_CTX_set_verify(
             IntPtr ctx,
             int mode,
             VerifyCallback callback);
 
-        [LibraryImport(LibSsl, EntryPoint = "X509_STORE_CTX_get_current_cert")]
+        [LibraryImport(LibCrypto, EntryPoint = "X509_STORE_CTX_get_current_cert")]
         internal static partial IntPtr X509_STORE_CTX_get_current_cert(IntPtr ctx);
 
-        [LibraryImport(LibSsl, EntryPoint = "X509_STORE_CTX_get_error_depth")]
+        [LibraryImport(LibCrypto, EntryPoint = "X509_STORE_CTX_get_error_depth")]
         internal static partial int X509_STORE_CTX_get_error_depth(IntPtr ctx);
 
-        [LibraryImport(LibSsl, EntryPoint = "X509_STORE_CTX_get_error")]
+        // Reserved for future use
+        [LibraryImport(LibCrypto, EntryPoint = "X509_STORE_CTX_get_error")]
         internal static partial int X509_STORE_CTX_get_error(IntPtr ctx);
 
         // int i2d_X509(X509 *a, unsigned char **out);
-        [LibraryImport(LibSsl, EntryPoint = "i2d_X509")]
+        [LibraryImport(LibCrypto, EntryPoint = "i2d_X509")]
         internal static partial int i2d_X509(IntPtr x509, ref IntPtr pp);
 
         // void CRYPTO_free(void *ptr, const char *file, int line);

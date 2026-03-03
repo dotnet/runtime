@@ -165,8 +165,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_ptr(ConnectionHandle ldapHandle, LdapOption option, ref IntPtr inValue);
 
-        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
-        public static partial int ldap_set_option_ptr(IntPtr ldapHandle, LdapOption option, ref IntPtr inValue);
+        //[LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
+        //public static partial int ldap_set_option_ptr(IntPtr ldapHandle, LdapOption option, ref IntPtr inValue);
 
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         internal static partial int ldap_set_option_ptr_value(ConnectionHandle ldapHandle, LdapOption option, IntPtr inValue);

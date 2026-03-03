@@ -369,3 +369,6 @@ test:.cs
 *.tempLog.xml
 *.testResults.xml
 *.testStats.csv
+
+# Patch files
+*.patch
