@@ -1051,7 +1051,6 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 //
 // Still TODO
 // * Blocks only reachable via EH
-// * proper handling of BR_TABLE defaults
 // * tail calls (RETURN_CALL)
 // * Rethink need for BB0 (have m_end refer to end of last block in range, not start of first block after)
 // * Compatibility of LaRPO with try region layout constraints (if any)
