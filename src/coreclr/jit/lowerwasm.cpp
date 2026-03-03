@@ -167,7 +167,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
     ContainCheckBinary(binOp);
 
-    if (binOp->gtOverflow())
+    if (binOp->gtOverflowEx())
     {
         binOp->gtGetOp1()->SetMultiplyUsed();
         binOp->gtGetOp2()->SetMultiplyUsed();

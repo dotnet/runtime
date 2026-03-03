@@ -1054,7 +1054,7 @@ void CodeGen::genFloatToFloatCast(GenTree* tree)
 //
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
-    if (treeNode->gtOverflow())
+    if (treeNode->gtOverflowEx())
     {
         genCodeForBinaryOverflow(treeNode);
         return;
@@ -2610,11 +2610,12 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 //
 void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
-    GenTree*  dstAddr     = cpObjNode->Addr();
-    GenTree*  source      = cpObjNode->Data();
-    var_types srcAddrType = TYP_BYREF;
-    regNumber dstReg      = GetMultiUseOperandReg(dstAddr);
-    unsigned  dstOffset   = 0;
+    GenTree*  dstAddr      = cpObjNode->Addr();
+    GenTree*  source       = cpObjNode->Data();
+    var_types srcAddrType  = TYP_BYREF;
+    regNumber dstReg       = GetMultiUseOperandReg(dstAddr);
+    unsigned  dstOffset    = 0;
+    bool      doNullChecks = ((cpObjNode->gtFlags & GTF_EXCEPT) != 0) && cpObjNode->OperMayThrow(m_compiler);
     regNumber srcReg;
     unsigned  srcOffset;
 
@@ -2628,7 +2629,10 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         srcReg      = GetMultiUseOperandReg(source);
         srcOffset   = 0;
 
-        genEmitNullCheck(srcReg);
+        if (doNullChecks)
+        {
+            genEmitNullCheck(srcReg);
+        }
     }
     else
     {
@@ -2657,7 +2661,10 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     emitter* emit = GetEmitter();
 
-    genEmitNullCheck(dstReg);
+    if (doNullChecks)
+    {
+        genEmitNullCheck(dstReg);
+    }
 
     // TODO-WASM: Remove the need to do this somehow
     // The dst and src may be on the evaluation stack, but we can't reliably use them, so drop them.

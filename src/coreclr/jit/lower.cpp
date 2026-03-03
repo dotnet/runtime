@@ -3974,7 +3974,7 @@ bool Lowering::IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive
 //
 void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
 {
-    assert(node->OperIsPutArg() || node->OperIsFieldList());
+    assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
 
     if (node->OperIsFieldList())
     {
@@ -3985,10 +3985,26 @@ void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
             MovePutArgUpToCall(call, operand.GetNode());
         }
     }
-    else
+    else if (node->OperIsPutArg())
     {
         GenTree* operand = node->AsOp()->gtGetOp1();
         JITDUMP("Checking if we can move operand of GT_PUTARG_* node:\n");
+        DISPTREE(operand);
+        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsCFGCallArgInvariantInRange(operand, call))
+        {
+            JITDUMP("...yes, moving to after validator call\n");
+            BlockRange().Remove(operand);
+            BlockRange().InsertBefore(call, operand);
+        }
+        else
+        {
+            JITDUMP("...no, operand has side effects or is not invariant\n");
+        }
+    }
+    else
+    {
+        GenTree* operand = node;
+        JITDUMP("Checking if we can move node:\n");
         DISPTREE(operand);
         if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsCFGCallArgInvariantInRange(operand, call))
         {
@@ -4024,14 +4040,14 @@ void Lowering::MovePutArgNodesUpToCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* node = arg.GetEarlyNode();
-        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
         MovePutArgUpToCall(call, node);
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         GenTree* node = arg.GetLateNode();
-        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        assert(!HAS_FIXED_REGISTER_SET || node->OperIsPutArg() || node->OperIsFieldList());
         MovePutArgUpToCall(call, node);
     }
 }
@@ -8011,6 +8027,13 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         {
             return next;
         }
+    }
+#endif
+
+#if defined(TARGET_WASM)
+    if (node->OperIs(GT_ADD))
+    {
+        LowerBinaryArithmetic(node);
     }
 #endif
 
