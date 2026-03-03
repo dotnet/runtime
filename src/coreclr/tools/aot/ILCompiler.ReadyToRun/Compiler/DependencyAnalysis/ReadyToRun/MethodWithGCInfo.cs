@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.JitInterface;
 using Internal.Pgo;
 using Internal.Text;
@@ -273,6 +274,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (ISymbolNode node in _fixups)
             {
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
+            }
+
+            if (factory.Target.Architecture is TargetArchitecture.Wasm32)
+            {
+                // All methods require an explicit signature declaration in Wasm which we materialize as a separate node,
+                // so we need to make sure this signature node is always created and marked as a dependency. 
+                WasmTypeNode signature = factory.WasmTypeNode(_method);
+                dependencyList.Add(signature, "wasmMethodsRequireSignature");
             }
 
             if (_nonRelocationDependencies != null)

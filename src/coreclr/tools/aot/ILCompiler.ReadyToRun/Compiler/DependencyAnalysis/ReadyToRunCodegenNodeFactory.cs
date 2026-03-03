@@ -1086,5 +1086,11 @@ namespace ILCompiler.DependencyAnalysis
             WasmFuncType funcType = WasmFuncType.FromCorInfoSignature(types);
             return _wasmTypeNodes.GetOrAdd(funcType);
         }
+
+        public WasmTypeNode WasmTypeNode(MethodDesc method)
+        {
+            WasmFuncType funcType = WasmLowering.GetSignature(method);
+            return _wasmTypeNodes.GetOrAdd(funcType);
+        }
     }
 }
