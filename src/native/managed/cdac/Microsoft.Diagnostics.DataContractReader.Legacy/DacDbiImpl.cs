@@ -30,7 +30,23 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int IsLeftSideInitialized(int* pResult) => _legacy is not null ? _legacy.IsLeftSideInitialized(pResult) : HResults.E_NOTIMPL;
 
-    public int GetAppDomainFromId(uint appdomainId, ulong* pRetVal) => _legacy is not null ? _legacy.GetAppDomainFromId(appdomainId, pRetVal) : HResults.E_NOTIMPL;
+    public int GetAppDomainFromId(uint appdomainId, ulong* pRetVal)
+    {
+        // In .NET Core (single AppDomain), the only valid appdomainId is DefaultADID=1.
+        // Return the global AppDomain pointer.
+        TargetPointer appDomain = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        *pRetVal = appDomain.Value;
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong legacyResult;
+            int legacyHr = _legacy.GetAppDomainFromId(appdomainId, &legacyResult);
+            Debug.Assert(legacyHr == HResults.S_OK);
+            Debug.Assert(legacyResult == *pRetVal, $"GetAppDomainFromId mismatch: cDAC={*pRetVal:x} legacy={legacyResult:x}");
+        }
+#endif
+        return HResults.S_OK;
+    }
 
     public int GetAppDomainId(ulong vmAppDomain, uint* pRetVal)
     {
