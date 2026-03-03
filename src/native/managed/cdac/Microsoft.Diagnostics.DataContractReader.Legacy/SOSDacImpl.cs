@@ -1760,8 +1760,60 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetJitHelperFunctionName(ip, count, name, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetJitManagerList(uint count, void* managers, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetJitManagerList(count, managers, pNeeded) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetJitManagerList(uint count, DacpJitManagerInfo* managers, uint* pNeeded)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (managers is not null)
+            {
+                if (count >= 1)
+                {
+                    *managers = default;
+                    Contracts.JitManagerInfo jitManagerInfo = _target.Contracts.ExecutionManager.GetEEJitManagerInfo();
+                    managers->managerAddr = jitManagerInfo.ManagerAddress.ToClrDataAddress(_target);
+                    managers->codeType = jitManagerInfo.CodeType;
+                    managers->ptrHeapList = jitManagerInfo.HeapListAddress.ToClrDataAddress(_target);
+                }
+            }
+            else if (pNeeded is not null)
+            {
+                *pNeeded = 1;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            if (managers is not null)
+            {
+                DacpJitManagerInfo managerLocal = default;
+                int hrLocal = _legacyImpl.GetJitManagerList(count, &managerLocal, null);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (hr == HResults.S_OK && count >= 1)
+                {
+                    Debug.Assert(managers->managerAddr == managerLocal.managerAddr);
+                    Debug.Assert(managers->codeType == managerLocal.codeType);
+                    Debug.Assert(managers->ptrHeapList == managerLocal.ptrHeapList);
+                }
+            }
+            else
+            {
+                uint neededLocal;
+                int hrLocal = _legacyImpl.GetJitManagerList(0, null, &neededLocal);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (hr == HResults.S_OK && pNeeded is not null)
+                {
+                    Debug.Assert(*pNeeded == neededLocal);
+                }
+            }
+        }
+#endif
+        return hr;
+    }
 
     private bool IsJumpRel64(TargetPointer pThunk)
         => 0x48 == _target.Read<byte>(pThunk) &&
