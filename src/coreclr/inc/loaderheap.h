@@ -18,6 +18,9 @@
 #include "ex.h"
 #include "executableallocator.h"
 
+// Forward declaration for cDAC data exposure
+template<typename T> struct cdac_data;
+
 //==============================================================================
 // Interface used to back out loader heap allocations.
 //==============================================================================
@@ -176,6 +179,7 @@ enum class LoaderHeapImplementationKind
 
 class UnlockedLoaderHeapBaseTraversable
 {
+    friend struct cdac_data<UnlockedLoaderHeapBaseTraversable>;
 protected:
 #ifdef DACCESS_COMPILE
     UnlockedLoaderHeapBaseTraversable() {}
@@ -199,6 +203,12 @@ typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase
 protected:
     // Linked list of ClrVirtualAlloc'd pages
     PTR_LoaderHeapBlock m_pFirstBlock;
+};
+
+template<>
+struct cdac_data<UnlockedLoaderHeapBaseTraversable>
+{
+    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock);
 };
 
 //===============================================================================
