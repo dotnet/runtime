@@ -1288,7 +1288,7 @@ bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool o
         return true;
     }
 
-#if !defined(TARGET_64BIT)
+#if defined(TARGET_X86) || defined(TARGET_ARM)
     if (varTypeIsFloating(fromType) && varTypeIsLong(toType))
     {
         return true;
@@ -1302,7 +1302,7 @@ bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool o
         return true;
 #endif // TARGET_X86
     }
-#endif // !TARGET_64BIT
+#endif // TARGET_X86 || TARGET_ARM
 
     return false;
 }
