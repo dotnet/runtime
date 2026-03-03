@@ -5537,9 +5537,12 @@ ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const B
         return blockPred->bbAssertionOut;
     }
 
-    if (blockPred->GetUniqueSucc() == block)
+    for (BasicBlock* const pred : block->PredBlocks())
     {
-        return blockPred->bbAssertionOut;
+        if (pred == blockPred)
+        {
+            return blockPred->bbAssertionOut;
+        }
     }
     return BitVecOps::MakeEmpty(apTraits);
 }
