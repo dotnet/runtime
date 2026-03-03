@@ -22,12 +22,22 @@ namespace System.Net.Security
         internal static readonly bool s_ktlsEnabled =
             Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SECURITY_KTLS") == "1";
 
+        // DirectOpenSSL mode: use socket BIO (SSL_set_fd) for OpenSSL I/O but
+        // do NOT enable kTLS offload. This measures the overhead of SslStream's
+        // memory-BIO abstraction layer vs direct OpenSSL socket I/O.
+        internal static readonly bool s_directOpenSslEnabled =
+            Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_SECURITY_DIRECT_OPENSSL") == "1";
+
         private bool _useKtls;
 
         // When kTLS TX is active, writes bypass SSL_write and use Socket directly
         // (kernel encrypts transparently on send).
         private bool _ktlsTx;
         private bool _ktlsRx;
+
+        // On kTLS RX sockets, non-application TLS records (NewSessionTicket,
+        // KeyUpdate) cause recv to fail with EIO. We catch the SocketException
+        // and fall back to SSL_read to consume the control record.
 
         // Buffer for peek-based socket readiness notification. A 1-byte MSG_PEEK
         // recv waits via epoll on non-blocking sockets. Used during handshake
@@ -36,7 +46,7 @@ namespace System.Net.Security
 
         static SslStream()
         {
-            System.Console.WriteLine($"kTLS Enabled: {s_ktlsEnabled}");
+            System.Console.WriteLine($"kTLS Enabled: {s_ktlsEnabled}, DirectOpenSSL Enabled: {s_directOpenSslEnabled}");
         }
 #endif
 
@@ -345,9 +355,9 @@ namespace System.Net.Security
                 }
 #endif // TARGET_APPLE
 
-                // kTLS path: use socket BIO for direct kernel TLS offload
+                // kTLS / DirectOpenSSL path: use socket BIO for direct OpenSSL I/O
 #if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
-                if (s_ktlsEnabled && reAuthenticationData == null && OperatingSystem.IsLinux() && InnerStream is NetworkStream ns)
+                if ((s_ktlsEnabled || s_directOpenSslEnabled) && reAuthenticationData == null && OperatingSystem.IsLinux() && InnerStream is NetworkStream ns)
                 {
                     await DoKtlsHandshakeAsync<TIOAdapter>(ns.Socket, cancellationToken).ConfigureAwait(false);
                     return;
@@ -496,7 +506,7 @@ namespace System.Net.Security
                 socket.Blocking = false;
             }
 
-            SafeSslHandle sslHandle = Interop.OpenSsl.AllocateSslHandle(_sslAuthenticationOptions, fd);
+            SafeSslHandle sslHandle = Interop.OpenSsl.AllocateSslHandle(_sslAuthenticationOptions, fd, enableKtls: s_ktlsEnabled);
             _securityContext = sslHandle;
 
             while (true)
@@ -507,7 +517,8 @@ namespace System.Net.Security
                 {
                     _ktlsTx = Interop.Ssl.SslGetKtlsSend(sslHandle) != 0;
                     _ktlsRx = Interop.Ssl.SslGetKtlsRecv(sslHandle) != 0;
-                    System.Console.WriteLine($"kTLS handshake completed: kTLS recv: {(_ktlsRx ? 1 : 0)}, kTLS send: {(_ktlsTx ? 1 : 0)}");
+                    string mode = s_ktlsEnabled ? "kTLS" : "DirectOpenSSL";
+                    System.Console.WriteLine($"{mode} handshake completed: kTLS recv: {(_ktlsRx ? 1 : 0)}, kTLS send: {(_ktlsTx ? 1 : 0)}");
                     sslHandle.MarkHandshakeCompleted();
                     break;
                 }
@@ -518,9 +529,9 @@ namespace System.Net.Security
                 }
                 else if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE)
                 {
-                    // Wait for socket writability. Socket doesn't expose an async writability
-                    // wait, but WANT_WRITE during handshake is short-lived.
-                    await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                    Debug.Fail("WANT_WRITE during kTLS handshake was not expected to occur in practice.");
+                    socket.Poll(1_000_000, SelectMode.SelectWrite);
+                    cancellationToken.ThrowIfCancellationRequested();
                 }
                 else
                 {
@@ -549,6 +560,162 @@ namespace System.Net.Security
             // Capture errno immediately - any subsequent P/Invoke with SetLastError=true will overwrite it.
             errno = Interop.Sys.GetLastErrorInfo().Error;
             return ret;
+        }
+
+        private async ValueTask<int> KtlsSocketReadAsync<TIOAdapter>(Socket socket, SafeSslHandle sslHandle, Memory<byte> buffer, CancellationToken cancellationToken)
+            where TIOAdapter : IReadWriteAdapter
+        {
+            // kTLS RX: the kernel decrypts application data transparently, so
+            // plain recv (via Socket.ReceiveAsync) returns decrypted plaintext.
+            // Non-application records (NewSessionTicket, KeyUpdate) cause recv
+            // to fail with EIO (mapped to SocketException). This happens 1-2
+            // times per TLS 1.3 connection; we catch the exception and fall
+            // back to SSL_read to consume the control record.
+
+            bool useReadAhead = buffer.Length < ReadBufferSize;
+
+            if (useReadAhead)
+            {
+                _buffer.EnsureAvailableSpace(ReadBufferSize);
+            }
+
+            while (true)
+            {
+                Memory<byte> readTarget = useReadAhead ? _buffer.AvailableMemory : buffer;
+
+                int ret;
+                try
+                {
+                    ret = await socket.ReceiveAsync(readTarget, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                }
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.SocketError)
+                {
+                    // EIO from kTLS — a non-application TLS record (e.g.
+                    // NewSessionTicket, KeyUpdate) is at the head of the queue.
+                    // SSL_read can process it via its internal recvmsg call.
+                    ret = TryKtlsRead(sslHandle, readTarget, out Interop.Ssl.SslErrorCode error, out Interop.Error errno);
+                    if (ret > 0)
+                    {
+                        // SSL_read returned application data after processing
+                        // the control record — fall through to handle it.
+                    }
+                    else if (IsKtlsWantRead(error, errno))
+                    {
+                        // Control record consumed, no app data yet — retry.
+                        continue;
+                    }
+                    else if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN)
+                    {
+                        return 0;
+                    }
+                    else
+                    {
+                        throw new IOException(SR.net_io_decrypt, Interop.OpenSsl.GetSslError(ret, error));
+                    }
+                }
+
+                if (ret == 0)
+                {
+                    return 0;
+                }
+
+                if (useReadAhead)
+                {
+                    _buffer.Commit(ret);
+
+                    // No fill loop needed: unlike SSL_read which returns one
+                    // TLS record per call, plain recv() on a kTLS socket
+                    // already returns all available decrypted data in one call.
+
+                    _buffer.OnDecrypted(0, ret, ret);
+
+                    return CopyDecryptedData(buffer);
+                }
+
+                return ret;
+            }
+        }
+
+        private async ValueTask<int> KtlsSslReadAsync<TIOAdapter>(Socket socket, SafeSslHandle sslHandle, Memory<byte> buffer, CancellationToken cancellationToken)
+            where TIOAdapter : IReadWriteAdapter
+        {
+            // kTLS without RX offload: use SSL_read with MSG_PEEK wait.
+            bool useReadAhead = buffer.Length < ReadBufferSize;
+
+            if (useReadAhead)
+            {
+                _buffer.EnsureAvailableSpace(ReadBufferSize);
+            }
+
+            while (true)
+            {
+                Memory<byte> readTarget = useReadAhead ? _buffer.AvailableMemory : buffer;
+                int ret = TryKtlsRead(sslHandle, readTarget, out Interop.Ssl.SslErrorCode error, out Interop.Error errno);
+
+                if (ret > 0)
+                {
+                    if (useReadAhead)
+                    {
+                        int totalRead = ret;
+                        _buffer.Commit(ret);
+
+                        while (_buffer.AvailableLength > 0)
+                        {
+                            ret = TryKtlsRead(sslHandle, _buffer.AvailableMemory, out _, out _);
+                            if (ret <= 0) break;
+                            totalRead += ret;
+                            _buffer.Commit(ret);
+                        }
+
+                        _buffer.OnDecrypted(0, totalRead, totalRead);
+
+                        return CopyDecryptedData(buffer);
+                    }
+
+                    int totalDirect = ret;
+                    while (totalDirect < buffer.Length)
+                    {
+                        ret = TryKtlsRead(sslHandle, buffer.Slice(totalDirect), out _, out _);
+                        if (ret <= 0) break;
+                        totalDirect += ret;
+                    }
+
+                    return totalDirect;
+                }
+
+                if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN)
+                {
+                    return 0;
+                }
+
+                if (ret == 0 && error == Interop.Ssl.SslErrorCode.SSL_ERROR_SYSCALL && errno == Interop.Error.SUCCESS)
+                {
+                    return 0;
+                }
+
+                if (IsKtlsWantRead(error, errno, buffer.Length == 0))
+                {
+                    try
+                    {
+                        await socket.ReceiveAsync(s_peekBuffer, SocketFlags.Peek, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (SocketException) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        // kTLS may report ECONNRESET on recv() instead of a clean
+                        // EOF when the peer closes the connection. Continue to
+                        // SSL_read to get the TLS-level status.
+                    }
+
+                    if (buffer.Length == 0)
+                    {
+                        return 0;
+                    }
+
+                    continue;
+                }
+
+                throw new IOException(SR.net_io_decrypt, Interop.OpenSsl.GetSslError(ret, error));
+            }
         }
 #endif
 
@@ -996,102 +1163,19 @@ namespace System.Net.Security
                         return CopyDecryptedData(buffer);
                     }
 
-                    // SSL_read is needed even with kTLS RX because OpenSSL must
-                    // process TLS 1.3 post-handshake messages (e.g. NewSessionTicket)
-                    // that arrive as non-application-data records on the socket. The
-                    // kernel decryption still benefits SSL_read transparently.
                     Socket socket = ((NetworkStream)InnerStream).Socket;
                     SafeSslHandle sslHandle = (SafeSslHandle)_securityContext!;
 
-                    bool useReadAhead = buffer.Length < ReadBufferSize;
-
-                    if (useReadAhead)
+                    if (_ktlsRx)
                     {
-                        _buffer.EnsureAvailableSpace(ReadBufferSize);
+                        // kTLS RX: recv returns decrypted application data directly.
+                        // Non-application records (NewSessionTicket, KeyUpdate) cause
+                        // recv to fail with EIO; SSL_read is used to consume them.
+                        return await KtlsSocketReadAsync<TIOAdapter>(socket, sslHandle, buffer, cancellationToken).ConfigureAwait(false);
                     }
 
-                    while (true)
-                    {
-                        Memory<byte> readTarget = useReadAhead ? _buffer.AvailableMemory : buffer;
-                        int ret = TryKtlsRead(sslHandle, readTarget, out Interop.Ssl.SslErrorCode error, out Interop.Error errno);
-
-                        if (ret > 0)
-                        {
-                            if (useReadAhead)
-                            {
-                                int totalRead = ret;
-                                _buffer.Commit(ret);
-
-                                // Try to fill more of the buffer without waiting. Each
-                                // SSL_read returns at most one TLS record (~16KB), so
-                                // looping here amortizes the MSG_PEEK wait cost.
-                                while (_buffer.AvailableLength > 0)
-                                {
-                                    ret = TryKtlsRead(sslHandle, _buffer.AvailableMemory, out error, out errno);
-                                    if (ret <= 0)
-                                    {
-                                        break;
-                                    }
-
-                                    totalRead += ret;
-                                    _buffer.Commit(ret);
-                                }
-
-                                _buffer.OnDecrypted(0, totalRead, totalRead);
-
-                                return CopyDecryptedData(buffer);
-                            }
-
-                            // Large user buffer: loop SSL_read to fill as much as
-                            // possible. Each call returns at most one TLS record.
-                            int totalDirect = ret;
-                            while (totalDirect < buffer.Length)
-                            {
-                                ret = TryKtlsRead(sslHandle, buffer.Slice(totalDirect), out error, out errno);
-                                if (ret <= 0)
-                                {
-                                    break;
-                                }
-
-                                totalDirect += ret;
-                            }
-
-                            return totalDirect;
-                        }
-
-                        if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN)
-                        {
-                            return 0;
-                        }
-
-                        if (ret == 0 && error == Interop.Ssl.SslErrorCode.SSL_ERROR_SYSCALL && errno == Interop.Error.SUCCESS)
-                        {
-                            return 0;
-                        }
-
-                        if (IsKtlsWantRead(error, errno, buffer.Length == 0))
-                        {
-                            try
-                            {
-                                await socket.ReceiveAsync(s_peekBuffer, SocketFlags.Peek, cancellationToken).ConfigureAwait(false);
-                            }
-                            catch (SocketException) when (!cancellationToken.IsCancellationRequested)
-                            {
-                                // kTLS may report ECONNRESET on recv() instead of a clean
-                                // EOF when the peer closes the connection. Continue to
-                                // SSL_read to get the TLS-level status.
-                            }
-
-                            if (buffer.Length == 0)
-                            {
-                                return 0;
-                            }
-
-                            continue;
-                        }
-
-                        throw new IOException(SR.net_io_decrypt, Interop.OpenSsl.GetSslError(ret, error));
-                    }
+                    // kTLS without RX offload: use SSL_read with MSG_PEEK wait
+                    return await KtlsSslReadAsync<TIOAdapter>(socket, sslHandle, buffer, cancellationToken).ConfigureAwait(false);
                 }
 #endif
 
@@ -1273,9 +1357,10 @@ namespace System.Net.Security
                         if (error == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE ||
                             IsKtlsWantRead(error, errno)) // SYSCALL+EAGAIN can also mean socket buffer full
                         {
-                            // Wait briefly for socket buffer to drain. Socket doesn't expose
-                            // an async writability wait, but WANT_WRITE is rare and short-lived.
-                            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                            Debug.Fail("WANT_WRITE during kTLS write was not expected to occur in practice.");
+                            Socket socket = ((NetworkStream)InnerStream).Socket;
+                            socket.Poll(1_000_000, SelectMode.SelectWrite);
+                            cancellationToken.ThrowIfCancellationRequested();
                             continue;
                         }
 

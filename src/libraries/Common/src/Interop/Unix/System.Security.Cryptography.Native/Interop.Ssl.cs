@@ -480,7 +480,7 @@ namespace Microsoft.Win32.SafeHandles
             return handle;
         }
 
-        public static SafeSslHandle CreateForKtls(SafeSslContextHandle context, bool isServer, int socketFd)
+        public static SafeSslHandle CreateForKtls(SafeSslContextHandle context, bool isServer, int socketFd, bool enableKtls = true)
         {
             SafeSslHandle handle = Interop.Ssl.SslCreate(context);
             if (handle.IsInvalid)
@@ -497,7 +497,10 @@ namespace Microsoft.Win32.SafeHandles
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
-            Interop.Ssl.SslSetKtls(handle);
+            if (enableKtls)
+            {
+                Interop.Ssl.SslSetKtls(handle);
+            }
 
             if (isServer)
             {
