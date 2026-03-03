@@ -72,7 +72,11 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetAddressType(ulong address, int* pRetVal) => _legacy is not null ? _legacy.GetAddressType(address, pRetVal) : HResults.E_NOTIMPL;
 
-    public int IsTransitionStub(ulong address, int* pResult) => _legacy is not null ? _legacy.IsTransitionStub(address, pResult) : HResults.E_NOTIMPL;
+    public int IsTransitionStub(ulong address, int* pResult)
+    {
+        // On Unix/Linux, this is E_NOTIMPL (only used for VS mixed-mode debugging on Windows)
+        return HResults.E_NOTIMPL;
+    }
 
     public int GetCompilerFlags(ulong vmDomainAssembly, int* pfAllowJITOpts, int* pfEnableEnC) => _legacy is not null ? _legacy.GetCompilerFlags(vmDomainAssembly, pfAllowJITOpts, pfEnableEnC) : HResults.E_NOTIMPL;
 
@@ -286,7 +290,11 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetVarArgSig(ulong VASigCookieAddr, ulong* pArgBase, nint pRetVal) => _legacy is not null ? _legacy.GetVarArgSig(VASigCookieAddr, pArgBase, pRetVal) : HResults.E_NOTIMPL;
 
-    public int RequiresAlign8(ulong thExact, int* pResult) => _legacy is not null ? _legacy.RequiresAlign8(thExact, pResult) : HResults.E_NOTIMPL;
+    public int RequiresAlign8(ulong thExact, int* pResult)
+    {
+        // FEATURE_64BIT_ALIGNMENT is only defined on ARM/WASM, not x64
+        return HResults.E_NOTIMPL;
+    }
 
     public int ResolveExactGenericArgsToken(uint dwExactGenericArgsTokenIndex, ulong rawToken, ulong* pRetVal) => _legacy is not null ? _legacy.ResolveExactGenericArgsToken(dwExactGenericArgsTokenIndex, rawToken, pRetVal) : HResults.E_NOTIMPL;
 
@@ -332,7 +340,12 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetStackFramesFromException(ulong vmObject, nint dacStackFrames) => _legacy is not null ? _legacy.GetStackFramesFromException(vmObject, dacStackFrames) : HResults.E_NOTIMPL;
 
-    public int IsRcw(ulong vmObject, int* pResult) => _legacy is not null ? _legacy.IsRcw(vmObject, pResult) : HResults.E_NOTIMPL;
+    public int IsRcw(ulong vmObject, int* pResult)
+    {
+        // FEATURE_COMINTEROP is not defined on Linux; always returns FALSE
+        *pResult = 0;
+        return HResults.S_OK;
+    }
 
     public int GetRcwCachedInterfaceTypes(ulong vmObject, ulong vmAppDomain, int bIInspectableOnly, nint pDacInterfaces) => _legacy is not null ? _legacy.GetRcwCachedInterfaceTypes(vmObject, vmAppDomain, bIInspectableOnly, pDacInterfaces) : HResults.E_NOTIMPL;
 
