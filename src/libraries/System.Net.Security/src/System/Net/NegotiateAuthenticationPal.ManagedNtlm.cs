@@ -131,8 +131,8 @@ namespace System.Net
                 private int _payloadOffset;
                 public int PayloadOffset
                 {
-                    readonly get =>BitConverter.IsLittleEndian? _payloadOffset: BinaryPrimitives.ReverseEndianness(_payloadOffset);
-                    set =>_payloadOffset = BitConverter.IsLittleEndian? value: BinaryPrimitives.ReverseEndianness(value);
+                    readonly get => BitConverter.IsLittleEndian? _payloadOffset: BinaryPrimitives.ReverseEndianness(_payloadOffset);
+                    set => _payloadOffset = BitConverter.IsLittleEndian? value: BinaryPrimitives.ReverseEndianness(value);
                 }
             }
 
@@ -158,8 +158,8 @@ namespace System.Net
                 public byte CurrentRevision;
                 public ushort ProductBuild
                 {
-                    readonly get =>BitConverter.IsLittleEndian? _productBuild: BinaryPrimitives.ReverseEndianness(_productBuild);
-                    set =>_productBuild = BitConverter.IsLittleEndian? value: BinaryPrimitives.ReverseEndianness(value);
+                    readonly get => BitConverter.IsLittleEndian? _productBuild: BinaryPrimitives.ReverseEndianness(_productBuild);
+                    set => _productBuild = BitConverter.IsLittleEndian? value: BinaryPrimitives.ReverseEndianness(value);
                 }
             }
 
@@ -174,8 +174,8 @@ namespace System.Net
                 public Version Version;
                 public Flags Flags
                 {
-                    readonly get =>BitConverter.IsLittleEndian? _flags: (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
-                    set =>_flags = BitConverter.IsLittleEndian? value: (Flags)BinaryPrimitives.ReverseEndianness((uint)value);
+                    readonly get => BitConverter.IsLittleEndian? _flags: (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
+                    set => _flags = BitConverter.IsLittleEndian? value: (Flags)BinaryPrimitives.ReverseEndianness((uint)value);
                 }
             }
 
@@ -185,8 +185,13 @@ namespace System.Net
             {
                 public MessageHeader Header;
                 public MessageField TargetName;
-                public Flags Flags;
                 public fixed byte ServerChallenge[ChallengeLength];
+                private Flags _flags;
+                public Flags Flags
+                {
+                    readonly get => BitConverter.IsLittleEndian? _flags: (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
+                    set => _flags = BitConverter.IsLittleEndian? value: (Flags)BinaryPrimitives.ReverseEndianness((uint)value);
+                }
                 private ulong _unused;
                 public MessageField TargetInfo;
                 public Version Version;
@@ -203,7 +208,12 @@ namespace System.Net
                 public MessageField UserName;
                 public MessageField Workstation;
                 public MessageField EncryptedRandomSessionKey;
-                public Flags Flags;
+                private Flags _flags;
+                public Flags Flags
+                {
+                    readonly get => BitConverter.IsLittleEndian? _flags: (Flags)BinaryPrimitives.ReverseEndianness((uint)_flags);
+                    set => _flags = BitConverter.IsLittleEndian? value: (Flags)BinaryPrimitives.ReverseEndianness((uint)value);
+                }
                 public Version Version;
                 public fixed byte Mic[16];
             }
@@ -589,7 +599,7 @@ namespace System.Net
                     return null;
                 }
 
-                Flags flags = BitConverter.IsLittleEndian ? challengeMessage.Flags : (Flags)BinaryPrimitives.ReverseEndianness((uint)challengeMessage.Flags);
+                Flags flags = challengeMessage.Flags;
                 ReadOnlySpan<byte> targetName = GetField(challengeMessage.TargetName, blob);
 
                 // Only NTLMv2 with MIC is supported
