@@ -8852,7 +8852,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 return false;
             }
 
-            const bool requiresRuntimeLookup = pDevirtMD->IsSharedByGenericInstantiations();
+            const bool requiresRuntimeLookup = pDevirtMD->IsSharedByGenericMethodInstantiations();
             if (requiresRuntimeLookup)
             {
                 if (info->pResolvedTokenVirtualMethod == nullptr)
