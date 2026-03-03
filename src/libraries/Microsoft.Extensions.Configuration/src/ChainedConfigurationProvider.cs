@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Loads configuration values from the source represented by this <see cref="IConfigurationProvider"/>.
         /// </summary>
-        public void Load() { }
+        public void Load() => (_config as IConfigurationRoot)?.Reload();
 
         /// <summary>
         /// Returns the immediate descendant configuration keys for a given parent path based on the data of this

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Configuration.Memory;
@@ -54,10 +55,43 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal(providers, configRoot.Providers);
         }
 
+        [Fact]
+        public void ChainedConfiguration_ReloadPropagatestoInnerConfigurationRoot()
+        {
+            var innerConfig = new ConfigurationBuilder()
+                .Add(new RandomValueConfigurationSource())
+                .Build();
+
+            var outerConfig = new ConfigurationBuilder()
+                .AddConfiguration(innerConfig)
+                .Build();
+
+            string? valueBefore = outerConfig["Random"];
+            Assert.NotNull(valueBefore);
+
+            outerConfig.Reload();
+
+            string? valueAfter = outerConfig["Random"];
+            Assert.NotNull(valueAfter);
+            Assert.NotEqual(valueBefore, valueAfter);
+        }
+
         private class TestConfigurationProvider : ConfigurationProvider
         {
             public TestConfigurationProvider(string key, string value)
                 => Data.Add(key, value);
+        }
+
+        private class RandomValueConfigurationSource : IConfigurationSource
+        {
+            public IConfigurationProvider Build(IConfigurationBuilder builder)
+                => new RandomValueConfigurationProvider();
+        }
+
+        private class RandomValueConfigurationProvider : ConfigurationProvider
+        {
+            public override void Load()
+                => Data["Random"] = Guid.NewGuid().ToString();
         }
     }
 }
