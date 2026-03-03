@@ -5402,7 +5402,8 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     // Keep track of the set of phi-preds
     //
     BitVecTraits traits(fgBBNumMax + 1, this);
-    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+    BitVec       phiPreds    = BitVecOps::MakeEmpty(&traits);
+    BitVec       actualPreds = BitVecOps::MakeEmpty(&traits);
 
     // Given an ssaDef and its block, we must consider two edge cases:
     //  1) ssaDef->GetBlock()->PredBlocks() contains blocks that do not exist in AsPhi()->Uses()
@@ -5410,7 +5411,6 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     //
     // We conservatively terminate the walk if either mismatch occurs.
     //
-    BitVec actualPreds = BitVecOps::MakeEmpty(&traits);
     for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
     {
         BitVecOps::AddElemD(&traits, actualPreds, pred->bbNum);
@@ -5422,9 +5422,12 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
 
         if (!BitVecOps::IsMember(&traits, actualPreds, phiArg->gtPredBB->bbNum))
         {
-            // We have a phi-pred which is not a block pred. Fail the phi inference.
             JITDUMP("... optVisitReachingAssertions in " FMT_BB ": phi-pred " FMT_BB " not a block pred\n",
                     ssaDef->GetBlock()->bbNum, phiArg->gtPredBB->bbNum);
+
+            // We probably can just ignore this phi-pred if we know for sure phiArg->gtPredBB never reaches
+            // the ssaDef's block. For now, conservatively fail the phi inference in this case.
+            // Alternatively, we can request optRepeat here.
             return AssertVisit::Abort;
         }
 
@@ -5435,23 +5438,16 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             // The visitor wants to abort the walk.
             return AssertVisit::Abort;
         }
-        BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+        BitVecOps::AddElemD(&traits, phiPreds, phiArg->gtPredBB->bbNum);
     }
 
-    // Verify the set of phi-preds covers the set of block preds
-    //
-    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    if (!BitVecOps::Equal(&traits, phiPreds, actualPreds))
     {
-        if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
-        {
-            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
-                    ssaDef->GetBlock()->bbNum, pred->bbNum);
-
-            // We missed examining a block pred. Fail the phi inference.
-            //
-            return AssertVisit::Abort;
-        }
+        // We missed examining a block pred. Fail the phi inference.
+        //
+        return AssertVisit::Abort;
     }
+
     return AssertVisit::Continue;
 }
 
