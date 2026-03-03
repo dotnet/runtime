@@ -12,7 +12,7 @@ namespace System.Net.NetworkInformation.Tests
         private readonly NetworkAvailabilityChangedEventHandler _availabilityHandler = delegate { };
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not supported on SunOS")]
         public void NetworkAvailabilityChanged_AddRemove_Success()
         {
             NetworkChange.NetworkAvailabilityChanged += _availabilityHandler;
@@ -20,14 +20,14 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not supported on SunOS")]
         public void NetworkAvailabilityChanged_JustRemove_Success()
         {
             NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not supported on SunOS")]
         public void NetworkAddressChanged_Add_DoesNotBlock()
         {
             // Register without unregistering.
@@ -41,7 +41,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not supported on SunOS")]
         public void NetworkAddressChanged_AddAndRemove_NetworkAvailabilityChanged_JustRemove_Success()
         {
             NetworkChange.NetworkAddressChanged += _addressHandler;
@@ -54,7 +54,7 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not supported on SunOS")]
         public void NetworkAvailabilityChanged_NetworkAddressChanged_AddAndRemove_Success(bool addAddressFirst, bool removeAddressFirst)
         {
             if (addAddressFirst)
