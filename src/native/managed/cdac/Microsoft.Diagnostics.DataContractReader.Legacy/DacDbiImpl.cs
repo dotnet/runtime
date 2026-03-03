@@ -1,18 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices.Marshalling;
+
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
 public sealed unsafe class DacDbiImpl : IDacDbiInterface
 {
+    private readonly Target _target;
     private readonly IDacDbiInterface? _legacy;
 
     public DacDbiImpl(Target target, object? legacyObj)
     {
-        _ = target;
+        _target = target;
         _legacy = legacyObj as IDacDbiInterface;
     }
 
@@ -254,9 +258,64 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, byte* pResult) => _legacy is not null ? _legacy.GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwTimeStamp, dwImageSize, pStrFilename, pResult) : HResults.E_NOTIMPL;
 
-    public int IsThreadSuspendedOrHijacked(ulong vmThread, byte* pResult) => _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;
+    public int IsThreadSuspendedOrHijacked(ulong vmThread, byte* pResult)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IThread threadContract = _target.Contracts.Thread;
+            ThreadData threadData = threadContract.GetThreadData(new TargetPointer(vmThread));
+            uint state = (uint)threadData.State;
+            // TS_SyncSuspended = 0x00080000, TS_Hijacked = 0x00000080 (from threads.h)
+            const uint TS_SyncSuspended = 0x00080000;
+            const uint TS_Hijacked = 0x00000080;
+            *pResult = ((state & TS_SyncSuspended) != 0 || (state & TS_Hijacked) != 0) ? (byte)1 : (byte)0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            byte resultLocal;
+            int hrLocal = _legacy.IsThreadSuspendedOrHijacked(vmThread, &resultLocal);
+            Debug.Assert(hrLocal == hr, $"[DacDbi] IsThreadSuspendedOrHijacked cDAC hr: 0x{hr:x}, DAC hr: 0x{hrLocal:x}");
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                Debug.Assert(*pResult == resultLocal, $"[DacDbi] IsThreadSuspendedOrHijacked cDAC: {*pResult}, DAC: {resultLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
-    public int AreGCStructuresValid(byte* pResult) => _legacy is not null ? _legacy.AreGCStructuresValid(pResult) : HResults.E_NOTIMPL;
+    public int AreGCStructuresValid(byte* pResult)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IGC gc = _target.Contracts.GC;
+            *pResult = gc.GetGCStructuresValid() ? (byte)1 : (byte)0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            byte resultLocal;
+            int hrLocal = _legacy.AreGCStructuresValid(&resultLocal);
+            Debug.Assert(hrLocal == hr, $"[DacDbi] AreGCStructuresValid cDAC hr: 0x{hr:x}, DAC hr: 0x{hrLocal:x}");
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                Debug.Assert(*pResult == resultLocal, $"[DacDbi] AreGCStructuresValid cDAC: {*pResult}, DAC: {resultLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int CreateHeapWalk(nuint* pHandle) => _legacy is not null ? _legacy.CreateHeapWalk(pHandle) : HResults.E_NOTIMPL;
 
