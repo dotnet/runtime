@@ -152,7 +152,22 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetThreadObject(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetThreadObject(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetThreadAllocInfo(ulong vmThread, nint pThreadAllocInfo) => _legacy is not null ? _legacy.GetThreadAllocInfo(vmThread, pThreadAllocInfo) : HResults.E_NOTIMPL;
+    public int GetThreadAllocInfo(ulong vmThread, nint pThreadAllocInfo)
+    {
+        // DacThreadAllocInfo: { ulong m_allocBytesSOH; ulong m_allocBytesUOH; }
+        IThread threadContract = _target.Contracts.Thread;
+        ThreadData threadData = threadContract.GetThreadData(new TargetPointer(vmThread));
+        ulong* pInfo = (ulong*)pThreadAllocInfo;
+
+        // Get raw alloc bytes and LOH bytes from the contract
+        threadContract.GetThreadAllocContext(new TargetPointer(vmThread), out long allocBytes, out long allocBytesLoh);
+
+        // SOH = alloc_bytes - (alloc_limit - alloc_ptr), matching native behavior
+        long unused = (long)(threadData.AllocContextLimit.Value - threadData.AllocContextPointer.Value);
+        pInfo[0] = (ulong)(allocBytes - unused);
+        pInfo[1] = (ulong)allocBytesLoh;
+        return HResults.S_OK;
+    }
 
     public int SetDebugState(ulong vmThread, int debugState) => _legacy is not null ? _legacy.SetDebugState(vmThread, debugState) : HResults.E_NOTIMPL;
 
