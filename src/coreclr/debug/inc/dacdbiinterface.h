@@ -2636,5 +2636,8 @@ public:
 
 }; // end IDacDbiInterface
 
+// IID declaration for non-Windows platforms where __uuidof() expands to IID_##type.
+// The actual IID is defined in corguids (via dacdbi_i.cpp).
+EXTERN_C const IID IID_IDacDbiInterface;
 
 #endif // _DACDBI_INTERFACE_H_

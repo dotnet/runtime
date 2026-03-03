@@ -1185,7 +1185,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
 
 HRESULT DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult)
 {
-    if (pTimeStamp == NULL || pImageSize == NULL || pResult == NULL)
+    if (pTimeStamp == NULL || pImageSize == NULL || pStrFilename == NULL || pResult == NULL)
         return E_POINTER;
 
     DD_ENTER_MAY_THROW;
