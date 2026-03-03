@@ -3595,6 +3595,12 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"^$", "a\n\nb", MA, new[] { "" } };
                 yield return new object[] { engine, @"^$", "a\u0085\u0085b", MA, new[] { "" } };
 
+                // ^$ on "\r\n" — no empty line between \r and \n (atomicity proof), but ^ matches at start and after \n
+                yield return new object[] { engine, @"^$", "\r\n", MA, new[] { "", "" } };
+
+                // ^$ on "\n\r" — empty line between \n and \r (TR18 RL1.6 reversed CRLF requirement)
+                yield return new object[] { engine, @"^$", "\n\r", MA, new[] { "", "", "" } };
+
                 // RightToLeft
                 yield return new object[] { engine, @"^\w+", "foo\rbar", MA | RegexOptions.RightToLeft, new[] { "bar", "foo" } };
             }
@@ -3654,6 +3660,13 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @".+", "abc\rdef", RegexOptions.None, new[] { "abc\rdef" } };
                 yield return new object[] { engine, @".+", "abc\u0085def", RegexOptions.None, new[] { "abc\u0085def" } };
                 yield return new object[] { engine, @".+", "abc\u2028def", RegexOptions.None, new[] { "abc\u2028def" } };
+
+                // Without AnyNewLine, . matches VT and FF (baseline: they are NOT newlines)
+                yield return new object[] { engine, @".+", "abc\vdef", RegexOptions.None, new[] { "abc\vdef" } };
+                yield return new object[] { engine, @".+", "abc\fdef", RegexOptions.None, new[] { "abc\fdef" } };
+
+                // Without AnyNewLine, .*$ with Multiline captures \r with the line content (the gotcha AnyNewLine solves)
+                yield return new object[] { engine, @".*$", "foo\r\nbar", RegexOptions.Multiline, new[] { "foo\r", "", "bar", "" } };
 
                 // .+$ with Multiline|AnyNewLine
                 yield return new object[] { engine, @".+$", "foo\r\nbar", RegexOptions.Multiline | RegexHelpers.RegexOptionAnyNewLine, new[] { "foo", "bar" } };
