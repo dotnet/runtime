@@ -221,13 +221,14 @@ namespace Microsoft.Win32.SafeHandles
         /// <returns>
         /// <c>true</c> if the process group was terminated; <c>false</c> if the process had already exited.
         /// </returns>
-        /// <exception cref="InvalidOperationException">Thrown when the handle is invalid.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the handle is invalid or the process was not started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/>.</exception>
         /// <exception cref="Win32Exception">Thrown when the kill operation fails for reasons other than the process having already exited.</exception>
         /// <remarks>
         /// On Unix, sends SIGKILL to all processes in the process group.
-        /// On Windows, requires the process to have been started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/>=true.
-        /// Terminates all processes in the job object. If the process was not started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/>=true,
-        /// throws an <see cref="InvalidOperationException"/>.
+        /// On Windows, the process must have been started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> set to true,
+        /// which creates a job object that contains the process and its children. This method terminates all processes in that job object.
+        /// This is a best-effort emulation of Unix process groups using Windows job objects;
+        /// the set of processes in the job object may not be exactly the same as a Unix process group.
         /// </remarks>
         internal bool KillProcessGroup()
         {
@@ -255,24 +256,19 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         /// Sends a signal to the process.
         /// </summary>
-        /// <param name="signal">The signal to send.</param>
+        /// <param name="signal">The signal to send. Raw signal numbers (positive values) are supported on Unix.</param>
         /// <exception cref="InvalidOperationException">Thrown when the handle is invalid.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when the signal value is not supported.</exception>
         /// <exception cref="ArgumentException">Thrown when the signal is not supported on the current platform.</exception>
         /// <exception cref="Win32Exception">Thrown when the signal operation fails.</exception>
         /// <remarks>
         /// On Windows, only SIGINT (mapped to CTRL_C_EVENT), SIGQUIT (mapped to CTRL_BREAK_EVENT), and SIGKILL are supported.
-        /// The process must have been started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> set to true for signals to work properly.
-        /// On Windows, signals are always sent to the entire process group, not just the single process.
-        /// On Unix/Linux, all signals defined in PosixSignal are supported, and the signal is sent only to the specific process.
+        /// Signals can only be sent to processes with a console attached on Windows.
+        /// SIGINT and SIGQUIT are sent to the entire process group via GenerateConsoleCtrlEvent.
+        /// SIGKILL is emulated by terminating the specific process via TerminateProcess.
+        /// On Unix/Linux, all signals defined in PosixSignal and raw signal numbers are supported.
         /// </remarks>
         public void Signal(PosixSignal signal)
         {
-            if (!Enum.IsDefined(signal))
-            {
-                throw new ArgumentOutOfRangeException(nameof(signal));
-            }
-
             Validate();
 
             SendSignalCore(signal, entireProcessGroup: false);
@@ -281,23 +277,21 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         /// Sends a signal to the entire process group.
         /// </summary>
-        /// <param name="signal">The signal to send.</param>
+        /// <param name="signal">The signal to send. Raw signal numbers (positive values) are supported on Unix.</param>
         /// <exception cref="InvalidOperationException">Thrown when the handle is invalid.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when the signal value is not supported.</exception>
+        /// <exception cref="ArgumentException">Thrown when the signal is not supported on the current platform.</exception>
         /// <exception cref="Win32Exception">Thrown when the signal operation fails.</exception>
         /// <remarks>
         /// On Windows, only SIGINT (mapped to CTRL_C_EVENT), SIGQUIT (mapped to CTRL_BREAK_EVENT), and SIGKILL are supported.
-        /// The process must have been started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> set to true for signals to work properly.
-        /// On Windows, signals are always sent to the entire process group.
-        /// On Unix/Linux, all signals defined in PosixSignal are supported, and the signal is sent to all processes in the process group.
+        /// Signals can only be sent to processes with a console attached on Windows.
+        /// The process must have been started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> set to true.
+        /// SIGKILL terminates all processes in the job object associated with the process group.
+        /// This is a best-effort emulation of Unix process groups using Windows job objects;
+        /// the set of processes in the job object may not be exactly the same as a Unix process group.
+        /// On Unix/Linux, all signals defined in PosixSignal and raw signal numbers are supported.
         /// </remarks>
         public void SignalProcessGroup(PosixSignal signal)
         {
-            if (!Enum.IsDefined(signal))
-            {
-                throw new ArgumentOutOfRangeException(nameof(signal));
-            }
-
             Validate();
 
             SendSignalCore(signal, entireProcessGroup: true);

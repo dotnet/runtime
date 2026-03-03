@@ -189,6 +189,8 @@
              Link="Common\Interop\Windows\Advapi32\Interop.TOKEN_PRIVILEGE.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.Constants.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitForSingleObject_SafeProcessHandle.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.WaitForSingleObject_SafeProcessHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreatePipe_SafeFileHandle.cs"
              Link="Common\Interop\Windows\kernel32\Interop.CreatePipe.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ThreadOptions.cs"

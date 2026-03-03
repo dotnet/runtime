@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void Start_WithNoArguments_Succeeds()
         {
-            ProcessStartOptions options = new("hostname");
+            ProcessStartOptions options = new("whoami");
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
