@@ -3448,6 +3448,11 @@ public sealed unsafe partial class SOSDacImpl
                     data->blockCCW = ccw.ToClrDataAddress(_target);
                 }
             }
+
+            // Maintain backwards compatibility with old versions of CLRMD. They will not properly iterate, but at least it will not infinite loop.
+            if (addr == 0)
+                throw new ArgumentException();
+
         }
         catch (System.Exception ex)
         {

@@ -3885,6 +3885,10 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
 #endif // FEATURE_COMINTEROP
     }
 
+    // Maintain backwards compatibility with old versions of CLRMD. They will not properly iterate, but at least it will not infinite loop.
+    if (syncBlock == 0)
+        return E_INVALIDARG;
+
     SOSDacLeave();
     return hr;
 }
