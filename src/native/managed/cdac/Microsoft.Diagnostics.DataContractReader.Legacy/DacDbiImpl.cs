@@ -32,7 +32,12 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetAppDomainFromId(uint appdomainId, ulong* pRetVal) => _legacy is not null ? _legacy.GetAppDomainFromId(appdomainId, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetAppDomainId(ulong vmAppDomain, uint* pRetVal) => _legacy is not null ? _legacy.GetAppDomainId(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
+    public int GetAppDomainId(ulong vmAppDomain, uint* pRetVal)
+    {
+        // Native implementation returns 0 for null, DefaultADID (1) otherwise
+        *pRetVal = (vmAppDomain == 0) ? 0u : 1u;
+        return HResults.S_OK;
+    }
 
     public int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal) => _legacy is not null ? _legacy.GetAppDomainObject(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
 
@@ -379,7 +384,12 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return unchecked((int)0x80131c14);
     }
 
-    public int GetVmObjectHandle(ulong handleAddress, ulong* pRetVal) => _legacy is not null ? _legacy.GetVmObjectHandle(handleAddress, pRetVal) : HResults.E_NOTIMPL;
+    public int GetVmObjectHandle(ulong handleAddress, ulong* pRetVal)
+    {
+        // Native implementation wraps the address directly as a VMPTR_OBJECTHANDLE
+        *pRetVal = handleAddress;
+        return HResults.S_OK;
+    }
 
     public int IsVmObjectHandleValid(ulong vmHandle, int* pResult) => _legacy is not null ? _legacy.IsVmObjectHandleValid(vmHandle, pResult) : HResults.E_NOTIMPL;
 
@@ -390,9 +400,19 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return HResults.S_OK;
     }
 
-    public int GetAppDomainIdFromVmObjectHandle(ulong vmHandle, uint* pRetVal) => _legacy is not null ? _legacy.GetAppDomainIdFromVmObjectHandle(vmHandle, pRetVal) : HResults.E_NOTIMPL;
+    public int GetAppDomainIdFromVmObjectHandle(ulong vmHandle, uint* pRetVal)
+    {
+        // Native implementation always returns DefaultADID (1)
+        *pRetVal = 1;
+        return HResults.S_OK;
+    }
 
-    public int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal) => _legacy is not null ? _legacy.GetHandleAddressFromVmHandle(vmHandle, pRetVal) : HResults.E_NOTIMPL;
+    public int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal)
+    {
+        // Native implementation unwraps the VMPTR to get the raw address
+        *pRetVal = vmHandle;
+        return HResults.S_OK;
+    }
 
     public int GetObjectContents(ulong obj, nint pRetVal) => _legacy is not null ? _legacy.GetObjectContents(obj, pRetVal) : HResults.E_NOTIMPL;
 
