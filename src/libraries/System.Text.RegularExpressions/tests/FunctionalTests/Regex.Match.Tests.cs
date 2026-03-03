@@ -3668,9 +3668,15 @@ namespace System.Text.RegularExpressions.Tests
                 // Without AnyNewLine, .*$ with Multiline captures \r with the line content (the gotcha AnyNewLine solves)
                 yield return new object[] { engine, @".*$", "foo\r\nbar", RegexOptions.Multiline, new[] { "foo\r", "", "bar", "" } };
 
+                // Without AnyNewLine, .+$ with Multiline also captures \r
+                yield return new object[] { engine, @".+$", "foo\r\nbar", RegexOptions.Multiline, new[] { "foo\r", "bar" } };
+
                 // .+$ with Multiline|AnyNewLine
                 yield return new object[] { engine, @".+$", "foo\r\nbar", RegexOptions.Multiline | RegexHelpers.RegexOptionAnyNewLine, new[] { "foo", "bar" } };
                 yield return new object[] { engine, @".+$", "foo\rbar", RegexOptions.Multiline | RegexHelpers.RegexOptionAnyNewLine, new[] { "foo", "bar" } };
+
+                // .*$ with Multiline|AnyNewLine — no \r captured with line content (contrast with baseline without AnyNewLine)
+                yield return new object[] { engine, @".*$", "foo\r\nbar", RegexOptions.Multiline | RegexHelpers.RegexOptionAnyNewLine, new[] { "foo", "", "bar", "" } };
 
                 // Adjacent different newlines: . doesn't match any of them
                 yield return new object[] { engine, @".+", "a\r\n\rb", RegexHelpers.RegexOptionAnyNewLine, new[] { "a", "b" } };
