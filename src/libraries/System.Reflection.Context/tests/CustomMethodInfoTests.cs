@@ -57,7 +57,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(_customMethod.IsGenericMethodDefinition);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecurityCritical_ReturnsValue()
         {
@@ -65,7 +65,7 @@ namespace System.Reflection.Context.Tests
             Assert.True(value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
@@ -73,7 +73,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void IsSecurityTransparent_ReturnsValue()
         {
@@ -87,7 +87,7 @@ namespace System.Reflection.Context.Tests
             Assert.True(_customMethod.MetadataToken > 0);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void MethodHandle_ReturnsValue()
         {
             RuntimeMethodHandle handle = _customMethod.MethodHandle;

@@ -52,7 +52,7 @@ namespace System.Reflection.Context.Tests
             Assert.Equal(ProjectionConstants.CustomType, _publicField.DeclaringType.GetType().FullName);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void FieldHandle_ReturnsValue()
         {
             RuntimeFieldHandle handle = _publicField.FieldHandle;
@@ -117,21 +117,21 @@ namespace System.Reflection.Context.Tests
             Assert.True(_publicField.IsPublic);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void IsSecurityCritical_ReturnsValue()
         {
             bool value = _publicField.IsSecurityCritical;
             Assert.True(value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
             bool value = _publicField.IsSecuritySafeCritical;
             Assert.False(value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void IsSecurityTransparent_ReturnsValue()
         {
             bool value = _publicField.IsSecurityTransparent;

@@ -150,7 +150,7 @@ namespace System.Reflection.Context.Tests
         }
 
         // Tests for pointer type
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void PointerType_IsPointer_ReturnsTrue()
         {
             TypeInfo typeInfo = typeof(int*).GetTypeInfo();
@@ -159,7 +159,7 @@ namespace System.Reflection.Context.Tests
             Assert.True(customType.IsPointer);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void PointerType_GetElementType_ReturnsProjectedType()
         {
             TypeInfo typeInfo = typeof(int*).GetTypeInfo();

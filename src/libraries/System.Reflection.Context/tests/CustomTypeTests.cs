@@ -92,21 +92,21 @@ namespace System.Reflection.Context.Tests
             Assert.False(_customTypeInfo.IsGenericTypeDefinition);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void IsSecurityCritical_ReturnsValue()
         {
             bool value = _customTypeInfo.IsSecurityCritical;
             Assert.True(value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void IsSecuritySafeCritical_ReturnsValue()
         {
             bool value = _customTypeInfo.IsSecuritySafeCritical;
             Assert.False(value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void IsSecurityTransparent_ReturnsValue()
         {
             bool value = _customTypeInfo.IsSecurityTransparent;
@@ -153,7 +153,7 @@ namespace System.Reflection.Context.Tests
             Assert.Null(_customTypeInfo.ReflectedType);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void StructLayoutAttribute_ReturnsValue()
         {
             // Class has auto layout by default
@@ -161,7 +161,7 @@ namespace System.Reflection.Context.Tests
             Assert.NotNull(attr);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void TypeHandle_ReturnsValue()
         {
             RuntimeTypeHandle handle = _customTypeInfo.TypeHandle;

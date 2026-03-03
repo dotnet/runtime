@@ -75,7 +75,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(_customAssembly.IsDynamic);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void IsFullyTrusted_ReturnsTrue()
         {
             Assert.True(_customAssembly.IsFullyTrusted);
@@ -162,7 +162,7 @@ namespace System.Reflection.Context.Tests
 #pragma warning restore SYSLIB0050
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void GetForwardedTypes_ThrowsNotImplemented()
         {
             // GetForwardedTypes may throw NotImplementedException

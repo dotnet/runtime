@@ -47,7 +47,7 @@ namespace System.Reflection.Context.Tests
             Assert.True(token > 0);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
+        [Fact]
         public void ModuleVersionId_ReturnsNonEmptyGuid()
         {
             Guid mvid = _customModule.ModuleVersionId;
@@ -167,7 +167,7 @@ namespace System.Reflection.Context.Tests
             Assert.All(types, t => Assert.Equal(ProjectionConstants.CustomType, t.GetType().FullName));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
+        [Fact]
         public void FindTypes_ReturnsProjectedTypes()
         {
             Type[] types = _customModule.FindTypes((t, o) => t.Name == "TestObject", null);
