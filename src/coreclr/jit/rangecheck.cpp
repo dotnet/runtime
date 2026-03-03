@@ -1042,9 +1042,22 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             // span.Length anyway.
             ValueNum checkedBoundVN = curAssertion.GetOp2().GetCheckedBound();
 
-            int maxValue = comp->vnStore->IsVNArrLen(checkedBoundVN) ? CORINFO_Array_MaxLength : INT32_MAX;
-            cmpOper      = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
-            limit        = Limit(Limit::keConstant, maxValue);
+            int maxValue = INT32_MAX;
+            if (comp->vnStore->IsVNArrLen(checkedBoundVN))
+            {
+                maxValue = CORINFO_Array_MaxLength;
+            }
+            else
+            {
+                int cns;
+                if (comp->vnStore->IsVNIntegralConstant(checkedBoundVN, &cns) && (cns >= 0) && (cns < maxValue))
+                {
+                    maxValue = cns;
+                }
+            }
+
+            cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+            limit   = Limit(Limit::keConstant, maxValue);
         }
         // Current assertion is of the form "i <relop> (checkedBndVN + cns)"
         else if (curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
