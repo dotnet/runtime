@@ -11,11 +11,15 @@ namespace System.DirectoryServices.Protocols
 {
     public partial class LdapSessionOptions
     {
+        private int _verifyCallbackInvoked;
+        private int _verifyCallbackResult;
         private LDAP_TLS_CONNECT_CB _serverCertificateRoutine;
         private Interop.OpenSsl.VerifyCallback? _openSslVerifyRoutine;
 
         private void InitializeServerCertificateDelegate()
         {
+            _verifyCallbackInvoked = 0;
+            _verifyCallbackResult = 0;
             _serverCertificateRoutine = new LDAP_TLS_CONNECT_CB(SetOpenSslCallback);
             _openSslVerifyRoutine ??= new Interop.OpenSsl.VerifyCallback(ProcessServerCertificate);
         }
@@ -42,21 +46,35 @@ namespace System.DirectoryServices.Protocols
                 return 1;
             }
 
+            // The callback is only expected to be invoked once per connection, but if it is invoked multiple times, the result from the first invocation will be returned.
+            // This emulates Windows behavior.
+            if (System.Threading.Interlocked.CompareExchange(ref _verifyCallbackInvoked, 1, 0) != 0)
+            {
+                return System.Threading.Volatile.Read(ref _verifyCallbackResult);
+            }
+
+            int result = 0;
             X509Certificate? cert = TryGetX509Certificate2FromStoreCtx(x509StoreCtx);
             if (cert == null)
+            {
+                System.Threading.Volatile.Write(ref _verifyCallbackResult, 0);
                 return 0;
+            }
 
             try
             {
-                return _serverCertificateDelegate(_connection, cert) ? 1 : 0;
+                result = _serverCertificateDelegate(_connection, cert) ? 1 : 0;
+                return result;
             }
             catch
             {
+                result = 0;
                 return 0;
             }
             finally
             {
                 cert.Dispose();
+                System.Threading.Volatile.Write(ref _verifyCallbackResult, result);
             }
         }
 
