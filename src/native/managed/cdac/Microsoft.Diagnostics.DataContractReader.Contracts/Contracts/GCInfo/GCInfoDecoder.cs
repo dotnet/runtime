@@ -614,7 +614,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
                 }
                 Debug.Assert(countIntersections <= 1);
                 if (countIntersections == 0 && executionAborted)
-                    goto ReportUntracked;
+                    return true; // Native: goto ExitSuccess (skip all reporting including untracked)
             }
 
             // Read the indirect live state table header (if present)
@@ -827,6 +827,10 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private void ReportSlot(uint slotIndex, Action<uint, GcSlotDesc, uint> reportSlot)
     {
+        // TODO(stackref): The native ReportSlotToGC filters out scratch registers/stack slots
+        // for non-leaf frames (when reportScratchSlots is false) and respects ReportFPBasedSlotsOnly.
+        // The cDAC currently reports all slots unconditionally, which over-reports for non-leaf frames.
+        // This is safe (extra roots won't cause crashes) but imprecise.
         Debug.Assert(slotIndex < _slots.Count);
         GcSlotDesc slot = _slots[(int)slotIndex];
         uint gcFlags = (uint)slot.Flags & ((uint)GcSlotFlags.GC_SLOT_INTERIOR | (uint)GcSlotFlags.GC_SLOT_PINNED);

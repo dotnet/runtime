@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
 internal class ARM64GCInfoTraits : IGCInfoTraits
 {
-    public static uint DenormalizeStackBaseRegister(uint reg) => reg ^ 0x29u;
+    public static uint DenormalizeStackBaseRegister(uint reg) => reg ^ 29u;
     public static uint DenormalizeCodeLength(uint len) => len << 2;
     public static uint NormalizeCodeLength(uint len) => len >> 2;
     public static uint DenormalizeCodeOffset(uint offset) => offset << 2;
