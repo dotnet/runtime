@@ -99,12 +99,13 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     if (emitIsSmallInsDsc(id))
         return SMALL_IDSC_SIZE;
 
+	//return sizeof(instrDesc);
     assert((unsigned)id->idInsFmt() < emitFmtCount);
 
     ID_OPS idOp      = (ID_OPS)emitFmtToOps[id->idInsFmt()];
-    bool   isCallIns = (id->idIns() == INS_bl) || (id->idIns() == INS_blr) || (id->idIns() == INS_b_tail) ||
-                     (id->idIns() == INS_br_tail);
-    bool maybeCallIns = (id->idIns() == INS_b) || (id->idIns() == INS_br);
+    bool   isCallIns = false ; //(id->idIns() == INS_bl) || (id->idIns() == INS_blr) || (id->idIns() == INS_b_tail) ||
+                     //(id->idIns() == INS_br_tail);
+    bool maybeCallIns = false ;//(id->idIns() == INS_b) || (id->idIns() == INS_br);
 
     switch (idOp)
     {
@@ -1460,44 +1461,6 @@ const char* emitter::emitVectorRegName(regNumber reg)
 #endif
 }
 
-/*****************************************************************************
- *
- *  Returns the base encoding of the given CPU instruction.
- */
-
-emitter::insFormat emitter::emitInsFormat(instruction ins)
-{
-    // clang-format off
-    const static insFormat insFormats[] =
-    {
-        #define INST1(id, nm, info, fmt, e1                                ) fmt,
-        #define INST2(id, nm, info, fmt, e1, e2                            ) fmt,
-        #define INST3(id, nm, info, fmt, e1, e2, e3                        ) fmt,
-        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) fmt,
-        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) fmt,
-        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) fmt,
-        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) fmt,
-        #include "instrs.h"
-        #define INST1(id, nm, info, fmt, e1                                                     ) fmt,
-        #define INST2(id, nm, info, fmt, e1, e2                                                 ) fmt,
-        #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) fmt,
-        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) fmt,
-        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) fmt,
-        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) fmt,
-        #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) fmt,
-        #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) fmt,
-        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) fmt,
-        #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) fmt,
-        #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) fmt,
-        #include "instrss390x.h"
-    };
-    // clang-format on
-
-    assert(ins < ArrLen(insFormats));
-    assert((insFormats[ins] != IF_NONE));
-
-    return insFormats[ins];
-}
 
 #define LD  1
 #define ST  2
@@ -1511,26 +1474,8 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
-    #define INST1(id, nm, info, fmt, e1                                ) info,
-    #define INST2(id, nm, info, fmt, e1, e2                            ) info,
-    #define INST3(id, nm, info, fmt, e1, e2, e3                        ) info,
-    #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) info,
-    #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) info,
-    #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) info,
-    #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) info,
+     #define INST(id, nm, info, e1) info,
     #include "instrs.h"
-    #define INST1(id, nm, info, fmt, e1                                                     ) info,
-    #define INST2(id, nm, info, fmt, e1, e2                                                 ) info,
-    #define INST3(id, nm, info, fmt, e1, e2, e3                                             ) info,
-    #define INST4(id, nm, info, fmt, e1, e2, e3, e4                                         ) info,
-    #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                                     ) info,
-    #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6                                 ) info,
-    #define INST7(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7                             ) info,
-    #define INST8(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8                         ) info,
-    #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9                     ) info,
-    #define INST11(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,e11           ) info,
-    #define INST13(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13) info,
-    #include "instrss390x.h"
 };
 // clang-format on
 
@@ -1686,700 +1631,14 @@ bool emitter::emitInsDestIsOp2(instruction ins)
 
 emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 {
+    code_t code = BAD_CODE;
     // clang-format off
-    const static code_t insCodes1[] =
+    const static code_t insCode[] =
     {
-        #define INST1(id, nm, info, fmt, e1                                ) e1,
-        #define INST2(id, nm, info, fmt, e1, e2                            ) e1,
-        #define INST3(id, nm, info, fmt, e1, e2, e3                        ) e1,
-        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) e1,
-        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) e1,
-        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e1,
-        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e1,
+        #define INST(id, nm, info, e1) e1,
         #include "instrs.h"
     };
-    const static code_t insCodes2[] =
-    {
-        #define INST1(id, nm, info, fmt, e1                                )
-        #define INST2(id, nm, info, fmt, e1, e2                            ) e2,
-        #define INST3(id, nm, info, fmt, e1, e2, e3                        ) e2,
-        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) e2,
-        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) e2,
-        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e2,
-        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e2,
-        #include "instrs.h"
-    };
-    const static code_t insCodes3[] =
-    {
-        #define INST1(id, nm, info, fmt, e1                                )
-        #define INST2(id, nm, info, fmt, e1, e2                            )
-        #define INST3(id, nm, info, fmt, e1, e2, e3                        ) e3,
-        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) e3,
-        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) e3,
-        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e3,
-        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e3,
-        #include "instrs.h"
-    };
-    const static code_t insCodes4[] =
-    {
-        #define INST1(id, nm, info, fmt, e1                                )
-        #define INST2(id, nm, info, fmt, e1, e2                            )
-        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    ) e4,
-        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) e4,
-        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e4,
-        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e4,
-        #include "instrs.h"
-    };
-    const static code_t insCodes5[] =
-    {
-        #define INST1(id, nm, info, fmt, e1                                )
-        #define INST2(id, nm, info, fmt, e1, e2                            )
-        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                ) e5,
-        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e5,
-        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e5,
-        #include "instrs.h"
-    };
-    const static code_t insCodes6[] =
-    {
-        #define INST1(id, nm, info, fmt, e1                                )
-        #define INST2(id, nm, info, fmt, e1, e2                            )
-        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            ) e6,
-        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e6,
-        #include "instrs.h"
-    };
-    const static code_t insCodes7[] =
-    {
-        #define INST1(id, nm, info, fmt, e1                                )
-        #define INST2(id, nm, info, fmt, e1, e2                            )
-        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            )
-        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e7,
-        #include "instrs.h"
-    };
-    const static code_t insCodes8[] =
-    {
-        #define INST1(id, nm, info, fmt, e1                                )
-        #define INST2(id, nm, info, fmt, e1, e2                            )
-        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            )
-        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e8,
-        #include "instrs.h"
-    };
-    const static code_t insCodes9[] =
-    {
-        #define INST1(id, nm, info, fmt, e1                                )
-        #define INST2(id, nm, info, fmt, e1, e2                            )
-        #define INST3(id, nm, info, fmt, e1, e2, e3                        )
-        #define INST4(id, nm, info, fmt, e1, e2, e3, e4                    )
-        #define INST5(id, nm, info, fmt, e1, e2, e3, e4, e5                )
-        #define INST6(id, nm, info, fmt, e1, e2, e3, e4, e5, e6            )
-        #define INST9(id, nm, info, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e9,
-        #include "instrs.h"
-    };
-    // clang-format on
-
-    const static insFormat formatEncode9[9]  = {IF_DR_2E, IF_DR_2G, IF_DI_1B, IF_DI_1D, IF_DV_3C,
-                                                IF_DV_2B, IF_DV_2C, IF_DV_2E, IF_DV_2F};
-    const static insFormat formatEncode6A[6] = {IF_DR_3A, IF_DR_3B, IF_DR_3C, IF_DI_2A, IF_DV_3A, IF_DV_3E};
-    const static insFormat formatEncode6B[6] = {IF_LS_2D, IF_LS_3F, IF_LS_2E, IF_LS_2F, IF_LS_3G, IF_LS_2G};
-    const static insFormat formatEncode5A[5] = {IF_LS_2A, IF_LS_2B, IF_LS_2C, IF_LS_3A, IF_LS_1A};
-    const static insFormat formatEncode5B[5] = {IF_DV_2G, IF_DV_2H, IF_DV_2I, IF_DV_1A, IF_DV_1B};
-    const static insFormat formatEncode5C[5] = {IF_DR_3A, IF_DR_3B, IF_DI_2C, IF_DV_3C, IF_DV_1B};
-    const static insFormat formatEncode4A[4] = {IF_LS_2A, IF_LS_2B, IF_LS_2C, IF_LS_3A};
-    const static insFormat formatEncode4B[4] = {IF_DR_3A, IF_DR_3B, IF_DR_3C, IF_DI_2A};
-    const static insFormat formatEncode4C[4] = {IF_DR_2A, IF_DR_2B, IF_DR_2C, IF_DI_1A};
-    const static insFormat formatEncode4D[4] = {IF_DV_3B, IF_DV_3D, IF_DV_3BI, IF_DV_3DI};
-    const static insFormat formatEncode4E[4] = {IF_DR_3A, IF_DR_3B, IF_DI_2C, IF_DV_3C};
-    const static insFormat formatEncode4F[4] = {IF_DR_3A, IF_DR_3B, IF_DV_3C, IF_DV_1B};
-    const static insFormat formatEncode4G[4] = {IF_DR_2E, IF_DR_2F, IF_DV_2M, IF_DV_2L};
-    const static insFormat formatEncode4H[4] = {IF_DV_3E, IF_DV_3A, IF_DV_2L, IF_DV_2M};
-    const static insFormat formatEncode4I[4] = {IF_DV_3D, IF_DV_3B, IF_DV_2G, IF_DV_2A};
-    const static insFormat formatEncode4J[4] = {IF_DV_2N, IF_DV_2O, IF_DV_3E, IF_DV_3A};
-    const static insFormat formatEncode4K[4] = {IF_DV_3E, IF_DV_3A, IF_DV_3EI, IF_DV_3AI};
-    const static insFormat formatEncode3A[3] = {IF_DR_3A, IF_DR_3B, IF_DI_2C};
-    const static insFormat formatEncode3B[3] = {IF_DR_2A, IF_DR_2B, IF_DI_1C};
-    const static insFormat formatEncode3C[3] = {IF_DR_3A, IF_DR_3B, IF_DV_3C};
-    const static insFormat formatEncode3D[3] = {IF_DV_2C, IF_DV_2D, IF_DV_2E};
-    const static insFormat formatEncode3E[3] = {IF_DV_3B, IF_DV_3BI, IF_DV_3DI};
-    const static insFormat formatEncode3F[3] = {IF_DV_2A, IF_DV_2G, IF_DV_2H};
-    const static insFormat formatEncode3G[3] = {IF_DV_2A, IF_DV_2G, IF_DV_2I};
-    const static insFormat formatEncode3H[3] = {IF_DR_3A, IF_DV_3A, IF_DV_3AI};
-    const static insFormat formatEncode3I[3] = {IF_DR_2E, IF_DR_2F, IF_DV_2M};
-    const static insFormat formatEncode3J[3] = {IF_LS_2D, IF_LS_3F, IF_LS_2E};
-    const static insFormat formatEncode2A[2] = {IF_DR_2E, IF_DR_2F};
-    const static insFormat formatEncode2B[2] = {IF_DR_3A, IF_DR_3B};
-    const static insFormat formatEncode2C[2] = {IF_DR_3A, IF_DI_2D};
-    const static insFormat formatEncode2D[2] = {IF_DR_3A, IF_DI_2B};
-    const static insFormat formatEncode2E[2] = {IF_LS_3B, IF_LS_3C};
-    const static insFormat formatEncode2F[2] = {IF_DR_2I, IF_DI_1F};
-    const static insFormat formatEncode2G[2] = {IF_DV_3B, IF_DV_3D};
-    const static insFormat formatEncode2H[2] = {IF_DV_2C, IF_DV_2F};
-    const static insFormat formatEncode2I[2] = {IF_DV_2K, IF_DV_1C};
-    const static insFormat formatEncode2J[2] = {IF_DV_2A, IF_DV_2G};
-    const static insFormat formatEncode2K[2] = {IF_DV_2M, IF_DV_2L};
-    const static insFormat formatEncode2L[2] = {IF_DR_2G, IF_DV_2M};
-    const static insFormat formatEncode2M[2] = {IF_DV_3A, IF_DV_3AI};
-    const static insFormat formatEncode2N[2] = {IF_DV_2N, IF_DV_2O};
-    const static insFormat formatEncode2O[2] = {IF_DV_3E, IF_DV_3A};
-    const static insFormat formatEncode2P[2] = {IF_DV_2Q, IF_DV_3B};
-    const static insFormat formatEncode2Q[2] = {IF_DV_2S, IF_DV_3A};
-
-    code_t    code           = BAD_CODE;
-    insFormat insFmt         = emitInsFormat(ins);
-    bool      encoding_found = false;
-    int       index          = -1;
-
-    switch (insFmt)
-    {
-        case IF_EN9:
-            for (index = 0; index < 9; index++)
-            {
-                if (fmt == formatEncode9[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN6A:
-            for (index = 0; index < 6; index++)
-            {
-                if (fmt == formatEncode6A[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN6B:
-            for (index = 0; index < 6; index++)
-            {
-                if (fmt == formatEncode6B[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN5A:
-            for (index = 0; index < 5; index++)
-            {
-                if (fmt == formatEncode5A[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN5B:
-            for (index = 0; index < 5; index++)
-            {
-                if (fmt == formatEncode5B[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN5C:
-            for (index = 0; index < 5; index++)
-            {
-                if (fmt == formatEncode5C[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN4A:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4A[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN4B:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4B[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN4C:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4C[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN4D:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4D[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN4E:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4E[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN4F:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4F[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN4G:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4G[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN4H:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4H[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN4I:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4I[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN4J:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4J[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN4K:
-            for (index = 0; index < 4; index++)
-            {
-                if (fmt == formatEncode4K[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN3A:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3A[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN3B:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3B[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN3C:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3C[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN3D:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3D[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN3E:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3E[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN3F:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3F[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN3G:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3G[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN3H:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3H[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN3I:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3I[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN3J:
-            for (index = 0; index < 3; index++)
-            {
-                if (fmt == formatEncode3J[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2A:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2A[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2B:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2B[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2C:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2C[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2D:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2D[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2E:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2E[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2F:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2F[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2G:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2G[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2H:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2H[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2I:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2I[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2J:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2J[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2K:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2K[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2L:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2L[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2M:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2M[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2N:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2N[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2O:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2O[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2P:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2P[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        case IF_EN2Q:
-            for (index = 0; index < 2; index++)
-            {
-                if (fmt == formatEncode2Q[index])
-                {
-                    encoding_found = true;
-                    break;
-                }
-            }
-            break;
-
-        default:
-            if (fmt == insFmt)
-            {
-                encoding_found = true;
-                index          = 0;
-            }
-            else
-            {
-                encoding_found = false;
-            }
-            break;
-    }
-
-    assert(encoding_found);
-
-    switch (index)
-    {
-        case 0:
-            assert(ins < ArrLen(insCodes1));
-            code = insCodes1[ins];
-            break;
-        case 1:
-            assert(ins < ArrLen(insCodes2));
-            code = insCodes2[ins];
-            break;
-        case 2:
-            assert(ins < ArrLen(insCodes3));
-            code = insCodes3[ins];
-            break;
-        case 3:
-            assert(ins < ArrLen(insCodes4));
-            code = insCodes4[ins];
-            break;
-        case 4:
-            assert(ins < ArrLen(insCodes5));
-            code = insCodes5[ins];
-            break;
-        case 5:
-            assert(ins < ArrLen(insCodes6));
-            code = insCodes6[ins];
-            break;
-        case 6:
-            assert(ins < ArrLen(insCodes7));
-            code = insCodes7[ins];
-            break;
-        case 7:
-            assert(ins < ArrLen(insCodes8));
-            code = insCodes8[ins];
-            break;
-        case 8:
-            assert(ins < ArrLen(insCodes9));
-            code = insCodes9[ins];
-            break;
-    }
-
+    code = insCode[ins];
     assert((code != BAD_CODE));
 
     return code;
@@ -3804,15 +3063,16 @@ void emitter::emitIns(instruction ins)
 {
 	return;
     instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
-    insFormat  fmt = emitInsFormat(ins);
 
-    if (ins != INS_BREAKPOINT)
-    {
-        assert(fmt == IF_SN_0A);
-    }
+   // if (ins != INS_BREAKPOINT)
+   // {
+   //     assert(fmt == IF_SN_0A);
+   // }
 
     id->idIns(ins);
-    id->idInsFmt(fmt);
+    //id->idInsFmt(fmt);
+    //id->idAddr()->iiaSetInstrEncode(emitInsCode(ins));
+    //id->idCodeSize(2);
 
     dispIns(id);
     appendToCurIG(id);
@@ -6230,7 +5490,9 @@ void emitter::emitIns_R_R_R(instruction     ins,
             break;
 #endif
         case INS_add:
+#if 0
         case INS_sub:
+#endif
             if (isVectorRegister(reg1))
             {
                 // ASIMD instruction
@@ -6255,10 +5517,11 @@ void emitter::emitIns_R_R_R(instruction     ins,
                 break;
             }
             // Base instruction
-            FALLTHROUGH;
-
+            //FALLTHROUGH;
+#if 0
         case INS_adds:
         case INS_subs:
+#endif
             emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, opt);
             return;
 #if 0
@@ -7090,7 +6353,9 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
             break;
 #endif
         case INS_add:
+#if 0
         case INS_sub:
+#endif
             setFlags = false;
             isAddSub = true;
             break;
@@ -8142,29 +7407,29 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
-        case INS_strb:
-        case INS_ldrb:
-        case INS_ldrsb:
+        case INS_stc:
+        case INS_lgb:
+        case INS_llgc:
             scale = 0;
             break;
 
-        case INS_strh:
-        case INS_ldrh:
-        case INS_ldrsh:
+        case INS_sth:
+        case INS_lgh:
+        case INS_llgh:
             scale = 1;
             break;
 
-        case INS_ldrsw:
-            scale = 2;
-            break;
+//        case INS_ldrsw:
+//            scale = 2;
+//            break;
 
-        case INS_str:
-        case INS_ldr:
+        case INS_st:
+        case INS_l:
             assert(isValidGeneralDatasize(size) || isValidVectorDatasize(size));
             scale    = genLog2(EA_SIZE_IN_BYTES(size));
             isLdrStr = true;
             break;
-
+#if 0
         case INS_lea:
             assert(size == EA_8BYTE);
             isSimple = false;
@@ -8191,6 +7456,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
                 fmt = IF_DR_3A; // add reg1,reg2,rsvdReg
             }
             break;
+#endif
 /*
         case INS_sve_ldr:
         {
@@ -8441,17 +7707,17 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
-        case INS_strb:
+        case INS_stc:
             scale = 0;
             assert(isGeneralRegister(reg1));
             break;
 
-        case INS_strh:
+        case INS_sth:
             scale = 1;
             assert(isGeneralRegister(reg1));
             break;
 
-        case INS_str:
+        case INS_st:
             if (isGeneralRegister(reg1))
             {
                 assert(isValidGeneralDatasize(size));
@@ -11323,7 +10589,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     /* What instruction format have we got? */
 
-    switch (fmt)
+    switch (ins)
     {
         ssize_t  imm;
         ssize_t  index;
@@ -11366,7 +10632,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = sizeof(instrDescJmp);
             break;
 #endif
-        case IF_BR_1A: // BR_1A   ................ ......nnnnn.....         Rn
+        case INS_br: // BR_1A   ................ ......nnnnn.....         Rn
             assert(insOptsNone(id->idInsOpt()));
             assert((ins == INS_ret) || (ins == INS_br));
             code = emitInsCode(ins, fmt);
@@ -11375,6 +10641,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             //dst += emitOutput_Instr(dst, code);
             dst += emitOutputWord(dst, (ssize_t)code);
             break;
+	//remove ret since it is as same as br.
+	case INS_ret: // BR_1A   ................ ......nnnnn.....         Rn
+            assert(insOptsNone(id->idInsOpt()));
+            assert((ins == INS_ret) || (ins == INS_br));
+            code = emitInsCode(ins, fmt);
+            code = ((code << 8) | (0xf << 4) | (id->idReg1())); // nnnnn
+
+            //dst += emitOutput_Instr(dst, code);
+            dst += emitOutputWord(dst, (ssize_t)code);
+            break;
+
 #if 0
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
             assert(insOptsNone(id->idInsOpt()));
@@ -11450,12 +10727,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 #endif
-        case IF_LS_2C: // LS_2C   .X.......X.iiiii iiiiPPnnnnnttttt      Rt Rn    imm(-256..+255) no/pre/post inc
+        case INS_st: // LS_2C   .X.......X.iiiii iiiiPPnnnnnttttt      Rt Rn    imm(-256..+255) no/pre/post inc
             assert(insOptsNone(id->idInsOpt()) || insOptsIndexed(id->idInsOpt()));
             imm = emitGetInsSC(id); //get instruction's constant value
             assert((imm >= -256) && (imm <= 255)); // signed 9 bits
             //imm &= 0x1ff;                          // force into unsigned 9 bit representation
             code = emitInsCode(ins, fmt);
+	
 #if 0
 		// Is the target a vector register?
             if (isVectorRegister(id->idReg1()))
@@ -11508,6 +10786,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 #endif
             break;
+	    case INS_l: // LS_2C   .X.......X.iiiii iiiiPPnnnnnttttt      Rt Rn    imm(-256..+255) no/pre/post inc
+            assert(insOptsNone(id->idInsOpt()) || insOptsIndexed(id->idInsOpt()));
+            imm = emitGetInsSC(id); //get instruction's constant value
+            assert((imm >= -256) && (imm <= 255)); // signed 9 bits
+            //imm &= 0x1ff;                          // force into unsigned 9 bit representation
+            code = emitInsCode(ins, fmt);
+	       code = ((code << 24) | ((id->idReg1()) << 20) | (0 << 16) | ((id->idReg2()) << 12) | ((imm) & 0xfff)); //x is always 0 in other compilers 0 << 16 is kept for the sake of visualizing fmt RX
+            dst += emitOutput_Instr(dst, code);
+	    break; 
 #if 0
         case IF_LS_2D: // LS_2D   .Q.............. ....ssnnnnnttttt      Vt Rn
         case IF_LS_2E: // LS_2E   .Q.............. ....ssnnnnnttttt      Vt Rn
@@ -11688,7 +10975,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 #endif
-        case IF_DI_1B: // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)
+        case INS_mov: // DI_1B   X........hwiiiii iiiiiiiiiiiddddd      Rd       imm(i16,hw)
             imm = emitGetInsSC(id);
             //assert(isValidImmHWVal(imm, id->idOpSize()));
             code = emitInsCode(ins, fmt);
@@ -11995,7 +11282,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             break;
 #endif
-        case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
+        case INS_add: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
             code = emitInsCode(ins, fmt);
             //code |= insEncodeDatasize(id->idOpSize()); // X
             code = (code << 16) | (insEncodeReg_Rd(id->idReg3())<< 12) | (insEncodeReg_Rn(id->idReg1())<< 4)|(insEncodeReg_Rn(id->idReg2()));     // ddddd
@@ -14229,11 +13516,12 @@ void emitter::emitDispInsHelp(
             break;
 #endif
         case IF_DR_3A: // DR_3A   X..........mmmmm ......nnnnnmmmmm      Rd Rn Rm
-            if ((ins == INS_add) || (ins == INS_sub))
+            if ((ins == INS_add) /*|| (ins == INS_sub)*/)
             {
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, true);
             }
+#if 0
             else if ((ins == INS_smulh) || (ins == INS_umulh))
             {
                 size = EA_8BYTE;
@@ -14248,6 +13536,7 @@ void emitter::emitDispInsHelp(
                 size = EA_4BYTE;
                 emitDispReg(id->idReg2(), size, true);
             }
+#endif
             else
             {
                 emitDispReg(id->idReg1(), size, true);
@@ -15160,6 +14449,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     }
 
     bool isMulOverflow = false;
+#if 0
     if (dst->gtOverflowEx())
     {
         if ((ins == INS_add) || (ins == INS_adds))
@@ -15180,12 +14470,15 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             assert(!"Invalid ins for overflow check");
         }
     }
+#endif
+
     if (intConst != nullptr)
     {
         emitIns_R_R_I(ins, attr, dst->GetRegNum(), nonIntReg->GetRegNum(), intConst->IconValue());
     }
     else
     {
+#if 0
         if (isMulOverflow)
         {
             regNumber extraReg = codeGen->internalRegisters.GetSingle(dst);
@@ -15245,9 +14538,12 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
         else
         {
+#endif
             // We can just multiply.
             emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
+#if 0
         }
+#endif
     }
 
     if (dst->gtOverflowEx())

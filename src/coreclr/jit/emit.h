@@ -1163,7 +1163,6 @@ protected:
         inline bool idIsEmptyAlign() const
         {
             //return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
-	    _ASSERTE("NYI"); 
             //return (idInsOpt() == INS_OPTS_NONE); //TODO : Giri , should be have INS_align? 
         }
 

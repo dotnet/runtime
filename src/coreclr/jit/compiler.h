@@ -12446,14 +12446,9 @@ const instruction INS_ABS  = INS_fabs;
 const instruction INS_SQRT = INS_fsqrt;
 
 #endif // TARGET_ARM64
+
 #ifdef TARGET_S390X
-inline const instruction INS_BREAKPOINT_osHelper()
-{
-    // GDB needs the encoding of brk #0
-    // Windbg needs the encoding of brk #F000
-    return TargetOS::IsUnix ? INS_brk_unix : INS_brk_windows;
-}
-#define INS_BREAKPOINT INS_BREAKPOINT_osHelper()
+const instruction INS_BREAKPOINT = INS_break;
 #endif // TARGET_S390X
 
 #ifdef TARGET_LOONGARCH64

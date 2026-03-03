@@ -304,7 +304,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 assert(data->AsIntCon()->IconValue() == 0);
                 emitAttr attr = emitActualTypeSize(targetType);
                 // On non-windows, need to load the address from system register.
-		emit->emitIns_R(INS_mrs_tpid0, attr, targetReg);
+		//emit->emitIns_R(INS_mrs_tpid0, attr, targetReg);
             }
             else
             {
@@ -750,11 +750,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //
 //        case GT_LABEL:
 //            genPendingCallLabel = genCreateTempLabel();
-#if defined(TARGET_ARM)
-            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
-#else
-            emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
-#endif
+//#if defined(TARGET_ARM)
+//            genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
+//#else
+//            emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
+//#endif
 //            break;
 //
 //        case GT_STORE_BLK:
@@ -2355,27 +2355,27 @@ public:
     {
         assert(regSizeBytes == 8);
 
-        emitter->emitIns_R_R_R_I(INS_ldp, EA_SIZE(regSizeBytes), intReg1, intReg2, addrReg, offset);
+        //emitter->emitIns_R_R_R_I(INS_ldp, EA_SIZE(regSizeBytes), intReg1, intReg2, addrReg, offset);
     }
 
     void StorePairRegs(int offset, unsigned regSizeBytes)
     {
         assert(regSizeBytes == 8);
 
-        emitter->emitIns_R_R_R_I(INS_stp, EA_SIZE(regSizeBytes), intReg1, intReg2, addrReg, offset);
+    //    emitter->emitIns_R_R_R_I(INS_stp, EA_SIZE(regSizeBytes), intReg1, intReg2, addrReg, offset);
     }
 
     void LoadReg(int offset, unsigned regSizeBytes)
     {
-        instruction ins = INS_ldr;
+        instruction ins = INS_l;
 
         if (regSizeBytes == 1)
         {
-            ins = INS_ldrb;
+            ins = INS_lgb;
         }
         else if (regSizeBytes == 2)
         {
-            ins = INS_ldrh;
+            ins = INS_lgh;
         }
 
         emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), intReg1, addrReg, offset);
@@ -2383,15 +2383,15 @@ public:
 
     void StoreReg(int offset, unsigned regSizeBytes)
     {
-        instruction ins = INS_str;
+        instruction ins = INS_st;
 
         if (regSizeBytes == 1)
         {
-            ins = INS_strb;
+            ins = INS_stc;
         }
         else if (regSizeBytes == 2)
         {
-            ins = INS_strh;
+            ins = INS_sth;
         }
 
         emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), intReg1, addrReg, offset);
@@ -2418,21 +2418,23 @@ public:
 
     void LoadPairRegs(int offset, unsigned regSizeBytes)
     {
+	_ASSERTE(!"NYI");
         assert((regSizeBytes == 8) || (regSizeBytes == 16));
 
-        emitter->emitIns_R_R_R_I(INS_ldp, EA_SIZE(regSizeBytes), simdReg1, simdReg2, addrReg, offset);
+      //  emitter->emitIns_R_R_R_I(INS_ldp, EA_SIZE(regSizeBytes), simdReg1, simdReg2, addrReg, offset);
     }
 
     void StorePairRegs(int offset, unsigned regSizeBytes)
     {
+	_ASSERTE(!"NYI");
         assert((regSizeBytes == 8) || (regSizeBytes == 16));
 
-        emitter->emitIns_R_R_R_I(INS_stp, EA_SIZE(regSizeBytes), simdReg1, simdReg2, addrReg, offset);
+      //  emitter->emitIns_R_R_R_I(INS_stp, EA_SIZE(regSizeBytes), simdReg1, simdReg2, addrReg, offset);
     }
 
     void LoadReg(int offset, unsigned regSizeBytes)
     {
-        instruction ins = INS_ldr;
+        instruction ins = INS_l;
 
         // Note that 'intReg1' can be unavailable.
         // If that is the case, then use SIMD instruction ldr and
@@ -2449,11 +2451,11 @@ public:
 
             if (regSizeBytes == 1)
             {
-                ins = INS_ldrb;
+                ins = INS_lgb;
             }
             else if (regSizeBytes == 2)
             {
-                ins = INS_ldrh;
+                ins = INS_lgh;
             }
         }
 
@@ -2462,7 +2464,7 @@ public:
 
     void StoreReg(int offset, unsigned regSizeBytes)
     {
-        instruction ins = INS_str;
+        instruction ins = INS_st;
 
         // Note that 'intReg1' can be unavailable.
         // If that is the case, then use SIMD instruction ldr and
@@ -2479,11 +2481,11 @@ public:
 
             if (regSizeBytes == 1)
             {
-                ins = INS_strb;
+                ins = INS_stc;
             }
             else if (regSizeBytes == 2)
             {
-                ins = INS_strh;
+                ins = INS_sth;
             }
         }
 
@@ -4743,6 +4745,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_ADD:
             ins = INS_add;
             break;
+#if 0
         case GT_AND:
             ins = INS_and;
             break;
@@ -4784,6 +4787,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_ROR:
             ins = INS_ror;
             break;
+#endif
         default:
             unreached();
             break;
@@ -7160,7 +7164,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     if (EA_IS_RELOC(size))
     {
         // This emits a pair of adrp/add (two instructions) with fix-ups.
-        GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+        //GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
     }
     else
     {
@@ -7169,6 +7173,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE,
                                       INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
+#if 0
         else
         {
             // Arm64 allows any arbitrary 16-bit constant to be loaded into a register halfword
@@ -7228,11 +7233,14 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             // should not be in this else condition
             assert(ins == INS_movk);
         }
+#endif
         // The caller may have requested that the flags be set on this mov (rarely/never)
+#if 0
         if (flags == INS_FLAGS_SET)
         {
             GetEmitter()->emitIns_R_I(INS_tst, size, reg, 0);
         }
+#endif
     }
 
     regSet.verifyRegUsed(reg);
