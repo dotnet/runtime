@@ -520,7 +520,25 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetCurrentException(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetCurrentException(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int GetCurrentException(ulong vmThread, ulong* pRetVal)
+    {
+        // Read ExceptionTracker → ThrownObjectHandle
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(new TargetPointer(vmThread));
+        TargetPointer tracker = thread.ExceptionTracker;
+        if (tracker != TargetPointer.Null)
+        {
+            Data.ExceptionInfo exInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(tracker);
+            *pRetVal = exInfo.ThrownObjectHandle.Value;
+        }
+        else
+        {
+            // No active exception tracker - return null handle
+            // Note: native also checks IsLastThrownObjectUnhandled() for unhandled fallback,
+            // which requires ExceptionState flags not yet in the data descriptor.
+            *pRetVal = 0;
+        }
+        return HResults.S_OK;
+    }
 
     public int GetObjectForCCW(ulong ccwPtr, ulong* pRetVal) => _legacy is not null ? _legacy.GetObjectForCCW(ccwPtr, pRetVal) : HResults.E_NOTIMPL;
 
