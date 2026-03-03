@@ -5534,6 +5534,7 @@ ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const B
         {
             return BitVecOps::MakeEmpty(apTraits);
         }
+        return blockPred->bbAssertionOut;
     }
 
     if (blockPred->GetUniqueSucc() == block)
