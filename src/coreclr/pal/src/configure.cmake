@@ -366,21 +366,7 @@ int main()
 }" HAVE_WORKING_CLOCK_GETTIME)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
 
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_MONOTONIC)
-set(CMAKE_REQUIRED_LIBRARIES)
 
 check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 

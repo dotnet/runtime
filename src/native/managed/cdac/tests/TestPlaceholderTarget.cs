@@ -77,7 +77,16 @@ internal class TestPlaceholderTarget : Target
     }
 
     public override TargetPointer ReadPointer(ulong address) => DefaultReadPointer(address);
+    public override bool TryReadPointer(ulong address, out TargetPointer value) => DefaultTryReadPointer(address, out value);
     public override TargetCodePointer ReadCodePointer(ulong address) => DefaultReadCodePointer(address);
+    public override bool TryReadCodePointer(ulong address, out TargetCodePointer value)
+    {
+        value = default;
+        if (!DefaultTryReadPointer(address, out TargetPointer ptr))
+            return false;
+        value = new TargetCodePointer(ptr);
+        return true;
+    }
     public override void ReadBuffer(ulong address, Span<byte> buffer)
     {
         if (_dataReader(address, buffer) < 0)

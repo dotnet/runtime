@@ -61,6 +61,7 @@
     <LibraryBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'LibraryBuilder'))</LibraryBuilderDir>
 
     <MonoAotCrossDir>$([MSBuild]::NormalizePath($(BuildBaseDir), 'cross'))</MonoAotCrossDir>
+    <Crossgen2InBuildDir>$([MSBuild]::NormalizeDirectory('$(BuildBaseDir)', 'crossgen2'))</Crossgen2InBuildDir>
     <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(BuildBaseDir)', 'ilc'))</CoreCLRILCompilerDir>
     <ILCompilerTargetsDir>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'BuildIntegration'))</ILCompilerTargetsDir>
     <ILCompilerTargetsPath>$([MSBuild]::NormalizePath('$(ILCompilerTargetsDir)', 'Microsoft.DotNet.ILCompiler.SingleEntry.targets'))</ILCompilerTargetsPath>

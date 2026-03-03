@@ -500,12 +500,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.EqualsAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EqualsAll(Vector2 left, Vector2 right) => Vector128.EqualsAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool EqualsAll(Vector2 left, Vector2 right) => AllWhereAllBitsSet(Equals(left, right));
 
         /// <inheritdoc cref="Vector4.EqualsAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool EqualsAny(Vector2 left, Vector2 right) => Vector128.EqualsAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool EqualsAny(Vector2 left, Vector2 right) => AnyWhereAllBitsSet(Equals(left, right));
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
         [Intrinsic]
@@ -520,12 +520,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.GreaterThanAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanAll(Vector2 left, Vector2 right) => Vector128.GreaterThanAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool GreaterThanAll(Vector2 left, Vector2 right) => AllWhereAllBitsSet(GreaterThan(left, right));
 
         /// <inheritdoc cref="Vector4.GreaterThanAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanAny(Vector2 left, Vector2 right) => Vector128.GreaterThanAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool GreaterThanAny(Vector2 left, Vector2 right) => AnyWhereAllBitsSet(GreaterThan(left, right));
 
         /// <inheritdoc cref="Vector4.GreaterThanOrEqual(Vector4, Vector4)" />
         [Intrinsic]
@@ -535,12 +535,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.GreaterThanOrEqualAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanOrEqualAll(Vector2 left, Vector2 right) => Vector128.GreaterThanOrEqualAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool GreaterThanOrEqualAll(Vector2 left, Vector2 right) => AllWhereAllBitsSet(GreaterThanOrEqual(left, right));
 
         /// <inheritdoc cref="Vector4.GreaterThanOrEqualAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GreaterThanOrEqualAny(Vector2 left, Vector2 right) => Vector128.GreaterThanOrEqualAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool GreaterThanOrEqualAny(Vector2 left, Vector2 right) => AnyWhereAllBitsSet(GreaterThanOrEqual(left, right));
 
         /// <inheritdoc cref="Vector4.Hypot(Vector4, Vector4)" />
         [Intrinsic]
@@ -650,12 +650,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LessThanAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanAll(Vector2 left, Vector2 right) => Vector128.LessThanAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool LessThanAll(Vector2 left, Vector2 right) => AllWhereAllBitsSet(LessThan(left, right));
 
         /// <inheritdoc cref="Vector4.LessThanAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanAny(Vector2 left, Vector2 right) => Vector128.LessThanAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool LessThanAny(Vector2 left, Vector2 right) => AnyWhereAllBitsSet(LessThan(left, right));
 
         /// <inheritdoc cref="Vector4.LessThanOrEqual(Vector4, Vector4)" />
         [Intrinsic]
@@ -665,12 +665,12 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.LessThanOrEqualAll(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanOrEqualAll(Vector2 left, Vector2 right) => Vector128.LessThanOrEqualAll(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool LessThanOrEqualAll(Vector2 left, Vector2 right) => AllWhereAllBitsSet(LessThanOrEqual(left, right));
 
         /// <inheritdoc cref="Vector4.LessThanOrEqualAny(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool LessThanOrEqualAny(Vector2 left, Vector2 right) => Vector128.LessThanOrEqualAny(left.AsVector128Unsafe(), right.AsVector128Unsafe());
+        public static bool LessThanOrEqualAny(Vector2 left, Vector2 right) => AnyWhereAllBitsSet(LessThanOrEqual(left, right));
 
         /// <inheritdoc cref="Vector4.Load(float*)" />
         [Intrinsic]

@@ -129,6 +129,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend,
     NI_System_Runtime_CompilerServices_AsyncHelpers_Await,
     NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait,
 
     NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref,
 
