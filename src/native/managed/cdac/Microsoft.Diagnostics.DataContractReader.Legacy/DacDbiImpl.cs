@@ -38,7 +38,12 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetAssemblyFromDomainAssembly(ulong vmDomainAssembly, ulong* vmAssembly) => _legacy is not null ? _legacy.GetAssemblyFromDomainAssembly(vmDomainAssembly, vmAssembly) : HResults.E_NOTIMPL;
 
-    public int IsAssemblyFullyTrusted(ulong vmDomainAssembly, int* pResult) => _legacy is not null ? _legacy.IsAssemblyFullyTrusted(vmDomainAssembly, pResult) : HResults.E_NOTIMPL;
+    public int IsAssemblyFullyTrusted(ulong vmDomainAssembly, int* pResult)
+    {
+        // Native implementation always returns TRUE (full trust is the only mode)
+        *pResult = 1;
+        return HResults.S_OK;
+    }
 
     public int GetAppDomainFullName(ulong vmAppDomain, nint pStrName) => _legacy is not null ? _legacy.GetAppDomainFullName(vmAppDomain, pStrName) : HResults.E_NOTIMPL;
 
@@ -86,7 +91,35 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int EnumerateThreads(nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateThreads(fpCallback, pUserData) : HResults.E_NOTIMPL;
 
-    public int IsThreadMarkedDead(ulong vmThread, byte* pResult) => _legacy is not null ? _legacy.IsThreadMarkedDead(vmThread, pResult) : HResults.E_NOTIMPL;
+    public int IsThreadMarkedDead(ulong vmThread, byte* pResult)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IThread threadContract = _target.Contracts.Thread;
+            ThreadData threadData = threadContract.GetThreadData(new TargetPointer(vmThread));
+            // TS_Dead = 0x00000800 (from threads.h)
+            const uint TS_Dead = 0x00000800;
+            *pResult = ((uint)threadData.State & TS_Dead) != 0 ? (byte)1 : (byte)0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            byte resultLocal;
+            int hrLocal = _legacy.IsThreadMarkedDead(vmThread, &resultLocal);
+            Debug.Assert(hrLocal == hr, $"[DacDbi] IsThreadMarkedDead cDAC hr: 0x{hr:x}, DAC hr: 0x{hrLocal:x}");
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                Debug.Assert(*pResult == resultLocal, $"[DacDbi] IsThreadMarkedDead cDAC: {*pResult}, DAC: {resultLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetThreadHandle(ulong vmThread, nint pRetVal) => _legacy is not null ? _legacy.GetThreadHandle(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
@@ -106,9 +139,64 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetTaskID(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetTaskID(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int TryGetVolatileOSThreadID(ulong vmThread, uint* pRetVal) => _legacy is not null ? _legacy.TryGetVolatileOSThreadID(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int TryGetVolatileOSThreadID(ulong vmThread, uint* pRetVal)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IThread threadContract = _target.Contracts.Thread;
+            ThreadData threadData = threadContract.GetThreadData(new TargetPointer(vmThread));
+            // SWITCHED_OUT_FIBER_OSID is a magic cookie; return 0 in that case
+            const uint SWITCHED_OUT_FIBER_OSID = 0xbaadf00d;
+            uint osId = (uint)threadData.OSId.Value;
+            *pRetVal = (osId == SWITCHED_OUT_FIBER_OSID) ? 0u : osId;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint resultLocal;
+            int hrLocal = _legacy.TryGetVolatileOSThreadID(vmThread, &resultLocal);
+            Debug.Assert(hrLocal == hr, $"[DacDbi] TryGetVolatileOSThreadID cDAC hr: 0x{hr:x}, DAC hr: 0x{hrLocal:x}");
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                Debug.Assert(*pRetVal == resultLocal, $"[DacDbi] TryGetVolatileOSThreadID cDAC: {*pRetVal}, DAC: {resultLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
-    public int GetUniqueThreadID(ulong vmThread, uint* pRetVal) => _legacy is not null ? _legacy.GetUniqueThreadID(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int GetUniqueThreadID(ulong vmThread, uint* pRetVal)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            IThread threadContract = _target.Contracts.Thread;
+            ThreadData threadData = threadContract.GetThreadData(new TargetPointer(vmThread));
+            *pRetVal = (uint)threadData.OSId.Value;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint resultLocal;
+            int hrLocal = _legacy.GetUniqueThreadID(vmThread, &resultLocal);
+            Debug.Assert(hrLocal == hr, $"[DacDbi] GetUniqueThreadID cDAC hr: 0x{hr:x}, DAC hr: 0x{hrLocal:x}");
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                Debug.Assert(*pRetVal == resultLocal, $"[DacDbi] GetUniqueThreadID cDAC: {*pRetVal}, DAC: {resultLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int GetCurrentException(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetCurrentException(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
