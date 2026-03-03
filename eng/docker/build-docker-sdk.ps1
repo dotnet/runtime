@@ -9,6 +9,8 @@ Param(
   [switch][Alias('w')]$buildWindowsContainers
 )
 
+Set-PSDebug -Trace 1
+
 $ErrorActionPreference = "Stop"
 
 $REPO_ROOT_DIR=$(git -C "$PSScriptRoot" rev-parse --show-toplevel)
