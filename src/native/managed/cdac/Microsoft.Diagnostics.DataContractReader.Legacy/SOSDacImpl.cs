@@ -625,7 +625,7 @@ public sealed unsafe partial class SOSDacImpl
             int hrLocal;
             fixed (DacpCOMInterfacePointerData* interfacesLocalPtr = interfacesLocal)
             {
-                hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocalPtr, &neededLocal)
+                hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocalPtr, &neededLocal);
             }
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
