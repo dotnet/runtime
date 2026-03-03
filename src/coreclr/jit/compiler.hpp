@@ -5404,9 +5404,30 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     BitVecTraits traits(fgBBNumMax + 1, this);
     BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
 
+    // Given an ssaDef and its block, we must consider two edge cases:
+    //  1) ssaDef->GetBlock()->PredBlocks() contains blocks that do not exist in AsPhi()->Uses()
+    //  2) AsPhi()->Uses() contains blocks that do not exist in ssaDef->GetBlock()->PredBlocks()
+    //
+    // We conservatively terminate the walk if either mismatch occurs.
+    //
+    BitVec actualPreds = BitVecOps::MakeEmpty(&traits);
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    {
+        BitVecOps::AddElemD(&traits, actualPreds, pred->bbNum);
+    }
+
     for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
     {
-        GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
+        GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
+
+        if (!BitVecOps::IsMember(&traits, actualPreds, phiArg->gtPredBB->bbNum))
+        {
+            // We have a phi-pred which is not a block pred. Fail the phi inference.
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": phi-pred " FMT_BB " not a block pred\n",
+                    ssaDef->GetBlock()->bbNum, phiArg->gtPredBB->bbNum);
+            return AssertVisit::Abort;
+        }
+
         const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
         ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
