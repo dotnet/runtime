@@ -278,6 +278,7 @@ namespace System.Net.NetworkInformation.Tests
         [ConditionalTheory]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)

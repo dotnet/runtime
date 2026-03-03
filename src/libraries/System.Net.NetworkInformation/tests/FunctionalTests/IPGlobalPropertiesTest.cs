@@ -34,6 +34,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Expected behavior is different on Android")]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
         public void IPGlobalProperties_AccessAllMethods_NoErrors()
         {
             IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
@@ -129,6 +130,7 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [MemberData(nameof(Loopbacks))]
         [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
         public void IPGlobalProperties_TcpListeners_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -145,6 +147,7 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [MemberData(nameof(Loopbacks))]
         [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
         public void IPGlobalProperties_UdpListeners_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp))
@@ -160,6 +163,7 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android))]
         [MemberData(nameof(Loopbacks))]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
         public async Task IPGlobalProperties_TcpActiveConnections_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -190,6 +194,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
         public void IPGlobalProperties_TcpActiveConnections_NotListening()
         {
             TcpConnectionInformation[] tcpCconnections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();

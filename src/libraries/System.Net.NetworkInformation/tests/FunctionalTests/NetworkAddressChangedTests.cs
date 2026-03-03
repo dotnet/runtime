@@ -12,6 +12,7 @@ namespace System.Net.NetworkInformation.Tests
         private readonly NetworkAddressChangedEventHandler _addressHandler = delegate { };
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
         public void NetworkAddressChanged_AddRemove_Success()
         {
             NetworkChange.NetworkAddressChanged += _addressHandler;
@@ -19,6 +20,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.illumos | TestPlatforms.Solaris, "Not yet implemented for SunOS")]
         public void NetworkAddressChanged_JustRemove_Success()
         {
             NetworkChange.NetworkAddressChanged -= _addressHandler;
