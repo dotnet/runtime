@@ -299,6 +299,7 @@ foreach ($pr in $candidates) {
 
     # Classify reviewers
     $hasOwnerApproval = $false
+    $hasCurrentOwnerApproval = $false
     $hasTriagerApproval = $false
     $hasAnyApproval = $false
     $hasStaleApproval = $false
@@ -315,7 +316,10 @@ foreach ($pr in $candidates) {
             # Check if approval is on the current head commit
             $isStale = $headCommitOid -and $rev.commit -and $rev.commit.oid -and ($rev.commit.oid -ne $headCommitOid)
             if ($isStale) { $hasStaleApproval = $true }
-            if ($prOwners -contains $login) { $hasOwnerApproval = $true }
+            if ($prOwners -contains $login) {
+                $hasOwnerApproval = $true
+                if (-not $isStale) { $hasCurrentOwnerApproval = $true }
+            }
             elseif ($communityTriagers -contains $login) { $hasTriagerApproval = $true }
         }
     }
@@ -421,6 +425,12 @@ foreach ($pr in $candidates) {
     elseif ($daysSinceUpdate -gt 14) {
         $prNextAction = "@$($authorLogin): merge main (stale $([int]$daysSinceUpdate)d)"
         $who = @($authorLogin)
+    }
+    elseif ($hasOwnerApproval -and -not $hasCurrentOwnerApproval) {
+        $prNextAction = "Maintainer: re-review needed (approval on older commit)"
+        $staleOwners = @($approverLogins | Where-Object { $prOwners -contains $_ }) | Select-Object -First 2
+        if ($staleOwners.Count -gt 0) { $who = $staleOwners }
+        elseif ($prOwners.Count -gt 0) { $who = @($prOwners | Select-Object -First 2) }
     }
     elseif ($ciScore -eq 1 -and $conflictScore -eq 1 -and $maintScore -ge 0.75 -and $feedbackScore -eq 1) {
         $prNextAction = "Ready to merge"
