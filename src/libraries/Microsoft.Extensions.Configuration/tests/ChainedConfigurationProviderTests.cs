@@ -76,6 +76,27 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.NotEqual(valueBefore, valueAfter);
         }
 
+        [Fact]
+        public void ChainedConfiguration_ReloadDoesNotPropagateToInnerConfigurationSection()
+        {
+            var innerConfig = new ConfigurationBuilder()
+                .Add(new RandomValueConfigurationSource("Section:Random"))
+                .Build();
+
+            var outerConfig = new ConfigurationBuilder()
+                .AddConfiguration(innerConfig.GetSection("Section"))
+                .Build();
+
+            string? valueBefore = outerConfig["Random"];
+            Assert.NotNull(valueBefore);
+
+            outerConfig.Reload();
+
+            string? valueAfter = outerConfig["Random"];
+            Assert.NotNull(valueAfter);
+            Assert.Equal(valueBefore, valueAfter);
+        }
+
         private class TestConfigurationProvider : ConfigurationProvider
         {
             public TestConfigurationProvider(string key, string value)
@@ -84,14 +105,24 @@ namespace Microsoft.Extensions.Configuration.Test
 
         private class RandomValueConfigurationSource : IConfigurationSource
         {
+            private readonly string _key;
+
+            public RandomValueConfigurationSource(string key = "Random")
+                => _key = key;
+
             public IConfigurationProvider Build(IConfigurationBuilder builder)
-                => new RandomValueConfigurationProvider();
+                => new RandomValueConfigurationProvider(_key);
         }
 
         private class RandomValueConfigurationProvider : ConfigurationProvider
         {
+            private readonly string _key;
+
+            public RandomValueConfigurationProvider(string key)
+                => _key = key;
+
             public override void Load()
-                => Data["Random"] = Guid.NewGuid().ToString();
+                => Data[_key] = Guid.NewGuid().ToString();
         }
     }
 }
