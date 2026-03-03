@@ -168,7 +168,24 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetMetadata(ulong vmModule, nint pTargetBuffer) => _legacy is not null ? _legacy.GetMetadata(vmModule, pTargetBuffer) : HResults.E_NOTIMPL;
 
-    public int GetSymbolsBuffer(ulong vmModule, nint pTargetBuffer, int* pSymbolFormat) => _legacy is not null ? _legacy.GetSymbolsBuffer(vmModule, pTargetBuffer, pSymbolFormat) : HResults.E_NOTIMPL;
+    public int GetSymbolsBuffer(ulong vmModule, nint pTargetBuffer, int* pSymbolFormat)
+    {
+        // TargetBuffer: { CORDB_ADDRESS pAddress(8); ULONG cbSize(4); }
+        // SymbolFormat: kSymbolFormatNone=0, kSymbolFormatPDB=1
+        *(ulong*)pTargetBuffer = 0;
+        *(uint*)(pTargetBuffer + 8) = 0;
+        *pSymbolFormat = 0; // kSymbolFormatNone
+
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle mh = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+        if (loader.TryGetSymbolStream(mh, out TargetPointer buffer, out uint size) && size > 0)
+        {
+            *(ulong*)pTargetBuffer = buffer.Value;
+            *(uint*)(pTargetBuffer + 8) = size;
+            *pSymbolFormat = 1; // kSymbolFormatPDB
+        }
+        return HResults.S_OK;
+    }
 
     public int GetModuleData(ulong vmModule, nint pData)
     {
@@ -935,7 +952,18 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetLoaderHeapMemoryRanges(nint pRanges) => _legacy is not null ? _legacy.GetLoaderHeapMemoryRanges(pRanges) : HResults.E_NOTIMPL;
 
-    public int IsModuleMapped(ulong pModule, int* isModuleMapped) => _legacy is not null ? _legacy.IsModuleMapped(pModule, isModuleMapped) : HResults.E_NOTIMPL;
+    public int IsModuleMapped(ulong pModule, int* isModuleMapped)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle mh = loader.GetModuleHandleFromModulePtr(new TargetPointer(pModule));
+        if (loader.TryGetLoadedImageContents(mh, out _, out _, out uint imageFlags))
+        {
+            *isModuleMapped = (imageFlags & 0x01) != 0 ? 1 : 0; // FLAG_MAPPED
+            return HResults.S_OK;
+        }
+        *isModuleMapped = 0;
+        return 1; // S_FALSE - no loaded image
+    }
 
     public int MetadataUpdatesApplied(byte* pResult) => _legacy is not null ? _legacy.MetadataUpdatesApplied(pResult) : HResults.E_NOTIMPL;
 
