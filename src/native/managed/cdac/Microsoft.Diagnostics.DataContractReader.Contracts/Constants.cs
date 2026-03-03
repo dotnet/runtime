@@ -13,6 +13,7 @@ public static class Constants
         public const string ThreadStore = nameof(ThreadStore);
         public const string FinalizerThread = nameof(FinalizerThread);
         public const string GCThread = nameof(GCThread);
+        public const string Debugger = nameof(Debugger);
 
         public const string FeatureCOMInterop = nameof(FeatureCOMInterop);
         public const string FeatureComWrappers = nameof(FeatureComWrappers);

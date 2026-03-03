@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices.Marshalling;
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Data = Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -28,7 +29,29 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int Destroy() => _legacy is not null ? _legacy.Destroy() : HResults.E_NOTIMPL;
 
-    public int IsLeftSideInitialized(int* pResult) => _legacy is not null ? _legacy.IsLeftSideInitialized(pResult) : HResults.E_NOTIMPL;
+    public int IsLeftSideInitialized(int* pResult)
+    {
+        TargetPointer debuggerPtr = _target.ReadGlobalPointer(Constants.Globals.Debugger);
+        if (debuggerPtr != TargetPointer.Null)
+        {
+            Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
+            *pResult = debugger.LeftSideInitialized != 0 ? 1 : 0;
+        }
+        else
+        {
+            *pResult = 0;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            int legacyResult;
+            int legacyHr = _legacy.IsLeftSideInitialized(&legacyResult);
+            Debug.Assert(legacyHr == HResults.S_OK);
+            Debug.Assert(legacyResult == *pResult, $"IsLeftSideInitialized mismatch: cDAC={*pResult} legacy={legacyResult}");
+        }
+#endif
+        return HResults.S_OK;
+    }
 
     public int GetAppDomainFromId(uint appdomainId, ulong* pRetVal)
     {
@@ -669,9 +692,45 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int AreOptimizationsDisabled(ulong vmModule, uint methodTk, int* pOptimizationsDisabled) => _legacy is not null ? _legacy.AreOptimizationsDisabled(vmModule, methodTk, pOptimizationsDisabled) : HResults.E_NOTIMPL;
 
-    public int GetDefinesBitField(uint* pDefines) => _legacy is not null ? _legacy.GetDefinesBitField(pDefines) : HResults.E_NOTIMPL;
+    public int GetDefinesBitField(uint* pDefines)
+    {
+        if (pDefines == null) return HResults.E_INVALIDARG;
+        TargetPointer debuggerPtr = _target.ReadGlobalPointer(Constants.Globals.Debugger);
+        if (debuggerPtr == TargetPointer.Null)
+            return unchecked((int)0x80131c23); // CORDBG_E_NOTREADY
+        Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
+        *pDefines = debugger.Defines;
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint legacyResult;
+            int legacyHr = _legacy.GetDefinesBitField(&legacyResult);
+            Debug.Assert(legacyHr == HResults.S_OK);
+            Debug.Assert(legacyResult == *pDefines, $"GetDefinesBitField mismatch: cDAC={*pDefines:x} legacy={legacyResult:x}");
+        }
+#endif
+        return HResults.S_OK;
+    }
 
-    public int GetMDStructuresVersion(uint* pMDStructuresVersion) => _legacy is not null ? _legacy.GetMDStructuresVersion(pMDStructuresVersion) : HResults.E_NOTIMPL;
+    public int GetMDStructuresVersion(uint* pMDStructuresVersion)
+    {
+        if (pMDStructuresVersion == null) return HResults.E_INVALIDARG;
+        TargetPointer debuggerPtr = _target.ReadGlobalPointer(Constants.Globals.Debugger);
+        if (debuggerPtr == TargetPointer.Null)
+            return unchecked((int)0x80131c23); // CORDBG_E_NOTREADY
+        Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
+        *pMDStructuresVersion = debugger.MDStructuresVersion;
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint legacyResult;
+            int legacyHr = _legacy.GetMDStructuresVersion(&legacyResult);
+            Debug.Assert(legacyHr == HResults.S_OK);
+            Debug.Assert(legacyResult == *pMDStructuresVersion, $"GetMDStructuresVersion mismatch: cDAC={*pMDStructuresVersion} legacy={legacyResult}");
+        }
+#endif
+        return HResults.S_OK;
+    }
 
     public int GetActiveRejitILCodeVersionNode(ulong vmModule, uint methodTk, ulong* pVmILCodeVersionNode) => _legacy is not null ? _legacy.GetActiveRejitILCodeVersionNode(vmModule, methodTk, pVmILCodeVersionNode) : HResults.E_NOTIMPL;
 

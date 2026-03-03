@@ -38,6 +38,7 @@ public enum DataType
     Module,
     ModuleLookupMap,
     AppDomain,
+    Debugger,
     SystemDomain,
     Assembly,
     LoaderAllocator,

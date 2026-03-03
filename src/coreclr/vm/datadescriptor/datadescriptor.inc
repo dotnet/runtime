@@ -297,6 +297,13 @@ CDAC_TYPE_FIELD(SystemDomain, /*GlobalLoaderAllocator*/, GlobalLoaderAllocator, 
 CDAC_TYPE_FIELD(SystemDomain, /*pointer*/, SystemAssembly, cdac_data<SystemDomain>::SystemAssembly)
 CDAC_TYPE_END(SystemDomain)
 
+CDAC_TYPE_BEGIN(Debugger)
+CDAC_TYPE_INDETERMINATE(Debugger)
+CDAC_TYPE_FIELD(Debugger, /*int32*/, LeftSideInitialized, cdac_data<Debugger>::LeftSideInitialized)
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, Defines, cdac_data<Debugger>::Defines)
+CDAC_TYPE_FIELD(Debugger, /*uint32*/, MDStructuresVersion, cdac_data<Debugger>::MDStructuresVersion)
+CDAC_TYPE_END(Debugger)
+
 CDAC_TYPE_BEGIN(ArrayListBase)
 CDAC_TYPE_INDETERMINATE(ArrayListBase)
 CDAC_TYPE_FIELD(ArrayListBase, /*uint32*/, Count, cdac_data<ArrayListBase>::Count)
@@ -1142,6 +1149,7 @@ CDAC_GLOBAL_POINTER(SystemDomain, cdac_data<SystemDomain>::SystemDomainPtr)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
+CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 
 // Add FrameIdentifier for all defined Frame types. Used to differentiate Frame objects.
 #define FRAME_TYPE_NAME(frameType) \
