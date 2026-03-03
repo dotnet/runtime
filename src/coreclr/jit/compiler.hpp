@@ -5402,8 +5402,8 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     // Keep track of the set of phi-preds
     //
     BitVecTraits traits(fgBBNumMax + 1, this);
-    BitVec       phiPreds    = BitVecOps::MakeEmpty(&traits);
-    BitVec       actualPreds = BitVecOps::MakeEmpty(&traits);
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+    BitVec       actualPreds   = BitVecOps::MakeEmpty(&traits);
 
     // Given an ssaDef and its block, we must consider two edge cases:
     //  1) ssaDef->GetBlock()->PredBlocks() contains blocks that do not exist in AsPhi()->Uses()
@@ -5438,15 +5438,16 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             // The visitor wants to abort the walk.
             return AssertVisit::Abort;
         }
-        BitVecOps::AddElemD(&traits, phiPreds, phiArg->gtPredBB->bbNum);
+        BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
     }
 
+    // Verify the set of phi-preds covers the set of block preds
+    //
     // We can just do BitVecOps::Equal(&traits, phiPreds, actualPreds), but
-    // re-iterating the preds is typically cheaper (phi args don't usually have many preds)
-    // while for BitVecOps::Equal we need to iterate over all the bits up to fgBBNumMax (can be many).
+    // re-iterating the preds is cheaper.
     for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
     {
-        if (!BitVecOps::IsMember(&traits, phiPreds, pred->bbNum))
+        if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
         {
             JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
                     ssaDef->GetBlock()->bbNum, pred->bbNum);
@@ -5456,7 +5457,6 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             return AssertVisit::Abort;
         }
     }
-
     return AssertVisit::Continue;
 }
 
