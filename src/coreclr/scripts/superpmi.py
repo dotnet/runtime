@@ -3058,8 +3058,6 @@ class SuperPMIReplayThroughputDiff:
         if self.coreclr_args.jitoption:
             for o in self.coreclr_args.jitoption:
                 base_option_flags += "-jitoption", o
-        # Disable JitReportMetrics for throughput diffs to avoid measurement noise
-        base_option_flags += "-jitoption", "force", "JitReportMetrics=0"
 
         diff_option_flags = []
         if self.coreclr_args.diff_jit_option:
@@ -3068,8 +3066,6 @@ class SuperPMIReplayThroughputDiff:
         if self.coreclr_args.jitoption:
             for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
-        # Disable JitReportMetrics for throughput diffs to avoid measurement noise
-        diff_option_flags += "-jit2option", "force", "JitReportMetrics=0"
 
         base_jit_build_string_decoded = decode_clrjit_build_string(self.base_jit_path)
         diff_jit_build_string_decoded = decode_clrjit_build_string(self.diff_jit_path)
