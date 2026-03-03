@@ -1175,6 +1175,14 @@ CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 0)
 #endif // FEATURE_ON_STACK_REPLACEMENT
+#ifdef FEATURE_WEBCIL
+CDAC_GLOBAL(FeatureWebcil, uint8, 1)
+CDAC_GLOBAL(WebcilHeaderSize, uint32, sizeof(WebcilHeader))
+CDAC_GLOBAL(WebcilSectionHeaderSize, uint32, sizeof(WebcilSectionHeader))
+CDAC_GLOBAL(WebcilCoffSectionsOffset, uint32, offsetof(WebcilHeader, CoffSections))
+#else
+CDAC_GLOBAL(FeatureWebcil, uint8, 0)
+#endif
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)

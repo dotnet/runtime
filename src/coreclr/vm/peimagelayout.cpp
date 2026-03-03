@@ -203,6 +203,22 @@ DWORD SectionCharacteristicsToPageProtection(UINT characteristics)
 }
 #endif // TARGET_UNIX
 
+void PEImageLayout::InitDecoders(void* data, COUNT_T size)
+{
+#ifdef FEATURE_WEBCIL
+    if (WebcilDecoder::DetectWebcilFormat(data, size))
+    {
+        m_format = FORMAT_WEBCIL;
+        m_webcilDecoder.Init(data, size);
+        m_peDecoder.Init(data, size); // Initialize base/size/flags for cDAC
+    }
+    else
+#endif
+    {
+        m_peDecoder.Init(data, size);
+    }
+}
+
 // IMAGE_REL_BASED_PTR is architecture specific reloc of virtual address
 #ifdef TARGET_64BIT
 #define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_DIR64
@@ -656,18 +672,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         // Image was provided as flat data via external assembly probing.
         // We do not manage the data - just initialize with it directly.
         _ASSERTE(dataSize != 0);
-#ifdef FEATURE_WEBCIL
-        if (WebcilDecoder::DetectWebcilFormat(data, (COUNT_T)dataSize))
-        {
-            m_format = FORMAT_WEBCIL;
-            m_webcilDecoder.Init(data, (COUNT_T)dataSize);
-            m_peDecoder.Init(data, (COUNT_T)dataSize); // Initialize base/size/flags for cDAC
-        }
-        else
-#endif
-        {
-            m_peDecoder.Init(data, (COUNT_T)dataSize);
-        }
+        InitDecoders(data, (COUNT_T)dataSize);
         return;
     }
 
@@ -775,18 +780,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         }
     }
 
-#ifdef FEATURE_WEBCIL
-    if (WebcilDecoder::DetectWebcilFormat(addr, (COUNT_T)size))
-    {
-        m_format = FORMAT_WEBCIL;
-        m_webcilDecoder.Init(addr, (COUNT_T)size);
-        m_peDecoder.Init(addr, (COUNT_T)size); // Initialize base/size/flags for cDAC
-    }
-    else
-#endif
-    {
-        m_peDecoder.Init(addr, (COUNT_T)size);
-    }
+    InitDecoders(addr, (COUNT_T)size);
 }
 
 FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size)
@@ -834,18 +828,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
             ThrowLastError();
 
         memcpy(m_FileView, array, size);
-#ifdef FEATURE_WEBCIL
-        if (WebcilDecoder::DetectWebcilFormat(m_FileView, size))
-        {
-            m_format = FORMAT_WEBCIL;
-            m_webcilDecoder.Init((void*)m_FileView, size);
-            m_peDecoder.Init((void*)m_FileView, size); // Initialize base/size/flags for cDAC
-        }
-        else
-#endif
-        {
-            m_peDecoder.Init((void*)m_FileView, size);
-        }
+        InitDecoders((void*)m_FileView, size);
     }
 }
 

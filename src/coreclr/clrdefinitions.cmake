@@ -153,7 +153,7 @@ endif()
 
 if(FEATURE_WEBCIL)
   add_compile_definitions(FEATURE_WEBCIL)
-endif(FEATURE_WEBCIL)
+endif()
 
 add_compile_definitions($<${FEATURE_JAVAMARSHAL}:FEATURE_JAVAMARSHAL>)
 

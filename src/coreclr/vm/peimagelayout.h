@@ -219,6 +219,11 @@ public:
 #endif
 
 protected:
+    // Initialize the appropriate decoder(s) based on format detection.
+    // For Webcil images, initializes both the WebcilDecoder and PEDecoder (for cDAC base/size/flags).
+    // For PE images, initializes only the PEDecoder.
+    void InitDecoders(void* data, COUNT_T size);
+
     // Protected forwarding helpers for subclass access to PEDecoder protected members
     IMAGE_NT_HEADERS* FindNTHeaders() const { return m_peDecoder.FindNTHeaders(); }
     IMAGE_SECTION_HEADER* RvaToSection(RVA rva) const { return m_peDecoder.RvaToSection(rva); }

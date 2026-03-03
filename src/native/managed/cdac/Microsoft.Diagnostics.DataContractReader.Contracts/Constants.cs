@@ -20,6 +20,10 @@ public static class Constants
         public const string FeatureJavaMarshal = nameof(FeatureJavaMarshal);
         public const string FeatureOnStackReplacement = nameof(FeatureOnStackReplacement);
         public const string FeaturePortableEntrypoints = nameof(FeaturePortableEntrypoints);
+        public const string FeatureWebcil = nameof(FeatureWebcil);
+        public const string WebcilHeaderSize = nameof(WebcilHeaderSize);
+        public const string WebcilSectionHeaderSize = nameof(WebcilSectionHeaderSize);
+        public const string WebcilCoffSectionsOffset = nameof(WebcilCoffSectionsOffset);
 
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
