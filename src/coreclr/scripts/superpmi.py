@@ -3556,11 +3556,8 @@ def write_metricdiff_markdown_summary(write_fh, base_jit_options, diff_jit_optio
 
     write_jit_options(base_jit_options, diff_jit_options, write_fh)
 
-    # Collect the union of all metrics across all collections
-    all_metrics = []
-    for (_, metrics_list, _, _) in metric_diffs:
-        for m in metrics_list:
-            all_metrics.append(m)
+    # Collect the union of all metrics across all collections (preserving first-seen order)
+    all_metrics = list(dict.fromkeys(m for (_, metrics_list, _, _) in metric_diffs for m in metrics_list))
 
     any_significant = False
     metrics_with_diffs = set()
