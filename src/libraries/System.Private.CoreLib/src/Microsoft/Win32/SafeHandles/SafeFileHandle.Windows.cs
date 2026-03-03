@@ -274,8 +274,16 @@ namespace Microsoft.Win32.SafeHandles
                 return System.IO.FileHandleType.Pipe;
             }
 
-            // If GetNamedPipeInfo fails, it's likely a socket
-            return System.IO.FileHandleType.Socket;
+            // GetNamedPipeInfo failed - check the error code
+            int error = Marshal.GetLastPInvokeError();
+            if (error == Interop.Errors.ERROR_INVALID_HANDLE)
+            {
+                // ERROR_INVALID_HANDLE means this is a socket (pipes return true, sockets return this error)
+                return System.IO.FileHandleType.Socket;
+            }
+
+            // Unexpected error - throw
+            throw new Win32Exception(error);
         }
 
         private unsafe System.IO.FileHandleType GetDiskBasedType()
@@ -287,19 +295,32 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     return System.IO.FileHandleType.Directory;
                 }
-            }
 
-            // Check if it's a reparse point (symbolic link) using GetFileInformationByHandleEx
-            Interop.Kernel32.FILE_BASIC_INFO basicInfo;
-            if (Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileBasicInfo, &basicInfo, (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
-            {
-                if ((basicInfo.FileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0)
+                // Check if it's a reparse point - only symlinks should return SymbolicLink
+                if ((fileInfo.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0)
                 {
-                    return System.IO.FileHandleType.SymbolicLink;
+                    // Check the reparse tag to distinguish symlinks from other reparse points (junctions, mount points, etc.)
+                    const int FileAttributeTagInfo = 35; // FileAttributeTagInformation
+                    FILE_ATTRIBUTE_TAG_INFO tagInfo;
+                    if (Interop.Kernel32.GetFileInformationByHandleEx(this, FileAttributeTagInfo, &tagInfo, (uint)sizeof(FILE_ATTRIBUTE_TAG_INFO)))
+                    {
+                        if (tagInfo.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK)
+                        {
+                            return System.IO.FileHandleType.SymbolicLink;
+                        }
+                    }
+                    // Other reparse points (junctions, mount points, etc.) are still regular files/directories
                 }
             }
 
             return System.IO.FileHandleType.RegularFile;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct FILE_ATTRIBUTE_TAG_INFO
+        {
+            internal uint FileAttributes;
+            internal uint ReparseTag;
         }
 
         internal long GetFileLength()

@@ -40,7 +40,7 @@ namespace System.IO.Tests
             await readerTask;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [Fact]
         public void GetFileType_SymbolicLink()
         {
             string targetPath = GetTestFilePath();
@@ -62,7 +62,7 @@ namespace System.IO.Tests
         {
             string[] possibleBlockDevices = { "/dev/sda", "/dev/loop0", "/dev/vda", "/dev/nvme0n1" };
 
-            string blockDevice = null;
+            string? blockDevice = null;
             foreach (string device in possibleBlockDevices)
             {
                 if (File.Exists(device))
@@ -72,7 +72,7 @@ namespace System.IO.Tests
                 }
             }
 
-            if (blockDevice == null)
+            if (blockDevice is null)
             {
                 throw new SkipTestException("No accessible block device found for testing");
             }
