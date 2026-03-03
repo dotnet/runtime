@@ -3,6 +3,7 @@
 
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -518,16 +519,11 @@ namespace System.IO.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(HasNotReadyDrive))]
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
         public void NotReadyDriveAsPath_ThrowsDirectoryNotFoundException()
         {   // Behavior is suspect, should really have thrown IOException similar to the SubDirectory case
-            var drive = IOServices.GetNotReadyDrive();
-            if (drive == null)
-            {
-                Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
-                return;
-            }
+            string drive = s_notReadyDrive ?? throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
 
             Assert.Throws<DirectoryNotFoundException>(() =>
             {
@@ -535,16 +531,11 @@ namespace System.IO.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(HasNotReadyDrive))]
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
         public void SubdirectoryOnNotReadyDriveAsPath_ThrowsIOException()
         {
-            var drive = IOServices.GetNotReadyDrive();
-            if (drive == null)
-            {
-                Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
-                return;
-            }
+            string drive = s_notReadyDrive ?? throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
 
             // 'Device is not ready'
             Assert.Throws<IOException>(() =>
@@ -552,6 +543,9 @@ namespace System.IO.Tests
                 Create(Path.Combine(drive, "Subdirectory"));
             });
         }
+
+        private static readonly string? s_notReadyDrive = IOServices.GetNotReadyDrive();
+        private static bool HasNotReadyDrive => s_notReadyDrive is not null;
 
 #if !TEST_WINRT // Cannot set current directory to root from appcontainer with it's default ACL
         /*

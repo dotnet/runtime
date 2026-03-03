@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -301,37 +302,30 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(HasNotReadyDrive))]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void NotReadyDriveAsPath_ReturnsFalse()
         {
-            var drive = IOServices.GetNotReadyDrive();
-            if (drive == null)
-            {
-                Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
-                return;
-            }
+            string drive = s_notReadyDrive ?? throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
 
             bool result = Exists(drive);
 
             Assert.False(result);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(HasNotReadyDrive))]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void SubdirectoryOnNotReadyDriveAsPath_ReturnsFalse()
         {
-            var drive = IOServices.GetNotReadyDrive();
-            if (drive == null)
-            {
-                Console.WriteLine("Skipping test. Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
-                return;
-            }
+            string drive = s_notReadyDrive ?? throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
 
             bool result = Exists(Path.Combine(drive, "Subdirectory"));
 
             Assert.False(result);
         }
+
+        private static readonly string? s_notReadyDrive = IOServices.GetNotReadyDrive();
+        private static bool HasNotReadyDrive => s_notReadyDrive is not null;
 
         // Not all drives may be accessible (locked, no rights, etc.), and as such would return false.
         // eg. Create a new volume, bitlocker it, and lock it. This new volume is no longer accessible
