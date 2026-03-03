@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -424,7 +424,7 @@ namespace System.Text.RegularExpressions
                         }
                         else if ((_options & RegexOptions.AnyNewLine) != 0)
                         {
-                            _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.NotNewLineOrCarriageReturnClass);
+                            _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.NotAnyNewLineClass);
                         }
                         else
                         {
@@ -1692,18 +1692,18 @@ namespace System.Text.RegularExpressions
             RegexOptions opts = _options;
             RegexOptions lookaheadOpts = opts & ~RegexOptions.RightToLeft;
             RegexOptions lookbehindOpts = opts | RegexOptions.RightToLeft;
-            RegexOptions lookaheadNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
-            RegexOptions lookbehindNoCase = lookbehindOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lookaheadOptsNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lookbehindOptsNoCase = lookbehindOpts & ~RegexOptions.IgnoreCase;
 
             // \r\n\z
             var crlfEnd = new RegexNode(RegexNodeKind.Concatenate, lookaheadOpts);
-            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, lookaheadNoCase, '\r'));
-            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, lookaheadNoCase, '\n'));
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, lookaheadOptsNoCase, '\r'));
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, lookaheadOptsNoCase, '\n'));
             crlfEnd.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
 
             // [\r\u0085\u2028\u2029]?\z — optional CR-or-Unicode-newline followed by end of string
             var crUniOptEnd = new RegexNode(RegexNodeKind.Concatenate, lookaheadOpts);
-            crUniOptEnd.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadNoCase, CrUnicodeNewLineClass).MakeQuantifier(false, 0, 1));
+            crUniOptEnd.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadOptsNoCase, CrUnicodeNewLineClass).MakeQuantifier(false, 0, 1));
             crUniOptEnd.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
 
             // (?=\r\n\z|[\r\u0085\u2028\u2029]?\z)
@@ -1715,11 +1715,11 @@ namespace System.Text.RegularExpressions
 
             // (?<!\r)
             var negLookbehind = new RegexNode(RegexNodeKind.NegativeLookaround, lookbehindOpts);
-            negLookbehind.AddChild(new RegexNode(RegexNodeKind.One, lookbehindNoCase, '\r'));
+            negLookbehind.AddChild(new RegexNode(RegexNodeKind.One, lookbehindOptsNoCase, '\r'));
 
             // (?=\n\z)
             var nEnd = new RegexNode(RegexNodeKind.Concatenate, lookaheadOpts);
-            nEnd.AddChild(new RegexNode(RegexNodeKind.One, lookaheadNoCase, '\n'));
+            nEnd.AddChild(new RegexNode(RegexNodeKind.One, lookaheadOptsNoCase, '\n'));
             nEnd.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
             var lookahead2 = new RegexNode(RegexNodeKind.PositiveLookaround, lookaheadOpts);
             lookahead2.AddChild(nEnd);
@@ -1747,24 +1747,24 @@ namespace System.Text.RegularExpressions
             RegexOptions opts = _options;
             RegexOptions lookaheadOpts = opts & ~RegexOptions.RightToLeft;
             RegexOptions lookbehindOpts = opts | RegexOptions.RightToLeft;
-            RegexOptions lookaheadNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
-            RegexOptions lookbehindNoCase = lookbehindOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lookaheadOptsNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lookbehindOptsNoCase = lookbehindOpts & ~RegexOptions.IgnoreCase;
 
             // (?=[\r\u0085\u2028\u2029]|\z)
             // \r covers both \r\n and bare \r (lookahead only checks the first char)
             var innerAlt = new RegexNode(RegexNodeKind.Alternate, lookaheadOpts);
-            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadNoCase, CrUnicodeNewLineClass));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadOptsNoCase, CrUnicodeNewLineClass));
             innerAlt.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
             var lookahead1 = new RegexNode(RegexNodeKind.PositiveLookaround, lookaheadOpts);
             lookahead1.AddChild(innerAlt);
 
             // (?<!\r)
             var negLookbehind = new RegexNode(RegexNodeKind.NegativeLookaround, lookbehindOpts);
-            negLookbehind.AddChild(new RegexNode(RegexNodeKind.One, lookbehindNoCase, '\r'));
+            negLookbehind.AddChild(new RegexNode(RegexNodeKind.One, lookbehindOptsNoCase, '\r'));
 
             // (?=\n)
             var lookahead2 = new RegexNode(RegexNodeKind.PositiveLookaround, lookaheadOpts);
-            lookahead2.AddChild(new RegexNode(RegexNodeKind.One, lookaheadNoCase, '\n'));
+            lookahead2.AddChild(new RegexNode(RegexNodeKind.One, lookaheadOptsNoCase, '\n'));
 
             // (?<!\r)(?=\n)
             var branch2 = new RegexNode(RegexNodeKind.Concatenate, opts);
@@ -1789,24 +1789,24 @@ namespace System.Text.RegularExpressions
             RegexOptions opts = _options;
             RegexOptions lookaheadOpts = opts & ~RegexOptions.RightToLeft;
             RegexOptions lookbehindOpts = opts | RegexOptions.RightToLeft;
-            RegexOptions lookaheadNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
-            RegexOptions lookbehindNoCase = lookbehindOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lookaheadOptsNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lookbehindOptsNoCase = lookbehindOpts & ~RegexOptions.IgnoreCase;
 
             // (?<=[\n\u0085\u2028\u2029]|\A)
             // \n covers both \r\n and bare \n (lookbehind only checks the last char)
             var innerAlt = new RegexNode(RegexNodeKind.Alternate, lookbehindOpts);
-            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookbehindNoCase, NlUnicodeNewLineClass));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookbehindOptsNoCase, NlUnicodeNewLineClass));
             innerAlt.AddChild(new RegexNode(RegexNodeKind.Beginning, lookbehindOpts));
             var lookbehind1 = new RegexNode(RegexNodeKind.PositiveLookaround, lookbehindOpts);
             lookbehind1.AddChild(innerAlt);
 
             // (?<=\r)
             var lookbehind2 = new RegexNode(RegexNodeKind.PositiveLookaround, lookbehindOpts);
-            lookbehind2.AddChild(new RegexNode(RegexNodeKind.One, lookbehindNoCase, '\r'));
+            lookbehind2.AddChild(new RegexNode(RegexNodeKind.One, lookbehindOptsNoCase, '\r'));
 
             // (?!\n)
             var negLookahead = new RegexNode(RegexNodeKind.NegativeLookaround, lookaheadOpts);
-            negLookahead.AddChild(new RegexNode(RegexNodeKind.One, lookaheadNoCase, '\n'));
+            negLookahead.AddChild(new RegexNode(RegexNodeKind.One, lookaheadOptsNoCase, '\n'));
 
             // (?<=\r)(?!\n)
             var branch2 = new RegexNode(RegexNodeKind.Concatenate, opts);
