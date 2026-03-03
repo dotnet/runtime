@@ -123,7 +123,7 @@ namespace System.Xml.XmlNodeReaderTests
         }
 
         [Fact]
-        public void XmlNodeReaderMoveToUnexistedAttribute()
+        public void NodeReaderMoveToNonexistentAttribute()
         {
             string xml = "<root><child attr1='value1'><other /></child></root>";
             XmlNodeReader nodeReader = NodeReaderTestHelper.CreateNodeReader(xml);
