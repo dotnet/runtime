@@ -78,7 +78,12 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return HResults.S_OK;
     }
 
-    public int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal) => _legacy is not null ? _legacy.GetAppDomainObject(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
+    public int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal)
+    {
+        // AppDomain::GetRawExposedObjectHandleForDebugger() always returns NULL in .NET Core
+        *pRetVal = 0;
+        return HResults.S_OK;
+    }
 
     public int GetAssemblyFromDomainAssembly(ulong vmDomainAssembly, ulong* vmAssembly)
     {
@@ -189,7 +194,38 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetThreadHandle(ulong vmThread, nint pRetVal) => _legacy is not null ? _legacy.GetThreadHandle(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetThreadObject(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetThreadObject(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int GetThreadObject(ulong vmThread, ulong* pRetVal)
+    {
+        const uint TS_Dead = 0x800;
+        const uint TS_Unstarted = 0x400;
+        const uint TS_Detached = 0x0040;
+
+        IThread threadContract = _target.Contracts.Thread;
+        ThreadData threadData = threadContract.GetThreadData(new TargetPointer(vmThread));
+
+        if ((threadData.State & TS_Dead) != 0 ||
+            (threadData.State & TS_Unstarted) != 0 ||
+            (threadData.State & TS_Detached) != 0)
+        {
+            return unchecked((int)0x8013132d); // CORDBG_E_BAD_THREAD_STATE
+        }
+
+        // Read ExposedObject (named "GCHandle" in data descriptor)
+        Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
+        TargetPointer exposedObject = _target.ReadPointer(new TargetPointer(vmThread) + (ulong)type.Fields["GCHandle"].Offset);
+        *pRetVal = exposedObject.Value;
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong legacyResult;
+            int legacyHr = _legacy.GetThreadObject(vmThread, &legacyResult);
+            Debug.Assert(legacyHr == HResults.S_OK || legacyHr == unchecked((int)0x8013132d));
+            if (legacyHr == HResults.S_OK)
+                Debug.Assert(legacyResult == *pRetVal, $"GetThreadObject mismatch: cDAC={*pRetVal:x} legacy={legacyResult:x}");
+        }
+#endif
+        return HResults.S_OK;
+    }
 
     public int GetThreadAllocInfo(ulong vmThread, nint pThreadAllocInfo)
     {
