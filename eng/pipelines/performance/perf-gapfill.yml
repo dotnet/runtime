@@ -1,0 +1,83 @@
+# perf-gapfill.yml — Triggered programmatically by the GapFiller tool to fill commit gaps in perf data.
+# No CI/PR triggers. Supports selective job group execution and BCS-cached builds.
+
+trigger: none
+pr: none
+
+parameters:
+  # Per-job-group toggles
+  - name: run_viper_linux
+    type: boolean
+    default: true
+  - name: run_viper_windows
+    type: boolean
+    default: true
+  - name: run_ampere_linux
+    type: boolean
+    default: true
+  - name: run_ampere_windows
+    type: boolean
+    default: true
+  - name: run_android
+    type: boolean
+    default: true
+  - name: run_wasm
+    type: boolean
+    default: true
+
+  # If non-zero, use a cached build from BCS instead of building from source.
+  - name: downloadSpecificBuildId
+    type: number
+    default: 0
+
+  - name: onlySanityCheck
+    type: boolean
+    default: false
+
+resources:
+  repositories:
+    - repository: performance
+      type: git
+      name: internal/dotnet-performance
+
+variables:
+- template: /eng/pipelines/common/variables.yml
+
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+
+      # WASM perf jobs — only included when run_wasm is true
+      - ${{ if eq(parameters.run_wasm, true) }}:
+        - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
+          parameters:
+            ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+              runProfile: 'v8'
+            runtimeRepoAlias: self
+            performanceRepoAlias: performance
+            ${{ if ne(parameters.downloadSpecificBuildId, 0) }}:
+              downloadSpecificBuild:
+                buildId: ${{ parameters.downloadSpecificBuildId }}
+            jobParameters:
+              ${{ if parameters.onlySanityCheck }}:
+                onlySanityCheck: true
+
+      # Runtime perf jobs (non-WASM) — included when ANY non-WASM toggle is true.
+      # TODO: Finer-grained per-job-group control (individual viper/tiger/ampere/android toggles)
+      # requires adding toggle parameters to runtime-perf-jobs.yml in the performance repo.
+      # Currently the template defines viperMicro/tigerMicro/owlMicro/androidMono params
+      # but does not reference them in the job definitions.
+      - ${{ if or(eq(parameters.run_viper_linux, true), eq(parameters.run_viper_windows, true), eq(parameters.run_ampere_linux, true), eq(parameters.run_ampere_windows, true), eq(parameters.run_android, true)) }}:
+        - template: /eng/pipelines/runtime-perf-jobs.yml@performance
+          parameters:
+            runtimeRepoAlias: self
+            performanceRepoAlias: performance
+            ${{ if ne(parameters.downloadSpecificBuildId, 0) }}:
+              downloadSpecificBuild:
+                buildId: ${{ parameters.downloadSpecificBuildId }}
+            jobParameters:
+              ${{ if parameters.onlySanityCheck }}:
+                onlySanityCheck: true
