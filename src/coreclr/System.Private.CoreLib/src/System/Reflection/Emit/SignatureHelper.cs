@@ -392,7 +392,7 @@ namespace System.Reflection.Emit
                 AddData(args.Length);
 
                 foreach (Type t in args)
-                    AddOneArgTypeHelper(t);
+                    AddOneArgTypeHelper(t, scope);
             }
             else if (clsArgument is RuntimeTypeBuilder clsBuilder)
             {
