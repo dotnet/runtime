@@ -16,55 +16,55 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterfaceControl
         _legacy = legacyObj as IDacDbiInterfaceControl;
     }
 
-    public int CheckDbiVersion(nint p0) => _legacy is not null ? _legacy.CheckDbiVersion(p0) : HResults.E_NOTIMPL;
+    public int CheckDbiVersion(DbiVersion* pVersion) => _legacy is not null ? _legacy.CheckDbiVersion(pVersion) : HResults.E_NOTIMPL;
 
     public int FlushCache() => _legacy is not null ? _legacy.FlushCache() : HResults.E_NOTIMPL;
 
-    public int DacSetTargetConsistencyChecks(int p0) => _legacy is not null ? _legacy.DacSetTargetConsistencyChecks(p0) : HResults.E_NOTIMPL;
+    public int DacSetTargetConsistencyChecks(bool fEnableAsserts) => _legacy is not null ? _legacy.DacSetTargetConsistencyChecks(fEnableAsserts) : HResults.E_NOTIMPL;
 
     public int Destroy() => _legacy is not null ? _legacy.Destroy() : HResults.E_NOTIMPL;
 
-    public int IsLeftSideInitialized(nint p0) => _legacy is not null ? _legacy.IsLeftSideInitialized(p0) : HResults.E_NOTIMPL;
+    public int IsLeftSideInitialized(int* pResult) => _legacy is not null ? _legacy.IsLeftSideInitialized(pResult) : HResults.E_NOTIMPL;
 
-    public int GetAppDomainFromId(uint p0, nint p1) => _legacy is not null ? _legacy.GetAppDomainFromId(p0, p1) : HResults.E_NOTIMPL;
+    public int GetAppDomainFromId(uint appdomainId, ulong* pRetVal) => _legacy is not null ? _legacy.GetAppDomainFromId(appdomainId, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetAppDomainId(ulong p0, nint p1) => _legacy is not null ? _legacy.GetAppDomainId(p0, p1) : HResults.E_NOTIMPL;
+    public int GetAppDomainId(ulong vmAppDomain, uint* pRetVal) => _legacy is not null ? _legacy.GetAppDomainId(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetAppDomainObject(ulong p0, nint p1) => _legacy is not null ? _legacy.GetAppDomainObject(p0, p1) : HResults.E_NOTIMPL;
+    public int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal) => _legacy is not null ? _legacy.GetAppDomainObject(vmAppDomain, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetAssemblyFromDomainAssembly(ulong p0, nint p1) => _legacy is not null ? _legacy.GetAssemblyFromDomainAssembly(p0, p1) : HResults.E_NOTIMPL;
+    public int GetAssemblyFromDomainAssembly(ulong vmDomainAssembly, ulong* vmAssembly) => _legacy is not null ? _legacy.GetAssemblyFromDomainAssembly(vmDomainAssembly, vmAssembly) : HResults.E_NOTIMPL;
 
-    public int IsAssemblyFullyTrusted(ulong p0, nint p1) => _legacy is not null ? _legacy.IsAssemblyFullyTrusted(p0, p1) : HResults.E_NOTIMPL;
+    public int IsAssemblyFullyTrusted(ulong vmDomainAssembly, int* pResult) => _legacy is not null ? _legacy.IsAssemblyFullyTrusted(vmDomainAssembly, pResult) : HResults.E_NOTIMPL;
 
-    public int GetAppDomainFullName(ulong p0, nint p1) => _legacy is not null ? _legacy.GetAppDomainFullName(p0, p1) : HResults.E_NOTIMPL;
+    public int GetAppDomainFullName(ulong vmAppDomain, nint pStrName) => _legacy is not null ? _legacy.GetAppDomainFullName(vmAppDomain, pStrName) : HResults.E_NOTIMPL;
 
-    public int GetModuleSimpleName(ulong p0, nint p1) => _legacy is not null ? _legacy.GetModuleSimpleName(p0, p1) : HResults.E_NOTIMPL;
+    public int GetModuleSimpleName(ulong vmModule, nint pStrFilename) => _legacy is not null ? _legacy.GetModuleSimpleName(vmModule, pStrFilename) : HResults.E_NOTIMPL;
 
-    public int GetAssemblyPath(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.GetAssemblyPath(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetAssemblyPath(ulong vmAssembly, nint pStrFilename, int* pResult) => _legacy is not null ? _legacy.GetAssemblyPath(vmAssembly, pStrFilename, pResult) : HResults.E_NOTIMPL;
 
-    public int ResolveTypeReference(nint p0, nint p1) => _legacy is not null ? _legacy.ResolveTypeReference(p0, p1) : HResults.E_NOTIMPL;
+    public int ResolveTypeReference(nint pTypeRefInfo, nint pTargetRefInfo) => _legacy is not null ? _legacy.ResolveTypeReference(pTypeRefInfo, pTargetRefInfo) : HResults.E_NOTIMPL;
 
-    public int GetModulePath(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.GetModulePath(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetModulePath(ulong vmModule, nint pStrFilename, int* pResult) => _legacy is not null ? _legacy.GetModulePath(vmModule, pStrFilename, pResult) : HResults.E_NOTIMPL;
 
-    public int GetMetadata(ulong p0, nint p1) => _legacy is not null ? _legacy.GetMetadata(p0, p1) : HResults.E_NOTIMPL;
+    public int GetMetadata(ulong vmModule, nint pTargetBuffer) => _legacy is not null ? _legacy.GetMetadata(vmModule, pTargetBuffer) : HResults.E_NOTIMPL;
 
-    public int GetSymbolsBuffer(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.GetSymbolsBuffer(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetSymbolsBuffer(ulong vmModule, nint pTargetBuffer, int* pSymbolFormat) => _legacy is not null ? _legacy.GetSymbolsBuffer(vmModule, pTargetBuffer, pSymbolFormat) : HResults.E_NOTIMPL;
 
-    public int GetModuleData(ulong p0, nint p1) => _legacy is not null ? _legacy.GetModuleData(p0, p1) : HResults.E_NOTIMPL;
+    public int GetModuleData(ulong vmModule, nint pData) => _legacy is not null ? _legacy.GetModuleData(vmModule, pData) : HResults.E_NOTIMPL;
 
-    public int GetDomainAssemblyData(ulong p0, nint p1) => _legacy is not null ? _legacy.GetDomainAssemblyData(p0, p1) : HResults.E_NOTIMPL;
+    public int GetDomainAssemblyData(ulong vmDomainAssembly, nint pData) => _legacy is not null ? _legacy.GetDomainAssemblyData(vmDomainAssembly, pData) : HResults.E_NOTIMPL;
 
-    public int GetModuleForDomainAssembly(ulong p0, nint p1) => _legacy is not null ? _legacy.GetModuleForDomainAssembly(p0, p1) : HResults.E_NOTIMPL;
+    public int GetModuleForDomainAssembly(ulong vmDomainAssembly, ulong* pModule) => _legacy is not null ? _legacy.GetModuleForDomainAssembly(vmDomainAssembly, pModule) : HResults.E_NOTIMPL;
 
-    public int GetAddressType(ulong p0, nint p1) => _legacy is not null ? _legacy.GetAddressType(p0, p1) : HResults.E_NOTIMPL;
+    public int GetAddressType(ulong address, int* pRetVal) => _legacy is not null ? _legacy.GetAddressType(address, pRetVal) : HResults.E_NOTIMPL;
 
-    public int IsTransitionStub(ulong p0, nint p1) => _legacy is not null ? _legacy.IsTransitionStub(p0, p1) : HResults.E_NOTIMPL;
+    public int IsTransitionStub(ulong address, int* pResult) => _legacy is not null ? _legacy.IsTransitionStub(address, pResult) : HResults.E_NOTIMPL;
 
-    public int GetCompilerFlags(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.GetCompilerFlags(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int GetCompilerFlags(ulong vmDomainAssembly, int* pfAllowJITOpts, int* pfEnableEnC) => _legacy is not null ? _legacy.GetCompilerFlags(vmDomainAssembly, pfAllowJITOpts, pfEnableEnC) : HResults.E_NOTIMPL;
 
-    public int SetCompilerFlags(ulong p0, int p1, int p2) => _legacy is not null ? _legacy.SetCompilerFlags(p0, p1, p2) : HResults.E_NOTIMPL;
+    public int SetCompilerFlags(ulong vmDomainAssembly, int fAllowJitOpts, int fEnableEnC) => _legacy is not null ? _legacy.SetCompilerFlags(vmDomainAssembly, fAllowJitOpts, fEnableEnC) : HResults.E_NOTIMPL;
 
-    public int EnumerateAppDomains(nint p0, nint p1) => _legacy is not null ? _legacy.EnumerateAppDomains(p0, p1) : HResults.E_NOTIMPL;
+    public int EnumerateAppDomains(nint fpCallback, nint pUserData) => _legacy is not null ? _legacy.EnumerateAppDomains(fpCallback, pUserData) : HResults.E_NOTIMPL;
 
     public int EnumerateAssembliesInAppDomain(ulong p0, nint p1, nint p2) => _legacy is not null ? _legacy.EnumerateAssembliesInAppDomain(p0, p1, p2) : HResults.E_NOTIMPL;
 

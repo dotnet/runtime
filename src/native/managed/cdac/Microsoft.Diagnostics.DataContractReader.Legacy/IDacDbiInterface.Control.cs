@@ -22,79 +22,79 @@ public struct DbiVersion
 public unsafe interface IDacDbiInterfaceControl
 {
     [PreserveSig]
-    int CheckDbiVersion(nint p0);
+    int CheckDbiVersion(DbiVersion* pVersion);
 
     [PreserveSig]
     int FlushCache();
 
     [PreserveSig]
-    int DacSetTargetConsistencyChecks(int p0);
+    int DacSetTargetConsistencyChecks([MarshalAs(UnmanagedType.Bool)] bool fEnableAsserts);
 
     [PreserveSig]
     int Destroy();
 
     [PreserveSig]
-    int IsLeftSideInitialized(nint p0);
+    int IsLeftSideInitialized(int* pResult);
 
     [PreserveSig]
-    int GetAppDomainFromId(uint p0, nint p1);
+    int GetAppDomainFromId(uint appdomainId, ulong* pRetVal);
 
     [PreserveSig]
-    int GetAppDomainId(ulong p0, nint p1);
+    int GetAppDomainId(ulong vmAppDomain, uint* pRetVal);
 
     [PreserveSig]
-    int GetAppDomainObject(ulong p0, nint p1);
+    int GetAppDomainObject(ulong vmAppDomain, ulong* pRetVal);
 
     [PreserveSig]
-    int GetAssemblyFromDomainAssembly(ulong p0, nint p1);
+    int GetAssemblyFromDomainAssembly(ulong vmDomainAssembly, ulong* vmAssembly);
 
     [PreserveSig]
-    int IsAssemblyFullyTrusted(ulong p0, nint p1);
+    int IsAssemblyFullyTrusted(ulong vmDomainAssembly, int* pResult);
 
     [PreserveSig]
-    int GetAppDomainFullName(ulong p0, nint p1);
+    int GetAppDomainFullName(ulong vmAppDomain, nint pStrName);
 
     [PreserveSig]
-    int GetModuleSimpleName(ulong p0, nint p1);
+    int GetModuleSimpleName(ulong vmModule, nint pStrFilename);
 
     [PreserveSig]
-    int GetAssemblyPath(ulong p0, nint p1, nint p2);
+    int GetAssemblyPath(ulong vmAssembly, nint pStrFilename, int* pResult);
 
     [PreserveSig]
-    int ResolveTypeReference(nint p0, nint p1);
+    int ResolveTypeReference(nint pTypeRefInfo, nint pTargetRefInfo);
 
     [PreserveSig]
-    int GetModulePath(ulong p0, nint p1, nint p2);
+    int GetModulePath(ulong vmModule, nint pStrFilename, int* pResult);
 
     [PreserveSig]
-    int GetMetadata(ulong p0, nint p1);
+    int GetMetadata(ulong vmModule, nint pTargetBuffer);
 
     [PreserveSig]
-    int GetSymbolsBuffer(ulong p0, nint p1, nint p2);
+    int GetSymbolsBuffer(ulong vmModule, nint pTargetBuffer, int* pSymbolFormat);
 
     [PreserveSig]
-    int GetModuleData(ulong p0, nint p1);
+    int GetModuleData(ulong vmModule, nint pData);
 
     [PreserveSig]
-    int GetDomainAssemblyData(ulong p0, nint p1);
+    int GetDomainAssemblyData(ulong vmDomainAssembly, nint pData);
 
     [PreserveSig]
-    int GetModuleForDomainAssembly(ulong p0, nint p1);
+    int GetModuleForDomainAssembly(ulong vmDomainAssembly, ulong* pModule);
 
     [PreserveSig]
-    int GetAddressType(ulong p0, nint p1);
+    int GetAddressType(ulong address, int* pRetVal);
 
     [PreserveSig]
-    int IsTransitionStub(ulong p0, nint p1);
+    int IsTransitionStub(ulong address, int* pResult);
 
     [PreserveSig]
-    int GetCompilerFlags(ulong p0, nint p1, nint p2);
+    int GetCompilerFlags(ulong vmDomainAssembly, int* pfAllowJITOpts, int* pfEnableEnC);
 
     [PreserveSig]
-    int SetCompilerFlags(ulong p0, int p1, int p2);
+    int SetCompilerFlags(ulong vmDomainAssembly, int fAllowJitOpts, int fEnableEnC);
 
     [PreserveSig]
-    int EnumerateAppDomains(nint p0, nint p1);
+    int EnumerateAppDomains(nint fpCallback, nint pUserData);
 
     [PreserveSig]
     int EnumerateAssembliesInAppDomain(ulong p0, nint p1, nint p2);
