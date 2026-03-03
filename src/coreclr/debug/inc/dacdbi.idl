@@ -101,6 +101,9 @@ typedef int CLR_DEBUGGING_PROCESS_FLAGS;
 // Size type
 typedef unsigned int SIZE_T;
 
+// HANDLE type (void* in native header)
+typedef UINT_PTR HANDLE;
+
 // Handle types (void** in native header, use UINT_PTR for pointer-sized IDL compatibility)
 typedef UINT_PTR StackWalkHandle;
 typedef UINT_PTR HeapWalkHandle;
