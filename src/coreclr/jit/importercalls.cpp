@@ -7751,9 +7751,9 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 break;
             }
 
-            likelyContext      = dvInfo.exactContext;
-            likelyMethod       = dvInfo.devirtualizedMethod;
-            instParamLookup    = dvInfo.instParamLookup;
+            likelyContext   = dvInfo.exactContext;
+            likelyMethod    = dvInfo.devirtualizedMethod;
+            instParamLookup = dvInfo.instParamLookup;
         }
         else
         {
