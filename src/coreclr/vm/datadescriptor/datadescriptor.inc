@@ -35,6 +35,8 @@ CDAC_TYPE_FIELD(Thread, GCHandle, LastThrownObject, cdac_data<Thread>::LastThrow
 CDAC_TYPE_FIELD(Thread, pointer, LinkNext, cdac_data<Thread>::Link)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, ThreadLocalDataPtr, cdac_data<Thread>::ThreadLocalDataPtr)
 CDAC_TYPE_FIELD(Thread, /*uint32*/, StateNC, cdac_data<Thread>::StateNC)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, ThreadHandle, cdac_data<Thread>::ThreadHandle)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, CurrNotification, cdac_data<Thread>::CurrNotification)
 #ifndef TARGET_UNIX
 CDAC_TYPE_FIELD(Thread, /*pointer*/, TEB, cdac_data<Thread>::TEB)
 CDAC_TYPE_FIELD(Thread, /*pointer*/, UEWatsonBucketTrackerBuckets, cdac_data<Thread>::UEWatsonBucketTrackerBuckets)

@@ -361,7 +361,12 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetThreadHandle(ulong vmThread, nint pRetVal) => _legacy is not null ? _legacy.GetThreadHandle(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int GetThreadHandle(ulong vmThread, nint pRetVal)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(new TargetPointer(vmThread));
+        *(ulong*)pRetVal = thread.ThreadHandle.Value;
+        return HResults.S_OK;
+    }
 
     public int GetThreadObject(ulong vmThread, ulong* pRetVal)
     {
@@ -547,7 +552,12 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetObjectForCCW(ulong ccwPtr, ulong* pRetVal) => _legacy is not null ? _legacy.GetObjectForCCW(ccwPtr, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetCurrentCustomDebuggerNotification(ulong vmThread, ulong* pRetVal) => _legacy is not null ? _legacy.GetCurrentCustomDebuggerNotification(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int GetCurrentCustomDebuggerNotification(ulong vmThread, ulong* pRetVal)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(new TargetPointer(vmThread));
+        *pRetVal = thread.CurrNotification.Value;
+        return HResults.S_OK;
+    }
 
     public int GetCurrentAppDomain(ulong* pRetVal)
     {

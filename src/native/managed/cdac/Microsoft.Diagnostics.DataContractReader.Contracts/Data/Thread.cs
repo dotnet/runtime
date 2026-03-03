@@ -41,6 +41,8 @@ internal sealed class Thread : IData<Thread>
             : TargetPointer.Null;
         ThreadLocalDataPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(ThreadLocalDataPtr)].Offset);
         StateNC = target.Read<uint>(address + (ulong)type.Fields[nameof(StateNC)].Offset);
+        ThreadHandle = target.ReadPointer(address + (ulong)type.Fields[nameof(ThreadHandle)].Offset);
+        CurrNotification = target.ReadPointer(address + (ulong)type.Fields[nameof(CurrNotification)].Offset);
     }
 
     public uint Id { get; init; }
@@ -58,4 +60,6 @@ internal sealed class Thread : IData<Thread>
     public TargetPointer UEWatsonBucketTrackerBuckets { get; init; }
     public TargetPointer ThreadLocalDataPtr { get; init; }
     public uint StateNC { get; init; }
+    public TargetPointer ThreadHandle { get; init; }
+    public TargetPointer CurrNotification { get; init; }
 }
