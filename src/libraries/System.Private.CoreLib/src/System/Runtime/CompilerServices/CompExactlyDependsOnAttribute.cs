@@ -8,8 +8,8 @@ namespace System.Runtime.CompilerServices
     // Use this attribute to indicate that a function should only be compiled into a Ready2Run
     // binary if the associated type will always have a well defined value for its IsSupported property
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, AllowMultiple = true, Inherited = false)]
-#if MONO
-    [Conditional("unnecessary")] // Mono doesn't use Ready2Run so we can remove this attribute to reduce size
+#if MONO || TARGET_BROWSER || TARGET_WASI
+    [Conditional("unnecessary")] // These platforms don't use Ready2Run so we can remove this attribute to reduce size
 #endif
     internal sealed class CompExactlyDependsOnAttribute : Attribute
     {

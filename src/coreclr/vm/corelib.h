@@ -859,10 +859,12 @@ DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSup
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwift)
 
+#if !defined(TARGET_WASM) || !defined(FOR_ILLINK)
 DEFINE_CLASS(SWIFT_SELF,                     Swift,                  SwiftSelf)
 DEFINE_CLASS(SWIFT_SELF_T,                   Swift,                  SwiftSelf`1)
 DEFINE_CLASS(SWIFT_ERROR,                    Swift,                  SwiftError)
 DEFINE_CLASS(SWIFT_INDIRECT_RESULT,          Swift,                  SwiftIndirectResult)
+#endif // !defined(TARGET_WASM) || !defined(FOR_ILLINK)
 
 DEFINE_CLASS(SAFE_HANDLE,         Interop,                SafeHandle)
 DEFINE_FIELD(SAFE_HANDLE,           HANDLE,                 handle)
@@ -1176,7 +1178,9 @@ DEFINE_METHOD(HANDLE_MARSHALER,          CONVERT_SAFEHANDLE_TO_NATIVE,ConvertSaf
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_SAFEHANDLE_FIELD_CHANGED, ThrowSafeHandleFieldChanged, SM_RetVoid)
 DEFINE_METHOD(HANDLE_MARSHALER,          THROW_CRITICALHANDLE_FIELD_CHANGED, ThrowCriticalHandleFieldChanged, SM_RetVoid)
 
+#if !defined(TARGET_WASM) || !defined(FOR_ILLINK)
 DEFINE_CLASS(COMVARIANT,            Marshalling,            ComVariant)
+#endif // !defined(TARGET_WASM) || !defined(FOR_ILLINK)
 
 DEFINE_CLASS(SZARRAYHELPER,         System,                        SZArrayHelper)
 // Note: The order of methods here has to match order they are implemented on the interfaces in
