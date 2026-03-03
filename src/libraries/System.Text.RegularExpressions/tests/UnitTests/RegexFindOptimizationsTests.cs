@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Text;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -173,16 +174,48 @@ namespace System.Text.RegularExpressions.Tests
         [OuterLoop("Stress test for deep nesting")]
         public void LeadingPrefix_DeepCaptureNesting_DoesNotStackOverflow()
         {
-            // Deeply nested captures like (((((...))))) with IgnoreCase exercise the recursive
-            // Capture-unwrapping path in TryGetOrdinalCaseInsensitiveString. Verify it doesn't SO.
+            // Deeply nested pure captures like (((((...ab...))))) exercise the iterative
+            // Capture-walking loop in FindPrefixOrdinalCaseInsensitive. Verify it doesn't SO.
             const int Depth = 2000;
             string pattern = new string('(', Depth) + "ab" + new string(')', Depth);
             RegexFindOptimizations opts = ComputeOptimizations(pattern, RegexOptions.IgnoreCase);
-            // The prefix may or may not be extracted depending on stack limits, but it must not crash.
-            // If extraction succeeds, it should find "ab".
+            Assert.Equal(FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, opts.FindMode);
+            Assert.Equal("ab", opts.LeadingPrefix);
+        }
+
+        [Theory]
+        [OuterLoop("Stress test for deep nesting")]
+        [InlineData(5)]
+        [InlineData(5_000)]
+        public void LeadingPrefix_InterleavedCaptureNesting_DoesNotStackOverflow(int depth)
+        {
+            // Build a pattern that interleaves Capture and Concatenate nodes: (…(ab)ab…)ab
+            // This exercises the recursive Capture-unwrapping and inner-Concatenate recursion
+            // in TryGetOrdinalCaseInsensitiveString. Verify it doesn't SO and extracts the prefix.
+            // At small depths, extraction should succeed. At very large depths, the stack guard
+            // in TryGetOrdinalCaseInsensitiveString may bail out, which is fine — the important
+            // thing is no crash.
+            string pattern = "ab";
+            for (int i = 0; i < depth; i++)
+            {
+                pattern = "(" + pattern + ")ab";
+            }
+
+            RegexFindOptimizations opts = ComputeOptimizations(pattern, RegexOptions.IgnoreCase);
+            if (depth <= 5)
+            {
+                // At small depths, extraction must succeed.
+                Assert.Equal(FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight, opts.FindMode);
+            }
             if (opts.FindMode == FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight)
             {
-                Assert.Equal("ab", opts.LeadingPrefix);
+                // Each nesting level plus the innermost contributes "ab" to the prefix.
+                var expected = new StringBuilder();
+                for (int i = 0; i <= depth; i++)
+                {
+                    expected.Append("ab");
+                }
+                Assert.Equal(expected.ToString(), opts.LeadingPrefix);
             }
         }
 
