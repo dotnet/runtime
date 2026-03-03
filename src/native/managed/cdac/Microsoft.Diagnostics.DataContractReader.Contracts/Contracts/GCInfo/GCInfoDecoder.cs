@@ -140,6 +140,10 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     private List<GcSlotDesc> _slots = [];
     private int _liveStateBitOffset;
 
+    /* EnumerateLiveSlots state (set per-call) */
+    private bool _reportScratchSlots;
+    private bool _reportFpBasedSlotsOnly;
+
     public GcInfoDecoder(Target target, TargetPointer gcInfoAddress, uint gcVersion)
     {
         _target = target;
@@ -557,13 +561,20 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         uint inputFlags,
         Action<uint, GcSlotDesc, uint> reportSlot)
     {
+        const uint ActiveStackFrame = 0x1;
         const uint ParentOfFuncletStackFrame = 0x40;
         const uint NoReportUntracked = 0x80;
         const uint ExecutionAborted = 0x2;
+        const uint ReportFPBasedSlotsOnly = 0x200;
 
         EnsureDecodedTo(DecodePoints.SlotTable);
 
         bool executionAborted = (inputFlags & ExecutionAborted) != 0;
+        bool reportScratchSlots = (inputFlags & ActiveStackFrame) != 0;
+        bool reportFpBasedSlotsOnly = (inputFlags & ReportFPBasedSlotsOnly) != 0;
+
+        _reportScratchSlots = reportScratchSlots;
+        _reportFpBasedSlotsOnly = reportFpBasedSlotsOnly;
 
         // WantsReportOnlyLeaf is always true for non-legacy formats
         if ((inputFlags & ParentOfFuncletStackFrame) != 0)
@@ -829,13 +840,33 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private void ReportSlot(uint slotIndex, Action<uint, GcSlotDesc, uint> reportSlot)
     {
-        // TODO(stackref): The native ReportSlotToGC filters out scratch registers/stack slots
-        // for non-leaf frames (when reportScratchSlots is false) and respects ReportFPBasedSlotsOnly.
-        // The cDAC currently reports all slots unconditionally, which over-reports for non-leaf frames.
-        // This is safe (extra roots won't cause crashes) but imprecise.
         Debug.Assert(slotIndex < _slots.Count);
         GcSlotDesc slot = _slots[(int)slotIndex];
         uint gcFlags = (uint)slot.Flags & ((uint)GcSlotFlags.GC_SLOT_INTERIOR | (uint)GcSlotFlags.GC_SLOT_PINNED);
+
+        if (slot.IsRegister)
+        {
+            // Skip scratch registers for non-leaf frames
+            if (!_reportScratchSlots && TTraits.IsScratchRegister(slot.RegisterNumber))
+                return;
+            // FP-based-only mode skips all register slots
+            if (_reportFpBasedSlotsOnly)
+                return;
+        }
+        else
+        {
+            // Skip scratch stack slots for non-leaf frames (slots in the outgoing/scratch area)
+            if (!_reportScratchSlots && TTraits.HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA
+                && slot.Base == GcStackSlotBase.GC_SP_REL
+                && slot.SpOffset >= 0
+                && (uint)slot.SpOffset < _fixedStackParameterScratchArea)
+            {
+                return;
+            }
+            // FP-based-only mode: only report GC_FRAMEREG_REL slots
+            if (_reportFpBasedSlotsOnly && slot.Base != GcStackSlotBase.GC_FRAMEREG_REL)
+                return;
+        }
 
         reportSlot(slotIndex, slot, gcFlags);
     }

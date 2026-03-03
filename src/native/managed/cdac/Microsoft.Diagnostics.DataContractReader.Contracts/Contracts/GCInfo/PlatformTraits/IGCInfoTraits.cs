@@ -48,6 +48,12 @@ internal interface IGCInfoTraits
 
     static abstract bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA { get; }
 
+    /// <summary>
+    /// Returns true if the given register is a scratch (volatile) register.
+    /// Scratch register slots should only be reported for the active (leaf) stack frame.
+    /// </summary>
+    static abstract bool IsScratchRegister(uint regNum);
+
     // These are the same across all platforms
     static virtual int POINTER_SIZE_ENCBASE { get; } = 3;
     static virtual int LIVESTATE_RLE_RUN_ENCBASE { get; } = 2;
