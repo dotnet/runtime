@@ -170,7 +170,39 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetSymbolsBuffer(ulong vmModule, nint pTargetBuffer, int* pSymbolFormat) => _legacy is not null ? _legacy.GetSymbolsBuffer(vmModule, pTargetBuffer, pSymbolFormat) : HResults.E_NOTIMPL;
 
-    public int GetModuleData(ulong vmModule, nint pData) => _legacy is not null ? _legacy.GetModuleData(vmModule, pData) : HResults.E_NOTIMPL;
+    public int GetModuleData(ulong vmModule, nint pData)
+    {
+        // ModuleInfo: { vmAssembly(8), pPEBaseAddress(8), vmPEAssembly(8), nPESize(4), fIsDynamic(4), fInMemory(4) }
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle mh = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+
+        // Zero-init the struct
+        new Span<byte>((void*)pData, 40).Clear();
+
+        ulong* p = (ulong*)pData;
+        // vmAssembly
+        p[0] = loader.GetAssembly(mh).Value;
+        // vmPEAssembly
+        TargetPointer peAssembly = loader.GetPEAssembly(mh);
+        p[2] = peAssembly.Value;
+
+        // pPEBaseAddress, nPESize
+        bool isDynamic = (loader.GetFlags(mh) & ModuleFlags.ReflectionEmit) != 0;
+        if (!isDynamic && loader.TryGetLoadedImageContents(mh, out TargetPointer baseAddr, out uint size, out uint _))
+        {
+            p[1] = baseAddr.Value; // pPEBaseAddress
+            *(uint*)(pData + 24) = size; // nPESize
+        }
+
+        // fIsDynamic
+        *(int*)(pData + 28) = isDynamic ? 1 : 0;
+
+        // fInMemory - true if module has no path
+        string path = loader.GetPath(mh);
+        *(int*)(pData + 32) = string.IsNullOrEmpty(path) ? 1 : 0;
+
+        return HResults.S_OK;
+    }
 
     public unsafe int GetDomainAssemblyData(ulong vmDomainAssembly, nint pData)
     {
