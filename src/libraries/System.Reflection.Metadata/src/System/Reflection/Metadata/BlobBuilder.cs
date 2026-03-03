@@ -137,6 +137,10 @@ namespace System.Reflection.Metadata
                     Throw.InvalidOperationBuilderAlreadyLinked();
                 }
 
+                // Do not check for the buffer's length. An implementation that pools blob builders separately from their buffers
+                // might want to set this to an empty array in FreeChunk, after returning the buffer to the pool (it will be set
+                // again to a new buffer in AllocateChunk). If AllocateChunk returns a builder with a too small buffer, we will
+                // detect it and throw in AllocateChunkHelper.
                 _buffer = value;
                 _length = 0;
             }
@@ -838,6 +842,11 @@ namespace System.Reflection.Metadata
             }
         }
 
+        /// <summary>
+        /// Writes bytes from a subset of the provided buffer into this <see cref="BlobBuilder"/>.
+        /// </summary>
+        /// <param name="buffer">A pointer to the first byte of the buffer to write from.</param>
+        /// <param name="byteCount">The number of bytes to write from the buffer.</param>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is negative.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
@@ -912,6 +921,10 @@ namespace System.Reflection.Metadata
             return byteCount - remaining;
         }
 
+        /// <summary>
+        /// Writes bytes from the provided buffer into this <see cref="BlobBuilder"/>.
+        /// </summary>
+        /// <param name="buffer">The buffer to write from.</param>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteBytes(ImmutableArray<byte> buffer)
@@ -924,6 +937,12 @@ namespace System.Reflection.Metadata
             WriteBytes(buffer.AsSpan());
         }
 
+        /// <summary>
+        /// Writes bytes from a subset of the provided buffer into this <see cref="BlobBuilder"/>.
+        /// </summary>
+        /// <param name="buffer">The buffer to write from.</param>
+        /// <param name="start">The index of the first byte to write from the buffer.</param>
+        /// <param name="byteCount">The number of bytes to write from the buffer.</param>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the <paramref name="buffer"/>.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
@@ -939,6 +958,10 @@ namespace System.Reflection.Metadata
             WriteBytes(buffer.AsSpan(start, byteCount));
         }
 
+        /// <summary>
+        /// Writes bytes from the provided buffer into this <see cref="BlobBuilder"/>.
+        /// </summary>
+        /// <param name="buffer">The buffer to write from.</param>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteBytes(byte[] buffer)
@@ -951,6 +974,12 @@ namespace System.Reflection.Metadata
             WriteBytes(buffer.AsSpan());
         }
 
+        /// <summary>
+        /// Writes bytes from a subset of the provided buffer into this <see cref="BlobBuilder"/>.
+        /// </summary>
+        /// <param name="buffer">The buffer to write from.</param>
+        /// <param name="start">The index of the first byte to write from the buffer.</param>
+        /// <param name="byteCount">The number of bytes to write from the buffer.</param>
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Range specified by <paramref name="start"/> and <paramref name="byteCount"/> falls outside of the bounds of the <paramref name="buffer"/>.</exception>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
@@ -966,6 +995,10 @@ namespace System.Reflection.Metadata
             WriteBytes(buffer.AsSpan(start, byteCount));
         }
 
+        /// <summary>
+        /// Writes bytes from the provided buffer into this <see cref="BlobBuilder"/>.
+        /// </summary>
+        /// <param name="buffer">The buffer to write from.</param>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteBytes(ReadOnlySpan<byte> buffer)
         {
