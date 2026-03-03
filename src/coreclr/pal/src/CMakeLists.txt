@@ -280,14 +280,22 @@ if(CLR_CMAKE_TARGET_OSX)
   )
 endif(CLR_CMAKE_TARGET_OSX)
 
-if(CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
+if(CLR_CMAKE_TARGET_FREEBSD)
   target_link_libraries(coreclrpal
     PUBLIC
     pthread
     rt
     ${UNWIND_LIBS}
   )
-endif(CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD)
+endif(CLR_CMAKE_TARGET_FREEBSD)
+
+if(CLR_CMAKE_TARGET_OPENBSD)
+  target_link_libraries(coreclrpal
+    PUBLIC
+    pthread
+    ${UNWIND_LIBS}
+  )
+endif(CLR_CMAKE_TARGET_OPENBSD)
 
 if(CLR_CMAKE_TARGET_HAIKU)
   target_link_libraries(coreclrpal
