@@ -12,22 +12,27 @@ namespace System.Threading
     {
 #if FEATURE_SINGLE_THREADED
 #pragma warning disable CA1822, IDE0060
-        private void CreateMutexCore(bool initiallyOwned) => throw new PlatformNotSupportedException();
+        private void CreateMutexCore(bool initiallyOwned) { }
 
         private void CreateMutexCore(
             bool initiallyOwned,
             string? name,
             NamedWaitHandleOptionsInternal options,
-            out bool createdNew) =>
-            throw new PlatformNotSupportedException();
+            out bool createdNew)
+        {
+            createdNew = true;
+        }
 
         private static OpenExistingResult OpenExistingWorker(
             string name,
             NamedWaitHandleOptionsInternal options,
-            out Mutex? result) =>
-            throw new PlatformNotSupportedException();
+            out Mutex? result)
+        {
+            result = null;
+            return OpenExistingResult.NameNotFound;
+        }
 
-        public void ReleaseMutex() => throw new PlatformNotSupportedException();
+        public void ReleaseMutex() { }
 #pragma warning restore CA1822, IDE0060
 #else
         private void CreateMutexCore(bool initiallyOwned) => SafeWaitHandle = WaitSubsystem.NewMutex(initiallyOwned);

@@ -15,7 +15,6 @@ namespace System.Threading
         private void CreateEventCore(bool initialState, EventResetMode mode)
         {
             ValidateMode(mode);
-            throw new PlatformNotSupportedException();
         }
 
         private void CreateEventCore(
@@ -23,20 +22,26 @@ namespace System.Threading
             EventResetMode mode,
             string? name,
             NamedWaitHandleOptionsInternal options,
-            out bool createdNew) =>
-            throw new PlatformNotSupportedException();
+            out bool createdNew)
+        {
+            ValidateMode(mode);
+            createdNew = true;
+        }
 
         private static OpenExistingResult OpenExistingWorker(
             string name,
             NamedWaitHandleOptionsInternal options,
-            out EventWaitHandle? result) =>
-            throw new PlatformNotSupportedException();
+            out EventWaitHandle? result)
+        {
+            result = null;
+            return OpenExistingResult.NameNotFound;
+        }
 
-        public bool Reset() => throw new PlatformNotSupportedException();
+        public bool Reset() => true;
 
-        public bool Set() => throw new PlatformNotSupportedException();
+        public bool Set() => true;
 
-        internal static bool Set(SafeWaitHandle waitHandle) => throw new PlatformNotSupportedException();
+        internal static bool Set(SafeWaitHandle waitHandle) => true;
 #pragma warning restore CA1822, IDE0060
 #else
         private void CreateEventCore(bool initialState, EventResetMode mode)

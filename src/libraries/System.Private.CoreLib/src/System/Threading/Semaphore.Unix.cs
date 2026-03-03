@@ -15,7 +15,6 @@ namespace System.Threading
         private void CreateSemaphoreCore(int initialCount, int maximumCount)
         {
             ValidateArguments(initialCount, maximumCount);
-            throw new PlatformNotSupportedException();
         }
 
         private void CreateSemaphoreCore(
@@ -23,16 +22,22 @@ namespace System.Threading
             int maximumCount,
             string? name,
             NamedWaitHandleOptionsInternal options,
-            out bool createdNew) =>
-            throw new PlatformNotSupportedException();
+            out bool createdNew)
+        {
+            ValidateArguments(initialCount, maximumCount);
+            createdNew = true;
+        }
 
         private static OpenExistingResult OpenExistingWorker(
             string name,
             NamedWaitHandleOptionsInternal options,
-            out Semaphore? result) =>
-            throw new PlatformNotSupportedException();
+            out Semaphore? result)
+        {
+            result = null;
+            return OpenExistingResult.NameNotFound;
+        }
 
-        private int ReleaseCore(int releaseCount) => throw new PlatformNotSupportedException();
+        private int ReleaseCore(int releaseCount) => 0;
 #pragma warning restore CA1822, IDE0060
 #else
         private void CreateSemaphoreCore(int initialCount, int maximumCount)

@@ -8,14 +8,16 @@ namespace System.Threading
     public abstract partial class WaitHandle
     {
 #if FEATURE_SINGLE_THREADED
+#pragma warning disable IDE0060
         private static int WaitOneCore(IntPtr handle, int millisecondsTimeout, bool useTrivialWaits) =>
-            throw new PlatformNotSupportedException();
+            WaitHandle.WaitSuccess;
 
         private static int WaitMultipleIgnoringSyncContextCore(ReadOnlySpan<IntPtr> handles, bool waitAll, int millisecondsTimeout) =>
-            throw new PlatformNotSupportedException();
+            WaitHandle.WaitSuccess;
 
         private static int SignalAndWaitCore(IntPtr handleToSignal, IntPtr handleToWaitOn, int millisecondsTimeout) =>
-            throw new PlatformNotSupportedException();
+            WaitHandle.WaitSuccess;
+#pragma warning restore IDE0060
 #else
         private static int WaitOneCore(IntPtr handle, int millisecondsTimeout, bool useTrivialWaits) =>
             WaitSubsystem.Wait(handle, millisecondsTimeout, interruptible: !useTrivialWaits);
