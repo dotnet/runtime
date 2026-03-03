@@ -125,7 +125,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     // Set flags on new region
     tryBegBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
     faultBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
-    faultBB->bbCatchTyp = BBCT_FAULT;
+    faultBB->SetCatchType(BBCT_FAULT);
 
     tryBegBB->setTryIndex(XTnew);
     tryBegBB->clearHndIndex();

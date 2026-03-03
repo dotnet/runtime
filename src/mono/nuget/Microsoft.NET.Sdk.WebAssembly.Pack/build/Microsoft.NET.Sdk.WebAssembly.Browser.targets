@@ -353,7 +353,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmBuildWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebcilPath>
       <_WasmBuildTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebcilPath>
-      <_WasmBuildOuputPath>$([MSBuild]::NormalizeDirectory('$(OutputPath)', 'wwwroot'))</_WasmBuildOuputPath>
     </PropertyGroup>
 
     <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
@@ -362,6 +361,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ConvertDllsToWebcil>
 
     <ItemGroup>
+      <!-- Set per-item ContentRoot so each asset's Identity matches its actual file on disk -->
+      <_WebcilAssetsCandidates Update="@(_WebcilAssetsCandidates)" ContentRoot="%(RootDir)%(Directory)" />
       <_WasmFingerprintPatterns Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DllFiles" Pattern="*.dll" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DatFiles" Pattern="*.dat" Expression="#[.{fingerprint}]!" />
@@ -377,7 +378,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssetRole="Primary"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="Never"
-      ContentRoot="$(_WasmBuildOuputPath)"
       FingerprintCandidates="$(_WasmFingerprintAssets)"
       FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
       BasePath="$(StaticWebAssetBasePath)"
@@ -412,6 +412,10 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_AddWasmStaticWebAssets" DependsOnTargets="$(AddWasmStaticWebAssetsDependsOn)">
     <ItemGroup>
+      <!-- Remove SDK-defined assets that we're redefining as WasmStaticWebAsset to avoid
+           duplicate Identity collisions and duplicate endpoint entries. This follows the
+           same pattern used above for _WasmJsConfigStaticWebAsset. -->
+      <StaticWebAsset Remove="@(WasmStaticWebAsset)" />
       <StaticWebAsset Include="@(WasmStaticWebAsset)" />
       <StaticWebAsset Include="@(_WasmBuildBootConfigStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(WasmStaticWebAssetEndpoint)" />
@@ -446,16 +450,34 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="FilteredEndpoints" ItemName="_WasmJsModuleCandidatesForBuildEndpoint" />
     </FilterStaticWebAssetEndpoints>
 
+    <!-- Filter out SDK endpoints for assets we're redefining as WasmStaticWebAsset.
+         Per-item ContentRoot can make WasmStaticWebAsset Identity equal the original
+         DLL path, which the SDK already has endpoints for. We must remove these before
+         DefineStaticWebAssetEndpoints so it creates fresh _framework/ prefixed endpoints,
+         and before the resolver so it doesn't produce duplicate AssetFile keys. -->
+    <FilterStaticWebAssetEndpoints
+      Endpoints="@(StaticWebAssetEndpoint)"
+      Assets="@(WasmStaticWebAsset)"
+      Filters=""
+    >
+      <Output TaskParameter="FilteredEndpoints" ItemName="_WasmOverlappingSdkEndpoint" />
+    </FilterStaticWebAssetEndpoints>
+
+    <ItemGroup>
+      <_WasmNonOverlappingSdkEndpoint Include="@(StaticWebAssetEndpoint)" />
+      <_WasmNonOverlappingSdkEndpoint Remove="@(_WasmOverlappingSdkEndpoint)" />
+    </ItemGroup>
+
     <DefineStaticWebAssetEndpoints
       CandidateAssets="@(WasmStaticWebAsset)"
-      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ExistingEndpoints="@(_WasmNonOverlappingSdkEndpoint)"
       ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
     >
       <Output TaskParameter="Endpoints" ItemName="WasmStaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
 
     <ResolveFingerprintedStaticWebAssetEndpointsForAssets
-      CandidateEndpoints="@(WasmStaticWebAssetEndpoint);@(_WasmJsModuleCandidatesForBuildEndpoint);@(StaticWebAssetEndpoint)"
+      CandidateEndpoints="@(WasmStaticWebAssetEndpoint);@(_WasmJsModuleCandidatesForBuildEndpoint);@(_WasmNonOverlappingSdkEndpoint)"
       CandidateAssets="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
       IsStandalone="$(StaticWebAssetStandaloneHosting)"
     >
@@ -523,7 +545,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssetTraitValue="manifest"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="Never"
-      ContentRoot="$(OutDir)wwwroot"
+      ContentRoot="$(IntermediateOutputPath)"
       BasePath="$(StaticWebAssetBasePath)"
     >
       <Output TaskParameter="Assets" ItemName="_WasmBuildBootConfigStaticWebAsset" />
@@ -589,18 +611,10 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_AddWasmPreloadBuildProperties" DependsOnTargets="_WasmConfigurePreload;_AddWasmStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
-    <PropertyGroup>
-      <_WasmBootConfigFileNameWithoutExtension>$([System.IO.Path]::GetFileNameWithoutExtension('$(_WasmBootConfigFileName)'))</_WasmBootConfigFileNameWithoutExtension>
-      <_WasmBootConfigFileExtension>$([System.IO.Path]::GetExtension('$(_WasmBootConfigFileName)'))</_WasmBootConfigFileExtension>
-    </PropertyGroup>
-    <ItemGroup>
-      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="'$(_WasmFingerprintAssets)' == 'true' and '$(_WasmFingerprintBootConfig)' == 'true' and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileNameWithoutExtension).%(Fingerprint)$(_WasmBootConfigFileExtension)'" />
-      <_WasmPreloadBuildScriptAsset Include="@(StaticWebAsset)" Condition="('$(_WasmFingerprintAssets)' != 'true' or '$(_WasmFingerprintBootConfig)' != 'true') and '%(AssetKind)' != 'Publish' and '%(FileName)%(Extension)' == '$(_WasmBootConfigFileName)'" />
-    </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
       Endpoints="@(StaticWebAssetEndpoint)"
-      Assets="@(_WasmPreloadBuildScriptAsset)"
+      Assets="@(_WasmBuildBootConfigStaticWebAsset)"
       Filters="@(_WasmPreloadEndpointFilter)"
     >
       <Output TaskParameter="FilteredEndpoints" ItemName="_WasmPreloadBuildScriptAssetEndpoint" />
@@ -619,13 +633,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
   <Target Name="_AddWasmPreloadPublishProperties" DependsOnTargets="_WasmConfigurePreload;_AddPublishWasmBootJsonToStaticWebAssets" BeforeTargets="GenerateStaticWebAssetsPublishManifest" Condition="'$(_WasmPreloadAssets)' == 'true'">
-    <ItemGroup>
-      <_WasmPreloadPublishScriptAsset Include="@(StaticWebAsset)" Condition="'%(AssetKind)' != 'Build' and '%(FileName)%(Extension)' == '$(_WasmPublishBootConfigFileName)'" />
-    </ItemGroup>
 
     <FilterStaticWebAssetEndpoints
       Endpoints="@(StaticWebAssetEndpoint)"
-      Assets="@(_WasmPreloadPublishScriptAsset)"
+      Assets="@(_WasmPublishBootConfigStaticWebAsset)"
       Filters="@(_WasmPreloadEndpointFilter)"
     >
       <Output TaskParameter="FilteredEndpoints" ItemName="_WasmPreloadPublishScriptAssetEndpoint" />
@@ -735,6 +746,18 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata
         Include="@(_NewWebcilPublishStaticWebAssetsCandidates)"
         RemoveMetadata="Integrity;Fingerprint" />
+      <!-- Set per-item ContentRoot so each asset's Identity matches its actual file on disk.
+           Clear stale Fingerprint/Integrity so DefineStaticWebAssets recomputes from the actual file. -->
+      <_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata Update="@(_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata)" ContentRoot="%(RootDir)%(Directory)" />
+      <_PromotedWasmPublishStaticWebAssets Update="@(_PromotedWasmPublishStaticWebAssets)" ContentRoot="%(RootDir)%(Directory)" Fingerprint="" Integrity="" />
+      <!-- Satellite (Culture) promoted assets are Related assets whose RelatedAsset points to a build-time path
+           that doesn't match any publish-time candidate. Promote them to Primary so DefineStaticWebAssets
+           processes them as standalone assets instead of trying to match a parent. -->
+      <_PromotedWasmPublishStaticWebAssets
+        Update="@(_PromotedWasmPublishStaticWebAssets)"
+        Condition="'%(_PromotedWasmPublishStaticWebAssets.AssetTraitName)' == 'Culture'"
+        AssetRole="Primary"
+        RelatedAsset="" />
     </ItemGroup>
 
     <DefineStaticWebAssets CandidateAssets="@(_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata);@(_PromotedWasmPublishStaticWebAssets)">

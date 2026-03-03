@@ -437,6 +437,13 @@ public struct DacpFieldDescData
     public ClrDataAddress NextField;
 };
 
+public struct DacpJitManagerInfo
+{
+    public ClrDataAddress managerAddr;
+    public uint codeType;
+    public ClrDataAddress ptrHeapList;
+};
+
 public struct DacpSyncBlockData
 {
     public enum COMFlagsEnum : uint
@@ -546,7 +553,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetCodeHeaderData(ClrDataAddress ip, DacpCodeHeaderData* data);
     [PreserveSig]
-    int GetJitManagerList(uint count, /*struct DacpJitManagerInfo*/ void* managers, uint* pNeeded);
+    int GetJitManagerList(uint count, DacpJitManagerInfo* managers, uint* pNeeded);
     [PreserveSig]
     int GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded);
     [PreserveSig]
@@ -682,7 +689,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetCCWInterfaces(ClrDataAddress ccw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
     [PreserveSig]
-    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ void* pCallback, void* token);
+    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ delegate* unmanaged[Stdcall]</*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token);
 
     // GC Reference Functions
 

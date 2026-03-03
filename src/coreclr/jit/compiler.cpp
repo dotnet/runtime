@@ -4015,9 +4015,8 @@ const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMapping
         return nullptr;
     }
 
-    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    for (const ParameterRegisterLocalMapping& mapping : m_paramRegLocalMappings->BottomUpOrder())
     {
-        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
         if (mapping.RegisterSegment->GetRegister() == reg)
         {
             return &mapping;
@@ -4047,9 +4046,8 @@ const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMapping
         return nullptr;
     }
 
-    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    for (const ParameterRegisterLocalMapping& mapping : m_paramRegLocalMappings->BottomUpOrder())
     {
-        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
         if ((mapping.LclNum == lclNum) && (mapping.Offset == offset))
         {
             return &mapping;

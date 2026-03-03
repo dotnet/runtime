@@ -534,38 +534,6 @@ enum DispatchCallSimpleFlags
 #define PREPARE_VIRTUAL_CALLSITE_USING_METHODDESC(pMD, objref)                \
         PCODE __pSlot = pMD->GetCallTarget(&objref);
 
-#ifdef _DEBUG
-#define SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, methodTable)                     \
-        {                                                                        \
-            MethodDesc* __pMeth = methodTable->GetMethodDescForSlot(slotNumber); \
-            _ASSERTE(__pMeth);                                                   \
-            _ASSERTE(!__pMeth->HasMethodInstantiation() &&                       \
-                     !__pMeth->GetMethodTable()->IsInterface());                 \
-        }
-#else
-#define SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, objref)
-#endif
-
-// a simple virtual method is a non-interface/non-generic method
-// Note: objref has to be protected!
-#define PREPARE_SIMPLE_VIRTUAL_CALLSITE(id, objref)                              \
-        static WORD s_slot##id = MethodTable::NO_SLOT;                           \
-        WORD __slot = VolatileLoad(&s_slot##id);                                 \
-        if (__slot == MethodTable::NO_SLOT)                                      \
-        {                                                                        \
-            MethodDesc *pMeth = CoreLibBinder::GetMethod(id);                        \
-            _ASSERTE(pMeth);                                                     \
-            __slot = pMeth->GetSlot();                                           \
-            VolatileStore(&s_slot##id, __slot);                                  \
-        }                                                                        \
-        PREPARE_SIMPLE_VIRTUAL_CALLSITE_USING_SLOT(__slot, objref)               \
-
-// a simple virtual method is a non-interface/non-generic method
-#define PREPARE_SIMPLE_VIRTUAL_CALLSITE_USING_SLOT(slotNumber, objref)           \
-        MethodTable* __pObjMT = (objref)->GetMethodTable();                      \
-        SIMPLE_VIRTUAL_METHOD_CHECK(slotNumber, __pObjMT);                       \
-        PCODE __pSlot = (PCODE) __pObjMT->GetRestoredSlot(slotNumber);
-
 #define PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD)   \
         PCODE __pSlot = (pMD)->GetSingleCallableAddrOfCode();
 
@@ -761,7 +729,7 @@ public:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        
+
         // Sanity check - UnmanagedCallersOnly methods must be in CoreLib.
         // See below load level override.
         _ASSERTE(_pMD->GetModule()->IsSystem());
