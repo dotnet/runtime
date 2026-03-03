@@ -414,7 +414,38 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetUserState(ulong vmThread, int* pRetVal) => _legacy is not null ? _legacy.GetUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
 
-    public int GetPartialUserState(ulong vmThread, int* pRetVal) => _legacy is not null ? _legacy.GetPartialUserState(vmThread, pRetVal) : HResults.E_NOTIMPL;
+    public int GetPartialUserState(ulong vmThread, int* pRetVal)
+    {
+        // Thread state flags
+        const uint TS_Background = 0x200;
+        const uint TS_Unstarted = 0x400;
+        const uint TS_Dead = 0x800;
+        const uint TS_Interruptible = 0x2000000;
+        const uint TS_TPWorkerThread = 0x1000000;
+        // ThreadStateNC flags
+        const uint TSNC_DebuggerSleepWaitJoin = 0x04000000;
+        // CorDebugUserState
+        const int USER_BACKGROUND = 0x4;
+        const int USER_UNSTARTED = 0x8;
+        const int USER_STOPPED = 0x10;
+        const int USER_WAIT_SLEEP_JOIN = 0x20;
+        const int USER_THREADPOOL = 0x100;
+
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(new TargetPointer(vmThread));
+        uint ts = thread.State;
+        uint tsnc = thread.StateNC;
+        int result = 0;
+
+        if ((ts & TS_Background) != 0) result |= USER_BACKGROUND;
+        if ((ts & TS_Unstarted) != 0) result |= USER_UNSTARTED;
+        if ((ts & TS_Dead) != 0) result |= USER_STOPPED;
+        if ((ts & TS_Interruptible) != 0 || (tsnc & TSNC_DebuggerSleepWaitJoin) != 0)
+            result |= USER_WAIT_SLEEP_JOIN;
+        if ((ts & TS_TPWorkerThread) != 0) result |= USER_THREADPOOL;
+
+        *pRetVal = result;
+        return HResults.S_OK;
+    }
 
     public int GetConnectionID(ulong vmThread, uint* pRetVal)
     {

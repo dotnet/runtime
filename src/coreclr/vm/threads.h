@@ -3767,6 +3767,7 @@ struct cdac_data<Thread>
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t Link = offsetof(Thread, m_Link);
     static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
+    static constexpr size_t StateNC = offsetof(Thread, m_StateNC);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
         "Thread::m_ExceptionState is of type ThreadExceptionState");
