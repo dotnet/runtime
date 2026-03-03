@@ -21,10 +21,10 @@ namespace System.Text.RegularExpressions
         private const int MaxValueDiv10 = int.MaxValue / 10;
         private const int MaxValueMod10 = int.MaxValue % 10;
 
-        /// <summary>Character class for [\r\u0085\u2028\u2029] — CR plus Unicode newlines, used in $ and \Z lowering.</summary>
-        private const string CrUnicodeNewLineClass = "\x00\x06\x00\x0D\x0E\x85\x86\u2028\u202A";
-        /// <summary>Character class for [\n\u0085\u2028\u2029] — LF plus Unicode newlines, used in ^ lowering.</summary>
-        private const string NlUnicodeNewLineClass = "\x00\x06\x00\x0A\x0B\x85\x86\u2028\u202A";
+        /// <summary>Character class for [\x0B\x0C\r\u0085\u2028\u2029] — VT, FF, CR plus Unicode newlines, used in $ and \Z lowering.</summary>
+        private const string CrUnicodeNewLineClass = "\x00\x06\x00\x0B\x0E\x85\x86\u2028\u202A";
+        /// <summary>Character class for [\n\x0B\x0C\u0085\u2028\u2029] — LF, VT, FF plus Unicode newlines, used in ^ lowering.</summary>
+        private const string NlUnicodeNewLineClass = "\x00\x06\x00\x0A\x0D\x85\x86\u2028\u202A";
 
         private RegexNode? _stack;
         private RegexNode? _group;
