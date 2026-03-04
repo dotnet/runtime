@@ -2901,9 +2901,6 @@ unsigned AsyncTransformation::GetExceptionVar()
 // AsyncTransformation::CreateSharedReturnBB:
 //   Create the shared return BB.
 //
-// Returns:
-//   Basic block or nullptr.
-//
 void AsyncTransformation::CreateSharedReturnBB()
 {
     m_sharedReturnBB = m_compiler->fgNewBBafter(BBJ_RETURN, m_compiler->fgLastBBInMainFunction(), false);
