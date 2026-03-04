@@ -854,31 +854,31 @@ namespace Internal.TypeSystem
         }
 
         private static bool TryGetCandidateImplementation(
-            MetadataType runtimeInterface,
+            MetadataType currentMT,
             MethodDesc interfaceMethod,
-            TypeDesc interfaceMethodOwningType,
+            TypeDesc interfaceMT,
             bool allowVariance,
-            out MethodDesc candidateMethod)
+            out MethodDesc candidateMD)
         {
-            candidateMethod = null;
+            candidateMD = null;
             MethodDesc interfaceMethodDefinition = interfaceMethod.GetMethodDefinition();
 
-            if (runtimeInterface == interfaceMethodOwningType)
+            if (currentMT == interfaceMT)
             {
                 // exact match
                 if (!interfaceMethod.IsAbstract)
                 {
-                    candidateMethod = interfaceMethodDefinition;
+                    candidateMD = interfaceMethodDefinition;
                 }
             }
-            else if (runtimeInterface.CanCastTo(interfaceMethodOwningType))
+            else if (currentMT.CanCastTo(interfaceMT))
             {
-                if (runtimeInterface.HasSameTypeDefinition(interfaceMethodOwningType))
+                if (currentMT.HasSameTypeDefinition(interfaceMT))
                 {
                     // Generic variance match - we'll instantiate pCurMD with the right type arguments later
                     if (allowVariance && !interfaceMethod.IsAbstract)
                     {
-                        candidateMethod = runtimeInterface.FindMethodOnTypeWithMatchingTypicalMethod(interfaceMethodDefinition);
+                        candidateMD = currentMT.FindMethodOnTypeWithMatchingTypicalMethod(interfaceMethodDefinition);
                     }
                 }
                 else
@@ -887,7 +887,7 @@ namespace Internal.TypeSystem
                     // A more specific interface - search for an methodimpl for explicit override
                     // Implicit override in default interface methods are not allowed
                     //
-                    MethodImplRecord[] possibleImpls = runtimeInterface.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name);
+                    MethodImplRecord[] possibleImpls = currentMT.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name);
                     if (possibleImpls != null)
                     {
                         foreach (MethodImplRecord implRecord in possibleImpls)
@@ -898,11 +898,11 @@ namespace Internal.TypeSystem
                             // We do CanCastTo to also cover variance.
                             // We already know this is a method on the same type definition as the (generic)
                             // interface but we need to make sure the instantiations match.
-                            if (!interfaceMethodOwningType.HasInstantiation
-                                || implRecord.Decl.OwningType == interfaceMethodOwningType
-                                || (allowVariance && implRecord.Decl.OwningType.CanCastTo(interfaceMethodOwningType)))
+                            if (!interfaceMT.HasInstantiation
+                                || implRecord.Decl.OwningType == interfaceMT
+                                || (allowVariance && implRecord.Decl.OwningType.CanCastTo(interfaceMT)))
                             {
-                                candidateMethod = implRecord.Body;
+                                candidateMD = implRecord.Body;
                                 break;
                             }
                         }
@@ -910,7 +910,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            return candidateMethod is not null;
+            return candidateMD is not null;
         }
 
         // Find the default interface implementation method for interface dispatch
@@ -922,7 +922,7 @@ namespace Internal.TypeSystem
             bool allowVariance,
             out MethodDesc impl)
         {
-            TypeDesc interfaceMethodOwningType = interfaceMethod.OwningType;
+            TypeDesc interfaceMT = interfaceMethod.OwningType;
             MethodDesc interfaceMethodDefinition = interfaceMethod.GetMethodDefinition();
             impl = null;
 
@@ -938,15 +938,13 @@ namespace Internal.TypeSystem
                 consideredInterfaces[consideredInterfaces.Length - 1] = currentType.IsGenericDefinition ? (DefType)currentType.InstantiateAsOpen() : currentType;
             }
 
-            // We need to maintain the invariant that the candidates are always the most specific
-            // in all path scaned so far. There might be multiple incompatible candidates
             MetadataType[] candidateInterfaces = new MetadataType[consideredInterfaces.Length];
             MethodDesc[] candidateMethods = new MethodDesc[consideredInterfaces.Length];
             int candidatesCount = 0;
 
-            foreach (MetadataType runtimeInterface in consideredInterfaces)
+            foreach (MetadataType currentMT in consideredInterfaces)
             {
-                if (!TryGetCandidateImplementation(runtimeInterface, interfaceMethod, interfaceMethodOwningType, allowVariance, out MethodDesc candidateMethod))
+                if (!TryGetCandidateImplementation(currentMT, interfaceMethod, interfaceMT, allowVariance, out MethodDesc currentMD))
                     continue;
 
                 //
@@ -955,31 +953,33 @@ namespace Internal.TypeSystem
                 bool needToInsert = true;
                 bool seenMoreSpecific = false;
 
+                // We need to maintain the invariant that the candidates are always the most specific
+                // in all path scaned so far. There might be multiple incompatible candidates
                 for (int i = 0; i < candidatesCount; i++)
                 {
                     MetadataType candidateMT = candidateInterfaces[i];
                     if (candidateMT is null)
                         continue;
 
-                    if (candidateMT == runtimeInterface)
+                    if (candidateMT == currentMT)
                     {
                         // A dup - we are done
                         needToInsert = false;
                         break;
                     }
 
-                    if (allowVariance && candidateMT.HasSameTypeDefinition(runtimeInterface))
+                    if (allowVariance && candidateMT.HasSameTypeDefinition(currentMT))
                     {
                         // Variant match on the same type - this is a tie
                     }
-                    else if (runtimeInterface.CanCastTo(candidateMT))
+                    else if (currentMT.CanCastTo(candidateMT))
                     {
                         // pCurMT is a more specific choice than IFoo/IBar both overrides IBlah :
                         if (!seenMoreSpecific)
                         {
                             seenMoreSpecific = true;
-                            candidateInterfaces[i] = runtimeInterface;
-                            candidateMethods[i] = candidateMethod;
+                            candidateInterfaces[i] = currentMT;
+                            candidateMethods[i] = currentMD;
                         }
                         else
                         {
@@ -988,7 +988,7 @@ namespace Internal.TypeSystem
                         }
                         needToInsert = false;
                     }
-                    else if (candidateMT.CanCastTo(runtimeInterface))
+                    else if (candidateMT.CanCastTo(currentMT))
                     {
                         // pCurMT is less specific - we don't need to scan more entries as this entry can
                         // represent pCurMT (other entries are incompatible with pCurMT)
@@ -1004,8 +1004,8 @@ namespace Internal.TypeSystem
                 if (needToInsert)
                 {
                     Debug.Assert(candidatesCount < candidateInterfaces.Length);
-                    candidateInterfaces[candidatesCount] = runtimeInterface;
-                    candidateMethods[candidatesCount] = candidateMethod;
+                    candidateInterfaces[candidatesCount] = currentMT;
+                    candidateMethods[candidatesCount] = currentMD;
                     candidatesCount++;
                 }
             }
@@ -1013,40 +1013,40 @@ namespace Internal.TypeSystem
             // scan to see if there are any conflicts
             // If we are doing second pass (allowing variance), we know don't actually look for
             // a conflict anymore, but pick the first match.
-            MetadataType bestCandidateInterface = null;
-            MethodDesc bestCandidateMethod = null;
+            MetadataType bestCandidateMT = null;
+            MethodDesc bestCandidateMD = null;
             for (int i = 0; i < candidatesCount; i++)
             {
                 if (candidateInterfaces[i] is null)
                     continue;
 
-                if (bestCandidateInterface is null)
+                if (bestCandidateMT is null)
                 {
-                    bestCandidateInterface = candidateInterfaces[i];
-                    bestCandidateMethod = candidateMethods[i];
+                    bestCandidateMT = candidateInterfaces[i];
+                    bestCandidateMD = candidateMethods[i];
 
                     // If this is a second pass lookup, we know this is a variant match. As such
                     // we pick the first result as the winner and don't look for a conflict for instance methods.
                     if (allowVariance && !interfaceMethod.Signature.IsStatic)
                         break;
                 }
-                else if (bestCandidateInterface != candidateInterfaces[i])
+                else if (bestCandidateMT != candidateInterfaces[i])
                 {
                     return DefaultInterfaceMethodResolution.Diamond;
                 }
             }
 
-            if (bestCandidateMethod is null)
+            if (bestCandidateMD is null)
             {
                 return DefaultInterfaceMethodResolution.None;
             }
 
-            if (bestCandidateMethod.IsAbstract)
+            if (bestCandidateMD.IsAbstract)
             {
                 return DefaultInterfaceMethodResolution.Reabstraction;
             }
 
-            impl = bestCandidateMethod;
+            impl = bestCandidateMD;
             if (interfaceMethod != interfaceMethodDefinition)
                 impl = impl.MakeInstantiatedMethod(interfaceMethod.Instantiation);
 
