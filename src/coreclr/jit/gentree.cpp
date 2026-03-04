@@ -33828,7 +33828,17 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     case FloatComparisonMode::OrderedFalseNonSignaling:
                     case FloatComparisonMode::OrderedFalseSignaling:
                     {
-                        resultNode = gtNewZeroConNode(retType);
+                        if (ni == NI_AVX_CompareScalar)
+                        {
+                            // CompareScalar preserves upper elements from op1,
+                            // so we can't fold to a full zero vector
+                            break;
+                        }
+                        // CompareMask returns TYP_MASK which gtNewZeroConNode doesn't handle,
+                        // so use the SIMD vector type instead; the mask conversion at the end
+                        // of this function will wrap it with CvtVectorToMask
+                        resultNode = gtNewZeroConNode(varTypeIsMask(retType) ? getSIMDTypeForSize(simdSize)
+                                                                            : retType);
                         resultNode = gtWrapWithSideEffects(resultNode, tree, GTF_ALL_EFFECT);
                         break;
                     }
@@ -33836,7 +33846,17 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     case FloatComparisonMode::UnorderedTrueNonSignaling:
                     case FloatComparisonMode::UnorderedTrueSignaling:
                     {
-                        resultNode = gtNewAllBitsSetConNode(retType);
+                        if (ni == NI_AVX_CompareScalar)
+                        {
+                            // CompareScalar preserves upper elements from op1,
+                            // so we can't fold to a full AllBitsSet vector
+                            break;
+                        }
+                        // CompareMask returns TYP_MASK which gtNewAllBitsSetConNode doesn't handle,
+                        // so use the SIMD vector type instead; the mask conversion at the end
+                        // of this function will wrap it with CvtVectorToMask
+                        resultNode = gtNewAllBitsSetConNode(varTypeIsMask(retType) ? getSIMDTypeForSize(simdSize)
+                                                                                  : retType);
                         resultNode = gtWrapWithSideEffects(resultNode, tree, GTF_ALL_EFFECT);
                         break;
                     }
