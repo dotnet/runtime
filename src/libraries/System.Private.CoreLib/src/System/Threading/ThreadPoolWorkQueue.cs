@@ -12,10 +12,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
-#if !FEATURE_MULTITHREADING
-using WorkQueue = System.Collections.Generic.Queue<object>;
-#else
+#if FEATURE_MULTITHREADING
 using WorkQueue = System.Collections.Concurrent.ConcurrentQueue<object>;
+#else
+using WorkQueue = System.Collections.Generic.Queue<object>;
 #endif
 #if TARGET_WINDOWS
 using IOCompletionPollerEvent = System.Threading.PortableThreadPool.IOCompletionPoller.Event;
