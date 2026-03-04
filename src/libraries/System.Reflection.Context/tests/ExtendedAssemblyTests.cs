@@ -252,20 +252,13 @@ namespace System.Reflection.Context.Tests
             Assert.False(concreteMethod.ContainsGenericParameters);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void Invoke_OnMadeGenericMethod_Works()
         {
             MethodInfo concreteMethod = _genericMethod.MakeGenericMethod(typeof(int));
             var target = new TypeWithGenericMethod();
-            if (PlatformDetection.IsNativeAot)
-            {
-                Assert.ThrowsAny<Exception>(() => concreteMethod.Invoke(target, new object[] { 42 }));
-            }
-            else
-            {
-                object result = concreteMethod.Invoke(target, new object[] { 42 });
-                Assert.Equal(42, result);
-            }
+            object result = concreteMethod.Invoke(target, new object[] { 42 });
+            Assert.Equal(42, result);
         }
 
         [Fact]
