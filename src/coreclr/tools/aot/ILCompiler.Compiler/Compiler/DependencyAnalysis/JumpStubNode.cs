@@ -23,5 +23,8 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override int ClassCode => 737788182;
+
+        // TODO-Wasm: Get signature
+        public override WasmTypeNode GetSignature(NodeFactory factory) => null;
     }
 }

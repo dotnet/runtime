@@ -76,6 +76,9 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
+        // TODO-Wasm: Get signature
+        public WasmTypeNode GetSignature(NodeFactory factory) => null;
+
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             Debug.Assert(_dependencies != null);

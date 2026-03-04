@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using ILCompiler.DependencyAnalysis;
 using ILCompiler.ObjectWriter;
+using ILCompiler.DependencyAnalysis.Wasm;
 
-namespace ILCompiler.DependencyAnalysis.Wasm
+namespace ILCompiler.DependencyAnalysis
 {
     //
     // Represents a WASM type signature, e.g. "(i32, i32) -> (i64)". Used as a relocation target for things like 'call_indirect'.

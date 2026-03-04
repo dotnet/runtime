@@ -108,5 +108,8 @@ namespace ILCompiler.DependencyAnalysis
 
             return comparer.Compare(Method, ((FatFunctionPointerNode)other).Method);
         }
+
+        // TODO-Wasm: Get signature
+        public WasmTypeNode GetSignature(NodeFactory factory) => null;
     }
 }

@@ -73,6 +73,8 @@ namespace ILCompiler.DependencyAnalysis
             return dependencies ?? (IEnumerable<CombinedDependencyListEntry>)Array.Empty<CombinedDependencyListEntry>();
         }
 
+        public WasmTypeNode GetSignature(NodeFactory factory) => null;
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = _nonRelocationDependencies != null ? new DependencyList(_nonRelocationDependencies) : null;

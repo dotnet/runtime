@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
@@ -55,6 +54,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             return CanonicalMethodNode;
         }
+
+        // TODO-WASM: implement
+        public WasmTypeNode GetSignature(NodeFactory factory) => null;
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {

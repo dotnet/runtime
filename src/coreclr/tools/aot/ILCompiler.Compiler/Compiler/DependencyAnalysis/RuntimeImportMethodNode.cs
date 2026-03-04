@@ -34,5 +34,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_method, ((RuntimeImportMethodNode)other)._method);
         }
+
+        // TODO-Wasm: Get signature
+        public WasmTypeNode GetSignature(NodeFactory factory) => null;
     }
 }

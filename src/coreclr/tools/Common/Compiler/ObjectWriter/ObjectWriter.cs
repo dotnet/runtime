@@ -441,6 +441,7 @@ namespace ILCompiler.ObjectWriter
                     RecordMethodSignature(signature);
                 }
 
+
                 if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayout.Separate)
                 {
                     // Record only information we can get from the MethodDesc here. The actual
@@ -450,8 +451,13 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
                 {
-                    // TODO-WASM: handle AssemblyStubNode properly here instead of skipping
+                    // TODO-Wasm: Handle AssemblyStubNode. It is the other IWasmCodeNode implementation we should see for R2R. (NativeAOT will have others)
                     continue;
+                }
+
+                if (_nodeFactory.Target.IsWasm && node is IWasmCodeNode codeNode)
+                {
+                    Debug.Assert(codeNode.GetSignature(_nodeFactory) != null, $"Wasm code node {codeNode.GetType()} has null signature");
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)

@@ -92,6 +92,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_helperCell, otherNode._helperCell);
         }
 
+        public override WasmTypeNode GetSignature(NodeFactory factory) => null;
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             Debug.Assert(base.ComputeNonRelocationBasedDependencies(factory) == null);

@@ -7,6 +7,7 @@ using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
+using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -44,6 +45,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("PrecodeMethodImport -> "u8);
             base.AppendMangledName(nameMangler, sb);
         }
+
+        // TODO-Wasm: Get proper signature
+        public WasmTypeNode GetSignature(NodeFactory factory) => null;
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {

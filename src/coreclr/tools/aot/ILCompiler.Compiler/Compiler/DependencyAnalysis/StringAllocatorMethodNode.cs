@@ -78,5 +78,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             return comparer.Compare(_allocationMethod, ((StringAllocatorMethodNode)other)._allocationMethod);
         }
+
+        // TODO-Wasm: Get signature
+        public WasmTypeNode GetSignature(NodeFactory factory) => null;
     }
 }

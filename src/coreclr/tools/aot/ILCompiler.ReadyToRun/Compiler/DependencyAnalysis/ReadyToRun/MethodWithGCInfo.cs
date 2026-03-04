@@ -262,6 +262,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return writer.ToArray();
         }
 
+        public WasmTypeNode GetSignature(NodeFactory factory)
+        {
+            return factory.WasmTypeNode(_method);
+        }
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencyList = new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
@@ -276,11 +281,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
             }
 
-            if (factory.Target.Architecture is TargetArchitecture.Wasm32)
+            if (factory.Target.IsWasm)
             {
                 // All methods require an explicit signature declaration in Wasm which we materialize as a separate node,
                 // so we need to make sure this signature node is always created and marked as a dependency. 
-                WasmTypeNode signature = factory.WasmTypeNode(_method);
+                WasmTypeNode signature = GetSignature(factory);
+                Debug.Assert(signature != null);
                 dependencyList.Add(signature, "WASM methods require signature");
             }
 

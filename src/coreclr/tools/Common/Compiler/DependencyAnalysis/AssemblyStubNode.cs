@@ -7,7 +7,7 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public abstract class AssemblyStubNode : ObjectNode, ISymbolDefinitionNode
+    public abstract class AssemblyStubNode : ObjectNode, ISymbolDefinitionNode, IWasmCodeNode
     {
         public AssemblyStubNode()
         {
@@ -26,6 +26,9 @@ namespace ILCompiler.DependencyAnalysis
         public abstract void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb);
         public int Offset => 0;
         public override bool IsShareable => false;
+
+        // TODO-Wasm: implement
+        public virtual WasmTypeNode GetSignature(NodeFactory factory) => null;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
