@@ -3905,7 +3905,7 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 //
 bool Compiler::impCanReorderWithNullCheck(GenTree* tree)
 {
-    if ((tree->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
+    if ((tree->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
     {
         return false;
     }
