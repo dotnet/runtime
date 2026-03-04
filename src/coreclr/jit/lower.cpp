@@ -10892,7 +10892,11 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 
     if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
+#if defined(TARGET_WASM)
+        return LowerStoreIndir(ind);
+#else
         return ind->gtNext;
+#endif
     }
 
 #ifndef TARGET_XARCH
