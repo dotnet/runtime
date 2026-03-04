@@ -222,7 +222,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             services.AddSingleton<FactoryCircularDependencyB>(sp =>
             {
                 // Factory tries to resolve FactoryCircularDependencyA, creating a circle
-                var a = sp.GetRequiredService<FactoryCircularDependencyA>();
+                _ = sp.GetRequiredService<FactoryCircularDependencyA>();
                 return new FactoryCircularDependencyB();
             });
 
@@ -232,7 +232,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             // Resolution should throw InvalidOperationException for circular dependency
             var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                var a = serviceProvider.GetRequiredService<FactoryCircularDependencyA>();
+                _ = serviceProvider.GetRequiredService<FactoryCircularDependencyA>();
             });
 
             // Verify it's a circular dependency error with proper service type
@@ -251,7 +251,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             services.AddSingleton<FactoryCircularDependencyA>();
             services.AddSingleton<FactoryCircularDependencyB>(sp =>
             {
-                var a = sp.GetRequiredService<FactoryCircularDependencyA>();
+                _ = sp.GetRequiredService<FactoryCircularDependencyA>();
                 return new FactoryCircularDependencyB();
             });
 
