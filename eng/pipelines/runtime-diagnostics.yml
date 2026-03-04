@@ -250,6 +250,13 @@ extends:
                     _Creator: dotnet-bot
                     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
                     NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
+              - pwsh: |
+                  if ("$(Agent.JobStatus)" -ne "Succeeded") {
+                    Write-Error "One or more cDAC dump test failures were detected. Failing the job."
+                    exit 1
+                  }
+                displayName: 'Fail on test errors'
+                condition: always()
 
     #
     # cDAC X-Plat Dump Generation and Testing — Two-stage flow:
@@ -325,6 +332,13 @@ extends:
                   targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
                   artifactName: CdacDumps_$(osGroup)_$(archType)
                 displayName: 'Publish Dump Artifacts'
+              - pwsh: |
+                  if ("$(Agent.JobStatus)" -ne "Succeeded") {
+                    Write-Error "One or more cDAC dump generation failures were detected. Failing the job."
+                    exit 1
+                  }
+                displayName: 'Fail on dump generation errors'
+                condition: always()
 
       - stage: CdacXPlatDumpTests
         dependsOn:
@@ -402,3 +416,10 @@ extends:
                     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
                     NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
                     SourcePlatforms: ${{ join(';', parameters.cdacDumpPlatforms) }}
+              - pwsh: |
+                  if ("$(Agent.JobStatus)" -ne "Succeeded") {
+                    Write-Error "One or more cDAC x-plat dump test failures were detected. Failing the job."
+                    exit 1
+                  }
+                displayName: 'Fail on test errors'
+                condition: always()

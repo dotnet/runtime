@@ -58,15 +58,17 @@
   <!-- Windows: dump generation + tar commands -->
   <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
     <_DumpGenCommands>@(_Debuggee->'mkdir %HELIX_WORKITEM_PAYLOAD%\dumps\local\%(DumpDir)\%(Identity) &amp; set "DOTNET_DbgMiniDumpType=%(MiniDumpType)" &amp; set "DOTNET_DbgMiniDumpName=%HELIX_WORKITEM_PAYLOAD%\dumps\local\%(DumpDir)\%(Identity)\%(Identity).dmp" &amp; %HELIX_CORRELATION_PAYLOAD%\dotnet.exe exec %HELIX_WORKITEM_PAYLOAD%\debuggees\%(Identity)\%(Identity).dll', ' &amp; ')</_DumpGenCommands>
+    <_DumpInfoCommand>echo {"os":"$(TargetOS)","arch":"$(TargetArchitecture)"}&gt; %HELIX_WORKITEM_PAYLOAD%\dumps\local\dump-info.json</_DumpInfoCommand>
     <_TarCommand>tar -czf %HELIX_WORKITEM_UPLOAD_ROOT%\dumps.tar.gz -C %HELIX_WORKITEM_PAYLOAD%\dumps .</_TarCommand>
-    <_FullCommand>$(_DumpGenCommands) &amp; $(_TarCommand)</_FullCommand>
+    <_FullCommand>$(_DumpGenCommands) &amp; $(_DumpInfoCommand) &amp; $(_TarCommand)</_FullCommand>
   </PropertyGroup>
 
   <!-- Unix: dump generation + tar commands -->
   <PropertyGroup Condition="'$(TargetOS)' != 'windows'">
     <_DumpGenCommands>@(_Debuggee->'mkdir -p $HELIX_WORKITEM_PAYLOAD/dumps/local/%(DumpDir)/%(Identity) &amp;&amp; DOTNET_DbgMiniDumpType=%(MiniDumpType) DOTNET_DbgMiniDumpName=$HELIX_WORKITEM_PAYLOAD/dumps/local/%(DumpDir)/%(Identity)/%(Identity).dmp $HELIX_CORRELATION_PAYLOAD/dotnet exec $HELIX_WORKITEM_PAYLOAD/debuggees/%(Identity)/%(Identity).dll || true', ' &amp;&amp; ')</_DumpGenCommands>
+    <_DumpInfoCommand>echo '{"os":"$(TargetOS)","arch":"$(TargetArchitecture)"}' &gt; $HELIX_WORKITEM_PAYLOAD/dumps/local/dump-info.json</_DumpInfoCommand>
     <_TarCommand>tar -czf $HELIX_WORKITEM_UPLOAD_ROOT/dumps.tar.gz -C $HELIX_WORKITEM_PAYLOAD/dumps .</_TarCommand>
-    <_FullCommand>$(_DumpGenCommands) &amp;&amp; $(_TarCommand)</_FullCommand>
+    <_FullCommand>$(_DumpGenCommands) &amp;&amp; $(_DumpInfoCommand) &amp;&amp; $(_TarCommand)</_FullCommand>
   </PropertyGroup>
 
   <!-- Pre-commands: enable dump generation -->
