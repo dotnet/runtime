@@ -25,13 +25,14 @@ struct CallStubHeader
     int TotalStackSize;
     bool HasContinuationRet; // Indicates whether the stub supports returning a continuation
     bool HasSwiftError; // Indicates whether the stub has a Swift error parameter
+    bool HasSwiftReturnLowering; // Indicates whether the stub uses Swift lowered return registers
     // This is a pointer to a helper function that invokes the target method. There are several
     // versions of this function, depending on the return type of the target method.
     InvokeFunctionPtr Invoke;
     // This is an array of routines that translate the arguments from the interpreter stack to the CPU registers and native stack.
     PCODE Routines[0];
 
-    CallStubHeader(int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, bool hasSwiftError, InvokeFunctionPtr pInvokeFunction)
+    CallStubHeader(int numRoutines, int targetSlotIndex, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, bool hasSwiftError, bool hasSwiftReturnLowering, InvokeFunctionPtr pInvokeFunction)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -41,6 +42,7 @@ struct CallStubHeader
         Invoke = pInvokeFunction;
         HasContinuationRet = hasContinuationRet;
         HasSwiftError = hasSwiftError;
+        HasSwiftReturnLowering = hasSwiftReturnLowering;
 
         memcpy(Routines, pRoutines, NumRoutines * sizeof(PCODE));
     }
@@ -171,8 +173,6 @@ class CallStubGenerator
 
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
     bool m_interpreterToNative = false;
-    bool m_hasSwiftError = false;
-    bool m_isSwiftCallConv = false;
 
 #if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
     PCODE GetGPRegRefRoutine(int r);
@@ -191,9 +191,12 @@ class CallStubGenerator
 #endif // TARGET_ARM64
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     // Swift calling convention state
+    bool m_isSwiftCallConv = false;
+    bool m_isSwiftILStub = false;
+    bool m_hasSwiftError = false;
+    bool m_hasSwiftReturnLowering = false;
     int m_swiftSelfByRefSize = 0;
     CORINFO_SWIFT_LOWERING m_swiftReturnLowering = {};
-    bool m_hasSwiftReturnLowering = false;
 
     // Swift routine helpers
     PCODE GetSwiftSelfRoutine();
@@ -245,8 +248,10 @@ private:
         // The size of the routines array is three times the number of arguments plus one slot for the target method pointer.
         size_t baseSize = sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
-        // Add extra space for Swift return lowering (up to 4 elements * 2 slots + terminator = 9 slots).
-        baseSize += 9 * sizeof(PCODE);
+        // - Each struct arg can expand to up to 4 lowered elements * 2 slots = 8 slots per struct
+        // - Return lowering: up to 4 elements * 2 slots + terminator = 9 slots
+        // Use numArgs * 8 as a conservative estimate for arg lowering plus 9 for return.
+        baseSize += (numArgs * 8 + 9) * sizeof(PCODE);
 #endif
         return baseSize;
     }

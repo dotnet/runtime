@@ -697,6 +697,7 @@ CDAC_TYPE_END(RangeSection)
 CDAC_TYPE_BEGIN(EEJitManager)
 CDAC_TYPE_INDETERMINATE(EEJitManager)
 CDAC_TYPE_FIELD(EEJitManager, /*bool*/, StoreRichDebugInfo, cdac_data<EEJitManager>::StoreRichDebugInfo)
+CDAC_TYPE_FIELD(EEJitManager, /*pointer*/, AllCodeHeaps, cdac_data<EEJitManager>::AllCodeHeaps)
 CDAC_TYPE_END(EEJitManager)
 
 CDAC_TYPE_BEGIN(RealCodeHeader)
@@ -1058,6 +1059,25 @@ CDAC_TYPE_INDETERMINATE(SimpleComCallWrapper)
 CDAC_TYPE_FIELD(SimpleComCallWrapper, /*int64*/, RefCount, cdac_data<SimpleComCallWrapper>::RefCount)
 CDAC_TYPE_FIELD(SimpleComCallWrapper, /*uint32*/, Flags, cdac_data<SimpleComCallWrapper>::Flags)
 CDAC_TYPE_END(SimpleComCallWrapper)
+
+CDAC_TYPE_BEGIN(RCWCleanupList)
+CDAC_TYPE_INDETERMINATE(RCWCleanupList)
+CDAC_TYPE_FIELD(RCWCleanupList, /*pointer*/, FirstBucket, cdac_data<RCWCleanupList>::FirstBucket)
+CDAC_TYPE_END(RCWCleanupList)
+
+CDAC_TYPE_BEGIN(RCW)
+CDAC_TYPE_INDETERMINATE(RCW)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, NextCleanupBucket, cdac_data<RCW>::NextCleanupBucket)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, NextRCW, cdac_data<RCW>::NextRCW)
+CDAC_TYPE_FIELD(RCW, /*uint32*/, Flags, cdac_data<RCW>::Flags)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, CtxCookie, cdac_data<RCW>::CtxCookie)
+CDAC_TYPE_FIELD(RCW, /*pointer*/, CtxEntry, cdac_data<RCW>::CtxEntry)
+CDAC_TYPE_END(RCW)
+
+CDAC_TYPE_BEGIN(CtxEntry)
+CDAC_TYPE_INDETERMINATE(CtxEntry)
+CDAC_TYPE_FIELD(CtxEntry, /*pointer*/, STAThread, cdac_data<CtxEntry>::STAThread)
+CDAC_TYPE_END(CtxEntry)
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
@@ -1069,6 +1089,7 @@ CDAC_TYPE_END(ComWrappersVtablePtrs)
 CDAC_TYPE_BEGIN(SyncBlockCache)
 CDAC_TYPE_INDETERMINATE(SyncBlockCache)
 CDAC_TYPE_FIELD(SyncBlockCache, /*uint32*/, FreeSyncTableIndex, cdac_data<SyncBlockCache>::FreeSyncTableIndex)
+CDAC_TYPE_FIELD(SyncBlockCache, /*pointer*/, CleanupBlockList, cdac_data<SyncBlockCache>::CleanupBlockList)
 CDAC_TYPE_END(SyncBlockCache)
 
 CDAC_TYPES_END()
@@ -1219,17 +1240,22 @@ CDAC_GLOBAL(StressLogMaxMessageSize, uint64, (uint64_t)StressMsg::maxMsgSize)
 CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
+CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
 CDAC_GLOBAL_POINTER(SyncBlockCache, &SyncBlockCache::s_pSyncBlockCache)
 CDAC_GLOBAL(SyncBlockMaskLockThreadId, uint32, SBLK_MASK_LOCK_THREADID)
 CDAC_GLOBAL(SyncBlockMaskLockRecursionLevel, uint32, SBLK_MASK_LOCK_RECLEVEL)
 CDAC_GLOBAL(SyncBlockRecursionLevelShift, uint32, SBLK_RECLEVEL_SHIFT)
+CDAC_GLOBAL(SyncBlockIsHashOrSyncBlockIndex, uint32, BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+CDAC_GLOBAL(SyncBlockIsHashCode, uint32, BIT_SBLK_IS_HASHCODE)
+CDAC_GLOBAL(SyncBlockIndexMask, uint32, MASK_SYNCBLOCKINDEX)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(ComRefcountMask, int64, SimpleComCallWrapper::COM_REFCOUNT_MASK)
+CDAC_GLOBAL_POINTER(RCWCleanupList, &g_pRCWCleanupList)
 #endif // FEATURE_COMINTEROP
 
 // It is important for the subdescriptor pointers to be the last pointers in the global structure.

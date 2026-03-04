@@ -3550,9 +3550,8 @@ void CSE_HeuristicRL::SoftmaxPolicy()
 
         if (first)
         {
-            for (int i = 0; i < choices.Height(); i++)
+            for (Choice& option : choices.TopDownOrder())
             {
-                Choice& option = choices.TopRef(i);
                 if (option.m_dsc == nullptr)
                 {
                     m_baseLikelihoods->push_back(0);
@@ -3683,18 +3682,18 @@ void CSE_HeuristicRL::Softmax(ArrayStack<Choice>& choices)
     // Determine likelihood via softmax.
     //
     double softmaxSum = 0;
-    for (int i = 0; i < choices.Height(); i++)
+    for (Choice& choice : choices.TopDownOrder())
     {
-        double softmax              = exp(choices.TopRef(i).m_preference);
-        choices.TopRef(i).m_softmax = softmax;
+        double softmax   = exp(choice.m_preference);
+        choice.m_softmax = softmax;
         softmaxSum += softmax;
     }
 
     // Normalize each choice's softmax likelihood
     //
-    for (int i = 0; i < choices.Height(); i++)
+    for (Choice& choice : choices.TopDownOrder())
     {
-        choices.TopRef(i).m_softmax /= softmaxSum;
+        choice.m_softmax /= softmaxSum;
     }
 }
 
@@ -3888,11 +3887,11 @@ void CSE_HeuristicRL::UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choi
         adjustment[i] = 0;
     }
 
-    for (int c = 0; c < choices.Height(); c++)
+    for (Choice& choice : choices.TopDownOrder())
     {
         double choiceFeatures[numParameters];
-        GetFeatures(choices.TopRef(c).m_dsc, choiceFeatures);
-        double softmax = choices.TopRef(c).m_softmax;
+        GetFeatures(choice.m_dsc, choiceFeatures);
+        double softmax = choice.m_softmax;
 
         for (int i = 0; i < numParameters; i++)
         {
@@ -3942,11 +3941,11 @@ void CSE_HeuristicRL::UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choi
 //
 CSE_HeuristicRL::Choice* CSE_HeuristicRL::FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices)
 {
-    for (int i = 0; i < choices.Height(); i++)
+    for (Choice& choice : choices.TopDownOrder())
     {
-        if (choices.TopRef(i).m_dsc == dsc)
+        if (choice.m_dsc == dsc)
         {
-            return &choices.TopRef(i);
+            return &choice;
         }
     }
     return nullptr;
@@ -5109,9 +5108,9 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     if (insertIntoSsa)
     {
         JITDUMP("Inserting each use created for defs into SSA\n");
-        for (int i = 0; i < defUses.Height(); i++)
+        for (UseDefLocation& defUse : defUses.BottomUpOrder())
         {
-            InsertUseIntoSsa(ssaBuilder, defUses.BottomRef(i));
+            InsertUseIntoSsa(ssaBuilder, defUse);
         }
     }
 
