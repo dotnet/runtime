@@ -136,7 +136,7 @@ namespace System.Diagnostics
 
         internal bool HasEnvironmentBeenAccessed => _environment is not null;
 
-        internal bool HasInheritedHandlesBeenAccessed => _inheritedHandles is not null;
+        internal bool HasInheritedHandles => _inheritedHandles is not null && _inheritedHandles.Count > 0;
 
         internal bool HasArgumentsBeenAccessed => _arguments is not null;
 

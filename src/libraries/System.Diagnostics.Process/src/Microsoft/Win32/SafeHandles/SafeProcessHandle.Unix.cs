@@ -42,6 +42,8 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
+        private int GetProcessIdCore() => throw new NotImplementedException();
+
         private static SafeProcessHandle OpenCore(int processId) => throw new NotImplementedException();
 
         private static SafeProcessHandle StartCore(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended) => throw new NotImplementedException();

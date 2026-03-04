@@ -18,11 +18,27 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
+        private int _processId = -1;
 
         /// <summary>
         /// Gets or sets the process ID.
         /// </summary>
-        internal int ProcessId { get; set; }
+        public int ProcessId
+        {
+            get
+            {
+                Validate();
+
+                if (_processId == -1)
+                {
+                    _processId = GetProcessIdCore();
+                }
+
+                return _processId;
+
+            }
+            private set { _processId = value; }
+        }
 
         /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeProcessHandle" />.
@@ -224,11 +240,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <exception cref="InvalidOperationException">Thrown when the handle is invalid or the process was not started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/>.</exception>
         /// <exception cref="Win32Exception">Thrown when the kill operation fails for reasons other than the process having already exited.</exception>
         /// <remarks>
-        /// On Unix, sends SIGKILL to all processes in the process group.
-        /// On Windows, the process must have been started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> set to true,
-        /// which creates a job object that contains the process and its children. This method terminates all processes in that job object.
-        /// This is a best-effort emulation of Unix process groups using Windows job objects;
-        /// the set of processes in the job object may not be exactly the same as a Unix process group.
+        /// On Windows, it kills not just the process group, but all descendants of the process.
         /// </remarks>
         internal bool KillProcessGroup()
         {
@@ -256,16 +268,24 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         /// Sends a signal to the process.
         /// </summary>
-        /// <param name="signal">The signal to send. Raw signal numbers (positive values) are supported on Unix.</param>
+        /// <param name="signal">The signal to send.</param>
         /// <exception cref="InvalidOperationException">Thrown when the handle is invalid.</exception>
         /// <exception cref="ArgumentException">Thrown when the signal is not supported on the current platform.</exception>
         /// <exception cref="Win32Exception">Thrown when the signal operation fails.</exception>
         /// <remarks>
-        /// On Windows, only SIGINT (mapped to CTRL_C_EVENT), SIGQUIT (mapped to CTRL_BREAK_EVENT), and SIGKILL are supported.
-        /// Signals can only be sent to processes with a console attached on Windows.
-        /// SIGINT and SIGQUIT are sent to the entire process group via GenerateConsoleCtrlEvent.
-        /// SIGKILL is emulated by terminating the specific process via TerminateProcess.
+        /// <para>
+        /// On Windows, signals can only be sent to processes that have a console attached
+        /// and were started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> set to <see langword="true"/>.
+        /// The following signal mappings are used:
+        /// </para>
+        /// <list type="bullet">
+        /// <item><description><see cref="PosixSignal.SIGINT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_C_EVENT)</c>.</description></item>
+        /// <item><description><see cref="PosixSignal.SIGQUIT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT)</c>.</description></item>
+        /// <item><description><see cref="PosixSignal.SIGKILL"/> is mapped to <see cref="Kill"/>.</description></item>
+        /// </list>
+        /// <para>
         /// On Unix/Linux, all signals defined in PosixSignal and raw signal numbers are supported.
+        /// </para>
         /// </remarks>
         public void Signal(PosixSignal signal)
         {
@@ -277,18 +297,24 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         /// Sends a signal to the entire process group.
         /// </summary>
-        /// <param name="signal">The signal to send. Raw signal numbers (positive values) are supported on Unix.</param>
+        /// <param name="signal">The signal to send.</param>
         /// <exception cref="InvalidOperationException">Thrown when the handle is invalid.</exception>
         /// <exception cref="ArgumentException">Thrown when the signal is not supported on the current platform.</exception>
         /// <exception cref="Win32Exception">Thrown when the signal operation fails.</exception>
         /// <remarks>
-        /// On Windows, only SIGINT (mapped to CTRL_C_EVENT), SIGQUIT (mapped to CTRL_BREAK_EVENT), and SIGKILL are supported.
-        /// Signals can only be sent to processes with a console attached on Windows.
-        /// The process must have been started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> set to true.
-        /// SIGKILL terminates all processes in the job object associated with the process group.
-        /// This is a best-effort emulation of Unix process groups using Windows job objects;
-        /// the set of processes in the job object may not be exactly the same as a Unix process group.
+        /// <para>
+        /// On Windows, signals can only be sent to processes that have a console attached
+        /// and were started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> set to <see langword="true"/>.
+        /// The following signal mappings are used:
+        /// </para>
+        /// <list type="bullet">
+        /// <item><description><see cref="PosixSignal.SIGINT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_C_EVENT)</c>.</description></item>
+        /// <item><description><see cref="PosixSignal.SIGQUIT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT)</c>.</description></item>
+        /// <item><description><see cref="PosixSignal.SIGKILL"/> is mapped to <see cref="KillProcessGroup"/>.</description></item>
+        /// </list>
+        /// <para>
         /// On Unix/Linux, all signals defined in PosixSignal and raw signal numbers are supported.
+        /// </para>
         /// </remarks>
         public void SignalProcessGroup(PosixSignal signal)
         {

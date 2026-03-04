@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -298,12 +300,28 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public static void Open_CurrentProcess_Succeeds()
+        public void Open_CanWaitForExitOnOpenedProcess()
         {
-            int currentPid = Environment.ProcessId;
-            using SafeProcessHandle handle = SafeProcessHandle.Open(currentPid);
+            ProcessStartOptions options = CreateTenSecondSleep();
+            using SafeProcessHandle started = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
-            Assert.False(handle.IsInvalid);
+            using SafeProcessHandle opened = SafeProcessHandle.Open(started.ProcessId);
+
+            opened.Kill();
+            Assert.True(opened.TryWaitForExit(TimeSpan.FromMilliseconds(300), out _));
+        }
+
+        [Fact]
+        public static void ProcessId_IsFetched_WhenNotProvided()
+        {
+            ProcessStartOptions options = CreateTenSecondSleep();
+            using SafeProcessHandle started = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+
+            using SafeProcessHandle copy = new(started.DangerousGetHandle(), ownsHandle: false);
+            Assert.Equal(started.ProcessId, copy.ProcessId);
+
+            copy.Kill();
+            Assert.True(started.TryWaitForExit(TimeSpan.FromMilliseconds(300), out _));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -311,12 +329,34 @@ namespace System.Diagnostics.Tests
         [InlineData(PosixSignal.SIGQUIT)]
         public void Signal_TerminatesProcessInNewProcessGroup(PosixSignal signal)
         {
-            ProcessStartOptions options = CreateTenSecondSleep();
+            // When a process is created with CREATE_NEW_PROCESS_GROUP specified, an implicit call to SetConsoleCtrlHandler(NULL,TRUE) is made.
+            // We need to re-enable the handler inside the child process.
+            // Since RemoteExecutor doesn't support SafeProcessHandle APIs yet, we use PowerShell.
+
+            const string script = """
+                Add-Type -TypeDefinition @"
+                using System;
+                using System.Runtime.InteropServices;
+
+                public class Kernel32 {
+                    [DllImport("kernel32.dll", SetLastError = true)]
+                    public static extern bool SetConsoleCtrlHandler(IntPtr handlerRoutine, bool add);
+                }
+                "@
+
+                [Kernel32]::SetConsoleCtrlHandler([IntPtr]::Zero, $false)
+                Start-Sleep -Seconds 5
+                """;
+
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("powershell.exe") { Arguments = { "-NoProfile", "-Command", script } }
+                : CreateTenSecondSleep();
+
             options.CreateNewProcessGroup = true;
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
-            bool hasExited = processHandle.TryWaitForExit(TimeSpan.Zero, out _);
+            bool hasExited = processHandle.TryWaitForExit(TimeSpan.FromMilliseconds(200), out _); // let PWS start and set up the handler
             Assert.False(hasExited, "Process should still be running before signal is sent");
 
             processHandle.Signal(signal);
@@ -410,6 +450,111 @@ namespace System.Diagnostics.Tests
             Task finishedTask = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromMilliseconds(300))); // give some time for the pipe to be closed
             Assert.Equal(createNewProcessGroup, finishedTask == readTask);
             Assert.Equal(createNewProcessGroup, readTask.IsCompleted);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void KillOnParentExit_KillsTheChild_WhenParentExits(bool enabled)
+        {
+            RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false };
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                (enabledStr) =>
+                {
+                    ProcessStartOptions processStartOptions = CreateTenSecondSleep();
+                    processStartOptions.KillOnParentExit = bool.Parse(enabledStr);
+
+                    using SafeProcessHandle started = SafeProcessHandle.Start(processStartOptions, input: null, output: null, error: null);
+                    return started.ProcessId; // return grand child pid as exit code
+                },
+                arg: enabled.ToString(),
+                remoteInvokeOptions);
+
+            remoteHandle.Process.WaitForExit();
+
+            VerifyProcessIsRunning(enabled, remoteHandle.ExitCode);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void KillOnParentExit_KillsTheChild_WhenParentIsKilled(bool enabled)
+        {
+            RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false };
+            remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
+            remoteInvokeOptions.StartInfo.RedirectStandardInput = true;
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                (enabledStr) =>
+                {
+                    ProcessStartOptions processStartOptions = CreateTenSecondSleep();
+                    processStartOptions.KillOnParentExit = bool.Parse(enabledStr);
+
+                    using SafeProcessHandle started = SafeProcessHandle.Start(processStartOptions, input: null, output: null, error: null);
+                    Console.WriteLine(started.ProcessId);
+
+                    // This will block the child until parent kills it.
+                    _ = Console.ReadLine();
+                },
+                arg: enabled.ToString(),
+                remoteInvokeOptions);
+
+            string firstLine = remoteHandle.Process.StandardOutput.ReadLine();
+            int grandChildPid = int.Parse(firstLine);
+            remoteHandle.Process.Kill();
+            remoteHandle.Process.WaitForExit();
+
+            VerifyProcessIsRunning(enabled, grandChildPid);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void KillOnParentExit_KillsTheChild_WhenParentCrashes(bool enabled)
+        {
+            RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false };
+            remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
+            remoteInvokeOptions.StartInfo.RedirectStandardError = true;
+            remoteInvokeOptions.StartInfo.RedirectStandardInput = true;
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                (enabledStr) =>
+                {
+                    ProcessStartOptions processStartOptions = CreateTenSecondSleep();
+                    processStartOptions.KillOnParentExit = bool.Parse(enabledStr);
+
+                    using SafeProcessHandle started = SafeProcessHandle.Start(processStartOptions, input: null, output: null, error: null);
+                    Console.WriteLine(started.ProcessId);
+
+                    // This will block the child until parent writes input.
+                    _ = Console.ReadLine();
+
+                    // Guaranteed Access Violation - write to null pointer
+                    Marshal.WriteInt32(IntPtr.Zero, 42);
+                },
+                arg: enabled.ToString(),
+                remoteInvokeOptions);
+
+            string firstLine = remoteHandle.Process.StandardOutput.ReadLine();
+            int grandChildPid = int.Parse(firstLine);
+            remoteHandle.Process.StandardInput.WriteLine("One AccessViolationException please.");
+            remoteHandle.Process.WaitForExit();
+
+            VerifyProcessIsRunning(enabled, grandChildPid);
+        }
+
+        private static void VerifyProcessIsRunning(bool shouldExited, int processId)
+        {
+            try
+            {
+                using SafeProcessHandle grandChild = SafeProcessHandle.Open(processId);
+                grandChild.Kill();
+                grandChild.WaitForExit();
+            }
+            catch (Win32Exception) when (shouldExited)
+            {
+            }
         }
     }
 }

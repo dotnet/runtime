@@ -10,6 +10,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         public SafeProcessHandle() : base (default(bool)) { }
         public SafeProcessHandle(System.IntPtr existingHandle, bool ownsHandle) : base (default(bool)) { }
+        public int ProcessId { get { throw null; } }
         public bool Kill() { throw null; }
         public static Microsoft.Win32.SafeHandles.SafeProcessHandle Open(int processId) { throw null; }
         protected override bool ReleaseHandle() { throw null; }

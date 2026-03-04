@@ -3,13 +3,21 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        internal sealed class SafeJobHandle : SafeHandleZeroOrMinusOneIsInvalid
+        {
+            public SafeJobHandle() : base(true) { }
+
+            protected override bool ReleaseHandle() => Interop.Kernel32.CloseHandle(handle);
+        }
+
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial IntPtr CreateJobObjectW(IntPtr lpJobAttributes, IntPtr lpName);
+        internal static partial SafeJobHandle CreateJobObjectW(IntPtr lpJobAttributes, IntPtr lpName);
 
         internal const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000;
 
@@ -57,10 +65,10 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool SetInformationJobObject(IntPtr hJob, JOBOBJECTINFOCLASS JobObjectInfoClass, ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION lpJobObjectInfo, uint cbJobObjectInfoLength);
+        internal static partial bool SetInformationJobObject(SafeJobHandle hJob, JOBOBJECTINFOCLASS JobObjectInfoClass, ref JOBOBJECT_EXTENDED_LIMIT_INFORMATION lpJobObjectInfo, uint cbJobObjectInfoLength);
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TerminateJobObject(IntPtr hJob, uint uExitCode);
+        internal static partial bool TerminateJobObject(SafeJobHandle hJob, uint uExitCode);
     }
 }

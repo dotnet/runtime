@@ -23,10 +23,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool GetHandleInformation(IntPtr hObject, out int lpdwFlags);
-
-        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool SetHandleInformation(IntPtr hObject, int dwMask, int dwFlags);
+        internal static partial bool GetHandleInformation(SafeHandle hObject, out int lpdwFlags);
     }
 }
