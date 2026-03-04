@@ -148,7 +148,7 @@ namespace System.Security.Authentication.ExtendedProtection
         {
             get
             {
-                // .NET is supported only on Windows where ExtendedProtection is supported.
+                // ExtendedProtection is supported on all Windows versions supported by current .NET version.
                 return OperatingSystem.IsWindows();
             }
         }

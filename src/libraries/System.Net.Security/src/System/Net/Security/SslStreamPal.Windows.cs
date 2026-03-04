@@ -289,7 +289,7 @@ namespace System.Net.Security
             return;
         }
 
-        // This is legacy crypto API used on older Windows 10 versions.
+        // This is legacy crypto API used on older Windows versions.
         // It only supports TLS up to 1.2
         public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslAuthenticationOptions authOptions)
         {
