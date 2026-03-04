@@ -690,11 +690,18 @@ namespace
 
         SString source;
         ULONG key = CreateKey(pMD, source);
-        const ReverseThunkMapValue* thunk;
-        bool success = table->Lookup(key, &thunk) && strcmp(thunk->Source, source.GetUTF8()) == 0;
-        LOG((LF_STUBS, LL_INFO100000, "WASM reverse thunk %s for key: %u\n", success ? "found" : "missing", key));
+        const ReverseThunkMapValue* thunk = nullptr;
+        for (HashToReverseThunkHash::KeyIterator iter = table->Begin(key), end = table->End(key); iter != end; iter++)
+        {
+            if (strcmp(iter->Value()->Source, source.GetUTF8()) == 0)
+            {
+                thunk = iter->Value();
+                break;
+            }
+        }
+        LOG((LF_STUBS, LL_INFO100000, "WASM reverse thunk %s for key: %u\n", thunk != nullptr ? "found" : "missing", key));
 
-        return success ? thunk : nullptr;
+        return thunk;
     }
 }
 
