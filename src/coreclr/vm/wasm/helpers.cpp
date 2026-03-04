@@ -631,63 +631,37 @@ namespace
         return thunk;
     }
 
-    ULONG CreateFallbackKey(MethodDesc* pMD, SString &strFallbackSource)
+    ULONG CreateKey(MethodDesc* pMD, SString &strSource)
     {
         _ASSERTE(pMD != nullptr);
 
-        // the fallback key is in the form $"{MethodName}#{Method.GetParameters().Length}:{AssemblyName}:{Namespace}:{TypeName}";
+        // the key is in the form $"{MethodName}#{Method.GetParameters().Length}:{AssemblyName}:{Namespace}:{TypeName}";
         const char* pszNamespace = nullptr;
         const char* pszName = pMD->GetMethodTable()->GetFullyQualifiedNameInfo(&pszNamespace);
         MetaSig sig(pMD);
-        strFallbackSource.Printf("%s#%d:%s:%s:%s",
+        strSource.Printf("%s#%d:%s:%s:%s",
             pMD->GetName(),
             sig.NumFixedArgs(),
             pMD->GetAssembly()->GetSimpleName(),
             pszNamespace != nullptr ? pszNamespace : "",
             pszName);
 
-        return strFallbackSource.Hash();
-    }
-
-    ULONG CreateKey(MethodDesc* pMD, mdMethodDef& token, char* mvidBuffer, int len)
-    {
-        _ASSERTE(pMD != nullptr);
-
-        // Get the MVID of the module containing the method.
-        // Format it to match C#'s Guid.ToString() so the hash matches the generator.
-        GUID mvid;
-        pMD->GetModule()->GetPEAssembly()->GetMVID(&mvid);
-
-        snprintf(mvidBuffer, len, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-            mvid.Data1, mvid.Data2, mvid.Data3,
-            mvid.Data4[0], mvid.Data4[1],
-            mvid.Data4[2], mvid.Data4[3],
-            mvid.Data4[4], mvid.Data4[5],
-            mvid.Data4[6], mvid.Data4[7]);
-
-        SString strMvid(SString::Utf8, mvidBuffer);
-
-        // Get the member def token for the method.
-        token = pMD->GetMemberDef();
-
-        // Combine the two to create a reasonably unique key.
-        return strMvid.Hash() ^ token;
+        return strSource.Hash();
     }
 
     typedef MapSHash<ULONG, const ReverseThunkMapValue*> HashToReverseThunkHash;
     HashToReverseThunkHash* reverseThunkCache = nullptr;
-    HashToReverseThunkHash* reverseThunkFallbackCache = nullptr;
 
-    HashToReverseThunkHash* CreateReverseThunkHashTable(bool fallback)
+    HashToReverseThunkHash* CreateReverseThunkHashTable()
     {
         HashToReverseThunkHash* newTable = new HashToReverseThunkHash();
         newTable->Reallocate(g_ReverseThunksCount * HashToReverseThunkHash::s_density_factor_denominator / HashToReverseThunkHash::s_density_factor_numerator + 1);
         for (size_t i = 0; i < g_ReverseThunksCount; i++)
         {
-            newTable->Add(fallback ? g_ReverseThunks[i].fallbackKey : g_ReverseThunks[i].key, &g_ReverseThunks[i].value);
+            newTable->Add(g_ReverseThunks[i].key, &g_ReverseThunks[i].value);
         }
 
-        HashToReverseThunkHash **ppCache = fallback ? &reverseThunkFallbackCache : &reverseThunkCache;
+        HashToReverseThunkHash **ppCache = &reverseThunkCache;
         if (InterlockedCompareExchangeT(ppCache, newTable, nullptr) != nullptr)
         {
             // Another thread won the race, discard ours
@@ -705,46 +679,20 @@ namespace
             LOG((LF_STUBS, LL_INFO100000, "WASM lookupThunk pMD: %s.%s::%s\n", pszLookupNamespace ? pszLookupNamespace : "", pszLookupName, pMD->GetName()));
         }
 #endif
+
         HashToReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
+
         if (table == nullptr)
         {
             LOG((LF_STUBS, LL_INFO100000, "WASM creating reverse thunk hash table for the first time\n"));
-            table = CreateReverseThunkHashTable(false /* fallback */);
+            table = CreateReverseThunkHashTable();
         }
-        mdMethodDef token;
-        char mvidBuffer[MINIPAL_GUID_BUFFER_LEN];
-        ULONG key = CreateKey(pMD, token, mvidBuffer, MINIPAL_GUID_BUFFER_LEN);
-        LOG((LF_STUBS, LL_INFO100000, "WASM looking for reverse thunk with key: %u found token: %u\n", key, token));
 
-        // Try primary key, it is based on Assembly MVID and method token
+        SString source;
+        ULONG key = CreateKey(pMD, source);
         const ReverseThunkMapValue* thunk;
-        if (table->Lookup(key, &thunk) && thunk->Token == token)
-        {
-            _ASSERTE(thunk->MVIDIndex < g_ReverseThunkMVIDsCount);
-            if (strcmp(g_ReverseThunkMVIDs[thunk->MVIDIndex], mvidBuffer) == 0)
-            {
-                LOG((LF_STUBS, LL_INFO100000, "WASM primary reverse thunk found for key: %u\n", key));
-                return thunk;
-            }
-        }
-
-        LOG((LF_STUBS, LL_INFO100000, "WASM reverse thunk missing for primary key: %u\n", key));
-
-        // Try fallback key, that is based on method properties and assembly name
-        // The fallback is used when the assembly has different MVID
-        table = VolatileLoad(&reverseThunkFallbackCache);
-
-        if (table == nullptr)
-        {
-            LOG((LF_STUBS, LL_INFO100000, "WASM creating reverse thunk fallback hash table for the first time\n"));
-            table = CreateReverseThunkHashTable(true /* fallback */);
-        }
-
-        SString fallbackSource;
-        key = CreateFallbackKey(pMD, fallbackSource);
-
-        bool success = table->Lookup(key, &thunk) && strcmp(thunk->FallbackSource, fallbackSource.GetUTF8()) == 0;
-        LOG((LF_STUBS, LL_INFO100000, "WASM reverse thunk %s for fallback key: %u\n", success ? "found" : "missing", key));
+        bool success = table->Lookup(key, &thunk) && strcmp(thunk->Source, source.GetUTF8()) == 0;
+        LOG((LF_STUBS, LL_INFO100000, "WASM reverse thunk %s for key: %u\n", success ? "found" : "missing", key));
 
         return success ? thunk : nullptr;
     }

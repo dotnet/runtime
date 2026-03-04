@@ -473,27 +473,12 @@ internal sealed class PInvokeTableGenerator
             cb_index++;
         }
 
-        var uniqueMVIDs = callbacks.Select(cb => cb.MVID).Distinct(StringComparer.Ordinal).OrderBy(m => m, StringComparer.Ordinal).ToList();
-        var mvidIndexMap = new Dictionary<string, int>(StringComparer.Ordinal);
-        for (int i = 0; i < uniqueMVIDs.Count; i++)
-            mvidIndexMap[uniqueMVIDs[i]] = i;
-
-        var mvidToAssemblyName = callbacks.GroupBy(cb => cb.MVID, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.First().AssemblyName, StringComparer.Ordinal);
-
         w.Write(
             $$"""
 
-            const char* g_ReverseThunkMVIDs[] =
-            {
-            {{uniqueMVIDs.Join($",{w.NewLine}", mvid => $"    \"{EscapeLiteral(mvid)}\" // {mvidToAssemblyName[mvid]}")}}
-            };
-
-            const size_t g_ReverseThunkMVIDsCount = sizeof(g_ReverseThunkMVIDs) / sizeof(g_ReverseThunkMVIDs[0]);
-
             const ReverseThunkMapEntry g_ReverseThunks[] =
             {
-            {{callbacks.Join($",{w.NewLine}", cb => ThunkMapEntryLine(cb, Log, mvidIndexMap))}}
+            {{callbacks.Join($",{w.NewLine}", cb => ThunkMapEntryLine(cb, Log))}}
             };
 
             const size_t g_ReverseThunksCount = sizeof(g_ReverseThunks) / sizeof(g_ReverseThunks[0]);
@@ -510,11 +495,11 @@ internal sealed class PInvokeTableGenerator
     }
 
 
-    private string ThunkMapEntryLine(PInvokeCallback cb, LogAdapter Log, Dictionary<string, int> mvidIndexMap)
+    private string ThunkMapEntryLine(PInvokeCallback cb, LogAdapter Log)
     {
         var fsName = FixedSymbolName(cb, Log);
 
-        return $"    {{ {cb.Token ^ HashString(cb.MVID)}, {HashString(cb.Key)}, {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol}, {cb.Token}, {mvidIndexMap[cb.MVID]}, \"{cb.Key}\" }} }}";
+        return $"    {{ {HashString(cb.Key)}, {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol}, \"{cb.Key}\" }} }}";
     }
 
     private static readonly Dictionary<Type, bool> _blittableCache = new();
