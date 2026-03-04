@@ -1088,17 +1088,8 @@ void ILValueClassMarshaler::EmitClearNative(ILCodeStream * pslILEmit)
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    TypeHandle structType{m_pargs->m_pMT};
 
-    MethodDesc* pFreeMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__FREE);
-
-    MethodDesc* pFreeMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pFreeMethodTypicalInstantiation,
-        TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&structType, 1)).GetMethodTable(),
-        FALSE,
-        Instantiation(),
-        TRUE);
-
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pFreeMethod), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
 }
 
 
@@ -1113,15 +1104,7 @@ void ILValueClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    MethodDesc* pConvertToUnmanagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED);
-
-    MethodDesc* pConvertToUnmanagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToUnmanagedMethodTypicalInstantiation,
-        TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&structType, 1)).GetMethodTable(),
-        FALSE,
-        Instantiation(),
-        TRUE);
-
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToUnmanagedMethod), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
 }
 
 void ILValueClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -1132,17 +1115,7 @@ void ILValueClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEm
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    TypeHandle structType{m_pargs->m_pMT};
-
-    MethodDesc* pConvertToManagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED);
-
-    MethodDesc* pConvertToManagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToManagedMethodTypicalInstantiation,
-        TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&structType, 1)).GetMethodTable(),
-        FALSE,
-        Instantiation(),
-        TRUE);
-
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToManagedMethod), 3, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, m_pargs->m_pMT)), 3, 0);
 }
 
 
@@ -2333,15 +2306,7 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    MethodDesc* pConvertToUnmanagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED);
-
-    MethodDesc* pConvertToUnmanagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToUnmanagedMethodTypicalInstantiation,
-        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
-        FALSE,
-        Instantiation(),
-        TRUE);
-
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToUnmanagedMethod), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
 
     if (emittedTypeCheck)
     {
@@ -2373,17 +2338,7 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* psl
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    TypeHandle layoutClassType{m_pargs->m_pMT};
-
-    MethodDesc* pConvertToManagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED);
-
-    MethodDesc* pConvertToManagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToManagedMethodTypicalInstantiation,
-        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
-        FALSE,
-        Instantiation(),
-        TRUE);
-
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToManagedMethod), 3, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, m_pargs->m_pMT)), 3, 0);
 
     if (emittedTypeCheck)
     {
@@ -2410,17 +2365,7 @@ void ILLayoutClassPtrMarshaler::EmitClearNativeContents(ILCodeStream * pslILEmit
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    TypeHandle layoutClassType{m_pargs->m_pMT};
-
-    MethodDesc* pFreeMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE);
-
-    MethodDesc* pFreeMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pFreeMethodTypicalInstantiation,
-        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
-        FALSE,
-        Instantiation(),
-        TRUE);
-
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pFreeMethod), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
 
     if (emittedTypeCheck)
     {
@@ -2569,15 +2514,7 @@ void ILLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    MethodDesc* pConvertToUnmanagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED);
-
-    MethodDesc* pConvertToUnmanagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToUnmanagedMethodTypicalInstantiation,
-        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
-        FALSE,
-        Instantiation(),
-        TRUE);
-
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToUnmanagedMethod), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED, m_pargs->m_pMT)), 4, 0);
 }
 
 void ILLayoutClassMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit)
@@ -2596,17 +2533,7 @@ void ILLayoutClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
     EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    TypeHandle layoutClassType{m_pargs->m_pMT};
-
-    MethodDesc* pConvertToManagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED);
-
-    MethodDesc* pConvertToManagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToManagedMethodTypicalInstantiation,
-        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
-        FALSE,
-        Instantiation(),
-        TRUE);
-
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToManagedMethod), 3, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, m_pargs->m_pMT)), 3, 0);
 }
 
 void ILLayoutClassMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
@@ -2618,17 +2545,7 @@ void ILLayoutClassMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
     pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    TypeHandle layoutClassType{m_pargs->m_pMT};
-
-    MethodDesc* pFreeMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE);
-
-    MethodDesc* pFreeMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pFreeMethodTypicalInstantiation,
-        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
-        FALSE,
-        Instantiation(),
-        TRUE);
-
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pFreeMethod), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE, m_pargs->m_pMT)), 4, 0);
 }
 
 
