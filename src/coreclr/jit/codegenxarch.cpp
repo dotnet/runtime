@@ -6063,7 +6063,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 }
                 else
 #endif // TARGET_X86
-                    if (varTypeIsFloating(returnType))
+                    if (varTypeIsFloating(returnType) || returnType == TYP_HALF)
                     {
                         returnReg = REG_FLOATRET;
                     }
@@ -6158,7 +6158,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
         else
         {
-            assert(!varTypeIsStruct(call));
+            assert(!varTypeIsStruct(call) || call->TypeIs(TYP_HALF));
 
             if (call->TypeIs(TYP_REF))
             {
@@ -8346,7 +8346,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
     }
 #endif // defined(TARGET_X86) && defined(FEATURE_SIMD)
 
-    if (varTypeIsSIMD(targetType))
+    if (varTypeIsSIMD(targetType) || targetType == TYP_HALF)
     {
         regNumber srcReg = genConsumeReg(source);
         assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));

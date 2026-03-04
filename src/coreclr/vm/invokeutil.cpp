@@ -220,6 +220,17 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
     case ELEMENT_TYPE_VALUETYPE:
     {
         MethodTable* pMT = th.GetMethodTable();
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+        // System.Half is passed in floating point registers. Zero-extend the 2-byte value
+        // to 4 bytes so that the movss load in CallDescrWorker reads clean data.
+        if (pMT->IsNativeHalfType())
+        {
+            _ASSERTE(argRef != NULL);
+            *(UINT32 *)pArgDst = 0;
+            *(UINT16 *)pArgDst = *(UINT16 *)argRef;
+            break;
+        }
+#endif // TARGET_XARCH
         CopyValueClassArg(argDest, argRef, pMT, 0);
         break;
     }
