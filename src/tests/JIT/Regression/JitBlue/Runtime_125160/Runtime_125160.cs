@@ -26,6 +26,15 @@ public class Runtime_125160
         Assert.Equal(1d, trueDouble.GetElement(1));
     }
 
+    [ConditionalFact(typeof(Avx512F), nameof(Avx512F.IsSupported))]
+    public static void TestCompareMask()
+    {
+        Assert.Equal(Vector512<float>.Zero, CompareMaskFalseFloat(Vector512<float>.One, Vector512<float>.Zero));
+        Assert.Equal(Vector512<double>.Zero, CompareMaskFalseDouble(Vector512<double>.One, Vector512<double>.Zero));
+        Assert.Equal(Vector512.Create(-1f), CompareMaskTrueFloat(Vector512<float>.One, Vector512<float>.Zero));
+        Assert.Equal(Vector512.Create(-1d), CompareMaskTrueDouble(Vector512<double>.One, Vector512<double>.Zero));
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector128<float> CompareFalseFloat(Vector128<float> x, Vector128<float> y)
         => Avx.CompareScalar(x, y, FloatComparisonMode.OrderedFalseSignaling);
@@ -41,4 +50,20 @@ public class Runtime_125160
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector128<double> CompareTrueDouble(Vector128<double> x, Vector128<double> y)
         => Avx.CompareScalar(x, y, FloatComparisonMode.UnorderedTrueNonSignaling);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector512<float> CompareMaskFalseFloat(Vector512<float> x, Vector512<float> y)
+        => Avx512F.Compare(x, y, FloatComparisonMode.OrderedFalseSignaling);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector512<double> CompareMaskFalseDouble(Vector512<double> x, Vector512<double> y)
+        => Avx512F.Compare(x, y, FloatComparisonMode.OrderedFalseNonSignaling);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector512<float> CompareMaskTrueFloat(Vector512<float> x, Vector512<float> y)
+        => Avx512F.Compare(x, y, FloatComparisonMode.UnorderedTrueSignaling);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector512<double> CompareMaskTrueDouble(Vector512<double> x, Vector512<double> y)
+        => Avx512F.Compare(x, y, FloatComparisonMode.UnorderedTrueNonSignaling);
 }

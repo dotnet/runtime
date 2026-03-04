@@ -33834,7 +33834,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             // so we can't fold to a full zero vector
                             break;
                         }
-                        resultNode = gtNewZeroConNode(retType);
+                        // CompareMask returns TYP_MASK which gtNewZeroConNode doesn't handle,
+                        // so use the SIMD vector type instead; the mask conversion at the end
+                        // of this function will wrap it with CvtVectorToMask
+                        resultNode = gtNewZeroConNode(varTypeIsMask(retType) ? getSIMDTypeForSize(simdSize)
+                                                                            : retType);
                         resultNode = gtWrapWithSideEffects(resultNode, tree, GTF_ALL_EFFECT);
                         break;
                     }
@@ -33848,7 +33852,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             // so we can't fold to a full AllBitsSet vector
                             break;
                         }
-                        resultNode = gtNewAllBitsSetConNode(retType);
+                        // CompareMask returns TYP_MASK which gtNewAllBitsSetConNode doesn't handle,
+                        // so use the SIMD vector type instead; the mask conversion at the end
+                        // of this function will wrap it with CvtVectorToMask
+                        resultNode = gtNewAllBitsSetConNode(varTypeIsMask(retType) ? getSIMDTypeForSize(simdSize)
+                                                                                  : retType);
                         resultNode = gtWrapWithSideEffects(resultNode, tree, GTF_ALL_EFFECT);
                         break;
                     }
