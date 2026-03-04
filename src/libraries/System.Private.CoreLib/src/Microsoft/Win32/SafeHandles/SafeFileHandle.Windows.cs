@@ -25,7 +25,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool IsNoBuffering => (GetFileOptions() & NoBuffering) != 0;
 
-        internal bool CanSeek => !IsClosed && Type == System.IO.FileHandleType.RegularFile;
+        internal bool CanSeek => !IsClosed && Type == FileHandleType.RegularFile;
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
@@ -253,44 +253,45 @@ namespace Microsoft.Win32.SafeHandles
             return _fileOptions = result;
         }
 
-        internal unsafe System.IO.FileHandleType GetFileTypeCore()
+        internal FileHandleType GetFileTypeCore()
         {
             int kernelFileType = Interop.Kernel32.GetFileType(this);
             return kernelFileType switch
             {
-                Interop.Kernel32.FileTypes.FILE_TYPE_CHAR => System.IO.FileHandleType.CharacterDevice,
+                Interop.Kernel32.FileTypes.FILE_TYPE_CHAR => FileHandleType.CharacterDevice,
                 Interop.Kernel32.FileTypes.FILE_TYPE_PIPE => GetPipeOrSocketType(),
                 Interop.Kernel32.FileTypes.FILE_TYPE_DISK => GetDiskBasedType(),
-                _ => System.IO.FileHandleType.Unknown
+                _ => FileHandleType.Unknown
             };
         }
 
-        private unsafe System.IO.FileHandleType GetPipeOrSocketType()
+        private unsafe FileHandleType GetPipeOrSocketType()
         {
-            // Try to call GetNamedPipeInfo to determine if it's a pipe or socket
+            // When GetFileType returns FILE_TYPE_PIPE, the handle can be either a pipe or a socket.
+            // Use GetNamedPipeInfo to determine if it's a pipe.
             uint flags;
             if (Interop.Kernel32.GetNamedPipeInfo(this, &flags, null, null, null))
             {
-                return System.IO.FileHandleType.Pipe;
+                return FileHandleType.Pipe;
             }
 
-            int error = Marshal.GetLastPInvokeError();
-            return error switch
+            return Marshal.GetLastPInvokeError() switch
             {
-                Interop.Errors.ERROR_PIPE_NOT_CONNECTED => System.IO.FileHandleType.Pipe,
-                Interop.Errors.ERROR_INVALID_HANDLE => System.IO.FileHandleType.Socket,
-                _ => throw Win32Marshal.GetExceptionForWin32Error(error)
+                Interop.Errors.ERROR_PIPE_NOT_CONNECTED => FileHandleType.Pipe,
+                // Since we got here, it means the handle itself is valid.
+                // So treat all other errors as an indication that it's not a pipe, and thus a socket.
+                _ => FileHandleType.Socket,
             };
         }
 
-        private unsafe System.IO.FileHandleType GetDiskBasedType()
+        private unsafe FileHandleType GetDiskBasedType()
         {
             // First check if it's a directory using GetFileInformationByHandle
             if (Interop.Kernel32.GetFileInformationByHandle(this, out Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInfo))
             {
                 if ((fileInfo.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0)
                 {
-                    return System.IO.FileHandleType.Directory;
+                    return FileHandleType.Directory;
                 }
 
                 // Check if it's a reparse point - only symlinks should return SymbolicLink
@@ -302,15 +303,15 @@ namespace Microsoft.Win32.SafeHandles
                     {
                         if (tagInfo.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK)
                         {
-                            return System.IO.FileHandleType.SymbolicLink;
+                            return FileHandleType.SymbolicLink;
                         }
                     }
                     // Other reparse points (junctions, mount points, etc.) are not recognized as of now
-                    return System.IO.FileHandleType.Unknown;
+                    return FileHandleType.Unknown;
                 }
             }
 
-            return System.IO.FileHandleType.RegularFile;
+            return FileHandleType.RegularFile;
         }
 
         internal long GetFileLength()

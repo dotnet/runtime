@@ -28,6 +28,7 @@ namespace System.IO.Tests
             string pipePath = GetTestFilePath();
             Assert.Equal(0, Interop.Sys.MkFifo(pipePath, (int)UnixFileMode.UserRead | (int)UnixFileMode.UserWrite));
 
+            // The reader blocks until a writer opens the pipe, so run it in a separate task.
             Task readerTask = Task.Run(() =>
             {
                 using SafeFileHandle reader = File.OpenHandle(pipePath, FileMode.Open, FileAccess.Read);

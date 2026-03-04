@@ -32,16 +32,16 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void GetFileType_NamedPipe()
+        public async Task GetFileType_NamedPipe()
         {
             string pipeName = Path.GetRandomFileName();
             using NamedPipeServerStream server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
 
-            Task serverTask = Task.Run(async () => await server.WaitForConnectionAsync());
+            Task serverTask = server.WaitForConnectionAsync();
 
             using NamedPipeClientStream client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None);
             client.Connect();
-            serverTask.Wait();
+            await serverTask;
 
             using SafeFileHandle serverHandle = new SafeFileHandle(server.SafePipeHandle.DangerousGetHandle(), ownsHandle: false);
             Assert.Equal(FileHandleType.Pipe, serverHandle.Type);
@@ -53,13 +53,16 @@ namespace System.IO.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetFileType_ConsoleInput()
         {
-            if (!Console.IsInputRedirected)
-            {
-                using SafeFileHandle handle = Console.OpenStandardInputHandle();
-                FileHandleType type = handle.Type;
+            using SafeFileHandle handle = Console.OpenStandardInputHandle();
+            FileHandleType type = handle.Type;
 
-                Assert.True(type == FileHandleType.CharacterDevice || type == FileHandleType.Pipe || type == FileHandleType.RegularFile,
-                    $"Expected CharacterDevice, Pipe, or RegularFile but got {type}");
+            if (Console.IsInputRedirected)
+            {
+                Assert.True(type == FileHandleType.Pipe || type == FileHandleType.RegularFile, $"Expected Pipe or RegularFile but got {type}");
+            }
+            else
+            {
+                Assert.Equal(FileHandleType.CharacterDevice, type);
             }
         }
 

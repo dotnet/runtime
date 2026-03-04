@@ -65,6 +65,8 @@ namespace System.IO.Tests
         public void GetFileType_ClosedHandle_ThrowsObjectDisposedException()
         {
             SafeFileHandle handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write);
+            Assert.Equal(FileHandleType.RegularFile, handle.Type);
+
             handle.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => handle.Type);

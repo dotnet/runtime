@@ -7,9 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        // From FILE_INFO_BY_HANDLE_CLASS
-        // Use for GetFileInformationByHandleEx
-        internal const int FileAttributeTagInfo = 35;
+        internal const int FileAttributeTagInfo = 9;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct FILE_ATTRIBUTE_TAG_INFO

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -585,11 +586,13 @@ namespace System.IO.Ports
 
             try
             {
-                int fileType = Interop.Kernel32.GetFileType(tempHandle);
+                FileHandleType fileType = tempHandle.Type;
 
                 // Allowing FILE_TYPE_UNKNOWN for legitimate serial device such as USB to serial adapter device
-                if ((fileType != Interop.Kernel32.FileTypes.FILE_TYPE_CHAR) && (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN))
+                if (fileType is not FileHandleType.CharacterDevice and not FileHandleType.Unknown)
+                {
                     throw new ArgumentException(SR.Format(SR.Arg_InvalidSerialPort, portName), nameof(portName));
+                }
 
                 _handle = tempHandle;
 
