@@ -81,6 +81,7 @@ namespace System.Net.Http.Functional.Tests
 
 #if !WINHTTPHANDLER_TEST
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
+        [SkipOnPlatform(TestPlatforms.OSX, "Crashes due to a double-free bug in macOS GSS framework (https://github.com/dotnet/runtime/issues/125150)")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
