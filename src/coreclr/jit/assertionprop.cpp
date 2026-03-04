@@ -731,7 +731,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
         // more than 64 assertions.
         // Note this tracks at most only 512 assertions.
         //
-        static const AssertionIndex countFunc[] = {64, 128, 512, 128, 64};
+        static const AssertionIndex countFunc[] = {512, 512, 512};
         static const unsigned       upperBound  = ArrLen(countFunc) - 1;
         const unsigned              codeSize    = info.compILCodeSize / 512;
         optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
