@@ -459,12 +459,12 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
 // CollectReferencesForStoreInd: Collect virtual register references for an indirect store
 //
 // Arguments:
-//    node - The GT_STOREINT node
+//    node - The GT_STOREIND node
 //
 void WasmRegAlloc::CollectReferencesForStoreInd(GenTreeStoreInd* node)
 {
     GenTree* const addr = node->Addr();
-    ConsumeTemporaryRegForOperand(addr DEBUGARG("storeind address"));
+    ConsumeTemporaryRegForOperand(addr DEBUGARG("storeind null check"));
 }
 
 //------------------------------------------------------------------------
