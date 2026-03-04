@@ -1972,6 +1972,7 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
         
         // Fix up the methodStartIP to point to the final bytecode start
         dstDataRW->methodStartIP = pByteCodeStart;
+        dstDataRW->resumeInfo.DiagnosticIP += (TARGET_SIZE_T)pByteCodeStart;
         
         // Fix up interval map pointers if they exist
         // Note: The interval maps were allocated via AllocMethodData in the old model,
