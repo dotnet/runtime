@@ -173,8 +173,7 @@
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
   </PropertyGroup>
 
-  <!-- Don't append the RID to the output path for our test tree. Our test builds are already separated by RID
-       and including the RID breaks some of our glob expressions in issues.targets -->
+  <!-- Don't append the RID to the output path for our test tree. Our test builds are already separated by RID. -->
   <PropertyGroup>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>

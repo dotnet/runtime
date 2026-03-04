@@ -7,7 +7,7 @@ using System.Numerics;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal static class DwarfHelper
+    public static class DwarfHelper
     {
         public static uint SizeOfULEB128(ulong value)
         {
@@ -78,6 +78,64 @@ namespace ILCompiler.ObjectWriter
         {
             Span<byte> buffer = writer.GetSpan((int)SizeOfSLEB128(value));
             writer.Advance(WriteSLEB128(buffer, value));
+        }
+
+        public static void WritePaddedULEB128(Span<byte> bytes, ulong value)
+        {
+            int actualSize = WriteULEB128(bytes, value);
+            if (actualSize < bytes.Length)
+            {
+                bytes[actualSize - 1] |= 0x80;
+                bytes.Slice(actualSize, bytes.Length - actualSize - 1).Fill(0x80);
+                bytes[bytes.Length - 1] = 0x00;
+            }
+        }
+
+        public static void WritePaddedSLEB128(Span<byte> bytes, long value)
+        {
+            int actualSize = WriteSLEB128(bytes, value);
+            if (actualSize < bytes.Length)
+            {
+                byte padValue = value < 0 ? (byte)0x7f : (byte)0x00;
+                bytes[actualSize - 1] |= 0x80;
+                bytes.Slice(actualSize, bytes.Length - actualSize - 1).Fill((byte)(padValue | 0x80));
+                bytes[bytes.Length - 1] = padValue;
+            }
+        }
+
+        public static ulong ReadULEB128(ReadOnlySpan<byte> buffer)
+        {
+            ulong value = 0;
+            byte @byte;
+            int shift = 0, pos = 0;
+
+            do
+            {
+                @byte = buffer[pos++];
+                value |= ((ulong)@byte & 0x7f) << shift;
+                shift += 7;
+            } while ((@byte & 0x80) != 0);
+
+            return value;
+        }
+
+        public static long ReadSLEB128(ReadOnlySpan<byte> buffer)
+        {
+            ulong value = 0;
+            byte @byte;
+            int shift = 0, pos = 0;
+
+            do
+            {
+                @byte = buffer[pos++];
+                value |= ((ulong)@byte & 0x7f) << shift;
+                shift += 7;
+            } while ((@byte & 0x80) != 0);
+
+            if (((ulong)shift < (8 * sizeof(ulong))) && ((@byte & 0x40) != 0))
+                value |= unchecked((ulong)(long)-1) << shift;
+
+            return unchecked((long)value);
         }
     }
 }
