@@ -251,5 +251,34 @@ namespace System.IO.Compression
                 }
             }
         }
+
+        [Theory]
+        [InlineData(8)]
+        [InlineData(10)]
+        [InlineData(15)]
+        [InlineData(-1)]
+        public void RoundTrip_WithWindowLog(int windowLog)
+        {
+            byte[] input = Enumerable.Range(0, 1024).Select(i => (byte)i).ToArray();
+
+            var options = new ZLibCompressionOptions
+            {
+                CompressionLevel = 6,
+                WindowLog = windowLog
+            };
+
+            using var compressed = new MemoryStream();
+            using (var compressor = new DeflateStream(compressed, options, leaveOpen: true))
+            {
+                compressor.Write(input);
+            }
+
+            compressed.Position = 0;
+            using var decompressor = new DeflateStream(compressed, CompressionMode.Decompress);
+            using var decompressed = new MemoryStream();
+            decompressor.CopyTo(decompressed);
+
+            Assert.Equal(input, decompressed.ToArray());
+        }
     }
 }
