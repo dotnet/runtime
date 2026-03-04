@@ -1874,7 +1874,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     // Also note The CASTCLASS helpers won't appear in predicates as they throw on failure.
     // So the helper list here is smaller than the one in optAssertionProp_Call.
     //
-    CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+    CorInfoHelpFunc helper = call->GetHelperNum();
     if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
         (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY))
     {
@@ -2048,7 +2048,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                 //
                 // arr[idx] = value; - creates idx is within bounds of arr assertion
                 //
-                CorInfoHelpFunc helperId = eeGetHelperNum(call->gtCallMethHnd);
+                CorInfoHelpFunc helperId = call->GetHelperNum();
                 if ((helperId == CORINFO_HELP_ARRADDR_ST) || (helperId == CORINFO_HELP_LDELEMA_REF))
                 {
                     assert(call->gtArgs.CountUserArgs() == 3);
@@ -2363,8 +2363,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
 GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
 {
     JITDUMP("See if we can optimize NI_System_SpanHelpers_Memmove with help of VN...\n")
-    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) ||
-           call->IsHelperCall(this, CORINFO_HELP_MEMCPY));
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(CORINFO_HELP_MEMCPY));
 
     CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
     CallArg* srcArg = call->gtArgs.GetUserArgByIndex(1);
@@ -2505,7 +2504,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
             break;
     }
 
-    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(this, CORINFO_HELP_MEMCPY))
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(CORINFO_HELP_MEMCPY))
     {
         return optVNBasedFoldExpr_Call_Memmove(call);
     }
@@ -4983,7 +4982,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
 
     if (!optLocalAssertionProp && call->IsHelperCall())
     {
-        const CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+        const CorInfoHelpFunc helper = call->GetHelperNum();
         if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
             (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY) ||
             (helper == CORINFO_HELP_CHKCASTINTERFACE) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
