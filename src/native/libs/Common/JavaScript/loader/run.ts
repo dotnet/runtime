@@ -14,13 +14,14 @@ import { validateEngineFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
-async function invokeLibraryInitializers(modules: JsModuleExports[], resources: any[], methodName: string, args: any): Promise<void> {
+async function callLibraryInitializers(modules: JsModuleExports[], resources: any[], methodName: string, args: any): Promise<void> {
     for (let i = 0; i < modules.length; i++) {
         try {
             await (modules[i] as any)[methodName]?.(args);
         } catch (err) {
             const name = (resources[i] as any).name || "unknown";
-            throw new Error(`Failed to invoke '${methodName}' on library initializer '${name}': ${err}`);
+            const message = err instanceof Error ? err.message : String(err);
+            throw new Error(`Failed to invoke '${methodName}' on library initializer '${name}': ${message}`, { cause: err });
         }
     }
 }
@@ -44,7 +45,7 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
 
         const afterConfigLoadedResources = loaderConfig.resources.modulesAfterConfigLoaded || [];
         const modulesAfterConfigLoaded = await Promise.all(afterConfigLoadedResources.map(loadJSModule));
-        await invokeLibraryInitializers(modulesAfterConfigLoaded, afterConfigLoadedResources, "onRuntimeConfigLoaded", loaderConfig);
+        await callLibraryInitializers(modulesAfterConfigLoaded, afterConfigLoadedResources, "onRuntimeConfigLoaded", loaderConfig);
 
         // after onConfigLoaded hooks, polyfills can be initialized
         await initPolyfills();
@@ -113,7 +114,7 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
             const modulesAfterRuntimeReady = await modulesAfterRuntimeReadyPromise;
             const allRuntimeReadyModules = [...modulesAfterConfigLoaded, ...modulesAfterRuntimeReady];
             const allRuntimeReadyResources = [...afterConfigLoadedResources, ...afterRuntimeReadyResources];
-            await invokeLibraryInitializers(allRuntimeReadyModules, allRuntimeReadyResources, "onRuntimeReady", dotnetApi);
+            await callLibraryInitializers(allRuntimeReadyModules, allRuntimeReadyResources, "onRuntimeReady", dotnetApi);
         }
         runtimeState.creatingRuntime = false;
     } catch (err) {

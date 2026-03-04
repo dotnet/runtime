@@ -40,7 +40,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     [GeneratedRegex("MONO_WASM: Failed to invoke 'onRuntimeConfigLoaded' on library initializer '../WasmBasicTestApp.[a-z0-9]+.lib.module.js': Error: Error thrown from library initializer")]
     private static partial Regex AbortStartupOnErrorRegex { get; }
 
-    [GeneratedRegex("Aborting startup, reason: Error: Failed to invoke 'onRuntimeReady' on library initializer '.*': Error: Error thrown from library initializer")]
+    [GeneratedRegex("Aborting startup, reason: Error: Failed to invoke 'onRuntimeReady' on library initializer '(\\.\\./)?WasmBasicTestApp(\\.[a-z0-9]+)?\\.lib\\.module\\.js': Error thrown from library initializer")]
     private static partial Regex AbortStartupOnErrorCoreClrRegex { get; }
 
     [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("bundler-friendly")]
