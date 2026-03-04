@@ -166,70 +166,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     COMP_HANDLE compHnd = codeGen->GetCompiler()->info.compCompHnd;
 
-    CorInfoWasmType *types = nullptr;
-    size_t typeCount = 0;
-    if (params.methHnd)
-    {
-        // eeFindHelper smuggles helpers in fake method handles, so check whether we have one of those.
-        // Passing a fake method handle to crossgen will just crash.
-        CorInfoHelpFunc helper = codeGen->GetCompiler()->eeGetHelperNum(params.methHnd);
-        if (helper != CORINFO_HELP_UNDEF)
-        {
-#define _SIG(helper_id, ...) \
-            case helper_id: \
-            { \
-                static CorInfoWasmType helper_id ## _types[] = {__VA_ARGS__}; \
-                types = helper_id ## _types; \
-                typeCount = sizeof(helper_id ## _types) / sizeof(CorInfoWasmType); \
-                break; \
-            }
-
-            switch (helper)
-            {
-                // Managed throw helpers with no args
-                _SIG(CORINFO_HELP_RNGCHKFAIL,                CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
-                _SIG(CORINFO_HELP_OVERFLOW,                  CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
-                _SIG(CORINFO_HELP_THROWDIVZERO,              CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
-                _SIG(CORINFO_HELP_THROWNULLREF,              CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
-                // RhpAssignRef
-                _SIG(CORINFO_HELP_ASSIGN_REF,                CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
-                // RhpCheckedAssignRef
-                _SIG(CORINFO_HELP_CHECKED_ASSIGN_REF,        CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
-                // JIT_WriteBarrierEnsureNonHeapTarget
-                _SIG(CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
-                // RhpByRefAssignRef
-                _SIG(CORINFO_HELP_ASSIGN_BYREF,              CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
-                // RhBulkMoveWithWriteBarrier
-                _SIG(CORINFO_HELP_BULK_WRITEBARRIER,         CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
-                default:
-                    printf("Helper %d has no hard-coded signature\n", helper);
-                    NYI_WASM("signature for unrecognized helper");
-                    unreached();
-            }
-
-#undef _SIG
-        }
-        else
-        {
-            CORINFO_SIG_INFO sig;
-            compHnd->getMethodSig(params.methHnd, &sig);
-            typeCount = sig.numArgs + 2; // Add two params for sp and pep
-            types = (CorInfoWasmType *)alloca(typeCount * sizeof(CorInfoWasmType));
-            types[0] = CORINFO_WASM_TYPE_I32; // sp
-            types[typeCount - 1] = CORINFO_WASM_TYPE_I32; // pep
-
-            CORINFO_ARG_LIST_HANDLE args = sig.args;
-            for (size_t i = 0; i < sig.numArgs; i++) {
-                CORINFO_CLASS_HANDLE argClass = compHnd->getArgClass(&sig, args);
-                types[i + 1] = compHnd->getWasmLowering(argClass);
-                args = compHnd->getArgNext(args);
-            }
-        }
-    }
-    else
-    {
-        NYI_WASM("Call without a methHnd");
-    }
+    assert(params.wasmSignature);
 
     /*
         We need to allocate the appropriate instruction descriptor based
@@ -240,9 +177,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     instruction ins;
 
-    // FIXME-WASM: Currently while we're loading SP onto the stack we're not loading PEP, so generate one here.
-    emitIns_I(INS_i32_const, EA_4BYTE, 0);
-
     switch (params.callType)
     {
         case EC_FUNC_TOKEN:
@@ -252,20 +186,11 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             id->idInsFmt(IF_FUNCIDX);
             break;
         case EC_INDIR_R:
-        {
-            // Indirect load of actual ftn ptr from indirection cell (on the stack)
-            // TODO-WASM: temporary, move this into higher layers (lowering).
-            emitIns_I(INS_i32_load, EA_PTRSIZE, 0);
             ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
-
-            CORINFO_WASM_TYPE_SYMBOL_HANDLE typeHandle =
-                codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, typeCount);
-
-            id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void*)typeHandle);
+            id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void*)params.wasmSignature);
             id->idIns(ins);
             id->idInsFmt(IF_CALL_INDIRECT);
             break;
-        }
         default:
             unreached();
     }
@@ -442,7 +367,7 @@ unsigned emitter::SizeOfSLEB128(int64_t value)
     return (x * 37) >> 8;
 }
 
-static uint8_t GetWasmValueTypeCode(WasmValueType type)
+uint8_t emitter::GetWasmValueTypeCode(WasmValueType type)
 {
     // clang-format off
     static const uint8_t typecode_mapping[] = {
@@ -451,6 +376,7 @@ static uint8_t GetWasmValueTypeCode(WasmValueType type)
         0x7E, // WasmValueType::I64 = 2,
         0x7D, // WasmValueType::F32 = 3,
         0x7C, // WasmValueType::F64 = 4,
+        0x7B, // WasmValueType::V128 = 5,
     };
     static const int WASM_TYP_COUNT = ArrLen(typecode_mapping);
     static_assert(ArrLen(typecode_mapping) == (int)WasmValueType::Count);

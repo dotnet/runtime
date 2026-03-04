@@ -32,7 +32,7 @@ void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int o
 
 static unsigned SizeOfULEB128(uint64_t value);
 static unsigned SizeOfSLEB128(int64_t value);
-
+static uint8_t GetWasmValueTypeCode(WasmValueType type);
 static unsigned emitGetAlignHintLog2(const instrDesc* id);
 
 instrDesc*           emitNewInstrLclVarDecl(emitAttr attr, unsigned int localCount, WasmValueType type, int lclOffset);

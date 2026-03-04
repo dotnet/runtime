@@ -2127,6 +2127,31 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #endif // DEBUG
     GenTree* target = getCallTarget(call, &params.methHnd);
 
+    ArrayStack<CorInfoWasmType> typeStack(GetCompiler()->getAllocator(CMK_ArrayStack));
+
+    if (call->gtReturnType == TYP_STRUCT)
+        typeStack.Push(GetCompiler()->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
+    else if (call->gtReturnType == TYP_VOID)
+        typeStack.Push(CORINFO_WASM_TYPE_VOID);
+    else
+        typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(TypeToWasmValueType(call->gtReturnType)));
+
+    for (const CallArg& arg : call->gtArgs.Args())
+    {
+        for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
+        {
+            assert(seg.IsPassedInRegister());
+
+            WasmValueType wvt = WasmRegToType(seg.GetRegister());
+            if (wvt >= WasmValueType::Count)
+                NYI_WASM("Unrecognized register type in genCallInstruction");
+            else
+                typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
+        }
+    }
+
+    params.wasmSignature = GetCompiler()->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
+
     if (target != nullptr)
     {
         // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
@@ -2227,6 +2252,46 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     params.methHnd = m_compiler->eeFindHelper(helper);
     params.argSize = argSize;
     params.retSize = retSize;
+
+    CorInfoWasmType *types = nullptr;
+    size_t typeCount = 0;
+
+#define _SIG(helper_id, ...) \
+    case helper_id: \
+    { \
+        static CorInfoWasmType helper_id ## _types[] = {__VA_ARGS__}; \
+        types = helper_id ## _types; \
+        typeCount = sizeof(helper_id ## _types) / sizeof(CorInfoWasmType); \
+        break; \
+    }
+
+    switch (helper)
+    {
+        // Managed throw helpers with no args
+        _SIG(CORINFO_HELP_RNGCHKFAIL,                CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
+        _SIG(CORINFO_HELP_OVERFLOW,                  CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
+        _SIG(CORINFO_HELP_THROWDIVZERO,              CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
+        _SIG(CORINFO_HELP_THROWNULLREF,              CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
+        // RhpAssignRef
+        _SIG(CORINFO_HELP_ASSIGN_REF,                CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
+        // RhpCheckedAssignRef
+        _SIG(CORINFO_HELP_CHECKED_ASSIGN_REF,        CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
+        // JIT_WriteBarrierEnsureNonHeapTarget
+        _SIG(CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
+        // RhpByRefAssignRef
+        _SIG(CORINFO_HELP_ASSIGN_BYREF,              CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
+        // RhBulkMoveWithWriteBarrier
+        _SIG(CORINFO_HELP_BULK_WRITEBARRIER,         CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
+
+        default:
+            printf("Helper %d (%s) has no hard-coded signature\n", helper, GetCompiler()->eeGetMethodFullName(params.methHnd));
+            NYI_WASM("signature for unrecognized helper");
+            unreached();
+    }
+
+#undef _SIG
+
+    params.wasmSignature = GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, typeCount);
 
     genEmitCallWithCurrentGC(params);
 }
