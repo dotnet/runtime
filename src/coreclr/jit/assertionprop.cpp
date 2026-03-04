@@ -6097,7 +6097,7 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
 {
     // TODO-Review: EH successor/predecessor iteration seems broken.
     // See: SELF_HOST_TESTS_ARM\jit\Directed\ExcepFilters\fault\fault.exe
-    if (block->bbCatchTyp == BBCT_FAULT)
+    if (block->CatchTypeIs(BBCT_FAULT))
     {
         return stmt;
     }
@@ -6200,9 +6200,9 @@ PhaseStatus Compiler::optAssertionPropMain()
         }
     }
 
-    for (int i = 0; i < switchBlocks.Height(); i++)
+    for (BasicBlock* const switchBlock : switchBlocks.BottomUpOrder())
     {
-        madeChanges |= optCreateJumpTableImpliedAssertions(switchBlocks.Bottom(i));
+        madeChanges |= optCreateJumpTableImpliedAssertions(switchBlock);
     }
 
     if (optAssertionCount == 0)
@@ -6261,7 +6261,7 @@ PhaseStatus Compiler::optAssertionPropMain()
 
         // TODO-Review: EH successor/predecessor iteration seems broken.
         // SELF_HOST_TESTS_ARM\jit\Directed\ExcepFilters\fault\fault.exe
-        if (block->bbCatchTyp == BBCT_FAULT)
+        if (block->CatchTypeIs(BBCT_FAULT))
         {
             continue;
         }
