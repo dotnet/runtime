@@ -152,9 +152,10 @@ namespace System.IO.Hashing.Tests
         }
 
         [Theory]
-        [InlineData(5553, 0x62C69C89u)]
-        [InlineData(11104, 0xA8AE3724u)]
-        public void LargeInput_ExceedsNMax(int length, uint expected)
+        [InlineData(5553)]
+        [InlineData(11104)]
+        [InlineData(65536)]
+        public void LargeInput_ExceedsNMax(int length)
         {
             // This test ensures that Adler32 optimizations involving delayed modulo
             // do not overflow a 32-bit intermediate at any point.
@@ -167,22 +168,25 @@ namespace System.IO.Hashing.Tests
 
             byte[] primer = new byte[65519];
             primer.AsSpan().Fill(1);
-
             alg.Append(primer);
+
             Assert.Equal(0xFFF0FFF0, alg.GetCurrentHashAsUInt32());
 
             // Starting from an already-maxed checksum, a stream of 5553 max value
             // bytes will overflow if not reduced by mod 65521 before the last byte.
+            // Of course, once overflowed, the result will be incorrect for any larger
+            // input as well.
 
             byte[] data = new byte[length];
             data.AsSpan().Fill(byte.MaxValue);
-
             alg.Append(data);
+
+            uint expected = ReferenceAdler32(data, 0xFFF0FFF0);
             Assert.Equal(expected, alg.GetCurrentHashAsUInt32());
         }
 
         /// <summary>
-        /// Tests a wide variety of lengths to exercise scalar, Vector128, Vector256, and Vector512
+        /// Tests a wide variety of lengths to exercise scalar, Vector128, and Vector256
         /// code paths as well as their transitions and tail handling.
         /// </summary>
         [Theory]

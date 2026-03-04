@@ -80,11 +80,8 @@ file static class Adler32Simd
         Vector128<uint> vs1 = Vector128.CreateScalar(s1);
         Vector128<uint> vs2 = Vector128.CreateScalar(s2);
 
-        if (loopVectors != 0)
-        {
-            (vs1, vs2) = TSimdStrategy.VectorLoop<TAccumulate, TDotProduct>(vs1, vs2, ref bufRef, loopVectors);
-            bufRef = ref Unsafe.Add(ref bufRef, loopVectors * (uint)Vector128<byte>.Count);
-        }
+        (vs1, vs2) = TSimdStrategy.VectorLoop<TAccumulate, TDotProduct>(vs1, vs2, ref bufRef, loopVectors);
+        bufRef = ref Unsafe.Add(ref bufRef, loopVectors * (uint)Vector128<byte>.Count);
 
         Vector128<byte> weights = Vector128.CreateSequence((byte)16, unchecked((byte)-1));
         Vector128<uint> vps;
@@ -131,9 +128,9 @@ file struct AdlerVector128 : ISimdStrategy
     {
         // Calculating the residual mod 65521 is impractical in SIMD, however we can reduce by
         // enough to prevent overflow without changing the final result of a modulo performed later.
+        //
         // Essentially, the high word of the accumulator represents the number of times it has
         // wrapped to 65536.
-        //
         // 65536 % 65521 = 15, which is what would be carried forward from the high word.
         // We can simply multiply the high word by 15 and add that to the low word to perform
         // the reduction, resulting in a maximum possible residual of 0xFFFF0.
