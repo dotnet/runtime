@@ -116,11 +116,18 @@ namespace System.Reflection.Context.Tests
             Assert.NotNull(name);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void GetReferencedAssemblies_ReturnsValue()
         {
-            AssemblyName[] refs = _customAssembly.GetReferencedAssemblies();
-            Assert.NotEmpty(refs);
+            if (PlatformDetection.IsNativeAot)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => _customAssembly.GetReferencedAssemblies());
+            }
+            else
+            {
+                AssemblyName[] refs = _customAssembly.GetReferencedAssemblies();
+                Assert.NotEmpty(refs);
+            }
         }
 
         [Fact]
@@ -245,13 +252,20 @@ namespace System.Reflection.Context.Tests
             Assert.False(concreteMethod.ContainsGenericParameters);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        [Fact]
         public void Invoke_OnMadeGenericMethod_Works()
         {
             MethodInfo concreteMethod = _genericMethod.MakeGenericMethod(typeof(int));
             var target = new TypeWithGenericMethod();
-            object result = concreteMethod.Invoke(target, new object[] { 42 });
-            Assert.Equal(42, result);
+            if (PlatformDetection.IsNativeAot)
+            {
+                Assert.ThrowsAny<Exception>(() => concreteMethod.Invoke(target, new object[] { 42 }));
+            }
+            else
+            {
+                object result = concreteMethod.Invoke(target, new object[] { 42 });
+                Assert.Equal(42, result);
+            }
         }
 
         [Fact]

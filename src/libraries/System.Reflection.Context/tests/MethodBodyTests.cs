@@ -41,6 +41,7 @@ namespace System.Reflection.Context.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
     public class MethodBodyTests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
@@ -57,13 +58,13 @@ namespace System.Reflection.Context.Tests
             _methodBody = _methodWithTryCatch.GetMethodBody();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void GetMethodBody_ReturnsProjectedMethodBody()
         {
             Assert.NotNull(_methodBody);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void ExceptionHandlingClauses_ReturnsProjectedClauses()
         {
             IList<ExceptionHandlingClause> clauses = _methodBody.ExceptionHandlingClauses;
@@ -72,35 +73,35 @@ namespace System.Reflection.Context.Tests
             Assert.True(clauses.Count >= 2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void LocalVariables_ReturnsProjectedVariables()
         {
             IList<LocalVariableInfo> locals = _methodBody.LocalVariables;
             Assert.NotNull(locals);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void InitLocals_ReturnsValue()
         {
             bool initLocals = _methodBody.InitLocals;
             Assert.True(initLocals);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void LocalSignatureMetadataToken_ReturnsValue()
         {
             int token = _methodBody.LocalSignatureMetadataToken;
             Assert.True(token >= 0);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void MaxStackSize_ReturnsValue()
         {
             int maxStack = _methodBody.MaxStackSize;
             Assert.True(maxStack >= 0);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void GetILAsByteArray_ReturnsBytes()
         {
             byte[] il = _methodBody.GetILAsByteArray();
@@ -108,14 +109,14 @@ namespace System.Reflection.Context.Tests
             Assert.NotEmpty(il);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void ToString_ReturnsValue()
         {
             string str = _methodBody.ToString();
             Assert.NotNull(str);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void MethodWithLocals_HasLocalVariables()
         {
             MethodBody body = _methodWithLocals.GetMethodBody();
@@ -125,6 +126,7 @@ namespace System.Reflection.Context.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
     public class ExceptionHandlingClauseTests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
@@ -143,19 +145,19 @@ namespace System.Reflection.Context.Tests
             _finallyClause = clauses.FirstOrDefault(c => c.Flags == ExceptionHandlingClauseOptions.Finally);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void CatchClause_Exists()
         {
             Assert.NotNull(_catchClause);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void FinallyClause_Exists()
         {
             Assert.NotNull(_finallyClause);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void CatchType_ReturnsProjectedType()
         {
             if (_catchClause != null)
@@ -166,7 +168,7 @@ namespace System.Reflection.Context.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void Flags_ReturnsValue()
         {
             if (_catchClause != null)
@@ -176,7 +178,7 @@ namespace System.Reflection.Context.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void HandlerLength_ReturnsValue()
         {
             if (_catchClause != null)
@@ -186,7 +188,7 @@ namespace System.Reflection.Context.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void HandlerOffset_ReturnsValue()
         {
             if (_catchClause != null)
@@ -196,7 +198,7 @@ namespace System.Reflection.Context.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void TryLength_ReturnsValue()
         {
             if (_catchClause != null)
@@ -206,7 +208,7 @@ namespace System.Reflection.Context.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void TryOffset_ReturnsValue()
         {
             if (_catchClause != null)
@@ -216,7 +218,7 @@ namespace System.Reflection.Context.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void ToString_ReturnsValue()
         {
             if (_catchClause != null)
@@ -227,6 +229,7 @@ namespace System.Reflection.Context.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
     public class LocalVariableInfoTests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
@@ -241,13 +244,13 @@ namespace System.Reflection.Context.Tests
             _localVariable = body.LocalVariables.FirstOrDefault();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void LocalVariable_Exists()
         {
             Assert.NotNull(_localVariable);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void LocalType_ReturnsProjectedType()
         {
             if (_localVariable != null)
@@ -258,7 +261,7 @@ namespace System.Reflection.Context.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void LocalIndex_ReturnsValue()
         {
             if (_localVariable != null)
@@ -268,7 +271,7 @@ namespace System.Reflection.Context.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void IsPinned_ReturnsFalse()
         {
             if (_localVariable != null)
@@ -278,7 +281,7 @@ namespace System.Reflection.Context.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
+        [Fact]
         public void ToString_ReturnsValue()
         {
             if (_localVariable != null)
