@@ -729,9 +729,9 @@ void Compiler::optAssertionInit(bool isLocalProp)
         // method being compiled. The function is linear to the IL size for small and
         // moderate methods. For large methods, considering throughput impact, we track no
         // more than 64 assertions.
-        // Note this tracks at most only 256 assertions.
+        // Note this tracks at most only 512 assertions.
         //
-        static const AssertionIndex countFunc[] = {64, 128, 256, 128, 64};
+        static const AssertionIndex countFunc[] = {64, 128, 512, 128, 64};
         static const unsigned       upperBound  = ArrLen(countFunc) - 1;
         const unsigned              codeSize    = info.compILCodeSize / 512;
         optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
