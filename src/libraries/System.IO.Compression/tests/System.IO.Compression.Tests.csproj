@@ -70,6 +70,5 @@
     <Compile Include="Zstandard\ZstandardDictionaryTests.cs" />
     <Compile Include="Zstandard\ZstandardTestUtils.cs" />
     <Compile Include="Zstandard\ZstandardEncoderDecoderTests.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\Compression\EncoderDecoderTestBase.cs" Link="Common\System\IO\Compression\EncoderDecoderTestBase.cs" />
   </ItemGroup>
 </Project>
