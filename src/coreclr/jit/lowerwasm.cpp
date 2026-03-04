@@ -81,6 +81,12 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
+    if ((node->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        // We need to be able to null check the address, and that requires multiple uses of the address operand.
+        node->Addr()->SetMultiplyUsed();
+    }
+
     ContainCheckStoreIndir(node);
     return node->gtNext;
 }
