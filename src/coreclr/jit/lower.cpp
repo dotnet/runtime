@@ -6379,6 +6379,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             // indirection cell, instead of duplicating the tree.
             bool hasIndirectionCell = call->GetIndirectionCellArgKind() != WellKnownArg::None;
 
+#if !TARGET_WASM
             if (!hasIndirectionCell)
             {
                 // Non-virtual direct calls to addresses accessed by
@@ -6390,6 +6391,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
                 GenTree* indir = Ind(cellAddr);
                 result         = indir;
             }
+#endif
             break;
         }
 

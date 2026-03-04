@@ -164,8 +164,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
     }
 
-    COMP_HANDLE compHnd = codeGen->GetCompiler()->info.compCompHnd;
-
     assert(params.wasmSignature);
 
     /*
