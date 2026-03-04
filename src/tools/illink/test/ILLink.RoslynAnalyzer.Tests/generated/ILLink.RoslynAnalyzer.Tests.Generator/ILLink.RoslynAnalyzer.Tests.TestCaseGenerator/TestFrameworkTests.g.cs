@@ -106,6 +106,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task VerifyLocalsAreChanged()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
         public Task VerifyResourceInAssemblyAttributesBehavior()
         {
             return RunTest(allowMissingWarnings: true);
