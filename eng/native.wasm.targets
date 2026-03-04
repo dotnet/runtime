@@ -36,7 +36,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureMultithreading)' != 'true'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_THREADS=1&quot;" />
-      <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_MULTITHREADING=0&quot;" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureMultithreading)' == 'true'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_MULTITHREADING=1&quot;" />
