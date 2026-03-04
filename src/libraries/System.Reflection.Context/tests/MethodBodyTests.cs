@@ -41,6 +41,7 @@ namespace System.Reflection.Context.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
     public class MethodBodyTests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
@@ -125,6 +126,7 @@ namespace System.Reflection.Context.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
     public class ExceptionHandlingClauseTests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
@@ -227,6 +229,7 @@ namespace System.Reflection.Context.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
     public class LocalVariableInfoTests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
