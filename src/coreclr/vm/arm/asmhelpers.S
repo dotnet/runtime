@@ -19,6 +19,16 @@
         bx      lr
     LEAF_END GetCurrentSP, _TEXT
 
+// void SaveInterpCalleeSavedRegisters(CalleeSavedRegisters* regs, UINT64* fpRegs)
+// Saves callee-saved GP and FP registers into the provided buffers.
+// GP order: r4, r5, r6, r7, r8, r9, r10, r11(fp), r14(lr)
+// FP: d8-d15
+    LEAF_ENTRY SaveInterpCalleeSavedRegisters, _TEXT
+        stm     r0, {r4-r11, lr}
+        vstm    r1, {d8-d15}
+        bx      lr
+    LEAF_END SaveInterpCalleeSavedRegisters, _TEXT
+
 //-----------------------------------------------------------------------------
 // This helper routine enregisters the appropriate arguments and makes the
 // actual call.

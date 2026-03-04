@@ -2483,6 +2483,9 @@ public:
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
         , m_SSP(0)
 #endif
+#ifndef TARGET_WASM
+        , m_nativeIP(0)
+#endif
         , m_continuation(NULL)
     {
         WRAPPER_NO_CONTRACT;
@@ -2552,6 +2555,32 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_SP;
     }
+
+    void SetInterpExecMethodIP(TADDR ip)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_nativeIP = ip;
+    }
+
+    TADDR GetInterpExecMethodIP()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_nativeIP;
+    }
+
+    CalleeSavedRegisters* GetCalleeSavedRegisters()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_calleeSavedRegisters;
+    }
+
+#if !defined(UNIX_AMD64_ABI) && !defined(UNIX_X86_ABI)
+    void* GetFPCalleeSavedRegisters()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_fpCalleeSavedRegisters;
+    }
+#endif
 #endif // TARGET_WASM
 
     void SetIsFaulting(bool isFaulting)
@@ -2594,6 +2623,25 @@ private:
 #endif // HOST_AMD64 && HOST_WINDOWS
 #ifndef TARGET_WASM
     TADDR m_SP;
+    // Saved IP inside InterpExecMethod's try block for deterministic resume-after-catch.
+    // The C++ exception handler uses this to route ThrowResumeAfterCatchException to the
+    // correct catch clause without requiring OS-based unwinding.
+    TADDR m_nativeIP;
+    // Lightweight buffer for callee-saved registers captured from within InterpExecMethod.
+    // Filled by SaveInterpCalleeSavedRegisters (asm helper) on each try-block entry.
+    // Used to build the CONTEXT in ResumeAfterCatch without OS-based unwinding.
+    CalleeSavedRegisters m_calleeSavedRegisters;
+#if defined(TARGET_ARM64)
+    UINT64 m_fpCalleeSavedRegisters[8]; // d8-d15
+#elif defined(TARGET_ARM)
+    UINT64 m_fpCalleeSavedRegisters[8]; // d8-d15
+#elif defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    M128A m_fpCalleeSavedRegisters[10]; // xmm6-xmm15
+#elif defined(TARGET_LOONGARCH64)
+    UINT64 m_fpCalleeSavedRegisters[8]; // f24-f31
+#elif defined(TARGET_RISCV64)
+    UINT64 m_fpCalleeSavedRegisters[12]; // fs0-fs11
+#endif
 #endif // TARGET_WASM
     PTR_Object m_continuation;
 };

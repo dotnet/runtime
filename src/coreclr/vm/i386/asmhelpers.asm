@@ -522,6 +522,19 @@ _GetCurrentSP@0 proc public
     retn
 _GetCurrentSP@0 endp
 
+; void SaveInterpCalleeSavedRegisters(CalleeSavedRegisters* regs, void* fpRegs)
+; Saves callee-saved GP registers into the provided buffer.
+; Order: Edi, Esi, Ebx, Ebp
+; No FP callee-saved registers on x86, second arg is unused.
+_SaveInterpCalleeSavedRegisters@8 proc public
+    mov     eax, [esp + 4]
+    mov     [eax +  0], edi
+    mov     [eax +  4], esi
+    mov     [eax +  8], ebx
+    mov     [eax + 12], ebp
+    retn    8
+_SaveInterpCalleeSavedRegisters@8 endp
+
 
 ; void __stdcall ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID);
 _ProfileEnterNaked@4 proc public

@@ -1912,35 +1912,138 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
     throw ResumeAfterCatchException(resumeSP, resumeIP);
 #else
     Thread *pThread = GetThread();
-    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
+    InterpreterFrame *pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
 
-    ClrCaptureContext(pContext);
+    // Build a context from the callee-saved registers, SP, and IP saved from
+    // InterpExecMethod's try block. This avoids OS-based unwinding (PAL_VirtualUnwind /
+    // VirtualUnwindCallFrame). The saved IP is inside the try block, which is required
+    // for the C++ exception handler to route ThrowResumeAfterCatchException to the catch
+    // clause in InterpExecMethod.
+    memset(pContext, 0, sizeof(CONTEXT));
+    pContext->ContextFlags = CONTEXT_FULL;
+    SetSP(pContext, pInterpreterFrame->GetInterpExecMethodSP());
+    SetIP(pContext, pInterpreterFrame->GetInterpExecMethodIP());
 
-    TADDR targetSP = pInterpreterFrame->GetInterpExecMethodSP();
+    CalleeSavedRegisters* pRegs = pInterpreterFrame->GetCalleeSavedRegisters();
 
-    // We are resuming in interpreter frame. So we need to skip all native, JIT and AOT generated frames until we reach
-    // the resumeSP
-    do
+#if defined(TARGET_ARM64)
+    pContext->Fp  = pRegs->x29;
+    pContext->Lr  = pRegs->x30;
+    pContext->X19 = pRegs->x19;
+    pContext->X20 = pRegs->x20;
+    pContext->X21 = pRegs->x21;
+    pContext->X22 = pRegs->x22;
+    pContext->X23 = pRegs->x23;
+    pContext->X24 = pRegs->x24;
+    pContext->X25 = pRegs->x25;
+    pContext->X26 = pRegs->x26;
+    pContext->X27 = pRegs->x27;
+    pContext->X28 = pRegs->x28;
+    // Restore FP callee-saved d8-d15 into CONTEXT V[8]-V[15]
+    UINT64* fpRegs = (UINT64*)pInterpreterFrame->GetFPCalleeSavedRegisters();
+    for (int i = 0; i < 8; i++)
     {
-        if (ExecutionManager::IsManagedCode(GetIP(pContext)))
-        {
-            // JIT / AOT generated managed code
-            Thread::VirtualUnwindCallFrame(pContext);
-        }
-        else
-        {
-#ifdef TARGET_UNIX
-            PAL_VirtualUnwind(pContext, NULL);
-#else
-            Thread::VirtualUnwindCallFrame(pContext);
-#endif
-        }
+        pContext->V[8 + i].Low = fpRegs[i];
+        pContext->V[8 + i].High = 0;
     }
-    while (GetSP(pContext) != targetSP);
+#elif defined(TARGET_ARM)
+    pContext->R4  = pRegs->r4;
+    pContext->R5  = pRegs->r5;
+    pContext->R6  = pRegs->r6;
+    pContext->R7  = pRegs->r7;
+    pContext->R8  = pRegs->r8;
+    pContext->R9  = pRegs->r9;
+    pContext->R10 = pRegs->r10;
+    pContext->R11 = pRegs->r11;
+    pContext->Lr  = pRegs->r14;
+    // Restore FP callee-saved d8-d15 into CONTEXT D[8]-D[15]
+    UINT64* fpRegs = (UINT64*)pInterpreterFrame->GetFPCalleeSavedRegisters();
+    for (int i = 0; i < 8; i++)
+    {
+        pContext->D[8 + i] = fpRegs[i];
+    }
+#elif defined(TARGET_AMD64)
+#ifdef TARGET_UNIX
+    pContext->R12 = pRegs->R12;
+    pContext->R13 = pRegs->R13;
+    pContext->R14 = pRegs->R14;
+    pContext->R15 = pRegs->R15;
+    pContext->Rbx = pRegs->Rbx;
+    pContext->Rbp = pRegs->Rbp;
+#else // TARGET_WINDOWS
+    pContext->Rdi = pRegs->Rdi;
+    pContext->Rsi = pRegs->Rsi;
+    pContext->Rbx = pRegs->Rbx;
+    pContext->Rbp = pRegs->Rbp;
+    pContext->R12 = pRegs->R12;
+    pContext->R13 = pRegs->R13;
+    pContext->R14 = pRegs->R14;
+    pContext->R15 = pRegs->R15;
+    // Restore FP callee-saved xmm6-xmm15
+    M128A* fpRegs = (M128A*)pInterpreterFrame->GetFPCalleeSavedRegisters();
+    pContext->Xmm6  = fpRegs[0];
+    pContext->Xmm7  = fpRegs[1];
+    pContext->Xmm8  = fpRegs[2];
+    pContext->Xmm9  = fpRegs[3];
+    pContext->Xmm10 = fpRegs[4];
+    pContext->Xmm11 = fpRegs[5];
+    pContext->Xmm12 = fpRegs[6];
+    pContext->Xmm13 = fpRegs[7];
+    pContext->Xmm14 = fpRegs[8];
+    pContext->Xmm15 = fpRegs[9];
+#endif // TARGET_UNIX
+#elif defined(TARGET_X86)
+    pContext->Edi = pRegs->Edi;
+    pContext->Esi = pRegs->Esi;
+    pContext->Ebx = pRegs->Ebx;
+    pContext->Ebp = pRegs->Ebp;
+#elif defined(TARGET_LOONGARCH64)
+    pContext->Fp = pRegs->fp;
+    pContext->Ra = pRegs->ra;
+    pContext->S0 = pRegs->s0;
+    pContext->S1 = pRegs->s1;
+    pContext->S2 = pRegs->s2;
+    pContext->S3 = pRegs->s3;
+    pContext->S4 = pRegs->s4;
+    pContext->S5 = pRegs->s5;
+    pContext->S6 = pRegs->s6;
+    pContext->S7 = pRegs->s7;
+    pContext->S8 = pRegs->s8;
+    // Restore FP callee-saved f24-f31
+    UINT64* fpRegs = (UINT64*)pInterpreterFrame->GetFPCalleeSavedRegisters();
+    for (int i = 0; i < 8; i++)
+    {
+        pContext->F[24 + i] = fpRegs[i];
+    }
+#elif defined(TARGET_RISCV64)
+    pContext->Fp = pRegs->fp;
+    pContext->Ra = pRegs->ra;
+    pContext->S1 = pRegs->s1;
+    pContext->S2 = pRegs->s2;
+    pContext->S3 = pRegs->s3;
+    pContext->S4 = pRegs->s4;
+    pContext->S5 = pRegs->s5;
+    pContext->S6 = pRegs->s6;
+    pContext->S7 = pRegs->s7;
+    pContext->S8 = pRegs->s8;
+    pContext->S9 = pRegs->s9;
+    pContext->S10 = pRegs->s10;
+    pContext->S11 = pRegs->s11;
+    pContext->Tp = pRegs->tp;
+    pContext->Gp = pRegs->gp;
+    // Restore FP callee-saved fs0-fs11 (f8-f9, f18-f27)
+    UINT64* fpRegs = (UINT64*)pInterpreterFrame->GetFPCalleeSavedRegisters();
+    pContext->F[8]  = fpRegs[0];  // fs0
+    pContext->F[9]  = fpRegs[1];  // fs1
+    for (int i = 0; i < 10; i++)
+    {
+        pContext->F[18 + i] = fpRegs[2 + i];  // fs2-fs11
+    }
+#endif
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
-#endif    
+#endif
     ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
 #endif // TARGET_WASM
 }
