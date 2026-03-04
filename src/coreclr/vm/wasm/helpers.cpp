@@ -678,7 +678,7 @@ namespace
             const char* pszLookupName = pMD->GetMethodTable()->GetFullyQualifiedNameInfo(&pszLookupNamespace);
             LOG((LF_STUBS, LL_INFO100000, "WASM lookupThunk pMD: %s.%s::%s\n", pszLookupNamespace ? pszLookupNamespace : "", pszLookupName, pMD->GetName()));
         }
-#endif
+#endif // LOGGING
 
         HashToReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
 
