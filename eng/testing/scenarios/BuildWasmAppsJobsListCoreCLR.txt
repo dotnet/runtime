@@ -10,3 +10,4 @@ Wasm.Build.Tests.SatelliteLoadingTests
 Wasm.Build.Tests.WasmBuildAppTest
 Wasm.Build.Tests.WasmRunOutOfAppBundleTests
 Wasm.Build.Tests.WasmTemplateTests
+Wasm.Build.Tests.MaxParallelDownloadsTests
