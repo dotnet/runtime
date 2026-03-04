@@ -117,6 +117,7 @@
 
   <Target Name="TrimSharedFrameworkAssemblies"
           AfterTargets="Build"
+          Condition="'$(RunILLinkInBuild)' == 'true'"
           DependsOnTargets="ResolveProjectReferences;GetTrimSharedFrameworkAssembliesInputs;PrepareForAssembliesTrim"
           Inputs="@(SharedFrameworkAssembly);@(SharedFrameworkSuppressionsXml);$(ILLinkTasksAssembly)"
           Outputs="$(SharedFrameworkAssembliesTrimMarkerFile)">
