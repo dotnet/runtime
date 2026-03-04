@@ -143,7 +143,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 // Exceptions in StartedAsync cause startup to be aborted.
                 LogAndRethrow();
 
-                // Cancel IHostApplicationLifetime.Started
+                // Cancel IHostApplicationLifetime.ApplicationStarted
                 // This catches all exceptions and does not re-throw.
                 _applicationLifetime.NotifyStarted();
 
@@ -272,7 +272,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     }
                 }
 
-                // Cancel IHostApplicationLifetime.Stopped
+                // Cancel IHostApplicationLifetime.ApplicationStopped.
                 // This catches all exceptions and does not re-throw.
                 _applicationLifetime.NotifyStopped();
 
