@@ -246,6 +246,34 @@ namespace System.Text.Json.Nodes.Tests
             Assert.IsType(expectedType, result);
         }
 
+        [Fact]
+        public static void TryGetValue_NullableTypes_Deserialized()
+        {
+            // String primitive (JsonValueOfJsonString): JsonElement? should work
+            JsonValue stringValue = JsonSerializer.Deserialize<JsonValue>("\"Hello\"");
+            Assert.True(stringValue.TryGetValue(out JsonElement? _));
+
+            // Bool primitive (JsonValueOfJsonBool): JsonElement? and bool? should work
+            JsonValue boolValue = JsonSerializer.Deserialize<JsonValue>("true");
+            Assert.True(boolValue.TryGetValue(out JsonElement? _));
+            Assert.True(boolValue.TryGetValue(out bool? _));
+
+            // Number primitive (JsonValueOfJsonNumber): JsonElement? and numeric nullable types should work
+            JsonValue numberValue = JsonSerializer.Deserialize<JsonValue>("42");
+            Assert.True(numberValue.TryGetValue(out JsonElement? _));
+            Assert.True(numberValue.TryGetValue(out int? _));
+            Assert.True(numberValue.TryGetValue(out long? _));
+            Assert.True(numberValue.TryGetValue(out double? _));
+            Assert.True(numberValue.TryGetValue(out short? _));
+            Assert.True(numberValue.TryGetValue(out decimal? _));
+            Assert.True(numberValue.TryGetValue(out byte? _));
+            Assert.True(numberValue.TryGetValue(out float? _));
+            Assert.True(numberValue.TryGetValue(out uint? _));
+            Assert.True(numberValue.TryGetValue(out ushort? _));
+            Assert.True(numberValue.TryGetValue(out ulong? _));
+            Assert.True(numberValue.TryGetValue(out sbyte? _));
+        }
+
         [Theory]
         [InlineData("\"A\"")]
         [InlineData("\" \"")]
