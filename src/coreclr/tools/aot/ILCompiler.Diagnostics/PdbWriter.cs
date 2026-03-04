@@ -92,26 +92,6 @@ namespace ILCompiler.Diagnostics
         UIntPtr _pdbMod;
         ISymNGenWriter2 _ngenWriter;
 
-        static PdbWriter()
-        {
-            NativeLibrary.SetDllImportResolver(typeof(PdbWriter).Assembly, DllImportResolver);
-        }
-
-        private static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
-        {
-            IntPtr libraryHandle = IntPtr.Zero;
-            if (libraryName == DiaSymReaderLibrary)
-            {
-                string archSuffix = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-                if (archSuffix == "x64")
-                {
-                    archSuffix = "amd64";
-                }
-                libraryHandle = NativeLibrary.Load(DiaSymReaderLibrary + "." + archSuffix + ".dll", assembly, searchPath);
-            }
-            return libraryHandle;
-        }
-
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
         [LibraryImport(DiaSymReaderLibrary, StringMarshalling = StringMarshalling.Utf16)]
         private static partial void CreateNGenPdbWriter(
