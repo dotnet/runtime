@@ -480,7 +480,7 @@ public unsafe partial interface IXCLRDataTask
     int SetContext(uint contextSize, byte* context);
 
     [PreserveSig]
-    int GetCurrentExceptionState(/*IXCLRDataExceptionState*/ void** exception);
+    int GetCurrentExceptionState(out IXCLRDataExceptionState? exception);
 
     [PreserveSig]
     int Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer);
@@ -923,9 +923,9 @@ public unsafe partial interface IXCLRDataExceptionState
     [PreserveSig]
     int GetFlags(uint* flags);
     [PreserveSig]
-    int GetPrevious(/*IXCLRDataExceptionState*/ void** exState);
+    int GetPrevious(IXCLRDataExceptionState** exState);
     [PreserveSig]
-    int GetManagedObject(/*IXCLRDataValue*/ void** value);
+    int GetManagedObject(IXCLRDataValue** value);
     [PreserveSig]
     int GetBaseType(/*CLRDataBaseExceptionType*/ uint* type);
     [PreserveSig]
@@ -941,7 +941,7 @@ public unsafe partial interface IXCLRDataExceptionState
     [PreserveSig]
     int IsSameState2(uint flags, /*EXCEPTION_RECORD64*/ void* exRecord, uint contextSize, byte* cxRecord);
     [PreserveSig]
-    int GetTask(/*IXCLRDataTask*/ void** task);
+    int GetTask(IXCLRDataTask** task);
 }
 
 [GeneratedComInterface]
