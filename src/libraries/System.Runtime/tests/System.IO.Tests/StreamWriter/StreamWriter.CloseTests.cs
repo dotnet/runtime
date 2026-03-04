@@ -48,6 +48,16 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void AfterDisposeThrows_LeaveOpenTrue()
+        {
+            // Repro for https://github.com/dotnet/runtime/issues/89646
+            var sw = new StreamWriter(CreateStream(), leaveOpen: true);
+            sw.Write("Hello");
+            sw.Dispose();
+            ValidateDisposedExceptions(sw);
+        }
+
+        [Fact]
         public void CloseCausesFlush() {
             StreamWriter sw2;
             Stream memstr2;

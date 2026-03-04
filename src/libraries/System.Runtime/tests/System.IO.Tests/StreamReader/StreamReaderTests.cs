@@ -264,6 +264,17 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void ObjectDisposedExceptionDisposedStream_LeaveOpenTrue()
+        {
+            var ms = new MemoryStream(Encoding.UTF8.GetBytes("Hello World"));
+            var sr = new StreamReader(ms, leaveOpen: true);
+            sr.ReadToEnd();
+            sr.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => sr.Read(new char[1], 0, 1));
+        }
+
+        [Fact]
         public void EmptyStream()
         {
             var ms = CreateStream();

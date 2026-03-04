@@ -63,6 +63,18 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public async Task DisposeAsync_LeaveOpenTrue_ThrowsAfterDispose()
+        {
+            // Repro for https://github.com/dotnet/runtime/issues/89646
+            var ms = new MemoryStream();
+            var sw = new StreamWriter(ms, leaveOpen: true);
+            sw.Write("Hello");
+            await sw.DisposeAsync();
+
+            Assert.Throws<ObjectDisposedException>(() => sw.Write(" World"));
+        }
+
+        [Fact]
         public async Task DisposeAsync_DerivedTypeForcesDisposeToBeUsedUnlessOverridden()
         {
             var ms = new MemoryStream();
