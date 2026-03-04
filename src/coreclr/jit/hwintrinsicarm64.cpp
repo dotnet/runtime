@@ -3343,7 +3343,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewScalarHWIntrinsicNode(retType, op1, op2, op3, intrinsic);
 
             retNode->AsHWIntrinsic()->SetSimdBaseType(simdBaseType);
-            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op2BaseJitType);
             break;
         }
 

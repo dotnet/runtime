@@ -2725,14 +2725,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(varTypeIsIntegralOrI(intrin.baseType));
 
-                    emitSize = emitTypeSize(node);
+                    emitSize = varTypeIsLong(intrin.baseType) ? EA_8BYTE : EA_4BYTE;
 
                     assert((targetReg == op2Reg) || (targetReg != op1Reg));
                     assert((targetReg == op2Reg) || (targetReg != op3Reg));
                     GetEmitter()->emitIns_Mov(INS_mov, emitSize, targetReg, op2Reg,
                                               /* canSkip */ true);
+
                     GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op3Reg, opt,
                                                    INS_SCALABLE_OPTS_NONE);
+
+                    // clasta/clastb scalar variants produce 32-bit results for byte/short base types.
+                    // Narrow down to the correct type if required.
+                    if (varTypeIsSmall(intrin.baseType))
+                    {
+                        emitAttr castSize = emitActualTypeSize(node->TypeGet());
+                        inst_Mov_Extend(intrin.baseType, /* srcInReg */ true, targetReg, targetReg,
+                                        /* canSkip */ false, castSize);
+                    }
                     break;
                 }
 
@@ -2762,9 +2772,19 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(varTypeIsIntegralOrI(intrin.baseType));
 
-                    emitSize = emitTypeSize(node);
+                    emitSize = varTypeIsLong(intrin.baseType) ? EA_8BYTE : EA_4BYTE;
+
                     GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
                                                    INS_SCALABLE_OPTS_NONE);
+
+                    // lasta/lastb scalar variants produce 32-bit results for byte/short base types.
+                    // Narrow down to the correct type if required.
+                    if (varTypeIsSmall(intrin.baseType))
+                    {
+                        emitAttr castSize = emitActualTypeSize(node->TypeGet());
+                        inst_Mov_Extend(intrin.baseType, /* srcInReg */ true, targetReg, targetReg,
+                                        /* canSkip */ false, castSize);
+                    }
                     break;
                 }
 
