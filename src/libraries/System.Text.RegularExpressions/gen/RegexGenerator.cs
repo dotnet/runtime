@@ -48,8 +48,9 @@ namespace System.Text.RegularExpressions.Generator
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // The ForAttributeWithMetadataName transform validates the attribute, parses the regex,
-            // generates code, and extracts the result into deeply equatable types.
+            // The ForAttributeWithMetadataName transform validates the attribute and extracts
+            // the RegexPatternAndSyntax data. ParseAndGenerateRegex then parses the regex, generates
+            // code, and fills in the diagnostic and helper accumulators.
             // Collect all per-method results into a single IncrementalValueProvider, then aggregate
             // into one RegexSourceGenerationResult record (with deduplicated helpers) plus diagnostics.
             IncrementalValueProvider<(RegexSourceGenerationResult Result, ImmutableArray<Diagnostic> Diagnostics)> collected =
@@ -57,45 +58,53 @@ namespace System.Text.RegularExpressions.Generator
                 .ForAttributeWithMetadataName(
                     GeneratedRegexAttributeName,
                     (node, _) => node is MethodDeclarationSyntax or PropertyDeclarationSyntax or IndexerDeclarationSyntax or AccessorDeclarationSyntax,
-                    GetRegexMethodDataOrFailureDiagnostic)
+                    (context, cancellationToken) =>
+                    {
+                        ImmutableArray<Diagnostic>.Builder? diagnostics = null;
+                        Dictionary<string, HelperMethod>? helpers = null;
+                        Location memberLocation = context.TargetNode.GetLocation();
+
+                        RegexPatternAndSyntax? method = GetRegexMethodDataOrFailureDiagnostic(context, ref diagnostics);
+                        RegexMethodEntry? entry = method is not null
+                            ? ParseAndGenerateRegex(method, memberLocation, ref diagnostics, ref helpers)
+                            : null;
+
+                        return (
+                            Entry: entry,
+                            Helpers: helpers?.Values.OrderBy(h => h.Name, StringComparer.Ordinal).ToImmutableEquatableArray() ?? ImmutableEquatableArray<HelperMethod>.Empty,
+                            Diagnostics: diagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
+                    })
                 .Where(static m => m.Entry is not null || !m.Diagnostics.IsDefaultOrEmpty)
                 .Collect()
                 .Select(static (items, _) =>
                 {
-                    var methods = new List<RegexMethodEntry>();
-                    var helpersByName = new Dictionary<string, HelperMethod>(StringComparer.Ordinal);
-                    var allDiagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+                    List<RegexMethodEntry>? methods = null;
+                    Dictionary<string, HelperMethod>? helpersByName = null;
+                    ImmutableArray<Diagnostic>.Builder? allDiagnostics = null;
 
                     foreach ((RegexMethodEntry? entry, ImmutableEquatableArray<HelperMethod> helpers, ImmutableArray<Diagnostic> diagnostics) in items)
                     {
                         if (entry is not null)
                         {
-                            methods.Add(entry);
+                            (methods ??= new List<RegexMethodEntry>()).Add(entry);
                         }
 
                         foreach (HelperMethod helper in helpers)
                         {
-#if NET
-                            helpersByName.TryAdd(helper.Name, helper);
-#else
-                            if (!helpersByName.ContainsKey(helper.Name))
-                            {
-                                helpersByName.Add(helper.Name, helper);
-                            }
-#endif
+                            AddHelper(ref helpersByName, helper.Name, helper);
                         }
 
-                        foreach (Diagnostic diag in diagnostics)
+                        if (!diagnostics.IsEmpty)
                         {
-                            allDiagnostics.Add(diag);
+                            (allDiagnostics ??= ImmutableArray.CreateBuilder<Diagnostic>()).AddRange(diagnostics);
                         }
                     }
 
                     var result = new RegexSourceGenerationResult(
-                        methods.ToImmutableEquatableArray(),
-                        helpersByName.Values.OrderBy(h => h.Name, StringComparer.Ordinal).ToImmutableEquatableArray());
+                        methods?.ToImmutableEquatableArray() ?? ImmutableEquatableArray<RegexMethodEntry>.Empty,
+                        helpersByName?.Values.OrderBy(h => h.Name, StringComparer.Ordinal).ToImmutableEquatableArray() ?? ImmutableEquatableArray<HelperMethod>.Empty);
 
-                    return (Result: result, Diagnostics: allDiagnostics.ToImmutable());
+                    return (Result: result, Diagnostics: allDiagnostics?.ToImmutable() ?? ImmutableArray<Diagnostic>.Empty);
                 });
 
             // Project to just the equatable source model, discarding diagnostics.
