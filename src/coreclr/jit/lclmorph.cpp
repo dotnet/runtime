@@ -689,9 +689,9 @@ public:
         BitVecTraits localsTraits(m_compiler->lvaCount, m_compiler);
         BitVec       result(BitVecOps::MakeEmpty(&localsTraits));
 
-        for (int i = 0; i < m_assertions.Height(); i++)
+        for (const LocalEqualsLocalAddrAssertion& assertion : m_assertions.BottomUpOrder())
         {
-            BitVecOps::AddElemD(&localsTraits, result, m_assertions.BottomRef(i).DestLclNum);
+            BitVecOps::AddElemD(&localsTraits, result, assertion.DestLclNum);
         }
 
         return result;
@@ -2597,9 +2597,8 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
     }
 
     bool changed = false;
-    for (int i = 0; i < stores.Height(); i++)
+    for (const Store& store : stores.BottomUpOrder())
     {
-        const Store& store = stores.BottomRef(i);
         assert(store.Tree->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
         if (BitVecOps::IsMember(&localsTraits, unreadLocals, store.Tree->GetLclNum()))
