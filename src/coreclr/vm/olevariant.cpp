@@ -3822,20 +3822,21 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     else
     {
         MethodDesc* pMD;
+        DECLARE_ARGHOLDER_ARRAY(args, 4);
 
         if (pValueClassMT->IsValueType())
         {
             pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
+            args[ARGNUM_0] = PTR_TO_ARGHOLDER((*pBoxedValueClass)->GetData());
         }
         else
         {
             // Layout class
             pMD = GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
+            args[ARGNUM_0] = PTR_TO_ARGHOLDER(*pBoxedValueClass);
         }
 
         PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
-        args[ARGNUM_0] = PTR_TO_ARGHOLDER((*pBoxedValueClass)->GetData());
         args[ARGNUM_1] = PTR_TO_ARGHOLDER(V_RECORD(pRecHolder));
         args[ARGNUM_2] = DWORD_TO_ARGHOLDER(pValueClassMT->GetNativeSize());
         args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
