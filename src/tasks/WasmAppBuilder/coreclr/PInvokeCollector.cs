@@ -229,7 +229,6 @@ internal sealed class PInvokeCallback
         TypeFullName = t.FullName!;
         AssemblyName = t.Module!.Assembly!.GetName()!.Name!;
         AssemblyFQName = t.Module!.Assembly!.GetName()!.FullName!;
-        MVID = t.Module!.ModuleVersionId.ToString();
         Namespace = t.Namespace;
         MethodName = method.Name!;
         ReturnType = method.ReturnType!;
@@ -272,7 +271,6 @@ internal sealed class PInvokeCallback
     public string? EntrySymbol { get; set; }
     public string AssemblyName { get; }
     public string AssemblyFQName { get; }
-    public string MVID { get; }
     public string TypeName { get; }
     public string TypeFullName { get; }
     public string? Namespace { get;}
