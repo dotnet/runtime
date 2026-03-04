@@ -358,7 +358,7 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
 
     // Check if last two statements in the loop body are the increment of the iterator
     // and the loop termination test.
-    noway_assert(cond->bbStmtList != nullptr);
+    noway_assert(cond->firstStmt() != nullptr);
     Statement* testStmt = cond->lastStmt();
     noway_assert(testStmt != nullptr && testStmt->GetNextStmt() == nullptr);
 
@@ -1934,9 +1934,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     unsigned estDupCostSz = 0;
 
-    for (int i = 0; i < duplicatedBlocks.Height(); i++)
+    for (BasicBlock* const block : duplicatedBlocks.BottomUpOrder())
     {
-        BasicBlock* block = duplicatedBlocks.Bottom(i);
         for (Statement* stmt : block->Statements())
         {
             GenTree* tree = stmt->GetRootNode();
@@ -2058,9 +2057,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     fgRedirectEdge(newPreheader->TargetEdgeRef(), stayInLoopSucc);
 
     // Duplicate all the code now
-    for (int i = 0; i < duplicatedBlocks.Height(); i++)
+    for (BasicBlock* const block : duplicatedBlocks.BottomUpOrder())
     {
-        BasicBlock* block = duplicatedBlocks.Bottom(i);
         for (Statement* stmt : block->Statements())
         {
             GenTree*   clonedTree = gtCloneExpr(stmt->GetRootNode());
@@ -4583,10 +4581,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 bool visitedCurr = false;
                 bool isCommaTree = tree->OperIs(GT_COMMA);
                 bool hasExcep    = false;
-                for (int i = 0; i < m_valueStack.Height(); i++)
+                for (Value& value : m_valueStack.BottomUpOrder())
                 {
-                    Value& value = m_valueStack.BottomRef(i);
-
                     if (value.m_hoistable)
                     {
                         assert(value.Node() != tree);
