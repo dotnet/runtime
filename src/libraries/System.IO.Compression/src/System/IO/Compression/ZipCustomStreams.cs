@@ -813,19 +813,33 @@ namespace System.IO.Compression
 
         private void ProcessBytesRead(ReadOnlySpan<byte> data)
         {
-            if (data.Length > 0 && !_crcAbandoned)
-            {
-                _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, data);
-                _totalBytesRead += data.Length;
+            if (_crcAbandoned)
+                return;
 
+            if (data.Length == 0)
+            {
+                // EOF reached. Only validate CRC if we've read exactly the expected number of bytes.
+                // If _totalBytesRead < _expectedLength the declared size was larger than the actual
+                // data (e.g. a tampered-but-not-truncated entry); we don't throw here because the
+                // caller (decompressor) is responsible for surfacing that as an error.
+                // If _totalBytesRead == _expectedLength we can validate the CRC now, which covers
+                // zero-length entries and the final EOF read after all expected bytes were consumed.
                 if (_totalBytesRead == _expectedLength)
-                {
                     ValidateCrc();
-                }
-                else if (_totalBytesRead > _expectedLength)
-                {
-                    throw new InvalidDataException(SR.UnexpectedStreamLength);
-                }
+
+                return;
+            }
+
+            _runningCrc = Crc32Helper.UpdateCrc32(_runningCrc, data);
+            _totalBytesRead += data.Length;
+
+            if (_totalBytesRead == _expectedLength)
+            {
+                ValidateCrc();
+            }
+            else if (_totalBytesRead > _expectedLength)
+            {
+                throw new InvalidDataException(SR.UnexpectedStreamLength);
             }
         }
 

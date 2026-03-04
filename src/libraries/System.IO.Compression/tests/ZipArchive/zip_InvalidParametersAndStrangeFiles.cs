@@ -273,20 +273,26 @@ namespace System.IO.Compression.Tests
             ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
             Stream source = await OpenEntryStream(async, e);
 
-            byte[] buffer = new byte[e.Length + 20];
+            // Allocate a read window plus a sentinel tail. Each iteration reads into only
+            // the window portion [0, s_bufferSize), so the tail [s_bufferSize, end) must
+            // never be touched regardless of how many iterations the loop takes.
+            const int sentinelSize = 64;
+            byte[] buffer = new byte[s_bufferSize + sentinelSize];
             Array.Fill<byte>(buffer, 0xDE);
-            int offset = 0;
-            int length = buffer.Length;
 
             await Assert.ThrowsAsync<InvalidDataException>(async () =>
             {
                 int read;
-                while ((read = await source.ReadAsync(buffer, offset, length)) != 0)
+                while ((read = await source.ReadAsync(buffer, 0, s_bufferSize)) != 0)
                 {
-                    offset += read;
-                    length -= read;
                 }
             });
+
+            // The sentinel tail must be entirely untouched.
+            for (int i = s_bufferSize; i < buffer.Length; i++)
+            {
+                Assert.Equal(0xDE, buffer[i]);
+            }
 
             await DisposeStream(async, source);
             await DisposeZipArchive(async, archive);
@@ -477,7 +483,7 @@ namespace System.IO.Compression.Tests
 
             await DisposeStream(async, s);
 
-            await DisposeZipArchive(async, archive);
+            await DisposeZipArchive(async, modifiedArchive);
         }
 
         private static int PatchDataRelativeToFileName(byte[] fileNameInBytes, MemoryStream packageStream, int distance, int start = 0)
