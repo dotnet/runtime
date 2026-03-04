@@ -765,30 +765,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AllocContinuation;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_CONTEXTS:
-                    id = ReadyToRunHelper.AsyncCaptureContexts;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_CONTEXTS:
-                    id = ReadyToRunHelper.AsyncRestoreContexts;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_EXECUTION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncCaptureExecutionContext;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncRestoreExecutionContext;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION:
-                    id = ReadyToRunHelper.AsyncRestoreContextsOnSuspension;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncCaptureContinuationContext;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                     return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTable"u8, null));
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:

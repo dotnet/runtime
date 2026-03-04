@@ -1267,30 +1267,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AllocContinuationClass;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_CONTEXTS:
-                    id = ReadyToRunHelper.AsyncCaptureContexts;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_CONTEXTS:
-                    id = ReadyToRunHelper.AsyncRestoreContexts;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_EXECUTION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncCaptureExecutionContext;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_EXECUTION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncRestoreExecutionContext;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_RESTORE_CONTEXTS_ON_SUSPENSION:
-                    id = ReadyToRunHelper.AsyncRestoreContextsOnSuspension;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_ASYNC_CAPTURE_CONTINUATION_CONTEXT:
-                    id = ReadyToRunHelper.AsyncCaptureContinuationContext;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                     id = ReadyToRunHelper.InitClass;
                     break;
@@ -1323,10 +1299,54 @@ namespace Internal.JitInterface
             return _compilation.NodeFactory.GetReadyToRunHelperCell(id);
         }
 
+        // CORINFO_ACCESS_ANY = 0x0000, // Normal access
+        // CORINFO_ACCESS_THIS = 0x0001, // Accessed via the this reference
+        // CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT = 0x0002, // Prefer access to a method via slot over using the temporary entrypoint
+
+        // CORINFO_ACCESS_NONNULL = 0x0004, // Instance is guaranteed non-null
+
+        // CORINFO_ACCESS_LDFTN = 0x0010, // Accessed via ldftn
+        // CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE = 0x0020, // Method might be attributed with UnmanagedCallersOnlyAttribute.
+
+        // // Field access flags
+        // CORINFO_ACCESS_GET = 0x0100, // Field get (ldfld)
+        // CORINFO_ACCESS_SET = 0x0200, // Field set (stfld)
+        // CORINFO_ACCESS_ADDRESS = 0x0400, // Field address (ldflda)
+        // CORINFO_ACCESS_INIT_ARRAY = 0x0800, // Field use for InitializeArray
+        // // UNUSED = 0x4000,
+        // CORINFO_ACCESS_INLINECHECK = 0x8000, // Return fieldFlags and fieldAccessor only. Used by JIT64 during inlining.
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
         {
+            DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            var captureExecutionContextMethHnd = asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null);
+            var restoreExecutionContextMethHnd = asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null);
+            var captureContinuationContextMethHnd = asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null);
+            var captureContextsMethHnd = asyncHelpers.GetKnownMethod("CaptureContexts"u8, null);
+            var restoreContextsMethHnd = asyncHelpers.GetKnownMethod("RestoreContexts"u8, null);
+            var restoreContextsOnSuspensionMethHnd = asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null);
             var method = HandleToObject(ftn);
-            throw new RequiresRuntimeJitException($"getFunctionEntryPoint called for {method} from {MethodBeingCompiled}");
+            if (method == captureExecutionContextMethHnd
+                || method == restoreExecutionContextMethHnd
+                || method == captureContinuationContextMethHnd
+                || method == captureContextsMethHnd
+                || method == restoreContextsMethHnd
+                || method == restoreContextsOnSuspensionMethHnd)
+            {
+                var entrypoint = _compilation.NodeFactory.MethodEntrypoint(
+                    new MethodWithToken(
+                        method,
+                        _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(method, true, true),
+                        null,
+                        false,
+                        MethodBeingCompiled),
+                    false,
+                    false,
+                    false);
+                pResult = CreateConstLookupToSymbol(entrypoint);
+            }
+            else{
+                throw new RequiresRuntimeJitException(method.ToString());
+            }
         }
 
         private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)

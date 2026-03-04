@@ -363,13 +363,6 @@ namespace Internal.ReadyToRunConstants
         AllocContinuation              = 0x120,
         AllocContinuationClass         = 0x121,
         AllocContinuationMethod        = 0x122,
-        AsyncCaptureContexts                = 0x123,
-        AsyncRestoreContexts                = 0x124,
-        AsyncCaptureExecutionContext        = 0x125,
-        AsyncRestoreExecutionContext        = 0x126,
-        AsyncRestoreContextsOnSuspension    = 0x127,
-        AsyncCaptureContinuationContext     = 0x128,
-
         // **********************************************************************************************
         //
         // These are not actually part of the R2R file format. We have them here because it's convenient.
