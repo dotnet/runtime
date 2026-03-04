@@ -3900,8 +3900,8 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 //    tree - The tree
 //
 // Return Value:
-//    True if it would be unobservable whether a null check threw or before the
-//    specified node.
+//    True if it would be observable whether a null check threw before or after
+//    the specified node.
 //
 bool Compiler::impCanReorderWithNullCheck(GenTree* tree)
 {
