@@ -2034,7 +2034,7 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
     // Write the InterpMethod pointer to the header (InterpByteCodeStart)
     *(InterpMethod**)(rwBase + headerOffset) = pMethodRX;
 
-    // Apply any additional relocations tracked by the builder
+    // Record the finalized base addresses in the method data builder
     m_methodDataBuilder.Finalize(baseAddressRW, baseAddressRX);
 
     return pMethodRX;
