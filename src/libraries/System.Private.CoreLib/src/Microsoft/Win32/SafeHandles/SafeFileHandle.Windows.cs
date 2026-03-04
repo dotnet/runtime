@@ -275,13 +275,12 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             int error = Marshal.GetLastPInvokeError();
-            if (error == Interop.Errors.ERROR_INVALID_HANDLE)
+            return error switch
             {
-                // ERROR_INVALID_HANDLE means this is a socket (pipes return true, sockets return this error)
-                return System.IO.FileHandleType.Socket;
-            }
-
-            throw Win32Marshal.GetExceptionForWin32Error(error);
+                Interop.Errors.ERROR_PIPE_NOT_CONNECTED => System.IO.FileHandleType.Pipe,
+                Interop.Errors.ERROR_INVALID_HANDLE => System.IO.FileHandleType.Socket,
+                _ => throw Win32Marshal.GetExceptionForWin32Error(error)
+            };
         }
 
         private unsafe System.IO.FileHandleType GetDiskBasedType()
@@ -306,7 +305,8 @@ namespace Microsoft.Win32.SafeHandles
                             return System.IO.FileHandleType.SymbolicLink;
                         }
                     }
-                    // Other reparse points (junctions, mount points, etc.) are still regular files/directories
+                    // Other reparse points (junctions, mount points, etc.) are not recognized as of now
+                    return System.IO.FileHandleType.Unknown;
                 }
             }
 
