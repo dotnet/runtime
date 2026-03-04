@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
+        [RequiresUnsafe]
         internal static unsafe bool IsMemberOfGroup(uint gid)
         {
             if (gid == GetEGid())
@@ -53,6 +55,7 @@ internal static partial class Interop
         private static partial uint GetEGid();
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetGroups", SetLastError = true)]
+        [RequiresUnsafe]
         private static unsafe partial int GetGroups(int ngroups, uint* groups);
     }
 }

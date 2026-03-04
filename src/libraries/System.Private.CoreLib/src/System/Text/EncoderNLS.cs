@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -41,6 +42,7 @@ namespace System.Text
             _fallbackBuffer?.Reset();
         }
 
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(char[] chars, int index, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(chars);
@@ -61,6 +63,7 @@ namespace System.Text
             return result;
         }
 
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(char* chars, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(chars);

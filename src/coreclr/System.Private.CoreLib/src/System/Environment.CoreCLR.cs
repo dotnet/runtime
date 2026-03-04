@@ -87,6 +87,7 @@ namespace System
         [DoesNotReturn]
         private static partial void FailFast(StackCrawlMarkHandle mark, string? message, ObjectHandleOnStack exception, string? errorMessage);
 
+        [RequiresUnsafe]
         private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
         {
             string[] commandLineArgs = new string[argc + 1];

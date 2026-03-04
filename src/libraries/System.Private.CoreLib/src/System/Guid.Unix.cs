@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -8,6 +9,7 @@ namespace System
     public partial struct Guid
     {
         // This will create a new random guid based on the https://www.ietf.org/rfc/rfc4122.txt
+        [RequiresUnsafe]
         public static unsafe Guid NewGuid()
         {
             Guid g;

@@ -23,6 +23,7 @@ namespace System
             _type = type.GetUnderlyingNativeHandle();
         }
 
+        [RequiresUnsafe]
         public static unsafe object? ToObject(TypedReference value)
         {
             TypeHandle typeHandle = new((void*)value._type);

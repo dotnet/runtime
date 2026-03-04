@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -54,6 +55,7 @@ internal static partial class Interop
         internal static partial IntPtr OpenDir(string path);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDir")]
+        [RequiresUnsafe]
         internal static unsafe partial int ReadDir(IntPtr dir, DirectoryEntry* outputEntry);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseDir", SetLastError = true)]

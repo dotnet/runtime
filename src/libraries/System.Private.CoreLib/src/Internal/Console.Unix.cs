@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -10,6 +11,7 @@ namespace Internal
     public static partial class Console
     {
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         public static unsafe void Write(string s)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(s);
@@ -22,6 +24,7 @@ namespace Internal
         public static partial class Error
         {
             [MethodImplAttribute(MethodImplOptions.NoInlining)]
+            [RequiresUnsafe]
             public static unsafe void Write(string s)
             {
                 byte[] bytes = Encoding.UTF8.GetBytes(s);

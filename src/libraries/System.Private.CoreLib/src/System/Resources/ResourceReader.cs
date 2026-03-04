@@ -150,6 +150,7 @@ namespace System.Resources
             Close();
         }
 
+        [RequiresUnsafe]
         private unsafe void Dispose(bool disposing)
         {
             if (_store != null)
@@ -172,6 +173,7 @@ namespace System.Resources
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe int ReadUnalignedI4(int* p)
         {
             return BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(p, sizeof(int)));
@@ -190,6 +192,7 @@ namespace System.Resources
             _store.BaseStream.Seek(stringLength, SeekOrigin.Current);
         }
 
+        [RequiresUnsafe]
         private unsafe int GetNameHash(int index)
         {
             Debug.Assert(index >= 0 && index < _numResources, $"Bad index into hash array.  index: {index}");
@@ -206,6 +209,7 @@ namespace System.Resources
             }
         }
 
+        [RequiresUnsafe]
         private unsafe int GetNamePosition(int index)
         {
             Debug.Assert(index >= 0 && index < _numResources, $"Bad index into name position array.  index: {index}");
@@ -332,6 +336,7 @@ namespace System.Resources
         // with the string you pass in.
         // Whoever calls this method should make sure that they take a lock
         // so no one else can cause us to seek in the stream.
+        [RequiresUnsafe]
         private unsafe bool CompareStringEqualsName(string name)
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");
@@ -375,6 +380,7 @@ namespace System.Resources
         // This is used in the enumerator.  The enumerator iterates from 0 to n
         // of our resources and this returns the resource name for a particular
         // index.  The parameter is NOT a virtual offset.
+        [RequiresUnsafe]
         private unsafe string AllocateStringForNameIndex(int index, out int dataOffset)
         {
             Debug.Assert(_store != null, "ResourceReader is closed!");

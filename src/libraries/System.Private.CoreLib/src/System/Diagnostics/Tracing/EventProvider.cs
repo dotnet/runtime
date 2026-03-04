@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -236,6 +237,7 @@ namespace System.Diagnostics.Tracing
             s_returnCode = error;
         }
 
+        [RequiresUnsafe]
         private static unsafe object? EncodeObject(ref object? data, ref EventData* dataDescriptor, ref byte* dataBuffer, ref uint totalEventSize)
         /*++
 
@@ -461,6 +463,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventPayload">
         /// Payload for the ETW event.
         /// </param>
+        [RequiresUnsafe]
         internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, object?[] eventPayload)
         {
             WriteEventErrorCode status = WriteEventErrorCode.NoError;

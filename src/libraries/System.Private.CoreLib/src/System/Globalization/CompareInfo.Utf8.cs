@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Unicode;
 
@@ -72,6 +73,7 @@ namespace System.Globalization
             }
         }
 
+        [RequiresUnsafe]
         private unsafe bool StartsWithCoreUtf8(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prefix, CompareOptions options)
         {
             // NLS/ICU doesn't provide native UTF-8 support so we need to convert to UTF-16 and compare that way

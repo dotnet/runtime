@@ -301,6 +301,7 @@ namespace System
         /// <exception cref="ArgumentException">
         /// An instance with nonprimitive (non-blittable) members cannot be pinned.
         /// </exception>
+        [RequiresUnsafe]
         public unsafe MemoryHandle Pin()
         {
             // It's possible that the below logic could result in an AV if the struct

@@ -761,6 +761,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_PERFTRACING
         // Generate the serialized blobs that describe events for all strongly typed events (that is events that define strongly
         // typed event methods. Dynamically defined events (that use Write) hare defined on the fly and are handled elsewhere.
+        [RequiresUnsafe]
         private unsafe void DefineEventPipeEvents()
         {
             // If the EventSource is set to emit all events as TraceLogging events, skip this initialization.
@@ -814,6 +815,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (no args)
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId)
         {
             WriteEventCore(eventId, 0, null);
@@ -822,6 +824,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (ints)
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, int arg1)
         {
             if (IsEnabled())
@@ -836,6 +839,7 @@ namespace System.Diagnostics.Tracing
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, int arg1, int arg2)
         {
             if (IsEnabled())
@@ -853,6 +857,7 @@ namespace System.Diagnostics.Tracing
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, int arg1, int arg2, int arg3)
         {
             if (IsEnabled())
@@ -874,6 +879,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (longs)
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, long arg1)
         {
             if (IsEnabled())
@@ -888,6 +894,7 @@ namespace System.Diagnostics.Tracing
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, long arg1, long arg2)
         {
             if (IsEnabled())
@@ -905,6 +912,7 @@ namespace System.Diagnostics.Tracing
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, long arg1, long arg2, long arg3)
         {
             if (IsEnabled())
@@ -926,6 +934,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (strings)
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, string? arg1)
         {
             if (IsEnabled())
@@ -944,6 +953,7 @@ namespace System.Diagnostics.Tracing
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, string? arg1, string? arg2)
         {
             if (IsEnabled())
@@ -967,6 +977,7 @@ namespace System.Diagnostics.Tracing
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, string? arg1, string? arg2, string? arg3)
         {
             if (IsEnabled())
@@ -996,6 +1007,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (string and ints)
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, string? arg1, int arg2)
         {
             if (IsEnabled())
@@ -1017,6 +1029,7 @@ namespace System.Diagnostics.Tracing
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, string? arg1, int arg2, int arg3)
         {
             if (IsEnabled())
@@ -1042,6 +1055,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (string and longs)
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, string? arg1, long arg2)
         {
             if (IsEnabled())
@@ -1064,6 +1078,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (long and string)
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, long arg1, string? arg2)
         {
             if (IsEnabled())
@@ -1086,6 +1101,7 @@ namespace System.Diagnostics.Tracing
         // optimized for common signatures (int and string)
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, int arg1, string? arg2)
         {
             if (IsEnabled())
@@ -1107,6 +1123,7 @@ namespace System.Diagnostics.Tracing
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, byte[]? arg1)
         {
             if (IsEnabled())
@@ -1142,6 +1159,7 @@ namespace System.Diagnostics.Tracing
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, long arg1, byte[]? arg2)
         {
             if (IsEnabled())
@@ -1179,6 +1197,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Returns the object as a IntPtr - safe when only used for logging
+        [RequiresUnsafe]
         internal static unsafe nint ObjectIDForEvents(object? o) => *(nint*)&o;
 
 #pragma warning restore 1591
@@ -1263,7 +1282,7 @@ namespace System.Diagnostics.Tracing
                 set => m_Reserved = value;
             }
 
-#region private
+            #region private
             /// <summary>
             /// Initializes the members of this EventData object to point at a previously-pinned
             /// tracelogging-compatible metadata blob.
@@ -1271,6 +1290,7 @@ namespace System.Diagnostics.Tracing
             /// <param name="pointer">Pinned tracelogging-compatible metadata blob.</param>
             /// <param name="size">The size of the metadata blob.</param>
             /// <param name="reserved">Value for reserved: 2 for per-provider metadata, 1 for per-event metadata</param>
+            [RequiresUnsafe]
             internal unsafe void SetMetadata(byte* pointer, int size, int reserved)
             {
                 this.m_Ptr = (ulong)pointer;
@@ -1319,6 +1339,7 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         protected unsafe void WriteEventCore(int eventId, int eventDataCount, EventData* data)
         {
             WriteEventWithRelatedActivityIdCore(eventId, null, eventDataCount, data);
@@ -1354,6 +1375,7 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventData* data)
         {
             if (IsEnabled())
@@ -1472,6 +1494,7 @@ namespace System.Diagnostics.Tracing
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEvent(int eventId, params object?[] args)
         {
             WriteEventVarargs(eventId, null, args);
@@ -1489,6 +1512,7 @@ namespace System.Diagnostics.Tracing
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
+        [RequiresUnsafe]
         protected unsafe void WriteEventWithRelatedActivityId(int eventId, Guid relatedActivityId, params object?[] args)
         {
             WriteEventVarargs(eventId, &relatedActivityId, args);
@@ -1565,10 +1589,11 @@ namespace System.Diagnostics.Tracing
             // NOTE: we nop out this method body if !IsSupported using ILLink.Substitutions.
             this.Dispose(false);
         }
-#endregion
+        #endregion
 
-#region private
+        #region private
 
+        [RequiresUnsafe]
         private unsafe void WriteEventRaw(
             string? eventName,
             ref EventDescriptor eventDescriptor,
@@ -1649,6 +1674,7 @@ namespace System.Diagnostics.Tracing
         /// "Log", such an exception would become a cached exception for the initialization of the static
         /// member, and any future access to the "Log" would throw the cached exception).
         /// </summary>
+        [RequiresUnsafe]
         private unsafe void Initialize(Guid eventSourceGuid, string eventSourceName, string[]? traits)
         {
             try
@@ -1786,6 +1812,7 @@ namespace System.Diagnostics.Tracing
             return new Guid(bytes.Slice(0, 16));
         }
 
+        [RequiresUnsafe]
         private static unsafe void DecodeObjects(object?[] decodedObjects, Type[] parameterTypes, EventData* data)
         {
             for (int i = 0; i < decodedObjects.Length; i++, data++)
@@ -1954,6 +1981,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [Conditional("DEBUG")]
+        [RequiresUnsafe]
         private static unsafe void AssertValidString(EventData* data)
         {
             Debug.Assert(data->Size >= 0 && data->Size % 2 == 0, "String size should be even");
@@ -1984,6 +2012,7 @@ namespace System.Diagnostics.Tracing
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
+        [RequiresUnsafe]
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
             if (IsEnabled())
@@ -2147,6 +2176,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        [RequiresUnsafe]
         private unsafe void WriteToAllListeners(EventWrittenEventArgs eventCallbackArgs, int eventDataCount, EventData* data)
         {
             Debug.Assert(m_eventData != null);
@@ -2228,6 +2258,7 @@ namespace System.Diagnostics.Tracing
         // ETW and EventPipe providers. It is not a general purpose API, it will
         // log the message with Level=LogAlways and Keywords=All to make sure whoever
         // is listening gets the message.
+        [RequiresUnsafe]
         private unsafe void WriteEventString(string msgString)
         {
             bool allAreNull = m_etwProvider == null;
@@ -2931,6 +2962,7 @@ namespace System.Diagnostics.Tracing
 
         // Send out the ETW manifest XML out to ETW
         // Today, we only send the manifest to ETW, custom listeners don't get it.
+        [RequiresUnsafe]
         private unsafe void SendManifest(byte[]? rawManifest)
         {
             if (rawManifest == null)
@@ -3917,6 +3949,7 @@ namespace System.Diagnostics.Tracing
 
 #if CORECLR
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void InitializeDefaultEventSources(Exception* pException)
         {
             try
@@ -3955,6 +3988,7 @@ namespace System.Diagnostics.Tracing
 
         // Pre-registration creates and registers an EventProvider prior to the EventSource being constructed.
         // If a tracing session is started using the provider then the EventSource will be constructed on demand.
+        [RequiresUnsafe]
         internal static unsafe void PreregisterEventProviders(Guid id, string name, Func<EventSource?> eventSourceFactory)
         {
             // NOTE: Pre-registration has some minor limitations and variations to normal EventSource behavior:
@@ -4320,6 +4354,7 @@ namespace System.Diagnostics.Tracing
             TimeStamp = DateTime.UtcNow;
         }
 
+        [RequiresUnsafe]
         internal unsafe EventWrittenEventArgs(EventSource eventSource, int eventId, Guid* pActivityID, Guid* pChildActivityID)
             : this(eventSource, eventId)
         {

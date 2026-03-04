@@ -153,6 +153,7 @@ namespace System.Diagnostics.Tracing
         public static TraceLoggingTypeInfo UIntPtr() => s_uintptr ??= new ScalarArrayTypeInfo(typeof(UIntPtr[]), Statics.UIntPtrType, System.IntPtr.Size);
         public static TraceLoggingTypeInfo Single() => s_single ??= new ScalarArrayTypeInfo(typeof(float[]), TraceLoggingDataType.Float, sizeof(float));
         public static TraceLoggingTypeInfo Double() => s_double ??= new ScalarArrayTypeInfo(typeof(double[]), TraceLoggingDataType.Double, sizeof(double));
+        [RequiresUnsafe]
         public static unsafe TraceLoggingTypeInfo Guid() => s_guid ??= new ScalarArrayTypeInfo(typeof(Guid[]), TraceLoggingDataType.Guid, sizeof(Guid));
     }
 

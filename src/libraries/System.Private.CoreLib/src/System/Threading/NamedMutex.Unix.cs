@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -204,6 +205,7 @@ namespace System.Threading
 
         protected abstract void ReleaseLockCore(bool abandoning);
 
+        [RequiresUnsafe]
         internal static unsafe SharedMemoryProcessDataHeader<NamedMutexProcessDataBase>? CreateOrOpen(string name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, out bool created)
         {
             WaitSubsystem.LockHolder creationDeletionProcessLock = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
@@ -259,6 +261,7 @@ namespace System.Threading
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe void InitializeSharedData(void* v)
         {
             if (UsePThreadMutexes)

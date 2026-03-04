@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -145,6 +146,7 @@ namespace System.Diagnostics.Tracing
             Volatile.Write(ref m_sessionID, 0);
         }
 
+        [RequiresUnsafe]
         private unsafe bool DispatchEventsToEventListenersOnce(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency, CancellationToken token)
         {
             bool eventsReceived = false;

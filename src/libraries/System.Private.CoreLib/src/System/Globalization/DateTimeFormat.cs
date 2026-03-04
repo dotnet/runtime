@@ -4,6 +4,7 @@
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -161,6 +162,7 @@ namespace System
         /// <param name="minimumLength">
         /// The minimum length for formatted number. If the number of digits in the value is less than this length, it will be padded with leading zeros.
         /// </param>
+        [RequiresUnsafe]
         internal static unsafe void FormatDigits<TChar>(ref ValueListBuilder<TChar> outputBuffer, int value, int minimumLength) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(value >= 0, "DateTimeFormat.FormatDigits(): value >= 0");
@@ -784,6 +786,7 @@ namespace System
         }
 
         // output the 'z' family of formats, which output a the offset from UTC, e.g. "-07:30"
+        [RequiresUnsafe]
         private static unsafe void FormatCustomizedTimeZone<TChar>(DateTime dateTime, TimeSpan offset, int tokenLen, bool timeOnly, ref ValueListBuilder<TChar> result) where TChar : unmanaged, IUtfChar<TChar>
         {
             // See if the instance already has an offset

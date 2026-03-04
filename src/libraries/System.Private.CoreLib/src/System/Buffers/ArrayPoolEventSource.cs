@@ -46,6 +46,7 @@ namespace System.Buffers
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
         [Event(1, Level = EventLevel.Verbose)]
+        [RequiresUnsafe]
         internal unsafe void BufferRented(int bufferId, int bufferSize, int poolId, int bucketId)
         {
             EventData* payload = stackalloc EventData[4];
@@ -72,6 +73,7 @@ namespace System.Buffers
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
         [Event(2, Level = EventLevel.Informational)]
+        [RequiresUnsafe]
         internal unsafe void BufferAllocated(int bufferId, int bufferSize, int poolId, int bucketId, BufferAllocatedReason reason)
         {
             EventData* payload = stackalloc EventData[5];
@@ -121,6 +123,7 @@ namespace System.Buffers
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                    Justification = EventSourceSuppressMessage)]
         [Event(6, Level = EventLevel.Informational)]
+        [RequiresUnsafe]
         internal unsafe void BufferDropped(int bufferId, int bufferSize, int poolId, int bucketId, BufferDroppedReason reason)
         {
             EventData* payload = stackalloc EventData[5];

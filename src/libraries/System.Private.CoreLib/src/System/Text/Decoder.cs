@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -94,6 +95,7 @@ namespace System.Text
         // We expect this to be the workhorse for NLS Encodings, but for existing
         // ones we need a working (if slow) default implementation)
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public virtual unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -107,6 +109,7 @@ namespace System.Text
             return GetCharCount(arrbyte, 0, count);
         }
 
+        [RequiresUnsafe]
         public virtual unsafe int GetCharCount(ReadOnlySpan<byte> bytes, bool flush)
         {
             fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -455,6 +456,7 @@ namespace System.Collections.Generic
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe int PickPivotAndPartition(Span<T> keys)
         {
             Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);

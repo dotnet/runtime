@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -10,6 +11,7 @@ namespace System
 {
     internal static partial class Number
     {
+        [RequiresUnsafe]
         private static unsafe bool TryParseNumber<TChar>(scoped ref TChar* str, TChar* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -277,6 +279,7 @@ namespace System
             return false;
         }
 
+        [RequiresUnsafe]
         internal static unsafe bool TryStringToNumber<TChar>(ReadOnlySpan<TChar> value, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
         {

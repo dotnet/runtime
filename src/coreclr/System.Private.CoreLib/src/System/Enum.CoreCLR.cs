@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -15,6 +16,7 @@ namespace System
         private static partial void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)
         {
             Debug.Assert(rt.IsActualEnum);
@@ -24,6 +26,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private unsafe CorElementType InternalGetCorElementType()
         {
             CorElementType elementType = RuntimeHelpers.GetMethodTable(this)->GetPrimitiveCorElementType();

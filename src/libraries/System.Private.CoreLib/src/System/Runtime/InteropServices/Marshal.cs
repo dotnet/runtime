@@ -30,6 +30,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr AllocHGlobal(int cb) => AllocHGlobal((nint)cb);
 
+        [RequiresUnsafe]
         public static unsafe string? PtrToStringAnsi(IntPtr ptr)
         {
             if (IsNullOrWin32Atom(ptr))
@@ -40,6 +41,7 @@ namespace System.Runtime.InteropServices
             return new string((sbyte*)ptr);
         }
 
+        [RequiresUnsafe]
         public static unsafe string PtrToStringAnsi(IntPtr ptr, int len)
         {
             ArgumentNullException.ThrowIfNull(ptr);
@@ -48,6 +50,7 @@ namespace System.Runtime.InteropServices
             return new string((sbyte*)ptr, 0, len);
         }
 
+        [RequiresUnsafe]
         public static unsafe string? PtrToStringUni(IntPtr ptr)
         {
             if (IsNullOrWin32Atom(ptr))
@@ -58,6 +61,7 @@ namespace System.Runtime.InteropServices
             return new string((char*)ptr);
         }
 
+        [RequiresUnsafe]
         public static unsafe string PtrToStringUni(IntPtr ptr, int len)
         {
             ArgumentNullException.ThrowIfNull(ptr);
@@ -66,6 +70,7 @@ namespace System.Runtime.InteropServices
             return new string((char*)ptr, 0, len);
         }
 
+        [RequiresUnsafe]
         public static unsafe string? PtrToStringUTF8(IntPtr ptr)
         {
             if (IsNullOrWin32Atom(ptr))
@@ -77,6 +82,7 @@ namespace System.Runtime.InteropServices
             return string.CreateStringFromEncoding((byte*)ptr, nbBytes, Encoding.UTF8);
         }
 
+        [RequiresUnsafe]
         public static unsafe string PtrToStringUTF8(IntPtr ptr, int byteLen)
         {
             ArgumentNullException.ThrowIfNull(ptr);
@@ -130,6 +136,7 @@ namespace System.Runtime.InteropServices
             return SizeOfHelper(t, throwIfNotMarshalable: true);
         }
 
+        [RequiresUnsafe]
         public static unsafe int QueryInterface(IntPtr pUnk, in Guid iid, out IntPtr ppv)
         {
             ArgumentNullException.ThrowIfNull(pUnk);
@@ -141,6 +148,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        [RequiresUnsafe]
         public static unsafe int AddRef(IntPtr pUnk)
         {
             ArgumentNullException.ThrowIfNull(pUnk);
@@ -148,6 +156,7 @@ namespace System.Runtime.InteropServices
             return ((delegate* unmanaged<IntPtr, int>)(*(*(void***)pUnk + 1 /* IUnknown.AddRef slot */)))(pUnk);
         }
 
+        [RequiresUnsafe]
         public static unsafe int Release(IntPtr pUnk)
         {
             ArgumentNullException.ThrowIfNull(pUnk);
@@ -161,6 +170,7 @@ namespace System.Runtime.InteropServices
         /// an array that is not pinned can cause unexpected results.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [RequiresUnsafe]
         public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index)
         {
             ArgumentNullException.ThrowIfNull(arr);
@@ -170,6 +180,7 @@ namespace System.Runtime.InteropServices
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
         }
 
+        [RequiresUnsafe]
         public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
         {
             ArgumentNullException.ThrowIfNull(arr);
@@ -221,6 +232,7 @@ namespace System.Runtime.InteropServices
             CopyToNative(source, startIndex, destination, length);
         }
 
+        [RequiresUnsafe]
         private static unsafe void CopyToNative<T>(T[] source, int startIndex, IntPtr destination, int length)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -271,6 +283,7 @@ namespace System.Runtime.InteropServices
             CopyToManaged(source, destination, startIndex, length);
         }
 
+        [RequiresUnsafe]
         private static unsafe void CopyToManaged<T>(IntPtr source, T[] destination, int startIndex, int length)
         {
             ArgumentNullException.ThrowIfNull(destination);
@@ -284,6 +297,7 @@ namespace System.Runtime.InteropServices
             new Span<T>((void*)source, length).CopyTo(new Span<T>(destination, startIndex, length));
         }
 
+        [RequiresUnsafe]
         public static unsafe byte ReadByte(IntPtr ptr, int ofs)
         {
             try
@@ -300,6 +314,7 @@ namespace System.Runtime.InteropServices
 
         public static byte ReadByte(IntPtr ptr) => ReadByte(ptr, 0);
 
+        [RequiresUnsafe]
         public static unsafe short ReadInt16(IntPtr ptr, int ofs)
         {
             try
@@ -324,6 +339,7 @@ namespace System.Runtime.InteropServices
 
         public static short ReadInt16(IntPtr ptr) => ReadInt16(ptr, 0);
 
+        [RequiresUnsafe]
         public static unsafe int ReadInt32(IntPtr ptr, int ofs)
         {
             try
@@ -371,6 +387,7 @@ namespace System.Runtime.InteropServices
 
         public static nint ReadIntPtr(IntPtr ptr) => ReadIntPtr(ptr, 0);
 
+        [RequiresUnsafe]
         public static unsafe long ReadInt64(IntPtr ptr, int ofs)
         {
             try
@@ -395,6 +412,7 @@ namespace System.Runtime.InteropServices
 
         public static long ReadInt64(IntPtr ptr) => ReadInt64(ptr, 0);
 
+        [RequiresUnsafe]
         public static unsafe void WriteByte(IntPtr ptr, int ofs, byte val)
         {
             try
@@ -411,6 +429,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteByte(IntPtr ptr, byte val) => WriteByte(ptr, 0, val);
 
+        [RequiresUnsafe]
         public static unsafe void WriteInt16(IntPtr ptr, int ofs, short val)
         {
             try
@@ -444,6 +463,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteInt16(IntPtr ptr, char val) => WriteInt16(ptr, 0, (short)val);
 
+        [RequiresUnsafe]
         public static unsafe void WriteInt32(IntPtr ptr, int ofs, int val)
         {
             try
@@ -491,6 +511,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteIntPtr(IntPtr ptr, nint val) => WriteIntPtr(ptr, 0, val);
 
+        [RequiresUnsafe]
         public static unsafe void WriteInt64(IntPtr ptr, int ofs, long val)
         {
             try
@@ -683,6 +704,7 @@ namespace System.Runtime.InteropServices
             return GetExceptionForHRInternal(errorCode, in iid, pUnk);
         }
 
+        [RequiresUnsafe]
         private static unsafe Exception? GetExceptionForHRInternal(int errorCode, in Guid iid, IntPtr pUnk)
         {
             const IntPtr NoErrorInfo = -1; // Use -1 to indicate no error info available
@@ -1015,6 +1037,7 @@ namespace System.Runtime.InteropServices
             return s.MarshalToString(globalAlloc: true, unicode: true);
         }
 
+        [RequiresUnsafe]
         public static unsafe IntPtr StringToHGlobalAnsi(string? s)
         {
             if (s is null)
@@ -1037,6 +1060,7 @@ namespace System.Runtime.InteropServices
             return ptr;
         }
 
+        [RequiresUnsafe]
         public static unsafe IntPtr StringToHGlobalUni(string? s)
         {
             if (s is null)
@@ -1060,6 +1084,7 @@ namespace System.Runtime.InteropServices
             return ptr;
         }
 
+        [RequiresUnsafe]
         private static unsafe IntPtr StringToHGlobalUTF8(string? s)
         {
             if (s is null)
@@ -1078,6 +1103,7 @@ namespace System.Runtime.InteropServices
             return ptr;
         }
 
+        [RequiresUnsafe]
         public static unsafe IntPtr StringToCoTaskMemUni(string? s)
         {
             if (s is null)
@@ -1101,6 +1127,7 @@ namespace System.Runtime.InteropServices
             return ptr;
         }
 
+        [RequiresUnsafe]
         public static unsafe IntPtr StringToCoTaskMemUTF8(string? s)
         {
             if (s is null)
@@ -1119,6 +1146,7 @@ namespace System.Runtime.InteropServices
             return ptr;
         }
 
+        [RequiresUnsafe]
         public static unsafe IntPtr StringToCoTaskMemAnsi(string? s)
         {
             if (s is null)
@@ -1262,6 +1290,7 @@ namespace System.Runtime.InteropServices
             return (dwLastError & 0x0000FFFF) | unchecked((int)0x80070000);
         }
 
+        [RequiresUnsafe]
         public static unsafe void ZeroFreeBSTR(IntPtr s)
         {
             if (s == IntPtr.Zero)
@@ -1277,6 +1306,7 @@ namespace System.Runtime.InteropServices
             ZeroFreeCoTaskMemUTF8(s);
         }
 
+        [RequiresUnsafe]
         public static unsafe void ZeroFreeCoTaskMemUnicode(IntPtr s)
         {
             if (s == IntPtr.Zero)
@@ -1287,6 +1317,7 @@ namespace System.Runtime.InteropServices
             FreeCoTaskMem(s);
         }
 
+        [RequiresUnsafe]
         public static unsafe void ZeroFreeCoTaskMemUTF8(IntPtr s)
         {
             if (s == IntPtr.Zero)
@@ -1297,6 +1328,7 @@ namespace System.Runtime.InteropServices
             FreeCoTaskMem(s);
         }
 
+        [RequiresUnsafe]
         public static unsafe void ZeroFreeGlobalAllocAnsi(IntPtr s)
         {
             if (s == IntPtr.Zero)
@@ -1307,6 +1339,7 @@ namespace System.Runtime.InteropServices
             FreeHGlobal(s);
         }
 
+        [RequiresUnsafe]
         public static unsafe void ZeroFreeGlobalAllocUnicode(IntPtr s)
         {
             if (s == IntPtr.Zero)
@@ -1317,6 +1350,7 @@ namespace System.Runtime.InteropServices
             FreeHGlobal(s);
         }
 
+        [RequiresUnsafe]
         public static unsafe IntPtr StringToBSTR(string? s)
         {
             if (s is null)
@@ -1338,6 +1372,7 @@ namespace System.Runtime.InteropServices
             return PtrToStringUni(ptr, (int)(SysStringByteLen(ptr) / sizeof(char)));
         }
 
+        [RequiresUnsafe]
         internal static unsafe uint SysStringByteLen(IntPtr s)
         {
             return *(((uint*)s) - 1);

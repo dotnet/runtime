@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -9,6 +10,7 @@ internal static partial class Interop
     internal static partial class Globalization
     {
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetTimeZoneDisplayName", StringMarshalling = StringMarshalling.Utf16)]
+        [RequiresUnsafe]
         internal static unsafe partial ResultCode GetTimeZoneDisplayName(
             string localeName,
             string timeZoneId,
@@ -17,6 +19,7 @@ internal static partial class Interop
             int resultLength);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_WindowsIdToIanaId", StringMarshalling = StringMarshalling.Utf16)]
+        [RequiresUnsafe]
         internal static unsafe partial int WindowsIdToIanaId(string windowsId, IntPtr region, char* ianaId, int ianaIdLength);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_IanaIdToWindowsId", StringMarshalling = StringMarshalling.Utf16)]

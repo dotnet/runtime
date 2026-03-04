@@ -97,6 +97,7 @@ namespace System.Runtime.InteropServices
         /// It's quite slow and can return back dangling pointers. It's only there for backcompat.
         /// People should instead use the IntPtr overloads.
         /// </remarks>
+        [RequiresUnsafe]
         private static unsafe T ReadValueSlow<T>(object ptr, int ofs, Func<IntPtr, int, T> readValueHelper)
         {
             // Consumers of this method are documented to throw AccessViolationException on any AV
@@ -163,6 +164,7 @@ namespace System.Runtime.InteropServices
         /// value back. This is quite slow and can return back dangling pointers. It is
         /// only here for backcompat. People should instead use the IntPtr overloads.
         /// </summary>
+        [RequiresUnsafe]
         private static unsafe void WriteValueSlow<T>(object ptr, int ofs, T val, Action<IntPtr, int, T> writeValueHelper)
         {
             // Consumers of this method are documented to throw AccessViolationException on any AV
@@ -241,6 +243,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the StructureToPtr<T> overload instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [RequiresUnsafe]
         public static unsafe void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld)
         {
             ArgumentNullException.ThrowIfNull(ptr);
@@ -274,6 +277,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Helper function to copy a pointer into a preallocated structure.
         /// </summary>
+        [RequiresUnsafe]
         private static unsafe void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(structure);
@@ -302,6 +306,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [RequiresUnsafe]
         public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             ArgumentNullException.ThrowIfNull(ptr);
@@ -327,10 +332,12 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_TryGetStructMarshalStub")]
+        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool TryGetStructMarshalStub(IntPtr th, delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void>* structMarshalStub, nuint* size);
 
         // Note: Callers are required to keep obj alive
+        [RequiresUnsafe]
         internal static unsafe bool IsPinnable(object? obj)
             => (obj == null) || !RuntimeHelpers.GetMethodTable(obj)->ContainsGCPointers;
 
@@ -992,6 +999,7 @@ namespace System.Runtime.InteropServices
 
 #if DEBUG // Used for testing in Checked or Debug
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIsInCooperativeGCModeFunctionPointer")]
+        [RequiresUnsafe]
         internal static unsafe partial delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
 #endif
     }

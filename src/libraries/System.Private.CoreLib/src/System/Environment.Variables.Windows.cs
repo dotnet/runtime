@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -66,6 +67,7 @@ namespace System
             }
         }
 
+        [RequiresUnsafe]
         public static unsafe IDictionary GetEnvironmentVariables()
         {
             // Format for GetEnvironmentStrings is:

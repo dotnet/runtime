@@ -183,6 +183,7 @@ namespace System.Text
                 (_fallbackCount < 0) ? 0 : _fallbackCount;
 
         // Clear the buffer
+        [RequiresUnsafe]
         public override unsafe void Reset()
         {
             _fallbackCount = -1;

@@ -97,6 +97,7 @@ namespace System.Runtime.InteropServices
             return Marshal.QueryInterface(wrapper.ExternalComObject, IID_IUnknown, out unknown) == HResults.S_OK;
         }
 
+        [RequiresUnsafe]
         public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
         {
             obj = null;
@@ -129,12 +130,14 @@ namespace System.Runtime.InteropServices
             /// <typeparam name="T">Desired type.</typeparam>
             /// <param name="dispatchPtr">Pointer supplied to Vtable function entry.</param>
             /// <returns>Instance of type associated with dispatched function call.</returns>
+            [RequiresUnsafe]
             public static unsafe T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class
             {
                 ManagedObjectWrapper* comInstance = ToManagedObjectWrapper(dispatchPtr);
                 return Unsafe.As<T>(comInstance->Holder!.WrappedObject);
             }
 
+            [RequiresUnsafe]
             internal static unsafe ManagedObjectWrapper* ToManagedObjectWrapper(ComInterfaceDispatch* dispatchPtr)
             {
                 InternalComInterfaceDispatch* dispatch = (InternalComInterfaceDispatch*)unchecked((nuint)dispatchPtr & (nuint)InternalComInterfaceDispatch.DispatchAlignmentMask);
@@ -783,6 +786,7 @@ namespace System.Runtime.InteropServices
         /// this <see cref="ComWrappers" /> instance, the previously created COM interface will be returned.
         /// If not, a new one will be created.
         /// </remarks>
+        [RequiresUnsafe]
         public unsafe IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
             ArgumentNullException.ThrowIfNull(instance);
@@ -826,6 +830,7 @@ namespace System.Runtime.InteropServices
             return (nuint)((value + alignMask) & ~alignMask);
         }
 
+        [RequiresUnsafe]
         private unsafe ManagedObjectWrapper* CreateManagedObjectWrapper(object instance, CreateComInterfaceFlags flags)
         {
             ComInterfaceEntry* userDefined = ComputeVtables(instance, flags, out int userDefinedCount);
@@ -985,6 +990,7 @@ namespace System.Runtime.InteropServices
             return obj;
         }
 
+        [RequiresUnsafe]
         private static unsafe ComInterfaceDispatch* TryGetComInterfaceDispatch(IntPtr comObject)
         {
             // If the first Vtable entry is part of a ManagedObjectWrapper impl,
@@ -1080,6 +1086,7 @@ namespace System.Runtime.InteropServices
         /// <param name="userState">A state object provided by the user for creating the object, otherwise <see cref="NoUserState.Instance" />.</param>
         /// <returns>Returns <c>true</c> if a managed object could be retrieved/created, <c>false</c> otherwise</returns>
         /// <param name="retValue">The managed object associated with the supplied external COM object or <c>null</c> if it could not be created.</param>
+        [RequiresUnsafe]
         private unsafe bool TryGetOrCreateObjectForComInstanceInternal(
             IntPtr externalComObject,
             IntPtr innerMaybe,
@@ -1473,11 +1480,12 @@ namespace System.Runtime.InteropServices
         /// <returns><see cref="ComInterfaceEntry" /> pointer containing memory for all COM interface entries.</returns>
         /// <remarks>
         /// All memory returned from this function must either be unmanaged memory, pinned managed memory, or have been
-        /// allocated with the <see cref="CompilerServices.RuntimeHelpers.AllocateTypeAssociatedMemory(Type, int)"/> API.
+        /// allocated with the <see cref="RuntimeHelpers.AllocateTypeAssociatedMemory(Type, int)"/> API.
         ///
         /// If the interface entries cannot be created and a negative <paramref name="count" /> or <code>null</code> and a non-zero <paramref name="count" /> are returned,
         /// the call to <see cref="GetOrCreateComInterfaceForObject(object, CreateComInterfaceFlags)"/> will throw a <see cref="ArgumentException"/>.
         /// </remarks>
+        [RequiresUnsafe]
         protected abstract unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
         /// <summary>
@@ -1529,6 +1537,7 @@ namespace System.Runtime.InteropServices
             return s_globalInstanceForMarshalling.GetOrCreateComInterfaceForObject(instance, CreateComInterfaceFlags.TrackerSupport);
         }
 
+        [RequiresUnsafe]
         internal static unsafe IntPtr ComInterfaceForObject(object instance, Guid targetIID)
         {
             IntPtr unknownPtr = ComInterfaceForObject(instance);

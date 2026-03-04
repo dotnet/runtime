@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -48,12 +49,14 @@ internal static partial class Interop
         internal const string LOCALE_NAME_SYSTEM_DEFAULT = "!x-sys-default-locale";
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
+        [RequiresUnsafe]
         internal static unsafe partial int LCIDToLocaleName(int locale, char* pLocaleName, int cchName, uint dwFlags);
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         internal static partial int LocaleNameToLCID(string lpName, uint dwFlags);
 
         [LibraryImport("kernel32.dll",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [RequiresUnsafe]
         internal static unsafe partial int LCMapStringEx(
                     string? lpLocaleName,
                     uint dwMapFlags,

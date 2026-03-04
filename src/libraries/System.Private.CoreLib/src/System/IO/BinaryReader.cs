@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -222,7 +223,9 @@ namespace System.IO
         public virtual long ReadInt64() => BinaryPrimitives.ReadInt64LittleEndian(InternalRead(stackalloc byte[sizeof(long)]));
         [CLSCompliant(false)]
         public virtual ulong ReadUInt64() => BinaryPrimitives.ReadUInt64LittleEndian(InternalRead(stackalloc byte[sizeof(ulong)]));
+        [RequiresUnsafe]
         public virtual unsafe Half ReadHalf() => BinaryPrimitives.ReadHalfLittleEndian(InternalRead(stackalloc byte[sizeof(Half)]));
+        [RequiresUnsafe]
         public virtual unsafe float ReadSingle() => BinaryPrimitives.ReadSingleLittleEndian(InternalRead(stackalloc byte[sizeof(float)]));
         public virtual unsafe double ReadDouble() => BinaryPrimitives.ReadDoubleLittleEndian(InternalRead(stackalloc byte[sizeof(double)]));
 

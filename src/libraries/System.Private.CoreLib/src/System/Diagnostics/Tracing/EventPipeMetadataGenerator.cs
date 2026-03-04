@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using EventMetadata = System.Diagnostics.Tracing.EventSource.EventMetadata;
 
@@ -62,6 +63,7 @@ namespace System.Diagnostics.Tracing
             return GenerateMetadata(eventId, eventName, (long)keywords, (uint)level, version, opcode, eventParams);
         }
 
+        [RequiresUnsafe]
         internal unsafe byte[]? GenerateMetadata(
             int eventId,
             string eventName,
@@ -220,6 +222,7 @@ namespace System.Diagnostics.Tracing
 
         // Copy src to buffer and modify the offset.
         // Note: We know the buffer size ahead of time to make sure no buffer overflow.
+        [RequiresUnsafe]
         internal static unsafe void WriteToBuffer(byte* buffer, uint bufferLength, ref uint offset, byte* src, uint srcLength)
         {
             Debug.Assert(bufferLength >= (offset + srcLength));

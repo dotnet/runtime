@@ -7,6 +7,7 @@
 #endif
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -245,6 +246,7 @@ namespace System
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static unsafe void MemmoveNative(ref byte dest, ref byte src, nuint len)
         {
             fixed (byte* pDest = &dest)
@@ -261,6 +263,7 @@ namespace System
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [RequiresUnsafe]
         private static unsafe partial void* memmove(void* dest, void* src, nuint len);
 #pragma warning restore CS3016
 #endif

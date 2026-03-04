@@ -90,6 +90,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(chars);
@@ -114,6 +115,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(string s)
         {
             if (s is null)
@@ -130,6 +132,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(char* chars, int count)
         {
             ArgumentNullException.ThrowIfNull(chars);
@@ -145,6 +148,7 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
+        [RequiresUnsafe]
         public override unsafe int GetBytes(string s, int charIndex, int charCount,
                                             byte[] bytes, int byteIndex)
         {
@@ -183,6 +187,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
                                             byte[] bytes, int byteIndex)
         {
@@ -218,6 +223,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
             ArgumentNullException.ThrowIfNull(chars);
@@ -237,6 +243,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -261,6 +268,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -275,6 +283,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                             char[] chars, int charIndex)
         {
@@ -310,6 +319,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -329,6 +339,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe string GetString(byte[] bytes, int index, int count)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -350,6 +361,7 @@ namespace System.Text
         //
         // End of standard methods copied from EncodingNLS.cs
         //
+        [RequiresUnsafe]
         internal override unsafe int GetByteCount(char* chars, int count, EncoderNLS? encoder)
         {
             Debug.Assert(chars is not null, "[UTF32Encoding.GetByteCount]chars!=null");
@@ -481,6 +493,7 @@ namespace System.Text
             return byteCount;
         }
 
+        [RequiresUnsafe]
         internal override unsafe int GetBytes(char* chars, int charCount,
                                                  byte* bytes, int byteCount, EncoderNLS? encoder)
         {
@@ -683,6 +696,7 @@ namespace System.Text
             return (int)(bytes - byteStart);
         }
 
+        [RequiresUnsafe]
         internal override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS? baseDecoder)
         {
             Debug.Assert(bytes is not null, "[UTF32Encoding.GetCharCount]bytes!=null");
@@ -825,6 +839,7 @@ namespace System.Text
             return charCount;
         }
 
+        [RequiresUnsafe]
         internal override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, DecoderNLS? baseDecoder)
         {

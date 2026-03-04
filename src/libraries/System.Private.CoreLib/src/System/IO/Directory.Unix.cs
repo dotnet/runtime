@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.IO
@@ -24,6 +25,7 @@ namespace System.IO
             return new DirectoryInfo(path, fullPath, isNormalized: true);
         }
 
+        [RequiresUnsafe]
         private static unsafe string CreateTempSubdirectoryCore(string? prefix)
         {
             // mkdtemp takes a char* and overwrites the XXXXXX with six characters

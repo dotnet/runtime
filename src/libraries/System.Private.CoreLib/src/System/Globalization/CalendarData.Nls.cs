@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -29,6 +30,7 @@ namespace System.Globalization
             return Interop.Kernel32.GetCalendarInfoEx(localeName, (uint)calendar, IntPtr.Zero, calType | CAL_RETURN_NUMBER, IntPtr.Zero, 0, out data) != 0;
         }
 
+        [RequiresUnsafe]
         private static unsafe bool CallGetCalendarInfoEx(string localeName, CalendarId calendar, uint calType, out string data)
         {
             const int BUFFER_LENGTH = 80;
@@ -59,6 +61,7 @@ namespace System.Globalization
 
         // EnumCalendarInfoExEx callback itself.
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe Interop.BOOL EnumCalendarInfoCallback(char* lpCalendarInfoString, uint calendar, IntPtr pReserved, void* lParam)
         {
             EnumData* context = (EnumData*)lParam;

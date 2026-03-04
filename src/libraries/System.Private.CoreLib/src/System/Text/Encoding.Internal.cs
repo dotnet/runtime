@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -118,6 +119,7 @@ namespace System.Text
         /// <summary>
         /// Entry point from <see cref="EncoderNLS.GetByteCount"/>.
         /// </summary>
+        [RequiresUnsafe]
         internal virtual unsafe int GetByteCount(char* pChars, int charCount, EncoderNLS? encoder)
         {
             Debug.Assert(encoder != null, "This code path should only be called from EncoderNLS.");
@@ -171,6 +173,7 @@ namespace System.Text
         /// The implementation should not attempt to perform any sort of fallback behavior.
         /// If custom fallback behavior is necessary, override <see cref="GetByteCountWithFallback"/>.
         /// </remarks>
+        [RequiresUnsafe]
         private protected virtual unsafe int GetByteCountFast(char* pChars, int charsLength, EncoderFallback? fallback, out int charsConsumed)
         {
             // Any production-quality type would override this method and provide a real

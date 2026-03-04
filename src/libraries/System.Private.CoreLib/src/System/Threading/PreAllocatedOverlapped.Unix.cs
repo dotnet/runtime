@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -92,6 +93,7 @@ namespace System.Threading
         public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) =>
             UnsafeCreatePortableCore(callback, state, pinData);
 
+        [RequiresUnsafe]
         private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
             // This construction is duplicated in PreAllocatedOverlapped.Windows.cs
@@ -116,6 +118,7 @@ namespace System.Threading
             ReleasePortableCore();
         }
 
+        [RequiresUnsafe]
         unsafe void IDeferredDisposable.OnFinalRelease(bool disposed)
         {
             IDeferredDisposableOnFinalReleasePortableCore(disposed);

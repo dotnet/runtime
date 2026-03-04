@@ -4,6 +4,7 @@
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 namespace System.Diagnostics.Tracing
 {
     /// <summary>
@@ -44,6 +45,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="childActivityId">The ID of the current child activity.</param>
         /// <param name="payload">A span pointing to the data payload for the event.</param>
         [NonEvent]
+        [RequiresUnsafe]
         internal unsafe void ProcessEvent(uint eventID, uint osThreadID, DateTime timeStamp, Guid activityId, Guid childActivityId, ReadOnlySpan<byte> payload)
         {
             // A simple fix to avoid dependencies brought by this method if event source is disabled via a feature switch.

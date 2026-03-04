@@ -947,6 +947,7 @@ namespace System.Numerics
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [RequiresUnsafe]
             public static unsafe bool Decompose(in Impl matrix, out Vector3 scale, out Quaternion rotation, out Vector3 translation)
             {
                 Impl matTemp = Matrix4x4.Identity.AsImpl();

@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ConstrainedExecution;
 using System.Threading;
 
@@ -170,6 +171,7 @@ namespace System.IO.Enumeration
             bool ShouldSkip(FileAttributes attributeToSkip) => (_options.AttributesToSkip & attributeToSkip) != 0;
         }
 
+        [RequiresUnsafe]
         private unsafe void FindNextEntry()
         {
             int result;

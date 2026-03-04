@@ -379,6 +379,7 @@ namespace System
         /// <exception cref="ArgumentException">
         /// An instance with nonprimitive (non-blittable) members cannot be pinned.
         /// </exception>
+        [RequiresUnsafe]
         public unsafe MemoryHandle Pin()
         {
             // Just like the Span property getter, we have special support for a mutable Memory<char>

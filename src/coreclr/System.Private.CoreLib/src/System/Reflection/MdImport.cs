@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -228,6 +229,7 @@ namespace System.Reflection
 
         #region Static Members
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe bool GetMarshalAs(
             IntPtr pNativeType,
             int cNativeType,
@@ -241,6 +243,7 @@ namespace System.Reflection
             out byte* marshalCookie,
             out int iidParamIndex);
 
+        [RequiresUnsafe]
         internal static unsafe MarshalAsAttribute GetMarshalAs(ConstArray nativeType, RuntimeModule scope)
         {
             if (!GetMarshalAs(

@@ -6,6 +6,7 @@
 //
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Text
@@ -111,6 +112,7 @@ namespace System.Text
         public override int Remaining => (_iCount > 0) ? _iCount : 0;
 
         // Clear the buffer
+        [RequiresUnsafe]
         public override unsafe void Reset()
         {
             _iCount = -1;

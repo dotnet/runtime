@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -12,6 +13,7 @@ namespace System
     internal static partial class SpanHelpers // .T
     {
         [Intrinsic] // Unrolled for small sizes
+        [RequiresUnsafe]
         public static unsafe void Fill<T>(ref T refData, nuint numElements, T value)
         {
             // Early checks to see if it's even possible to vectorize - JIT will turn these checks into consts.
@@ -3711,6 +3713,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> equals) where T : struct
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();

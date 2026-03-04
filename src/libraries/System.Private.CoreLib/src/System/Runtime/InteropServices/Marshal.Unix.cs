@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Runtime.InteropServices
@@ -32,6 +33,7 @@ namespace System.Runtime.InteropServices
 
         private static bool IsNullOrWin32Atom(IntPtr ptr) => ptr == IntPtr.Zero;
 
+        [RequiresUnsafe]
         internal static unsafe int StringToAnsiString(string s, byte* buffer, int bufferLength, bool bestFit = false, bool throwOnUnmappableChar = false)
         {
             Debug.Assert(bufferLength >= (s.Length + 1) * SystemMaxDBCSCharSize, "Insufficient buffer length passed to StringToAnsiString");
@@ -43,6 +45,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Returns number of bytes required to convert given string to Ansi string. The return value includes null terminator.
+        [RequiresUnsafe]
         internal static unsafe int GetAnsiStringByteCount(ReadOnlySpan<char> chars)
         {
             int byteLength = Encoding.UTF8.GetByteCount(chars);

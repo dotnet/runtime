@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.InteropServices
 {
@@ -28,6 +29,7 @@ namespace System.Runtime.InteropServices
             Interop.Sys.FreeLibrary(handle);
         }
 
+        [RequiresUnsafe]
         private static unsafe IntPtr GetSymbolOrNull(IntPtr handle, string symbolName)
         {
             return Interop.Sys.GetProcAddress(handle, symbolName);

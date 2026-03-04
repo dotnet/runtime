@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 #if NET
@@ -104,6 +105,7 @@ namespace System.Text
         /// </summary>
         /// <returns>An ASCII byte is defined as 0x00 - 0x7F, inclusive.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe nuint GetIndexOfFirstNonAsciiByte(byte* pBuffer, nuint bufferLength)
         {
             // If 256/512-bit aren't supported but SSE2 is supported, use those specific intrinsics instead of
@@ -126,6 +128,7 @@ namespace System.Text
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe nuint GetIndexOfFirstNonAsciiByte_Vector(byte* pBuffer, nuint bufferLength)
         {
             // Squirrel away the original buffer reference. This method works by determining the exact

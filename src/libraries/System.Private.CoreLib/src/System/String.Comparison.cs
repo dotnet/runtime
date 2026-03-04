@@ -758,6 +758,7 @@ namespace System
         // restructure the comparison so that for odd-length spans, we simulate the null terminator and include
         // it in the hash computation exactly as does str.GetNonRandomizedHashCode().
 
+        [RequiresUnsafe]
         internal unsafe int GetNonRandomizedHashCode()
         {
             fixed (char* src = &_firstChar)
@@ -788,6 +789,7 @@ namespace System
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe int GetNonRandomizedHashCode(ReadOnlySpan<char> span)
         {
             uint hash1 = (5381 << 16) + 5381;
@@ -851,6 +853,7 @@ namespace System
         // for both for big-endian and for little-endian.
         private const uint NormalizeToLowercase = 0x0020_0020u;
 
+        [RequiresUnsafe]
         internal unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase()
         {
             uint hash1 = (5381 << 16) + 5381;
@@ -897,6 +900,7 @@ namespace System
             return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(hash1, hash2, this.AsSpan(Length - length));
         }
 
+        [RequiresUnsafe]
         internal static unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> span)
         {
             uint hash1 = (5381 << 16) + 5381;
@@ -983,6 +987,7 @@ namespace System
             return GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(hash1, hash2, span.Slice(span.Length - length));
         }
 
+        [RequiresUnsafe]
         private static unsafe int GetNonRandomizedHashCodeOrdinalIgnoreCaseSlow(uint hash1, uint hash2, ReadOnlySpan<char> str)
         {
             int length = str.Length;

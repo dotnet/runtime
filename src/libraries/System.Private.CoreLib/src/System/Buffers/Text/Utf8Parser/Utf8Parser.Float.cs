@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Buffers.Text
 {
@@ -27,6 +28,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
+        [RequiresUnsafe]
         public static unsafe bool TryParse(ReadOnlySpan<byte> source, out float value, out int bytesConsumed, char standardFormat = default)
         {
             Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, stackalloc byte[Number.SingleNumberBufferLength]);
@@ -60,6 +62,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
+        [RequiresUnsafe]
         public static unsafe bool TryParse(ReadOnlySpan<byte> source, out double value, out int bytesConsumed, char standardFormat = default)
         {
             Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, stackalloc byte[Number.DoubleNumberBufferLength]);

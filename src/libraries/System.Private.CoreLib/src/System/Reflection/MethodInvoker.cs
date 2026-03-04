@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -335,6 +336,7 @@ namespace System.Reflection
             return InvokeDirectByRefWithFewArgs(obj, ((Span<object?>)stackStorage._args).Slice(0, _argCount));
         }
 
+        [RequiresUnsafe]
         internal unsafe object? InvokeDirectByRefWithFewArgs(object? obj, Span<object?> copyOfArgs)
         {
             if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
@@ -355,6 +357,7 @@ namespace System.Reflection
             return _invokeFunc_RefArgs!(obj, pByRefFixedStorage);
         }
 
+        [RequiresUnsafe]
         internal unsafe object? InvokeWithManyArgs(object? obj, Span<object?> arguments)
         {
             Span<object?> copyOfArgs;

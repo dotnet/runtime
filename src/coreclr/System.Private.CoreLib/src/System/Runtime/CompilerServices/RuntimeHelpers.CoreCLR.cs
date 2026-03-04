@@ -16,6 +16,7 @@ namespace System.Runtime.CompilerServices
     public static partial class RuntimeHelpers
     {
         [Intrinsic]
+        [RequiresUnsafe]
         public static unsafe void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
         {
             if (array is null)
@@ -86,6 +87,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
@@ -138,6 +140,7 @@ namespace System.Runtime.CompilerServices
         // Of course, reference types are not cloned.
         //
         [return: NotNullIfNotNull(nameof(obj))]
+        [RequiresUnsafe]
         public static unsafe object? GetObjectValue(object? obj)
         {
             if (obj == null)
@@ -198,10 +201,12 @@ namespace System.Runtime.CompilerServices
         internal static partial void CompileMethod(RuntimeMethodHandleInternal method);
 
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
+        [RequiresUnsafe]
         private static unsafe partial void PrepareMethod(RuntimeMethodHandleInternal method, IntPtr* pInstantiation, int cInstantiation);
 
         public static void PrepareMethod(RuntimeMethodHandle method) => PrepareMethod(method, null);
 
+        [RequiresUnsafe]
         public static unsafe void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[]? instantiation)
         {
             IRuntimeMethodInfo methodInfo = method.GetMethodInfo() ??
@@ -262,6 +267,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        [RequiresUnsafe]
         public static new unsafe bool Equals(object? o1, object? o2)
         {
             // Compare by ref for normal classes, by value for value types.
@@ -392,6 +398,7 @@ namespace System.Runtime.CompilerServices
             ref Unsafe.As<RawData>(obj).Data;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe nuint GetRawObjectDataSize(object obj)
         {
             MethodTable* pMT = GetMethodTable(obj);
@@ -408,6 +415,7 @@ namespace System.Runtime.CompilerServices
 
         // Returns array element size.
         // Callers are required to keep obj alive
+        [RequiresUnsafe]
         internal static unsafe ushort GetElementSize(this Array array)
         {
             Debug.Assert(ObjectHasComponentSize(array));
@@ -424,6 +432,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe int GetMultiDimensionalArrayRank(this Array array)
         {
             int rank = GetMethodTable(array)->MultiDimensionalArrayRank;
@@ -435,6 +444,7 @@ namespace System.Runtime.CompilerServices
         // i.e., is variable length like System.String or Array.
         // Callers are required to keep obj alive
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe bool ObjectHasComponentSize(object obj)
         {
             return GetMethodTable(obj)->HasComponentSize;
@@ -447,6 +457,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="data">A reference to the data to box.</param>
         /// <returns>A boxed instance of the value at <paramref name="data"/>.</returns>
         /// <remarks>This method includes proper handling for nullable value types as well.</remarks>
+        [RequiresUnsafe]
         internal static unsafe object? Box(MethodTable* methodTable, ref byte data) =>
             methodTable->IsNullable ? CastHelpers.Box_Nullable(methodTable, ref data) : CastHelpers.Box(methodTable, ref data);
 
@@ -462,9 +473,11 @@ namespace System.Runtime.CompilerServices
         // GC.KeepAlive(o);
         //
         [Intrinsic]
+        [RequiresUnsafe]
         internal static unsafe MethodTable* GetMethodTable(object obj) => GetMethodTable(obj);
 
         [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
+        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
 
@@ -519,9 +532,11 @@ namespace System.Runtime.CompilerServices
         private static partial IntPtr AllocateTypeAssociatedMemoryAligned(QCallTypeHandle type, uint size, uint alignment);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe TailCallArgBuffer* GetTailCallArgBuffer();
 
         [LibraryImport(QCall, EntryPoint = "TailCallHelp_AllocTailCallArgBufferInternal")]
+        [RequiresUnsafe]
         private static unsafe partial TailCallArgBuffer* AllocTailCallArgBufferInternal(int size);
 
         private const int TAILCALLARGBUFFER_ACTIVE = 0;
@@ -529,6 +544,7 @@ namespace System.Runtime.CompilerServices
         private const int TAILCALLARGBUFFER_INACTIVE = 2;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // To allow unrolling of Span.Clear
+        [RequiresUnsafe]
         private static unsafe TailCallArgBuffer* AllocTailCallArgBuffer(int size, IntPtr gcDesc)
         {
             TailCallArgBuffer* buffer = GetTailCallArgBuffer();
@@ -558,9 +574,11 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
 
         [StackTraceHidden]
+        [RequiresUnsafe]
         private static unsafe void DispatchTailCalls(
             IntPtr callersRetAddrSlot,
             delegate*<TailCallArgBuffer*, ref byte, PortableTailCallFrame*, void> callTarget,

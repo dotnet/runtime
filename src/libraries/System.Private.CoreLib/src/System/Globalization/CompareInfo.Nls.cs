@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Globalization
@@ -15,6 +16,7 @@ namespace System.Globalization
             _sortHandle = NlsGetSortHandle(_sortName);
         }
 
+        [RequiresUnsafe]
         internal static unsafe IntPtr NlsGetSortHandle(string cultureName)
         {
             if (GlobalizationMode.Invariant)
@@ -41,6 +43,7 @@ namespace System.Globalization
             return IntPtr.Zero;
         }
 
+        [RequiresUnsafe]
         private static unsafe int FindStringOrdinal(
             uint dwFindStringOrdinalFlags,
             ReadOnlySpan<char> source,

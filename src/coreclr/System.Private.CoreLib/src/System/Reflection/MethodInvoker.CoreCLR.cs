@@ -1,6 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
 
 namespace System.Reflection
@@ -9,6 +10,7 @@ namespace System.Reflection
     {
         private readonly Signature? _signature;
 
+        [RequiresUnsafe]
         private unsafe MethodInvoker(RuntimeMethodInfo method) : this(method, method.Signature.Arguments)
         {
             _signature = method.Signature;
@@ -16,6 +18,7 @@ namespace System.Reflection
             _invocationFlags = method.ComputeAndUpdateInvocationFlags();
         }
 
+        [RequiresUnsafe]
         private unsafe MethodInvoker(DynamicMethod method) : this(method, method.Signature.Arguments)
         {
             _signature = method.Signature;

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -37,6 +38,7 @@ namespace System.Runtime.InteropServices.Java
         /// runtime code when cross-reference marking is required.
         /// Additionally, this callback must be implemented in unmanaged code.
         /// </remarks>
+        [RequiresUnsafe]
         public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferencesArgs*, void> markCrossReferences)
         {
             ArgumentNullException.ThrowIfNull(markCrossReferences);
@@ -61,6 +63,7 @@ namespace System.Runtime.InteropServices.Java
         /// <returns>A <see cref="GCHandle"/> that represents the allocated reference-tracking handle.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="obj"/> is null.</exception>
         /// <exception cref="PlatformNotSupportedException">The runtime or platform does not support Java cross-reference marshalling.</exception>
+        [RequiresUnsafe]
         public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context)
         {
             ArgumentNullException.ThrowIfNull(obj);

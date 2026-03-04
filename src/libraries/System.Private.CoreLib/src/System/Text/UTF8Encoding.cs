@@ -126,6 +126,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
             if (chars is null)
@@ -154,6 +155,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(string chars)
         {
             if (chars is null)
@@ -172,6 +174,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(char* chars, int count)
         {
             if (chars is null)
@@ -187,6 +190,7 @@ namespace System.Text
             return GetByteCountCommon(chars, count);
         }
 
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(ReadOnlySpan<char> chars)
         {
             // It's ok for us to pass null pointers down to the workhorse below.
@@ -198,6 +202,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private unsafe int GetByteCountCommon(char* pChars, int charCount)
         {
             // Common helper method for all non-EncoderNLS entry points to GetByteCount.
@@ -228,6 +233,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetCharCountCommon
+        [RequiresUnsafe]
         private protected sealed override unsafe int GetByteCountFast(char* pChars, int charsLength, EncoderFallback? fallback, out int charsConsumed)
         {
             // The number of UTF-8 code units may exceed the number of UTF-16 code units,
@@ -252,6 +258,7 @@ namespace System.Text
         // So if you fix this, fix the others.  Currently those include:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
+        [RequiresUnsafe]
         public override unsafe int GetBytes(string s, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex)
         {
@@ -300,6 +307,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
                                                byte[] bytes, int byteIndex)
         {
@@ -339,6 +347,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
             if (chars is null || bytes is null)
@@ -358,6 +367,7 @@ namespace System.Text
             return GetBytesCommon(chars, charCount, bytes, byteCount);
         }
 
+        [RequiresUnsafe]
         public override unsafe int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes)
         {
             // It's ok for us to operate on null / empty spans.
@@ -370,6 +380,7 @@ namespace System.Text
         }
 
         /// <inheritdoc/>
+        [RequiresUnsafe]
         public override unsafe bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
         {
             fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
@@ -388,6 +399,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private unsafe int GetBytesCommon(char* pChars, int charCount, byte* pBytes, int byteCount, bool throwForDestinationOverflow = true)
         {
             // Common helper method for all non-EncoderNLS entry points to GetBytes.
@@ -417,6 +429,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetBytesCommon
+        [RequiresUnsafe]
         private protected sealed override unsafe int GetBytesFast(char* pChars, int charsLength, byte* pBytes, int bytesLength, out int charsConsumed)
         {
             // We don't care about the exact OperationStatus value returned by the workhorse routine; we only
@@ -437,6 +450,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
             if (bytes is null)
@@ -465,6 +479,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
             if (bytes is null)
@@ -480,6 +495,7 @@ namespace System.Text
             return GetCharCountCommon(bytes, count);
         }
 
+        [RequiresUnsafe]
         public override unsafe int GetCharCount(ReadOnlySpan<byte> bytes)
         {
             // It's ok for us to pass null pointers down to the workhorse routine.
@@ -495,6 +511,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                               char[] chars, int charIndex)
         {
@@ -534,6 +551,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
             if (bytes is null || chars is null)
@@ -553,6 +571,7 @@ namespace System.Text
             return GetCharsCommon(bytes, byteCount, chars, charCount);
         }
 
+        [RequiresUnsafe]
         public override unsafe int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars)
         {
             // It's ok for us to pass null pointers down to the workhorse below.
@@ -565,6 +584,7 @@ namespace System.Text
         }
 
         /// <inheritdoc/>
+        [RequiresUnsafe]
         public override unsafe bool TryGetChars(ReadOnlySpan<byte> bytes, Span<char> chars, out int charsWritten)
         {
             fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
@@ -590,6 +610,7 @@ namespace System.Text
         // Note:  We throw exceptions on individually encoded surrogates and other non-shortest forms.
         //        If exceptions aren't turned on, then we drop all non-shortest &individual surrogates.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private unsafe int GetCharsCommon(byte* pBytes, int byteCount, char* pChars, int charCount, bool throwForDestinationOverflow = true)
         {
             // Common helper method for all non-DecoderNLS entry points to GetChars.
@@ -619,6 +640,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetCharsCommon
+        [RequiresUnsafe]
         private protected sealed override unsafe int GetCharsFast(byte* pBytes, int bytesLength, char* pChars, int charsLength, out int bytesConsumed)
         {
             // We don't care about the exact OperationStatus value returned by the workhorse routine; we only
@@ -674,6 +696,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
         // parent method is safe
 
+        [RequiresUnsafe]
         public override unsafe string GetString(byte[] bytes, int index, int count)
         {
             if (bytes is null)
@@ -708,6 +731,7 @@ namespace System.Text
         //
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private unsafe int GetCharCountCommon(byte* pBytes, int byteCount)
         {
             // Common helper method for all non-DecoderNLS entry points to GetCharCount.
@@ -738,6 +762,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetCharCountCommon
+        [RequiresUnsafe]
         private protected sealed override unsafe int GetCharCountFast(byte* pBytes, int bytesLength, DecoderFallback? fallback, out int bytesConsumed)
         {
             // The number of UTF-16 code units will never exceed the number of UTF-8 code units,

@@ -10,6 +10,7 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -93,6 +94,7 @@ namespace System
         public static extern double Sin(double a);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe (double Sin, double Cos) SinCos(double x)
         {
             if (RuntimeHelpers.IsKnownConstant(x))
@@ -122,6 +124,7 @@ namespace System
         public static extern double Tanh(double value);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe double ModF(double x, double* intptr);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

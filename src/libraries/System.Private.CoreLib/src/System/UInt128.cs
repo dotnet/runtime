@@ -1127,6 +1127,7 @@ namespace System
                 return (chkHi > valHi) || ((chkHi == valHi) && (chkLo > valLo));
             }
 
+            [RequiresUnsafe]
             unsafe static UInt128 DivideSlow(UInt128 quotient, UInt128 divisor)
             {
                 // This is the same algorithm currently used by BigInteger so

@@ -54,6 +54,7 @@ namespace System
         /// or <see langword="null"/> if no such constant is found.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe string? GetName<TEnum>(TEnum value) where TEnum : struct, Enum
         {
             RuntimeType rt = (RuntimeType)typeof(TEnum);
@@ -170,6 +171,7 @@ namespace System
         /// <param name="value">The underlying value for which we're searching.</param>
         /// <returns>The name of the value if found; otherwise, <see langword="null"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe string? GetNameInlined<TStorage>(EnumInfo<TStorage> enumInfo, TStorage value)
             where TStorage : struct, INumber<TStorage>
         {
@@ -469,6 +471,7 @@ namespace System
         /// <param name="value">The value in <typeparamref name="TEnum"/>.</param>
         /// <returns><see langword="true"/> if a given integral value exists in a specified enumeration; <see langword="false"/>, otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe bool IsDefined<TEnum>(TEnum value) where TEnum : struct, Enum
         {
             RuntimeType rt = (RuntimeType)typeof(TEnum);
@@ -713,6 +716,7 @@ namespace System
             TryParse(enumType, value, ignoreCase, throwOnFailure: false, out result);
 
         /// <summary>Core implementation for all non-generic {Try}Parse methods.</summary>
+        [RequiresUnsafe]
         private static unsafe bool TryParse(Type enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, [NotNullWhen(true)] out object? result)
         {
             bool parsed = false;
@@ -1536,6 +1540,7 @@ namespace System
 
         /// <summary>Formats the data for the underlying value as hex into a new, fixed-length string.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe string FormatNumberAsHex<TStorage>(ref byte data) where TStorage : struct
         {
             fixed (byte* ptr = &data)
@@ -1551,6 +1556,7 @@ namespace System
 
         /// <summary>Tries to format the data for the underlying value as hex into the destination span.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe bool TryFormatNumberAsHex<TStorage>(ref byte data, Span<char> destination, out int charsWritten) where TStorage : struct
         {
             if (sizeof(TStorage) * 2 <= destination.Length)
@@ -1745,6 +1751,7 @@ namespace System
         /// <param name="format">A span containing the character that represents the standard format string that defines the acceptable format of destination. This may be empty, or "g", "d", "f", or "x".</param>
         /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/> if the destination span wasn't large enough to contain the formatted value.</returns>
         /// <exception cref="FormatException">The format parameter contains an invalid value.</exception>
+        [RequiresUnsafe]
         public static unsafe bool TryFormat<TEnum>(TEnum value, Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.EnumFormat)] ReadOnlySpan<char> format = default) where TEnum : struct
         {
             RuntimeType rt = (RuntimeType)typeof(TEnum);
@@ -1801,6 +1808,7 @@ namespace System
         /// those constraints. It's a manual copy/paste right now to avoid pressure on the JIT's inlining mechanisms.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // format is most frequently a constant, and we want it exposed to the implementation; this should be inlined automatically, anyway
+        [RequiresUnsafe]
         internal static unsafe bool TryFormatUnconstrained<TEnum>(TEnum value, Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.EnumFormat)] ReadOnlySpan<char> format = default)
         {
             Debug.Assert(typeof(TEnum).IsEnum);

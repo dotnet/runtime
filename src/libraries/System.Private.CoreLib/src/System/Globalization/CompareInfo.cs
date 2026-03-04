@@ -525,6 +525,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
+        [RequiresUnsafe]
         public unsafe bool IsPrefix(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options = CompareOptions.None)
         {
             // The empty string is trivially a prefix of every other string. For compat with
@@ -597,6 +598,7 @@ namespace System.Globalization
         /// take a <paramref name="matchLength"/> argument. Call this overload only if you require
         /// the match length information.
         /// </remarks>
+        [RequiresUnsafe]
         public unsafe bool IsPrefix(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, out int matchLength)
         {
             bool matched;
@@ -627,6 +629,7 @@ namespace System.Globalization
             return matched;
         }
 
+        [RequiresUnsafe]
         private unsafe bool StartsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsStartsWith(source, prefix, options, matchLengthPtr) :
@@ -668,6 +671,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
+        [RequiresUnsafe]
         public unsafe bool IsSuffix(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options = CompareOptions.None)
         {
             // The empty string is trivially a suffix of every other string. For compat with
@@ -740,6 +744,7 @@ namespace System.Globalization
         /// take a <paramref name="matchLength"/> argument. Call this overload only if you require
         /// the match length information.
         /// </remarks>
+        [RequiresUnsafe]
         public unsafe bool IsSuffix(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, out int matchLength)
         {
             bool matched;
@@ -775,6 +780,7 @@ namespace System.Globalization
             return IsSuffix(source, suffix, CompareOptions.None);
         }
 
+        [RequiresUnsafe]
         private unsafe bool EndsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsEndsWith(source, suffix, options, matchLengthPtr) :
@@ -940,6 +946,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
+        [RequiresUnsafe]
         public unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options = CompareOptions.None)
         {
             if ((options & ValidIndexMaskOffFlags) == 0)
@@ -1010,6 +1017,7 @@ namespace System.Globalization
         /// take a <paramref name="matchLength"/> argument. Call this overload only if you require
         /// the match length information.
         /// </remarks>
+        [RequiresUnsafe]
         public unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options, out int matchLength)
         {
             int tempMatchLength;
@@ -1043,6 +1051,7 @@ namespace System.Globalization
         /// Caller needs to ensure <paramref name="matchLengthPtr"/> is non-null and points
         /// to a valid address. This method will validate <paramref name="options"/>.
         /// </summary>
+        [RequiresUnsafe]
         private unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, int* matchLengthPtr, CompareOptions options, bool fromBeginning)
         {
             Debug.Assert(matchLengthPtr != null);
@@ -1108,6 +1117,7 @@ namespace System.Globalization
             return retVal;
         }
 
+        [RequiresUnsafe]
         private unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning) =>
             GlobalizationMode.UseNls ?
                 NlsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
@@ -1314,6 +1324,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
+        [RequiresUnsafe]
         public unsafe int LastIndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options = CompareOptions.None)
         {
             if ((options & ValidIndexMaskOffFlags) == 0)
@@ -1382,6 +1393,7 @@ namespace System.Globalization
         /// take a <paramref name="matchLength"/> argument. Call this overload only if you require
         /// the match length information.
         /// </remarks>
+        [RequiresUnsafe]
         public unsafe int LastIndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, CompareOptions options, out int matchLength)
         {
             int tempMatchLength;
@@ -1403,6 +1415,7 @@ namespace System.Globalization
         /// <exception cref="ArgumentException">
         /// <paramref name="options"/> contains an unsupported combination of flags.
         /// </exception>
+        [RequiresUnsafe]
         public unsafe int LastIndexOf(ReadOnlySpan<char> source, Rune value, CompareOptions options = CompareOptions.None)
         {
             Span<char> valueAsUtf16 = stackalloc char[Rune.MaxUtf16CharsPerRune];

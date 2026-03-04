@@ -155,6 +155,7 @@ namespace System.Text
             (_fallbackCount < 0) ? 0 : _fallbackCount;
 
         // Clear the buffer
+        [RequiresUnsafe]
         public override unsafe void Reset()
         {
             _fallbackCount = -1;
@@ -163,6 +164,7 @@ namespace System.Text
         }
 
         // This version just counts the fallback and doesn't actually copy anything.
+        [RequiresUnsafe]
         internal override unsafe int InternalFallback(byte[] bytes, byte* pBytes) =>
             // Right now this has both bytes and bytes[], since we might have extra bytes,
             // hence the array, and we might need the index, hence the byte*.

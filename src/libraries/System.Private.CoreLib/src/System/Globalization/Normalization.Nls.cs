@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -11,6 +12,7 @@ namespace System.Globalization
 {
     internal static partial class Normalization
     {
+        [RequiresUnsafe]
         private static unsafe bool NlsIsNormalized(ReadOnlySpan<char> source, NormalizationForm normalizationForm)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -32,6 +34,7 @@ namespace System.Globalization
             return result != Interop.BOOL.FALSE;
         }
 
+        [RequiresUnsafe]
         private static unsafe string NlsNormalize(string strInput, NormalizationForm normalizationForm)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

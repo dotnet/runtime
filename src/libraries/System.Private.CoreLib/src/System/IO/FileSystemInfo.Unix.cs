@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO
 {
@@ -29,6 +30,7 @@ namespace System.IO
 
         internal void InvalidateCore() => _fileStatus.InvalidateCaches();
 
+        [RequiresUnsafe]
         internal unsafe void Init(ref FileStatus fileStatus)
         {
             _fileStatus = fileStatus;

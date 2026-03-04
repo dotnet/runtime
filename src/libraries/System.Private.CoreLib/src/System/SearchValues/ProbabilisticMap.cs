@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -363,6 +364,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static unsafe int ProbabilisticIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);
@@ -376,6 +378,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnsafe]
         private static unsafe int ProbabilisticLastIndexOfAny(ref char searchSpace, int searchSpaceLength, ref char values, int valuesLength)
         {
             var valuesSpan = new ReadOnlySpan<char>(ref values, valuesLength);

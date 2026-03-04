@@ -18,6 +18,7 @@ namespace System.Threading
         // To protect against degenerate cases we will cap the per-iteration wait to 1-2 thousand spinwaits.
         private const uint MaxExponentialBackoffBits = 10;
 
+        [RequiresUnsafe]
         internal static unsafe int Exponential(uint attempt)
         {
             if (attempt > 0)

@@ -236,6 +236,7 @@ namespace System.Threading
         [Intrinsic]
         [return: NotNullIfNotNull(nameof(location1))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value)
         {
             // Handle all reference types with CompareExchange(ref object, ...).
@@ -485,6 +486,7 @@ namespace System.Threading
         /// </typeparam>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         [return: NotNullIfNotNull(nameof(location1))]
         public static unsafe T CompareExchange<T>(ref T location1, T value, T comparand)
         {
@@ -648,6 +650,7 @@ namespace System.Threading
         /// </typeparam>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe T And<T>(ref T location1, T value) where T : struct
         {
             // Only integer primitive types and enum types backed by integer types are supported.
@@ -791,6 +794,7 @@ namespace System.Threading
         /// </typeparam>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe T Or<T>(ref T location1, T value) where T : struct
         {
             // Only integer primitive types and enum types backed by integer types are supported.

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -18,6 +18,7 @@ namespace System.Runtime.InteropServices.Marshalling
         internal const short VARIANT_TRUE = -1;
         internal const short VARIANT_FALSE = 0;
 #if DEBUG
+        [RequiresUnsafe]
         static unsafe ComVariant()
         {
             // Variant size is the size of 4 pointers (16 bytes) on a 32-bit processor,
@@ -132,6 +133,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Release resources owned by this <see cref="ComVariant"/> instance.
         /// </summary>
+        [RequiresUnsafe]
         public unsafe void Dispose()
         {
 #if TARGET_WINDOWS
@@ -376,6 +378,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <returns>A variant that contains the provided value.</returns>
         /// <exception cref="ArgumentException">When the provided <paramref name="vt"/> corresponds to a variant type that is not supported in VARIANTs or is <see cref="VarEnum.VT_DECIMAL"/></exception>
         /// <exception cref="PlatformNotSupportedException">When the provided <paramref name="vt"/> specifies the <see cref="VarEnum.VT_ARRAY"/> flag for SAFEARRAYs.</exception>
+        [RequiresUnsafe]
         public static unsafe ComVariant CreateRaw<T>(VarEnum vt, T rawValue)
             where T : unmanaged
         {
@@ -566,6 +569,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <returns>A reference to the storage location within this <see cref="ComVariant"/>.</returns>
         /// <exception cref="ArgumentException"><typeparamref name="T"/> is <see cref="decimal"/> or larger than the storage space in an <see cref="ComVariant"/>.</exception>
         [UnscopedRef]
+        [RequiresUnsafe]
         public unsafe ref T GetRawDataRef<T>()
             where T : unmanaged
         {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -245,6 +246,7 @@ namespace System
 
         public static ulong DefaultSeed { get; } = GenerateSeed();
 
+        [RequiresUnsafe]
         private static unsafe ulong GenerateSeed()
         {
             ulong seed;

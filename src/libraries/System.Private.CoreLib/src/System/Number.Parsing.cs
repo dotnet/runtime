@@ -147,6 +147,7 @@ namespace System
 
         private const int FloatingPointMaxDenormalMantissaBits = 52;
 
+        [RequiresUnsafe]
         private static unsafe bool TryNumberBufferToBinaryInteger<TInteger>(ref NumberBuffer number, ref TInteger value)
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
@@ -767,6 +768,7 @@ namespace System
             return result;
         }
 
+        [RequiresUnsafe]
         internal static unsafe bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
         {
             number.CheckConsistency();

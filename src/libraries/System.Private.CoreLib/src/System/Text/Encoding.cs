@@ -568,6 +568,7 @@ namespace System.Text
         // which is really slow, so this method should be avoided if you're calling
         // a 3rd party encoding.
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public virtual unsafe int GetByteCount(char* chars, int count)
         {
             ArgumentNullException.ThrowIfNull(chars);
@@ -578,6 +579,7 @@ namespace System.Text
             return GetByteCount(arrChar, 0, count);
         }
 
+        [RequiresUnsafe]
         public virtual unsafe int GetByteCount(ReadOnlySpan<char> chars)
         {
             fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))
@@ -690,6 +692,7 @@ namespace System.Text
         // when we copy the buffer so that we don't overflow byteCount either.
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public virtual unsafe int GetBytes(char* chars, int charCount,
                                               byte* bytes, int byteCount)
         {
@@ -724,6 +727,7 @@ namespace System.Text
             return byteCount;
         }
 
+        [RequiresUnsafe]
         public virtual unsafe int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes)
         {
             fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))
@@ -769,6 +773,7 @@ namespace System.Text
         // We expect this to be the workhorse for NLS Encodings, but for existing
         // ones we need a working (if slow) default implementation)
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public virtual unsafe int GetCharCount(byte* bytes, int count)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -780,6 +785,7 @@ namespace System.Text
             return GetCharCount(arrByte, 0, count);
         }
 
+        [RequiresUnsafe]
         public virtual unsafe int GetCharCount(ReadOnlySpan<byte> bytes)
         {
             fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
@@ -839,6 +845,7 @@ namespace System.Text
         // when we copy the buffer so that we don't overflow charCount either.
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public virtual unsafe int GetChars(byte* bytes, int byteCount,
                                               char* chars, int charCount)
         {
@@ -873,6 +880,7 @@ namespace System.Text
             return charCount;
         }
 
+        [RequiresUnsafe]
         public virtual unsafe int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars)
         {
             fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
@@ -901,6 +909,7 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe string GetString(byte* bytes, int byteCount)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -910,6 +919,7 @@ namespace System.Text
             return string.CreateStringFromEncoding(bytes, byteCount, this);
         }
 
+        [RequiresUnsafe]
         public unsafe string GetString(ReadOnlySpan<byte> bytes)
         {
             fixed (byte* bytesPtr = &MemoryMarshal.GetNonNullPinnableReference(bytes))
@@ -1162,6 +1172,7 @@ namespace System.Text
             public override int GetByteCount(char[] chars, int index, int count, bool flush) =>
                 _encoding.GetByteCount(chars, index, count);
 
+            [RequiresUnsafe]
             public override unsafe int GetByteCount(char* chars, int count, bool flush) =>
                 _encoding.GetByteCount(chars, count);
 
@@ -1189,6 +1200,7 @@ namespace System.Text
                                          byte[] bytes, int byteIndex, bool flush) =>
                 _encoding.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
 
+            [RequiresUnsafe]
             public override unsafe int GetBytes(char* chars, int charCount,
                                                 byte* bytes, int byteCount, bool flush) =>
                 _encoding.GetBytes(chars, charCount, bytes, byteCount);
@@ -1216,6 +1228,7 @@ namespace System.Text
             public override int GetCharCount(byte[] bytes, int index, int count, bool flush) =>
                 _encoding.GetCharCount(bytes, index, count);
 
+            [RequiresUnsafe]
             public override unsafe int GetCharCount(byte* bytes, int count, bool flush) =>
                 // By default just call the encoding version, no flush by default
                 _encoding.GetCharCount(bytes, count);
@@ -1245,6 +1258,7 @@ namespace System.Text
                                          char[] chars, int charIndex, bool flush) =>
                 _encoding.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
 
+            [RequiresUnsafe]
             public override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, bool flush) =>
                 // By default just call the encoding's version
@@ -1264,6 +1278,7 @@ namespace System.Text
             private unsafe byte* _bytes;
             private readonly DecoderFallbackBuffer _fallbackBuffer;
 
+            [RequiresUnsafe]
             internal unsafe EncodingCharBuffer(Encoding enc, DecoderNLS? decoder, char* charStart, int charCount,
                                                     byte* byteStart, int byteCount)
             {
@@ -1289,6 +1304,7 @@ namespace System.Text
                 _fallbackBuffer.InternalInitialize(_bytes, _charEnd);
             }
 
+            [RequiresUnsafe]
             internal unsafe bool AddChar(char ch, int numBytes)
             {
                 if (_chars is not null)
@@ -1309,6 +1325,7 @@ namespace System.Text
 
             internal bool AddChar(char ch) => AddChar(ch, 1);
 
+            [RequiresUnsafe]
             internal unsafe bool AddChar(char ch1, char ch2, int numBytes)
             {
                 // Need room for 2 chars
@@ -1322,6 +1339,7 @@ namespace System.Text
                 return AddChar(ch1, numBytes) && AddChar(ch2, numBytes);
             }
 
+            [RequiresUnsafe]
             internal unsafe void AdjustBytes(int count)
             {
                 _bytes += count;
@@ -1330,10 +1348,12 @@ namespace System.Text
             internal unsafe bool MoreData => _bytes < _byteEnd;
 
             // Do we have count more bytes?
+            [RequiresUnsafe]
             internal unsafe bool EvenMoreData(int count) => _bytes <= _byteEnd - count;
 
             // GetNextByte shouldn't be called unless the caller's already checked more data or even more data,
             // but we'll double check just to make sure.
+            [RequiresUnsafe]
             internal unsafe byte GetNextByte()
             {
                 Debug.Assert(_bytes < _byteEnd, "[EncodingCharBuffer.GetNextByte]Expected more date");
@@ -1371,6 +1391,7 @@ namespace System.Text
                 return Fallback(byteBuffer);
             }
 
+            [RequiresUnsafe]
             internal unsafe bool Fallback(byte[] byteBuffer)
             {
                 // Do the fallback and add the data.
@@ -1411,6 +1432,7 @@ namespace System.Text
             private readonly EncoderNLS? _encoder;
             internal EncoderFallbackBuffer fallbackBuffer;
 
+            [RequiresUnsafe]
             internal unsafe EncodingByteBuffer(Encoding inEncoding, EncoderNLS? inEncoder,
                         byte* inByteStart, int inByteCount, char* inCharStart, int inCharCount)
             {
@@ -1441,6 +1463,7 @@ namespace System.Text
                 fallbackBuffer.InternalInitialize(_chars, _charEnd, _encoder, _bytes is not null);
             }
 
+            [RequiresUnsafe]
             internal unsafe bool AddByte(byte b, int moreBytesExpected)
             {
                 Debug.Assert(moreBytesExpected >= 0, "[EncodingByteBuffer.AddByte]expected non-negative moreBytesExpected");
@@ -1479,6 +1502,7 @@ namespace System.Text
                 AddByte(b3, 1) &&
                 AddByte(b4, 0);
 
+            [RequiresUnsafe]
             internal unsafe void MovePrevious(bool bThrow)
             {
                 if (fallbackBuffer.bFallingBack)
@@ -1496,6 +1520,7 @@ namespace System.Text
                     _enc.ThrowBytesOverflow(_encoder, _bytes == _byteStart);    // Throw? (and reset fallback if not converting)
             }
 
+            [RequiresUnsafe]
             internal unsafe bool Fallback(char charFallback)
             {
                 // Do the fallback
@@ -1506,6 +1531,7 @@ namespace System.Text
                 // See if fallbackBuffer is not empty or if there's data left in chars buffer.
                 (fallbackBuffer.Remaining > 0) || (_chars < _charEnd);
 
+            [RequiresUnsafe]
             internal unsafe char GetNextChar()
             {
                 // See if there's something in our fallback buffer

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -30,6 +31,7 @@ namespace System
 
             private ulong _s0, _s1, _s2, _s3;
 
+            [RequiresUnsafe]
             public unsafe XoshiroImpl()
             {
                 ulong* ptr = stackalloc ulong[4];
@@ -133,6 +135,7 @@ namespace System
 
             public override void NextBytes(byte[] buffer) => NextBytes((Span<byte>)buffer);
 
+            [RequiresUnsafe]
             public override unsafe void NextBytes(Span<byte> buffer)
             {
                 ulong s0 = _s0, s1 = _s1, s2 = _s2, s3 = _s3;

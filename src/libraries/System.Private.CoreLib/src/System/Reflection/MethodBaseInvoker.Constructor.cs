@@ -1,6 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -12,6 +13,7 @@ namespace System.Reflection
     internal sealed partial class MethodBaseInvoker
     {
         // The rarely used scenario of calling the constructor on an existing instance.
+        [RequiresUnsafe]
         internal unsafe object? InvokeConstructorWithoutAlloc(
             object? obj,
             BindingFlags invokeAttr,
@@ -65,6 +67,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresUnsafe]
         internal unsafe object? InvokeConstructorWithoutAlloc(object? obj, bool wrapInTargetInvocationException)
         {
             try

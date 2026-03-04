@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -14,6 +15,7 @@ namespace System.Diagnostics.Tracing
         // These PInvokes are used by the configuration APIs to interact with EventPipe.
         //
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Enable")]
+        [RequiresUnsafe]
         private static unsafe partial ulong Enable(
             char* outputFile,
             EventPipeSerializationFormat format,
@@ -28,6 +30,7 @@ namespace System.Diagnostics.Tracing
         // These PInvokes are used by EventSource to interact with the EventPipe.
         //
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_CreateProvider", StringMarshalling = StringMarshalling.Utf16)]
+        [RequiresUnsafe]
         internal static unsafe partial IntPtr CreateProvider(string providerName,
             delegate* unmanaged<byte*, int, byte, long, long, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR*, void*, void> callbackFunc,
             void* callbackContext);

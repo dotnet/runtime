@@ -532,6 +532,7 @@ namespace System.Numerics
             return upper;
         }
 
+        [RequiresUnsafe]
         private static unsafe BFloat16 RoundFromSigned<TInteger>(TInteger value)
             where TInteger : unmanaged, IBinaryInteger<TInteger>, ISignedNumber<TInteger>
         {
@@ -596,6 +597,7 @@ namespace System.Numerics
             return new BFloat16((ushort)(!float.IsNaN(value) ? roundedBits : (bits >> 16)));
         }
 
+        [RequiresUnsafe]
         private static unsafe BFloat16 RoundFromUnsigned<TInteger>(TInteger value)
             where TInteger : unmanaged, IBinaryInteger<TInteger>, IUnsignedNumber<TInteger>
         {

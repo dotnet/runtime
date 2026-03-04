@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -19,6 +20,7 @@ namespace System
 
         // Not all values can benefit from packing the searchSpace. See comments in PackSources below.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe bool CanUsePackedIndexOf<T>(T value)
         {
             Debug.Assert(PackedIndexOfIsSupported);

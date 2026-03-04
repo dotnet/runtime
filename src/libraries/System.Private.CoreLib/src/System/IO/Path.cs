@@ -276,6 +276,7 @@ namespace System.IO
         /// Returns a cryptographically strong random 8.3 string that can be
         /// used as either a folder name or a file name.
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe string GetRandomFileName()
         {
             byte* pKey = stackalloc byte[KeyLength];
@@ -727,6 +728,7 @@ namespace System.IO
             };
         }
 
+        [RequiresUnsafe]
         private static unsafe string JoinInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third, ReadOnlySpan<char> fourth)
         {
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0 && fourth.Length > 0, "should have dealt with empty paths");
@@ -791,6 +793,7 @@ namespace System.IO
 
         private static ReadOnlySpan<byte> Base32Char => "abcdefghijklmnopqrstuvwxyz012345"u8;
 
+        [RequiresUnsafe]
         internal static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, Span<char> chars)
         {
             // This method requires bytes of length 8 and chars of length 12.

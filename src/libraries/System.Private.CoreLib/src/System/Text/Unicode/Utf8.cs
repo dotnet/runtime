@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -42,6 +43,7 @@ namespace System.Text.Unicode
         /// in <paramref name="source"/> will be replaced with U+FFFD in <paramref name="destination"/>, and
         /// this method will not return <see cref="OperationStatus.InvalidData"/>.
         /// </remarks>
+        [RequiresUnsafe]
         public static unsafe OperationStatus FromUtf16(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
             fixed (char* pOriginalSource = &MemoryMarshal.GetReference(source))
@@ -128,6 +130,7 @@ namespace System.Text.Unicode
         /// in <paramref name="source"/> will be replaced with U+FFFD in <paramref name="destination"/>, and
         /// this method will not return <see cref="OperationStatus.InvalidData"/>.
         /// </remarks>
+        [RequiresUnsafe]
         public static unsafe OperationStatus ToUtf16(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
             // NOTE: Changes to this method should be kept in sync with ToUtf16PreservingReplacement below.

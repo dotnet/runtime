@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -17,6 +18,7 @@ namespace System.Text
         /// <param name="destination">The destination buffer to which UTF-16 text is written.</param>
         /// <param name="charsWritten">The number of chars actually written to <paramref name="destination"/>. It's the same as the number of bytes actually read from <paramref name="source"/></param>
         /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
+        [RequiresUnsafe]
         public static unsafe OperationStatus ToUtf16(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
         {
             nuint numElementsToConvert;
@@ -52,6 +54,7 @@ namespace System.Text
         /// <param name="destination">The destination buffer to which ASCII text is written.</param>
         /// <param name="bytesWritten">The number of bytes actually written to <paramref name="destination"/>. It's the same as the number of chars actually read from <paramref name="source"/>.</param>
         /// <returns>An <see cref="OperationStatus"/> describing the result of the operation.</returns>
+        [RequiresUnsafe]
         public static unsafe OperationStatus FromUtf16(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
         {
             nuint numElementsToConvert;

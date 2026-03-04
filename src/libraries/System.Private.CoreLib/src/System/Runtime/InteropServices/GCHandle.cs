@@ -196,6 +196,7 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe void CheckUninitialized(IntPtr handle)
         {
             // Check if the handle was never initialized or was freed.

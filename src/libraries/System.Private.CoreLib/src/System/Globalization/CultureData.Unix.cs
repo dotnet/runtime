@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Globalization
 {
@@ -50,6 +51,7 @@ namespace System.Globalization
 
         internal static bool IsWin32Installed => false;
 
+        [RequiresUnsafe]
         internal static unsafe CultureData GetCurrentRegionData() => CultureInfo.CurrentCulture._cultureData;
 
         private static bool ShouldUseUserOverrideNlsData => false;

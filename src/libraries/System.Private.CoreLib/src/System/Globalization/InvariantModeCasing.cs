@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -221,6 +222,7 @@ namespace System.Globalization
             return lengthA - lengthB;
         }
 
+        [RequiresUnsafe]
         internal static unsafe int IndexOfIgnoreCase(ReadOnlySpan<char> source, ReadOnlySpan<char> value)
         {
             Debug.Assert(value.Length > 0);
@@ -283,6 +285,7 @@ namespace System.Globalization
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe int LastIndexOfIgnoreCase(ReadOnlySpan<char> source, ReadOnlySpan<char> value)
         {
             Debug.Assert(value.Length > 0);

@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System
 {
     public sealed partial class TimeZoneInfo
     {
+        [RequiresUnsafe]
         private static unsafe bool TryConvertIanaIdToWindowsId(string ianaId, bool allocate, out string? windowsId)
         {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
@@ -36,6 +38,7 @@ namespace System
 #endif
         }
 
+        [RequiresUnsafe]
         private static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, bool allocate, out string? ianaId)
         {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS

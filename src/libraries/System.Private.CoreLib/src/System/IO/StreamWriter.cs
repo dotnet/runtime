@@ -399,6 +399,7 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private unsafe void WriteSpan(ReadOnlySpan<char> buffer, bool appendNewLine)
         {
             CheckAsyncTaskInProgress();

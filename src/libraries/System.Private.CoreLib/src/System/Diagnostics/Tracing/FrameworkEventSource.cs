@@ -33,6 +33,7 @@ namespace System.Diagnostics.Tracing
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
         [NonEvent]
+        [RequiresUnsafe]
         private unsafe void WriteEvent(int eventId, long arg1, int arg2, string? arg3, bool arg4, int arg5, int arg6)
         {
             if (IsEnabled())
@@ -68,6 +69,7 @@ namespace System.Diagnostics.Tracing
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
         [NonEvent]
+        [RequiresUnsafe]
         private unsafe void WriteEvent(int eventId, long arg1, int arg2, string? arg3)
         {
             if (IsEnabled())

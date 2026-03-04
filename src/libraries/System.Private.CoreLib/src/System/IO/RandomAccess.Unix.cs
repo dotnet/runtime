@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Strategies;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -19,9 +20,11 @@ namespace System.IO
         // that get stackalloced in the Linux kernel.
         private const int IovStackThreshold = 8;
 
+        [RequiresUnsafe]
         internal static unsafe void SetFileLength(SafeFileHandle handle, long length) =>
             FileStreamHelpers.CheckFileCall(Interop.Sys.FTruncate(handle, length), handle.Path);
 
+        [RequiresUnsafe]
         internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
             fixed (byte* bufPtr = &MemoryMarshal.GetReference(buffer))

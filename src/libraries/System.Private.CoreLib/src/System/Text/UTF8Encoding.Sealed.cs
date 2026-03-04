@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -52,6 +53,7 @@ namespace System.Text
                 }
             }
 
+            [RequiresUnsafe]
             private unsafe byte[] GetBytesForSmallInput(string s)
             {
                 Debug.Assert(s != null);
@@ -130,6 +132,7 @@ namespace System.Text
                 }
             }
 
+            [RequiresUnsafe]
             private unsafe string GetStringForSmallInput(byte[] bytes)
             {
                 Debug.Assert(bytes != null);

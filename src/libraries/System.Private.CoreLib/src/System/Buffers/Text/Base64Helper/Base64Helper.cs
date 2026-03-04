@@ -13,6 +13,7 @@ namespace System.Buffers.Text
     internal static partial class Base64Helper
     {
         [Conditional("DEBUG")]
+        [RequiresUnsafe]
         internal static unsafe void AssertRead<TVector>(byte* src, byte* srcStart, int srcLength)
         {
             int vectorElements = Unsafe.SizeOf<TVector>();
@@ -27,6 +28,7 @@ namespace System.Buffers.Text
         }
 
         [Conditional("DEBUG")]
+        [RequiresUnsafe]
         internal static unsafe void AssertWrite<TVector>(byte* dest, byte* destStart, int destLength)
         {
             int vectorElements = Unsafe.SizeOf<TVector>();
@@ -41,6 +43,7 @@ namespace System.Buffers.Text
         }
 
         [Conditional("DEBUG")]
+        [RequiresUnsafe]
         internal static unsafe void AssertRead<TVector>(ushort* src, ushort* srcStart, int srcLength)
         {
             int vectorElements = Unsafe.SizeOf<TVector>();
@@ -55,6 +58,7 @@ namespace System.Buffers.Text
         }
 
         [Conditional("DEBUG")]
+        [RequiresUnsafe]
         internal static unsafe void AssertWrite<TVector>(ushort* dest, ushort* destStart, int destLength)
         {
             int vectorElements = Unsafe.SizeOf<TVector>();
@@ -178,15 +182,22 @@ namespace System.Buffers.Text
             int GetMaxSrcLength(int srcLength, int destLength);
             int GetMaxEncodedLength(int srcLength);
             uint GetInPlaceDestinationLength(int encodedLength, int leftOver);
+            [RequiresUnsafe]
             unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, T* dest, ref byte encodingMap);
+            [RequiresUnsafe]
             unsafe void EncodeTwoOptionallyPadOne(byte* oneByte, T* dest, ref byte encodingMap);
+            [RequiresUnsafe]
             unsafe void EncodeThreeAndWrite(byte* threeBytes, T* destination, ref byte encodingMap);
             int IncrementPadTwo { get; }
             int IncrementPadOne { get; }
 #if NET
+            [RequiresUnsafe]
             unsafe void StoreVector512ToDestination(T* dest, T* destStart, int destLength, Vector512<byte> str);
+            [RequiresUnsafe]
             unsafe void StoreVector256ToDestination(T* dest, T* destStart, int destLength, Vector256<byte> str);
+            [RequiresUnsafe]
             unsafe void StoreVector128ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> str);
+            [RequiresUnsafe]
             unsafe void StoreArmVector128x4ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> res1,
                 Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4);
 #endif // NET
@@ -230,13 +241,19 @@ namespace System.Buffers.Text
                 Vector256<sbyte> lutShift,
                 Vector256<sbyte> shiftForUnderscore,
                 out Vector256<sbyte> result);
+            [RequiresUnsafe]
             unsafe bool TryLoadVector512(T* src, T* srcStart, int sourceLength, out Vector512<sbyte> str);
+            [RequiresUnsafe]
             unsafe bool TryLoadAvxVector256(T* src, T* srcStart, int sourceLength, out Vector256<sbyte> str);
+            [RequiresUnsafe]
             unsafe bool TryLoadVector128(T* src, T* srcStart, int sourceLength, out Vector128<byte> str);
+            [RequiresUnsafe]
             unsafe bool TryLoadArmVector128x4(T* src, T* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4);
 #endif // NET
+            [RequiresUnsafe]
             unsafe int DecodeFourElements(T* source, ref sbyte decodingMap);
+            [RequiresUnsafe]
             unsafe int DecodeRemaining(T* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3);
             int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<T> span);
             OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TTBase64Decoder>(TTBase64Decoder decoder, ReadOnlySpan<T> source,

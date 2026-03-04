@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -45,6 +46,7 @@ namespace System.Text
         /// <returns>True if <paramref name="value"/> is ASCII, False otherwise.</returns>
         public static bool IsValid(char value) => value <= 127;
 
+        [RequiresUnsafe]
         private static unsafe bool IsValidCore<T>(ref T searchSpace, int length) where T : unmanaged
         {
             Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));

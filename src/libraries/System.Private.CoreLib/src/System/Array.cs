@@ -71,6 +71,7 @@ namespace System
         }
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        [RequiresUnsafe]
         public static unsafe Array CreateInstance(Type elementType, int length)
         {
             ArgumentNullException.ThrowIfNull(elementType);
@@ -85,6 +86,7 @@ namespace System
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "MDArrays of Rank != 1 can be created because they don't implement generic interfaces.")]
+        [RequiresUnsafe]
         public static unsafe Array CreateInstance(Type elementType, int length1, int length2)
         {
             ArgumentNullException.ThrowIfNull(elementType);
@@ -101,6 +103,7 @@ namespace System
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "MDArrays of Rank != 1 can be created because they don't implement generic interfaces.")]
+        [RequiresUnsafe]
         public static unsafe Array CreateInstance(Type elementType, int length1, int length2, int length3)
         {
             ArgumentNullException.ThrowIfNull(elementType);
@@ -117,6 +120,7 @@ namespace System
         }
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        [RequiresUnsafe]
         public static unsafe Array CreateInstance(Type elementType, params int[] lengths)
         {
             ArgumentNullException.ThrowIfNull(elementType);
@@ -142,6 +146,7 @@ namespace System
         }
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        [RequiresUnsafe]
         public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
         {
             ArgumentNullException.ThrowIfNull(elementType);
@@ -203,6 +208,7 @@ namespace System
         /// </exception>
         /// <remarks>When the array type is readily available, this method should be preferred over <see cref="CreateInstance(Type, int)"/>, as it has
         /// better performance and it is AOT-friendly.</remarks>
+        [RequiresUnsafe]
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, int length)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
@@ -240,6 +246,7 @@ namespace System
         /// </exception>
         /// <remarks>When the array type is readily available, this method should be preferred over <see cref="CreateInstance(Type, int[])"/>, as it has
         /// better performance and it is AOT-friendly.</remarks>
+        [RequiresUnsafe]
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, params int[] lengths)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
@@ -292,6 +299,7 @@ namespace System
         /// <exception cref="PlatformNotSupportedException">Native AOT: any value in <paramref name="lowerBounds"/> is different than zero.</exception>
         /// <remarks>When the array type is readily available, this method should be preferred over <see cref="CreateInstance(Type, int[], int[])"/>, as it has
         /// better performance and it is AOT-friendly.</remarks>
+        [RequiresUnsafe]
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, int[] lengths, int[] lowerBounds)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
@@ -366,6 +374,7 @@ namespace System
 
         // Copies length elements from sourceArray, starting at index 0, to
         // destinationArray, starting at index 0.
+        [RequiresUnsafe]
         public static unsafe void Copy(Array sourceArray, Array destinationArray, int length)
         {
             if (sourceArray != null && destinationArray != null)
@@ -401,6 +410,7 @@ namespace System
             Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: false);
         }
 
+        [RequiresUnsafe]
         private static unsafe void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
             if (sourceArray != null && destinationArray != null)
@@ -434,6 +444,7 @@ namespace System
         // Reliability-wise, this method will either possibly corrupt your
         // instance, or if the reliable flag is true, it will either always
         // succeed or always throw an exception with no side effects.
+        [RequiresUnsafe]
         private static unsafe void CopyImpl(Array? sourceArray, int sourceIndex, Array? destinationArray, int destinationIndex, int length, bool reliable)
         {
             ArgumentNullException.ThrowIfNull(sourceArray);
@@ -531,6 +542,7 @@ namespace System
         }
 
         // Array.CopyImpl case: Object[] or interface array to value-type array copy.
+        [RequiresUnsafe]
         private static unsafe void CopyImplUnBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             MethodTable* pDestArrayMT = RuntimeHelpers.GetMethodTable(destinationArray);
@@ -576,6 +588,7 @@ namespace System
         }
 
         // Array.CopyImpl case: Value-type array to Object[] or interface array copy.
+        [RequiresUnsafe]
         private static unsafe void CopyImplBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             MethodTable* pSrcArrayMT = RuntimeHelpers.GetMethodTable(sourceArray);
@@ -601,6 +614,7 @@ namespace System
         }
 
         // Array.CopyImpl case: Casting copy from gc-ref array to gc-ref array.
+        [RequiresUnsafe]
         private static unsafe void CopyImplCastCheckEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             MethodTable* pDestMT = destinationArray.ElementMethodTable;
@@ -627,6 +641,7 @@ namespace System
         }
 
         // Array.CopyImpl case: Primitive types that have a widening conversion
+        [RequiresUnsafe]
         private static unsafe void CopyImplPrimitiveWiden(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             Debug.Assert(sourceArray.ElementMethodTable->IsPrimitive);
@@ -661,6 +676,7 @@ namespace System
         /// </summary>
         /// <param name="array">The array to clear.</param>
         /// <exception cref="ArgumentNullException"><paramref name="array"/> is null.</exception>
+        [RequiresUnsafe]
         public static unsafe void Clear(Array array)
         {
             if (array == null)
@@ -686,6 +702,7 @@ namespace System
         // Sets length elements in array to 0 (or null for Object arrays), starting
         // at index.
         //
+        [RequiresUnsafe]
         public static unsafe void Clear(Array array, int index, int length)
         {
             if (array == null)
@@ -720,6 +737,7 @@ namespace System
             // GC.KeepAlive(array) not required. pMT kept alive via `ptr`
         }
 
+        [RequiresUnsafe]
         private unsafe nint GetFlattenedIndex(int rawIndex)
         {
             // Checked by the caller
@@ -736,6 +754,7 @@ namespace System
             return rawIndex;
         }
 
+        [RequiresUnsafe]
         internal unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
             // Checked by the caller
@@ -1894,6 +1913,7 @@ namespace System
             return IndexOf(array, value, startIndex, array.Length - startIndex);
         }
 
+        [RequiresUnsafe]
         public static unsafe int IndexOf<T>(T[] array, T value, int startIndex, int count)
         {
             if (array == null)
@@ -2117,6 +2137,7 @@ namespace System
             return LastIndexOf(array, value, startIndex, (array.Length == 0) ? 0 : (startIndex + 1));
         }
 
+        [RequiresUnsafe]
         public static unsafe int LastIndexOf<T>(T[] array, T value, int startIndex, int count)
         {
             if (array == null)

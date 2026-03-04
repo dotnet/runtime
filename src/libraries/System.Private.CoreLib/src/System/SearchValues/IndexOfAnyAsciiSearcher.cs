@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -33,6 +34,7 @@ namespace System.Buffers
         internal static bool IsVectorizationSupported => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe void SetBitmapBit(byte* bitmap, int value)
         {
             Debug.Assert((uint)value <= 127);
@@ -42,6 +44,7 @@ namespace System.Buffers
             bitmap[(uint)lowNibble] |= (byte)(1 << highNibble);
         }
 
+        [RequiresUnsafe]
         internal static unsafe void ComputeAnyByteState(ReadOnlySpan<byte> values, out AnyByteState state)
         {
             // The exact format of these bitmaps differs from the other ComputeBitmap overloads as it's meant for the full [0, 255] range algorithm.

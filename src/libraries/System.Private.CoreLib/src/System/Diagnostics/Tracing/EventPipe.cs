@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -112,6 +113,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe ulong Enable(
             string? outputFile,
             EventPipeSerializationFormat format,

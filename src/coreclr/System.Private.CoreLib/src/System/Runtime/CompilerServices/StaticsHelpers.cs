@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Runtime.CompilerServices
@@ -278,12 +279,14 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         private static unsafe ref byte StaticFieldAddress_Dynamic(StaticFieldAddressArgs* pArgs)
         {
             return ref Unsafe.Add(ref pArgs->staticBaseHelper(pArgs->arg0), pArgs->offset);
         }
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         private static unsafe ref byte StaticFieldAddressUnbox_Dynamic(StaticFieldAddressArgs* pArgs)
         {
             object boxedObject = Unsafe.As<byte, object>(ref Unsafe.Add(ref pArgs->staticBaseHelper(pArgs->arg0), pArgs->offset));

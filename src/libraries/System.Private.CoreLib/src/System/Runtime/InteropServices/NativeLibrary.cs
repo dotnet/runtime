@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -278,6 +279,7 @@ namespace System.Runtime.InteropServices
             return ret;
         }
 
+        [RequiresUnsafe]
         private static unsafe IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError)
         {
             IntPtr ret = GetSymbolOrNull(handle, symbolName);

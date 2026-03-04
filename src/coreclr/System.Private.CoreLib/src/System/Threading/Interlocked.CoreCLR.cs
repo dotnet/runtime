@@ -135,6 +135,7 @@ namespace System.Threading
         // return type of the method.
         // The important part is avoiding `ref *location` that is reported as byref to the GC.
         [Intrinsic]
+        [RequiresUnsafe]
         internal static unsafe int CompareExchange(int* location1, int value, int comparand)
         {
 #if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
@@ -146,6 +147,7 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe int CompareExchange32Pointer(int* location1, int value, int comparand);
 
         /// <summary>Compares two 64-bit signed integers for equality and, if they are equal, replaces the first value.</summary>

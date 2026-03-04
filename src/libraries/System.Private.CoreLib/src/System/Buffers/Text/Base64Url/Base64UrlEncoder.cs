@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET
@@ -149,6 +150,7 @@ namespace System.Buffers.Text
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <returns>A string which contains the result of the operation, i.e. the ASCII string in Base64Url.</returns>
         /// <remarks>This implementation of the base64url encoding omits the optional padding characters.</remarks>
+        [RequiresUnsafe]
         public static unsafe string EncodeToString(ReadOnlySpan<byte> source)
         {
 #if NET
@@ -243,6 +245,7 @@ namespace System.Buffers.Text
             public int GetMaxEncodedLength(int srcLength) => GetEncodedLength(srcLength);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [RequiresUnsafe]
             public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, byte* dest, ref byte encodingMap)
             {
                 uint t0 = oneByte[0];

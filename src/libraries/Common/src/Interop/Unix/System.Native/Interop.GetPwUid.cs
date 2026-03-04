@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -30,6 +31,7 @@ internal static partial class Interop
         /// </summary>
         /// <param name="uid">The user ID.</param>
         /// <returns>On success, return a string with the user name associated to the specified UID. On failure, returns an empty string.</returns>
+        [RequiresUnsafe]
         internal static unsafe string GetUserNameFromPasswd(uint uid)
         {
             // First try with a buffer that should suffice for 99% of cases.
@@ -58,6 +60,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe bool TryGetUserNameFromPasswd(uint uid, byte* buf, int bufLen, out string? username)
         {
             // Call getpwuid_r to get the passwd struct

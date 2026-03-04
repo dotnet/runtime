@@ -203,6 +203,7 @@ namespace System
         /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
         {
             if (Bmi2.X64.IsSupported)
@@ -1487,6 +1488,7 @@ namespace System
         }
 
         [Intrinsic]
+        [RequiresUnsafe]
         public static unsafe double Truncate(double d)
         {
             ModF(d, &d);

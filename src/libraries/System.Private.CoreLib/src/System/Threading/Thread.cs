@@ -802,6 +802,7 @@ namespace System.Threading
             }
         }
 #else
+        [RequiresUnsafe]
         internal static unsafe void AssureBlockingPossible()
         {
         }

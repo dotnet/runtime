@@ -6,6 +6,7 @@
 // ===================================================================================================
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -450,6 +451,7 @@ namespace System
         }
 
         [Intrinsic]
+        [RequiresUnsafe]
         public static unsafe float Truncate(float x)
         {
             ModF(x, &x);

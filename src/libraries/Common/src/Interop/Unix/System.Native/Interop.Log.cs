@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -9,9 +10,11 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Log")]
+        [RequiresUnsafe]
         internal static unsafe partial void Log(byte* buffer, int count);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LogError")]
+        [RequiresUnsafe]
         internal static unsafe partial void LogError(byte* buffer, int count);
     }
 }

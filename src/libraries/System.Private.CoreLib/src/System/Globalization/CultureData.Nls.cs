@@ -14,6 +14,7 @@ namespace System.Globalization
     {
         // Wrappers around the GetLocaleInfoEx APIs which handle marshalling the returned
         // data as either and Int or string.
+        [RequiresUnsafe]
         internal static unsafe string? GetLocaleInfoEx(string localeName, uint field)
         {
             // REVIEW: Determine the maximum size for the buffer
@@ -29,6 +30,7 @@ namespace System.Globalization
             return null;
         }
 
+        [RequiresUnsafe]
         internal static unsafe int GetLocaleInfoExInt(string localeName, uint field)
         {
             field |= Interop.Kernel32.LOCALE_RETURN_NUMBER;
@@ -37,6 +39,7 @@ namespace System.Globalization
             return value;
         }
 
+        [RequiresUnsafe]
         internal static unsafe int GetLocaleInfoEx(string lpLocaleName, uint lcType, char* lpLCData, int cchData)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -345,6 +348,7 @@ namespace System.Globalization
 
         // EnumSystemLocaleEx callback.
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe Interop.BOOL EnumSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
             EnumLocaleData* context = (EnumLocaleData*)contextHandle;
@@ -368,6 +372,7 @@ namespace System.Globalization
 
         // EnumSystemLocaleEx callback.
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe Interop.BOOL EnumAllSystemLocalesProc(char* lpLocaleString, uint flags, void* contextHandle)
         {
             try
@@ -389,6 +394,7 @@ namespace System.Globalization
 
         // EnumTimeFormatsEx callback itself.
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe Interop.BOOL EnumTimeCallback(char* lpTimeFormatString, void* lParam)
         {
             try
@@ -402,6 +408,7 @@ namespace System.Globalization
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe string[]? nativeEnumTimeFormats(string localeName, uint dwFlags, bool useUserOverride)
         {
             EnumData data = default;

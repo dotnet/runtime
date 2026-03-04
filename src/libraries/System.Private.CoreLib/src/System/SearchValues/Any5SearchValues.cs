@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,6 +15,7 @@ namespace System.Buffers
     {
         private readonly TImpl _e0, _e1, _e2, _e3, _e4;
 
+        [RequiresUnsafe]
         public unsafe Any5SearchValues(ReadOnlySpan<TImpl> values)
         {
             Debug.Assert(sizeof(T) == sizeof(TImpl));
@@ -21,6 +23,7 @@ namespace System.Buffers
             (_e0, _e1, _e2, _e3, _e4) = (values[0], values[1], values[2], values[3], values[4]);
         }
 
+        [RequiresUnsafe]
         internal override unsafe T[] GetValues()
         {
             TImpl e0 = _e0, e1 = _e1, e2 = _e2, e3 = _e3, e4 = _e4;

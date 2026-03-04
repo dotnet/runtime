@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -11,12 +12,14 @@ internal static partial class Interop
     internal static partial class Globalization
     {
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetSortHandle", StringMarshalling = StringMarshalling.Utf8)]
+        [RequiresUnsafe]
         internal static unsafe partial ResultCode GetSortHandle(string localeName, out IntPtr sortHandle);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_CloseSortHandle")]
         internal static partial void CloseSortHandle(IntPtr handle);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_CompareString", StringMarshalling = StringMarshalling.Utf16)]
+        [RequiresUnsafe]
         internal static unsafe partial int CompareString(IntPtr sortHandle, char* lpStr1, int cwStr1Len, char* lpStr2, int cwStr2Len, CompareOptions options);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_IndexOf", StringMarshalling = StringMarshalling.Utf16)]

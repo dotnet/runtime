@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -46,6 +47,7 @@ namespace System.Text
             return GetCharCount(bytes, index, count, false);
         }
 
+        [RequiresUnsafe]
         public override unsafe int GetCharCount(byte[] bytes, int index, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -62,6 +64,7 @@ namespace System.Text
                 return GetCharCount(pBytes + index, count, flush);
         }
 
+        [RequiresUnsafe]
         public override unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(bytes);

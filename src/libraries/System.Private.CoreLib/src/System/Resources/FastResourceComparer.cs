@@ -70,6 +70,7 @@ namespace System.Resources
 
         // Input is one string to compare with, and a byte[] containing chars in
         // little endian unicode.  Pass in the number of valid chars.
+        [RequiresUnsafe]
         public static unsafe int CompareOrdinal(string a, byte[] bytes, int bCharLength)
         {
             Debug.Assert(a != null && bytes != null, "FastResourceComparer::CompareOrdinal must have non-null params");
@@ -106,6 +107,7 @@ namespace System.Resources
 
         // This method is to handle potentially misaligned data accesses.
         // The byte* must point to little endian Unicode characters.
+        [RequiresUnsafe]
         internal static unsafe int CompareOrdinal(byte* a, int byteLen, string b)
         {
             Debug.Assert((byteLen & 1) == 0, "CompareOrdinal is expecting a UTF-16 string length, which must be even!");

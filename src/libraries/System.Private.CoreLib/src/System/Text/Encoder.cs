@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -91,6 +92,7 @@ namespace System.Text
         // unfortunately for existing overrides, it has to call the [] version,
         // which is really slow, so avoid this method if you might be calling external encodings.
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public virtual unsafe int GetByteCount(char* chars, int count, bool flush)
         {
             ArgumentNullException.ThrowIfNull(chars);
@@ -105,6 +107,7 @@ namespace System.Text
             return GetByteCount(arrChar, 0, count, flush);
         }
 
+        [RequiresUnsafe]
         public virtual unsafe int GetByteCount(ReadOnlySpan<char> chars, bool flush)
         {
             fixed (char* charsPtr = &MemoryMarshal.GetNonNullPinnableReference(chars))

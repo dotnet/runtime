@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
@@ -63,6 +64,7 @@ namespace System.Threading
         public static extern HeaderLockResult Release(object obj);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe int* GetHeaderPtr(byte* ppObjectData)
         {
             // The header is the 4 bytes before a pointer-sized chunk before the object data pointer.
@@ -100,6 +102,7 @@ namespace System.Threading
         //
 
         // Try acquiring the thin-lock
+        [RequiresUnsafe]
         public static unsafe HeaderLockResult TryAcquireThinLock(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);

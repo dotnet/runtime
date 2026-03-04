@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -10,6 +11,7 @@ namespace System.Globalization
 {
     internal static partial class Normalization
     {
+        [RequiresUnsafe]
         private static unsafe bool IcuIsNormalized(ReadOnlySpan<char> source, NormalizationForm normalizationForm)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -44,6 +46,7 @@ namespace System.Globalization
             return ret == 1;
         }
 
+        [RequiresUnsafe]
         private static unsafe string IcuNormalize(string strInput, NormalizationForm normalizationForm)
         {
             Debug.Assert(!GlobalizationMode.Invariant);

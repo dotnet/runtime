@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -139,6 +140,7 @@ namespace System
         }
 #endif
 
+        [RequiresUnsafe]
         internal static unsafe void NumberToString<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
@@ -288,6 +290,7 @@ namespace System
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe void NumberToStringFormat<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));

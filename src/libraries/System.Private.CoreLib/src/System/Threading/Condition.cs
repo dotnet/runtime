@@ -4,6 +4,7 @@
 #pragma warning disable 0420 //passing volatile fields by ref
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 
 namespace System.Threading
@@ -34,6 +35,7 @@ namespace System.Threading
 
         internal Lock AssociatedLock => _lock;
 
+        [RequiresUnsafe]
         private unsafe void AssertIsInList(Waiter waiter)
         {
             Debug.Assert(_waitersHead != null && _waitersTail != null);
@@ -46,6 +48,7 @@ namespace System.Threading
             Debug.Fail("Waiter is not in the waiter list");
         }
 
+        [RequiresUnsafe]
         private unsafe void AssertIsNotInList(Waiter waiter)
         {
             Debug.Assert(waiter.next == null && waiter.prev == null);

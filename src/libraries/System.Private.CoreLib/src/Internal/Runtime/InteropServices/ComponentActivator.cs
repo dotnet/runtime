@@ -58,6 +58,7 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         public static unsafe int LoadAssemblyAndGetFunctionPointer(IntPtr assemblyPathNative,
                                                                    IntPtr typeNameNative,
                                                                    IntPtr methodNameNative,
@@ -178,6 +179,7 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         public static unsafe int LoadAssemblyBytes(byte* assembly, nint assemblyByteLength, byte* symbols, nint symbolsByteLength, IntPtr loadContext, IntPtr reserved)
         {
             if (!IsSupported)
@@ -223,6 +225,7 @@ namespace Internal.Runtime.InteropServices
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
         [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         public static unsafe int GetFunctionPointer(IntPtr typeNameNative,
                                                     IntPtr methodNameNative,
                                                     IntPtr delegateTypeNative,

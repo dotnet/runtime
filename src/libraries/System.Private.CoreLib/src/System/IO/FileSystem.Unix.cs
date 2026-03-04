@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Enumeration;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -638,6 +639,7 @@ namespace System.IO
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
             => default(FileStatus).SetLastAccessTime(fullPath, time, asDirectory);
 
+        [RequiresUnsafe]
         public static unsafe void SetLastAccessTime(SafeFileHandle fileHandle, DateTimeOffset time)
             => default(FileStatus).SetLastAccessTime(fileHandle, time, asDirectory: false);
 
@@ -650,6 +652,7 @@ namespace System.IO
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
             => default(FileStatus).SetLastWriteTime(fullPath, time, asDirectory);
 
+        [RequiresUnsafe]
         public static unsafe void SetLastWriteTime(SafeFileHandle fileHandle, DateTimeOffset time)
             => default(FileStatus).SetLastWriteTime(fileHandle, time, asDirectory: false);
 

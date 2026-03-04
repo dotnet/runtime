@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Runtime.InteropServices
@@ -11,6 +12,7 @@ namespace System.Runtime.InteropServices
     {
         private static readonly Dictionary<int, List<Token>> s_registrations = Initialize();
 
+        [RequiresUnsafe]
         private static unsafe Dictionary<int, List<Token>> Initialize()
         {
             if (!Interop.Sys.InitializeTerminalAndSignalHandling())

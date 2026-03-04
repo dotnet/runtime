@@ -6,6 +6,7 @@
 //
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -15,11 +16,13 @@ namespace System.Runtime.ExceptionServices
     {
         [StackTraceHidden]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SfiInit")]
+        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, [MarshalAs(UnmanagedType.U1)] bool instructionFault, bool* fIsExceptionIntercepted);
 
         [StackTraceHidden]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SfiNext")]
+        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
 

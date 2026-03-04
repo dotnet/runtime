@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Threading;
 
@@ -98,6 +99,7 @@ namespace System
         }
 
         // Helper function that retrieves various forms of time zone display names from ICU
+        [RequiresUnsafe]
         private static unsafe void GetDisplayName(string timeZoneId, Interop.Globalization.TimeZoneDisplayNameType nameType, string uiCulture, ref string? displayName)
         {
             if (GlobalizationMode.Invariant)
@@ -287,6 +289,7 @@ namespace System
         }
 
         // Helper function that returns an alternative ID using ICU data. Used primarily for converting from Windows IDs.
+        [RequiresUnsafe]
         private static unsafe string? GetAlternativeId(string id, out bool idIsIana)
         {
             idIsIana = false;

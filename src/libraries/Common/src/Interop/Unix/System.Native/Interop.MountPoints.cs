@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -14,6 +15,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAllMountPoints")]
+        [RequiresUnsafe]
         private static unsafe partial int GetAllMountPoints(delegate* unmanaged<void*, byte*, void> onFound, void* context);
 
         private struct AllMountPointsContext
@@ -23,6 +25,7 @@ internal static partial class Interop
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void AddMountPoint(void* context, byte* name)
         {
             AllMountPointsContext* callbackContext = (AllMountPointsContext*)context;

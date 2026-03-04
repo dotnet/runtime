@@ -94,6 +94,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>void __cpuidex (int cpuInfo[4], int function_id, int subfunction_id);</para>
         ///   <para>  CPUID</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId)
         {
             int* cpuInfo = stackalloc int[4];
@@ -106,6 +107,7 @@ namespace System.Runtime.Intrinsics.X86
         private static extern unsafe void CpuId(int* cpuInfo, int functionId, int subFunctionId);
 #else
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "X86Base_CpuId")]
+        [RequiresUnsafe]
         private static unsafe partial void CpuId(int* cpuInfo, int functionId, int subFunctionId);
 #endif
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -313,6 +314,7 @@ namespace System
         /// </summary>
         /// <param name="value">The number to convert.</param>
         /// <returns>An array of bytes with length 2.</returns>
+        [RequiresUnsafe]
         public static unsafe byte[] GetBytes(BFloat16 value)
         {
             byte[] bytes = new byte[sizeof(BFloat16)];
@@ -327,6 +329,7 @@ namespace System
         /// <param name="destination">When this method returns, the bytes representing the converted <see cref="BFloat16"/> value.</param>
         /// <param name="value">The <see cref="BFloat16"/> value to convert.</param>
         /// <returns><see langword="true"/> if the conversion was successful; <see langword="false"/> otherwise.</returns>
+        [RequiresUnsafe]
         public static unsafe bool TryWriteBytes(Span<byte> destination, BFloat16 value)
         {
             if (destination.Length < sizeof(BFloat16))

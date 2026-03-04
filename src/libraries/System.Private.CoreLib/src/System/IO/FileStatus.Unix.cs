@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -367,6 +368,7 @@ namespace System.IO
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick);
         }
 
+        [RequiresUnsafe]
         private unsafe void SetAccessOrWriteTimeCore(SafeFileHandle? handle, string? path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime, bool asDirectory)
         {
             // This api is used to set creation time on non OSX platforms, and as a fallback for OSX platforms.

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -59,6 +60,7 @@ internal static unsafe partial class VirtualDispatchHelpers
     private static GenericCache<VirtualResolutionData, IntPtr> s_virtualFunctionPointerCache = new GenericCache<VirtualResolutionData, IntPtr>(InitialCacheSize, MaximumCacheSize);
 
     [LibraryImport(RuntimeHelpers.QCall)]
+    [RequiresUnsafe]
     private static unsafe partial IntPtr ResolveVirtualFunctionPointer(ObjectHandleOnStack obj, IntPtr classHandle, IntPtr methodHandle);
 
     [MethodImpl(MethodImplOptions.NoInlining)]

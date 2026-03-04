@@ -439,6 +439,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe bool InternalEqualTypes(object a, object b)
         {
             if (a.GetType() == b.GetType())
@@ -483,11 +484,14 @@ namespace System
         private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
+        [RequiresUnsafe]
         private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
 
+        [RequiresUnsafe]
         internal unsafe IntPtr GetMulticastInvoke()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
@@ -503,8 +507,10 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe void* GetInvokeMethod(MethodTable* pMT);
 
+        [RequiresUnsafe]
         internal unsafe IntPtr GetInvokeMethod()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);

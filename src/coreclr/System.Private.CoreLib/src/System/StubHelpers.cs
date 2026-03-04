@@ -20,6 +20,7 @@ namespace System.StubHelpers
     {
         // The length of the returned array is an approximation based on the length of the input string and the system
         // character set. It is only guaranteed to be larger or equal to cbLength, don't depend on the exact value.
+        [RequiresUnsafe]
         internal static unsafe byte[] DoAnsiConversion(string str, bool fBestFit, bool fThrowOnUnmappableChar, out int cbLength)
         {
             byte[] buffer = new byte[checked((str.Length + 1) * Marshal.SystemMaxDBCSCharSize)];
@@ -30,6 +31,7 @@ namespace System.StubHelpers
             return buffer;
         }
 
+        [RequiresUnsafe]
         internal static unsafe byte ConvertToNative(char managedChar, bool fBestFit, bool fThrowOnUnmappableChar)
         {
             int cbAllocLength = (1 + 1) * Marshal.SystemMaxDBCSCharSize;
@@ -52,6 +54,7 @@ namespace System.StubHelpers
 
     internal static class CSTRMarshaler
     {
+        [RequiresUnsafe]
         internal static unsafe IntPtr ConvertToNative(int flags, string strManaged, IntPtr pNativeBuffer)
         {
             if (null == strManaged)
@@ -121,6 +124,7 @@ namespace System.StubHelpers
             return (IntPtr)pbNativeBuffer;
         }
 
+        [RequiresUnsafe]
         internal static unsafe string? ConvertToManaged(IntPtr cstr)
         {
             if (IntPtr.Zero == cstr)
@@ -129,6 +133,7 @@ namespace System.StubHelpers
                 return new string((sbyte*)cstr);
         }
 
+        [RequiresUnsafe]
         internal static unsafe void ConvertFixedToNative(int flags, string strManaged, IntPtr pNativeBuffer, int length)
         {
             if (strManaged == null)
@@ -183,6 +188,7 @@ namespace System.StubHelpers
             buffer[cbWritten] = 0;
         }
 
+        [RequiresUnsafe]
         internal static unsafe string ConvertFixedToManaged(IntPtr cstr, int length)
         {
             int end = new ReadOnlySpan<byte>((byte*)cstr, length).IndexOf((byte)0);
@@ -197,6 +203,7 @@ namespace System.StubHelpers
 
     internal static class UTF8BufferMarshaler
     {
+        [RequiresUnsafe]
         internal static unsafe IntPtr ConvertToNative(StringBuilder sb, IntPtr pNativeBuffer, int flags)
         {
             if (null == sb)
@@ -218,6 +225,7 @@ namespace System.StubHelpers
             return (IntPtr)pbNativeBuffer;
         }
 
+        [RequiresUnsafe]
         internal static unsafe void ConvertToManaged(StringBuilder sb, IntPtr pNative)
         {
             if (pNative == IntPtr.Zero)
@@ -264,6 +272,7 @@ namespace System.StubHelpers
             s_trailByteTable!.Add(strManaged, new TrailByte(trailByte));
         }
 
+        [RequiresUnsafe]
         internal static unsafe IntPtr ConvertToNative(string strManaged, IntPtr pNativeBuffer)
         {
             if (null == strManaged)
@@ -319,6 +328,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe string? ConvertToManaged(IntPtr bstr)
         {
             if (IntPtr.Zero == bstr)
@@ -370,6 +380,7 @@ namespace System.StubHelpers
 
     internal static class VBByValStrMarshaler
     {
+        [RequiresUnsafe]
         internal static unsafe IntPtr ConvertToNative(string strManaged, bool fBestFit, bool fThrowOnUnmappableChar, ref int cch)
         {
             if (null == strManaged)
@@ -409,6 +420,7 @@ namespace System.StubHelpers
             return new IntPtr(pNative);
         }
 
+        [RequiresUnsafe]
         internal static unsafe string? ConvertToManaged(IntPtr pNative, int cch)
         {
             if (IntPtr.Zero == pNative)
@@ -430,6 +442,7 @@ namespace System.StubHelpers
 
     internal static class AnsiBSTRMarshaler
     {
+        [RequiresUnsafe]
         internal static unsafe IntPtr ConvertToNative(int flags, string strManaged)
         {
             if (null == strManaged)
@@ -455,6 +468,7 @@ namespace System.StubHelpers
             return bstr;
         }
 
+        [RequiresUnsafe]
         internal static unsafe string? ConvertToManaged(IntPtr bstr)
         {
             if (IntPtr.Zero == bstr)
@@ -478,6 +492,7 @@ namespace System.StubHelpers
 
     internal static class FixedWSTRMarshaler
     {
+        [RequiresUnsafe]
         internal static unsafe void ConvertToNative(string? strManaged, IntPtr nativeHome, int length)
         {
             ReadOnlySpan<char> managed = strManaged;
@@ -489,6 +504,7 @@ namespace System.StubHelpers
             native[numChars] = '\0';
         }
 
+        [RequiresUnsafe]
         internal static unsafe string ConvertToManaged(IntPtr nativeHome, int length)
         {
             int end = new ReadOnlySpan<char>((char*)nativeHome, length).IndexOf('\0');
@@ -626,6 +642,7 @@ namespace System.StubHelpers
             internal short m_vt;
         }
 
+        [RequiresUnsafe]
         internal static unsafe void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, bool nativeDataValid, IntPtr pManagedMarshaler)
         {
             MarshalerState* pState = (MarshalerState*)pMarshalState;
@@ -677,6 +694,7 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdNativeArrayMarshaler_ConvertContentsToManaged")]
         private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
+        [RequiresUnsafe]
         internal static unsafe void ClearNative(IntPtr pMarshalState, IntPtr pNativeHome, int cElements)
         {
             IntPtr nativeHome = *(IntPtr*)pNativeHome;
@@ -708,6 +726,7 @@ namespace System.StubHelpers
 #pragma warning restore CA1823, IDE0044
         }
 
+        [RequiresUnsafe]
         internal static unsafe void CreateMarshaler(IntPtr pMarshalState, IntPtr pMT, int dwFlags, int cElements, IntPtr pManagedMarshaler)
         {
             MarshalerState* pState = (MarshalerState*)pMarshalState;
@@ -720,6 +739,7 @@ namespace System.StubHelpers
             pState->m_cElements = (uint)cElements;
         }
 
+        [RequiresUnsafe]
         internal static unsafe void ConvertSpaceToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
         {
             // We don't actually need to allocate native space here as the space is inline in the native layout.
@@ -1027,6 +1047,7 @@ namespace System.StubHelpers
 
         #region ConvertToNative helpers
 
+        [RequiresUnsafe]
         private unsafe IntPtr ConvertArrayToNative(object pManagedHome, int dwFlags)
         {
             Type elementType = pManagedHome.GetType().GetElementType()!;
@@ -1127,6 +1148,7 @@ namespace System.StubHelpers
             return pNativeHome;
         }
 
+        [RequiresUnsafe]
         private unsafe IntPtr ConvertStringBuilderToNative(StringBuilder pManagedHome, int dwFlags)
         {
             IntPtr pNativeHome;
@@ -1209,6 +1231,7 @@ namespace System.StubHelpers
             return pNativeHome;
         }
 
+        [RequiresUnsafe]
         private unsafe IntPtr ConvertLayoutToNative(object pManagedHome, int dwFlags)
         {
             // Note that the following call will not throw exception if the type
@@ -1276,6 +1299,7 @@ namespace System.StubHelpers
             return pNativeHome;
         }
 
+        [RequiresUnsafe]
         internal unsafe void ConvertToManaged(object pManagedHome, IntPtr pNativeHome)
         {
             switch (backPropAction)
@@ -1565,9 +1589,11 @@ namespace System.StubHelpers
         // Profiler helpers
         //-------------------------------------------------------
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
+        [RequiresUnsafe]
         internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
+        [RequiresUnsafe]
         internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
 #endif // PROFILING_SUPPORTED
 
@@ -1587,6 +1613,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
@@ -1606,6 +1633,7 @@ namespace System.StubHelpers
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe void FmtClassUpdateCLRInternal(object obj, byte* pNative)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);

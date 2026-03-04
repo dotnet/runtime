@@ -47,6 +47,7 @@ namespace System
         }
 
         // implementation of CORINFO_HELP_GETSYNCFROMCLASSHANDLE, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
+        [RequiresUnsafe]
         internal static unsafe RuntimeType GetRuntimeTypeFromHandle(IntPtr handle)
         {
             TypeHandle h = new((void*)handle);
@@ -67,6 +68,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe RuntimeType GetRuntimeType(MethodTable* pMT)
         {
             return pMT->AuxiliaryData->ExposedClassObject ?? GetRuntimeTypeFromHandleSlow((IntPtr)pMT);
@@ -281,6 +283,7 @@ namespace System
             int cTypeHandles,
             ObjectHandleOnStack instantiatedObject);
 
+        [RequiresUnsafe]
         internal static unsafe object InternalAlloc(MethodTable* pMT)
         {
             object? result = null;
@@ -297,6 +300,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAlloc")]
+        [RequiresUnsafe]
         private static unsafe partial void InternalAlloc(MethodTable* pMT, ObjectHandleOnStack result);
 
 
@@ -315,6 +319,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_InternalAllocNoChecks")]
+        [RequiresUnsafe]
         private static unsafe partial void InternalAllocNoChecks(MethodTable* pMT, ObjectHandleOnStack result);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -458,6 +463,7 @@ namespace System
         internal static extern int GetToken(RuntimeType type);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetMethodAt")]
+        [RequiresUnsafe]
         private static unsafe partial IntPtr GetMethodAt(MethodTable* pMT, int slot);
 
         internal static RuntimeMethodHandleInternal GetMethodAt(RuntimeType type, int slot)
@@ -557,6 +563,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetInterfaces")]
+        [RequiresUnsafe]
         private static unsafe partial void GetInterfaces(MethodTable* pMT, ObjectHandleOnStack result);
 
         internal static Type[] GetInterfaces(RuntimeType type)
@@ -659,6 +666,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe void* GetUtf8NameInternal(MethodTable* pMT);
 
         // Since the returned string is a pointer into metadata, the caller should
@@ -1086,8 +1094,10 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe MethodTable* GetMethodTable(RuntimeMethodHandleInternal method);
 
+        [RequiresUnsafe]
         internal static unsafe RuntimeType GetDeclaringType(RuntimeMethodHandleInternal method)
         {
             Debug.Assert(!method.IsNullHandle());
@@ -1566,6 +1576,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetFieldDataReference")]
+        [RequiresUnsafe]
         private static unsafe partial void GetFieldDataReference(IntPtr fieldDesc, ObjectHandleOnStack target, ByteRefOnStack fieldDataRef);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1661,6 +1672,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe RuntimeFieldHandleInternal GetStaticFieldForGenericType(RuntimeFieldHandleInternal field, MethodTable* pMT);
 
         internal static RuntimeFieldHandleInternal GetStaticFieldForGenericType(RuntimeFieldHandleInternal field, RuntimeType declaringType)
@@ -1701,6 +1713,7 @@ namespace System
         [StackTraceHidden]
         [DebuggerStepThrough]
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static unsafe void* GetFieldAddr(object tgt, void* pFD)
         {
             void* addr = GetEnCFieldAddr(ObjectHandleOnStack.Create(ref tgt), pFD);
@@ -1713,6 +1726,7 @@ namespace System
         [StackTraceHidden]
         [DebuggerStepThrough]
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static unsafe void* GetStaticFieldAddr(void* pFD)
         {
             object? nullTarget = null;
@@ -2112,6 +2126,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe int GetParameterOffsetInternal(void* sig, int csig, int parameterIndex);
 
         internal int GetParameterOffset(int parameterIndex)
@@ -2124,6 +2139,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe int GetTypeParameterOffsetInternal(void* sig, int csig, int offset, int index);
 
         internal int GetTypeParameterOffset(int offset, int index)
@@ -2142,6 +2158,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         private static extern unsafe int GetCallingConventionFromFunctionPointerAtOffsetInternal(void* sig, int csig, int offset);
 
         internal SignatureCallingConvention GetCallingConventionFromFunctionPointerAtOffset(int offset)
@@ -2199,6 +2216,7 @@ namespace System
         internal abstract RuntimeType? GetJitContext(out int securityControlFlags);
         internal abstract byte[] GetCodeInfo(out int stackSize, out int initLocals, out int EHCount);
         internal abstract byte[] GetLocalsSignature();
+        [RequiresUnsafe]
         internal abstract unsafe void GetEHInfo(int EHNumber, void* exception);
         internal abstract byte[]? GetRawEHInfo();
         // token resolution
@@ -2209,6 +2227,7 @@ namespace System
         internal abstract MethodInfo GetDynamicMethod();
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void GetJitContext(Resolver* pResolver, int* pSecurityControlFlags, RuntimeType* ppResult, Exception* pException)
         {
             try
@@ -2222,6 +2241,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void GetCodeInfo(Resolver* pResolver, int* pStackSize, int* pInitLocals, int* pEHCount, byte[]* ppResult, Exception* pException)
         {
             try
@@ -2235,6 +2255,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void GetLocalsSignature(Resolver* pResolver, byte[]* ppResult, Exception* pException)
         {
             try
@@ -2248,6 +2269,7 @@ namespace System
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void GetStringLiteral(Resolver* pResolver, int token, string* ppResult, Exception* pException)
         {
             try

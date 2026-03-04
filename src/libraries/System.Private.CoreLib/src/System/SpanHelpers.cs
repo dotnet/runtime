@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -10,6 +11,7 @@ namespace System
 {
     internal static partial class SpanHelpers
     {
+        [RequiresUnsafe]
         public static unsafe void ClearWithReferences(ref IntPtr ip, nuint pointerSizeLength)
         {
             Debug.Assert(Unsafe.IsOpportunisticallyAligned(ref ip, (uint)sizeof(IntPtr)), "Should've been aligned on natural word boundary.");
@@ -296,6 +298,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe void Reverse<T>(ref T elements, nuint length)
         {
             Debug.Assert(length > 1);

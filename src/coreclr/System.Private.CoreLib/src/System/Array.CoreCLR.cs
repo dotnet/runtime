@@ -16,9 +16,11 @@ namespace System
     public abstract partial class Array : ICloneable, IList, IStructuralComparable, IStructuralEquatable
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CreateInstance")]
+        [RequiresUnsafe]
         private static unsafe partial void InternalCreate(QCallTypeHandle type, int rank, int* pLengths, int* pLowerBounds,
             [MarshalAs(UnmanagedType.Bool)] bool fromArrayType, ObjectHandleOnStack retArray);
 
+        [RequiresUnsafe]
         private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
         {
             Array? retArray = null;
@@ -27,6 +29,7 @@ namespace System
             return retArray!;
         }
 
+        [RequiresUnsafe]
         private static unsafe Array InternalCreateFromArrayType(RuntimeType arrayType, int rank, int* pLengths, int* pLowerBounds)
         {
             Array? retArray = null;
@@ -36,12 +39,14 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_Ctor")]
+        [RequiresUnsafe]
         private static unsafe partial void Ctor(MethodTable* pArrayMT, uint dwNumArgs, int* pArgList, ObjectHandleOnStack retArray);
 
         // implementation of CORINFO_HELP_NEW_MDARR and CORINFO_HELP_NEW_MDARR_RARE.
         [StackTraceHidden]
         [DebuggerStepThrough]
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static unsafe Array Ctor(MethodTable* pArrayMT, uint dwNumArgs, int* pArgList)
         {
             Array? arr = null;
@@ -64,6 +69,7 @@ namespace System
             return (CorElementType)((int)elementType - shift);
         }
 
+        [RequiresUnsafe]
         private static unsafe ArrayAssignType CanAssignArrayType(Array sourceArray, Array destinationArray)
         {
             TypeHandle srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle();
@@ -139,6 +145,7 @@ namespace System
             return ArrayAssignType.WrongType;
         }
 
+        [RequiresUnsafe]
         internal unsafe object? InternalGetValue(nint flattenedIndex)
         {
             MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
@@ -181,6 +188,7 @@ namespace System
             return result;
         }
 
+        [RequiresUnsafe]
         private unsafe void InternalSetValue(object? value, nint flattenedIndex)
         {
             MethodTable* pMethodTable = RuntimeHelpers.GetMethodTable(this);
@@ -306,6 +314,7 @@ namespace System
 
         private unsafe MethodTable* ElementMethodTable => RuntimeHelpers.GetMethodTable(this)->GetArrayElementTypeHandle().AsMethodTable();
 
+        [RequiresUnsafe]
         private unsafe bool IsValueOfElementType(object value)
         {
             MethodTable* thisMT = RuntimeHelpers.GetMethodTable(this);
@@ -315,6 +324,7 @@ namespace System
         // if this is an array of value classes and that value class has a default constructor
         // then this calls this default constructor on every element in the value class array.
         // otherwise this is a no-op.  Generally this method is called automatically by the compiler
+        [RequiresUnsafe]
         public unsafe void Initialize()
         {
             MethodTable* pArrayMT = RuntimeHelpers.GetMethodTable(this);

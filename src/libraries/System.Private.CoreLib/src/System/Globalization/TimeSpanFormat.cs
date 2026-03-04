@@ -4,6 +4,7 @@
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -106,6 +107,7 @@ namespace System.Globalization
             g
         }
 
+        [RequiresUnsafe]
         internal static unsafe bool TryFormatStandard<TChar>(TimeSpan value, StandardFormat format, ReadOnlySpan<TChar> decimalSeparator, Span<TChar> destination, out int written) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(format == StandardFormat.C || format == StandardFormat.G || format == StandardFormat.g);

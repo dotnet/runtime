@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO
 {
@@ -134,6 +135,7 @@ namespace System.IO
         }
 
         /// <summary>Moves to the next component and parses it as an Int32.</summary>
+        [RequiresUnsafe]
         public unsafe int ParseNextInt32()
         {
             MoveNextOrFail();
@@ -179,6 +181,7 @@ namespace System.IO
         }
 
         /// <summary>Moves to the next component and parses it as an Int64.</summary>
+        [RequiresUnsafe]
         public unsafe long ParseNextInt64()
         {
             MoveNextOrFail();

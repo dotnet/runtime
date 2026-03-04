@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -33,6 +34,7 @@ namespace System
             }
 
             /// <summary>Create a copy of <see cref="Values"/>.</summary>
+            [RequiresUnsafe]
             public unsafe TResult[] CloneValues<TResult>() where TResult : struct
             {
                 Debug.Assert(sizeof(TStorage) == sizeof(TResult));

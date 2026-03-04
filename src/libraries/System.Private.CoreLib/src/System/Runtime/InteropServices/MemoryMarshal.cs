@@ -27,6 +27,7 @@ namespace System.Runtime.InteropServices
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe Span<byte> AsBytes<T>(Span<T> span)
             where T : struct
         {
@@ -50,6 +51,7 @@ namespace System.Runtime.InteropServices
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe ReadOnlySpan<byte> AsBytes<T>(ReadOnlySpan<T> span)
             where T : struct
         {
@@ -90,6 +92,7 @@ namespace System.Runtime.InteropServices
         /// for pinning but must never be dereferenced. This is useful for interop with methods that do not accept null pointers for zero-sized buffers.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe ref T GetNonNullPinnableReference<T>(Span<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
 
         /// <summary>
@@ -97,6 +100,7 @@ namespace System.Runtime.InteropServices
         /// can be used for pinning but must never be dereferenced. This is useful for interop with methods that do not accept null pointers for zero-sized buffers.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         internal static unsafe ref T GetNonNullPinnableReference<T>(ReadOnlySpan<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
 
         /// <summary>
@@ -111,6 +115,7 @@ namespace System.Runtime.InteropServices
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe Span<TTo> Cast<TFrom, TTo>(Span<TFrom> span)
             where TFrom : struct
             where TTo : struct
@@ -166,6 +171,7 @@ namespace System.Runtime.InteropServices
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe ReadOnlySpan<TTo> Cast<TFrom, TTo>(ReadOnlySpan<TFrom> span)
             where TFrom : struct
             where TTo : struct
@@ -249,6 +255,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>The returned span does not include the null terminator.</remarks>
         /// <exception cref="ArgumentException">The string is longer than <see cref="int.MaxValue"/>.</exception>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe ReadOnlySpan<char> CreateReadOnlySpanFromNullTerminated(char* value) =>
             value != null ? new ReadOnlySpan<char>(value, string.wcslen(value)) :
             default;
@@ -259,6 +266,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>The returned span does not include the null terminator, nor does it validate the well-formedness of the UTF-8 data.</remarks>
         /// <exception cref="ArgumentException">The string is longer than <see cref="int.MaxValue"/>.</exception>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) =>
             value != null ? new ReadOnlySpan<byte>(value, string.strlen(value)) :
             default;
@@ -465,6 +473,7 @@ namespace System.Runtime.InteropServices
         /// Reads a structure of type T out of a read-only span of bytes.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe T Read<T>(ReadOnlySpan<byte> source)
             where T : struct
         {
@@ -484,6 +493,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe bool TryRead<T>(ReadOnlySpan<byte> source, out T value)
             where T : struct
         {
@@ -504,6 +514,7 @@ namespace System.Runtime.InteropServices
         /// Writes a structure of type T into a span of bytes.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe void Write<T>(Span<byte> destination, in T value)
             where T : struct
         {
@@ -523,6 +534,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe bool TryWrite<T>(Span<byte> destination, in T value)
             where T : struct
         {
@@ -547,6 +559,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(1)] // Prioritize this overload over the ReadOnlySpan overload so types convertible to both resolve to this mutable version.
+        [RequiresUnsafe]
         public static unsafe ref T AsRef<T>(Span<byte> span)
             where T : struct
         {
@@ -569,6 +582,7 @@ namespace System.Runtime.InteropServices
         /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe ref readonly T AsRef<T>(ReadOnlySpan<byte> span)
             where T : struct
         {

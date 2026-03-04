@@ -92,6 +92,7 @@ namespace System.IO
                 path + PathInternal.DirectorySeparatorChar;
         }
 
+        [RequiresUnsafe]
         public static unsafe string GetTempFileName()
         {
             const int SuffixByteLength = 4; // ".tmp"

@@ -150,6 +150,7 @@ namespace System
                 private readonly MdUtf8String m_name;
                 private readonly MemberListType m_listType;
 
+                [RequiresUnsafe]
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
                     m_name = new MdUtf8String(pUtf8Name, cUtf8Name);
@@ -323,6 +324,7 @@ namespace System
                     return (FieldInfo)(object)list[0];
                 }
 
+                [RequiresUnsafe]
                 private unsafe T[] Populate(string? name, MemberListType listType, CacheType cacheType)
                 {
                     T[] list;
@@ -347,6 +349,7 @@ namespace System
                     return list;
                 }
 
+                [RequiresUnsafe]
                 private unsafe T[] GetListByName(string name, Span<byte> utf8Name, MemberListType listType, CacheType cacheType)
                 {
                     if (name.Length != 0)
@@ -574,6 +577,7 @@ namespace System
 
                 #region Population Logic
 
+                [RequiresUnsafe]
                 private unsafe RuntimeMethodInfo[] PopulateMethods(Filter filter)
                 {
                     ListBuilder<RuntimeMethodInfo> list = default;
@@ -853,6 +857,7 @@ namespace System
                     return list.ToArray();
                 }
 
+                [RequiresUnsafe]
                 private unsafe void PopulateRtFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
                     Span<IntPtr> result = stackalloc IntPtr[64];
@@ -1776,6 +1781,7 @@ namespace System
 
         // Returns the type from which the current type directly inherits from (without reflection quirks).
         // The parent type is null for interfaces, pointers, byrefs and generic parameters.
+        [RequiresUnsafe]
         internal unsafe RuntimeType? GetParentType()
         {
             TypeHandle typeHandle = GetNativeTypeHandle();
@@ -2424,6 +2430,7 @@ namespace System
 
         #region Private\Internal Members
 
+        [RequiresUnsafe]
         internal unsafe TypeHandle GetNativeTypeHandle()
         {
             return new TypeHandle((void*)m_handle);
@@ -3335,6 +3342,7 @@ namespace System
             return false;
         }
 
+        [RequiresUnsafe]
         public override unsafe bool IsInstanceOfType([NotNullWhen(true)] object? o)
         {
             bool ret = CastHelpers.IsInstanceOfAny(GetUnderlyingNativeHandle().ToPointer(), o) is not null;
@@ -3415,6 +3423,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
+        [RequiresUnsafe]
         private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result);
 
 #if FEATURE_COMINTEROP
@@ -3430,6 +3439,7 @@ namespace System
         private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result);
 #endif // FEATURE_COMINTEROP
 
+        [RequiresUnsafe]
         protected override unsafe bool IsValueTypeImpl()
         {
             TypeHandle th = GetNativeTypeHandle();
@@ -3510,6 +3520,7 @@ namespace System
             }
         }
 
+        [RequiresUnsafe]
         internal unsafe bool IsDelegate()
         {
             TypeHandle th = GetNativeTypeHandle();

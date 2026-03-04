@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -38,6 +39,7 @@ namespace System.Text
          * but fallback mechanism must be consulted for non-Latin-1 chars.
          */
 
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(char* chars, int count)
         {
             if (chars is null)
@@ -53,6 +55,7 @@ namespace System.Text
             return GetByteCountCommon(chars, count);
         }
 
+        [RequiresUnsafe]
         public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
             if (chars is null)

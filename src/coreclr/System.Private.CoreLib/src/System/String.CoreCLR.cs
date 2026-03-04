@@ -5,15 +5,18 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
     public partial class String
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RequiresUnsafe]
         internal static extern unsafe string FastAllocateString(MethodTable *pMT, nint length);
 
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static unsafe string FastAllocateString(nint length)
         {
             return FastAllocateString(TypeHandle.TypeHandleOf<string>().AsMethodTable(), length);

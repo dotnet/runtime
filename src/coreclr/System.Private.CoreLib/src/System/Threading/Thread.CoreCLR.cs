@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -92,6 +93,7 @@ namespace System.Threading
             return new ThreadHandle(thread);
         }
 
+        [RequiresUnsafe]
         private unsafe void StartCore()
         {
             lock (this)
@@ -108,6 +110,7 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
+        [RequiresUnsafe]
         private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception);
 
         // Called from the runtime

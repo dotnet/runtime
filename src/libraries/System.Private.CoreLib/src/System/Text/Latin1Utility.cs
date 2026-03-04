@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -17,6 +18,7 @@ namespace System.Text
         /// </summary>
         /// <returns>A Latin-1 char is defined as 0x0000 - 0x00FF, inclusive.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static unsafe nuint GetIndexOfFirstNonLatin1Char(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // If SSE2 is supported, use those specific intrinsics instead of the generic vectorized
@@ -29,6 +31,7 @@ namespace System.Text
                 : GetIndexOfFirstNonLatin1Char_Default(pBuffer, bufferLength);
         }
 
+        [RequiresUnsafe]
         private static unsafe nuint GetIndexOfFirstNonLatin1Char_Default(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // Squirrel away the original buffer reference.This method works by determining the exact

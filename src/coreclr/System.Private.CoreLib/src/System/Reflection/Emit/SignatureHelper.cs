@@ -538,6 +538,7 @@ namespace System.Reflection.Emit
             AddToken(clsToken);
         }
 
+        [RequiresUnsafe]
         private unsafe void InternalAddRuntimeType(Type type)
         {
             // Add a runtime type into the signature.

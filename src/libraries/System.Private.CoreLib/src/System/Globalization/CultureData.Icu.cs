@@ -169,6 +169,7 @@ namespace System.Globalization
             return true;
         }
 
+        [RequiresUnsafe]
         internal static unsafe bool GetLocaleName(string localeName, out string? windowsName)
         {
             // Get the locale name from ICU
@@ -184,6 +185,7 @@ namespace System.Globalization
             return true;
         }
 
+        [RequiresUnsafe]
         internal static unsafe bool GetDefaultLocaleName([NotNullWhen(true)] out string? windowsName)
         {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
@@ -225,6 +227,7 @@ namespace System.Globalization
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
+        [RequiresUnsafe]
         private unsafe string IcuGetLocaleInfo(string localeName, LocaleStringData type, string? uiCultureName = null)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
@@ -297,6 +300,7 @@ namespace System.Globalization
 
         private string IcuGetTimeFormatString() => IcuGetTimeFormatString(shortFormat: false);
 
+        [RequiresUnsafe]
         private unsafe string IcuGetTimeFormatString(bool shortFormat)
         {
             Debug.Assert(!GlobalizationMode.UseNls);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -100,6 +101,7 @@ namespace System
         // Please do not edit unless intentional.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy)
         {
             if (sourceBytesToCopy > destinationSizeInBytes)
@@ -114,6 +116,7 @@ namespace System
         // Please do not edit unless intentional.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy)
         {
             if (sourceBytesToCopy > destinationSizeInBytes)

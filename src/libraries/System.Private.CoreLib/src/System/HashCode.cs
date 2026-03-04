@@ -43,6 +43,7 @@ https://raw.githubusercontent.com/Cyan4973/xxHash/5c174cfa4e45a42f94082dc0d4539b
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -68,6 +69,7 @@ namespace System
         private uint _queue1, _queue2, _queue3;
         private uint _length;
 
+        [RequiresUnsafe]
         private static unsafe uint GenerateGlobalSeed()
         {
             uint result;

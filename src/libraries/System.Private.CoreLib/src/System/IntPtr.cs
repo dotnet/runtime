@@ -58,6 +58,7 @@ namespace System
 
         [CLSCompliant(false)]
         [NonVersionable]
+        [RequiresUnsafe]
         public unsafe IntPtr(void* value)
         {
             _value = (nint)value;
@@ -163,6 +164,7 @@ namespace System
 
         [CLSCompliant(false)]
         [NonVersionable]
+        [RequiresUnsafe]
         public unsafe void* ToPointer() => (void*)_value;
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />

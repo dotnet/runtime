@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -154,6 +155,7 @@ namespace System.Text
         public static OperationStatus ToUpperInPlace(Span<char> value, out int charsWritten)
             => ChangeCase<ushort, ToUpperConversion>(MemoryMarshal.Cast<char, ushort>(value), out charsWritten);
 
+        [RequiresUnsafe]
         private static unsafe OperationStatus ChangeCase<TFrom, TTo, TCasing>(ReadOnlySpan<TFrom> source, Span<TTo> destination, out int destinationElementsWritten)
             where TFrom : unmanaged, IBinaryInteger<TFrom>
             where TTo : unmanaged, IBinaryInteger<TTo>
@@ -189,6 +191,7 @@ namespace System.Text
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe OperationStatus ChangeCase<T, TCasing>(Span<T> buffer, out int elementsWritten)
             where T : unmanaged, IBinaryInteger<T>
             where TCasing : struct

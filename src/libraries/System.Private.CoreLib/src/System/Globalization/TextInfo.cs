@@ -185,6 +185,7 @@ namespace System.Globalization
             ChangeCaseCommon<ToLowerConversion>(this, source, destination);
         }
 
+        [RequiresUnsafe]
         private unsafe char ChangeCase(char c, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -226,6 +227,7 @@ namespace System.Globalization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe void ChangeCaseCommon<TConversion>(TextInfo? instance, ReadOnlySpan<char> source, Span<char> destination) where TConversion : struct
         {
             Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
@@ -276,6 +278,7 @@ namespace System.Globalization
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe string ChangeCaseCommon<TConversion>(TextInfo? instance, string source) where TConversion : struct
         {
             Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
@@ -390,6 +393,7 @@ namespace System.Globalization
             }
         }
 
+        [RequiresUnsafe]
         internal static unsafe string ToLowerAsciiInvariant(string s)
         {
             if (s.Length == 0)
@@ -775,6 +779,7 @@ namespace System.Globalization
             return inputIndex;
         }
 
+        [RequiresUnsafe]
         private unsafe void ChangeCaseCore(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
             if (GlobalizationMode.UseNls)

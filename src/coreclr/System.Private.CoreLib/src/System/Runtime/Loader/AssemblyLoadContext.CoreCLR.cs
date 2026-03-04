@@ -69,6 +69,7 @@ namespace System.Runtime.Loader
         }
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
+        [RequiresUnsafe]
         internal unsafe Assembly InternalLoad(ReadOnlySpan<byte> arrAssembly, ReadOnlySpan<byte> arrSymbols)
         {
             RuntimeAssembly? loadedAssembly = null;

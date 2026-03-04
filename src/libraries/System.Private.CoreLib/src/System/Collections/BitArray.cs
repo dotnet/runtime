@@ -11,6 +11,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections
 {
@@ -661,6 +662,7 @@ namespace System.Collections
         }
 
         /// <inheritdoc/>
+        [RequiresUnsafe]
         public unsafe void CopyTo(Array array, int index)
         {
             ArgumentNullException.ThrowIfNull(array);

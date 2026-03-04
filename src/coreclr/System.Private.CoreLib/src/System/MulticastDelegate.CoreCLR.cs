@@ -165,6 +165,7 @@ namespace System
             return false;
         }
 
+        [RequiresUnsafe]
         private unsafe MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object

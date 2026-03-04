@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -346,6 +347,7 @@ namespace System.Diagnostics.Tracing
             /// byte (since the top nibble can't be zero you can determine if this is true by seeing if
             /// this byte is nonZero.   This offset is needed to efficiently create the ID for child activities.
             /// </summary>
+            [RequiresUnsafe]
             private unsafe void CreateActivityPathGuid(out Guid idRet, out int activityPathGuidOffset)
             {
                 fixed (Guid* outPtr = &idRet)
@@ -377,6 +379,7 @@ namespace System.Diagnostics.Tracing
             /// sufficient space for this ID.   By doing this, we preserve the fact that this activity
             /// is a child (of unknown depth) from that ancestor.
             /// </summary>
+            [RequiresUnsafe]
             private unsafe void CreateOverflowGuid(Guid* outPtr)
             {
                 // Search backwards for an ancestor that has sufficient space to put the ID.

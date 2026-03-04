@@ -2392,6 +2392,7 @@ namespace System
         }
 
         // Removes a set of characters from the beginning and end of this string.
+        [RequiresUnsafe]
         public unsafe string Trim(char trimChar)
         {
             if (Length == 0 || (_firstChar != trimChar && this[^1] != trimChar))
@@ -2447,6 +2448,7 @@ namespace System
         }
 
         // Removes a set of characters from the beginning and end of this string.
+        [RequiresUnsafe]
         public unsafe string Trim(params char[]? trimChars)
         {
             if (trimChars == null || trimChars.Length == 0)
@@ -2468,6 +2470,7 @@ namespace System
         /// If <paramref name="trimChars"/> is empty, white-space characters are removed instead.
         /// If no characters can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
+        [RequiresUnsafe]
         public unsafe string Trim(params ReadOnlySpan<char> trimChars)
         {
             if (trimChars.IsEmpty)
@@ -2485,6 +2488,7 @@ namespace System
         public string TrimStart() => TrimWhiteSpaceHelper(TrimType.Head);
 
         // Removes a set of characters from the beginning of this string.
+        [RequiresUnsafe]
         public unsafe string TrimStart(char trimChar) => TrimHelper(&trimChar, 1, TrimType.Head);
 
         /// <summary>
@@ -2521,6 +2525,7 @@ namespace System
         }
 
         // Removes a set of characters from the beginning of this string.
+        [RequiresUnsafe]
         public unsafe string TrimStart(params char[]? trimChars)
         {
             if (trimChars == null || trimChars.Length == 0)
@@ -2542,6 +2547,7 @@ namespace System
         /// If <paramref name="trimChars"/> is empty, white-space characters are removed instead.
         /// If no characters can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
+        [RequiresUnsafe]
         public unsafe string TrimStart(params ReadOnlySpan<char> trimChars)
         {
             if (trimChars.IsEmpty)
@@ -2559,6 +2565,7 @@ namespace System
         public string TrimEnd() => TrimWhiteSpaceHelper(TrimType.Tail);
 
         // Removes a set of characters from the end of this string.
+        [RequiresUnsafe]
         public unsafe string TrimEnd(char trimChar) => TrimHelper(&trimChar, 1, TrimType.Tail);
 
         /// <summary>
@@ -2595,6 +2602,7 @@ namespace System
         }
 
         // Removes a set of characters from the end of this string.
+        [RequiresUnsafe]
         public unsafe string TrimEnd(params char[]? trimChars)
         {
             if (trimChars == null || trimChars.Length == 0)
@@ -2616,6 +2624,7 @@ namespace System
         /// If <paramref name="trimChars"/> is empty, white-space characters are removed instead.
         /// If no characters can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
+        [RequiresUnsafe]
         public unsafe string TrimEnd(params ReadOnlySpan<char> trimChars)
         {
             if (trimChars.IsEmpty)
@@ -2662,6 +2671,7 @@ namespace System
             return CreateTrimmedString(start, end);
         }
 
+        [RequiresUnsafe]
         private unsafe string TrimHelper(char* trimChars, int trimCharsLength, TrimType trimType)
         {
             Debug.Assert(trimChars != null);
