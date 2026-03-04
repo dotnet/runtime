@@ -14,16 +14,15 @@ namespace System.IO.Tests
             return new MemoryStream();
         }
 
-        [Fact]
-        public void AfterDisposeThrows()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void AfterDisposeThrows(bool leaveOpen)
         {
-            StreamWriter sw2;
-
-            // [] Calling methods after disposing the stream should throw
-            //-----------------------------------------------------------------
-            sw2 = new StreamWriter(CreateStream());
-            sw2.Dispose();
-            ValidateDisposedExceptions(sw2);
+            var sw = new StreamWriter(CreateStream(), leaveOpen: leaveOpen);
+            sw.Write("Hello");
+            sw.Dispose();
+            ValidateDisposedExceptions(sw);
         }
 
         [Fact]
@@ -45,16 +44,6 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => sw.Write("hello"));
             Assert.Throws<ObjectDisposedException>(() => sw.Flush());
             Assert.Throws<ObjectDisposedException>(() => sw.AutoFlush = true);
-        }
-
-        [Fact]
-        public void AfterDisposeThrows_LeaveOpenTrue()
-        {
-            // Repro for https://github.com/dotnet/runtime/issues/89646
-            var sw = new StreamWriter(CreateStream(), leaveOpen: true);
-            sw.Write("Hello");
-            sw.Dispose();
-            ValidateDisposedExceptions(sw);
         }
 
         [Fact]

@@ -62,12 +62,13 @@ namespace System.IO.Tests
             Assert.Equal(5, ms.Position); // doesn't throw
         }
 
-        [Fact]
-        public async Task DisposeAsync_LeaveOpenTrue_ThrowsAfterDispose()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DisposeAsync_ThrowsAfterDispose(bool leaveOpen)
         {
-            // Repro for https://github.com/dotnet/runtime/issues/89646
             var ms = new MemoryStream();
-            var sw = new StreamWriter(ms, leaveOpen: true);
+            var sw = new StreamWriter(ms, leaveOpen: leaveOpen);
             sw.Write("Hello");
             await sw.DisposeAsync();
 
