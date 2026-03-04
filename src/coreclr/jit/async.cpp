@@ -1259,8 +1259,6 @@ void AsyncTransformation::TransformTailAwaits(ArrayStack<BasicBlock*>& blocksWit
                 if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall() &&
                     tree->AsCall()->GetAsyncInfo().IsTailAwait)
                 {
-                    // Transform call; continue with the remainder block.
-                    // Transform takes care to update liveness.
                     TransformTailAwait(block, tree->AsCall(), &block);
                     any = true;
                     break;
