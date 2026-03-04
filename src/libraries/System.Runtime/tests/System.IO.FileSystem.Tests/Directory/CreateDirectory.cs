@@ -544,7 +544,7 @@ namespace System.IO.Tests
             });
         }
 
-        private static readonly string? s_notReadyDrive = IOServices.GetNotReadyDrive();
+        private static readonly string? s_notReadyDrive = OperatingSystem.IsWindows() ? IOServices.GetNotReadyDrive() : null;
 
 #if !TEST_WINRT // Cannot set current directory to root from appcontainer with it's default ACL
         /*
