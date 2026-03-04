@@ -766,6 +766,20 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
+    // Don't forward sub calls under TYP_REF GT_STOREIND nodes;
+    // the write barrier will constraint the address to a register that the call
+    // will trash, resulting in unfortunate shuffling.
+    //
+    if (fwdSubNode->IsCall())
+    {
+        GenTree* const parentNode = fsv.GetParentNode();
+        if ((parentNode != nullptr) && parentNode->OperIs(GT_STOREIND) && parentNode->TypeIs(TYP_REF))
+        {
+            JITDUMP(" call under TYP_REF GT_STOREIND; write barrier constraints\n");
+            return false;
+        }
+    }
+
     // There are implicit assumptions downstream on where/how multi-reg ops
     // can appear.
     //
