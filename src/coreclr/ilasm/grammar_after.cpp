@@ -120,6 +120,7 @@ char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen)
         _ASSERTE(!"NewStrFromTokenW: misaligned curTok");
         return NULL;
     }
+    // CodeQL [SM02986] Cast to WCHAR is safe because we bail if curTok is not properly aligned
     WCHAR* wcurTok = (WCHAR*)curTok;
     char *nb = new char[(tokLen<<1) + 2];
     if(nb != NULL)
@@ -144,6 +145,7 @@ char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Ou
         _ASSERTE(!"NewStaticStrFromTokenW: misaligned curTok");
         return NULL;
     }
+    // CodeQL [SM02986] Cast to WCHAR is safe because we bail if curTok is not properly aligned
     WCHAR* wcurTok = (WCHAR*)curTok;
     if(tokLen >= bufSize/2) return NULL;
     tokLen = WideCharToMultiByte(CP_UTF8,0,(LPCWSTR)wcurTok,(int)(tokLen >> 1),staticBuf,(int)bufSize,NULL,NULL);
@@ -173,6 +175,7 @@ unsigned GetDoubleW(_In_ __nullterminated char* begNum, unsigned L, double** ppR
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;
     dbuff[L+1] = 0;
+    // CodeQL [SM02986] Cast to WCHAR is safe because dbuff is properly aligned and we ensure proper null termination above
     *ppRes = new double(u16_strtod((const WCHAR*)dbuff, (WCHAR**)&pdummy));
     return ((unsigned)(pdummy - dbuff));
 }
@@ -199,9 +202,11 @@ char* yygetline(int Line)
         }
         if(Sym == SymW) // Unicode file
         {
+            // CodeQL [SM02986] pNextLine (via parser->getAll) points into properly WCHAR aligned data (MapViewOfFile) and is safely incremented by nextchar
             if(*((WCHAR*)pNextLine - 1) == '\r') pNextLine -= 2;
             uCount = (unsigned)(pNextLine - pLine);
             uCount &= 0x1FFF; // limit: 8K wchars
+            // CodeQL [SM02986] this cast is safe because buff is WCHAR aligned and we null terminate below
             WCHAR* wzBuff = (WCHAR*)buff;
             memcpy(buff,pLine,uCount);
             wzBuff[uCount >> 1] = 0;
@@ -243,7 +248,9 @@ void yyerror(_In_ __nullterminated const char* str) {
     const char* fmt = "%s(%d) : error : %s at token '%s' in: %s\n";
     if(Sym == SymW) // Unicode file
     {
+        // CodeQL [SM02986] Casting yygetline result to WCHAR* is safe because tokBuff is WCHAR-aligned and properly null terminated
         MAKE_UTF8PTR_FROMWIDE(tokBuffUtf8, (WCHAR*)tokBuff);
+        // CodeQL [SM02986] Casting yygetline result to WCHAR* is safe because buff is guaranteed to be WCHAR-aligned
         MAKE_UTF8PTR_FROMWIDE(curLineUtf8, (WCHAR*)yygetline(PENV->curLine));
         fprintf(stderr, fmt,
                 szfile, iline, str, tokBuffUtf8, curLineUtf8);
