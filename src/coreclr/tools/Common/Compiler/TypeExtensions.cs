@@ -418,13 +418,6 @@ namespace ILCompiler
 
             bool isStaticVirtualMethod = interfaceMethod.Signature.IsStatic;
 
-            // We can't resolve constraint calls effectively for reference types, and there's
-            // not a lot of perf. benefit in doing it anyway.
-            if (!constrainedType.IsValueType && (!isStaticVirtualMethod || constrainedType.IsCanonicalDefinitionType(CanonicalFormKind.Any)))
-            {
-                return null;
-            }
-
             // Interface method may or may not be fully canonicalized here.
             // It would be canonical on the CoreCLR side so canonicalize here to keep the algorithms similar.
             Instantiation methodInstantiation = interfaceMethod.Instantiation;
@@ -494,6 +487,13 @@ namespace ILCompiler
                     result = result.MakeInstantiatedMethod(methodInstantiation);
 
                 return result;
+            }
+
+            // We can't resolve constraint calls effectively for reference types, and there's
+            // not a lot of perf. benefit in doing it anyway.
+            if (!constrainedType.IsValueType)
+            {
+                return null;
             }
 
             // 1. Find the (possibly generic) method that would implement the
