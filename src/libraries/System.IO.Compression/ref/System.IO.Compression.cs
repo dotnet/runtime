@@ -188,6 +188,9 @@ namespace System.IO.Compression
     }
     public sealed partial class ZLibCompressionOptions
     {
+        public static int DefaultWindowLog { get { throw null; } }
+        public static int MaxWindowLog { get { throw null; } }
+        public static int MinWindowLog { get { throw null; } }
         public ZLibCompressionOptions() { }
         public int CompressionLevel { get { throw null; } set { } }
         public System.IO.Compression.ZLibCompressionStrategy CompressionStrategy { get { throw null; } set { } }
