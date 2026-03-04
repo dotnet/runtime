@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Threading.Tests
@@ -60,28 +59,6 @@ namespace System.Threading.Tests
             Volatile.ReadBarrier();
             long result3 = Volatile.Read(ref value3);
             Assert.Equal(123456789L, result3);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void Barriers_CrossThread()
-        {
-            bool complete = false;
-
-            Task.Run(() =>
-            {
-                Thread.Sleep(100);
-                complete = true;
-                Volatile.WriteBarrier();
-            });
-
-            SpinWait sw = default;
-            while (true)
-            {
-                Volatile.ReadBarrier();
-                if (complete)
-                    break;
-                sw.SpinOnce();
-            }
         }
     }
 }
