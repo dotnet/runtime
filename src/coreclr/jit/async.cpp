@@ -1061,6 +1061,8 @@ PhaseStatus AsyncTransformation::Run()
             FindAwaits(blocksWithNormalAwaits, blocksWithTailAwaits, &numNormalAwaits, &numTailAwaits);
             assert((numTailAwaits == 0) && (blocksWithTailAwaits.Height() == 0));
         }
+
+        result = PhaseStatus::MODIFIED_EVERYTHING;
     }
 
     JITDUMP("Found %d awaits in %d blocks\n", numNormalAwaits, blocksWithNormalAwaits.Height());
