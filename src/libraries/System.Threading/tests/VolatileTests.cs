@@ -63,19 +63,23 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void VolatileReadWrite_CrossThread()
+        public void Barriers_CrossThread()
         {
             bool complete = false;
 
             Task.Run(() =>
             {
                 Thread.Sleep(100);
-                Volatile.Write(ref complete, true);
+                complete = true;
+                Volatile.WriteBarrier();
             });
 
             SpinWait sw = default;
-            while (!Volatile.Read(ref complete))
+            while (true)
             {
+                Volatile.ReadBarrier();
+                if (complete)
+                    break;
                 sw.SpinOnce();
             }
         }
