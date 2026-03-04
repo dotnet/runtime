@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Threading.Tests
@@ -9,56 +10,10 @@ namespace System.Threading.Tests
     public class VolatileTests
     {
         [Fact]
-        public void ReadBarrier_DoesNotThrow()
+        public void Barriers_DoNotThrow()
         {
             Volatile.ReadBarrier();
-        }
-
-        [Fact]
-        public void WriteBarrier_DoesNotThrow()
-        {
             Volatile.WriteBarrier();
-        }
-
-        [Fact]
-        public void BarriersAndVolatileOperations()
-        {
-            // Test ReadBarrier, WriteBarrier, and other Volatile APIs
-            int value1 = 0;
-            int value2 = 0;
-            long value3 = 0;
-
-            // Test direct calls
-            Volatile.ReadBarrier();
-            Volatile.WriteBarrier();
-
-            // Test with Volatile.Read and Volatile.Write
-            Volatile.Write(ref value1, 42);
-            Volatile.WriteBarrier();
-            Assert.Equal(42, value1);
-
-            Volatile.ReadBarrier();
-            int result1 = Volatile.Read(ref value1);
-            Assert.Equal(42, result1);
-
-            // Test multiple sequential calls
-            Volatile.ReadBarrier();
-            Volatile.ReadBarrier();
-            Volatile.WriteBarrier();
-            Volatile.WriteBarrier();
-
-            // Test interleaved barriers with Volatile operations
-            Volatile.Write(ref value2, 100);
-            Volatile.WriteBarrier();
-            Volatile.ReadBarrier();
-            int result2 = Volatile.Read(ref value2);
-            Assert.Equal(100, result2);
-
-            // Test with different types
-            Volatile.Write(ref value3, 123456789L);
-            Volatile.ReadBarrier();
-            long result3 = Volatile.Read(ref value3);
-            Assert.Equal(123456789L, result3);
         }
 
         [Fact]
@@ -70,6 +25,59 @@ namespace System.Threading.Tests
             Assert.NotNull(writeBarrierMethod);
             readBarrierMethod.Invoke(null, null);
             writeBarrierMethod.Invoke(null, null);
+        }
+
+        [Fact]
+        public void BarriersAndVolatileOperations()
+        {
+            int value1 = 0;
+            int value2 = 0;
+            long value3 = 0;
+
+            Volatile.ReadBarrier();
+            Volatile.WriteBarrier();
+
+            Volatile.Write(ref value1, 42);
+            Volatile.WriteBarrier();
+            Assert.Equal(42, value1);
+
+            Volatile.ReadBarrier();
+            int result1 = Volatile.Read(ref value1);
+            Assert.Equal(42, result1);
+
+            Volatile.ReadBarrier();
+            Volatile.ReadBarrier();
+            Volatile.WriteBarrier();
+            Volatile.WriteBarrier();
+
+            Volatile.Write(ref value2, 100);
+            Volatile.WriteBarrier();
+            Volatile.ReadBarrier();
+            int result2 = Volatile.Read(ref value2);
+            Assert.Equal(100, result2);
+
+            Volatile.Write(ref value3, 123456789L);
+            Volatile.ReadBarrier();
+            long result3 = Volatile.Read(ref value3);
+            Assert.Equal(123456789L, result3);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void VolatileReadWrite_CrossThread()
+        {
+            bool complete = false;
+
+            Task.Run(() =>
+            {
+                Thread.Sleep(100);
+                Volatile.Write(ref complete, true);
+            });
+
+            SpinWait sw = default;
+            while (!Volatile.Read(ref complete))
+            {
+                sw.SpinOnce();
+            }
         }
     }
 }
