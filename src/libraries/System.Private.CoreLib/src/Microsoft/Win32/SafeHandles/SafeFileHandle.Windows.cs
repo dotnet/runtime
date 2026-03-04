@@ -306,6 +306,7 @@ namespace Microsoft.Win32.SafeHandles
                             return FileHandleType.SymbolicLink;
                         }
                     }
+
                     // Other reparse points (junctions, mount points, etc.) are not recognized as of now
                     return FileHandleType.Unknown;
                 }
