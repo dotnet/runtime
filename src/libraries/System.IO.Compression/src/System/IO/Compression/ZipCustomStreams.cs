@@ -824,7 +824,7 @@ namespace System.IO.Compression
                 }
                 else if (_totalBytesRead > _expectedLength)
                 {
-                    throw new InvalidDataException(SR.CrcMismatch);
+                    throw new InvalidDataException(SR.UnexpectedStreamLength);
                 }
             }
         }
