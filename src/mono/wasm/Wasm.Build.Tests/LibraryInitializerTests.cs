@@ -40,7 +40,10 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     [GeneratedRegex("MONO_WASM: Failed to invoke 'onRuntimeConfigLoaded' on library initializer '../WasmBasicTestApp.[a-z0-9]+.lib.module.js': Error: Error thrown from library initializer")]
     private static partial Regex AbortStartupOnErrorRegex { get; }
 
-    [Fact, TestCategory("bundler-friendly")]
+    [GeneratedRegex("Aborting startup, reason: Error: Failed to invoke 'onRuntimeReady' on library initializer '.*': Error: Error thrown from library initializer")]
+    private static partial Regex AbortStartupOnErrorCoreClrRegex { get; }
+
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsMonoRuntime)), TestCategory("bundler-friendly")]
     public async Task AbortStartupOnError()
     {
         Configuration config = Configuration.Debug;
@@ -54,5 +57,23 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             ExpectedExitCode: 1);
         RunResult result = await RunForPublishWithWebServer(options);
         Assert.True(result.ConsoleOutput.Any(m => AbortStartupOnErrorRegex.IsMatch(m)), "The library initializer test didn't emit expected error message");
+    }
+
+    [ConditionalFact(typeof(BuildTestBase), nameof(IsCoreClrRuntime)), TestCategory("bundler-friendly")]
+    public async Task AbortStartupOnError_CoreCLR()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_AbortStartupOnError_CoreCLR");
+        PublishProject(info, config);
+
+        BrowserRunOptions options = new(
+            config,
+            TestScenario: "LibraryInitializerTest",
+            BrowserQueryString: new NameValueCollection { {"throwErrorOnReady", "true" } },
+            ExpectedExitCode: 1);
+        RunResult result = await RunForPublishWithWebServer(options);
+        Assert.True(
+            result.ConsoleOutput.Any(m => AbortStartupOnErrorCoreClrRegex.IsMatch(m)),
+            $"The library initializer test didn't emit expected error message.\nConsole output:\n{string.Join("\n", result.ConsoleOutput)}");
     }
 }

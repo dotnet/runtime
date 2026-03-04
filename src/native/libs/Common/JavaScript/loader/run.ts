@@ -14,6 +14,17 @@ import { validateEngineFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
+async function invokeLibraryInitializers(modules: JsModuleExports[], resources: any[], methodName: string): Promise<void> {
+    for (let i = 0; i < modules.length; i++) {
+        try {
+            await (modules[i] as any)[methodName]?.(loaderConfig);
+        } catch (err) {
+            const name = (resources[i] as any).name || "unknown";
+            throw new Error(`Failed to invoke '${methodName}' on library initializer '${name}': ${err}`);
+        }
+    }
+}
+
 // WASM-TODO: downloadOnly - Blazor render mode auto pre-download. Really no start.
 // WASM-TODO: debugLevel
 
@@ -31,10 +42,9 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         }
         validateLoaderConfig();
 
-        const modulesAfterConfigLoaded = await Promise.all((loaderConfig.resources.modulesAfterConfigLoaded || []).map(loadJSModule));
-        for (const afterConfigLoadedModule of modulesAfterConfigLoaded) {
-            await afterConfigLoadedModule.onRuntimeConfigLoaded?.(loaderConfig);
-        }
+        const afterConfigLoadedResources = loaderConfig.resources.modulesAfterConfigLoaded || [];
+        const modulesAfterConfigLoaded = await Promise.all(afterConfigLoadedResources.map(loadJSModule));
+        await invokeLibraryInitializers(modulesAfterConfigLoaded, afterConfigLoadedResources, "onRuntimeConfigLoaded");
 
         // after onConfigLoaded hooks, polyfills can be initialized
         await initPolyfills();
@@ -98,10 +108,9 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         if (typeof Module.onDotnetReady === "function") {
             await Module.onDotnetReady();
         }
+        const afterRuntimeReadyResources = loaderConfig.resources.modulesAfterRuntimeReady || [];
         const modulesAfterRuntimeReady = await modulesAfterRuntimeReadyPromise;
-        for (const afterRuntimeReadyModule of modulesAfterRuntimeReady) {
-            await afterRuntimeReadyModule.onRuntimeReady?.(loaderConfig);
-        }
+        await invokeLibraryInitializers(modulesAfterRuntimeReady, afterRuntimeReadyResources, "onRuntimeReady");
         runtimeState.creatingRuntime = false;
     } catch (err) {
         exit(1, err);
