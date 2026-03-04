@@ -169,8 +169,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     if (binOp->gtOverflow())
     {
-        binOp->gtGetOp1()->SetMultiplyUsed();
-        binOp->gtGetOp2()->SetMultiplyUsed();
+        SetMultiplyUsed(binOp->gtGetOp1());
+        SetMultiplyUsed(binOp->gtGetOp2());
     }
 
     return binOp->gtNext;
@@ -189,12 +189,12 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
     ExceptionSetFlags exSetFlags = divMod->OperExceptions(m_compiler);
     if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
     {
-        divMod->gtGetOp1()->SetMultiplyUsed();
-        divMod->gtGetOp2()->SetMultiplyUsed();
+        SetMultiplyUsed(divMod->gtGetOp1());
+        SetMultiplyUsed(divMod->gtGetOp2());
     }
     else if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
     {
-        divMod->gtGetOp2()->SetMultiplyUsed();
+        SetMultiplyUsed(divMod->gtGetOp2());
     }
 
     ContainCheckDivOrMod(divMod);
@@ -248,7 +248,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         // If copying to the stack instead of the heap, we should treat it as a raw memcpy for
         //  smaller generated code and potentially better performance.
         if (blkNode->IsAddressNotOnHeap(m_compiler))
+        {
             doCpObj = false;
+        }
 
         // CopyObj or CopyBlk
         if (doCpObj)
@@ -260,9 +262,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
-            dstAddr->SetMultiplyUsed();
+            SetMultiplyUsed(dstAddr);
             if (src->OperIs(GT_IND))
-                src->gtGetOp1()->SetMultiplyUsed();
+            {
+                SetMultiplyUsed(src->gtGetOp1());
+            }
         }
         else
         {
@@ -299,7 +303,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     if (tree->gtOverflow())
     {
-        tree->gtGetOp1()->SetMultiplyUsed();
+        SetMultiplyUsed(tree->gtGetOp1());
     }
     ContainCheckCast(tree->AsCast());
 }
@@ -585,6 +589,6 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
     {
         // Prepare for explicit null check
         CallArg* thisArg = call->gtArgs.GetThisArg();
-        thisArg->GetNode()->SetMultiplyUsed();
+        SetMultiplyUsed(thisArg->GetNode());
     }
 }
