@@ -416,11 +416,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_UDIV:
         case GT_UMOD:
-            if (!LowerUnsignedDivOrMod(node->AsOp()))
-            {
-                ContainCheckDivOrMod(node->AsOp());
-            }
-            break;
+            return LowerUnsignedDivOrMod(node->AsOp());
 
         case GT_DIV:
         case GT_MOD:
@@ -2016,7 +2012,23 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
 #endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
     LegalizeArgPlacement(call);
+    AfterLowerArgsForCall(call);
 }
+
+#if !defined(TARGET_WASM)
+
+//------------------------------------------------------------------------
+// AfterLowerArgsForCall: post processing after call args are lowered
+//
+// Arguments:
+//    call - Call node
+//
+void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
+{
+    // no-op for non-Wasm targets
+}
+
+#endif // !defined(TARGET_WASM)
 
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
 //------------------------------------------------------------------------
@@ -3267,12 +3279,12 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
         // incoming args that live in that area. If we have later uses of those args, this
         // is a problem. We introduce a defensive copy into a temp here of those args that
         // potentially may cause problems.
-        for (int i = 0; i < putargs.Height(); i++)
+        for (GenTree* const put : putargs.BottomUpOrder())
         {
-            GenTreePutArgStk* put = putargs.Bottom(i)->AsPutArgStk();
+            GenTreePutArgStk* putArgStk = put->AsPutArgStk();
 
-            unsigned int overwrittenStart = put->getArgOffset();
-            unsigned int overwrittenEnd   = overwrittenStart + put->GetStackByteSize();
+            unsigned int overwrittenStart = putArgStk->getArgOffset();
+            unsigned int overwrittenEnd   = overwrittenStart + putArgStk->GetStackByteSize();
 
             for (unsigned callerArgLclNum = 0; callerArgLclNum < m_compiler->info.compArgsCount; callerArgLclNum++)
             {
@@ -4603,7 +4615,30 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         BlockRange().Remove(op2);
 
         GenCondition cmpCondition = GenCondition::FromRelop(cmp);
-        GenTreeCC*   setcc        = m_compiler->gtNewCC(GT_SETCC, cmp->TypeGet(), cmpCondition);
+
+        // For unsigned compares against zero that rely on flags-as-compare-to-zero,
+        // we cannot use UGT/UGE/ULT/ULE directly because op1 may set only NZ flags
+        // (e.g. ANDS on ARM64 clears C/V). UGT/ULT depend on carry, which would be wrong.
+        // Rewrite the condition to use Z/N where possible, or bail out.
+        if (cmp->IsUnsigned() && op2->IsIntegralConst(0) && cmp->OperIs(GT_GT, GT_GE, GT_LT, GT_LE))
+        {
+            if (cmp->OperIs(GT_GT))
+            {
+                // x > 0U  <=> x != 0
+                cmpCondition = GenCondition::NE;
+            }
+            else if (cmp->OperIs(GT_LE))
+            {
+                // x <= 0U <=> x == 0
+                cmpCondition = GenCondition::EQ;
+            }
+            else
+            {
+                // x >= 0U is always true and x < 0U is always false; keep the compare for correctness.
+                return cmp;
+            }
+        }
+        GenTreeCC* setcc = m_compiler->gtNewCC(GT_SETCC, cmp->TypeGet(), cmpCondition);
         BlockRange().InsertAfter(op1, setcc);
 
         use.ReplaceWith(setcc);
@@ -6592,18 +6627,9 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
 
 GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
 {
-#ifdef TARGET_X86
-    if (call->gtCallCookie != nullptr)
-    {
-        NYI_X86("Morphing indirect non-virtual call with non-standard args");
-    }
-#endif
-
     // Indirect cookie calls gets transformed by fgMorphArgs as indirect call with non-standard args.
     // Hence we should never see this type of call in lower.
-
     noway_assert(call->gtCallCookie == nullptr);
-
     return nullptr;
 }
 
@@ -8023,7 +8049,25 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 // LowerUnsignedDivOrMod: Lowers a GT_UDIV/GT_UMOD node.
 //
 // Arguments:
-//    divMod - pointer to the GT_UDIV/GT_UMOD node to be lowered
+//    divMod - the GT_UDIV/GT_UMOD node to be lowered
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
+{
+    if (!TryLowerConstIntUDivOrUMod(divMod))
+    {
+        LowerDivOrMod(divMod);
+    }
+    return divMod->gtNext;
+}
+
+//------------------------------------------------------------------------
+// LowerConstIntUDivOrUMod: Lowers a GT_UDIV/GT_UMOD node with a constant divisor.
+//
+// Arguments:
+//    divMod - the GT_UDIV/GT_UMOD node to be lowered
 //
 // Return Value:
 //    Returns a boolean indicating whether the node was transformed.
@@ -8033,8 +8077,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 //    - Transform UDIV by constant >= 2^(N-1) into GE
 //    - Transform UDIV/UMOD by constant >= 3 into "magic division"
 //
-
-bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
+bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
 {
     assert(divMod->OperIs(GT_UDIV, GT_UMOD));
 
@@ -8125,7 +8168,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
     }
 
-// TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
+    // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (!m_compiler->opts.MinOpts() && (divisorValue >= 3))
     {
@@ -8639,10 +8682,26 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
         }
         assert(nextNode == nullptr);
     }
-    ContainCheckDivOrMod(node->AsOp());
 
+    LowerDivOrMod(node->AsOp());
     return node->gtNext;
 }
+
+#ifndef TARGET_WASM
+//------------------------------------------------------------------------
+// LowerDivOrMod: Lowers a GT_[U]DIV/GT_[U]MOD node.
+//
+// Target-specific lowering, called **after** the possible transformation
+// into 'magic' division.
+//
+// Arguments:
+//    divMod - the node to be lowered
+//
+void Lowering::LowerDivOrMod(GenTreeOp* divMod)
+{
+    ContainCheckDivOrMod(divMod);
+}
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // TryFoldBinop: Try removing a binop node by constant folding.
@@ -8973,9 +9032,8 @@ void Lowering::MapParameterRegisterLocals()
     if (m_compiler->verbose)
     {
         printf("%d parameter register to local mappings\n", m_compiler->m_paramRegLocalMappings->Height());
-        for (int i = 0; i < m_compiler->m_paramRegLocalMappings->Height(); i++)
+        for (const ParameterRegisterLocalMapping& mapping : m_compiler->m_paramRegLocalMappings->BottomUpOrder())
         {
-            const ParameterRegisterLocalMapping& mapping = m_compiler->m_paramRegLocalMappings->BottomRef(i);
             printf("  %s -> V%02u+%u\n", getRegName(mapping.RegisterSegment->GetRegister()), mapping.LclNum,
                    mapping.Offset);
         }

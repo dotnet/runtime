@@ -106,10 +106,19 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, bo
         //     MethodDesc::BackpatchEntryPointSlots()
 
         // Backpatching the temporary entry point:
-        //     The temporary entry point is never backpatched for methods versionable with vtable slot backpatch. New vtable
-        //     slots inheriting the method will initially point to the temporary entry point and it must point to the prestub
-        //     and come here for backpatching such that the new vtable slot can be discovered and recorded for future
-        //     backpatching.
+        //     The temporary entry point is not directly backpatched for methods versionable with vtable slot backpatch.
+        //     New vtable slots inheriting the method will initially point to the temporary entry point. During call
+        //     counting, the temporary entry point's precode target may be temporarily redirected to a call counting
+        //     stub, but it must revert to the prestub when call counting ends (not to native code). This ensures new
+        //     vtable slots will come here for backpatching so they can be discovered and recorded for future
+        //     backpatching. The precode for backpatchable methods should only ever point to:
+        //       1. The prestub (default, and when call counting is not active)
+        //       2. A call counting stub (during active call counting only)
+        //     It must never point directly to native code, as that would permanently bypass slot recording.
+        //
+        //     To enable slot recording after the precode reverts to prestub, GetMethodEntryPoint() must be set to the
+        //     native code entry point (not the temporary entry point) during call counting. This prevents the
+        //     pExpected == pTarget check above from short-circuiting slot recording.
 
         _ASSERTE(!HasNonVtableSlot());
     }
@@ -1498,6 +1507,11 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
 
+    if (pTargetMD->IsAsyncMethod())
+    {
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+    }
+
     // Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + 1, msig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
@@ -1586,6 +1600,11 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+
+    if (pTargetMD->IsAsyncMethod())
+    {
+        pCode->EmitCALL(METHOD__ASYNC_HELPERS__TAIL_AWAIT, 0, 0);
+    }
 
     // Do the calli
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, msig.NumFixedArgs() + (msig.HasThis() ? 1 : 0), msig.IsReturnTypeVoid() ? 0 : 1);
@@ -2314,7 +2333,15 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             if (helperMD->ShouldCallPrestub())
                 (void)helperMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
             void* ilStubInterpData = helperMD->GetInterpreterCode();
+            // WASM-TODO: update this when we will have codegen
+            _ASSERTE(ilStubInterpData != NULL);
             SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
+
+            // Use this method's own PortableEntryPoint rather than the helper's.
+            // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
+            PCODE entryPoint = GetPortableEntryPoint();
+            PortableEntryPoint::SetInterpreterData(entryPoint, (PCODE)(TADDR)ilStubInterpData);
+            pCode = entryPoint;
         }
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         // FCalls are always wrapped in a precode to enable mapping of the entrypoint back to MethodDesc

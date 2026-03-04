@@ -1081,13 +1081,12 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
             break;
 
         case CORINFO_TOKENKIND_Await:
-            // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
-            // we cannot resolve to an Async variant in such case.
-            // return NULL, so that caller would re-resolve as a regular method call
-            pMD = pMD->ReturnsTaskOrValueTask() ?
-                pMD->GetAsyncVariant(/*allowInstParam*/FALSE):
-                NULL;
-
+            {
+                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+                // we cannot resolve to an Async variant in such case.
+                // return NULL, so that caller would re-resolve as a regular method call
+                pMD = pMD->ReturnsTaskOrValueTask() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+            }
             break;
 
         default:
@@ -2543,6 +2542,14 @@ void CEEInfo::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOW
     EE_TO_JIT_TRANSITION();
 }
 
+CorInfoWasmType CEEInfo::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    LIMITED_METHOD_CONTRACT;
+    // Only needed for a Wasm Jit.
+    UNREACHABLE();
+    return CORINFO_WASM_TYPE_VOID;
+}
+
 /*********************************************************************/
 unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
 {
@@ -2993,7 +3000,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     _ASSERT(pCallerMD != nullptr);
 
     pResultLookup->lookupKind.needsRuntimeLookup = true;
-    pResultLookup->lookupKind.runtimeLookupFlags = 0;
 
     CORINFO_RUNTIME_LOOKUP *pResult = &pResultLookup->runtimeLookup;
     pResult->signature = NULL;
@@ -6089,7 +6095,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
 /***********************************************************************/
 bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-        CORINFO_LOOKUP_KIND *           pGenericLookupKind,
         CorInfoHelpFunc                 id,
         CORINFO_METHOD_HANDLE           callerHandle,
         CORINFO_CONST_LOOKUP *          pLookup
@@ -8957,6 +8962,34 @@ CORINFO_METHOD_HANDLE CEEInfo::getInstantiatedEntry(
             *classArg = (CORINFO_CLASS_HANDLE)pMD->GetMethodTable();
         }
     }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
+    CORINFO_METHOD_HANDLE ftn,
+    bool* variantIsThunk)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_METHOD_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* pMD = GetMethod(ftn);
+    MethodDesc* pAsyncOtherVariant = NULL;
+    if (pMD->HasAsyncMethodData())
+    {
+         pAsyncOtherVariant = pMD->GetAsyncOtherVariant();
+    }
+    result = (CORINFO_METHOD_HANDLE)pAsyncOtherVariant;
+    *variantIsThunk = pAsyncOtherVariant != NULL && pAsyncOtherVariant->IsAsyncThunkMethod();
 
     EE_TO_JIT_TRANSITION();
 
@@ -13293,20 +13326,7 @@ static TADDR UnsafeJitFunctionWorker(
         //
         // Notify the debugger that we have successfully jitted the function
         //
-        bool isInterpreterCode = false;
-#ifdef FEATURE_INTERPRETER
-        EECodeInfo codeInfo((TADDR)nativeEntry);
-        if (codeInfo.IsValid())
-        {
-            IJitManager* pJitManager = codeInfo.GetJitManager();
-            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
-            {
-                isInterpreterCode = true;
-            }
-        }
-#endif // FEATURE_INTERPRETER
-        // TODO: Revisit this for interpreter code
-        if (g_pDebugInterface && !isInterpreterCode)
+        if (g_pDebugInterface)
         {
             g_pDebugInterface->JITComplete(nativeCodeVersion, (TADDR)nativeEntry);
 
@@ -13568,12 +13588,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 #endif // FEATURE_INTERPRETER
 
-#ifndef FEATURE_JIT
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
     if (!ret)
     {
         _ASSERTE(!"this platform does not support JIT compilation");
     }
-#else // !FEATURE_JIT
+#else // !FEATURE_DYNAMIC_CODE_COMPILED
     if (!ret)
     {
         EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
@@ -13632,7 +13652,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             break;
         }
     }
-#endif // !FEATURE_JIT
+#endif // !FEATURE_DYNAMIC_CODE_COMPILED
 
 #ifdef _DEBUG
     static BOOL fHeartbeat = -1;

@@ -561,12 +561,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount += BuildOperandUses(tree->AsBoundsChk()->GetArrayLength());
             break;
 
-        case GT_ARR_ELEM:
-            // These must have been lowered
-            noway_assert(!"We should never see a GT_ARR_ELEM after Lowering.");
-            srcCount = 0;
-            break;
-
         case GT_LEA:
             // The LEA usually passes its operands through to the GT_IND, in which case it will
             // be contained, but we may be instantiating an address, in which case we set them here.

@@ -788,6 +788,8 @@ ClrDataAccess::GetThreadFromThinlockID(UINT thinLockId, CLRDATA_ADDRESS *pThread
 HRESULT
 ClrDataAccess::GetThreadAllocData(CLRDATA_ADDRESS addr, struct DacpAllocData *data)
 {
+    if (addr == 0)
+        return E_INVALIDARG;
     if (data == NULL)
         return E_POINTER;
 
@@ -848,6 +850,12 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
 
 HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData)
 {
+    if (threadData == NULL)
+        return E_POINTER;
+
+    if (threadAddr == 0)
+        return E_INVALIDARG;
+
     SOSDacEnter();
 
     // marshal the Thread object from the target
@@ -1785,7 +1793,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
     ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
     ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
-    ModuleData->dwTransientFlags = pModule->m_dwTransientFlags;
+    ModuleData->dwTransientFlags = (pModule->m_dwTransientFlags & Module::IS_EDIT_AND_CONTINUE) ? DacpModuleData::IsEditAndContinue : 0;
     ModuleData->LoaderAllocator = HOST_CDADDR(pModule->m_loaderAllocator);
 
     EX_TRY
@@ -2692,9 +2700,14 @@ ClrDataAccess::GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count,
 HRESULT
 ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS domain, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *assemblyData)
 {
-    if (assembly == (CLRDATA_ADDRESS)NULL && domain == (CLRDATA_ADDRESS)NULL)
+    if (assembly == (CLRDATA_ADDRESS)NULL)
     {
         return E_INVALIDARG;
+    }
+
+    if (assemblyData == NULL)
+    {
+        return E_POINTER;
     }
 
     SOSDacEnter();
@@ -2728,6 +2741,11 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS domain, CLRDATA_ADDRESS assembly,
 HRESULT
 ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded)
 {
+    if ((assembly == (CLRDATA_ADDRESS)NULL) || (name == NULL && pNeeded == NULL) || (name != NULL && count == 0))
+    {
+        return E_INVALIDARG;
+    }
+
     SOSDacEnter();
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
 
@@ -3828,7 +3846,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
 HRESULT
 ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyncBlockCleanupData *syncBlockCData)
 {
-    if (syncBlock == 0 || syncBlockCData == NULL)
+    if (syncBlockCData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
@@ -3866,6 +3884,10 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
             syncBlockCData->blockCCW = (CLRDATA_ADDRESS) dac_cast<TADDR>(pBlock->m_pInteropInfo->GetCCW());
 #endif // FEATURE_COMINTEROP
     }
+
+    // Maintain backwards compatibility with old versions of CLRMD. They will not properly iterate, but at least it will not infinite loop.
+    if (syncBlock == 0)
+        return E_INVALIDARG;
 
     SOSDacLeave();
     return hr;
@@ -4361,8 +4383,14 @@ BOOL ClrDataAccess::DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr)
         return FALSE;
     }
 
-    return (qiAddress == GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface)
-        || qiAddress == GetEEFuncEntryPoint(TrackerTarget_QueryInterface));
+    for (unsigned int i = 0; i < g_numKnownQueryInterfaceImplementations; i++)
+    {
+        if (PINSTRToPCODE(qiAddress) == g_knownQueryInterfaceImplementations[i])
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
@@ -4587,6 +4615,8 @@ HRESULT ClrDataAccess::GetCCWInterfaces(CLRDATA_ADDRESS ccw, unsigned int count,
 
 HRESULT ClrDataAccess::GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data)
 {
+    if (objAddr == 0)
+        return E_INVALIDARG;
     if (data == NULL)
         return E_POINTER;
 

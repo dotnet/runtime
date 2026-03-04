@@ -54,9 +54,9 @@ namespace System.Globalization
 
                 int hijriAdvance = 0;
                 string? str = value.ToString();
-                if (string.Compare(str, 0, HijriAdvanceRegKeyEntry, 0, HijriAdvanceRegKeyEntry.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                if (str is not null && str.StartsWith(HijriAdvanceRegKeyEntry, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (str!.Length == HijriAdvanceRegKeyEntry.Length)
+                    if (str.Length == HijriAdvanceRegKeyEntry.Length)
                     {
                         hijriAdvance = -1;
                     }
