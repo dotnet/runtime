@@ -4309,6 +4309,14 @@ inline bool Compiler::PreciseRefCountsRequired()
     return opts.OptimizationEnabled();
 }
 
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
+{
+    return VisitOperandUses([visitor](GenTree** use) {
+        return visitor(*use);
+    });
+}
+
 #define RETURN_IF_ABORT(expr)                                                                                          \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -4316,8 +4324,22 @@ inline bool Compiler::PreciseRefCountsRequired()
             return VisitResult::Abort;                                                                                 \
     } while (0)
 
+//------------------------------------------------------------------------
+// VisitOperandUses: Call a functor for each use of a node's operands.
+//
+// Same as "GenTree::VisitOperands", but the TVisitor takes a "GenTree**
+// use" argument instead of "GenTree* operand", allowing for operand
+// modification.
+//
+// Arguments:
+//    visitor - The visitor, see "VisitOperands"
+//
+// Return Value:
+//    The visit result as returned by the visitor ("Continue" for nodes
+//    without operands).
+//
 template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
+GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
 {
     switch (OperGet())
     {
@@ -4362,7 +4384,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_GCPOLL:
             return VisitResult::Continue;
 
-        // Unary operators with an optional operand
+            // Unary operators with an optional operand
         case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:
@@ -4372,7 +4394,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
             }
             FALLTHROUGH;
 
-        // Standard unary operators
+            // Standard unary operators
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
@@ -4404,48 +4426,48 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
         case GT_RETURN_SUSPEND:
-            return visitor(this->AsUnOp()->gtOp1);
+            return visitor(&this->AsUnOp()->gtOp1);
 
-// Variadic nodes
+            // Variadic nodes
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            for (GenTree* operand : this->AsMultiOp()->Operands())
+            for (GenTree** use : this->AsMultiOp()->UseEdges())
             {
-                RETURN_IF_ABORT(visitor(operand));
+                RETURN_IF_ABORT(visitor(use));
             }
             return VisitResult::Continue;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
-        // Special nodes
+            // Special nodes
         case GT_PHI:
             for (GenTreePhi::Use& use : AsPhi()->Uses())
             {
-                RETURN_IF_ABORT(visitor(use.GetNode()));
+                RETURN_IF_ABORT(visitor(&use.NodeRef()));
             }
             return VisitResult::Continue;
 
         case GT_FIELD_LIST:
             for (GenTreeFieldList::Use& field : AsFieldList()->Uses())
             {
-                RETURN_IF_ABORT(visitor(field.GetNode()));
+                RETURN_IF_ABORT(visitor(&field.NodeRef()));
             }
             return VisitResult::Continue;
 
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
-            RETURN_IF_ABORT(visitor(cmpXchg->Addr()));
-            RETURN_IF_ABORT(visitor(cmpXchg->Data()));
-            return visitor(cmpXchg->Comparand());
+            RETURN_IF_ABORT(visitor(&cmpXchg->Addr()));
+            RETURN_IF_ABORT(visitor(&cmpXchg->Data()));
+            return visitor(&cmpXchg->Comparand());
         }
 
         case GT_ARR_ELEM:
         {
             GenTreeArrElem* const arrElem = this->AsArrElem();
-            RETURN_IF_ABORT(visitor(arrElem->gtArrObj));
+            RETURN_IF_ABORT(visitor(&arrElem->gtArrObj));
             for (unsigned i = 0; i < arrElem->gtArrRank; i++)
             {
-                RETURN_IF_ABORT(visitor(arrElem->gtArrInds[i]));
+                RETURN_IF_ABORT(visitor(&arrElem->gtArrInds[i]));
             }
             return VisitResult::Continue;
         }
@@ -4456,21 +4478,21 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
 
             for (CallArg& arg : call->gtArgs.EarlyArgs())
             {
-                RETURN_IF_ABORT(visitor(arg.GetEarlyNode()));
+                RETURN_IF_ABORT(visitor(&arg.EarlyNodeRef()));
             }
 
             for (CallArg& arg : call->gtArgs.LateArgs())
             {
-                RETURN_IF_ABORT(visitor(arg.GetLateNode()));
+                RETURN_IF_ABORT(visitor(&arg.LateNodeRef()));
             }
 
             if (call->gtCallType == CT_INDIRECT)
             {
-                RETURN_IF_ABORT(visitor(call->gtCallAddr));
+                RETURN_IF_ABORT(visitor(&call->gtCallAddr));
             }
             if (call->gtControlExpr != nullptr)
             {
-                return visitor(call->gtControlExpr);
+                return visitor(&call->gtControlExpr);
             }
             return VisitResult::Continue;
         }
@@ -4478,24 +4500,22 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_SELECT:
         {
             GenTreeConditional* const cond = this->AsConditional();
-            RETURN_IF_ABORT(visitor(cond->gtCond));
-            RETURN_IF_ABORT(visitor(cond->gtOp1));
-            return visitor(cond->gtOp2);
+            RETURN_IF_ABORT(visitor(&cond->gtCond));
+            RETURN_IF_ABORT(visitor(&cond->gtOp1));
+            return visitor(&cond->gtOp2);
         }
 
         // Binary nodes
         default:
             assert(this->OperIsBinary());
-            GenTree* op1 = gtGetOp1();
-            if (op1 != nullptr)
+            if (AsOp()->gtOp1 != nullptr)
             {
-                RETURN_IF_ABORT(visitor(op1));
+                RETURN_IF_ABORT(visitor(&AsOp()->gtOp1));
             }
 
-            GenTree* op2 = gtGetOp2();
-            if (op2 != nullptr)
+            if (AsOp()->gtOp2 != nullptr)
             {
-                return visitor(op2);
+                return visitor(&AsOp()->gtOp2);
             }
             return VisitResult::Continue;
     }
