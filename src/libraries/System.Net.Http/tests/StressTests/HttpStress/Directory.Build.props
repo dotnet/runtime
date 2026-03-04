@@ -11,8 +11,6 @@
         <!-- In Docker context, Versions.props isn't available so ProductVersion is unset.
              Default to NetCoreAppCurrentVersion.0 so the app roll-forwards to the testhost runtime. -->
         <ProductVersion Condition="'$(ProductVersion)' == ''">$(NetCoreAppCurrentVersion).0</ProductVersion>
-    </PropertyGroup>
-    <PropertyGroup>
         <MsQuicInteropIncludes Condition="'$(MsQuicInteropIncludes)' == ''">$(RepositoryRoot)src/libraries/System.Net.Quic/src/System/Net/Quic/Interop/*.cs</MsQuicInteropIncludes>
         <TargetingPacksTargetsLocation Condition="'$(TargetingPacksTargetsLocation)' == ''">$(RepositoryRoot)eng/targetingpacks.targets</TargetingPacksTargetsLocation>
         <NetCoreAppCurrentVersion Condition="'$(NetCoreAppCurrentVersion)' == ''">$(MajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
