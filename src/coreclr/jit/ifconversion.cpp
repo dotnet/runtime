@@ -389,7 +389,7 @@ void OptIfConversionDsc::IfConvertDump()
     bool beforeTransformation = m_startBlock->KindIs(BBJ_COND);
     if (beforeTransformation)
     {
-        // Dump all then blocks
+        // Dump all Then blocks
         for (BasicBlock* bb = m_startBlock->GetFalseTarget(); bb != m_finalBlock; bb = bb->GetUniqueSucc())
         {
             m_compiler->fgDumpBlock(bb);
@@ -397,7 +397,7 @@ void OptIfConversionDsc::IfConvertDump()
 
         if (m_doElseConversion)
         {
-            // Dump all else blocks
+            // Dump all Else blocks
             for (BasicBlock* bb = m_startBlock->GetTrueTarget(); bb != m_finalBlock; bb = bb->GetUniqueSucc())
             {
                 m_compiler->fgDumpBlock(bb);
@@ -406,8 +406,8 @@ void OptIfConversionDsc::IfConvertDump()
     }
     else if (m_finalBlock != nullptr)
     {
-        // After the transformating then/else blocks are empty. Instead,
-        // print unique succ of the SELECT block (prev. JTRUE) where flows would merge
+        // After the transformation Then/Else blocks are empty. Instead,
+        // dump unique successor of the SELECT (previously JTRUE) block where flows merge
         m_compiler->fgDumpBlock(m_finalBlock);
     }
 }
@@ -777,10 +777,10 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     // Update the flow graph. JTRUE block now contains the SELECT.
     //
 
-    // Remove flow into then/else blocks and update their weights
+    // Remove flow into Then/Else blocks and update their weights
     auto RemoveFlowInto = [&](BasicBlock* block) {
         m_compiler->fgRemoveAllRefPreds(block, m_startBlock);
-        block->setBBProfileWeight(0.0);
+        block->bbWeight = 0.0;
         assert(block->bbPreds == nullptr);
     };
     RemoveFlowInto(m_startBlock->GetFalseTarget());
@@ -790,7 +790,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     }
 
     // Change kind of JTRUE block and make it flow
-    // directly into block where flow merges (which is null in case of GT_RETURN)
+    // directly into block where flows merge (which is null in case of GT_RETURN)
     if (m_mainOper == GT_RETURN)
     {
         m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
