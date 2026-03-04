@@ -78,10 +78,9 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputLength"/> is negative or exceeds <see cref="uint.MaxValue"/>.</exception>
         public static long GetMaxCompressedLength(long inputLength)
         {
-            // DeflateEncoder.GetMaxCompressedLength returns the maximum size of the raw DEFLATE stream.
-            // The ZLib format adds a 2-byte header and a 4-byte Adler32 trailer on top of the DEFLATE data.
-            long maxCompressedLength = DeflateEncoder.GetMaxCompressedLength(inputLength) + 6;
-            return maxCompressedLength;
+            // compressBound() returns the upper bound for zlib-wrapped deflate, which already accounts
+            // for zlib's 2-byte header and 4-byte Adler32 trailer. Adding 6 bytes here is conservative.
+            return DeflateEncoder.GetMaxCompressedLength(inputLength) + 6;
         }
         /// <summary>
         /// Compresses a read-only byte span into a destination span.

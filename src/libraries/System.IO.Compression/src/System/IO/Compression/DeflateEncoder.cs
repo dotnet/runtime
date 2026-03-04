@@ -159,6 +159,8 @@ namespace System.IO.Compression
             ArgumentOutOfRangeException.ThrowIfNegative(inputLength);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(inputLength, uint.MaxValue);
 
+            // compressBound() returns the upper bound for zlib-wrapped deflate output.
+            // For raw deflate (no header/trailer) this slightly overestimates, which is safe.
             return (long)Interop.ZLib.compressBound((uint)inputLength);
         }
 
