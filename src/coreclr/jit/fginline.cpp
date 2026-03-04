@@ -10,7 +10,7 @@
 // Flowgraph Inline Support
 
 //------------------------------------------------------------------------
-// fgCheckForInlineDepthAndRecursion: compute depth of the candidate, and
+// fgCheckInlineDepthAndRecursion: compute depth of the candidate, and
 // check for recursion.
 //
 // Arguments:
