@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// In addition to PrecodeHelperImport instances of this import type emit GC ref map
     /// entries into the R2R executable.
     /// </summary>
-    public class DelayLoadHelperMethodImport : DelayLoadHelperImport, IMethodNode
+    public class DelayLoadHelperMethodImport : DelayLoadHelperImport, IMethodNode, IWasmCodeNode
     {
         private readonly MethodWithToken _method;
 
@@ -71,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public MethodDesc Method => _method.Method;
 
         // TODO-Wasm: Get proper signature
-        public WasmTypeNode GetSignature(NodeFactory factory) => null;
+        public WasmTypeNode GetWasmTypeSignature(NodeFactory factory) => null;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {

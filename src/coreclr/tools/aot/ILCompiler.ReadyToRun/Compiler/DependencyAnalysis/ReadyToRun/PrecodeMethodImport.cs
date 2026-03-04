@@ -46,9 +46,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             base.AppendMangledName(nameMangler, sb);
         }
 
-        // TODO-Wasm: Get proper signature
-        public WasmTypeNode GetSignature(NodeFactory factory) => null;
-
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             foreach (DependencyListEntry entry in base.GetStaticDependencies(factory))

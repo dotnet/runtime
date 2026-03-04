@@ -55,9 +55,6 @@ namespace ILCompiler.DependencyAnalysis
             return CanonicalMethodNode;
         }
 
-        // TODO-WASM: implement
-        public WasmTypeNode GetSignature(NodeFactory factory) => null;
-
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();

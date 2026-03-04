@@ -65,11 +65,11 @@ namespace ILCompiler.ObjectWriter
             _uniqueSignatures.Add(mangledName, _uniqueSignatures.Count);
         }
 
-        private protected override void RecordMethodDeclaration(ISymbolDefinitionNode symbol, MethodDesc desc)
+        private protected override void RecordMethodDeclaration(IWasmCodeNode node, MethodDesc desc)
         {
             WriteSignatureIndexForFunction(desc);
 
-            _uniqueSymbols.Add(symbol.GetMangledName(_nodeFactory.NameMangler), _methodCount);
+            _uniqueSymbols.Add(node.GetMangledName(_nodeFactory.NameMangler), _methodCount);
             _methodCount++;
         }
 

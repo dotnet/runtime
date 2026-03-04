@@ -380,7 +380,7 @@ namespace ILCompiler.ObjectWriter
             {
 
                 // TODO-WASM: emit symbol ranges properly when code and data are separated
-                // Right now we still need to determine placements for some traditionally text-placed nodes,
+                // Right now we still need to determine placements primary for some traditionally text-placed nodes,
                 // such as DebugDirectoryEntryNode and AssemblyStubNode
                 if (depNode is ISymbolRangeNode symbolRange && LayoutMode == CodeDataLayout.Unified)
                 {
@@ -442,22 +442,24 @@ namespace ILCompiler.ObjectWriter
                 }
 
 
-                if (node is IMethodBodyNode methodNode && LayoutMode is CodeDataLayout.Separate)
+                if (node is AssemblyStubNode && _nodeFactory.Target.IsWasm)
                 {
-                    // Record only information we can get from the MethodDesc here. The actual
-                    // body will be emitted by the call to EmitData() at the end
-                    // of this loop iteration.
-                    RecordMethodDeclaration((ISymbolDefinitionNode)node, methodNode.Method);
-                }
-                else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
-                {
-                    // TODO-Wasm: Handle AssemblyStubNode. It is the other IWasmCodeNode implementation we should see for R2R. (NativeAOT will have others)
+                    // TODO-Wasm: Handle AssemblyStubNode.
+                    // It is the other primary IWasmCodeNode implementation we should see for R2R. (NativeAOT will have others)
                     continue;
                 }
 
-                if (_nodeFactory.Target.IsWasm && node is IWasmCodeNode codeNode)
+                if (node is IWasmCodeNode codeNode && _nodeFactory.Target.IsWasm)
                 {
-                    Debug.Assert(codeNode.GetSignature(_nodeFactory) != null, $"Wasm code node {codeNode.GetType()} has null signature");
+                    Debug.Assert(codeNode.GetWasmTypeSignature(_nodeFactory) != null, $"Wasm code node {codeNode.GetType()} has null signature");
+
+                    if (node is IMethodBodyNode methodNode)
+                    {
+                        // Record only information we can get from the MethodDesc here. The actual
+                        // body will be emitted by the call to EmitData() at the end
+                        // of this loop iteration.
+                        RecordMethodDeclaration(codeNode, methodNode.Method);
+                    }
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
@@ -660,7 +662,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethodDeclaration(ISymbolDefinitionNode node, MethodDesc desc)
+        private protected virtual void RecordMethodDeclaration(IWasmCodeNode node, MethodDesc desc)
         {
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }

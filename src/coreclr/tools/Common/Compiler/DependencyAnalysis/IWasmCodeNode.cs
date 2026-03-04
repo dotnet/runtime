@@ -3,8 +3,11 @@
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public interface IWasmCodeNode
+    // TODO-Wasm: We may need to refactor here to split the functionality of
+    // this interface into a separate `IWasmNodeWithTypeReference` or similar
+    // once we add the concept of Wasm imports (since imports will also need signatures).
+    public interface IWasmCodeNode : ISymbolDefinitionNode
     {
-        WasmTypeNode GetSignature(NodeFactory factory);
+        WasmTypeNode GetWasmTypeSignature(NodeFactory factory);
     }
 }

@@ -9,7 +9,7 @@ using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class DelayLoadMethodImport : DelayLoadHelperImport, IMethodNode
+    public class DelayLoadMethodImport : DelayLoadHelperImport, IMethodNode, IWasmCodeNode
     {
         private readonly MethodWithGCInfo _localMethod;
 
@@ -41,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int ClassCode => 459923351;
 
         // TODO-Wasm: Get proper signature
-        public WasmTypeNode GetSignature(NodeFactory factory) => null;
+        public WasmTypeNode GetWasmTypeSignature(NodeFactory factory) => null;
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {

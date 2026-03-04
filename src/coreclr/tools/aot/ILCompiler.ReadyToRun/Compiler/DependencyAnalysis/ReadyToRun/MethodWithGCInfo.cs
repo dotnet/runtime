@@ -14,7 +14,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, ISymbolDefinitionNode
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, IWasmCodeNode 
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -262,7 +262,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return writer.ToArray();
         }
 
-        public WasmTypeNode GetSignature(NodeFactory factory)
+        public WasmTypeNode GetWasmTypeSignature(NodeFactory factory)
         {
             return factory.WasmTypeNode(_method);
         }
@@ -285,7 +285,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // All methods require an explicit signature declaration in Wasm which we materialize as a separate node,
                 // so we need to make sure this signature node is always created and marked as a dependency. 
-                WasmTypeNode signature = GetSignature(factory);
+                WasmTypeNode signature = GetWasmTypeSignature(factory);
                 Debug.Assert(signature != null);
                 dependencyList.Add(signature, "WASM methods require signature");
             }
