@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void ChainedConfiguration_ReloadPropagatestoInnerConfigurationRoot()
+        public void ChainedConfiguration_ReloadPropagatesToInnerConfigurationRoot()
         {
             var innerConfig = new ConfigurationBuilder()
                 .Add(new RandomValueConfigurationSource())
