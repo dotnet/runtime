@@ -33828,6 +33828,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     case FloatComparisonMode::OrderedFalseNonSignaling:
                     case FloatComparisonMode::OrderedFalseSignaling:
                     {
+                        if (ni == NI_AVX_CompareScalar)
+                        {
+                            // CompareScalar preserves upper elements from op1,
+                            // so we can't fold to a full zero vector
+                            break;
+                        }
                         resultNode = gtNewZeroConNode(retType);
                         resultNode = gtWrapWithSideEffects(resultNode, tree, GTF_ALL_EFFECT);
                         break;
@@ -33836,6 +33842,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     case FloatComparisonMode::UnorderedTrueNonSignaling:
                     case FloatComparisonMode::UnorderedTrueSignaling:
                     {
+                        if (ni == NI_AVX_CompareScalar)
+                        {
+                            // CompareScalar preserves upper elements from op1,
+                            // so we can't fold to a full AllBitsSet vector
+                            break;
+                        }
                         resultNode = gtNewAllBitsSetConNode(retType);
                         resultNode = gtWrapWithSideEffects(resultNode, tree, GTF_ALL_EFFECT);
                         break;
