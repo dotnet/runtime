@@ -13701,7 +13701,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
         default:
         {
-            assert(s_helperCallProperties.IsPure(eeGetHelperNum(call->gtCallMethHnd)));
+            assert(s_helperCallProperties.IsPure(call->GetHelperNum()));
 
 #ifdef DEBUG
             for (CallArg& arg : call->gtArgs.Args())
@@ -13957,7 +13957,7 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 
 void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
 {
-    CorInfoHelpFunc helpFunc         = eeGetHelperNum(call->gtCallMethHnd);
+    CorInfoHelpFunc helpFunc         = call->GetHelperNum();
     var_types       castToType       = TYP_UNDEF;
     var_types       castFromType     = TYP_UNDEF;
     bool            srcIsUnsigned    = false;
@@ -14322,7 +14322,7 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
 bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 {
-    CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+    CorInfoHelpFunc helpFunc = call->GetHelperNum();
 
     switch (helpFunc)
     {

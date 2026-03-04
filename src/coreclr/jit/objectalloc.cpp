@@ -2199,8 +2199,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 
                 if (call->IsHelperCall())
                 {
-                    canLclVarEscapeViaParentStack =
-                        !Compiler::s_helperCallProperties.IsNoEscape(m_compiler->eeGetHelperNum(call->gtCallMethHnd));
+                    canLclVarEscapeViaParentStack = !Compiler::s_helperCallProperties.IsNoEscape(call->GetHelperNum());
                 }
                 else if (call->IsSpecialIntrinsic())
                 {
@@ -2695,7 +2694,7 @@ void ObjectAllocator::RewriteUses()
             {
                 GenTreeCall* const call = tree->AsCall();
 
-                if (call->IsHelperCall(m_compiler, CORINFO_HELP_UNBOX))
+                if (call->IsHelperCall(CORINFO_HELP_UNBOX))
                 {
                     JITDUMP("Found unbox helper call [%06u]\n", m_compiler->dspTreeID(call));
 
@@ -2780,8 +2779,9 @@ void ObjectAllocator::RewriteUses()
 
                             // Update call state -- now an indirect call to the delegate target
                             //
-                            call->gtCallAddr = target;
-                            call->gtCallType = CT_INDIRECT;
+                            call->gtCallType    = CT_INDIRECT;
+                            call->gtControlExpr = target;
+                            call->gtCallMethHnd = NO_METHOD_HANDLE;
                             call->gtCallMoreFlags &= ~(GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
                         }
                     }
@@ -2799,8 +2799,7 @@ void ObjectAllocator::RewriteUses()
                 {
                     GenTree* const lastEffect = addr->AsOp()->gtGetOp1();
 
-                    if (lastEffect->IsCall() &&
-                        lastEffect->AsCall()->IsHelperCall(m_compiler, CORINFO_HELP_UNBOX_TYPETEST))
+                    if (lastEffect->IsCall() && lastEffect->AsCall()->IsHelperCall(CORINFO_HELP_UNBOX_TYPETEST))
                     {
                         GenTree* const actualAddr  = addr->gtEffectiveVal();
                         GenTree*       sideEffects = nullptr;
