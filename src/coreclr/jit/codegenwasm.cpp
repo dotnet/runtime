@@ -2040,12 +2040,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     genConsumeAddress(addr);
     genConsumeRegs(data);
 
-    if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
-    {
-        regNumber addrReg = GetMultiUseOperandReg(addr);
-        genEmitNullCheck(addrReg);
-    }
-
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
@@ -2053,6 +2047,12 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
     else // A normal store, not a WriteBarrier store
     {
+        if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
+        {
+            regNumber addrReg = GetMultiUseOperandReg(addr);
+            genEmitNullCheck(addrReg);
+        }
+
         var_types   type = tree->TypeGet();
         instruction ins  = ins_Store(type);
 
