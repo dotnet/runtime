@@ -10,7 +10,6 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'browser'">SR.SystemRuntimeInteropServicesJavaScript_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <FeatureMultithreading Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
@@ -71,8 +70,8 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Exception.cs" />
   </ItemGroup>
 
-  <!-- only include threads support when FeatureMultithreading is enabled -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(FeatureMultithreading)' == 'true'">
+  <!-- only include threads support when WasmEnableThreads is enabled -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSWebWorker.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSAsyncTaskScheduler.cs" />
