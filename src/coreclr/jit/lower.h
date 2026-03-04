@@ -637,6 +637,12 @@ private:
 
 #ifdef TARGET_WASM
     ArrayStack<GenTree*> m_stackificationStack;
+
+    static void SetMultiplyUsed(GenTree* node)
+    {
+        assert(node->gtType != TYP_STRUCT);
+        node->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
 #endif
 };
 

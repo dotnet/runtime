@@ -435,7 +435,7 @@ void CodeGen::WasmProduceReg(GenTree* node)
 //
 // If the operand is a candidate, we use that candidate's current register.
 // Otherwise it must have been allocated into a temporary register initialized
-// in 'WasmProduceReg'. To do this, call treeNode->SetMultiplyUsed() during
+// in 'WasmProduceReg'. To do this, call SetMultiplyUsed(treeNode) during
 // lowering and ensure that regalloc is updated to call 'ConsumeTemporaryRegForOperand'
 // on the node(s) that need to be used multiple times.
 //

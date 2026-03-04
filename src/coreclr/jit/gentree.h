@@ -1228,11 +1228,6 @@ public:
     // LIR flags
     //   These helper methods, along with the flag values they manipulate, are defined in lir.h
     //
-#ifdef TARGET_WASM
-    // Asks the register allocator to allocate a dedicated register for this node so we can use its value multiple
-    // times.
-    inline void SetMultiplyUsed();
-#endif
     // UnusedValue indicates that, although this node produces a value, it is unused.
     inline void SetUnusedValue();
     inline void ClearUnusedValue();
@@ -2517,6 +2512,9 @@ public:
     // in HIR if for some reason you need to visit operands in the order in which they will execute.
     template <typename TVisitor>
     VisitResult VisitOperands(TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitOperandUses(TVisitor visitor);
 
 public:
     bool Precedes(GenTree* other);
