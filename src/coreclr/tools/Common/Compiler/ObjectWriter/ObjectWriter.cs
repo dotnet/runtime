@@ -380,7 +380,7 @@ namespace ILCompiler.ObjectWriter
             {
 
                 // TODO-WASM: emit symbol ranges properly when code and data are separated
-                // Right now we still need to determine placements primary for some traditionally text-placed nodes,
+                // Right now we still need to determine placements for some traditionally text-placed nodes,
                 // such as DebugDirectoryEntryNode and AssemblyStubNode
                 if (depNode is ISymbolRangeNode symbolRange && LayoutMode == CodeDataLayout.Unified)
                 {

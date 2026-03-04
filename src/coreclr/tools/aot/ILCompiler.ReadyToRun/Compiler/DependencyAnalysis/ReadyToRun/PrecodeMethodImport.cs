@@ -7,7 +7,6 @@ using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
-using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
