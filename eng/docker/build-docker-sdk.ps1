@@ -65,7 +65,7 @@ if ($buildWindowsContainers)
   docker build --tag $imageName `
     --build-arg CONFIGURATION=$configuration `
     --build-arg VERSION=$VERSION `
-    --file libraries-sdk.windows.Dockerfile `
+    --file $dockerContext\libraries-sdk.windows.Dockerfile `
     $dockerContext
 }
 else
