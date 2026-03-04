@@ -1173,7 +1173,7 @@ namespace System.IO.Tests
             await FlushAsync(mode, stream);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public virtual async Task Flush_SetLengthAtEndOfBuffer_OperatesOnValidData()
         {
             if (!CanSeek || !CanSetLengthGreaterThanCapacity)
@@ -1734,7 +1734,7 @@ namespace System.IO.Tests
             await ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(readable, cancellationDelay);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadWriteByte_Success()
@@ -1919,7 +1919,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(AllReadWriteModesAndValue), false)]
         [MemberData(nameof(AllReadWriteModesAndValue), true)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
@@ -2400,7 +2400,7 @@ namespace System.IO.Tests
             await writes;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
@@ -2519,13 +2519,13 @@ namespace System.IO.Tests
 
         [OuterLoop("May take several seconds", ~TestPlatforms.Browser)]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public virtual async Task CopyToAsync_AllDataCopied_Large(bool useAsync) =>
             await CopyToAsync_AllDataCopied(1024 * 1024, useAsync);
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(CopyToAsync_AllDataCopied_MemberData))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
@@ -2564,7 +2564,7 @@ namespace System.IO.Tests
         }
 
         [OuterLoop("May take several seconds")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task Parallel_ReadWriteMultipleStreamsConcurrently()
@@ -2730,7 +2730,7 @@ namespace System.IO.Tests
             await Assert.ThrowsAsync<IOException>(async () => { await Task.Factory.FromAsync(writeable.BeginWrite, writeable.EndWrite, new byte[1], 0, 1, null); });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_DuringReadAsync_ThrowsIfUnsupported()

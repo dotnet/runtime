@@ -58,25 +58,25 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             string source2 = """
-                using System;
-                using System.Text.Json.Serialization;
+                    using System;
+                    using System.Text.Json.Serialization;
 
-                namespace Test
-                {
-                    // Same as above but with different implementation
-                    public class MyPoco
+                    namespace Test
                     {
-                        public int MyProperty
+                        // Same as above but with different implementation
+                        public class MyPoco
                         {
-                            get => -1;
-                            set => throw new NotSupportedException();
+                            public int MyProperty
+                            {
+                                get => -1;
+                                set => throw new NotSupportedException();
+                            }
                         }
-                    }
 
-                    // Changing location should produce identical SG model when no diagnostics are emitted.
-                    [JsonSerializable(typeof(MyPoco))]
-                    public partial class JsonContext : JsonSerializerContext { }
-                }
+                        // Changing location should produce identical SG model when no diagnostics are emitted.
+                        [JsonSerializable(typeof(MyPoco))]
+                        public partial class JsonContext : JsonSerializerContext { }
+                    }
                 """;
 
             JsonSourceGeneratorResult result1 = CompilationHelper.RunJsonSourceGenerator(CompilationHelper.CreateCompilation(source1));
@@ -262,25 +262,25 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             string source2 = """
-                using System;
-                using System.Text.Json.Serialization;
+                    using System;
+                    using System.Text.Json.Serialization;
 
-                namespace Test
-                {
-                    // Same as above but with different implementation
-                    public class MyPoco
+                    namespace Test
                     {
-                        public string MyProperty
+                        // Same as above but with different implementation
+                        public class MyPoco
                         {
-                            get => -1;
-                            set => throw new NotSupportedException();
+                            public string MyProperty
+                            {
+                                get => -1;
+                                set => throw new NotSupportedException();
+                            }
                         }
-                    }
 
-                    // Changing location should produce identical SG model when no diagnostics are emitted.
-                    [JsonSerializable(typeof(MyPoco))]
-                    public partial class JsonContext : JsonSerializerContext { }
-                }
+                        // Changing location should produce identical SG model when no diagnostics are emitted.
+                        [JsonSerializable(typeof(MyPoco))]
+                        public partial class JsonContext : JsonSerializerContext { }
+                    }
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source1);

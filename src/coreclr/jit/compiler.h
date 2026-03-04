@@ -4810,7 +4810,7 @@ protected:
 
     GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
-    GenTree* impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
+    GenTree* impMethodPointer(CORINFO_CALL_INFO* pCallInfo);
 
     GenTree* impTransformThis(GenTree*                thisPtr,
                               CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -4871,21 +4871,18 @@ public:
         return impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, true);
     }
 
-    GenTree* impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                             CORINFO_LOOKUP*         pLookup,
+    GenTree* impLookupToTree(CORINFO_LOOKUP*         pLookup,
                              GenTreeFlags            flags,
                              void*                   compileTimeHandle);
 
     GenTree* getRuntimeContextTree(CORINFO_RUNTIME_LOOKUP_KIND kind);
 
-    GenTree* impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    CORINFO_LOOKUP*         pLookup,
+    GenTree* impRuntimeLookupToTree(CORINFO_LOOKUP*         pLookup,
                                     void*                   compileTimeHandle);
 
     GenTreeCall* impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CorInfoHelpFunc         helper,
                                            var_types               type,
-                                           CORINFO_LOOKUP_KIND*    pGenericLookupKind = nullptr,
                                            GenTree*                arg1               = nullptr);
 
     bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
@@ -6232,6 +6229,7 @@ public:
     void fgConvertBBToThrowBB(BasicBlock* block);
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
+    bool fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow = false);
 
     void fgLoopCallTest(BasicBlock* srcBB, BasicBlock* dstBB);
     void fgLoopCallMark();
@@ -7595,7 +7593,7 @@ public:
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*> LocalNumberToNullCheckTreeMap;
 
-    GenTree*    getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
+    GenTree*    getArrayLengthFromAllocation(GenTree* tree);
     GenTree*    optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTree*    optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
     GenTree*    optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
@@ -8431,8 +8429,7 @@ protected:
     JitExpandArray<ASSERT_TP>* optAssertionDep = nullptr; // table that holds dependent assertions (assertions
                                                           // using the value of a local var) for each local var
     AssertionDsc*  optAssertionTabPrivate;                // table that holds info about assertions
-    VNSet*         optAssertionVNsMap = nullptr;
-    AssertionIndex optAssertionCount  = 0; // total number of assertions in the assertion table
+    AssertionIndex optAssertionCount = 0;                 // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
@@ -8561,7 +8558,6 @@ public:
 
     bool optCreateJumpTableImpliedAssertions(BasicBlock* switchBb);
 
-    bool optAssertionHasAssertionsForVN(ValueNum vn, bool addIfNotFound = false);
 #ifdef DEBUG
     void optPrintAssertion(const AssertionDsc& newAssertion, AssertionIndex assertionIndex = 0);
     void optPrintAssertionIndex(AssertionIndex index);
@@ -8682,6 +8678,11 @@ public:
 
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
     const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
+
+    Lowering* GetLowering() const
+    {
+        return m_pLowering;
+    }
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
