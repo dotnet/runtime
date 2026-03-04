@@ -2130,11 +2130,17 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     ArrayStack<CorInfoWasmType> typeStack(GetCompiler()->getAllocator(CMK_ArrayStack));
 
     if (call->gtReturnType == TYP_STRUCT)
+    {
         typeStack.Push(GetCompiler()->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
+    }
     else if (call->gtReturnType == TYP_VOID)
+    {
         typeStack.Push(CORINFO_WASM_TYPE_VOID);
+    }
     else
+    {
         typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(TypeToWasmValueType(call->gtReturnType)));
+    }
 
     for (const CallArg& arg : call->gtArgs.Args())
     {
@@ -2144,9 +2150,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
             WasmValueType wvt = WasmRegToType(seg.GetRegister());
             if (wvt >= WasmValueType::Count)
+            {
                 NYI_WASM("Unrecognized register type in genCallInstruction");
+            }
             else
+            {
                 typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
+            }
         }
     }
 
