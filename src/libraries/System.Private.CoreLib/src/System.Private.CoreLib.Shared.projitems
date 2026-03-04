@@ -1867,6 +1867,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_ALLOCATION_INFO.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.FILE_ALLOCATION_INFO.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_ATTRIBUTE_TAG_INFO.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FILE_ATTRIBUTE_TAG_INFO.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_END_OF_FILE_INFO.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.FILE_END_OF_FILE_INFO.cs</Link>
     </Compile>

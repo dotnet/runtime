@@ -274,7 +274,6 @@ namespace Microsoft.Win32.SafeHandles
                 return System.IO.FileHandleType.Pipe;
             }
 
-            // GetNamedPipeInfo failed - check the error code
             int error = Marshal.GetLastPInvokeError();
             if (error == Interop.Errors.ERROR_INVALID_HANDLE)
             {
@@ -282,8 +281,7 @@ namespace Microsoft.Win32.SafeHandles
                 return System.IO.FileHandleType.Socket;
             }
 
-            // Unexpected error - throw
-            throw new Win32Exception(error);
+            throw Win32Marshal.GetExceptionForWin32Error(error);
         }
 
         private unsafe System.IO.FileHandleType GetDiskBasedType()
@@ -300,9 +298,8 @@ namespace Microsoft.Win32.SafeHandles
                 if ((fileInfo.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0)
                 {
                     // Check the reparse tag to distinguish symlinks from other reparse points (junctions, mount points, etc.)
-                    const int FileAttributeTagInfo = 35; // FileAttributeTagInformation
-                    FILE_ATTRIBUTE_TAG_INFO tagInfo;
-                    if (Interop.Kernel32.GetFileInformationByHandleEx(this, FileAttributeTagInfo, &tagInfo, (uint)sizeof(FILE_ATTRIBUTE_TAG_INFO)))
+                    Interop.Kernel32.FILE_ATTRIBUTE_TAG_INFO tagInfo;
+                    if (Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileAttributeTagInfo, &tagInfo, (uint)sizeof(Interop.Kernel32.FILE_ATTRIBUTE_TAG_INFO)))
                     {
                         if (tagInfo.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK)
                         {
@@ -314,13 +311,6 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return System.IO.FileHandleType.RegularFile;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct FILE_ATTRIBUTE_TAG_INFO
-        {
-            internal uint FileAttributes;
-            internal uint ReparseTag;
         }
 
         internal long GetFileLength()
