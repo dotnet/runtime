@@ -10,6 +10,7 @@ public unsafe class SOSDacInterface8Tests
 {
     private const int S_OK = 0;
     private const int S_FALSE = 1;
+    private const int E_FAIL = unchecked((int)0x80004005);
 
     private static readonly GCHeapBuilder.GenerationInput[] s_generations =
     [
@@ -252,5 +253,49 @@ public unsafe class SOSDacInterface8Tests
 
         Assert.Equal(S_FALSE, hr);
         Assert.Equal((uint)s_fillPointers.Length, needed);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGenerationTable_ServerGC_ReturnsEFail(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface8 dac8 = CreateSvrDac8(arch, out _);
+
+        uint needed;
+        int hr = dac8.GetGenerationTable(0, null, &needed);
+        Assert.Equal(E_FAIL, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetFinalizationFillPointers_ServerGC_ReturnsEFail(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface8 dac8 = CreateSvrDac8(arch, out _);
+
+        uint needed;
+        int hr = dac8.GetFinalizationFillPointers(0, null, &needed);
+        Assert.Equal(E_FAIL, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGenerationTableSvr_WorkstationGC_ReturnsEFail(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface8 dac8 = CreateWksDac8(arch);
+
+        uint needed;
+        int hr = dac8.GetGenerationTableSvr((ClrDataAddress)0xDEAD, 0, null, &needed);
+        Assert.Equal(E_FAIL, hr);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetFinalizationFillPointersSvr_WorkstationGC_ReturnsEFail(MockTarget.Architecture arch)
+    {
+        ISOSDacInterface8 dac8 = CreateWksDac8(arch);
+
+        uint needed;
+        int hr = dac8.GetFinalizationFillPointersSvr((ClrDataAddress)0xDEAD, 0, null, &needed);
+        Assert.Equal(E_FAIL, hr);
     }
 }

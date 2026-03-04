@@ -4538,6 +4538,10 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+            if (gcIdentifiers.Contains(GCIdentifiers.Server))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
             GCHeapData heapData = gc.GetHeapData();
             uint totalGenerationCount = (uint)heapData.GenerationTable.Count;
 
@@ -4603,6 +4607,10 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+            if (gcIdentifiers.Contains(GCIdentifiers.Server))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
             GCHeapData heapData = gc.GetHeapData();
             uint numFillPointers = (uint)heapData.FillPointers.Count;
 
@@ -4661,6 +4669,10 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+            if (!gcIdentifiers.Contains(GCIdentifiers.Server))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
             GCHeapData heapData = gc.GetHeapData(heapAddr.ToTargetPointer(_target));
             uint totalGenerationCount = (uint)heapData.GenerationTable.Count;
 
@@ -4726,6 +4738,10 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             IGC gc = _target.Contracts.GC;
+            string[] gcIdentifiers = gc.GetGCIdentifiers();
+            if (!gcIdentifiers.Contains(GCIdentifiers.Server))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
             GCHeapData heapData = gc.GetHeapData(heapAddr.ToTargetPointer(_target));
             uint numFillPointers = (uint)heapData.FillPointers.Count;
 
