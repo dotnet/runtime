@@ -455,14 +455,12 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         if (gcHandle.Target is not EnumMethodInstances emi) return HResults.E_INVALIDARG;
         gcHandle.Free();
 
-#if DEBUG
         if (_legacyProcess != null && emi.LegacyHandle != TargetPointer.Null)
         {
             int hrLocal = _legacyProcess.EndEnumMethodInstancesByAddress(emi.LegacyHandle);
             if (hrLocal < 0)
                 return hrLocal;
         }
-#endif
 
         return hr;
     }
