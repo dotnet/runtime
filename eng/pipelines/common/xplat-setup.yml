@@ -176,11 +176,11 @@ jobs:
           os: linux
 
         # OSX Public Build Pool (we don't have on-prem OSX BuildPool).
-        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), not(in(parameters.jobParameters.hostedOs, 'linux', 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
           vmImage: 'macos-15'
 
         # Official build OSX pool
-        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), not(in(parameters.jobParameters.hostedOs, 'linux', 'windows')), ne(variables['System.TeamProject'], 'public')) }}:
           name: "Azure Pipelines"
           vmImage: 'macos-latest-internal'
           os: macOS
