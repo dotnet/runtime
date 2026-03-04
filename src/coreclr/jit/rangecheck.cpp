@@ -1798,7 +1798,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
 
     if (IsOverBudget())
     {
-        return false;
+        return true;
     }
     m_nVisitBudget--;
 
