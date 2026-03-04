@@ -2,6 +2,8 @@
 #define EP_SHARED_CONFIG_H_INCLUDED
 
 #cmakedefine01 HAVE_ERRNO_H
+#cmakedefine01 HAVE_SYS_MMAN_H
+#cmakedefine01 HAVE_MEMFD_CREATE
 #cmakedefine01 HAVE_LINUX_USER_EVENTS_H
 #cmakedefine01 HAVE_SYS_IOCTL_H
 #cmakedefine01 HAVE_SYS_SOCKET_H

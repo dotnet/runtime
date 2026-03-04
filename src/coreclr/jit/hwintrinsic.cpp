@@ -978,7 +978,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      AVX512v2_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512v3_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX10v1_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX10v2_X64
+    { FIRST_NI_AVX10v2_X64, LAST_NI_AVX10v2_X64 },              // AVX10v2_X64
     { NI_Illegal, NI_Illegal },                                 //      AES_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT_X64
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA_X64
@@ -999,6 +999,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      Atomics
     { FIRST_NI_Vector64, LAST_NI_Vector64 },                    // Vector64
     { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
+    { NI_Illegal, NI_Illegal },                                 // VectorT
     { NI_Illegal, NI_Illegal },                                 //      Dczva
     { NI_Illegal, NI_Illegal },                                 //      Rcpc
     { NI_Illegal, NI_Illegal },                                 //      VectorT128

@@ -1,7 +1,12 @@
 {
-    "changes": [
-        {"document": "GenericAddInstanceField.cs", "update": "GenericAddInstanceField_v1.cs"},
-        {"document": "GenericAddInstanceField.cs", "update": "GenericAddInstanceField_v2.cs"},
-    ]
+  "changes": [
+    {
+      "document": "GenericAddInstanceField.cs",
+      "update": "GenericAddInstanceField_v1.cs"
+    },
+    {
+      "document": "GenericAddInstanceField.cs",
+      "update": "GenericAddInstanceField_v2.cs"
+    }
+  ]
 }
-

@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public unsafe class LargeStructSize
 {
@@ -88,6 +89,7 @@ public unsafe class LargeStructSize
             Assert.Throws<TypeLoadException>(() => sizeof(Y_32));
     }
 
+    [ActiveIssue("This test is designed to run on mono only.", TestRuntimes.CoreCLR)]
     [Fact]
     public static void TestLargeStructSize()
     {

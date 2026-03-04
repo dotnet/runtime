@@ -1081,13 +1081,39 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
             break;
 
         case CORINFO_TOKENKIND_Await:
-            // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
-            // we cannot resolve to an Async variant in such case.
-            // return NULL, so that caller would re-resolve as a regular method call
-            pMD = pMD->ReturnsTaskOrValueTask() ?
-                pMD->GetAsyncVariant(/*allowInstParam*/FALSE):
-                NULL;
+        case CORINFO_TOKENKIND_AwaitVirtual:
+            {
+                // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+                // we cannot resolve to an Async variant in such case.
+                // return NULL, so that caller would re-resolve as a regular method call
+                bool allowAsyncVariant = pMD->ReturnsTaskOrValueTask();
+                if (allowAsyncVariant)
+                {
+                    bool isDirect = tokenType == CORINFO_TOKENKIND_Await || pMD->IsStatic();
+                    if (!isDirect)
+                    {
+                        DWORD attrs = pMD->GetAttrs();
+                        if (pMD->GetMethodTable()->IsInterface())
+                        {
+                            isDirect = !IsMdVirtual(attrs);
+                        }
+                        else
+                        {
+                            isDirect = !IsMdVirtual(attrs) || IsMdFinal(attrs) || pMD->GetMethodTable()->IsSealed();
+                        }
+                    }
 
+                    if (isDirect && !pMD->IsAsyncThunkMethod())
+                    {
+                        // Async variant would be a thunk. Do not resolve direct calls
+                        // to async thunks. That just creates and JITs unnecessary
+                        // thunks, and the thunks are harder for the JIT to optimize.
+                        allowAsyncVariant = false;
+                    }
+                }
+
+                pMD = allowAsyncVariant ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+            }
             break;
 
         default:
@@ -2482,7 +2508,7 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 #if defined(UNIX_AMD64_ABI)
                 SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
                 bool result = methodTablePtr->ClassifyEightBytes(&helper, useNativeLayout);
-                
+
                 // The answer must be true at this point.
                 _ASSERTE(result);
 #endif // UNIX_AMD64_ABI
@@ -2541,6 +2567,14 @@ void CEEInfo::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOW
     methodTablePtr->GetNativeSwiftPhysicalLowering(pLowering, useNativeLayout);
 
     EE_TO_JIT_TRANSITION();
+}
+
+CorInfoWasmType CEEInfo::getWasmLowering(CORINFO_CLASS_HANDLE structHnd)
+{
+    LIMITED_METHOD_CONTRACT;
+    // Only needed for a Wasm Jit.
+    UNREACHABLE();
+    return CORINFO_WASM_TYPE_VOID;
 }
 
 /*********************************************************************/
@@ -2993,7 +3027,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     _ASSERT(pCallerMD != nullptr);
 
     pResultLookup->lookupKind.needsRuntimeLookup = true;
-    pResultLookup->lookupKind.runtimeLookupFlags = 0;
 
     CORINFO_RUNTIME_LOOKUP *pResult = &pResultLookup->runtimeLookup;
     pResult->signature = NULL;
@@ -6089,7 +6122,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(CORINFO_OBJECT_HANDLE objHandle)
 /***********************************************************************/
 bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-        CORINFO_LOOKUP_KIND *           pGenericLookupKind,
         CorInfoHelpFunc                 id,
         CORINFO_METHOD_HANDLE           callerHandle,
         CORINFO_CONST_LOOKUP *          pLookup
@@ -8818,13 +8850,13 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
-    
+
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
         pDevirtMD = pDevirtMD->FindOrCreateAssociatedMethodDesc(
             pDevirtMD, pExactMT, pExactMT->IsValueType() && !pDevirtMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
-        
+
         // We still can't handle shared generic methods because we don't have
         // the right generic context for runtime lookup.
         // TODO: Remove this limitation.
@@ -10140,6 +10172,13 @@ void CEEInfo::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method,
     EE_TO_JIT_TRANSITION();
 }
 
+CORINFO_WASM_TYPE_SYMBOL_HANDLE CEEInfo::getWasmTypeSymbol(
+    CorInfoWasmType* types, size_t typesSize)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE_RET();
+}
+
 CORINFO_METHOD_HANDLE CEEInfo::getSpecialCopyHelper(CORINFO_CLASS_HANDLE type)
 {
     CONTRACTL {
@@ -10317,6 +10356,33 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
+static MethodTable* getContinuationType(
+    size_t dataSize,
+    bool* objRefs,
+    size_t objRefsSize,
+    Module* loaderModule)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    _ASSERTE(objRefsSize == (dataSize + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE);
+    LoaderAllocator* allocator = loaderModule->GetLoaderAllocator();
+    AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
+    MethodTable* mt = asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, loaderModule);
+
+#ifdef DEBUG
+    MethodTable* mt2 = asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, loaderModule);
+    _ASSERTE(mt2 == mt);
+#endif
+
+    return mt;
+}
+
 CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
     size_t dataSize,
     bool* objRefs,
@@ -10332,15 +10398,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(objRefsSize == (dataSize + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE);
-    LoaderAllocator* allocator = m_pMethodBeingCompiled->GetLoaderAllocator();
-    AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
-    result = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, m_pMethodBeingCompiled);
-
-#ifdef DEBUG
-    CORINFO_CLASS_HANDLE result2 = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, m_pMethodBeingCompiled);
-    _ASSERTE(result2 == result);
-#endif
+    result = (CORINFO_CLASS_HANDLE)::getContinuationType(dataSize, objRefs, objRefsSize, m_pMethodBeingCompiled->GetLoaderModule());
 
     EE_TO_JIT_TRANSITION();
 
@@ -11388,12 +11446,12 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
 {
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(pArgs->coldCodeSize == 0);
-    _ASSERTE(pArgs->roDataSize == 0);
+    _ASSERTE(pArgs->chunksCount == 1);
 
-    ULONG codeSize      = pArgs->hotCodeSize;
-    void **codeBlock    = &pArgs->hotCodeBlock;
-    void **codeBlockRW  = &pArgs->hotCodeBlockRW;
+    unsigned codeAlign    = std::max((unsigned)CODE_SIZE_ALIGN, pArgs->chunks[0].alignment);
+    ULONG codeSize        = pArgs->chunks[0].size;
+    uint8_t **codeBlock   = &pArgs->chunks[0].block;
+    uint8_t **codeBlockRW = &pArgs->chunks[0].blockRW;
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
 
     _ASSERTE(m_CodeHeader == 0 &&
@@ -11418,10 +11476,10 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
             ullMethodIdentifier = (ULONGLONG)m_pMethodBeingCompiled;
         }
         FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
-            pArgs->hotCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
+            codeSize, 0, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, pArgs->flag, &m_CodeHeader, &m_CodeHeaderRW,
+    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, codeAlign, &m_CodeHeader, &m_CodeHeaderRW,
         &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, 0);
 
     BYTE* current = (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress();
@@ -11433,11 +11491,6 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
     *codeBlockRW = current;
 
     current += codeSize;
-
-    pArgs->coldCodeBlock = NULL;
-    pArgs->coldCodeBlockRW = NULL;
-    pArgs->roDataBlock = NULL;
-    pArgs->roDataBlockRW = NULL;
 
     _ASSERTE((SIZE_T)(current - (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress()) <= totalSize.Value());
 
@@ -12689,53 +12742,28 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(pArgs->coldCodeSize == 0);
-    if (pArgs->coldCodeBlock)
-    {
-        pArgs->coldCodeBlock = NULL;
-    }
+    unsigned codeSize = 0;
+    unsigned roDataSize = 0;
+    S_SIZE_T totalSize(0);
+    unsigned alignment = CODE_SIZE_ALIGN;
 
-    ULONG codeSize      = pArgs->hotCodeSize;
-    void **codeBlock    = &pArgs->hotCodeBlock;
-    void **codeBlockRW  = &pArgs->hotCodeBlockRW;
+    for (unsigned i = 0; i < pArgs->chunksCount; i++)
+    {
+        AllocMemChunk& chunk = pArgs->chunks[i];
+        _ASSERTE((chunk.flags & CORJIT_ALLOCMEM_COLD_CODE) == 0);
 
-    S_SIZE_T totalSize = S_SIZE_T(codeSize);
-
-    size_t roDataAlignment = sizeof(void*);
-    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN)!= 0)
-    {
-        roDataAlignment = 64;
-    }
-    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
-    {
-        roDataAlignment = 32;
-    }
-    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)!= 0)
-    {
-        roDataAlignment = 16;
-    }
-    else if (pArgs->roDataSize >= 8)
-    {
-        roDataAlignment = 8;
-    }
-    if (pArgs->roDataSize > 0)
-    {
-        size_t codeAlignment = sizeof(void*);
-
-        if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+        if ((chunk.flags & CORJIT_ALLOCMEM_HOT_CODE) != 0)
         {
-            codeAlignment = 32;
+            codeSize += chunk.size;
         }
-        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+        else
         {
-            codeAlignment = 16;
+            roDataSize += chunk.size;
         }
-        totalSize.AlignUp(codeAlignment);
-        if (roDataAlignment > codeAlignment) {
-            // Add padding to align read-only data.
-            totalSize += (roDataAlignment - codeAlignment);
-        }
-        totalSize += pArgs->roDataSize;
+
+        totalSize.AlignUp(chunk.alignment);
+        totalSize += chunk.size;
+        alignment = max(alignment, chunk.alignment);
     }
 
     totalSize.AlignUp(sizeof(DWORD));
@@ -12767,40 +12795,33 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
         }
 
         FireEtwMethodJitMemoryAllocatedForCode(ullMethodIdentifier, ullModuleID,
-            pArgs->hotCodeSize + pArgs->coldCodeSize, pArgs->roDataSize, totalSize.Value(), pArgs->flag, GetClrInstanceId());
+            codeSize, roDataSize, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), pArgs->flag, &m_CodeHeader,
+    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), alignment, &m_CodeHeader,
         &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, m_totalUnwindInfos);
 
     m_moduleBase = m_pCodeHeap->GetModuleBase();
 
-    BYTE* current = (BYTE *)((CodeHeader*)m_CodeHeader)->GetCodeStartAddress();
+    BYTE* start = (BYTE *)((CodeHeader*)m_CodeHeader)->GetCodeStartAddress();
+    size_t offset = 0;
     size_t writeableOffset = (BYTE *)m_CodeHeaderRW - (BYTE *)m_CodeHeader;
 
-    *codeBlock = current;
-    *codeBlockRW = current + writeableOffset;
-    current += codeSize;
-
-    if (pArgs->roDataSize > 0)
+    for (unsigned i = 0; i < pArgs->chunksCount; i++)
     {
-        current = (BYTE *)ALIGN_UP(current, roDataAlignment);
-        pArgs->roDataBlock = current;
-        pArgs->roDataBlockRW = current + writeableOffset;
-        current += pArgs->roDataSize;
-    }
-    else
-    {
-        pArgs->roDataBlock = NULL;
-        pArgs->roDataBlockRW = NULL;
+        AllocMemChunk& chunk = pArgs->chunks[i];
+        offset = AlignUp(offset, chunk.alignment);
+        chunk.block = start + offset;
+        chunk.blockRW = start + offset + writeableOffset;
+        offset += chunk.size;
     }
 
-    current = (BYTE *)ALIGN_UP(current, sizeof(DWORD));
+    offset = AlignUp(offset, sizeof(DWORD));
 
-    m_theUnwindBlock = current;
-    current += m_totalUnwindSize;
+    m_theUnwindBlock = start + offset;
+    offset += m_totalUnwindSize;
 
-    _ASSERTE((SIZE_T)(current - (BYTE *)((CodeHeader*)m_CodeHeader)->GetCodeStartAddress()) <= totalSize.Value());
+    _ASSERTE(offset <= totalSize.Value());
 
 #ifdef _DEBUG
     m_codeSize = codeSize;
@@ -13185,6 +13206,7 @@ void ThrowExceptionForJit(HRESULT res)
 
         case CORJIT_BADCODE:
         case CORJIT_IMPLLIMITATION:
+        case CORJIT_R2R_UNSUPPORTED:
         default:
             COMPlusThrow(kInvalidProgramException);
             break;
@@ -13578,12 +13600,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 #endif // FEATURE_INTERPRETER
 
-#ifndef FEATURE_JIT
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
     if (!ret)
     {
         _ASSERTE(!"this platform does not support JIT compilation");
     }
-#else // !FEATURE_JIT
+#else // !FEATURE_DYNAMIC_CODE_COMPILED
     if (!ret)
     {
         EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
@@ -13642,7 +13664,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             break;
         }
     }
-#endif // !FEATURE_JIT
+#endif // !FEATURE_DYNAMIC_CODE_COMPILED
 
 #ifdef _DEBUG
     static BOOL fHeartbeat = -1;
@@ -13721,6 +13743,52 @@ void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap)
         cur--;
     } while (cur >= last);
 }
+
+MethodTable* GetContinuationTypeFromLayout(PCCOR_SIGNATURE pBlob, Module* currentModule)
+{
+    STANDARD_VM_CONTRACT;
+
+    SigPointer p(pBlob);
+    // Skip Continuation type signature
+    IfFailThrow(p.SkipExactlyOne());
+
+    uint32_t dwFlags;
+    IfFailThrow(p.GetData(&dwFlags));
+
+    uint32_t dwExpectedSize;
+    IfFailThrow(p.GetData(&dwExpectedSize));
+
+    if (((dwFlags & READYTORUN_LAYOUT_GCLayout) == 0)
+        || ((dwFlags & READYTORUN_LAYOUT_Alignment_Native) == 0)
+        || ((dwExpectedSize % TARGET_POINTER_SIZE) != 0))
+    {
+        return nullptr;
+    }
+
+    if (dwFlags & READYTORUN_LAYOUT_GCLayout_Empty)
+    {
+        // No GC references, don't read a bitmap
+        return ::getContinuationType(dwExpectedSize, nullptr, 0, currentModule);
+    }
+    else
+    {
+        uint8_t* pGCRefMapBlob = (uint8_t*)p.GetPtr();
+        size_t objRefsSize = (dwExpectedSize / TARGET_POINTER_SIZE);
+        bool* objRefs = (bool*)_alloca(objRefsSize * sizeof(bool));
+        size_t bytesInBlob = (objRefsSize + 7) / 8;
+        // Expand bitmap to bool array for use with getContinuationType
+        for (size_t byteIndex = 0; byteIndex < bytesInBlob; byteIndex++)
+        {
+            uint8_t b = pGCRefMapBlob[byteIndex];
+            for (int bit = 0; bit < 8 && byteIndex * 8 + bit < objRefsSize; bit++)
+            {
+                objRefs[byteIndex * 8 + bit] = (b & (1 << bit)) != 0;
+            }
+        }
+        return ::getContinuationType(dwExpectedSize, objRefs, objRefsSize, currentModule);
+    }
+}
+
 
 //
 // Type layout check verifies that there was no incompatible change in the value type layout.
@@ -14193,6 +14261,19 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
+    case READYTORUN_FIXUP_Continuation_Layout:
+        {
+            MethodTable* continuationTypeMethodTable = GetContinuationTypeFromLayout(pBlob, currentModule);
+            if (continuationTypeMethodTable == NULL)
+            {
+                return FALSE;
+            }
+
+            TypeHandle th = TypeHandle(continuationTypeMethodTable);
+            result = (size_t)th.AsPtr();
+        }
+        break;
+
     case READYTORUN_FIXUP_Check_FieldOffset:
         {
             DWORD dwExpectedOffset = CorSigUncompressData(pBlob);
@@ -14331,6 +14412,20 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 {
                     _ASSERTE(slot < pBaseMT->GetNumVirtuals());
                     pImplMethodRuntime = thImpl.GetMethodTable()->GetMethodDescForSlot(slot);
+                }
+            }
+
+            // Strip off method instantiation for comparison if the method is generic virtual.
+            if (pDeclMethod->HasMethodInstantiation())
+            {
+                if (pImplMethodRuntime != NULL)
+                {
+                    pImplMethodRuntime = pImplMethodRuntime->StripMethodInstantiation();
+                }
+
+                if (pImplMethodCompiler != NULL)
+                {
+                    pImplMethodCompiler = pImplMethodCompiler->StripMethodInstantiation();
                 }
             }
 

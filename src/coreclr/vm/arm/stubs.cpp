@@ -1287,14 +1287,23 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     // Update the integer registers in KNONVOLATILE_CONTEXT_POINTERS from
     // the exception context we have.
-    pRD->pCurrentContextPointers->R4 = (PDWORD)&m_ctx.R4;
-    pRD->pCurrentContextPointers->R5 = (PDWORD)&m_ctx.R5;
-    pRD->pCurrentContextPointers->R6 = (PDWORD)&m_ctx.R6;
-    pRD->pCurrentContextPointers->R7 = (PDWORD)&m_ctx.R7;
-    pRD->pCurrentContextPointers->R8 = (PDWORD)&m_ctx.R8;
-    pRD->pCurrentContextPointers->R9 = (PDWORD)&m_ctx.R9;
-    pRD->pCurrentContextPointers->R10 = (PDWORD)&m_ctx.R10;
-    pRD->pCurrentContextPointers->R11 = (PDWORD)&m_ctx.R11;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    T_CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    T_CONTEXT *pContext = &m_ctx;
+#endif
+
+    pRD->pCurrentContextPointers->R4 = (PDWORD)&pContext->R4;
+    pRD->pCurrentContextPointers->R5 = (PDWORD)&pContext->R5;
+    pRD->pCurrentContextPointers->R6 = (PDWORD)&pContext->R6;
+    pRD->pCurrentContextPointers->R7 = (PDWORD)&pContext->R7;
+    pRD->pCurrentContextPointers->R8 = (PDWORD)&pContext->R8;
+    pRD->pCurrentContextPointers->R9 = (PDWORD)&pContext->R9;
+    pRD->pCurrentContextPointers->R10 = (PDWORD)&pContext->R10;
+    pRD->pCurrentContextPointers->R11 = (PDWORD)&pContext->R11;
     pRD->pCurrentContextPointers->Lr = NULL;
 
     pRD->IsCallerContextValid = FALSE;

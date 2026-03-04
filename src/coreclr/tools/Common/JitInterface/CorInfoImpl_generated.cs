@@ -148,6 +148,7 @@ namespace Internal.JitInterface
                 s_callbacks.getSystemVAmd64PassStructInRegisterDescriptor = &_getSystemVAmd64PassStructInRegisterDescriptor;
                 s_callbacks.getSwiftLowering = &_getSwiftLowering;
                 s_callbacks.getFpStructLowering = &_getFpStructLowering;
+                s_callbacks.getWasmLowering = &_getWasmLowering;
                 s_callbacks.getThreadTLSIndex = &_getThreadTLSIndex;
                 s_callbacks.getAddrOfCaptureThreadGlobal = &_getAddrOfCaptureThreadGlobal;
                 s_callbacks.getHelperFtn = &_getHelperFtn;
@@ -196,6 +197,7 @@ namespace Internal.JitInterface
                 s_callbacks.getRelocTypeHint = &_getRelocTypeHint;
                 s_callbacks.getExpectedTargetArchitecture = &_getExpectedTargetArchitecture;
                 s_callbacks.getJitFlags = &_getJitFlags;
+                s_callbacks.getWasmTypeSymbol = &_getWasmTypeSymbol;
                 s_callbacks.getSpecialCopyHelper = &_getSpecialCopyHelper;
             }
 
@@ -270,7 +272,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte> isObjectImmutable;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, int, ushort*, byte> getStringChar;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, CORINFO_CLASS_STRUCT_*> getObjectType;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_LOOKUP_KIND*, CorInfoHelpFunc, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, byte> getReadyToRunHelper;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CorInfoHelpFunc, CORINFO_METHOD_STRUCT_*, CORINFO_CONST_LOOKUP*, byte> getReadyToRunHelper;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, mdToken, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_LOOKUP*, void> getReadyToRunDelegateCtorHelper;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_METHOD_STRUCT_*, CORINFO_CONTEXT_STRUCT*, CorInfoInitClassResult> initClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void> classMustBeLoadedBeforeCodeIsRun;
@@ -327,6 +329,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR*, byte> getSystemVAmd64PassStructInRegisterDescriptor;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_SWIFT_LOWERING*, void> getSwiftLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoWasmType> getWasmLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, uint> getThreadTLSIndex;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, int*> getAddrOfCaptureThreadGlobal;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_STRUCT_**, void> getHelperFtn;
@@ -375,6 +378,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, void*, CorInfoReloc> getRelocTypeHint;
             public delegate* unmanaged<IntPtr, IntPtr*, uint> getExpectedTargetArchitecture;
             public delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint> getJitFlags;
+            public delegate* unmanaged<IntPtr, IntPtr*, CorInfoWasmType*, nuint, CORINFO_WASM_TYPE_SYMBOL_STRUCT_*> getWasmTypeSymbol;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_METHOD_STRUCT_*> getSpecialCopyHelper;
         }
 
@@ -1434,12 +1438,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte _getReadyToRunHelper(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_LOOKUP_KIND* pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONST_LOOKUP* pLookup)
+        private static byte _getReadyToRunHelper(IntPtr thisHandle, IntPtr* ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoHelpFunc id, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONST_LOOKUP* pLookup)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getReadyToRunHelper(ref *pResolvedToken, ref *pGenericLookupKind, id, callerHandle, ref *pLookup) ? (byte)1 : (byte)0;
+                return _this.getReadyToRunHelper(ref *pResolvedToken, id, callerHandle, ref *pLookup) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2272,6 +2276,21 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
+        private static CorInfoWasmType _getWasmLowering(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* structHnd)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getWasmLowering(structHnd);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
         private static uint _getThreadTLSIndex(IntPtr thisHandle, IntPtr* ppException, void** ppIndirection)
         {
             var _this = GetThis(thisHandle);
@@ -2965,6 +2984,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.getJitFlags(ref *flags, sizeInBytes);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static CORINFO_WASM_TYPE_SYMBOL_STRUCT_* _getWasmTypeSymbol(IntPtr thisHandle, IntPtr* ppException, CorInfoWasmType* types, nuint typesSize)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getWasmTypeSymbol(types, typesSize);
             }
             catch (Exception ex)
             {

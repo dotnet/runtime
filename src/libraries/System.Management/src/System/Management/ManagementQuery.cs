@@ -3038,7 +3038,7 @@ namespace System.Management
                 throw new ArgumentException(SR.InvalidQuery);
             q = q.Remove(0, keyword.Length).TrimStart(null);
 
-            if (!q.StartsWith("*", StringComparison.Ordinal))
+            if (!q.StartsWith('*'))
                 throw new ArgumentException(SR.Format(SR.InvalidQueryTokenExpected, "*"), nameof(query));
             q = q.Remove(0, 1).TrimStart(null);
 

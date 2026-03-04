@@ -303,7 +303,6 @@ CORINFO_CLASS_HANDLE getObjectType(
 
 bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup) override;
@@ -535,6 +534,9 @@ void getFpStructLowering(
           CORINFO_CLASS_HANDLE structHnd,
           CORINFO_FPSTRUCT_LOWERING* pLowering) override;
 
+CorInfoWasmType getWasmLowering(
+          CORINFO_CLASS_HANDLE structHnd) override;
+
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
 
@@ -751,6 +753,10 @@ uint32_t getExpectedTargetArchitecture() override;
 uint32_t getJitFlags(
           CORJIT_FLAGS* flags,
           uint32_t sizeInBytes) override;
+
+CORINFO_WASM_TYPE_SYMBOL_HANDLE getWasmTypeSymbol(
+          CorInfoWasmType* types,
+          size_t typesSize) override;
 
 CORINFO_METHOD_HANDLE getSpecialCopyHelper(
           CORINFO_CLASS_HANDLE type) override;

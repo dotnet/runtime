@@ -589,6 +589,8 @@ OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions",
                                                                                     // conversions
 
 OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
+OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
+                  "JitAsyncDefaultValueAnalysisRange") // Enable async default value analysis based on method hash range
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods

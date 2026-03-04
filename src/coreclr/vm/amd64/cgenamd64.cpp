@@ -218,21 +218,30 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->SSP = m_SSP;
 #endif
 
-    pRD->pCurrentContextPointers->Rax = &m_ctx.Rax;
-    pRD->pCurrentContextPointers->Rcx = &m_ctx.Rcx;
-    pRD->pCurrentContextPointers->Rdx = &m_ctx.Rdx;
-    pRD->pCurrentContextPointers->Rbx = &m_ctx.Rbx;
-    pRD->pCurrentContextPointers->Rbp = &m_ctx.Rbp;
-    pRD->pCurrentContextPointers->Rsi = &m_ctx.Rsi;
-    pRD->pCurrentContextPointers->Rdi = &m_ctx.Rdi;
-    pRD->pCurrentContextPointers->R8  = &m_ctx.R8;
-    pRD->pCurrentContextPointers->R9  = &m_ctx.R9;
-    pRD->pCurrentContextPointers->R10 = &m_ctx.R10;
-    pRD->pCurrentContextPointers->R11 = &m_ctx.R11;
-    pRD->pCurrentContextPointers->R12 = &m_ctx.R12;
-    pRD->pCurrentContextPointers->R13 = &m_ctx.R13;
-    pRD->pCurrentContextPointers->R14 = &m_ctx.R14;
-    pRD->pCurrentContextPointers->R15 = &m_ctx.R15;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    CONTEXT *pContext = &m_ctx;
+#endif
+
+    pRD->pCurrentContextPointers->Rax = &pContext->Rax;
+    pRD->pCurrentContextPointers->Rcx = &pContext->Rcx;
+    pRD->pCurrentContextPointers->Rdx = &pContext->Rdx;
+    pRD->pCurrentContextPointers->Rbx = &pContext->Rbx;
+    pRD->pCurrentContextPointers->Rbp = &pContext->Rbp;
+    pRD->pCurrentContextPointers->Rsi = &pContext->Rsi;
+    pRD->pCurrentContextPointers->Rdi = &pContext->Rdi;
+    pRD->pCurrentContextPointers->R8  = &pContext->R8;
+    pRD->pCurrentContextPointers->R9  = &pContext->R9;
+    pRD->pCurrentContextPointers->R10 = &pContext->R10;
+    pRD->pCurrentContextPointers->R11 = &pContext->R11;
+    pRD->pCurrentContextPointers->R12 = &pContext->R12;
+    pRD->pCurrentContextPointers->R13 = &pContext->R13;
+    pRD->pCurrentContextPointers->R14 = &pContext->R14;
+    pRD->pCurrentContextPointers->R15 = &pContext->R15;
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.

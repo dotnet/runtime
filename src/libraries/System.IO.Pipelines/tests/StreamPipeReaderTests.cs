@@ -67,7 +67,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task CanReadMultipleTimes(bool useZeroByteReads)
@@ -278,7 +278,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ReadCanBeCancelledViaProvidedCancellationToken()
         {
             var stream = new CancelledReadsStream();
@@ -299,7 +299,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadAsync(bool useZeroByteReads)
@@ -318,7 +318,7 @@ namespace System.IO.Pipelines.Tests
             reader.Complete();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadAtLeastAsync(bool useZeroByteReads)

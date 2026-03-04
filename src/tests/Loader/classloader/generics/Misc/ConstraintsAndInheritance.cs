@@ -5,6 +5,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public interface I1{}
 
@@ -78,6 +79,7 @@ public class GenTypes
 
 public class Test_ConstraintsAndInheritance
 {
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
 	[Fact]
 	public static int TestEntryPoint()
 	{

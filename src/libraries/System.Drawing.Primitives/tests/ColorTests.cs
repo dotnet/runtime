@@ -499,7 +499,7 @@ namespace System.Drawing.Primitives.Tests
             DebuggerAttributes.ValidateDebuggerDisplayReferences(Color.FromArgb(4, 3, 2, 1));
         }
 
-        [ConditionalFact(nameof(SupportsReadingUpdatedSystemColors))]
+        [ConditionalFact(typeof(ColorTests), nameof(SupportsReadingUpdatedSystemColors))]
         public void UserPreferenceChangingEventTest()
         {
             int element = 12; // Win32SystemColors.AppWorkSpace.

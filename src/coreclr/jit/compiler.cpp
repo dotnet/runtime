@@ -438,6 +438,15 @@ Compiler::Compiler(ArenaAllocator*       arena,
 
     compMaxUncheckedOffsetForNullObject = eeInfo->maxUncheckedOffsetForNullObject;
 
+#if defined(DEBUG) && defined(TARGET_WASM)
+    // TODO-WASM: remove once we no longer need to use x86/arm collections for wasm replay
+    // if we are cross-replaying wasm, override compMaxUncheckedOffsetForNullObject
+    if (!info.compMatchedVM)
+    {
+        compMaxUncheckedOffsetForNullObject = 1024 - 1;
+    }
+#endif
+
     info.compProfilerCallback = false; // Assume false until we are told to hook this method.
 
     info.compCode         = methodInfo->ILCode;
@@ -746,6 +755,38 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         structSize = info.compCompHnd->getClassSize(clsHnd);
     }
     assert(structSize > 0);
+
+#if defined(TARGET_WASM)
+    CorInfoWasmType abiType = info.compCompHnd->getWasmLowering(clsHnd);
+
+    if (abiType == CORINFO_WASM_TYPE_VOID)
+    {
+        howToReturnStruct = SPK_ByReference;
+        useType           = TYP_UNKNOWN;
+    }
+    else
+    {
+        howToReturnStruct = SPK_PrimitiveType;
+        useType           = WasmClassifier::ToJitType(abiType);
+    }
+
+    if (wbReturnStruct != nullptr)
+    {
+        *wbReturnStruct = howToReturnStruct;
+    }
+
+    return useType;
+#else
+#ifdef DEBUG
+    // Extra query to facilitate wasm replay of native collections.
+    // TODO-WASM: delete once we can get a wasm collection.
+    //
+    if (JitConfig.EnableExtraSuperPmiQueries() && IsReadyToRun())
+    {
+        info.compCompHnd->getWasmLowering(clsHnd);
+    }
+#endif // DEBUG
+#endif // defined(TARGET_WASM)
 
 #ifdef SWIFT_SUPPORT
     if (callConv == CorInfoCallConvExtension::Swift)
@@ -4715,7 +4756,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             else
             {
                 // At least do local var liveness; lowering depends on this.
-                fgLocalVarLiveness();
+                fgSsaLiveness();
             }
 
             if (doEarlyProp)
@@ -4888,10 +4929,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
-
-    // Create any throw helper blocks that might be needed
-    //
-    DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
 
     if (opts.OptimizationEnabled())
     {
@@ -5910,6 +5947,16 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
             }
+
+#ifdef DEBUG
+            if (JitConfig.JitUseScalableVectorT() &&
+                currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT))
+            {
+                // Vector<T> will use SVE instead of NEON.
+                instructionSetFlags.RemoveInstructionSet(InstructionSet_VectorT128);
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT);
+            }
+#endif
         }
 
         instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
@@ -7706,7 +7753,8 @@ START:
     result = param.result;
 
 if (!inlineInfo &&
-    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+    (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION ||
+     result == CORJIT_R2R_UNSUPPORTED) &&
     !jitFallbackCompile)
 {
     // If we failed the JIT, reattempt with debuggable code.
@@ -9996,7 +10044,7 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         {
             chars += printf("[DONT_CSE]");
         }
-        if (tree->gtFlags & GTF_UNSIGNED)
+        if (tree->IsUnsigned())
         {
             chars += printf("[SMALL_UNSIGNED]");
         }
@@ -10476,7 +10524,7 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
         case CORINFO_DEVIRTUALIZATION_SUCCESS:
             return "success";
         case CORINFO_DEVIRTUALIZATION_FAILED_CANON:
-            return "object class was canonical";
+            return "object class or method was canonical";
         case CORINFO_DEVIRTUALIZATION_FAILED_COM:
             return "object class was com";
         case CORINFO_DEVIRTUALIZATION_FAILED_CAST:
@@ -10510,8 +10558,6 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "Decl method cannot be represented in R2R image";
         case CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE:
             return "Support for type equivalence in devirtualization is not yet implemented in crossgen2";
-        case CORINFO_DEVIRTUALIZATION_FAILED_GENERIC_VIRTUAL:
-            return "Devirtualization of generic virtual methods is not yet implemented in crossgen2";
         default:
             return "undefined";
     }

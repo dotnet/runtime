@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
@@ -52,6 +52,7 @@
 //     R2R 17 is not backward compatible with 16.x or earlier.
 // R2R Version 17.1 adds the READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE flag to specify that the R2R image pointed to by OwnerCompositeExecutable is in the platform native format.
 // R2R Version 18 updates fields layout algorithm
+// R2R Version 18.2 adds InitClass and InitInstClass helpers
 
 struct READYTORUN_CORE_HEADER
 {
@@ -296,6 +297,7 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_Check_IL_Body              = 0x35, /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
     READYTORUN_FIXUP_Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
+    READYTORUN_FIXUP_Continuation_Layout        = 0x37, /* Layout of an async method continuation type */
 
     READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
                                                         /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */
@@ -337,6 +339,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_FailFast                  = 0x24,
     READYTORUN_HELPER_ThrowNullRef              = 0x25,
     READYTORUN_HELPER_ThrowDivZero              = 0x26,
+    READYTORUN_HELPER_ThrowExact                = 0x27,
 
     // Write barriers
     READYTORUN_HELPER_WriteBarrier              = 0x30,
@@ -459,12 +462,19 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_CheckedWriteBarrier_EBP   = 0x10B,
 
     // JIT32 x86-specific exception handling
-    READYTORUN_HELPER_EndCatch                  = 0x110,
+    READYTORUN_HELPER_EndCatch                  = 0x110, // Unused since READYTORUN_MAJOR_VERSION 14.0
 
     // Stack probing helper
     READYTORUN_HELPER_StackProbe                = 0x111,
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
+
+    READYTORUN_HELPER_AllocContinuation = 0x113,
+    READYTORUN_HELPER_AllocContinuationClass = 0x114,
+    READYTORUN_HELPER_AllocContinuationMethod = 0x115,
+
+    READYTORUN_HELPER_InitClass                 = 0x116,
+    READYTORUN_HELPER_InitInstClass             = 0x117,
 };
 
 #include "readytoruninstructionset.h"

@@ -58,7 +58,7 @@ class AsyncTransformation
 {
     friend class AsyncLiveness;
 
-    Compiler*                     m_comp;
+    Compiler*                     m_compiler;
     jitstd::vector<LiveLocalInfo> m_liveLocalsScratch;
     CORINFO_ASYNC_INFO*           m_asyncInfo;
     jitstd::vector<BasicBlock*>   m_resumptionBBs;
@@ -71,6 +71,9 @@ class AsyncTransformation
     BasicBlock*                   m_lastSuspensionBB        = nullptr;
     BasicBlock*                   m_lastResumptionBB        = nullptr;
     BasicBlock*                   m_sharedReturnBB          = nullptr;
+
+    void        TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** remainder);
+    BasicBlock* CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call);
 
     bool IsLive(unsigned lclNum);
     void Transform(BasicBlock*               block,
@@ -98,7 +101,7 @@ class AsyncTransformation
                                           bool                           needsKeepAlive,
                                           jitstd::vector<LiveLocalInfo>& liveLocals);
 
-    CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness& life);
+    CallDefinitionInfo CanonicalizeCallDefinition(BasicBlock* block, GenTreeCall* call, AsyncLiveness* life);
 
     BasicBlock* CreateSuspension(
         BasicBlock* block, GenTreeCall* call, unsigned stateNum, AsyncLiveness& life, const ContinuationLayout& layout);
@@ -110,7 +113,6 @@ class AsyncTransformation
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                 GenTreeCall*              call,
                                                 const CallDefinitionInfo& callDefInfo,
-                                                AsyncLiveness&            life,
                                                 BasicBlock*               suspendBB,
                                                 BasicBlock**              remainder);
     BasicBlock*  CreateResumption(BasicBlock*               block,
@@ -137,15 +139,18 @@ class AsyncTransformation
                                    var_types    storeType,
                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    void     CreateDebugInfoForSuspensionPoint(const ContinuationLayout& layout);
-    unsigned GetResultBaseVar();
-    unsigned GetExceptionVar();
+    void        CreateDebugInfoForSuspensionPoint(const ContinuationLayout& layout);
+    unsigned    GetReturnedContinuationVar();
+    unsigned    GetNewContinuationVar();
+    unsigned    GetResultBaseVar();
+    unsigned    GetExceptionVar();
+    BasicBlock* GetSharedReturnBB();
 
     void CreateResumptionSwitch();
 
 public:
     AsyncTransformation(Compiler* comp)
-        : m_comp(comp)
+        : m_compiler(comp)
         , m_liveLocalsScratch(comp->getAllocator(CMK_Async))
         , m_resumptionBBs(comp->getAllocator(CMK_Async))
     {

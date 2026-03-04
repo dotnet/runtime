@@ -1131,6 +1131,11 @@ extern const BYTE genTypeStSzs[TYP_COUNT];
 template <class T>
 inline unsigned genTypeStSz(T value)
 {
+#ifdef TARGET_ARM64
+    // The size of these types cannot be evaluated in static contexts.
+    assert(TypeGet(value) != TYP_SIMD);
+    assert(TypeGet(value) != TYP_MASK);
+#endif
     assert((unsigned)TypeGet(value) < ArrLen(genTypeStSzs));
 
     return genTypeStSzs[TypeGet(value)];
@@ -3148,7 +3153,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtprVisitorFn = visitor;
     walkData.pCallbackData = callBackData;
     walkData.parent        = nullptr;
@@ -3207,7 +3212,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTree**     pTree,
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtpoVisitorFn = visitor;
     walkData.pCallbackData = callBackData;
     walkData.parent        = nullptr;
@@ -3247,7 +3252,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
 {
     fgWalkData walkData;
 
-    walkData.compiler      = this;
+    walkData.m_compiler    = this;
     walkData.wtprVisitorFn = preVisitor;
     walkData.wtpoVisitorFn = postVisitor;
     walkData.pCallbackData = callBackData;
@@ -3300,59 +3305,7 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
 
 inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
 {
-    if (!fgRngChkThrowAdded)
-    {
-        return false;
-    }
-
-    if (!block->HasFlag(BBF_INTERNAL) || !block->KindIs(BBJ_THROW))
-    {
-        return false;
-    }
-
-    if (!block->IsLIR() && (block->lastStmt() == nullptr))
-    {
-        return false;
-    }
-
-    // Special check blocks will always end in a throw helper call.
-    //
-    GenTree* const call = block->lastNode();
-
-    if ((call == nullptr) || !call->OperIs(GT_CALL))
-    {
-        return false;
-    }
-
-    if (!((call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
-          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
-          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_FAIL_FAST)) ||
-          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_ARGUMENTEXCEPTION)) ||
-          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION)) ||
-          (call->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_OVERFLOW))))
-    {
-        return false;
-    }
-
-    // We can get to this point for blocks that we didn't create as throw helper blocks
-    // under stress, with implausible flow graph optimizations. So, walk the fgAddCodeDscMap
-    // for the final determination.
-
-    if (fgHasAddCodeDscMap())
-    {
-        for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(fgGetAddCodeDscMap()))
-        {
-            if (block == add->acdDstBlk)
-            {
-                return add->acdKind == SCK_RNGCHK_FAIL || add->acdKind == SCK_DIV_BY_ZERO ||
-                       add->acdKind == SCK_OVERFLOW || add->acdKind == SCK_ARG_EXCPN ||
-                       add->acdKind == SCK_ARG_RNG_EXCPN || add->acdKind == SCK_FAIL_FAST;
-            }
-        }
-    }
-
-    // We couldn't find it in the fgAddCodeDscMap
-    return false;
+    return block->HasFlag(BBF_THROW_HELPER);
 }
 
 #if !FEATURE_FIXED_OUT_ARGS
@@ -3415,6 +3368,12 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 //
 inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
 {
+#ifdef TARGET_ARM64
+    if (varTypeHasUnknownSize(lvaGetDesc(lclNum)))
+    {
+        return false;
+    }
+#endif
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
 }
 
@@ -3484,7 +3443,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 inline void RegSet::tmpEnd()
 {
 #ifdef DEBUG
-    if (m_rsCompiler->verbose && (tmpCount > 0))
+    if (m_compiler->verbose && (tmpCount > 0))
     {
         printf("%d tmps used\n", tmpCount);
     }
@@ -3828,109 +3787,33 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  The following resets the assertions table used only during local assertion prop
  */
 
-inline void Compiler::optAssertionReset(AssertionIndex limit)
+inline void Compiler::optAssertionReset()
 {
+    assert(optLocalAssertionProp);
     assert(optAssertionCount <= optMaxAssertionCount);
-
-    while (optAssertionCount > limit)
+    while (optAssertionCount > 0)
     {
-        AssertionIndex index        = optAssertionCount;
-        AssertionDsc*  curAssertion = optGetAssertion(index);
+        // We intentionally don't reset optAssertionDep here to reuse the allocated bitvectors.
+        // We just remove all elements from them.
+        //
+        AssertionIndex      index        = optAssertionCount;
+        const AssertionDsc& curAssertion = optGetAssertion(index);
         optAssertionCount--;
-        unsigned lclNum = curAssertion->op1.lclNum;
+        unsigned lclNum = curAssertion.GetOp1().GetLclNum();
         assert(lclNum < lvaCount);
-        BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
+        BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
 
         //
         // Find the Copy assertions
         //
-        if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
-            (curAssertion->op2.kind == O2K_LCLVAR_COPY))
+        if (curAssertion.IsCopyAssertion())
         {
             //
             //  op2.lclNum no longer depends upon this assertion
             //
-            lclNum = curAssertion->op2.lclNum;
-            BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
+            lclNum = curAssertion.GetOp2().GetLclNum();
+            BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum, /*mustExist*/ true), index - 1);
         }
-    }
-    while (optAssertionCount < limit)
-    {
-        AssertionIndex index        = ++optAssertionCount;
-        AssertionDsc*  curAssertion = optGetAssertion(index);
-        unsigned       lclNum       = curAssertion->op1.lclNum;
-        BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
-
-        //
-        // Check for Copy assertions
-        //
-        if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
-            (curAssertion->op2.kind == O2K_LCLVAR_COPY))
-        {
-            //
-            //  op2.lclNum now depends upon this assertion
-            //
-            lclNum = curAssertion->op2.lclNum;
-            BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
-        }
-    }
-}
-
-/*****************************************************************************
- *
- *  The following removes the i-th entry in the assertions table
- *  used only during local assertion prop
- */
-
-inline void Compiler::optAssertionRemove(AssertionIndex index)
-{
-    assert(index > 0);
-    assert(index <= optAssertionCount);
-    assert(optAssertionCount <= optMaxAssertionCount);
-
-    AssertionDsc* curAssertion = optGetAssertion(index);
-
-    //  Two cases to consider if (index == optAssertionCount) then the last
-    //  entry in the table is to be removed and that happens automatically when
-    //  optAssertionCount is decremented and we can just clear the optAssertionDep bits
-    //  The other case is when index < optAssertionCount and here we overwrite the
-    //  index-th entry in the table with the data found at the end of the table
-    //  Since we are reordering the rable the optAssertionDep bits need to be recreated
-    //  using optAssertionReset(0) and optAssertionReset(newAssertionCount) will
-    //  correctly update the optAssertionDep bits
-    //
-    if (index == optAssertionCount)
-    {
-        unsigned lclNum = curAssertion->op1.lclNum;
-        BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
-
-        //
-        // Check for Copy assertions
-        //
-        if ((curAssertion->assertionKind == OAK_EQUAL) && (curAssertion->op1.kind == O1K_LCLVAR) &&
-            (curAssertion->op2.kind == O2K_LCLVAR_COPY))
-        {
-            //
-            //  op2.lclNum no longer depends upon this assertion
-            //
-            lclNum = curAssertion->op2.lclNum;
-            BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
-        }
-
-        optAssertionCount--;
-    }
-    else
-    {
-        AssertionDsc*  lastAssertion     = optGetAssertion(optAssertionCount);
-        AssertionIndex newAssertionCount = optAssertionCount - 1;
-
-        optAssertionReset(0); // This make optAssertionCount equal 0
-
-        memcpy(curAssertion,  // the entry to be removed
-               lastAssertion, // last entry in the table
-               sizeof(AssertionDsc));
-
-        optAssertionReset(newAssertionCount);
     }
 }
 
@@ -4613,14 +4496,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
 
             if (call->gtCallType == CT_INDIRECT)
             {
-                if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
-                {
-                    RETURN_IF_ABORT(visitor(call->gtCallCookie));
-                }
-                if (call->gtCallAddr != nullptr)
-                {
-                    RETURN_IF_ABORT(visitor(call->gtCallAddr));
-                }
+                RETURN_IF_ABORT(visitor(call->gtCallAddr));
             }
             if (call->gtControlExpr != nullptr)
             {
@@ -4675,13 +4551,13 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {
-        unsigned size = comp->lvaLclExactSize(AsLclVarCommon()->GetLclNum());
+        ValueSize size = comp->lvaLclValueSize(AsLclVarCommon()->GetLclNum());
         return visitor(LocalDef(AsLclVarCommon(), /* isEntire */ true, 0, size));
     }
     if (OperIs(GT_STORE_LCL_FLD))
     {
         GenTreeLclFld* fld = AsLclFld();
-        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetSize()));
+        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetValueSize()));
     }
     if (OperIs(GT_CALL))
     {
@@ -4693,7 +4569,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 
             bool isEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
 
-            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), storeSize));
+            return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), ValueSize(storeSize)));
         }
     }
 
@@ -5524,6 +5400,68 @@ bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned lim
     });
 
     return (result == BasicBlockVisit::Abort);
+}
+
+//--------------------------------------------------------------------------------
+// optVisitReachingAssertions: given a vn, call the specified callback function on all
+//    the assertions that reach it via PHI definitions if any.
+//
+// Arguments:
+//    vn         - The vn to visit all the reaching assertions for
+//    argVisitor - The callback function to call on the vn and its reaching assertions
+//
+// Return Value:
+//    AssertVisit::Aborted  - an argVisitor returned AssertVisit::Abort, we stop the walk and return
+//    AssertVisit::Continue - all argVisitor returned AssertVisit::Continue
+//
+template <typename TAssertVisitor>
+Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertVisitor argVisitor)
+{
+    VNPhiDef phiDef;
+    if (!vnStore->GetPhiDef(vn, &phiDef))
+    {
+        // We assume that the caller already checked assertions for the current block, so we're
+        // interested only in assertions for PHI definitions.
+        return AssertVisit::Abort;
+    }
+
+    LclSsaVarDsc*        ssaDef = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef);
+    GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
+    assert(node->IsPhiDefn());
+
+    // Keep track of the set of phi-preds
+    //
+    BitVecTraits traits(fgBBNumMax + 1, this);
+    BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+
+    for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
+    {
+        GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
+        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
+        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
+        if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
+        {
+            // The visitor wants to abort the walk.
+            return AssertVisit::Abort;
+        }
+        BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+    }
+
+    // Verify the set of phi-preds covers the set of block preds
+    //
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    {
+        if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": pred " FMT_BB " not a phi-pred\n",
+                    ssaDef->GetBlock()->bbNum, pred->bbNum);
+
+            // We missed examining a block pred. Fail the phi inference.
+            //
+            return AssertVisit::Abort;
+        }
+    }
+    return AssertVisit::Continue;
 }
 
 /*****************************************************************************/

@@ -62,4 +62,14 @@
   <ItemGroup>
     <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataVersion)" />
   </ItemGroup>
+
+  <!-- Zstandard tests (not supported on browser/wasi) -->
+  <ItemGroup Condition="'$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'">
+    <Compile Include="Zstandard\CompressionStreamUnitTests.Zstandard.cs" />
+    <Compile Include="Zstandard\ZstandardCompressionOptionsTests.cs" />
+    <Compile Include="Zstandard\ZstandardDictionaryTests.cs" />
+    <Compile Include="Zstandard\ZstandardTestUtils.cs" />
+    <Compile Include="Zstandard\ZstandardEncoderDecoderTests.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\EncoderDecoderTestBase.cs" Link="Common\System\IO\Compression\EncoderDecoderTestBase.cs" />
+  </ItemGroup>
 </Project>

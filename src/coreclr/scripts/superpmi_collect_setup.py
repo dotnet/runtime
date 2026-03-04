@@ -403,19 +403,6 @@ def setup_benchmark(workitem_directory, arch):
     except Exception as ex:
         print("Warning: failed to remove directory \"%s\": %s", os.path.join(performance_directory, ".git"), ex)
 
-    with ChangeDir(performance_directory):
-        dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
-        dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
-
-        if not os.path.isfile(dotnet_install_script):
-            print("Missing " + dotnet_install_script)
-            return
-
-        run_command(
-            get_python_name() + [dotnet_install_script, "install", "--channels", "10.0", "--architecture", arch, "--install-dir",
-                                 dotnet_directory, "--verbose"])
-
-
 def get_python_name():
     """Gets the python name
 
@@ -477,9 +464,9 @@ def main(main_args):
                 helix_queue = "azurelinux.3.amd64.open"
         elif platform_name == "osx":
             if arch == "arm64": # public osx_arm64
-                helix_queue = "osx.13.arm64.open"
+                helix_queue = "OSX.15.Arm64.Open"
             else: # public osx_x64
-                helix_queue = "OSX.13.Amd64.Open"
+                helix_queue = "OSX.15.Amd64.Open"
     else:
         if platform_name == "windows":
             if arch == "arm64": # internal windows_arm64
@@ -495,9 +482,9 @@ def main(main_args):
                 helix_queue = "azurelinux.3.amd64"
         elif platform_name == "osx":
             if arch == "arm64": # internal osx_arm64
-                helix_queue = "OSX.13.ARM64"
+                helix_queue = "OSX.15.Arm64"
             else: # internal osx_x64
-                helix_queue = "OSX.13.Amd64"
+                helix_queue = "OSX.15.Amd64"
 
     # Copy the superpmi scripts
 

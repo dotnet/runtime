@@ -253,29 +253,6 @@ OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
         add     $Target, sp, #192
     MEND
 
-; Epilog for PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS - restores FP callee-saved and returns
-    MACRO
-    POP_COOP_PINVOKE_FRAME_WITH_FLOATS_RETURN
-
-        ; Restore FP callee-saved registers (d8-d15) from sp+0
-        ldp     d8,  d9,  [sp, #0]
-        ldp     d10, d11, [sp, #16]
-        ldp     d12, d13, [sp, #32]
-        ldp     d14, d15, [sp, #48]
-
-        ; Deallocate space for FloatArgumentRegisters + FP callee-saved
-        EPILOG_STACK_FREE 192
-
-        ; Restore callee-saved registers
-        EPILOG_RESTORE_REG_PAIR   x27, x28, #80
-        EPILOG_RESTORE_REG_PAIR   x25, x26, #64
-        EPILOG_RESTORE_REG_PAIR   x23, x24, #48
-        EPILOG_RESTORE_REG_PAIR   x21, x22, #32
-        EPILOG_RESTORE_REG_PAIR   x19, x20, #16
-
-        EPILOG_RESTORE_REG_PAIR_RET   fp, lr, #176!
-    MEND
-
 #define GC_ALLOC_FINALIZE 1
 
 ;-----------------------------------------------------------------------------

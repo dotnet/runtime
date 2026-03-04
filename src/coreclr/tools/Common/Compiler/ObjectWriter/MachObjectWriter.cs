@@ -456,10 +456,16 @@ namespace ILCompiler.ObjectWriter
 
             switch (relocType)
             {
+                case IMAGE_REL_BASED_ARM64_BRANCH26:
                 case IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                 case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                     // Addend is handled through ARM64_RELOC_ADDEND
+                    fixed (byte* pData = data)
+                    {
+                        addend += Relocation.ReadValue(relocType, pData);
+                        Relocation.WriteValue(relocType, pData, 0);
+                    }
                     break;
 
                 case IMAGE_REL_BASED_RELPTR32:
@@ -756,20 +762,7 @@ namespace ILCompiler.ObjectWriter
 
                 uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
 
-                if (symbolicRelocation.Type == IMAGE_REL_BASED_ARM64_BRANCH26)
-                {
-                    sectionRelocations.Add(
-                        new MachRelocation
-                        {
-                            Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = symbolIndex,
-                            Length = 4,
-                            RelocationType = ARM64_RELOC_BRANCH26,
-                            IsExternal = true,
-                            IsPCRelative = true,
-                        });
-                }
-                else if (symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L)
+                if (symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_BRANCH26 or IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L)
                 {
                     if (symbolicRelocation.Addend != 0)
                     {
@@ -787,6 +780,7 @@ namespace ILCompiler.ObjectWriter
 
                     byte type = symbolicRelocation.Type switch
                     {
+                        IMAGE_REL_BASED_ARM64_BRANCH26 => ARM64_RELOC_BRANCH26,
                         IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => ARM64_RELOC_PAGE21,
                         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => ARM64_RELOC_PAGEOFF12,
                         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L => ARM64_RELOC_PAGEOFF12,
@@ -801,7 +795,7 @@ namespace ILCompiler.ObjectWriter
                             Length = 4,
                             RelocationType = type,
                             IsExternal = true,
-                            IsPCRelative = symbolicRelocation.Type == IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
+                            IsPCRelative = symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_BRANCH26 or IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
                         });
                 }
                 else if (symbolicRelocation.Type == IMAGE_REL_BASED_DIR64)

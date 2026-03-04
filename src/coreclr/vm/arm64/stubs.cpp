@@ -294,18 +294,27 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
     // Update the integer registers in KNONVOLATILE_CONTEXT_POINTERS from
     // the exception context we have.
-    pRD->pCurrentContextPointers->X19 = (PDWORD64)&m_ctx.X19;
-    pRD->pCurrentContextPointers->X20 = (PDWORD64)&m_ctx.X20;
-    pRD->pCurrentContextPointers->X21 = (PDWORD64)&m_ctx.X21;
-    pRD->pCurrentContextPointers->X22 = (PDWORD64)&m_ctx.X22;
-    pRD->pCurrentContextPointers->X23 = (PDWORD64)&m_ctx.X23;
-    pRD->pCurrentContextPointers->X24 = (PDWORD64)&m_ctx.X24;
-    pRD->pCurrentContextPointers->X25 = (PDWORD64)&m_ctx.X25;
-    pRD->pCurrentContextPointers->X26 = (PDWORD64)&m_ctx.X26;
-    pRD->pCurrentContextPointers->X27 = (PDWORD64)&m_ctx.X27;
-    pRD->pCurrentContextPointers->X28 = (PDWORD64)&m_ctx.X28;
-    pRD->pCurrentContextPointers->Fp = (PDWORD64)&m_ctx.Fp;
-    pRD->pCurrentContextPointers->Lr = (PDWORD64)&m_ctx.Lr;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    T_CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    T_CONTEXT *pContext = &m_ctx;
+#endif
+
+    pRD->pCurrentContextPointers->X19 = (PDWORD64)&pContext->X19;
+    pRD->pCurrentContextPointers->X20 = (PDWORD64)&pContext->X20;
+    pRD->pCurrentContextPointers->X21 = (PDWORD64)&pContext->X21;
+    pRD->pCurrentContextPointers->X22 = (PDWORD64)&pContext->X22;
+    pRD->pCurrentContextPointers->X23 = (PDWORD64)&pContext->X23;
+    pRD->pCurrentContextPointers->X24 = (PDWORD64)&pContext->X24;
+    pRD->pCurrentContextPointers->X25 = (PDWORD64)&pContext->X25;
+    pRD->pCurrentContextPointers->X26 = (PDWORD64)&pContext->X26;
+    pRD->pCurrentContextPointers->X27 = (PDWORD64)&pContext->X27;
+    pRD->pCurrentContextPointers->X28 = (PDWORD64)&pContext->X28;
+    pRD->pCurrentContextPointers->Fp = (PDWORD64)&pContext->Fp;
+    pRD->pCurrentContextPointers->Lr = (PDWORD64)&pContext->Lr;
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 

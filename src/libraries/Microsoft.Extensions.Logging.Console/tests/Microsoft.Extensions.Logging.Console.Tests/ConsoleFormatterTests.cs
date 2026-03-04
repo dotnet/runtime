@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             return new SetupDisposeHelper(logger, sink, errorSink, levelAsString, writesPerMsg, consoleLoggerProcessor);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ConsoleLoggerOptions_TimeStampFormat_IsReloaded()
         {
             // Arrange
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(ConsoleFormatterNames.Simple, logger.Formatter.Name);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(FormatterNames))]
         public void InvalidLogLevel_Throws(string formatterName)
         {
@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Throws<ArgumentOutOfRangeException>(() => logger.Log((LogLevel)8, 0, _state, null, _defaultFormatter));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(FormatterNamesAndLevels))]
         public void NoMessageOrException_Noop(string formatterName, LogLevel level)
         {
@@ -119,7 +119,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Equal(0, sink.Writes.Count);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(FormatterNamesAndLevels))]
         public void Log_LogsCorrectTimestamp(string formatterName, LogLevel level)
         {
@@ -182,7 +182,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void NullFormatterName_Throws()
         {
             // Arrange

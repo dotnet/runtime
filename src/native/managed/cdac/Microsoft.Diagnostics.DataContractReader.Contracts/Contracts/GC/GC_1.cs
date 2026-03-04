@@ -249,6 +249,14 @@ internal readonly struct GC_1 : IGC
             LohP = oomHistory.LohP != 0,
         };
 
+    void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit)
+    {
+        TargetPointer globalAllocContextAddress = _target.ReadGlobalPointer(Constants.Globals.GlobalAllocContext);
+        Data.EEAllocContext eeAllocContext = _target.ProcessedData.GetOrAdd<Data.EEAllocContext>(globalAllocContextAddress);
+        allocPtr = eeAllocContext.GCAllocationContext.Pointer;
+        allocLimit = eeAllocContext.GCAllocationContext.Limit;
+    }
+
     private GCType GetGCType()
     {
         string[] identifiers = ((IGC)this).GetGCIdentifiers();

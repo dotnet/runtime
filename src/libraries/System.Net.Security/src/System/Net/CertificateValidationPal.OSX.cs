@@ -142,9 +142,22 @@ namespace System.Net
 
                     using (SafeCFDataHandle cfData = new SafeCFDataHandle(element, ownsHandle: false))
                     {
-                        byte[] dnData = Interop.CoreFoundation.CFGetData(cfData);
-                        X500DistinguishedName dn = new X500DistinguishedName(dnData);
-                        distinguishedNames[i] = dn.Name;
+                        bool addedRef = false;
+                        try
+                        {
+                            cfData.DangerousAddRef(ref addedRef);
+
+                            ReadOnlySpan<byte> dnData = Interop.CoreFoundation.CFDataDangerousGetSpan(cfData);
+                            X500DistinguishedName dn = new X500DistinguishedName(dnData);
+                            distinguishedNames[i] = dn.Name;
+                        }
+                        finally
+                        {
+                            if (addedRef)
+                            {
+                                cfData.DangerousRelease();
+                            }
+                        }
                     }
                 }
 

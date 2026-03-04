@@ -76,6 +76,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task ILVerificationErrorsCanBeIgnored()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+        [Fact]
         public Task ILVerificationWorks()
         {
             return RunTest(allowMissingWarnings: true);

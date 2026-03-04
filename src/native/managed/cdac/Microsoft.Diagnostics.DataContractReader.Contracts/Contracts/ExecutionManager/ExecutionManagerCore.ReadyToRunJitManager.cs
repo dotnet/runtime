@@ -60,6 +60,38 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return true;
         }
 
+        public override void GetMethodRegionInfo(
+            RangeSection rangeSection,
+            TargetCodePointer jittedCodeAddress,
+            out uint hotSize,
+            out TargetPointer coldStart,
+            out uint coldSize)
+        {
+            coldSize = 0;
+            coldStart = TargetPointer.Null;
+
+            IGCInfo gcInfo = Target.Contracts.GCInfo;
+            GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
+            IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+            hotSize = gcInfo.GetCodeLength(gcInfoHandle);
+
+            Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
+            if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer imageBase, out uint index))
+                return;
+
+            if (_hotCold.TryGetColdFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index, r2rInfo.NumRuntimeFunctions, out uint coldStartIdx, out uint coldEndIdx))
+            {
+                Data.RuntimeFunction coldStartFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldStartIdx);
+                Data.RuntimeFunction coldEndFunc = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, coldEndIdx);
+                uint coldBeginOffset = coldStartFunc.BeginAddress;
+                uint coldEndOffset = coldEndFunc.BeginAddress + _runtimeFunctions.GetFunctionLength(imageBase, coldEndFunc);
+                coldSize = coldEndOffset - coldBeginOffset;
+                coldStart = imageBase + coldBeginOffset;
+
+                hotSize -= coldSize;
+            }
+        }
+
         public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             // ReadyToRunJitManager::JitCodeToMethodInfo
@@ -120,7 +152,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.RuntimeFunction runtimeFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
             TargetPointer unwindInfo = runtimeFunction.UnwindData + imageBase;
-            uint unwindDataSize = GetUnwindDataSize();
+            uint unwindDataSize = UnwindDataSize.GetUnwindDataSize(Target, unwindInfo, Target.Contracts.RuntimeInfo.GetTargetArchitecture());
             gcInfo = unwindInfo + unwindDataSize;
             gcVersion = GetR2RGCInfoVersion(r2rInfo);
         }
@@ -138,16 +170,6 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             {
                 < 11 => 3,
                 >= 11 => 4,
-            };
-        }
-
-        private uint GetUnwindDataSize()
-        {
-            RuntimeInfoArchitecture arch = Target.Contracts.RuntimeInfo.GetTargetArchitecture();
-            return arch switch
-            {
-                RuntimeInfoArchitecture.X86 => sizeof(uint),
-                _ => throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}")
             };
         }
 

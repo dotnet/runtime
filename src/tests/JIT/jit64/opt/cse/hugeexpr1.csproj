@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <CrossGenTest Condition="'$(TargetArchitecture)' == 'x86'">false</CrossGenTest> <!-- https://github.com/dotnet/runtime/issues/74555 -->
     <!-- Required for NativeAotIncompatible and to skip running crossgen (triggered by JitOptimizationSensitive) -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Takes long time to compile and not interesting from AOT perspective -->

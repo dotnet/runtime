@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(32, sizeof(JSMarshalerArgument));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))] // not V8 shell
         public unsafe void PrototypeNotEqual()
         {
             using var temp1 = JSHost.GlobalThis.GetPropertyAsJSObject("EventTarget");
@@ -107,35 +107,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public unsafe void BadCast()
-        {
-            JSException ex;
-            JSHost.DotnetInstance.SetProperty("testBool", true);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsInt32("testBool"));
-            Assert.Contains("Value is not an integer", ex.Message);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsDouble("testBool"));
-            Assert.Contains("Value is not a Number", ex.Message);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsString("testBool"));
-            Assert.Contains("Value is not a String", ex.Message);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsJSObject("testBool"));
-            Assert.Contains("JSObject proxy of boolean is not supported", ex.Message);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsByteArray("testBool"));
-            Assert.Contains("Value is not an Array or Uint8Array", ex.Message);
-            JSHost.DotnetInstance.SetProperty("testInt", 42);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsBoolean("testInt"));
-            Assert.Contains("Value is not a Boolean", ex.Message);
-        }
-
-        [Fact]
-        public unsafe void OutOfRange()
-        {
-            JSException ex;
-            JSHost.DotnetInstance.SetProperty("testDouble", 9007199254740991L);
-            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsInt32("testDouble"));
-            Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
-        }
-
-        [Fact]
         public async Task RejectString()
         {
             var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject("noodles"));
@@ -170,6 +141,93 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43 + 123 + 31, JavaScriptTestHelper.optimizedReached);
         }
 
+        #region Assertion Errors
+        [Fact]
+        public unsafe void BadCast()
+        {
+            JSException ex;
+            JSHost.DotnetInstance.SetProperty("testBool", true);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsInt32("testBool"));
+            Assert.Contains("Value is not an integer", ex.Message);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsDouble("testBool"));
+            Assert.Contains("Value is not a Number", ex.Message);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsString("testBool"));
+            Assert.Contains("Value is not a String", ex.Message);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsJSObject("testBool"));
+            Assert.Contains("JSObject proxy of boolean is not supported", ex.Message);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsByteArray("testBool"));
+            Assert.Contains("Value is not an Array or Uint8Array", ex.Message);
+            JSHost.DotnetInstance.SetProperty("testInt", 42);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsBoolean("testInt"));
+            Assert.Contains("Value is not a Boolean", ex.Message);
+        }
+
+        [Fact]
+        public unsafe void OutOfRange()
+        {
+            JSException ex;
+            JSHost.DotnetInstance.SetProperty("testDouble", 9007199254740991L);
+            ex = Assert.Throws<JSException>(() => JSHost.DotnetInstance.GetPropertyAsInt32("testDouble"));
+            Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
+        }
+
+        [Fact]
+        public async Task TaskOfShortOutOfRange_ThrowsAssertionInTaskContinuation()
+        {
+            Task<short> res = JavaScriptTestHelper.ReturnResolvedPromiseWithIntMaxValue_AsShortToBeOutOfRange();
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Overflow: value 2147483647 is out of -32768 32767 range", ex.Message);
+        }
+
+        [Fact]
+        public async Task TaskOfByteOutOfRange_ThrowsAssertionInTaskContinuation()
+        {
+            Task<byte> res = JavaScriptTestHelper.ReturnResolvedPromiseWithIntMaxValue_AsByteToBeOutOfRange();
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Overflow: value 2147483647 is out of 0 255 range", ex.Message);
+        }
+
+        [Fact]
+        public async Task TaskOfDateTimeOutOfRange_ThrowsAssertionInTaskContinuation()
+        {
+            Task<DateTime> res = JavaScriptTestHelper.ReturnResolvedPromiseWithDateMaxValue();
+            JSException ex = await Assert.ThrowsAsync<JSException>(() => res);
+            Assert.Equal("Error: Assert failed: Overflow: value +275760-09-13T00:00:00.000Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
+        }
+
+        [Fact]
+        public async Task DateTimeMaxValueBoundaryCondition()
+        {
+            DateTime t = JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MaxValue, 0);
+            Assert.Equal(DateTime.MaxValue.AddTicks(-9_999), t); // Microseconds are lost during marshalling
+            JSException ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MaxValue, 1));
+            Assert.Equal("Error: Assert failed: Overflow: value +010000-01-01T00:00:00.000Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
+        }
+
+        [Fact]
+        public async Task DateTimeMinValueBoundaryCondition()
+        {
+            DateTime t = JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MinValue, 0);
+            Assert.Equal(DateTime.MinValue, t);
+            JSException ex = Assert.Throws<JSException>(() => JavaScriptTestHelper.ReturnDateTimeWithOffset(DateTime.MinValue, -1));
+            Assert.Equal("Error: Assert failed: Overflow: value 0000-12-31T23:59:59.999Z is out of 0001-01-01T00:00:00.000Z 9999-12-31T23:59:59.999Z range", ex.Message);
+        }
+
+        [Fact]
+        public async Task Int32ArrayWithOutOfRangeValues()
+        {
+            int[] arr = JavaScriptTestHelper.getInt32ArrayWithOutOfRangeValues();
+            Assert.Equal(0, arr[0]);
+            Assert.Equal(1, arr[1]);
+            Assert.Equal(-2147483648, arr[2]);
+            Assert.Equal(-1147483648, arr[3]);
+            Assert.Equal(-1, arr[4]);
+            Assert.Equal(0, arr[5]);
+            // Currently, values > int32.MaxValue are wrapped around when marshaled from JS to C#.
+            // TODO: Instead throw OverflowException when out of range value is encountered.
+        }
+
+        #endregion
 
         #region Get/Set Property
 
@@ -289,6 +347,45 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             if (expected != null) for (int i = 0; i < expected.Length; i++)
                 {
                     var actualI = JavaScriptTestHelper.store_DoubleArray(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalDoubleArrayCases))]
+        public unsafe void JsImportDoubleArray_NoAttributes(double[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_DoubleArray_NoAttributes(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_DoubleArray_NoAttributes(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalSingleArrayCases))]
+        public unsafe void JsImportSingleArray(float[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_SingleArray(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_SingleArray(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalSingleArrayCases))]
+        public unsafe void JsImportSingleArray_NoAttributes(float[]? expected)
+        {
+            var actual = JavaScriptTestHelper.echo1_SingleArray_NoAttributes(expected);
+            Assert.Equal(expected, actual);
+            if (expected != null) for (int i = 0; i < expected.Length; i++)
+                {
+                    var actualI = JavaScriptTestHelper.store_SingleArray_NoAttributes(expected, i);
                     Assert.Equal(expected[i], actualI);
                 }
         }
@@ -452,6 +549,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public unsafe void JsImportSpanOfSingle()
+        {
+            var expectedFloats = stackalloc float[] { 0, 1, -1, float.Pi, 42, float.MaxValue, float.MinValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity };
+            Span<float> expected = new Span<float>(expectedFloats, 10);
+            Assert.True(Unsafe.AsPointer(ref expected.GetPinnableReference()) == expectedFloats);
+            Span<float> actual = JavaScriptTestHelper.echo1_SpanOfSingle(expected, false);
+            Assert.Equal(expected.Length, actual.Length);
+            Assert.NotEqual(expected[0], expected[1]);
+            Assert.Equal(expected.GetPinnableReference(), actual.GetPinnableReference());
+            Assert.True(actual.SequenceCompareTo(expected) == 0);
+            Assert.Equal(expected.ToArray(), actual.ToArray());
+            actual = JavaScriptTestHelper.echo1_SpanOfSingle(expected, true);
+            Assert.Equal(expected[0], expected[1]);
+            Assert.Equal(actual[0], actual[1]);
+        }
+
+        [Fact]
         public unsafe void JsImportArraySegmentOfByte()
         {
             var expectedBytes = new byte[] { 88, 1, 2, 42, 0, 127, 255 };
@@ -468,8 +582,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void JsImportArraySegmentOfInt32()
         {
-            var expectedBytes = new int[] { 88, 0, 1, -2, 42, int.MaxValue, int.MinValue };
-            ArraySegment<int> expected = new ArraySegment<int>(expectedBytes, 1, 6);
+            var expectedInts = new int[] { 88, 0, 1, -2, 42, int.MaxValue, int.MinValue };
+            ArraySegment<int> expected = new ArraySegment<int>(expectedInts, 1, 6);
             ArraySegment<int> actual = JavaScriptTestHelper.echo1_ArraySegmentOfInt32(expected, false);
             Assert.Equal(expected.Count, actual.Count);
             Assert.NotEqual(expected[0], expected[1]);
@@ -482,13 +596,27 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public unsafe void JsImportArraySegmentOfDouble()
         {
-            var expectedBytes = new double[] { 88.88, 0, 1, -1, double.Pi, 42, double.MaxValue, double.MinValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
-            ArraySegment<double> expected = new ArraySegment<double>(expectedBytes, 1, 10);
+            var expectedDoubles = new double[] { 88.88, 0, 1, -1, double.Pi, 42, double.MaxValue, double.MinValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity };
+            ArraySegment<double> expected = new ArraySegment<double>(expectedDoubles, 1, 10);
             ArraySegment<double> actual = JavaScriptTestHelper.echo1_ArraySegmentOfDouble(expected, false);
             Assert.Equal(expected.Count, actual.Count);
             Assert.NotEqual(expected[0], expected[1]);
             Assert.Equal(expected.Array, actual.Array);
             actual = JavaScriptTestHelper.echo1_ArraySegmentOfDouble(expected, true);
+            Assert.Equal(expected[0], expected[1]);
+            Assert.Equal(actual[0], actual[1]);
+        }
+
+        [Fact]
+        public unsafe void JsImportArraySegmentOfSingle()
+        {
+            var expectedFloats = new float[] { 88.88F, 0, 1, -1, float.Pi, 42, float.MaxValue, float.MinValue, float.NaN, float.PositiveInfinity, float.NegativeInfinity };
+            ArraySegment<float> expected = new ArraySegment<float>(expectedFloats, 1, 10);
+            ArraySegment<float> actual = JavaScriptTestHelper.echo1_ArraySegmentOfSingle(expected, false);
+            Assert.Equal(expected.Count, actual.Count);
+            Assert.NotEqual(expected[0], expected[1]);
+            Assert.Equal(expected.Array, actual.Array);
+            actual = JavaScriptTestHelper.echo1_ArraySegmentOfSingle(expected, true);
             Assert.Equal(expected[0], expected[1]);
             Assert.Equal(actual[0], actual[1]);
         }
@@ -718,6 +846,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "object", "Date");
         }
 
+        [Fact] // JavaScript Date has millisecond precision, the microseconds are lost during marshalling
+        public async Task DateTimeMarshallingLosesMicrosecondComponentPrecisionLoss()
+        {
+            DateTime now = new DateTime(1995, 4, 1, 10, 43, 6, 94, microsecond: 20);
+            DateTime t = JavaScriptTestHelper.ReturnDateTimeWithOffset(now, 0);
+            Assert.NotEqual(now, t);
+            DateTime nowWithJSPrecision = now.AddMicroseconds(-now.Microsecond);
+            Assert.Equal(nowWithJSPrecision, t);
+        }
         #endregion Datetime
 
         #region DateTimeOffset

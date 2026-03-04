@@ -189,7 +189,7 @@ namespace System
 
         public Assembly Load(string assemblyString) => Assembly.Load(assemblyString);
 
-        public Assembly[] ReflectionOnlyGetAssemblies() => Array.Empty<Assembly>();
+        public Assembly[] ReflectionOnlyGetAssemblies() => [];
 
         public static bool MonitoringIsEnabled
         {

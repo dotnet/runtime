@@ -86,7 +86,7 @@ class GCInfo
     friend class CodeGen;
 
 private:
-    Compiler* compiler;
+    Compiler* m_compiler;
     RegSet*   regSet;
 
 public:

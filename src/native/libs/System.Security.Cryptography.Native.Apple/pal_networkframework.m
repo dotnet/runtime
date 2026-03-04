@@ -51,30 +51,24 @@ static void* FramerGetManagedContext(nw_framer_t framer)
 {
     void* ptr = NULL;
 
-    if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4, watchOS 8.4, *))
-    {
-        nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
-        assert(framer_options != NULL);
+    nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
+    assert(framer_options != NULL);
 
-        NSNumber* num = nw_framer_options_copy_object_value(framer_options, MANAGED_CONTEXT_KEY);
-        assert(num != NULL);
-        [num getValue:&ptr];
-        [num release];
+    NSNumber* num = nw_framer_options_copy_object_value(framer_options, MANAGED_CONTEXT_KEY);
+    assert(num != NULL);
+    [num getValue:&ptr];
+    [num release];
 
-        nw_release(framer_options);
-    }
+    nw_release(framer_options);
 
     return ptr;
 }
 
 static void FramerOptionsSetManagedContext(nw_protocol_options_t framer_options, void* context)
 {
-    if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4.0, watchOS 8.4, *))
-    {
-        NSNumber *ref = [NSNumber numberWithLong:(long)context];
-        nw_framer_options_set_object_value(framer_options, MANAGED_CONTEXT_KEY, ref);
-        [ref release];
-    }
+    NSNumber *ref = [NSNumber numberWithLong:(long)context];
+    nw_framer_options_set_object_value(framer_options, MANAGED_CONTEXT_KEY, ref);
+    [ref release];
 }
 
 static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol palProtocolId)
@@ -313,23 +307,17 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
 // This writes encrypted TLS frames to the safe handle. It is executed on NW Thread pool
 static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, nw_framer_message_t message, size_t message_length, bool is_complete)
 {
-    if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4, watchOS 2.0, *))
-    {
-        void* context = FramerGetManagedContext(framer);
-        size_t size = message_length;
+    void* context = FramerGetManagedContext(framer);
+    size_t size = message_length;
 
-        nw_framer_parse_output(framer, 1, message_length, NULL, ^size_t(uint8_t *buffer, size_t buffer_length, bool is_complete2)
-        {
-            (_writeFunc)(context, buffer, buffer_length);
-            (void)is_complete2;
-            (void)message;
-            return buffer_length;
-        });
-    }
-    else
+    nw_framer_parse_output(framer, 1, message_length, NULL, ^size_t(uint8_t *buffer, size_t buffer_length, bool is_complete2)
     {
-        assert(0);
-    }
+        (_writeFunc)(context, buffer, buffer_length);
+        (void)is_complete2;
+        (void)message;
+        return buffer_length;
+    });
+
     (void)is_complete;
 };
 
@@ -584,23 +572,18 @@ PALEXPORT int32_t AppleCryptoNative_Init(StatusUpdateCallback statusFunc, WriteC
     assert(statusFunc != NULL);
     assert(writeFunc != NULL);
 
-    if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4.0, watchOS 8.4, *))
-    {
-        _writeFunc = writeFunc;
-        _statusFunc = statusFunc;
-        _challengeFunc = challengeFunc;
-        _framerDefinition = nw_framer_create_definition("com.dotnet.networkframework.tlsframer",
-            NW_FRAMER_CREATE_FLAGS_DEFAULT, framer_start);
-        _tlsDefinition = nw_protocol_copy_tls_definition();
-        _tlsQueue = dispatch_queue_create("com.dotnet.networkframework.tlsqueue", NULL);
-        _inputQueue = _tlsQueue;
+    _writeFunc = writeFunc;
+    _statusFunc = statusFunc;
+    _challengeFunc = challengeFunc;
+    _framerDefinition = nw_framer_create_definition("com.dotnet.networkframework.tlsframer",
+        NW_FRAMER_CREATE_FLAGS_DEFAULT, framer_start);
+    _tlsDefinition = nw_protocol_copy_tls_definition();
+    _tlsQueue = dispatch_queue_create("com.dotnet.networkframework.tlsqueue", NULL);
+    _inputQueue = _tlsQueue;
 
-        // The endpoint values (127.0.0.1:42) are arbitrary - they just need to be
-        // syntactically and semantically valid since the connection is never established.
-        _endpoint = nw_endpoint_create_host("127.0.0.1", "42");
+    // The endpoint values (127.0.0.1:42) are arbitrary - they just need to be
+    // syntactically and semantically valid since the connection is never established.
+    _endpoint = nw_endpoint_create_host("127.0.0.1", "42");
 
-        return 0;
-   }
-
-   return 1;
+    return 0;
 }

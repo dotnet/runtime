@@ -125,6 +125,7 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier', $(RuntimeIdentifier)))</_MonoAotCrossCompilerPath>
       <_WasmDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_WasmDefaultFlagsRsp>
       <_WasmDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-link.rsp'))</_WasmDefaultLinkFlagsRsp>
+      <_WasmLlvmSizeRsp>$(_WasmIntermediateOutputPath)emcc-llvmsize.rsp</_WasmLlvmSizeRsp>
       <!--<_WasmLLVMPathForAOT>$(EmscriptenUpstreamBinPath)</_WasmLLVMPathForAOT>-->
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
       <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == '' and '$(WasmNativeStrip)' == 'true'">true</WasmRunWasmOpt>
@@ -473,7 +474,7 @@
 
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
-      Lines="$(V8ScriptShebang);v8 --module $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
+      Lines="$(V8ScriptShebang);v8 $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
       Overwrite="true">
     </WriteLinesToFile>
 

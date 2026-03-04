@@ -711,10 +711,18 @@ namespace ILCompiler.DependencyAnalysis
             if (isConcreteInstantiation || !instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any))
             {
                 TypeSystemEntity contextOwner = context.Context;
-                GenericDictionaryNode dictionary =
-                    contextOwner is TypeDesc ?
-                    (GenericDictionaryNode)factory.TypeGenericDictionary((TypeDesc)contextOwner) :
-                    (GenericDictionaryNode)factory.MethodGenericDictionary((MethodDesc)contextOwner);
+                GenericDictionaryNode dictionary;
+
+                if (isConcreteInstantiation)
+                {
+                    dictionary = contextOwner is TypeDesc ?
+                        (GenericDictionaryNode)factory.TypeGenericDictionary((TypeDesc)contextOwner) :
+                        (GenericDictionaryNode)factory.MethodGenericDictionary((MethodDesc)contextOwner);
+                }
+                else
+                {
+                    dictionary = null;
+                }
 
                 return factory.InterfaceDispatchCell(instantiatedMethod, dictionary);
             }

@@ -139,7 +139,7 @@ namespace System
         public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
-        public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
+        public static bool IsMultithreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
 
@@ -232,8 +232,7 @@ namespace System
         // heavily on Reflection.Emit
         public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsInAppContainer && IsReflectionEmitSupported;
 
-        public static bool IsPreciseGcSupported => !IsMonoRuntime 
-                                                    && !IsBrowser; // TODO-WASM: https://github.com/dotnet/runtime/issues/114096
+        public static bool IsPreciseGcSupported => !IsMonoRuntime;
 
         public static bool IsRareEnumsSupported => !IsNativeAot;
 
@@ -445,6 +444,8 @@ namespace System
                 return false;
             }
         }
+
+        public static bool IsRuntimeAsyncSupported => !IsMonoRuntime;
 
         private static Version GetICUVersion()
         {

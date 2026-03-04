@@ -323,7 +323,7 @@ namespace System.Runtime.Serialization.DataContracts
                     foreach (Type type in _referencedTypes)
                     {
                         if (type == null)
-                            throw new InvalidOperationException(SR.Format(SR.ReferencedTypesCannotContainNull));
+                            throw new InvalidOperationException(SR.ReferencedTypesCannotContainNull);
 
                         AddReferencedType(_referencedTypesDictionary, type);
                     }
@@ -344,7 +344,7 @@ namespace System.Runtime.Serialization.DataContracts
                     foreach (Type type in _referencedCollectionTypes)
                     {
                         if (type == null)
-                            throw new InvalidOperationException(SR.Format(SR.ReferencedCollectionTypesCannotContainNull));
+                            throw new InvalidOperationException(SR.ReferencedCollectionTypesCannotContainNull);
                         AddReferencedType(_referencedCollectionTypesDictionary, type);
                     }
                 }

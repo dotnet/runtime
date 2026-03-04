@@ -488,7 +488,7 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-            Thread.ThrowIfSingleThreaded();
+            Thread.ThrowIfMultithreadingIsNotSupported();
 
             if (!IsSet)
             {

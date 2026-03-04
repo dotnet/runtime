@@ -791,31 +791,36 @@ namespace System.Collections.Immutable
             /// The object to locate in the <see cref="ImmutableList{T}"/>. The value
             /// can be null for reference types.
             /// </param>
-            /// <param name="index">The zero-based starting index of the backward search.</param>
+            /// <param name="startIndex">The zero-based starting index of the backward search.</param>
             /// <param name="count">The number of elements in the section to search.</param>
             /// <param name="equalityComparer">The equality comparer to use for testing the match of two elements.</param>
             /// <returns>
             /// The zero-based index of the last occurrence of <paramref name="item"/> within the range of elements
             /// in the <see cref="ImmutableList{T}"/> that contains <paramref name="count"/> number of elements
-            /// and ends at <paramref name="index"/>, if found; otherwise, -1.
+            /// and ends at <paramref name="startIndex"/>, if found; otherwise, -1.
             /// </returns>
-            internal int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer)
+            internal int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer)
             {
-                Requires.Range(index >= 0, nameof(index));
+                if (startIndex == 0 && count == 0)
+                {
+                    return -1;
+                }
+
+                Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
                 Requires.Range(count >= 0 && count <= this.Count, nameof(count));
-                Requires.Argument(index - count + 1 >= 0);
+                Requires.Range(startIndex - count + 1 >= 0, nameof(count));
 
                 equalityComparer ??= EqualityComparer<T>.Default;
-                using (var enumerator = new Enumerator(this, startIndex: index, count: count, reversed: true))
+                using (var enumerator = new Enumerator(this, startIndex: startIndex, count: count, reversed: true))
                 {
                     while (enumerator.MoveNext())
                     {
                         if (equalityComparer.Equals(item, enumerator.Current))
                         {
-                            return index;
+                            return startIndex;
                         }
 
-                        index--;
+                        startIndex--;
                     }
                 }
 
@@ -1233,9 +1238,15 @@ namespace System.Collections.Immutable
             internal int FindLastIndex(int startIndex, int count, Predicate<T> match)
             {
                 Requires.NotNull(match, nameof(match));
-                Requires.Range(startIndex >= 0, nameof(startIndex));
-                Requires.Range(count <= this.Count, nameof(count));
-                Requires.Range(startIndex - count + 1 >= 0, nameof(startIndex));
+
+                if (startIndex == 0 && count == 0)
+                {
+                    return -1;
+                }
+
+                Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
+                Requires.Range(count >= 0 && count <= this.Count, nameof(count));
+                Requires.Range(startIndex - count + 1 >= 0, nameof(count));
 
                 using (var enumerator = new Enumerator(this, startIndex: startIndex, count: count, reversed: true))
                 {

@@ -3,6 +3,7 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  hostedOs: ''
   container: ''
   testGroup: ''
   crossBuild: false
@@ -27,6 +28,7 @@ parameters:
   unifiedArtifactsName: ''
   unifiedBuildNameSuffix: ''
   unifiedBuildConfigOverride: ''
+  extraBuildArgs: ''
 
 ### Test run job
 
@@ -40,6 +42,8 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    hostedOs: ${{ parameters.hostedOs }}
+    extraBuildArgs: ${{ parameters.extraBuildArgs }}
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossBuild: ${{ parameters.crossBuild }}
@@ -64,7 +68,10 @@ jobs:
       - ${{ if notIn(parameters.testGroup, 'innerloop') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.unifiedArtifactsName, '')}}:
-        - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
+        - ${{ if eq(parameters.hostedOs, '')}}:
+          - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
+        - ${{ if ne(parameters.hostedOs, '')}}:
+          - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
 
     # Compute job name from template parameters
     ${{ if in(parameters.testGroup, 'innerloop') }}:
@@ -82,6 +89,9 @@ jobs:
       value: ${{ parameters.osSubgroup }}
     - name: archType
       value: ${{ parameters.archType }}
+
+    - name: extraBuildArgs
+      value: ${{ parameters.extraBuildArgs }}
 
     - name: monoAotBuildshCommand
       value: ''
@@ -233,19 +243,13 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts. This step also generates the final test execution scripts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg) $(extraBuildArgs)
       displayName: Copy native test components to test output folder
-
-
-    # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(logRootNameArg)Wrappers $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg)
-      displayName: Generate test wrappers
-
 
     # Compose the Core_Root folder containing all artifacts needed for running
     # CoreCLR tests. This step also compiles the framework using Crossgen2
     # in ReadyToRun jobs.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) -ci
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) -ci $(extraBuildArgs)
       displayName: Generate CORE_ROOT
 
     # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)

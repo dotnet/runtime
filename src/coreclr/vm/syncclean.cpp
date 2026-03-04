@@ -8,7 +8,10 @@
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
 
-VolatilePtr<Bucket> SyncClean::m_HashMap = NULL;
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif
+
 VolatilePtr<EEHashEntry*> SyncClean::m_EEHashTable;
 
 void SyncClean::Terminate()
@@ -19,26 +22,6 @@ void SyncClean::Terminate()
     } CONTRACTL_END;
 
     CleanUp();
-}
-
-void SyncClean::AddHashMap (Bucket *bucket)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (!g_fEEStarted) {
-        delete [] bucket;
-        return;
-    }
-
-    _ASSERTE (GetThreadNULLOk() == NULL || GetThread()->PreemptiveGCDisabled());
-
-    Bucket * pTempBucket = NULL;
-    do
-    {
-        pTempBucket = (Bucket *)m_HashMap;
-        NextObsolete (bucket) = pTempBucket;
-    }
-    while (InterlockedCompareExchangeT(m_HashMap.GetPointer(), bucket, pTempBucket) != pTempBucket);
 }
 
 void SyncClean::AddEEHashTable (EEHashEntry** entry)
@@ -69,17 +52,6 @@ void SyncClean::CleanUp ()
     _ASSERTE (IsAtProcessExit() ||
               IsGCSpecialThread() ||
               (GCHeapUtilities::IsGCInProgress()  && GetThreadNULLOk() == ThreadSuspend::GetSuspensionThread()));
-    if (m_HashMap)
-    {
-        Bucket * pTempBucket = InterlockedExchangeT(m_HashMap.GetPointer(), NULL);
-
-        while (pTempBucket)
-        {
-            Bucket* pNextBucket = NextObsolete (pTempBucket);
-            delete [] pTempBucket;
-            pTempBucket = pNextBucket;
-        }
-    }
 
     if (m_EEHashTable)
     {
@@ -95,4 +67,9 @@ void SyncClean::CleanUp ()
 
     // Give others we want to reclaim during the GC sync point a chance to do it
     VirtualCallStubManager::ReclaimAll();
+
+#ifdef FEATURE_INTERPRETER
+    // Reclaim dead interpreter dispatch cache entries
+    InterpDispatchCache_ReclaimAll();
+#endif
 }

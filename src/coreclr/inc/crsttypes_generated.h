@@ -170,7 +170,7 @@ int g_rgCrstLevelMap[] =
     1,          // CrstHandleTable
     7,          // CrstIJWFixupData
     0,          // CrstIJWHash
-    6,          // CrstILStubGen
+    14,         // CrstILStubGen
     0,          // CrstInlineTrackingMap
     18,         // CrstInstMethodHashTable
     0,          // CrstInterfaceDispatchGlobalLists

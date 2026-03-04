@@ -26,7 +26,7 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         public static IEnumerable<T> ToBlockingEnumerable<T>(this IAsyncEnumerable<T> source, CancellationToken cancellationToken = default)
         {
-            Thread.ThrowIfSingleThreaded();
+            Thread.ThrowIfMultithreadingIsNotSupported();
 
             IAsyncEnumerator<T> enumerator = source.GetAsyncEnumerator(cancellationToken);
             // A ManualResetEventSlim variant that lets us reuse the same
@@ -81,7 +81,7 @@ namespace System.Threading.Tasks
             [UnsupportedOSPlatform("browser")]
             public void Wait<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
             {
-                Thread.ThrowIfSingleThreaded();
+                Thread.ThrowIfMultithreadingIsNotSupported();
 
                 awaiter.UnsafeOnCompleted(_onCompleted);
                 Wait();

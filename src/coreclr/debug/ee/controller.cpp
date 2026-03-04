@@ -65,6 +65,31 @@ bool DebuggerControllerPatch::IsSafeForStackTrace()
 
 }
 
+// Determines whether a breakpoint patch should be bound to a given MethodDesc.
+// When pMethodDescFilter is NULL, the default filtering policy is applied which
+// excludes async thunk methods (they should not have user breakpoints bound to them).
+// When pMethodDescFilter is non-NULL, the patch is explicitly targeting that specific
+// MethodDesc and no default filtering is applied.
+bool ShouldBindPatchToMethodDesc(MethodDesc* pMD, MethodDesc* pMethodDescFilter)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // If explicitly filtered to a specific MethodDesc, only bind to that one
+    if (pMethodDescFilter != NULL)
+    {
+        return pMD == pMethodDescFilter;
+    }
+
+    // Default filtering policy: exclude async thunk methods
+    // User breakpoints should bind to the actual async implementation, not the thunk
+    if (pMD->IsAsyncThunkMethod())
+    {
+        return false;
+    }
+
+    return true;
+}
+
 #ifndef DACCESS_COMPILE
 #ifndef FEATURE_EMULATE_SINGLESTEP
 
@@ -1412,10 +1437,14 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
         _ASSERTE(startAddr != NULL);
     }
 
-    _ASSERTE(!g_pEEInterface->IsStub((const BYTE *)startAddr));
+    // The PrecodeStubManager redirects calls to the JITed Async Thunk which will be redirected by the AsyncThunkStubManager
+    // We need to bind a patch inside the async thunk which is a 'stub'.
+    _ASSERTE(!g_pEEInterface->IsStub((const BYTE *)startAddr) || pMD->IsAsyncThunkMethod());
 
     // If we've jitted, map to a native offset.
-    DebuggerJitInfo *info = g_pDebugger->GetJitInfo(pMD, (const BYTE *)startAddr);
+    // If the patch already has a DJI, use it to avoid calling GetJitInfo which can trigger
+    // a deadlock-prone code path through HashMap lookups that do GC mode transitions.
+    DebuggerJitInfo *info = patch->HasDJI() ? patch->GetDJI() : g_pDebugger->GetJitInfo(pMD, (const BYTE *)startAddr);
 
 #ifdef LOGGING
     if (info == NULL)
@@ -2138,8 +2167,18 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
             {
                 DebuggerJitInfo *dji = it.Current();
                 _ASSERTE(dji->m_jitComplete);
-                if (dji->m_encVersion == encVersion &&
-                   (pMethodDescFilter == NULL || pMethodDescFilter == dji->m_nativeCodeVersion.GetMethodDesc()))
+
+                MethodDesc *pMD = dji->m_nativeCodeVersion.GetMethodDesc();
+
+                // Apply default filtering policy (excludes async thunks) or explicit MethodDesc filter
+                if (!ShouldBindPatchToMethodDesc(pMD, pMethodDescFilter))
+                {
+                    LOG((LF_CORDB, LL_INFO10000, "DC::AILP: Skipping method due to filter policy\n"));
+                    it.Next();
+                    continue;
+                }
+
+                if (dji->m_encVersion == encVersion)
                 {
                     fVersionMatch = TRUE;
 
@@ -3948,7 +3987,7 @@ bool DebuggerController::DispatchTraceCall(Thread *thread,
                         _ASSERTE(info.HasReturnFrame());
 
                         // This check makes sure that we don't do this logic for inlined frames.
-                        if (info.GetReturnFrame().md->IsILStub())
+                        if (info.GetReturnFrame().md->IsInteropStub())
                         {
                             // Make sure that the frame pointer of the active frame is actually
                             // the address of an exit frame.
@@ -5831,10 +5870,15 @@ static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunct
         return false;
     }
 
-    MethodDesc* pTargetMD =
-        trace.GetTraceType() == TRACE_UNJITTED_METHOD
-        ? trace.GetMethodDesc()
-        : g_pEEInterface->GetNativeCodeMethodDesc(trace.GetAddress());
+    MethodDesc* pTargetMD = NULL;
+    if (trace.GetTraceType() == TRACE_UNJITTED_METHOD)
+    {
+        pTargetMD = trace.GetMethodDesc();
+    }
+    else if (trace.GetAddress() != (PCODE)NULL)
+    {
+        pTargetMD = g_pEEInterface->GetNativeCodeMethodDesc(trace.GetAddress());
+    }
 
     if (type == TailCallFunctionType::StoreTailCallArgs)
     {
@@ -6541,6 +6585,13 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
                  "DS::TSO: CallTailCallTarget frame.\n"));
             continue;
         }
+        else if (info->m_activeFrame.md != nullptr && info->m_activeFrame.md->IsAsyncThunkMethod())
+        {
+            // Async thunks are not interesting frames to step out into.
+            LOG((LF_CORDB, LL_INFO10000,
+                 "DS::TSO: skipping async thunk method frame.\n"));
+            continue;
+        }
         else if (info->m_activeFrame.managed)
         {
             LOG((LF_CORDB, LL_INFO10000,
@@ -7019,20 +7070,20 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
     Thread *thread = GetThread();
     CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
 
-    // ControllerStackInfo doesn't report IL stubs, so if we are in an IL stub, we need
-    // to handle the single-step specially.  There are probably other problems when we stop
-    // in an IL stub.  We need to revisit this later.
-    bool fIsILStub = false;
+    // ControllerStackInfo doesn't report interop stubs (IL stubs and P/Invokes), so if we are
+    // in an interop stub, we need to handle the single-step specially.  There are probably other
+    // problems when we stop in an interop stub.  We need to revisit this later.
+    bool fIsInteropStub = false;
     if ((context != NULL) &&
         g_pEEInterface->IsManagedNativeCode(reinterpret_cast<const BYTE *>(GetIP(context))))
     {
         MethodDesc * pMD = g_pEEInterface->GetNativeCodeMethodDesc(GetIP(context));
         if (pMD != NULL)
         {
-            fIsILStub = pMD->IsILStub();
+            fIsInteropStub = pMD->IsInteropStub();
         }
     }
-    LOG((LF_CORDB, LL_INFO10000, "DS::S - fIsILStub = %d\n", fIsILStub));
+    LOG((LF_CORDB, LL_INFO10000, "DS::S - fIsInteropStub = %d\n", fIsInteropStub));
 
     ControllerStackInfo info;
 
@@ -7097,9 +7148,9 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
         rangeCount = 0;
     }
 
-    if (fIsILStub)
+    if (fIsInteropStub)
     {
-        // Don't use the ControllerStackInfo if we are in an IL stub.
+        // Don't use the ControllerStackInfo if we are in an interop stub.
         m_fp = fp;
     }
     else
@@ -7117,9 +7168,9 @@ bool DebuggerStepper::Step(FramePointer fp, bool in,
     LOG((LF_CORDB,LL_INFO10000,"DS::Step %p STEP_NORMAL\n",this));
     m_reason = STEP_NORMAL; //assume it'll be a normal step & set it to
     //something else if we walk over it
-    if (fIsILStub)
+    if (fIsInteropStub)
     {
-        LOG((LF_CORDB, LL_INFO10000, "DS::Step: stepping in an IL stub\n"));
+        LOG((LF_CORDB, LL_INFO10000, "DS::Step: stepping in an interop stub\n"));
 
         // Enable the right triggers if the user wants to step in.
         if (in)
@@ -7358,7 +7409,7 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                     {
                         // We're hitting this code path with MC++ assemblies
                         // that have an unmanaged entry point so the stub returns to CallDescrWorker.
-                        _ASSERTE(g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(patch->address))->IsILStub());
+                        _ASSERTE(g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(patch->address))->IsInteropStub());
                     }
 
                 }
@@ -7405,6 +7456,60 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
     if (DetectHandleInterceptors(&info) )
     {
         return TPR_IGNORE; //don't actually want to stop
+    }
+
+    // With the addition of Async Thunks, it is now possible that an unjitted method trace
+    // represents a stub. We need to check for this case and follow the stub trace to find
+    // the real target. 
+    // Replica patches do not contain a reference to the original trace so we can not rely
+    // on the trace type == TRACE_UNJITTED_METHOD to identify this case.
+    {
+        PCODE currentPC = GetControlPC(&(info.m_activeFrame.registers));
+        LOG((LF_CORDB, LL_INFO10000, "DS::TP: Checking stub at PC %p, IsStub=%d\n", currentPC, g_pEEInterface->IsStub((const BYTE*)currentPC)));
+        if (g_pEEInterface->IsStub((const BYTE*)currentPC))
+        {
+            LOG((LF_CORDB, LL_INFO10000, "DS::TP: IsStub=true, calling TraceStub\n"));
+            TraceDestination trace;
+            bool traceOk;
+
+            // Call TraceStub to get the trace destination
+            traceOk = g_pEEInterface->TraceStub((const BYTE*)currentPC, &trace);
+            LOG((LF_CORDB, LL_INFO10000, "DS::TP: TraceStub=%d, trace type=%d\n", traceOk, traceOk ? trace.GetTraceType() : -1));
+
+            // Special case where TraceStub returns TRACE_MGR_PUSH at our current address.
+            // We need to call TraceManager to resolve the real target as the patch at the current
+            // address will not trigger due to being added to the beginning of the patch list.
+            // This behavior is used by the AsyncThunkStubManager due to the CONTRACT in TraceStub
+            // preventing it from triggering the GC.
+            if (traceOk &&
+                trace.GetTraceType() == TRACE_MGR_PUSH &&
+                trace.GetAddress() == currentPC)
+            {
+                LOG((LF_CORDB, LL_INFO10000, "DS::TP: Got TRACE_MGR_PUSH at current IP: 0x%p, calling TraceManager\n", currentPC));
+                CONTRACT_VIOLATION(GCViolation);
+                PTR_BYTE traceManagerRetAddr = NULL;
+                traceOk = g_pEEInterface->TraceManager(
+                    thread,
+                    trace.GetStubManager(),
+                    &trace,
+                    context,
+                    &traceManagerRetAddr);
+                LOG((LF_CORDB, LL_INFO10000, "DS::TP: TraceManager=%d, trace type=%d\n",
+                    traceOk, traceOk ? trace.GetTraceType() : -1));
+            }
+
+            if (traceOk && 
+                g_pEEInterface->FollowTrace(&trace) &&
+                PatchTrace(&trace, info.m_activeFrame.fp,
+                           (m_rgfMappingStop & STOP_UNMANAGED) ? true : false))
+            {
+                // Successfully patched the real target, continue execution
+                m_reason = STEP_CALL;
+                EnableTraceCall(LEAF_MOST_FRAME);
+                EnableUnwind(m_fp);
+                return TPR_IGNORE;
+            }
+        }
     }
 
     LOG((LF_CORDB,LL_INFO10000, "DS: m_fp:0x%p, activeFP:0x%p fpExc:0x%p\n",
@@ -7620,12 +7725,12 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
     StackTraceTicket ticket(ip);
     info.GetStackInfo(ticket, GetThread(), LEAF_MOST_FRAME, NULL);
 
-    // This is a special case where we return from a managed method back to an IL stub.  This can
+    // This is a special case where we return from a managed method back to an interop stub.  This can
     // only happen if there's no more managed method frames closer to the root and we want to perform
-    // a step out, or if we step-next off the end of a method called by an IL stub.  In either case,
-    // we'll get a single step in an IL stub, which we want to ignore.  We also want to enable trace
-    // call here, just in case this IL stub is about to call the managed target (in the reverse interop case).
-    if (fd->IsILStub())
+    // a step out, or if we step-next off the end of a method called by an interop stub.  In either case,
+    // we'll get a single step in an interop stub, which we want to ignore.  We also want to enable trace
+    // call here, just in case this stub is about to call the managed target (in the reverse interop case).
+    if (fd->IsInteropStub())
     {
         LOG((LF_CORDB,LL_INFO10000, "DS::TSS: not in managed code, Returning false (case 0)!\n"));
         if (this->GetDCType() == DEBUGGER_CONTROLLER_STEPPER)

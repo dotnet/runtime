@@ -9,21 +9,17 @@
 // To make this work, we need to make sure that these data are accessed in cooperative GC
 // mode.
 
-class Bucket;
 struct EEHashEntry;
-class Crst;
-class CrstStatic;
 
-class SyncClean {
+class SyncClean final
+{
 public:
     static void Terminate ();
 
-    static void AddHashMap (Bucket *bucket);
     static void AddEEHashTable (EEHashEntry** entry);
     static void CleanUp ();
 
 private:
-    static VolatilePtr<Bucket> m_HashMap;               // Cleanup list for HashMap
     static VolatilePtr<EEHashEntry *> m_EEHashTable;    // Cleanup list for EEHashTable
 };
 #endif
