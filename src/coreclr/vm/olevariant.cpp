@@ -3775,8 +3775,6 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     SafeComHolder<ITypeInfo> pTypeInfo = NULL;
     RecordVariantHolder pRecHolder = pOleVariant;
 
-    BOOL bSuccess = FALSE;
-
     // Initialize the OLE variant's VT_RECORD fields to NULL.
     V_RECORDINFO(pRecHolder) = NULL;
     V_RECORD(pRecHolder) = NULL;
@@ -3815,14 +3813,34 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     V_RECORD(pRecHolder) = V_RECORDINFO(pRecHolder)->RecordCreate();
     IfNullThrow(V_RECORD(pRecHolder));
 
-    PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED, pValueClassMT));
-    DECLARE_ARGHOLDER_ARRAY(args, 4);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER((*pBoxedValueClass)->GetData());
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(V_RECORD(pRecHolder));
-    args[ARGNUM_2] = DWORD_TO_ARGHOLDER(pValueClassMT->GetNativeSize());
-    args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
+    if (pValueClassMT->IsBlittable())
+    {
+        // If the value class is blittable, then we can just copy the bits over.
+        memcpyNoGCRefs(V_RECORD(pRecHolder), (*pBoxedValueClass)->GetData(), pValueClassMT->GetNativeSize());
+    }
+    else
+    {
+        MethodDesc* pMD;
 
-    CALL_MANAGED_METHOD_NORET(args);
+        if (pValueClassMT->IsValueType())
+        {
+            pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
+        }
+        else
+        {
+            // Layout class
+            pMD = GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, pValueClassMT);
+        }
+
+        PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
+        DECLARE_ARGHOLDER_ARRAY(args, 4);
+        args[ARGNUM_0] = PTR_TO_ARGHOLDER((*pBoxedValueClass)->GetData());
+        args[ARGNUM_1] = PTR_TO_ARGHOLDER(V_RECORD(pRecHolder));
+        args[ARGNUM_2] = DWORD_TO_ARGHOLDER(pValueClassMT->GetNativeSize());
+        args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
+
+        CALL_MANAGED_METHOD_NORET(args);
+    }
 
     pRecHolder.SuppressRelease();
 }

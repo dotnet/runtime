@@ -69,6 +69,13 @@ public:
 #endif
 };
 
+enum class MarshalOperation
+{
+    ConvertToUnmanaged,
+    ConvertToManaged,
+    Free
+};
+
 //=======================================================================
 // Collects code and data pertaining to the PInvoke interface.
 //=======================================================================
@@ -126,8 +133,7 @@ public:
                     FieldDesc*         pFD);
 #endif // FEATURE_COMINTEROP
 
-    static MethodDesc* CreateStructMarshalILStub(MethodTable* pMT);
-    static PCODE GetEntryPointForStructMarshalStub(MethodTable* pMT);
+    static MethodDesc* CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOperation operation);
 
     static MethodDesc* CreateCLRToNativeILStub(PInvokeStaticSigInfo* pSigInfo,
                              DWORD dwStubFlags,
@@ -169,8 +175,10 @@ enum PInvokeStubFlags
     PINVOKESTUB_FL_TARGET_HAS_THIS          = 0x00020000,
     PINVOKESTUB_FL_CHECK_PENDING_EXCEPTION  = 0x00040000,
     PINVOKESTUB_FL_SHARED_STUB              = 0x00080000,
-    // unused                               = 0x00100000,
-    // unused                               = 0x00200000,
+
+    PINVOKESTUB_FL_LAYOUTCLASS_OP_MASK      = 0x00300000, // 2 bits for layout class marshal operation
+    PINVOKESTUB_FL_LAYOUTCLASS_OP_SHIFT     = 20,
+
     // unused                               = 0x00400000,
     // unused                               = 0x00800000,
 
@@ -218,6 +226,7 @@ inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_STRUCT_MARSHAL)); }
 inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_CHECK_PENDING_EXCEPTION)); }
 inline bool SF_IsSharedStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_SHARED_STUB)); }
+inline DWORD GetLayoutClassMarshalOp   (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags & PINVOKESTUB_FL_LAYOUTCLASS_OP_MASK) >> PINVOKESTUB_FL_LAYOUTCLASS_OP_SHIFT; }
 
 inline bool SF_IsVirtualStaticMethodDispatchStub(DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return dwStubFlags == ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB; }
 

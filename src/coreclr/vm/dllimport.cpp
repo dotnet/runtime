@@ -245,7 +245,7 @@ public:
     virtual void MarshalReturn(MarshalInfo* pInfo, int argOffset) = 0;
     virtual void MarshalArgument(MarshalInfo* pInfo, int argOffset) = 0;
     virtual void MarshalLCID(int argIdx) = 0;
-    virtual void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc) = 0;
+    virtual void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc, DWORD dwMarshalFlags) = 0;
 
     virtual void EmitInvokeTarget(MethodDesc* pTargetMD, MethodDesc* pStubMD) = 0;
 
@@ -343,7 +343,7 @@ public:
         pInfo->GenerateArgumentIL(&m_slIL, argOffset, SF_IsForwardStub(m_dwStubFlags));
     }
 
-    void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc)
+    void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc, DWORD dwMarshalFlags)
     {
         CONTRACTL
         {
@@ -352,7 +352,7 @@ public:
         }
         CONTRACTL_END;
 
-        pInfo->GenerateFieldIL(&m_slIL, managedOffset, nativeOffset, pFieldDesc);
+        pInfo->GenerateFieldIL(&m_slIL, managedOffset, nativeOffset, pFieldDesc, dwMarshalFlags);
     }
 
 #ifdef FEATURE_COMINTEROP
@@ -1295,118 +1295,10 @@ public:
             pTypeContext,
             dwStubFlags,
             -1 /* We have no LCID parameter */,
-            nullptr),
-        m_nativeSize(pMT->GetNativeSize())
+            nullptr)
     {
         LIMITED_METHOD_CONTRACT;
-
     }
-
-    void BeginEmit(DWORD dwStubFlags)
-    {
-        STANDARD_VM_CONTRACT;
-
-        ILStubState::BeginEmit(dwStubFlags);
-
-        ILCodeStream* pcsSetup = m_slIL.GetSetupCodeStream();
-        ILCodeStream* pcsMarshal = m_slIL.GetMarshalCodeStream();
-        ILCodeStream* pcsUnmarshal = m_slIL.GetUnmarshalCodeStream();
-        ILCodeStream* pcsCleanup = m_slIL.GetCleanupCodeStream();
-
-        pMarshalStartLabel = pcsSetup->NewCodeLabel();
-        pCatchTrampolineStartLabel = pcsSetup->NewCodeLabel();
-        pCatchTrampolineEndLabel = pcsSetup->NewCodeLabel();
-        pUnmarshalStartLabel = pcsSetup->NewCodeLabel();
-        pCleanupStartLabel = pcsSetup->NewCodeLabel();
-        pReturnLabel = pcsSetup->NewCodeLabel();
-
-        dwExceptionDispatchInfoLocal = pcsSetup->NewLocal(CoreLibBinder::GetClass(CLASS__EXCEPTION_DISPATCH_INFO));
-        pcsSetup->EmitLDNULL();
-        pcsSetup->EmitSTLOC(dwExceptionDispatchInfoLocal);
-
-        pcsMarshal->EmitLabel(pMarshalStartLabel);
-        pcsUnmarshal->EmitLabel(pUnmarshalStartLabel);
-        pcsCleanup->EmitLabel(pCleanupStartLabel);
-
-        // Initialize the native structure's memory so we can do a partial cleanup
-        // if marshalling fails.
-        pcsMarshal->EmitLDARG(StructMarshalStubs::NATIVE_STRUCT_ARGIDX);
-        pcsMarshal->EmitLDC(0);
-        pcsMarshal->EmitLDC(m_nativeSize);
-        pcsMarshal->EmitINITBLK();
-    }
-
-    void FinishEmit(MethodDesc* pStubMD)
-    {
-        STANDARD_VM_CONTRACT;
-
-        ILCodeStream* pcsSetup = m_slIL.GetSetupCodeStream();
-        ILCodeStream* pcsMarshal = m_slIL.GetMarshalCodeStream();
-        ILCodeStream* pcsUnmarshal = m_slIL.GetUnmarshalCodeStream();
-        ILCodeStream* pcsDispatch = m_slIL.GetDispatchCodeStream();
-        ILCodeStream* pcsCleanup = m_slIL.GetCleanupCodeStream();
-
-        pcsSetup->EmitNOP("// marshal operation jump table {");
-        pcsSetup->EmitLDARG(StructMarshalStubs::OPERATION_ARGIDX);
-        pcsSetup->EmitLDC(StructMarshalStubs::MarshalOperation::Marshal);
-        pcsSetup->EmitBEQ(pMarshalStartLabel);
-        pcsSetup->EmitLDARG(StructMarshalStubs::OPERATION_ARGIDX);
-        pcsSetup->EmitLDC(StructMarshalStubs::MarshalOperation::Unmarshal);
-        pcsSetup->EmitBEQ(pUnmarshalStartLabel);
-        pcsSetup->EmitLDARG(StructMarshalStubs::OPERATION_ARGIDX);
-        pcsSetup->EmitLDC(StructMarshalStubs::MarshalOperation::Cleanup);
-        pcsSetup->EmitBEQ(pCleanupStartLabel);
-        pcsSetup->EmitNOP("// } marshal operation jump table");
-
-        // Clear native memory after release so we don't leave anything dangling.
-        pcsCleanup->EmitLDARG(StructMarshalStubs::NATIVE_STRUCT_ARGIDX);
-        pcsCleanup->EmitLDC(0);
-        pcsCleanup->EmitLDC(m_nativeSize);
-        pcsCleanup->EmitINITBLK();
-
-        pcsMarshal->EmitLEAVE(pReturnLabel);
-        pcsMarshal->EmitLabel(pCatchTrampolineStartLabel);
-        // WARNING: The ILStubLinker has no knowledge that the exception object is on the stack
-        //          (because it is
-        //          unaware that we've just entered a catch block), so we lie about the number of arguments
-        //          (say the method takes one less) to rebalance the stack.
-        pcsMarshal->EmitCALL(METHOD__EXCEPTION_DISPATCH_INFO__CAPTURE, 0, 1);
-        pcsMarshal->EmitSTLOC(dwExceptionDispatchInfoLocal);
-        pcsMarshal->EmitLEAVE(pCleanupStartLabel);
-        pcsMarshal->EmitLabel(pCatchTrampolineEndLabel);
-
-        pcsDispatch->EmitLabel(pReturnLabel);
-        pcsDispatch->EmitRET();
-
-        pcsUnmarshal->EmitRET();
-
-        pcsCleanup->EmitLDLOC(dwExceptionDispatchInfoLocal);
-        pcsCleanup->EmitBRFALSE(pReturnLabel);
-        pcsCleanup->EmitLDLOC(dwExceptionDispatchInfoLocal);
-        pcsCleanup->EmitCALL(METHOD__EXCEPTION_DISPATCH_INFO__THROW, 0, 0);
-        pcsCleanup->EmitRET();
-
-        ILStubState::FinishEmit(pStubMD);
-    }
-
-    virtual void EmitExceptionHandler(LocalDesc* pNativeReturnType, LocalDesc* pManagedReturnType,
-        ILCodeLabel** ppTryBeginLabel, ILCodeLabel** ppTryEndCatchBeginLabel, ILCodeLabel** ppCatchEndLabel)
-    {
-        *ppTryBeginLabel = pMarshalStartLabel;
-        *ppTryEndCatchBeginLabel = pCatchTrampolineStartLabel;
-        *ppCatchEndLabel = pCatchTrampolineEndLabel;
-    }
-
-private:
-    ILCodeLabel* pMarshalStartLabel = nullptr;
-    ILCodeLabel* pCatchTrampolineStartLabel = nullptr;
-    ILCodeLabel* pCatchTrampolineEndLabel = nullptr;
-    ILCodeLabel* pUnmarshalStartLabel = nullptr;
-    ILCodeLabel* pCleanupStartLabel = nullptr;
-    ILCodeLabel* pReturnLabel = nullptr;
-    DWORD dwExceptionDispatchInfoLocal;
-
-    UINT32 m_nativeSize;
 };
 
 class PInvoke_ILStubState : public ILStubState
@@ -2472,7 +2364,7 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-    void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc)
+    void MarshalField(MarshalInfo* pInfo, UINT32 managedOffset, UINT32 nativeOffset, FieldDesc* pFieldDesc, DWORD dwMarshalFlags)
     {
         LIMITED_METHOD_CONTRACT;
         UNREACHABLE();
@@ -3901,106 +3793,7 @@ static void CreatePInvokeStubWorker(StubState*               pss,
     pss->FinishEmit(pMD);
 }
 
-static void CreateStructStub(ILStubState* pss,
-    StubSigDesc* pSigDesc,
-    MethodTable* pMT,
-    DWORD dwStubFlags,
-    MethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pss));
-        PRECONDITION(CheckPointer(pSigDesc));
-        PRECONDITION(CheckPointer(pMD, NULL_OK));
-        PRECONDITION(!pMD || pMD->IsILStub());
-        PRECONDITION(SF_IsStructMarshalStub(dwStubFlags));
-    }
-    CONTRACTL_END;
-
-    SF_ConsistencyCheck(dwStubFlags);
-
-#ifdef _DEBUG
-    if (g_pConfig->ShouldBreakOnInteropStubSetup(pSigDesc->m_pDebugName))
-        CONSISTENCY_CHECK_MSGF(false, ("BreakOnInteropStubSetup: '%s' ", pSigDesc->m_pDebugName));
-#endif // _DEBUG
-
-    Module* pModule = pSigDesc->m_pModule;
-
-
-    pss->SetLastError(false);
-
-    pss->BeginEmit(dwStubFlags);
-
-    // Marshal the fields
-    MarshalInfo::MarshalScenario ms = MarshalInfo::MARSHAL_SCENARIO_FIELD;
-
-    EEClassNativeLayoutInfo const* pNativeLayoutInfo = pMT->GetNativeLayoutInfo();
-
-    int numFields = pNativeLayoutInfo->GetNumFields();
-
-    CorNativeLinkType nlType = pMT->GetCharSet();
-
-    NativeFieldDescriptor const* pFieldDescriptors = pNativeLayoutInfo->GetNativeFieldDescriptors();
-
-    const bool isInlineArray = pMT->GetClass()->IsInlineArray();
-    if (isInlineArray)
-    {
-        _ASSERTE(pNativeLayoutInfo->GetSize() % pFieldDescriptors[0].NativeSize() == 0);
-        numFields = pNativeLayoutInfo->GetSize() / pFieldDescriptors[0].NativeSize();
-    }
-
-    for (int i = 0; i < numFields; ++i)
-    {
-        // For inline arrays, we only have one field descriptor that we need to reuse for each field.
-        NativeFieldDescriptor const& nativeFieldDescriptor = isInlineArray ? pFieldDescriptors[0] : pFieldDescriptors[i];
-        PTR_FieldDesc pFD = nativeFieldDescriptor.GetFieldDesc();
-        SigPointer fieldSig = pFD->GetSigPointer();
-        // The first byte in a field signature is always 0x6 per ECMA 335. Skip over this byte to get to the rest of the signature for the MarshalInfo constructor.
-        (void)fieldSig.GetByte(nullptr);
-        SigTypeContext context(pFD, TypeHandle(pMT));
-
-        MarshalInfo mlInfo(pFD->GetModule(),
-            fieldSig,
-            &context,
-            pFD->GetMemberDef(),
-            ms,
-            nlType,
-            nlfNone,
-            TRUE,
-            i + 1,
-            numFields,
-            SF_IsBestFit(dwStubFlags),
-            SF_IsThrowOnUnmappableChar(dwStubFlags),
-            TRUE,
-            pMD,
-            TRUE
-            DEBUG_ARG(pSigDesc->m_pDebugName)
-            DEBUG_ARG(pSigDesc->m_pDebugClassName)
-            DEBUG_ARG(-1 /* field */));
-
-        // When we have an inline array, we need to calculate the offset based on how many elements we've already seen.
-        // Otherwise, we have a specific field descriptor for the given field that contains the correct offset info.
-        UINT32 managedOffset = isInlineArray ? (i * pFD->GetSize()) : pFD->GetOffset();
-        UINT32 externalOffset = isInlineArray ? (i * nativeFieldDescriptor.NativeSize()) : nativeFieldDescriptor.GetExternalOffset();
-
-        pss->MarshalField(&mlInfo, managedOffset, externalOffset, pFD);
-    }
-
-#if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
-    if (pMD->IsDynamicMethod())
-    {
-        DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
-        pDMD->SetNativeStackArgSize(4 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
-    }
-#endif
-
-    // FinishEmit needs to know the native stack arg size so we call it after the number
-    // has been set in the stub MD (code:DynamicMethodDesc.SetNativeStackArgSize)
-    pss->FinishEmit(pMD);
-}
-
-static void CreateStructMarshalIL(MethodDesc* pMD, DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder, DWORD dwMarshalOperationFlags)
+static void CreateStructMarshalIL(MethodDesc* pMD, MethodTable* pMT, ILStubResolver* resolver, COR_ILMETHOD_DECODER** methodILDecoder, DWORD dwMarshalOperationFlags)
 {
     CONTRACTL
     {
@@ -4010,8 +3803,6 @@ static void CreateStructMarshalIL(MethodDesc* pMD, DynamicResolver** resolver, C
         PRECONDITION(CheckPointer(methodILDecoder));
     }
     CONTRACTL_END;
-
-    MethodTable* pMT = pMD->GetClassInstantiation()[0].GetMethodTable();
 
     // Marshal the fields
     MarshalInfo::MarshalScenario ms = MarshalInfo::MARSHAL_SCENARIO_FIELD;
@@ -4102,16 +3893,7 @@ static void CreateStructMarshalIL(MethodDesc* pMD, DynamicResolver** resolver, C
         slIL->GetUnmarshalCodeStream()->EmitRET();
     }
 
-    SString sInstructions;
-
-    slIL->LogILStub(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB, &sInstructions);
-
-    fprintf(stderr, "Generated IL for struct marshal stub %s:\n%s\n", pMT->GetDebugClassName(), sInstructions.GetUTF8());
-
-    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
-    ilResolver->SetStubMethodDesc(pMD);
-    *methodILDecoder = ilResolver->FinalizeILStub(slIL);
-    *resolver = ilResolver.Extract();
+    *methodILDecoder = resolver->FinalizeILStub(slIL);
 }
 
 bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder)
@@ -4132,23 +3914,76 @@ bool StructMarshalStubs::TryGenerateStructMarshallingMethod(MethodDesc* pMD, Dyn
 
     MethodDesc* pTypicalDefinition = pMD->LoadTypicalMethodDefinition();
 
+    MethodTable* pStructMT = pMD->GetClassInstantiation()[0].GetMethodTable();
+
+    NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
+    ilResolver->SetStubMethodDesc(pMD);
+
     if (pTypicalDefinition == CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED_CORE))
     {
-        CreateStructMarshalIL(pMD, resolver, methodILDecoder, MARSHAL_FLAG_IN | MARSHAL_FLAG_NO_CLEANUP);
+        CreateStructMarshalIL(pMD, pStructMT, ilResolver, methodILDecoder, MARSHAL_FLAG_IN | MARSHAL_FLAG_NO_CLEANUP);
+        *resolver = ilResolver.Extract();
         return true;
     }
     else if (pTypicalDefinition == CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED))
     {
-        CreateStructMarshalIL(pMD, resolver, methodILDecoder, MARSHAL_FLAG_OUT | MARSHAL_FLAG_NO_CLEANUP);
+        CreateStructMarshalIL(pMD, pStructMT, ilResolver, methodILDecoder, MARSHAL_FLAG_OUT | MARSHAL_FLAG_NO_CLEANUP);
+        *resolver = ilResolver.Extract();
         return true;
     }
-    else if (pTypicalDefinition == CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__FREE))
+    else if (pTypicalDefinition == CoreLibBinder::GetMethod(METHOD__STRUCTURE_MARSHALER__FREE_CORE))
     {
-        CreateStructMarshalIL(pMD, resolver, methodILDecoder, MARSHAL_FLAG_IN | MARSHAL_FLAG_OUT | MARSHAL_FLAG_CLEANUP_ONLY);
+        CreateStructMarshalIL(pMD, pStructMT, ilResolver, methodILDecoder, MARSHAL_FLAG_IN | MARSHAL_FLAG_OUT | MARSHAL_FLAG_CLEANUP_ONLY);
+        *resolver = ilResolver.Extract();
         return true;
     }
 
     return false;
+}
+
+static void CreateLayoutClassStub(MethodTable* pMT,
+    DWORD dwStubFlags,
+    MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(pMD->IsILStub());
+        PRECONDITION(pMD->IsDynamicMethod());
+        PRECONDITION(SF_IsStructMarshalStub(dwStubFlags));
+    }
+    CONTRACTL_END;
+
+    int marshalFlags = 0;
+
+    MarshalOperation op = (MarshalOperation)((dwStubFlags & PINVOKESTUB_FL_LAYOUTCLASS_OP_MASK) >> PINVOKESTUB_FL_LAYOUTCLASS_OP_SHIFT);
+
+    switch (op)
+    {
+        case MarshalOperation::ConvertToUnmanaged:
+            marshalFlags |= MARSHAL_FLAG_IN | MARSHAL_FLAG_NO_CLEANUP;
+            break;
+        case MarshalOperation::ConvertToManaged:
+            marshalFlags |= MARSHAL_FLAG_OUT | MARSHAL_FLAG_NO_CLEANUP;
+            break;
+        case MarshalOperation::Free:
+            marshalFlags |= MARSHAL_FLAG_IN | MARSHAL_FLAG_OUT | MARSHAL_FLAG_CLEANUP_ONLY;
+            break;
+        default:
+            _ASSERTE(!"Unexpected marshal operation");
+            break;
+    }
+
+    COR_ILMETHOD_DECODER* ilDecoder;
+
+    DynamicMethodDesc* pDMD = pMD->AsDynamicMethodDesc();
+
+    CreateStructMarshalIL(pMD, pMT, pDMD->GetILStubResolver(), &ilDecoder, marshalFlags);
+
+#if defined(FEATURE_DYNAMIC_METHOD_HAS_NATIVE_STACK_ARG_SIZE)
+        pDMD->SetNativeStackArgSize(3 * TARGET_POINTER_SIZE); // The native stack arg size is constant since the signature for struct stubs is constant.
+#endif
 }
 
 namespace
@@ -5146,17 +4981,6 @@ namespace
 
                         if (!pEntryLock.DeadlockAwareAcquire())
                         {
-                            // the IL generation is not recursive.
-                            // However, we can encounter a recursive situation when attempting to
-                            // marshal a struct containing a layout class containing another struct.
-                            // Throw an exception here instead of asserting.
-                            if (SF_IsStructMarshalStub(dwStubFlags))
-                            {
-                                _ASSERTE(pSigDesc->m_pMT != nullptr);
-                                StackSString strTypeName;
-                                TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
-                                COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
-                            }
                             UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                         }
 
@@ -5181,17 +5005,6 @@ namespace
 
                                 if (!pEntryLock.DeadlockAwareAcquire())
                                 {
-                                    // the IL generation is not recursive.
-                                    // However, we can encounter a recursive situation when attempting to
-                                    // marshal a struct containing a layout class containing another struct.
-                                    // Throw an exception here instead of asserting.
-                                    if (SF_IsStructMarshalStub(dwStubFlags))
-                                    {
-                                        _ASSERTE(pSigDesc->m_pMT != nullptr);
-                                        StackSString strTypeName;
-                                        TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
-                                        COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
-                                    }
                                     UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                                 }
 
@@ -5255,7 +5068,7 @@ namespace
 
                                 if (SF_IsStructMarshalStub(dwStubFlags))
                                 {
-                                    CreateStructStub(pss, pSigDesc, pTargetMT, dwStubFlags, pStubMD);
+                                    CreateLayoutClassStub(pTargetMT, dwStubFlags, pStubMD);
                                 }
                                 else
                                 {
@@ -5283,14 +5096,13 @@ namespace
                                                             pStubMD,
                                                             pParamTokenArray,
                                                             iLCIDArg);
+
+                                    pResolver->SetTokenLookupMap(pss->GetTokenLookupMap());
+
+                                    pResolver->SetStubTargetMethodSig(
+                                        pss->GetStubTargetMethodSig(),
+                                        pss->GetStubTargetMethodSigLength());
                                 }
-
-
-                                pResolver->SetTokenLookupMap(pss->GetTokenLookupMap());
-
-                                pResolver->SetStubTargetMethodSig(
-                                    pss->GetStubTargetMethodSig(),
-                                    pss->GetStubTargetMethodSigLength());
 
                                 // we successfully generated the IL stub
                                 sgh.SuppressRelease();
@@ -5510,13 +5322,14 @@ MethodDesc* PInvoke::CreateFieldAccessILStub(
 
 #ifndef DACCESS_COMPILE
 
-MethodDesc* PInvoke::CreateStructMarshalILStub(MethodTable* pMT)
+MethodDesc* PInvoke::CreateLayoutClassMarshalILStub(MethodTable* pMT, MarshalOperation operation)
 {
     CONTRACT(MethodDesc*)
     {
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(!pMT->IsValueType());
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -5525,11 +5338,11 @@ MethodDesc* PInvoke::CreateStructMarshalILStub(MethodTable* pMT)
 
     EEMarshalingData* pMarshallingData = pLoaderAllocator->GetMarshalingData();
 
-    MethodDesc* pCachedStubMD = pMarshallingData->LookupStructILStub(pMT);
+    MethodDesc* pCachedStubMD = pMarshallingData->LookupLayoutClassILStub(pMT)->GetMarshalMethod(operation);
     if (pCachedStubMD != NULL)
         RETURN pCachedStubMD;
 
-    DWORD dwStubFlags = PINVOKESTUB_FL_STRUCT_MARSHAL;
+    DWORD dwStubFlags = PINVOKESTUB_FL_STRUCT_MARSHAL | ((DWORD)operation << PINVOKESTUB_FL_LAYOUTCLASS_OP_SHIFT);
 
     BOOL bestFit, throwOnUnmappableChar;
 
@@ -5558,29 +5371,12 @@ MethodDesc* PInvoke::CreateStructMarshalILStub(MethodTable* pMT)
     LocalDesc returnType(ELEMENT_TYPE_VOID);
     sigBuilder.SetReturnType(&returnType);
 
-
-    if (pMT->IsValueType())
-    {
-        LocalDesc managedParameter(pMT);
-        managedParameter.MakeByRef();
-        sigBuilder.NewArg(&managedParameter);
-
-        LocalDesc nativeValueType(TypeHandle{ pMT }.MakeNativeValueType());
-        nativeValueType.MakePointer();
-        sigBuilder.NewArg(&nativeValueType);
-    }
-    else
-    {
-        LocalDesc byteRef(ELEMENT_TYPE_I1);
-        byteRef.MakeByRef();
-        sigBuilder.NewArg(&byteRef);
-        LocalDesc bytePtr(ELEMENT_TYPE_I1);
-        bytePtr.MakePointer();
-        sigBuilder.NewArg(&bytePtr);
-    }
-
-    LocalDesc i4(ELEMENT_TYPE_I4);
-    sigBuilder.NewArg(&i4);
+    LocalDesc byteRef(ELEMENT_TYPE_I1);
+    byteRef.MakeByRef();
+    sigBuilder.NewArg(&byteRef);
+    LocalDesc bytePtr(ELEMENT_TYPE_I1);
+    bytePtr.MakePointer();
+    sigBuilder.NewArg(&bytePtr);
 
     LocalDesc cleanupWorkList(CoreLibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
     cleanupWorkList.MakeByRef();
@@ -5623,20 +5419,9 @@ MethodDesc* PInvoke::CreateStructMarshalILStub(MethodTable* pMT)
     // The CreateInteropILStub() handles only creating a single stub.
     // The stub returned will be okay to return even if the call below loses
     // the race to insert into the cache.
-    pMarshallingData->CacheStructILStub(pMT, pStubMD);
+    pMarshallingData->CacheLayoutClassILStub(pMT, operation, pStubMD);
 
     RETURN pStubMD;
-}
-
-PCODE PInvoke::GetEntryPointForStructMarshalStub(MethodTable* pMT)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    MethodDesc* pMD = CreateStructMarshalILStub(pMT);
-
-    _ASSERTE(pMD != nullptr);
-
-    return pMD->GetMultiCallableAddrOfCode();
 }
 
 #endif // DACCESS_COMPILE
@@ -6056,11 +5841,13 @@ MethodDesc* GetStructMarshallingMethod(BinderMethodID methodId, MethodTable* pMT
 
     GCX_PREEMP();
 
+    MethodDesc* pPrimaryMD = CoreLibBinder::GetMethod(methodId);
+
     TypeHandle th(pMT);
 
     MethodDesc* pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-        CoreLibBinder::GetMethod(methodId),
-        TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1)).GetMethodTable(),
+        pPrimaryMD,
+        TypeHandle(pPrimaryMD->GetMethodTable()).Instantiate(Instantiation(&th, 1)).GetMethodTable(),
         FALSE,
         Instantiation(),
         TRUE);

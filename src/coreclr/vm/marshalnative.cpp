@@ -96,87 +96,21 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
     return ret;
 }
 
-extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, MarshalNative::MarshalOperation operation, PCODE* pStructMarshalStub, SIZE_T* pSize)
+extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIsBlittable, DWORD* pNativeSize)
 {
-    QCALL_CONTRACT;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
-    BOOL ret = FALSE;
-
-    BEGIN_QCALL;
-
-    TypeHandle th = TypeHandle::FromPtr(enregisteredTypeHandle);
-
-    if (th.IsBlittable())
+    TypeHandle th = t.AsTypeHandle();
+    if (th.HasLayout())
     {
-        *pStructMarshalStub = (PCODE)NULL;
-        *pSize = th.GetMethodTable()->GetNativeSize();
-        ret = TRUE;
-    }
-    else if (th.HasLayout())
-    {
-        if (th.IsValueType())
-        {
-            // For value types instantiate and use StructureMarshaler<T> which will generate optimized IL for marshalling the struct.
-            BinderMethodID methodId = METHOD__NIL;
-            switch (operation)
-            {
-                case MarshalNative::MarshalOperation::Marshal:
-                    methodId = METHOD__STRUCTURE_MARSHALER__CONVERT_TO_UNMANAGED;
-                    break;
-                case MarshalNative::MarshalOperation::Unmarshal:
-                    methodId = METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED;
-                    break;
-                case MarshalNative::MarshalOperation::Cleanup:
-                    methodId = METHOD__STRUCTURE_MARSHALER__FREE;
-                    break;
-                default:
-                    UNREACHABLE();
-            }
-
-            if (methodId != METHOD__NIL)
-            {
-                MethodDesc* pPrimaryMD = CoreLibBinder::GetMethod(methodId);
-                TypeHandle structureMarshalerType = TypeHandle(CoreLibBinder::GetClass(CLASS__STRUCTURE_MARSHALER)).Instantiate(Instantiation(&th, 1));
-                MethodDesc* pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                    pPrimaryMD,
-                    structureMarshalerType.GetMethodTable(),
-                    FALSE,
-                    Instantiation(),
-                    FALSE);
-                *pStructMarshalStub = pMD->GetSingleCallableAddrOfCode();
-                *pSize = 0;
-                ret = TRUE;
-            }
-        }
-
-        MethodTable* pMT = th.GetMethodTable();
-        MethodDesc* structMarshalStub = NULL;
-
-        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
-        if (pEEMarshalingData != NULL)
-        {
-            GCX_COOP();
-            structMarshalStub = pEEMarshalingData->LookupStructILStubSpeculative(pMT);
-        }
-
-        if (structMarshalStub == NULL)
-        {
-            structMarshalStub = PInvoke::CreateStructMarshalILStub(pMT);
-        }
-
-        *pStructMarshalStub = structMarshalStub->GetSingleCallableAddrOfCode();
-        *pSize = 0;
-        ret = TRUE;
-    }
-    else
-    {
-        *pStructMarshalStub = (PCODE)NULL;
-        *pSize = 0;
+        *pIsBlittable = th.IsBlittable();
+        *pNativeSize = th.GetMethodTable()->GetNativeSize();
+        return TRUE;
     }
 
-    END_QCALL;
-
-    return ret;
+    *pIsBlittable = FALSE;
+    *pNativeSize = 0;
+    return FALSE;
 }
 
 /************************************************************************

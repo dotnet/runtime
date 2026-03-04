@@ -1345,9 +1345,9 @@ namespace System.StubHelpers
     // Constants for direction argument of struct marshalling stub.
     internal static class MarshalOperation
     {
-        internal const int Marshal = 0;
-        internal const int Unmarshal = 1;
-        internal const int Cleanup = 2;
+        internal const int ConvertToUnmanaged = 0;
+        internal const int ConvertToManaged = 1;
+        internal const int Free = 2;
     }
 
     internal static unsafe class StructureMarshaler<T> where T : struct
@@ -1364,7 +1364,7 @@ namespace System.StubHelpers
             }
             catch (Exception)
             {
-                Free(ref managed, unmanaged, ref cleanupWorkList);
+                Free(ref managed, unmanaged, nativeSize, ref cleanupWorkList);
                 throw;
             }
         }
@@ -1373,14 +1373,59 @@ namespace System.StubHelpers
         internal static extern void ConvertToManaged(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
 
         [Intrinsic]
-        internal static extern void Free(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
+        internal static extern void FreeCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList);
+
+        internal static void Free(ref T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        {
+            FreeCore(ref managed, unmanaged, ref cleanupWorkList);
+            NativeMemory.Clear(unmanaged, (nuint)nativeSize);
+        }
     }
 
-    internal static unsafe class LayoutClassMarshaller<T> where T : class
+    internal static unsafe class LayoutClassMarshaler<T> where T : class
     {
+        private static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToUnmanagedStub
+        {
+            get
+            {
+                if (field != null)
+                    return field;
+
+                RuntimeTypeHandle th = typeof(T).TypeHandle;
+
+                return field = StubHelpers.GetLayoutClassMarshalStub(new QCallTypeHandle(ref th), MarshalOperation.ConvertToUnmanaged);
+            }
+        }
+
+        private static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> ConvertToManagedStub
+        {
+            get
+            {
+                if (field != null)
+                    return field;
+
+                RuntimeTypeHandle th = typeof(T).TypeHandle;
+
+                return field = StubHelpers.GetLayoutClassMarshalStub(new QCallTypeHandle(ref th), MarshalOperation.ConvertToManaged);
+            }
+        }
+
+        private static delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> FreeStub
+        {
+            get
+            {
+                if (field != null)
+                    return field;
+
+                RuntimeTypeHandle th = typeof(T).TypeHandle;
+
+                return field = StubHelpers.GetLayoutClassMarshalStub(new QCallTypeHandle(ref th), MarshalOperation.Free);
+            }
+        }
+
         private static void ConvertToUnmanagedCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
-            throw new NotImplementedException();
+            ConvertToUnmanagedStub(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
         }
 
         internal static void ConvertToUnmanaged(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
@@ -1392,19 +1437,32 @@ namespace System.StubHelpers
             }
             catch (Exception)
             {
-                Free(managed, unmanaged, ref cleanupWorkList);
+                Free(managed, unmanaged, nativeSize, ref cleanupWorkList);
                 throw;
             }
         }
 
         internal static void ConvertToManaged(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
-            throw new NotImplementedException();
+            ConvertToManagedStub(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
         }
 
-        internal static void Free(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
+        internal static void FreeCore(T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
         {
-            throw new NotImplementedException();
+            if (managed is null)
+            {
+                FreeStub(ref Unsafe.NullRef<byte>(), unmanaged, ref cleanupWorkList);
+            }
+            else
+            {
+                FreeStub(ref managed.GetRawData(), unmanaged, ref cleanupWorkList);
+            }
+        }
+
+        internal static void Free(T managed, byte* unmanaged, int nativeSize, ref CleanupWorkListElement? cleanupWorkList)
+        {
+            FreeCore(managed, unmanaged, ref cleanupWorkList);
+            NativeMemory.Clear(unmanaged, (nuint)nativeSize);
         }
     }
 
@@ -1641,42 +1699,41 @@ namespace System.StubHelpers
             }
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetLayoutClassMarshalStub")]
+        internal static unsafe partial delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> GetLayoutClassMarshalStub(QCallTypeHandle th, int operation);
+
         internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+            RuntimeType type = (RuntimeType)obj.GetType();
+            bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out int size);
+            Debug.Assert(hasLayout);
 
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
-            nuint size;
-            bool success = Marshal.TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size);
-            Debug.Assert(success);
+            if (isBlittable)
+            {
+                SpanHelpers.Memmove(ref *(byte*)pNative, ref obj.GetRawData(), (nuint)size);
+                return;
+            }
 
-            if (structMarshalStub != null)
-            {
-                structMarshalStub(ref obj.GetRawData(), pNative, MarshalOperation.Marshal, ref pCleanupWorkList);
-            }
-            else
-            {
-                SpanHelpers.Memmove(ref *pNative, ref obj.GetRawData(), size);
-            }
+            Marshal.NonBlittableMarshalerMethods.MarshalMethods methods = Marshal.NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
+
+            methods.ConvertToUnmanaged(obj, (byte*)pNative, size, ref pCleanupWorkList);
         }
 
         internal static unsafe void FmtClassUpdateCLRInternal(object obj, byte* pNative)
         {
-            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+            RuntimeType type = (RuntimeType)obj.GetType();
+            bool hasLayout = Marshal.HasLayout(new QCallTypeHandle(ref type), out bool isBlittable, out int size);
+            Debug.Assert(hasLayout);
 
-            delegate*<ref byte, byte*, int, ref CleanupWorkListElement?, void> structMarshalStub;
-            nuint size;
-            bool success = Marshal.TryGetStructMarshalStub((IntPtr)pMT, &structMarshalStub, &size);
-            Debug.Assert(success);
+            if (isBlittable)
+            {
+                SpanHelpers.Memmove(ref obj.GetRawData(), ref *(byte*)pNative, (nuint)size);
+                return;
+            }
 
-            if (structMarshalStub != null)
-            {
-                structMarshalStub(ref obj.GetRawData(), pNative, MarshalOperation.Unmarshal, ref Unsafe.NullRef<CleanupWorkListElement?>());
-            }
-            else
-            {
-                SpanHelpers.Memmove(ref obj.GetRawData(), ref *pNative, size);
-            }
+            Marshal.NonBlittableMarshalerMethods.MarshalMethods methods = Marshal.NonBlittableMarshalerMethods.GetMarshalMethodsForType(type);
+
+            methods.ConvertToManaged(obj, (byte*)pNative, ref Unsafe.NullRef<CleanupWorkListElement?>());
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]

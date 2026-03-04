@@ -198,6 +198,47 @@ BOOL ParseNativeTypeInfo(mdToken                    token,
 BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport* pInternalImport);
 #endif
 
+enum class MarshalOperation : int32_t;
+
+class LayoutClassMarshalers
+{
+private:
+    MethodTable* m_pMT;
+    MethodDesc* m_pConvertToUnmanagedMD;
+    MethodDesc* m_pConvertToManagedMD;
+    MethodDesc* m_pFreeMD;
+
+public:
+    void *operator new(size_t size, LoaderHeap *pHeap);
+    void operator delete(void *pMem);
+    LayoutClassMarshalers(MethodTable* pMT)
+        : m_pMT(pMT)
+        , m_pConvertToUnmanagedMD(nullptr)
+        , m_pConvertToManagedMD(nullptr)
+        , m_pFreeMD(nullptr)
+    {
+
+    }
+    MethodDesc* GetConvertToUnmanagedMD()
+    {
+        return m_pConvertToUnmanagedMD;
+    }
+
+    MethodDesc* GetConvertToManagedMD()
+    {
+        return m_pConvertToManagedMD;
+    }
+
+    MethodDesc* GetFreeMD()
+    {
+        return m_pFreeMD;
+    }
+
+    void SetMarshalMethod(MethodDesc* pMD, MarshalOperation op);
+
+    MethodDesc* GetMarshalMethod(MarshalOperation op);
+};
+
 class EEMarshalingData
 {
 public:
@@ -210,23 +251,23 @@ public:
     void operator delete(void *pMem);
 
 #ifndef DACCESS_COMPILE
-    MethodDesc* LookupStructILStubSpeculative(MethodTable* pMT)
+    LayoutClassMarshalers* LookupLayoutClassILStubSpeculative(MethodTable* pMT)
     {
         WRAPPER_NO_CONTRACT;
         HashDatum res = 0;
         m_structILStubCache.GetValueSpeculative(pMT, &res);
-        return (MethodDesc*)res;
+        return (LayoutClassMarshalers*)res;
     }
 
-    MethodDesc* LookupStructILStub(MethodTable* pMT)
+    LayoutClassMarshalers* LookupLayoutClassILStub(MethodTable* pMT)
     {
         WRAPPER_NO_CONTRACT;
         HashDatum res = 0;
         m_structILStubCache.GetValue(pMT, &res);
-        return (MethodDesc*)res;
+        return (LayoutClassMarshalers*)res;
     }
 
-    void CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD);
+    void CacheLayoutClassILStub(MethodTable* pMT, MarshalOperation op, MethodDesc* pStubMD);
 #endif
 
     // This method returns the custom marshaling info associated with the name cookie pair. If the
@@ -331,7 +372,7 @@ public:
                         UINT32 managedOffset, // the field's byte offset into the managed object
                         UINT32 nativeOffset, // the field's byte offset into the native object
                         FieldDesc* pFieldDesc, // The field descriptor for reporting errors
-                        DWORD dwMarshalFlags = 0); // Flags to specify which scenarios to generate IL for.
+                        DWORD dwMarshalFlags); // Flags to specify which scenarios to generate IL for.
 
     OverrideProcArgs const* GetOverrideProcArgs()
     {

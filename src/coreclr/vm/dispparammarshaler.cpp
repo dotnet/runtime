@@ -388,14 +388,45 @@ void DispParamRecordMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECTRE
             // of the record into it.
             BoxedValueClass = m_pRecordMT->Allocate();
 
-            PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, m_pRecordMT));
-            DECLARE_ARGHOLDER_ARRAY(args, 3);
-            args[ARGNUM_0] = PTR_TO_ARGHOLDER(BoxedValueClass->GetData());
-            args[ARGNUM_1] = PTR_TO_ARGHOLDER(pvRecord);
-            args[ARGNUM_2] = DWORD_TO_ARGHOLDER(m_pRecordMT->GetNativeSize());
-            args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
+            MethodDesc* pMD;
 
-            CALL_MANAGED_METHOD_NORET(args);
+            if (m_pRecordMT->IsBlittable())
+            {
+                // For blittable types, we can skip the managed conversion and just copy the data directly into the box.
+                memcpyNoGCRefs(BoxedValueClass->GetData(), pvRecord, m_pRecordMT->GetNativeSize());
+            }
+            else
+            {
+                if (m_pRecordMT->IsValueType())
+                {
+                    pMD = GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__CONVERT_TO_MANAGED, m_pRecordMT);
+                }
+                else
+                {
+                    // Layout class
+                    pMD = GetStructMarshallingMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED, m_pRecordMT);
+                }
+
+                PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
+                DECLARE_ARGHOLDER_ARRAY(args, 3);
+
+                if (m_pRecordMT->IsValueType())
+                {
+                    // For value types, we need to pass the address of the data
+                    args[ARGNUM_0] = PTR_TO_ARGHOLDER(BoxedValueClass->GetData());
+                }
+                else
+                {
+                    // For layout classes, we need to pass the object reference
+                    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(BoxedValueClass);
+                }
+
+                args[ARGNUM_1] = PTR_TO_ARGHOLDER(pvRecord);
+                args[ARGNUM_2] = DWORD_TO_ARGHOLDER(m_pRecordMT->GetNativeSize());
+                args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
+
+                CALL_MANAGED_METHOD_NORET(args);
+            }
         }
 
         *pDestObj = BoxedValueClass;

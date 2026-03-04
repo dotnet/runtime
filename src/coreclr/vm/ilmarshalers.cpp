@@ -1083,9 +1083,9 @@ void ILValueClassMarshaler::EmitClearNative(ILCodeStream * pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-
     EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
     TypeHandle structType{m_pargs->m_pMT};
@@ -1098,7 +1098,7 @@ void ILValueClassMarshaler::EmitClearNative(ILCodeStream * pslILEmit)
         Instantiation(),
         TRUE);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pFreeMethod), 3, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pFreeMethod), 4, 0);
 }
 
 
@@ -1130,7 +1130,6 @@ void ILValueClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEm
 
     EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Unmarshal);
     EmitLoadCleanupWorkList(pslILEmit);
 
     TypeHandle structType{m_pargs->m_pMT};
@@ -1143,7 +1142,7 @@ void ILValueClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEm
         Instantiation(),
         TRUE);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToManagedMethod), 4, 0);
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToManagedMethod), 3, 0);
 }
 
 
@@ -2327,15 +2326,22 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
     ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
     bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
-    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
+    TypeHandle layoutClassType{m_pargs->m_pMT};
 
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
-    EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Marshal);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+    MethodDesc* pConvertToUnmanagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED);
+
+    MethodDesc* pConvertToUnmanagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToUnmanagedMethodTypicalInstantiation,
+        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
+        FALSE,
+        Instantiation(),
+        TRUE);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToUnmanagedMethod), 4, 0);
 
     if (emittedTypeCheck)
     {
@@ -2363,15 +2369,22 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* psl
     ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
     bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
-    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
-
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
-    EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Unmarshal);
+    EmitLoadNativeHomeAddr(pslILEmit);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+    TypeHandle layoutClassType{m_pargs->m_pMT};
+
+    MethodDesc* pConvertToManagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED);
+
+    MethodDesc* pConvertToManagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToManagedMethodTypicalInstantiation,
+        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
+        FALSE,
+        Instantiation(),
+        TRUE);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToManagedMethod), 3, 0);
+
     if (emittedTypeCheck)
     {
         pslILEmit->EmitBR(pNullRefLabel);
@@ -2392,15 +2405,22 @@ void ILLayoutClassPtrMarshaler::EmitClearNativeContents(ILCodeStream * pslILEmit
     ILCodeLabel* cleanedUpLabel = pslILEmit->NewCodeLabel();
     bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
-    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
-
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
-    EmitLoadNativeValue(pslILEmit);
-    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Cleanup);
+    EmitLoadNativeHomeAddr(pslILEmit);
+    pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+    TypeHandle layoutClassType{m_pargs->m_pMT};
+
+    MethodDesc* pFreeMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE);
+
+    MethodDesc* pFreeMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pFreeMethodTypicalInstantiation,
+        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
+        FALSE,
+        Instantiation(),
+        TRUE);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pFreeMethod), 4, 0);
 
     if (emittedTypeCheck)
     {
@@ -2542,17 +2562,22 @@ void ILLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
 
-
-    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
+    TypeHandle layoutClassType{m_pargs->m_pMT};
 
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Marshal);
+    pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
-    pslILEmit->EmitLabel(pNullRefLabel);
+    MethodDesc* pConvertToUnmanagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_UNMANAGED);
+
+    MethodDesc* pConvertToUnmanagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToUnmanagedMethodTypicalInstantiation,
+        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
+        FALSE,
+        Instantiation(),
+        TRUE);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToUnmanagedMethod), 4, 0);
 }
 
 void ILLayoutClassMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit)
@@ -2567,30 +2592,43 @@ void ILLayoutClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
-
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Unmarshal);
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+    TypeHandle layoutClassType{m_pargs->m_pMT};
+
+    MethodDesc* pConvertToManagedMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__CONVERT_TO_MANAGED);
+
+    MethodDesc* pConvertToManagedMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pConvertToManagedMethodTypicalInstantiation,
+        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
+        FALSE,
+        Instantiation(),
+        TRUE);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertToManagedMethod), 3, 0);
 }
 
 void ILLayoutClassMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
-
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitLDC(StructMarshalStubs::MarshalOperation::Cleanup);
+    pslILEmit->EmitLDC(m_pargs->m_pMT->GetNativeLayoutInfo()->GetSize());
     EmitLoadCleanupWorkList(pslILEmit);
 
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pStructMarshalStub), 4, 0);
+    TypeHandle layoutClassType{m_pargs->m_pMT};
+
+    MethodDesc* pFreeMethodTypicalInstantiation = CoreLibBinder::GetMethod(METHOD__LAYOUTCLASS_MARSHALER__FREE);
+
+    MethodDesc* pFreeMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pFreeMethodTypicalInstantiation,
+        TypeHandle(CoreLibBinder::GetClass(CLASS__LAYOUTCLASS_MARSHALER)).Instantiate(Instantiation(&layoutClassType, 1)).GetMethodTable(),
+        FALSE,
+        Instantiation(),
+        TRUE);
+
+    pslILEmit->EmitCALL(pslILEmit->GetToken(pFreeMethod), 4, 0);
 }
 
 

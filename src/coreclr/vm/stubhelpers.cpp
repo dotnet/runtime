@@ -677,3 +677,18 @@ extern "C" void QCALLTYPE StubHelpers_MulticastDebuggerTraceHelper(QCall::Object
 
     END_QCALL;
 }
+
+extern "C" PCODE QCALLTYPE StubHelpers_GetLayoutClassMarshalStub(QCall::TypeHandle th, int operation)
+{
+    QCALL_CONTRACT;
+
+    PCODE pStub = NULL;
+
+    BEGIN_QCALL;
+
+    pStub = PInvoke::CreateLayoutClassMarshalILStub(th.AsTypeHandle().GetMethodTable(), (MarshalOperation)operation)->GetMultiCallableAddrOfCode();
+
+    END_QCALL;
+
+    return pStub;
+}
