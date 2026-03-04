@@ -3,6 +3,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <_WasmPThreadPoolUnusedSize>10</_WasmPThreadPoolUnusedSize>
@@ -54,10 +55,12 @@
     <!-- System.Runtime.CompilerServices -->
     <Compile Include="System.Runtime.CompilerServices\AsyncIteratorMethodBuilderTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.cs" />
+    <Compile Include="System.Runtime.CompilerServices\RuntimeAsyncTests.cs" Condition="'$(RuntimeFlavor)' != 'mono'" />
     <Compile Include="System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs" />
     <Compile Include="System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\TaskAwaiterTests.cs" />
     <Compile Include="System.Runtime.CompilerServices\YieldAwaitableTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs" Condition="'$(RuntimeFlavor)' != 'mono'" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs" Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\ThreadPoolHelpers.cs" Link="CommonTest\System\Threading\ThreadPoolHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />

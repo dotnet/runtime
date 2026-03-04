@@ -297,7 +297,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         public async Task Write_TooMuch_ThrowsProtocolViolationException()
         {
             using (HttpClient client = new HttpClient())
@@ -325,7 +325,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         public async Task Write_TooLittleAsynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -351,7 +351,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         public async Task Write_TooLittleSynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -390,7 +390,7 @@ namespace System.Net.Tests
             using (Socket client = factory.GetConnectedSocket())
             {
                 // Send a header to the HttpListener to give it a context.
-                client.Send(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
+                await client.SendAsync(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
                 HttpListener listener = factory.GetListener();
                 listener.IgnoreWriteExceptions = ignoreWriteExceptions;
                 HttpListenerContext context = await listener.GetContextAsync();
@@ -428,7 +428,7 @@ namespace System.Net.Tests
             using (Socket client = factory.GetConnectedSocket())
             {
                 // Send a header to the HttpListener to give it a context.
-                client.Send(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
+                await client.SendAsync(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
                 HttpListener listener = factory.GetListener();
                 listener.IgnoreWriteExceptions = ignoreWriteExceptions;
                 HttpListenerContext context = await listener.GetContextAsync();
@@ -468,7 +468,7 @@ namespace System.Net.Tests
             using (Socket client = factory.GetConnectedSocket())
             {
                 // Send a header to the HttpListener to give it a context.
-                client.Send(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
+                await client.SendAsync(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
                 HttpListener listener = factory.GetListener();
                 listener.IgnoreWriteExceptions = ignoreWriteExceptions;
                 HttpListenerContext context = await listener.GetContextAsync();
@@ -508,7 +508,7 @@ namespace System.Net.Tests
             using (Socket client = factory.GetConnectedSocket())
             {
                 // Send a header to the HttpListener to give it a context.
-                client.Send(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
+                await client.SendAsync(factory.GetContent(RequestTypes.POST, Text, headerOnly: true));
                 HttpListener listener = factory.GetListener();
                 listener.IgnoreWriteExceptions = ignoreWriteExceptions;
                 HttpListenerContext context = await listener.GetContextAsync();

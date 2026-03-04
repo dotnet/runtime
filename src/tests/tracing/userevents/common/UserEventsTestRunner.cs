@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -18,7 +19,17 @@ namespace Tracing.UserEvents.Tests.Common
         private const int SIGINT = 2;
         private const int DefaultTraceeExitTimeoutMs = 5000;
         private const int DefaultRecordTraceExitTimeoutMs = 20000;
-        private const int DefaultTraceeDelayToSetupTracepointsMs = 200;
+
+        // Delay before starting the tracee to let record-trace finish setup. The
+        // tracee's ManualResetEventSlim gates on tracepoint registration via IPC, but
+        // that alone is not sufficient as record-trace's ring buffers must also be active
+        // (PerfSession::enable) to capture events. Without this delay, the tracee may be
+        // discovered during record-trace's /proc scan and receive IPC before enable,
+        // causing events to be lost. With the delay, the tracee is instead discovered
+        // via MMAP2 records after PerfSession is enabled.
+        // record-trace startup -> PerfSession::enable scales with system process count:
+        // averaged 113ms at 126 processes and 253ms at 534 processes on a 2-core system.
+        private const int RecordTraceSetupDelayMs = 300;
 
         [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
         private static extern int Kill(int pid, int sig);
@@ -27,17 +38,29 @@ namespace Tracing.UserEvents.Tests.Common
             string[] args,
             string scenarioName,
             Action traceeAction,
-            Func<EventPipeEventSource, bool> traceValidator,
+            Func<int, EventPipeEventSource, bool> traceValidator,
+            EventSource traceeEventSource,
             int traceeExitTimeout = DefaultTraceeExitTimeoutMs,
-            int recordTraceExitTimeout = DefaultRecordTraceExitTimeoutMs,
-            int traceeDelayToSetupTracepoints = DefaultTraceeDelayToSetupTracepointsMs)
+            int recordTraceExitTimeout = DefaultRecordTraceExitTimeoutMs)
         {
             if (args.Length > 0 && args[0].Equals("tracee", StringComparison.OrdinalIgnoreCase))
             {
-                if (traceeDelayToSetupTracepoints > 0)
+                using var enabledEvent = new ManualResetEventSlim(false);
+
+                traceeEventSource.EventCommandExecuted += (sender, e) =>
                 {
-                    Thread.Sleep(traceeDelayToSetupTracepoints);
+                    if (e.Command == EventCommand.Enable)
+                    {
+                        enabledEvent.Set();
+                    }
+                };
+
+                if (traceeEventSource.IsEnabled())
+                {
+                    enabledEvent.Set();
                 }
+
+                enabledEvent.Wait();
 
                 traceeAction();
                 return 0;
@@ -52,7 +75,7 @@ namespace Tracing.UserEvents.Tests.Common
 
         private static int RunOrchestrator(
             string scenarioName,
-            Func<EventPipeEventSource, bool> traceValidator,
+            Func<int, EventPipeEventSource, bool> traceValidator,
             int traceeExitTimeout,
             int recordTraceExitTimeout)
         {
@@ -119,7 +142,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.WriteLine($"[record-trace] {args.Data}");
+                    Console.WriteLine($"[record-trace][stdout] {args.Data}");
                 }
             };
             recordTraceProcess.BeginOutputReadLine();
@@ -127,7 +150,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.Error.WriteLine($"[record-trace] {args.Data}");
+                    Console.WriteLine($"[record-trace][stderr] {args.Data}");
                 }
             };
             recordTraceProcess.BeginErrorReadLine();
@@ -165,6 +188,10 @@ namespace Tracing.UserEvents.Tests.Common
             // When https://github.com/microsoft/one-collect/issues/183 is fixed, this and the above TMPDIR should be removed.
             EnsureCleanDiagnosticPorts(diagnosticPortDir);
 
+            // Allow record-trace to finish setup before starting the tracee.
+            Console.WriteLine($"Delaying tracee startup {RecordTraceSetupDelayMs}ms for record-trace setup...");
+            Thread.Sleep(RecordTraceSetupDelayMs);
+
             Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {string.Join(" ", traceeStartInfo.ArgumentList)}");
             using Process traceeProcess = Process.Start(traceeStartInfo);
             int traceePid = traceeProcess.Id;
@@ -173,7 +200,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.WriteLine($"[tracee] {args.Data}");
+                    Console.WriteLine($"[tracee][stdout] {args.Data}");
                 }
             };
             traceeProcess.BeginOutputReadLine();
@@ -181,7 +208,7 @@ namespace Tracing.UserEvents.Tests.Common
             {
                 if (!string.IsNullOrEmpty(args.Data))
                 {
-                    Console.Error.WriteLine($"[tracee] {args.Data}");
+                    Console.WriteLine($"[tracee][stderr] {args.Data}");
                 }
             };
             traceeProcess.BeginErrorReadLine();
@@ -220,7 +247,7 @@ namespace Tracing.UserEvents.Tests.Common
             }
 
             using EventPipeEventSource source = new EventPipeEventSource(traceFilePath);
-            if (!traceValidator(source))
+            if (!traceValidator(traceePid, source))
             {
                 Console.Error.WriteLine($"Trace file `{traceFilePath}` does not contain expected events.");
                 UploadTraceFileFromHelix(traceFilePath, scenarioName);
@@ -276,8 +303,19 @@ namespace Tracing.UserEvents.Tests.Common
                 {
                     foreach (FileInfo fi in ipc)
                     {
-                        Console.WriteLine($"Deleting zombie diagnostic port: {fi.FullName}");
-                        fi.Delete();
+                        try
+                        {
+                            Console.WriteLine($"Deleting zombie diagnostic port: {fi.FullName}");
+                            fi.Delete();
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            Console.WriteLine($"Skipping zombie diagnostic port (permission denied): {fi.FullName}");
+                        }
+                        catch (IOException)
+                        {
+                            Console.WriteLine($"Skipping zombie diagnostic port (I/O error): {fi.FullName}");
+                        }
                     }
                 }
                 else
@@ -288,8 +326,19 @@ namespace Tracing.UserEvents.Tests.Common
                         var duplicates = ipc.OrderBy(fileInfo => fileInfo.CreationTime.Ticks).SkipLast(1);
                         foreach (FileInfo fi in duplicates)
                         {
-                            Console.WriteLine($"Deleting duplicate diagnostic port: {fi.FullName}");
-                            fi.Delete();
+                            try
+                            {
+                                Console.WriteLine($"Deleting duplicate diagnostic port: {fi.FullName}");
+                                fi.Delete();
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                Console.WriteLine($"Skipping duplicate diagnostic port (permission denied): {fi.FullName}");
+                            }
+                            catch (IOException)
+                            {
+                                Console.WriteLine($"Skipping duplicate diagnostic port (I/O error): {fi.FullName}");
+                            }
                         }
                     }
                 }

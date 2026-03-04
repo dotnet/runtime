@@ -977,7 +977,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         return;
     }
 
-    if (!comp->optAssertionHasAssertionsForVN(normalLclVN))
+    if (normalLclVN == ValueNumStore::NoVN)
     {
         return;
     }
@@ -1024,6 +1024,40 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             {
                 continue;
             }
+        }
+        // If we're not allowed to emit keBinOpArray, we still can deduce something useful from
+        // O2K_CHECKED_BOUND_ADD_CNS for never negative checked bounds
+        //
+        //  Example: "(uint)normalLclVN < span.Length"   means normalLclVN's range is [0..INT32_MAX-1]
+        //  Example: "(uint)normalLclVN <= array.Length" means normalLclVN's range is [0..Array.MaxLength]
+        //
+        else if (!canUseCheckedBounds && curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == normalLclVN) &&
+                 (curAssertion.GetOp2().KindIs(Compiler::O2K_CHECKED_BOUND_ADD_CNS)) &&
+                 (curAssertion.GetOp2().IsCheckedBoundNeverNegative()) &&
+                 (curAssertion.GetOp2().GetCheckedBoundConstant() == 0))
+        {
+            // We can assume that the checked bound is within [0..INT32_MAX] thanks to IsCheckedBoundNeverNegative,
+            // but let's see if we can do better: we could call GetRangeFromAssertions on the checked bound's VN,
+            // but that may lead to infinite recursion. Also, the checked bound is usually either arr.Length or
+            // span.Length anyway.
+            ValueNum checkedBoundVN = curAssertion.GetOp2().GetCheckedBound();
+
+            int maxValue = INT32_MAX;
+            if (comp->vnStore->IsVNArrLen(checkedBoundVN))
+            {
+                maxValue = CORINFO_Array_MaxLength;
+            }
+            else
+            {
+                int cns;
+                if (comp->vnStore->IsVNIntegralConstant(checkedBoundVN, &cns) && (cns >= 0))
+                {
+                    maxValue = cns;
+                }
+            }
+
+            cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+            limit   = Limit(Limit::keConstant, maxValue);
         }
         // Current assertion is of the form "i <relop> (checkedBndVN + cns)"
         else if (curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
@@ -1092,14 +1126,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             int cnstLimit = (int)curAssertion.GetOp2().GetIntConstant();
             assert(cnstLimit == comp->vnStore->CoercedConstantValue<int>(curAssertion.GetOp2().GetVN()));
 
-            if ((cnstLimit == 0) && curAssertion.KindIs(Compiler::OAK_NOT_EQUAL) && canUseCheckedBounds &&
-                comp->vnStore->IsVNCheckedBound(curAssertion.GetOp1().GetVN()))
-            {
-                // we have arr.Len != 0, so the length must be atleast one
-                limit   = Limit(Limit::keConstant, 1);
-                cmpOper = GT_GE;
-            }
-            else if (curAssertion.KindIs(Compiler::OAK_EQUAL))
+            if (curAssertion.KindIs(Compiler::OAK_EQUAL))
             {
                 limit   = Limit(Limit::keConstant, cnstLimit);
                 cmpOper = GT_EQ;
@@ -1170,6 +1197,9 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             }
             else if (normalLclVN == lenVN)
             {
+                ValueNum indexOp1VN;
+                int      indexOp2Cns;
+
                 if (comp->vnStore->IsVNInt32Constant(indexVN))
                 {
                     // We have "Const < arr.Length" assertion, it means that "arr.Length > Const"
@@ -1183,6 +1213,14 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     {
                         continue;
                     }
+                }
+                // arr[arr.Length - CNS] means arr.Length >= CNS, so we can deduce "normalLclVN >= CNS"
+                // On the VN level it's VNF_ADD(normalLclVN, -CNS).
+                else if (comp->vnStore->IsVNBinFuncWithConst(indexVN, VNF_ADD, &indexOp1VN, &indexOp2Cns) &&
+                         (indexOp1VN == normalLclVN) && (indexOp2Cns < 0) && (indexOp2Cns > INT32_MIN))
+                {
+                    cmpOper = GT_GE;
+                    limit   = Limit(Limit::keConstant, -indexOp2Cns);
                 }
                 else
                 {

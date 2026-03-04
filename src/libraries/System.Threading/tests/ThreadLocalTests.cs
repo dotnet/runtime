@@ -59,7 +59,7 @@ namespace System.Threading.Tests
             Assert.True(tlocal.IsValueCreated);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunThreadLocalTest4_Value()
         {
             ThreadLocal<string> tlocal = null;
@@ -108,7 +108,7 @@ namespace System.Threading.Tests
             });
         }
 
-        [ConditionalFact(nameof(IsThreadingAndPreciseGcSupported))]
+        [ConditionalFact(typeof(ThreadLocalTests), nameof(IsThreadingAndPreciseGcSupported))]
         public static void RunThreadLocalTest5_Dispose()
         {
             // test recycling the combination index;
@@ -223,7 +223,7 @@ namespace System.Threading.Tests
             threadLocalWeakReferenceTest.Run();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/43981", TestRuntimes.Mono)]
         public static void RunThreadLocalTest8_Values()
         {
@@ -368,7 +368,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         public static void ValuesGetterDoesNotThrowUnexpectedExceptionWhenDisposed()
         {
@@ -438,7 +438,7 @@ namespace System.Threading.Tests
 
         private enum UniqueEnumUsedOnlyWithNonInterferenceTest { True, False }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestUnrelatedThreadLocalDoesNotInterfereWithTrackAllValues()
         {
             ThreadLocal<UniqueEnumUsedOnlyWithNonInterferenceTest> localThatDoesNotTrackValues = new ThreadLocal<UniqueEnumUsedOnlyWithNonInterferenceTest>(false);
@@ -481,6 +481,6 @@ namespace System.Threading.Tests
         }
 
         public static bool IsThreadingAndPreciseGcSupported =>
-            PlatformDetection.IsThreadingSupported && PlatformDetection.IsPreciseGcSupported;
+            PlatformDetection.IsMultithreadingSupported && PlatformDetection.IsPreciseGcSupported;
     }
 }
