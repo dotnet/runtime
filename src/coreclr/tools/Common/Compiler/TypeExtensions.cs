@@ -439,8 +439,6 @@ namespace ILCompiler
                 // Note: interfaceMethod was canonicalized above so its instantiation may contain
                 // __Canon even when the original was exact. Check methodInstantiation (saved before
                 // canonicalization) to match the C++ IsSharedByGenericMethodInstantiations check.
-                // We additionally check the constrained type, because the ILC scanner cannot handle
-                // resolved static virtual methods in shared generic code.
                 bool methodHasCanonInstantiation = false;
                 foreach (TypeDesc arg in methodInstantiation)
                 {
@@ -452,10 +450,25 @@ namespace ILCompiler
                 }
 
                 if (methodHasCanonInstantiation ||
-                    interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any) ||
-                    constrainedType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                    interfaceType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
                     return null;
+                }
+
+                // Check that there is no implementation of the interface on this type which is the canonical interface for a shared generic. If so, that indicates that
+                // we cannot exactly compute a target method result, as even if there is an exact match in the type hierarchy
+                // it isn't guaranteed that we will always find the right result, as we may find a match on a base type when we should find the match
+                // on a more derived type.
+                TypeDesc interfaceTypeCanonical = interfaceType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                if (interfaceType != interfaceTypeCanonical)
+                {
+                    foreach (DefType runtimeIface in constrainedType.RuntimeInterfaces)
+                    {
+                        if (runtimeIface == interfaceTypeCanonical)
+                        {
+                            return null;
+                        }
+                    }
                 }
 
                 MethodDesc staticMethodDef = interfaceMethod.GetMethodDefinition();
