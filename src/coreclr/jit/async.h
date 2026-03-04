@@ -204,6 +204,12 @@ class AsyncTransformation
     BasicBlock*                m_lastResumptionBB        = nullptr;
     BasicBlock*                m_sharedReturnBB          = nullptr;
 
+    void FindAwaits(ArrayStack<BasicBlock*>& blocksWithNormalAwaits,
+                    ArrayStack<BasicBlock*>& blocksWithTailAwaits,
+                    int*                     numNormalAwaits,
+                    int*                     numTailAwaits);
+
+    void        TransformTailAwaits(ArrayStack<BasicBlock*>& blocksWithTailAwaits);
     void        TransformTailAwait(BasicBlock* block, GenTreeCall* call, BasicBlock** remainder);
     BasicBlock* CreateTailAwaitSuspension(BasicBlock* block, GenTreeCall* call);
 
@@ -289,8 +295,7 @@ class AsyncTransformation
     unsigned    GetNewContinuationVar();
     unsigned    GetResultBaseVar();
     unsigned    GetExceptionVar();
-    BasicBlock* GetSharedReturnBB();
-
+    void CreateSharedReturnBB();
     bool ReuseContinuations();
     void CreateResumptionsAndSuspensions();
     void CreateResumptionSwitch();
