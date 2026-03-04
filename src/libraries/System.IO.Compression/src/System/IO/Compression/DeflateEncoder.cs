@@ -70,9 +70,6 @@ namespace System.IO.Compression
 
             int resolvedWindowLog = windowLog == -1 ? ZLibNative.DefaultWindowLog : windowLog;
 
-            _disposed = false;
-            _finished = false;
-
             // Compute windowBits based on the compression format:
             // - Deflate: negative windowLog produces raw deflate (no header/trailer)
             // - ZLib: positive windowLog produces zlib format
@@ -98,9 +95,6 @@ namespace System.IO.Compression
         internal DeflateEncoder(ZLibCompressionOptions options, CompressionFormat format)
         {
             ArgumentNullException.ThrowIfNull(options);
-
-            _disposed = false;
-            _finished = false;
 
             // -1 means use the default window log
             int windowLog = options.WindowLog == -1 ? ZLibNative.DefaultWindowLog : options.WindowLog;

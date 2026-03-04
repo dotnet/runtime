@@ -27,8 +27,6 @@ namespace System.IO.Compression
 
         internal DeflateDecoder(int windowBits)
         {
-            _disposed = false;
-            _finished = false;
             _state = ZLibNative.ZLibStreamHandle.CreateForInflate(windowBits);
         }
 
