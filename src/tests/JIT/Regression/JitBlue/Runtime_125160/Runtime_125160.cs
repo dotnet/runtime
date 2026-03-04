@@ -31,8 +31,8 @@ public class Runtime_125160
     {
         Assert.Equal(Vector512<float>.Zero, CompareMaskFalseFloat(Vector512<float>.One, Vector512<float>.Zero));
         Assert.Equal(Vector512<double>.Zero, CompareMaskFalseDouble(Vector512<double>.One, Vector512<double>.Zero));
-        Assert.Equal(Vector512.Create(-1f), CompareMaskTrueFloat(Vector512<float>.One, Vector512<float>.Zero));
-        Assert.Equal(Vector512.Create(-1d), CompareMaskTrueDouble(Vector512<double>.One, Vector512<double>.Zero));
+        Assert.Equal(Vector512<float>.AllBitsSet, CompareMaskTrueFloat(Vector512<float>.One, Vector512<float>.Zero));
+        Assert.Equal(Vector512<double>.AllBitsSet, CompareMaskTrueDouble(Vector512<double>.One, Vector512<double>.Zero));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
