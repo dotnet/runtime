@@ -19,22 +19,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         // ThreadStatic set to track call sites currently being resolved on this thread.
         // Used to detect circular dependencies that occur through factory functions.
-        // We use object reference equality to track the actual call site instances.
         [ThreadStatic]
-        private static HashSet<ServiceCallSite>? t_resolving;
+        private static HashSet<object>? t_resolving;
 
         private CallSiteRuntimeResolver()
         {
-        }
-
-        // Comparer that uses reference equality for ServiceCallSite instances
-        private sealed class ReferenceEqualityComparer : IEqualityComparer<ServiceCallSite>
-        {
-            public static readonly ReferenceEqualityComparer Instance = new();
-
-            public bool Equals(ServiceCallSite? x, ServiceCallSite? y) => ReferenceEquals(x, y);
-
-            public int GetHashCode(ServiceCallSite obj) => RuntimeHelpers.GetHashCode(obj);
         }
 
         public object? Resolve(ServiceCallSite callSite, ServiceProviderEngineScope scope)
@@ -108,7 +97,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
 
                 // Detect circular dependencies by tracking what we're currently resolving on this thread
-                t_resolving ??= new HashSet<ServiceCallSite>(ReferenceEqualityComparer.Instance);
+                t_resolving ??= new HashSet<object>(ReferenceEqualityComparer.Instance);
                 if (!t_resolving.Add(callSite))
                 {
                     // We're already resolving this call site on this thread - circular dependency detected
