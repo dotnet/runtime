@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // ThreadStatic set to track call sites currently being resolved on this thread.
         // Used to detect circular dependencies that occur through factory functions.
         [ThreadStatic]
-        private static HashSet<object>? t_resolving;
+        private static HashSet<ServiceCallSite>? t_resolving;
 
         private CallSiteRuntimeResolver()
         {
@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
 
                 // Detect circular dependencies by tracking what we're currently resolving on this thread
-                t_resolving ??= new HashSet<object>(ReferenceEqualityComparer.Instance);
+                t_resolving ??= new HashSet<ServiceCallSite>(ReferenceEqualityComparer.Instance);
                 if (!t_resolving.Add(callSite))
                 {
                     // We're already resolving this call site on this thread - circular dependency detected
