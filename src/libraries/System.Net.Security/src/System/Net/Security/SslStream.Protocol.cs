@@ -1245,6 +1245,16 @@ namespace System.Net.Security
                 return default;
             }
 
+#if !SYSNETSECURITY_NO_OPENSSL && !TARGET_WINDOWS
+            if (_useKtls)
+            {
+                // Socket BIO mode (kTLS/DirectOpenSSL): there is no output memory
+                // BIO to read close_notify bytes from. Shutdown was handled by
+                // ApplyShutdownToken keeping quiet shutdown enabled.
+                return default;
+            }
+#endif
+
             return GenerateToken(default, out _);
         }
 
