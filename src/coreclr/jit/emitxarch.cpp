@@ -3169,7 +3169,8 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
         case 0x06:
         {
-            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM) || m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512BMM) ||
+                   m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
             evexPrefix |= (0x6 << 16);
             break;
         }
@@ -20919,28 +20920,28 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movups:
         case INS_movapd:
         case INS_movupd:
+        {
+            if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
-                if (memAccessKind == PERFSCORE_MEMORY_NONE)
-                {
-                    // ins   reg, reg
-                    result.insThroughput = PERFSCORE_THROUGHPUT_4X;
-                    result.insLatency    = PERFSCORE_LATENCY_ZERO;
-                }
-                else if (memAccessKind == PERFSCORE_MEMORY_READ)
-                {
-                    // ins   reg, mem
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                    result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
-                }
-                else
-                {
-                    // ins   mem, reg
-                    assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                    result.insLatency += PERFSCORE_LATENCY_2C;
-                }
-                break;
+                // ins   reg, reg
+                result.insThroughput = PERFSCORE_THROUGHPUT_4X;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
             }
+            else if (memAccessKind == PERFSCORE_MEMORY_READ)
+            {
+                // ins   reg, mem
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
+            }
+            else
+            {
+                // ins   mem, reg
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency += PERFSCORE_LATENCY_2C;
+            }
+            break;
+        }
 
         case INS_movhps:
         case INS_movhpd:

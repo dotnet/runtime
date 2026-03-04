@@ -4515,7 +4515,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     if (sig->numArgs == 1)
                     {
-                        // todo-xarch-half: We only optimize `Round(Half)` for now, we can optimize other overloads later.
+                        // todo-xarch-half: We only optimize `Round(Half)` for now, we can optimize other overloads
+                        // later.
                         GenTree* op1 = impPopStack().val;
                         assert(op1->TypeGet() == TYP_HALF);
 
