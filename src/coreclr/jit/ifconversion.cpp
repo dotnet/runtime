@@ -373,7 +373,7 @@ void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
     stmtLast1->SetNextStmt(stmtList2);
     stmtList2->SetPrevStmt(stmtLast1);
     stmtList1->SetPrevStmt(stmtLast2);
-    fromBlock->bbStmtList = nullptr;
+    fromBlock->SetFirstStmt(nullptr);
 }
 
 //-----------------------------------------------------------------------------

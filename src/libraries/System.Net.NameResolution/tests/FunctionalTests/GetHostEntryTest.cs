@@ -15,7 +15,7 @@ namespace System.Net.NameResolution.Tests
 {
     public class GetHostEntryTest
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Dns_GetHostEntryAsync_IPAddress_Ok()
         {
             IPAddress localIPAddress = await TestSettings.GetLocalIPAddress();
@@ -31,7 +31,7 @@ namespace System.Net.NameResolution.Tests
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/51377", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
             !PlatformDetection.IsiOS && !PlatformDetection.IstvOS && !PlatformDetection.IsMacCatalyst;
 
-        [ConditionalTheory(nameof(GetHostEntryWorks))]
+        [ConditionalTheory(typeof(GetHostEntryTest), nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
@@ -79,7 +79,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(nameof(GetHostEntryWorks))]
+        [ConditionalTheory(typeof(GetHostEntryTest), nameof(GetHostEntryWorks))]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName)
@@ -108,7 +108,7 @@ namespace System.Net.NameResolution.Tests
 
         public static bool GetHostEntry_DisableIPv6_Condition = GetHostEntryWorks && RemoteExecutor.IsSupported;
 
-        [ConditionalTheory(nameof(GetHostEntry_DisableIPv6_Condition))]
+        [ConditionalTheory(typeof(GetHostEntryTest), nameof(GetHostEntry_DisableIPv6_Condition))]
         [InlineData("", false)]
         [InlineData("", true)]
         [InlineData(TestSettings.LocalHost, false)]
@@ -131,7 +131,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(nameof(GetHostEntry_DisableIPv6_Condition))]
+        [ConditionalTheory(typeof(GetHostEntryTest), nameof(GetHostEntry_DisableIPv6_Condition))]
         [InlineData(false)]
         [InlineData(true)]
         public void GetHostEntry_DisableIPv6_AddressFamilyInterNetworkV6_ReturnsEmpty(bool useAsyncOuter)
@@ -154,7 +154,7 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<ArgumentNullException>(() => Dns.GetHostEntryAsync((string)null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task Dns_GetHostEntry_NullStringHost_Fail_Obsolete()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(() => Task.Factory.FromAsync(Dns.BeginGetHostEntry, Dns.EndGetHostEntry, (string)null, null));
@@ -191,7 +191,7 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<ArgumentException>(() => Task.Factory.FromAsync(Dns.BeginGetHostEntry, Dns.EndGetHostEntry, address.ToString(), null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task DnsGetHostEntry_MachineName_AllVariationsMatch()
         {
             IPHostEntry syncResult = Dns.GetHostEntry(TestSettings.LocalHost);
@@ -246,7 +246,7 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAnyAsync<ArgumentOutOfRangeException>(() => Dns.GetHostEntryAsync(hostNameOrAddress));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData("Really.Long.Name.Over.One.Hundred.And.Twenty.Six.Chars.Eeeeeeeventualllllllly.I.Will.Get.To.The.Eeeee"
                 + "eeeeend.Almost.There.Are.We.Really.Long.Name.Over.One.Hundred.And.Twenty.Six.Chars.Eeeeeeeventualll"
                 + "llllly.I.Will.Get.To.The.Eeeeeeeeeend.Almost.There.Aret")]
@@ -276,7 +276,7 @@ namespace System.Net.NameResolution.Tests
             Assert.All(entry.AddressList, addr => Assert.True(IPAddress.IsLoopback(addr), "Not a loopback address: " + addr));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -414,6 +414,7 @@ namespace System.Net.NameResolution.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124751", TestPlatforms.Android)]
         public async Task DnsGetHostEntry_LocalhostSubdomain_RespectsAddressFamily(AddressFamily addressFamily)
         {
             // Skip IPv6 test if OS doesn't support it.

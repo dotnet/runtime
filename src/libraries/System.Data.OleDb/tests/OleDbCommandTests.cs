@@ -11,7 +11,7 @@ namespace System.Data.OleDb.Tests
     [Collection("System.Data.OleDb")] // not let tests run in parallel
     public class OleDbCommandTests : OleDbTestBase
     {
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void UpdatedRowSource_SetInvalidValue_Throws()
         {
             const int InvalidValue = 50;
@@ -37,7 +37,7 @@ namespace System.Data.OleDb.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void CommandTimeout_SetInvalidValue_Throws()
         {
             const int InvalidValue = -1;
@@ -60,7 +60,7 @@ namespace System.Data.OleDb.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void ResetCommandTimeout_ResetsToDefault()
         {
             using (var cmd = new OleDbCommand(default, connection, transaction))
@@ -74,7 +74,7 @@ namespace System.Data.OleDb.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void CommandType_SetInvalidValue_Throws()
         {
             const int InvalidValue = 0;
@@ -98,7 +98,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Prepare_ClosedConnection_Throws()
         {
             RunTest((command, tableName) => {
@@ -113,7 +113,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Prepare_MultipleCases_ThrowsForInvalidQuery()
         {
             RunTest((command, tableName) => {
@@ -132,7 +132,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Prepare_InsertMultipleItems_UseTableDirectToVerify()
         {
             RunTest((command, tableName) => {
@@ -174,7 +174,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Parameters_AddNullParameter_Throws()
         {
             RunTest((command, tableName) => {
@@ -205,7 +205,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void ExecuteNonQuery_NullConnection_Throws()
         {
             RunTest((command, tableName) => {
@@ -221,7 +221,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void CommandType_InvalidType_Throws()
         {
             RunTest((command, tableName) => {
@@ -233,7 +233,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void ExecuteScalar_Select_ComputesSumAndCount()
         {
             RunTest((command, tableName) => {
