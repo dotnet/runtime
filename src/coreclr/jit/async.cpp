@@ -2146,7 +2146,8 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
 #ifdef FEATURE_READYTORUN
         {
             CORINFO_CONST_LOOKUP entryPoint;
-            m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->captureContinuationContextMethHnd, &entryPoint);
+            m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->captureContinuationContextMethHnd,
+                                                                &entryPoint);
             captureCall->setEntryPoint(entryPoint);
         }
 #endif
@@ -2195,7 +2196,8 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
 #ifdef FEATURE_READYTORUN
         {
             CORINFO_CONST_LOOKUP entryPoint;
-            m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->captureExecutionContextMethHnd, &entryPoint);
+            m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->captureExecutionContextMethHnd,
+                                                                &entryPoint);
             captureExecContext->setEntryPoint(entryPoint);
         }
 #endif
@@ -2249,7 +2251,8 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
 #ifdef FEATURE_READYTORUN
     {
         CORINFO_CONST_LOOKUP entryPoint;
-        m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->restoreContextsOnSuspensionMethHnd, &entryPoint);
+        m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->restoreContextsOnSuspensionMethHnd,
+                                                            &entryPoint);
         restoreCall->setEntryPoint(entryPoint);
     }
 #endif
@@ -2457,7 +2460,8 @@ void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& 
 #ifdef FEATURE_READYTORUN
         {
             CORINFO_CONST_LOOKUP entryPoint;
-            m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->restoreExecutionContextMethHnd, &entryPoint);
+            m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->restoreExecutionContextMethHnd,
+                                                                &entryPoint);
             restoreCall->setEntryPoint(entryPoint);
         }
 #endif
