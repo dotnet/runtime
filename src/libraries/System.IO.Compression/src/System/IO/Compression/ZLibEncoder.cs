@@ -82,6 +82,7 @@ namespace System.IO.Compression
             // for zlib's 2-byte header and 4-byte Adler32 trailer. Adding 6 bytes here is conservative.
             return DeflateEncoder.GetMaxCompressedLength(inputLength) + 6;
         }
+        
         /// <summary>
         /// Compresses a read-only byte span into a destination span.
         /// </summary>
