@@ -61,6 +61,9 @@ public static class Constants
         public const string SyncBlockMaskLockThreadId = nameof(SyncBlockMaskLockThreadId);
         public const string SyncBlockMaskLockRecursionLevel = nameof(SyncBlockMaskLockRecursionLevel);
         public const string SyncBlockRecursionLevelShift = nameof(SyncBlockRecursionLevelShift);
+        public const string SyncBlockIsHashOrSyncBlockIndex = nameof(SyncBlockIsHashOrSyncBlockIndex);
+        public const string SyncBlockIsHashCode = nameof(SyncBlockIsHashCode);
+        public const string SyncBlockIndexMask = nameof(SyncBlockIndexMask);
 
         public const string ArrayBoundsZero = nameof(ArrayBoundsZero);
         public const string CoreLib = nameof(CoreLib);
@@ -70,6 +73,7 @@ public static class Constants
         public const string DirectorySeparator = nameof(DirectorySeparator);
 
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
+        public const string EEJitManagerAddress = nameof(EEJitManagerAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
         public const string DefaultADID = nameof(DefaultADID);
         public const string StaticsPointerMask = nameof(StaticsPointerMask);
@@ -82,6 +86,7 @@ public static class Constants
         public const string ProfilerControlBlock = nameof(ProfilerControlBlock);
 
         public const string ComRefcountMask = nameof(ComRefcountMask);
+        public const string RCWCleanupList = nameof(RCWCleanupList);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);

@@ -82,7 +82,6 @@ public enum DataType
     ThisPtrRetBufPrecodeData,
     Array,
     SyncBlock,
-    SLink,
     SyncTableEntry,
     InteropSyncBlockInfo,
     SyncBlockCache,
@@ -144,6 +143,9 @@ public enum DataType
     StubDispatchFrame,
     ComCallWrapper,
     SimpleComCallWrapper,
+    RCWCleanupList,
+    RCW,
+    CtxEntry,
 
 
     /* GC Data Types */

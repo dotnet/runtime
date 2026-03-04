@@ -1,5 +1,5 @@
 ---
-excludeAgent: code-review-agent
+excludeAgent: code-review
 ---
 
 **Any code you commit MUST compile, and new and existing tests related to the change MUST pass.**
@@ -9,6 +9,8 @@ You MUST make your best effort to ensure any code changes satisfy those criteria
 If you make code changes, do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
 
 Before completing, use the `code-review` skill to review your code changes. Any issues flagged as errors or warnings should be addressed before completing.
+
+Before making changes to a directory, search for `README.md` files in that directory and its parent directories up to the repository root. Read any you find — they contain conventions, patterns, and architectural context relevant to your work.
 
 If the changes are intended to improve performance, or if they could negatively impact performance, use the `performance-benchmark` skill to validate the impact before completing.
 

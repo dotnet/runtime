@@ -24,13 +24,9 @@ Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `Array` | `m_NumComponents` | Number of items in the array |
-| `InteropSyncBlockInfo` | `RCW` | Pointer to the RCW for the object (if it exists) |
-| `InteropSyncBlockInfo` | `CCW` | Pointer to the CCW for the object (if it exists) |
-| `InteropSyncBlockInfo` | `CCF` | Pointer to the COM class factory for the object (if it exists) |
 | `Object` | `m_pMethTab` | Method table for the object |
 | `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string (encoded in UTF-16) |
 | `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
-| `SyncBlock` | `InteropInfo` | Optional `InteropSyncBlockInfo` for the sync block |
 | `SyncTableEntry` | `SyncBlock` | `SyncBlock` corresponding to the entry |
 
 Global variables used:
@@ -42,11 +38,15 @@ Global variables used:
 | `StringMethodTable` | TargetPointer | The method table for System.String |
 | `SyncTableEntries` | TargetPointer | The `SyncTableEntry` list |
 | `SyncBlockValueToObjectOffset` | uint16 | Offset from the sync block value (in the object header) to the object itself |
+| `SyncBlockIsHashOrSyncBlockIndex` | uint32 | Check bit indicating that the sync block value represents either a hash code or a sync block index rather than a thin-lock state. |
+| `SyncBlockIsHashCode` | uint32 | Check bit that, when `SyncBlockIsHashOrSyncBlockIndex` is set, specifies that the remaining bits hold the hash code; when clear, the remaining bits hold the sync block index. |
+| `SyncBlockIndexMask` | uint32 | The mask for sync block index field. |
 
 Contracts used:
 | Contract Name |
 | --- |
 | `RuntimeTypeSystem` |
+| `SyncBlock` |
 
 ``` csharp
 TargetPointer GetMethodTableAddress(TargetPointer address)
@@ -98,40 +98,36 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
     {
         // Single-dimensional, zero-based - doesn't have bounds
         boundsStart = address + /* Array::m_NumComponents offset */;
-        lowerBounds = _target.ReadGlobalPointer("ArrayBoundsZero");
+        lowerBounds = target.ReadGlobalPointer("ArrayBoundsZero");
     }
 
     // Sync block is before `this` pointer, so substract the object header size
-    ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - _target.ReadGlobal<uint>("ObjectHeaderSize");
+    ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - target.ReadGlobal<uint>("ObjectHeaderSize");
     return address + dataOffset;
 }
 
 bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf)
 {
-    uint syncBlockValue = target.Read<uint>(address - _target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
+    rcw = TargetPointer.Null;
+    ccw = TargetPointer.Null;
+    ccf = TargetPointer.Null;
+
+    uint syncBlockValue = target.Read<uint>(address - target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
 
     // Check if the sync block value represents a sync block index
-    if ((syncBlockValue & (uint)(SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex | SyncBlockValue.Bits.IsHashCode)) != (uint)SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex)
+    if ((syncBlockValue & (target.ReadGlobal<uint>("SyncBlockIsHashCode") | target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex")))
+            != target.ReadGlobal<uint>("SyncBlockIsHashOrSyncBlockIndex"))
         return false;
 
-    // Get the offset into the sync table entries
-    uint index = syncBlockValue & SyncBlockValue.SyncBlockIndexMask;
+    uint index = syncBlockValue & target.ReadGlobal<uint>("SyncBlockIndexMask");
     ulong offsetInSyncTableEntries = index * /* SyncTableEntry size */;
 
-    TargetPointer syncBlock = target.ReadPointer(_syncTableEntries + offsetInSyncTableEntries + /* SyncTableEntry::SyncBlock offset */);
-    if (syncBlock == TargetPointer.Null)
+    TargetPointer syncBlockPtr = target.ReadPointer(_syncTableEntries + offsetInSyncTableEntries + /* SyncTableEntry::SyncBlock offset */);
+    if (syncBlockPtr == TargetPointer.Null)
         return false;
 
-    TargetPointer interopInfo = target.ReadPointer(syncBlock + /* SyncTableEntry::InteropInfo offset */);
-    if (interopInfo == TargetPointer.Null)
-        return false;
-
-    TargetPointer rcw1 = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::RCW offset */);
-    rcw = rcw1 & ~1ul;
-    TargetPointer ccw1 = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::CCW offset */);
-    ccw = (ccw1 == 1) ? TargetPointer.Null : ccw1;
-    TargetPointer ccf1 = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::CCF offset */);
-    ccf = (ccf1 == 1) ? TargetPointer.Null : ccf1;
-    return rcw != TargetPointer.Null || ccw != TargetPointer.Null || ccf != TargetPointer.Null;
+    // Delegate to the SyncBlock contract so that the interop data can also be read directly
+    // from a sync block address without going through the object (e.g. during cleanup).
+    return target.Contracts.SyncBlock.GetBuiltInComData(syncBlockPtr, out rcw, out ccw, out ccf);
 }
 ```
