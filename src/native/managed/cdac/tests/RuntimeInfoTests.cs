@@ -108,13 +108,13 @@ public class RuntimeInfoTests
     {
         var target = CreateTarget(DefaultArch, [],
             [(Constants.Globals.RecommendedReaderVersion, (ulong)2)]);
-        Assert.Equal((uint)2, target.Contracts.RuntimeInfo.RecommendedReaderVersion);
+        Assert.Equal((uint)2, target.Contracts.RuntimeInfo.GetRecommendedReaderVersion());
     }
 
     [Fact]
     public void RecommendedReaderVersion_GlobalAbsent_ReturnsZero()
     {
         var target = CreateTarget(DefaultArch, []);
-        Assert.Equal((uint)0, target.Contracts.RuntimeInfo.RecommendedReaderVersion);
+        Assert.Equal((uint)0, target.Contracts.RuntimeInfo.GetRecommendedReaderVersion());
     }
 }

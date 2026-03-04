@@ -32,10 +32,10 @@ RuntimeInfoArchitecture GetTargetArchitecture();
 RuntimeInfoOperatingSystem GetTargetOperatingSystem();
 
 // Returns the runtime's RecommendedReaderVersion global. Returns 0 if the global is absent.
-uint RecommendedReaderVersion { get; }
+uint GetRecommendedReaderVersion();
 
 // An embedded version constant indicating how much runtime functionality this reader knows how to parse.
-uint CurrentReaderVersion { get; }
+uint GetCurrentReaderVersion();
 ```
 
 ## Version 1
