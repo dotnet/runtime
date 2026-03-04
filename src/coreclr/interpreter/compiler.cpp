@@ -1992,8 +1992,8 @@ InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* base
         currentAsyncOffset += sizeof(InterpAsyncSuspendData);
     }
 
-    _ASSERTE(currentAsyncOffset == GetSectionOffset(InterpMethodDataSection::AsyncSuspendData) + GetSectionSize(InterpMethodDataSection::AsyncSuspendData));
-    _ASSERTE(currentIntervalMapOffset == GetSectionOffset(InterpMethodDataSection::IntervalMaps) + GetSectionSize(InterpMethodDataSection::IntervalMaps));
+    assert(currentAsyncOffset == m_methodDataBuilder.GetSectionOffset(InterpMethodDataSection::AsyncSuspendData) + m_methodDataBuilder.GetSectionSize(InterpMethodDataSection::AsyncSuspendData));
+    assert(currentIntervalMapOffset == m_methodDataBuilder.GetSectionOffset(InterpMethodDataSection::IntervalMaps) + m_methodDataBuilder.GetSectionSize(InterpMethodDataSection::IntervalMaps));
     // Fix up data item pointers that reference async suspend data
     // These pointers were recorded during compilation and now need to point to the final locations
     if (numDataItems > 0)
@@ -11088,14 +11088,6 @@ void InterpCompiler::UnlinkUnreachableBBlocks()
             prevBB = nextBB;
             nextBB = nextBB->pNextBB;
         }
-    }
-}
-
-void InterpCompiler::UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *pByteCodeStart)
-{
-    for (int32_t i = 0; i < m_asyncSuspendDataItems.GetSize(); i++)
-    {
-        m_asyncSuspendDataItems.Get(i)->methodStartIP = pByteCodeStart;
     }
 }
 
