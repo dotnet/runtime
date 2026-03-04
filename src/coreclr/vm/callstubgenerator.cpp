@@ -1583,6 +1583,28 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     LOG2((LF2_INTERPRETER, LL_INFO10000, "GenerateCallStub interpreterToNative=%d\n", interpreterToNative ? 1 : 0));
     m_interpreterToNative = interpreterToNative;
 
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+    // When a Swift P/Invoke requires marshaling, it goes through an IL stub.
+    // The outer CallStub (P/Invoke -> IL stub) must not include Load_SwiftError
+    // because the inner calli's CallStub handles Swift error capture via x21.
+    // If the outer epilog also writes x21, it overwrites the correct SwiftError
+    // with a stale value (x21 is clobbered by the interpreter loop in the IL stub).
+    if (pMD->IsPInvoke())
+    {
+        CorInfoCallConvExtension callConv;
+        PInvoke::GetCallingConvention_IgnoreErrors(pMD, &callConv, NULL);
+        if (callConv == CorInfoCallConvExtension::Swift)
+        {
+            PInvokeMethodDesc* pNMD = (PInvokeMethodDesc*)pMD;
+            if (pNMD->MarshalingRequired())
+            {
+                // Annotate PInvoke as an outer IL stub and let the inner calli's call stub handle the Swift calling convention
+                m_isSwiftILStub = true;
+            }
+        }
+    }
+#endif
+
     MetaSig sig(pMD);
     // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
     // plus one slot for the target pointer and reallocated to the real size at the end.
@@ -1687,7 +1709,7 @@ void InitCallStubGenerator()
     s_callStubCache = new CallStubCacheHash;
 }
 
-CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
+CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1699,7 +1721,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
 
     m_interpreterToNative = true; // We always generate the interpreter to native call stub here
 
-    ComputeCallStub(sig, pRoutines, NULL);
+    ComputeCallStub(sig, pRoutines, pContextMD);
 
     xxHash hashState;
     for (int i = 0; i < m_routineIndex; i++)

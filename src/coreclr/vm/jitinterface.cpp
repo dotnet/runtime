@@ -11418,7 +11418,7 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 #ifdef FEATURE_INTERPRETER
 
 // Forward declare the function for mapping MetaSig to a cookie.
-void* GetCookieForCalliSig(MetaSig metaSig);
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
 
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
@@ -11437,7 +11437,22 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
 
     _ASSERTE(szMetaSig->isAsyncCall() == sig.IsAsyncCall());
 
-    result = GetCookieForCalliSig(sig);
+    // Pass the method being compiled so that ComputeCallStub can detect the
+    // Swift calling convention when the calli is inside an IL stub.
+    MethodDesc* pContextMD = m_pMethodBeingCompiled;
+    if (pContextMD != NULL && pContextMD->IsILStub())
+    {
+        MethodDesc* pTargetMD = pContextMD->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
+        if (pTargetMD != NULL)
+        {
+            pContextMD = pTargetMD;
+        }
+        else
+        {
+            pContextMD = NULL;
+        }
+    }
+    result = GetCookieForCalliSig(sig, pContextMD);
 
     EE_TO_JIT_TRANSITION();
     return result;
