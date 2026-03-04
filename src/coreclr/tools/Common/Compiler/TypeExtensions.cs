@@ -416,8 +416,6 @@ namespace ILCompiler
         {
             forceRuntimeLookup = false;
 
-            bool isStaticVirtualMethod = interfaceMethod.Signature.IsStatic;
-
             // Interface method may or may not be fully canonicalized here.
             // It would be canonical on the CoreCLR side so canonicalize here to keep the algorithms similar.
             Instantiation methodInstantiation = interfaceMethod.Instantiation;
@@ -425,7 +423,7 @@ namespace ILCompiler
 
             // Static virtual methods are resolved separately, matching the C++ early return path
             // in MethodTable::TryResolveConstraintMethodApprox.
-            if (isStaticVirtualMethod)
+            if (interfaceMethod.Signature.IsStatic)
             {
                 // ResolveVirtualStaticMethod in the C++ only resolves when the interface and method
                 // are exact (not shared by generic instantiations). For canonical forms, return null.
@@ -523,11 +521,6 @@ namespace ILCompiler
                     {
                         potentialMatchingInterfaces++;
 
-                        // The below code is just trying to prevent one of the matches from requiring boxing
-                        // It doesn't apply to static virtual methods.
-                        if (isStaticVirtualMethod)
-                            continue;
-
                         MethodDesc potentialInterfaceMethod = genInterfaceMethod;
                         if (potentialInterfaceMethod.OwningType != potentialInterfaceType)
                         {
@@ -571,20 +564,9 @@ namespace ILCompiler
                             // We can resolve to exact method
                             MethodDesc exactInterfaceMethod = context.GetMethodForInstantiatedType(
                                 genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
-                            if (isStaticVirtualMethod)
-                            {
-                                method = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(exactInterfaceMethod);
-                                if (method == null)
-                                {
-                                    staticResolution = constrainedType.ResolveVariantInterfaceMethodToDefaultImplementationOnType(exactInterfaceMethod, out method);
-                                    if (staticResolution != DefaultInterfaceMethodResolution.DefaultImplementation)
-                                        method = null;
-                                }
-                            }
-                            else
-                            {
-                                method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
-                            }
+
+                            method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
+
                             isExactMethodResolved = method != null;
                         }
                     }
@@ -607,20 +589,8 @@ namespace ILCompiler
                         if (genInterfaceMethod.OwningType != interfaceType)
                             exactInterfaceMethod = context.GetMethodForInstantiatedType(
                                 genInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceType);
-                        if (isStaticVirtualMethod)
-                        {
-                            method = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(exactInterfaceMethod);
-                            if (method == null)
-                            {
-                                staticResolution = constrainedType.ResolveVariantInterfaceMethodToDefaultImplementationOnType(exactInterfaceMethod, out method);
-                                if (staticResolution != DefaultInterfaceMethodResolution.DefaultImplementation)
-                                    method = null;
-                            }
-                        }
-                        else
-                        {
-                            method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
-                        }
+
+                        method = constrainedType.ResolveVariantInterfaceMethodToVirtualMethodOnType(exactInterfaceMethod);
                     }
                 }
             }
@@ -645,7 +615,7 @@ namespace ILCompiler
             //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
             // Only return a method if the value type itself declares the method,
             // otherwise we might get a method from Object or System.ValueType
-            if (!isStaticVirtualMethod && !method.OwningType.IsValueType)
+            if (!method.OwningType.IsValueType)
             {
                 // Fall back to VSD
                 return null;
