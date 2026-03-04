@@ -585,10 +585,14 @@ namespace System.IO.Ports
 
             try
             {
-                FileHandleType fileType = tempHandle.Type;
-
                 // Allowing FILE_TYPE_UNKNOWN for legitimate serial device such as USB to serial adapter device
+#if NET11_0_OR_GREATER
+                FileHandleType fileType = tempHandle.Type;
                 if (fileType is not FileHandleType.CharacterDevice and not FileHandleType.Unknown)
+#else
+                int fileType = Interop.Kernel32.GetFileType(tempHandle);
+                if ((fileType != Interop.Kernel32.FileTypes.FILE_TYPE_CHAR) && (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN))
+#endif
                 {
                     throw new ArgumentException(SR.Format(SR.Arg_InvalidSerialPort, portName), nameof(portName));
                 }
