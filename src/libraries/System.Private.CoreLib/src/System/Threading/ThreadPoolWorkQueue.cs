@@ -715,10 +715,10 @@ namespace System.Threading
 
                 tl.isProcessingHighPriorityWorkItems = false;
             }
-#if !FEATURE_MULTITHREADING
-            else if (highPriorityWorkItems.Count == 0 &&
-#else
+#if FEATURE_MULTITHREADING
             else if (!highPriorityWorkItems.IsEmpty &&
+#else
+            else if (highPriorityWorkItems.Count == 0 &&
 #endif
                 TryStartProcessingHighPriorityWorkItemsAndDequeue(tl, out workItem))
             {
