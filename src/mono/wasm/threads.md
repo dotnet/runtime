@@ -4,12 +4,11 @@ For WebAssembly documentation including building, testing, and debugging, see [W
 
 ## Building the runtime
 
-Build the runtime with `/p:WasmEnableThreads=true` to enable support for multi-threading.
+commit~be479c82/src/mono/wasm/threads.md
 
 ## Building sample apps ##
 
 Sample apps use the "public" properties `WasmEnableThreads` to enable the relevant functionality.
-This also works with released versions of .NET 7 or later and the `wasmbrowser` template.
 
 ## Libraries feature defines ##
 
@@ -28,6 +27,7 @@ the single-threaded ref assemblies, and
 assemblies.  By default users compile against the single-threaded ref assemblies, but by adding a
 `PackageReference` to `Microsoft.NET.WebAssembly.Threading`, they get the multi-threaded ref
 assemblies.
+This fork of reference assemblies exists just for the experimental support. It will have to be undone if/once wasm threads are supported for real.
 
 ### Implementation assemblies ###
 
