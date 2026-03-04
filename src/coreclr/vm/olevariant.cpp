@@ -1536,12 +1536,13 @@ void OleVariant::ClearNonBlittableRecordArray(void *oleArray, SIZE_T cElements, 
     while (pOle < pOleEnd)
     {
         PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(GetStructMarshallingMethod(METHOD__STRUCTURE_MARSHALER__FREE, pInterfaceMT));
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        DECLARE_ARGHOLDER_ARRAY(args, 4);
         while (pOle < pOleEnd)
         {
             args[ARGNUM_0] = PTR_TO_ARGHOLDER(nullptr);
             args[ARGNUM_1] = PTR_TO_ARGHOLDER(pOle);
-            args[ARGNUM_2] = PTR_TO_ARGHOLDER(nullptr);
+            args[ARGNUM_2] = DWORD_TO_ARGHOLDER(elemSize);
+            args[ARGNUM_3] = PTR_TO_ARGHOLDER(nullptr);
 
             CALL_MANAGED_METHOD_NORET(args);
             pOle += elemSize;
