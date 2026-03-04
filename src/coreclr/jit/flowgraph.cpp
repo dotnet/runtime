@@ -1269,6 +1269,44 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     return true;
 }
 
+//-------------------------------------------------------------------------------------
+// fgCastRequiresHelper: Check whether a given cast must be converted to a helper call.
+//
+// Arguments:
+//    fromType - The source type of the cast.
+//    toType   - The target type of the cast.
+//    overflow - True if the cast has the GTF_OVERFLOW flag set.
+//
+// Return Value:
+//    True if the cast requires a helper call, otherwise false.
+//
+bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow /* false */)
+{
+    if (overflow && varTypeIsFloating(fromType))
+    {
+        assert(varTypeIsIntegral(toType));
+        return true;
+    }
+
+#if defined(TARGET_X86) || defined(TARGET_ARM)
+    if (varTypeIsFloating(fromType) && varTypeIsLong(toType))
+    {
+        return true;
+    }
+
+    if (varTypeIsLong(fromType) && varTypeIsFloating(toType))
+    {
+#if defined(TARGET_X86)
+        return !compOpportunisticallyDependsOn(InstructionSet_AVX512);
+#else
+        return true;
+#endif // TARGET_X86
+    }
+#endif // TARGET_X86 || TARGET_ARM
+
+    return false;
+}
+
 GenTree* Compiler::fgGetCritSectOfStaticMethod()
 {
     noway_assert(!compIsForInlining());
@@ -1476,7 +1514,7 @@ void Compiler::fgAddSyncMethodEnterExit()
         tryBegBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
 
         faultBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
-        faultBB->bbCatchTyp = BBCT_FAULT;
+        faultBB->SetCatchType(BBCT_FAULT);
 
         tryBegBB->setTryIndex(XTnew);
         tryBegBB->clearHndIndex();
@@ -4158,9 +4196,9 @@ bool Compiler::fgHasCycleWithoutGCSafePoint()
                     {
                         printf("Found a cycle that does not go through a GC safe point:\n");
                         printf(FMT_BB, succ->bbNum);
-                        for (int index = 0; index < stack.Height(); index++)
+                        for (auto& entry : stack.TopDownOrder())
                         {
-                            BasicBlock* block = stack.TopRef(index).Block();
+                            BasicBlock* block = entry.Block();
                             printf(" <- " FMT_BB, block->bbNum);
 
                             if (block == succ)
@@ -4219,7 +4257,7 @@ void Compiler::fgSetBlockOrder(BasicBlock* block)
         }
 
 #ifdef DEBUG
-        if (block->bbStmtList == stmt)
+        if (block->firstStmt() == stmt)
         {
             /* first statement in the list */
             assert(stmt->GetPrevStmt()->GetNextStmt() == nullptr);

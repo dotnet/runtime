@@ -243,7 +243,7 @@ void Compiler::impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement
 
     /* Store the tree list in the basic block */
 
-    block->bbStmtList = firstStmt;
+    block->SetFirstStmt(firstStmt);
 
     /* The block should not already be marked as imported */
     assert(!block->HasFlag(BBF_IMPORTED));
@@ -1918,7 +1918,7 @@ void Compiler::impSpillSpecialSideEff()
 {
     // Only exception objects need to be carefully handled
 
-    if (!compCurBB->bbCatchTyp)
+    if (compCurBB->CatchTypeIs(BBCT_NONE))
     {
         return;
     }
@@ -5126,7 +5126,7 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         FlowEdge* const newEdge = fgAddRefPred(block->GetTarget(), dupBlock);
         dupBlock->SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
         dupBlock->copyEHRegion(block);
-        dupBlock->bbCatchTyp = block->bbCatchTyp;
+        dupBlock->SetCatchType(block->GetCatchType());
 
         // Mark this block as
         //  a) not referenced by any other block to make sure that it gets deleted
@@ -6269,7 +6269,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     var_types callTyp    = TYP_COUNT;
     OPCODE    prevOpcode = CEE_ILLEGAL;
 
-    if (block->bbCatchTyp)
+    if (!block->CatchTypeIs(BBCT_NONE))
     {
         if (info.compStmtOffsetsImplicit & ICorDebugInfo::CALL_SITE_BOUNDARIES)
         {
@@ -8127,28 +8127,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto _CONV;
 
             _CONV:
-                // only converts from FLOAT or DOUBLE to an integer type
-                // and converts from  ULONG (or LONG on ARM) to DOUBLE are morphed to calls
-
-                if (varTypeIsFloating(lclTyp))
-                {
-                    callNode = varTypeIsLong(impStackTop().val) ||
-                               uns // uint->dbl gets turned into uint->long->dbl
-#ifdef TARGET_64BIT
-                                   // TODO-ARM64-Bug?: This was AMD64; I enabled it for ARM64 also. OK?
-                                   // TYP_BYREF could be used as TYP_I_IMPL which is long.
-                                   // TODO-CQ: remove this when we lower casts long/ulong --> float/double
-                                   // and generate SSE2 code instead of going through helper calls.
-                               || impStackTop().val->TypeIs(TYP_BYREF)
-#endif
-                        ;
-                }
-                else
-                {
-                    callNode = varTypeIsFloating(impStackTop().val->TypeGet());
-                }
-
-                op1 = impPopStack().val;
+                op1      = impPopStack().val;
+                callNode = fgCastRequiresHelper(op1->TypeGet(), lclTyp, ovfl);
 
                 impBashVarAddrsToI(op1);
 
@@ -8556,7 +8536,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 eeGetCallInfo(&resolvedToken, (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                              combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_LDFTN), &callInfo);
+                              CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN, &callInfo);
 
                 // This check really only applies to intrinsic Array.Address methods
                 if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
@@ -8595,8 +8575,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef */,
-                              combine(combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_LDFTN),
-                                      CORINFO_CALLINFO_CALLVIRT),
+                              CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_CALLVIRT,
                               &callInfo);
 
                 // This check really only applies to intrinsic Array.Address methods
@@ -8729,7 +8708,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 _impResolveToken(CORINFO_TOKENKIND_NewObj);
 
                 eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef*/,
-                              combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_ALLOWINSTPARAM), &callInfo);
+                              CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_ALLOWINSTPARAM, &callInfo);
 
                 mflags = callInfo.methodFlags;
 
@@ -8982,16 +8961,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (isAwait)
                     {
-                        _impResolveToken(opcode == CEE_CALLVIRT ? CORINFO_TOKENKIND_AwaitVirtual
-                                                                : CORINFO_TOKENKIND_Await);
-                        if (resolvedToken.hMethod != nullptr)
-                        {
-                            // There is a runtime async variant that is implicitly awaitable, just call that.
-                            // skip the await pattern to the last token.
-                            codeAddr   = codeAddrAfterMatch;
-                            opcodeOffs = awaitOffset;
-                        }
-                        else
+                        _impResolveToken(CORINFO_TOKENKIND_Await);
+                        if (resolvedToken.hMethod == nullptr)
                         {
                             // This can happen in cases when the Task-returning method is not a runtime Async
                             // function. For example "T M1<T>(T arg) => arg" when called with a Task argument.
@@ -9009,12 +8980,45 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         _impResolveToken(CORINFO_TOKENKIND_Method);
                     }
 
+                    CORINFO_CALLINFO_FLAGS flags = CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS;
+                    if (opcode == CEE_CALLVIRT)
+                    {
+                        flags |= CORINFO_CALLINFO_CALLVIRT;
+                    }
+
                     eeGetCallInfo(&resolvedToken,
-                                  (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                                  // this is how impImportCall invokes getCallInfo
-                                  combine(combine(CORINFO_CALLINFO_ALLOWINSTPARAM, CORINFO_CALLINFO_SECURITYCHECKS),
-                                          (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
+                                  (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags,
                                   &callInfo);
+
+                    if (isAwait && (callInfo.kind == CORINFO_CALL))
+                    {
+                        assert(callInfo.sig.isAsyncCall());
+                        bool isSyncCallThunk;
+                        info.compCompHnd->getAsyncOtherVariant(callInfo.hMethod, &isSyncCallThunk);
+                        if (!isSyncCallThunk)
+                        {
+                            // The async variant that we got is a thunk. Switch
+                            // back to the non-async task-returning call. There
+                            // is no reason to go through the thunk.
+                            _impResolveToken(CORINFO_TOKENKIND_Method);
+                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
+                            isAwait = false;
+
+                            JITDUMP(
+                                "Async variant provided by VM is a thunk, switching direct call to synchronous task-returning method\n");
+                            eeGetCallInfo(&resolvedToken,
+                                          (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
+                                          flags, &callInfo);
+                        }
+                    }
+
+                    if (isAwait)
+                    {
+                        // If the synchronous call is a thunk then it means the async variant is not a thunk and we
+                        // prefer to directly call it. Skip the await pattern to the last token.
+                        codeAddr   = codeAddrAfterMatch;
+                        opcodeOffs = awaitOffset;
+                    }
                 }
                 else
                 {
@@ -11230,8 +11234,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
                 if (fgNeedReturnSpillTemp())
                 {
-                    assert(info.compRetNativeType != TYP_VOID &&
-                           (fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals()));
+                    assert(info.compRetNativeType != TYP_VOID);
 
                     // If this method returns a ref type, track the actual types seen in the returns.
                     if (info.compRetType == TYP_REF)
@@ -11307,7 +11310,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     // in this case we have to insert multiple struct copies to the temp
                     // and the retexpr is just the temp.
                     assert(info.compRetNativeType != TYP_VOID);
-                    assert(fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals());
 
                     impStoreToTemp(lvaInlineeReturnSpillTemp, op2, CHECK_SPILL_ALL);
                 }
@@ -11544,7 +11546,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
     unsigned  tryIndex = block->getTryIndex();
     EHblkDsc* HBtab    = ehGetDsc(tryIndex);
 
-    if (bbIsTryBeg(block) && (block->bbStkDepth != 0))
+    if (bbIsTryBeg(block) && (block->bbStackDepthOnEntry() != 0))
     {
         BADCODE("Evaluation stack must be empty on entry into a try block");
     }
@@ -11567,7 +11569,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
             //
             stackState.esStackDepth = 0;
 
-            if (handlerGetsXcptnObj(hndBegBB->bbCatchTyp))
+            if (handlerGetsXcptnObj(hndBegBB->GetCatchType()))
             {
                 CORINFO_CLASS_HANDLE clsHnd;
 
@@ -12002,28 +12004,26 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     // If the block has not been imported, add to pending set.
     bool addToPending = !block->HasFlag(BBF_IMPORTED);
 
-    // Initialize bbEntryState just the first time we try to add this block to the pending list
-    // Just because bbEntryState is NULL, doesn't mean the pre-state wasn't previously set
-    // We use NULL to indicate the 'common' state to avoid memory allocation
-    if ((block->bbEntryState == nullptr) && !block->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(block) == 0))
+    // Initialize bbEntryState the first time we try to add this block to the pending list.
+    // A nullptr bbEntryState means that the block does not yet have a recorded pre-state,
+    // which corresponds to having no established (i.e. empty) stack depth on entry.
+    if ((block->GetEntryState() == nullptr) && !block->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(block) == 0))
     {
         initBBEntryState(block, &stackState);
-        assert(block->bbStkDepth == 0);
-        block->bbStkDepth = static_cast<unsigned short>(stackState.esStackDepth);
         assert(addToPending);
         assert(impGetPendingBlockMember(block) == 0);
     }
     else
     {
         // The stack should have the same height on entry to the block from all its predecessors.
-        if (block->bbStkDepth != stackState.esStackDepth)
+        if (block->bbStackDepthOnEntry() != stackState.esStackDepth)
         {
 #ifdef DEBUG
             char buffer[400];
             sprintf_s(buffer, sizeof(buffer),
                       "Block at offset %4.4x to %4.4x in %0.200s entered with different stack depths.\n"
                       "Previous depth was %d, current depth is %d",
-                      block->bbCodeOffs, block->bbCodeOffsEnd, info.compFullName, block->bbStkDepth,
+                      block->bbCodeOffs, block->bbCodeOffsEnd, info.compFullName, block->bbStackDepthOnEntry(),
                       stackState.esStackDepth);
             buffer[400 - 1] = 0;
             NO_WAY(buffer);
@@ -12037,7 +12037,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
             return;
         }
 
-        if (block->bbStkDepth > 0)
+        if (block->bbStackDepthOnEntry() > 0)
         {
             // We need to fix the types of any spill temps that might have changed:
             //   int->native int, float->double, int->byref, etc.
@@ -12064,7 +12064,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     else
     {
         // We have to create a new dsc
-        dsc = new (this, CMK_Unknown) PendingDsc;
+        dsc = new (this, CMK_ImpStack) PendingDsc;
     }
 
     dsc->pdBB                 = block;
@@ -12131,10 +12131,10 @@ void Compiler::impReimportBlockPending(BasicBlock* block)
 
     dsc->pdBB = block;
 
-    if (block->bbEntryState)
+    if (block->GetEntryState())
     {
-        dsc->pdSavedStack.ssDepth = block->bbEntryState->esStackDepth;
-        dsc->pdSavedStack.ssTrees = block->bbEntryState->esStack;
+        dsc->pdSavedStack.ssDepth = block->GetEntryState()->esStackDepth;
+        dsc->pdSavedStack.ssTrees = block->GetEntryState()->esStack;
     }
     else
     {
@@ -12264,7 +12264,7 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
     {
         // If we haven't imported this block (EntryState == NULL) and we're not going to
         // (because it isn't on the pending list) then just ignore it for now.
-        assert(blk->bbEntryState == nullptr);
+        assert(blk->GetEntryState() == nullptr);
         return;
     }
 
@@ -12303,9 +12303,9 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
 // Re-type the incoming lclVar nodes to match the varDsc.
 void Compiler::impRetypeEntryStateTemps(BasicBlock* blk)
 {
-    if (blk->bbEntryState != nullptr)
+    if (blk->GetEntryState() != nullptr)
     {
-        EntryState* es = blk->bbEntryState;
+        EntryState* es = blk->GetEntryState();
         for (unsigned level = 0; level < es->esStackDepth; level++)
         {
             GenTree* tree = es->esStack[level].val;
@@ -12371,26 +12371,24 @@ void Compiler::initBBEntryState(BasicBlock* block, EntryState* srcState)
 {
     if (srcState->esStackDepth == 0)
     {
-        block->bbEntryState = nullptr;
+        block->SetEntryState(nullptr);
         return;
     }
 
-    block->bbEntryState = getAllocator(CMK_Unknown).allocate<EntryState>(1);
+    block->SetEntryState(getAllocator(CMK_ImpStack).allocate<EntryState>(1));
 
-    // block->bbEntryState.esRefcount = 1;
-
-    block->bbEntryState->esStackDepth = srcState->esStackDepth;
+    block->GetEntryState()->esStackDepth = srcState->esStackDepth;
 
     if (srcState->esStackDepth > 0)
     {
-        block->bbSetStack(new (this, CMK_Unknown) StackEntry[srcState->esStackDepth]);
+        block->bbSetStack(new (this, CMK_ImpStack) StackEntry[srcState->esStackDepth]);
         unsigned stackSize = srcState->esStackDepth * sizeof(StackEntry);
 
-        memcpy(block->bbEntryState->esStack, srcState->esStack, stackSize);
+        memcpy(block->GetEntryState()->esStack, srcState->esStack, stackSize);
         for (unsigned level = 0; level < srcState->esStackDepth; level++)
         {
-            GenTree* tree                           = srcState->esStack[level].val;
-            block->bbEntryState->esStack[level].val = gtCloneExpr(tree);
+            GenTree* tree                              = srcState->esStack[level].val;
+            block->GetEntryState()->esStack[level].val = gtCloneExpr(tree);
         }
     }
 }
@@ -12400,13 +12398,13 @@ void Compiler::initBBEntryState(BasicBlock* block, EntryState* srcState)
  */
 void Compiler::resetCurrentState(BasicBlock* block, EntryState* destState)
 {
-    if (block->bbEntryState == nullptr)
+    if (block->GetEntryState() == nullptr)
     {
         destState->esStackDepth = 0;
         return;
     }
 
-    destState->esStackDepth = block->bbEntryState->esStackDepth;
+    destState->esStackDepth = block->GetEntryState()->esStackDepth;
 
     if (destState->esStackDepth > 0)
     {
@@ -14038,7 +14036,7 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
 //    pointer to token into jit-allocated memory.
 methodPointerInfo* Compiler::impAllocateMethodPointerInfo(const CORINFO_RESOLVED_TOKEN& token, mdToken tokenConstrained)
 {
-    methodPointerInfo* memory = getAllocator(CMK_Unknown).allocate<methodPointerInfo>(1);
+    methodPointerInfo* memory = getAllocator(CMK_ASTNode).allocate<methodPointerInfo>(1);
     memory->m_token           = token;
     memory->m_tokenConstraint = tokenConstrained;
     return memory;
