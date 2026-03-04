@@ -26,8 +26,8 @@ namespace System.IO.Compression
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">The value is less than -1 or greater than 9.</exception>
         /// <remarks>
-        /// Can accept any value between -1 and 9 (inclusive), 0 gives no compression, 1 gives best speed, 9 gives best compression.
-        /// and -1 requests the default compression level which is currently equivalent to 6. The default value is -1.
+        /// Can accept any value between -1 and 9 (inclusive), 0 gives no compression, 1 gives best speed, 9 gives best compression, and -1 requests the default compression level which is currently equivalent to 6.
+        /// The default value is -1.
         /// </remarks>
         public int CompressionLevel
         {
