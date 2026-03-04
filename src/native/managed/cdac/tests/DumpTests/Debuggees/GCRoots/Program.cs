@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 /// <summary>
@@ -33,6 +34,12 @@ internal static class Program
         // Create weak and strong handles
         var weakRef = new WeakReference(new object());
         var strongHandle = GCHandle.Alloc(testString, GCHandleType.Normal);
+        var weakLongHandle = GCHandle.Alloc(new object(), GCHandleType.WeakTrackResurrection);
+
+        // Create dependent handle
+        object dependentTarget = new object();
+        object dependentValue = new byte[16];
+        DependentHandle dependentHandle = new(dependentTarget, dependentValue);
 
         // Keep references alive
         GC.KeepAlive(testString);
@@ -42,7 +49,10 @@ internal static class Program
         GC.KeepAlive(pinnedArrays);
         GC.KeepAlive(weakRef);
         GC.KeepAlive(strongHandle);
-
+        GC.KeepAlive(weakLongHandle);
+        GC.KeepAlive(dependentTarget);
+        GC.KeepAlive(dependentValue);
+        GC.KeepAlive(dependentHandle);
         Environment.FailFast("cDAC dump test: GCRoots debuggee intentional crash");
     }
 }

@@ -18,6 +18,13 @@ public class LinkContentToWwwroot : Task
     [Required]
     public string MSBuildProjectDirectory { get; set; } = string.Empty;
 
+    /// <summary>
+    /// When set, files are copied to this directory (using their target path) and the
+    /// copies are used as ContentOut identities instead of the originals. This prevents
+    /// multiple static web assets from pointing to the same original file on disk.
+    /// </summary>
+    public string VfsOutputPath { get; set; } = string.Empty;
+
     // Outputs
     [Output]
     public ITaskItem[] WasmFilesToIncludeInFileSystem { get; set; } = [];
@@ -57,14 +64,16 @@ public class LinkContentToWwwroot : Task
                 wasmFiles.Add(new TaskItem(targetPath));
 
                 // Content: ContentRoot = Identity with TargetPath removed, TargetPath = wwwroot\TargetPath
-                var contentRoot = Path.GetDirectoryName(identity);
+                var isRooted = Path.IsPathRooted(identity);
+                var contentRoot = isRooted ? Path.GetDirectoryName(identity)! : Path.GetDirectoryName(Path.GetFullPath(identity, MSBuildProjectDirectory))!;
+                var outIdentity = CopyToVfsIfNeeded(identity, targetPath, ref contentRoot);
 
-                var outItem = new TaskItem(identity, item.CloneCustomMetadata());
+                var outItem = new TaskItem(outIdentity, item.CloneCustomMetadata());
                 outItem.SetMetadata("ContentRoot", contentRoot);
                 outItem.SetMetadata("TargetPath", Path.Combine("wwwroot", targetPath));
                 contentItems.Add(outItem);
 
-                Log.LogMessage(MessageImportance.Low, $"Adding TargetPath '{targetPath}' and ContentRoot '{contentRoot}' for Identity '{identity}'.");
+                Log.LogMessage(MessageImportance.Low, $"Adding TargetPath '{targetPath}' and ContentRoot '{contentRoot}' for Identity '{outIdentity}'.");
                 continue;
             }
 
@@ -73,7 +82,7 @@ public class LinkContentToWwwroot : Task
             {
                 var isRooted = Path.IsPathRooted(identity);
                 targetPath = isRooted ? Path.GetFileName(identity) : identity;
-                var contentRoot = isRooted ? Path.GetDirectoryName(identity) : Path.GetDirectoryName(Path.GetFullPath(identity, MSBuildProjectDirectory));
+                var contentRoot = isRooted ? Path.GetDirectoryName(identity)! : Path.GetDirectoryName(Path.GetFullPath(identity, MSBuildProjectDirectory))!;
 
                 // Add TargetPath to WasmFilesToIncludeInFileSystem
                 var wasmVfsFile = new TaskItem(targetPath);
@@ -85,12 +94,14 @@ public class LinkContentToWwwroot : Task
                         wasmVfsFile.SetMetadata("TargetPath", wasmVfsTargetPath);
                 }
 
-                var outItem = new TaskItem(identity, item.CloneCustomMetadata());
+                var outIdentity = CopyToVfsIfNeeded(identity, targetPath, ref contentRoot);
+
+                var outItem = new TaskItem(outIdentity, item.CloneCustomMetadata());
                 outItem.SetMetadata("ContentRoot", contentRoot);
                 outItem.SetMetadata("TargetPath", Path.Combine("wwwroot", targetPath));
                 contentItems.Add(outItem);
 
-                Log.LogMessage(MessageImportance.Low, $"Adding TargetPath '{targetPath}' and ContentRoot '{contentRoot}' for Identity '{identity}'.");
+                Log.LogMessage(MessageImportance.Low, $"Adding TargetPath '{targetPath}' and ContentRoot '{contentRoot}' for Identity '{outIdentity}'.");
                 continue;
             }
 
@@ -98,17 +109,19 @@ public class LinkContentToWwwroot : Task
             if (!string.IsNullOrEmpty(link) && !link.StartsWith("wwwroot"))
             {
                 var isRooted = Path.IsPathRooted(identity);
-                var contentRoot = isRooted ? Path.GetDirectoryName(identity) : Path.GetDirectoryName(Path.GetFullPath(identity, MSBuildProjectDirectory));
+                var contentRoot = isRooted ? Path.GetDirectoryName(identity)! : Path.GetDirectoryName(Path.GetFullPath(identity, MSBuildProjectDirectory))!;
 
                 // Add Link to WasmFilesToIncludeInFileSystem
                 wasmFiles.Add(new TaskItem(link));
 
-                var outItem = new TaskItem(identity, item.CloneCustomMetadata());
+                var outIdentity = CopyToVfsIfNeeded(identity, link, ref contentRoot);
+
+                var outItem = new TaskItem(outIdentity, item.CloneCustomMetadata());
                 outItem.SetMetadata("ContentRoot", contentRoot);
                 outItem.SetMetadata("Link", Path.Combine("wwwroot", link));
                 contentItems.Add(outItem);
 
-                Log.LogMessage(MessageImportance.Low, $"Adding Link '{link}' and ContentRoot '{contentRoot}' for Identity '{identity}'.");
+                Log.LogMessage(MessageImportance.Low, $"Adding Link '{link}' and ContentRoot '{contentRoot}' for Identity '{outIdentity}'.");
                 continue;
             }
         }
@@ -119,5 +132,24 @@ public class LinkContentToWwwroot : Task
         Log.LogMessage(MessageImportance.Low, $"Produced {WasmFilesToIncludeInFileSystem.Length} VFS files and {ContentOut.Length} content items.");
 
         return !Log.HasLoggedErrors;
+    }
+
+    /// <summary>
+    /// If <see cref="VfsOutputPath"/> is set, copies <paramref name="sourceFile"/> to
+    /// VfsOutputPath/<paramref name="relativePath"/> and updates <paramref name="contentRoot"/>
+    /// to point at the copy's directory. Returns the path to use as the output item Identity.
+    /// </summary>
+    private string CopyToVfsIfNeeded(string sourceFile, string relativePath, ref string contentRoot)
+    {
+        if (string.IsNullOrEmpty(VfsOutputPath))
+            return sourceFile;
+
+        // Normalize backslash separators (MSBuild metadata may use '\' even on Linux)
+        relativePath = relativePath.Replace('\\', Path.DirectorySeparatorChar);
+        var vfsFilePath = Path.Combine(VfsOutputPath, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(vfsFilePath)!);
+        File.Copy(sourceFile, vfsFilePath, overwrite: true);
+        contentRoot = Path.GetDirectoryName(vfsFilePath)!;
+        return vfsFilePath;
     }
 }

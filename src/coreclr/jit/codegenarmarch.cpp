@@ -501,7 +501,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CATCH_ARG:
 
-            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->bbCatchTyp));
+            noway_assert(handlerGetsXcptnObj(m_compiler->compCurBB->GetCatchType()));
 
             /* Catch arguments get passed in a register. genCodeForBBlist()
                would have marked it as holding a GC object, but not used. */
