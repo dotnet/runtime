@@ -611,6 +611,7 @@ RELEASE_CONFIG_STRING(AltJitExcludeAssemblies, "AltJitExcludeAssemblies")
 RELEASE_CONFIG_INTEGER(JitMeasureIR, "JitMeasureIR", 0)
 
 // If set, report JIT metrics back to the EE after each method compilation.
+// Used by SuperPMI metric diff (metricdiff) to measure per-method JIT metric changes.
 RELEASE_CONFIG_INTEGER(JitReportMetrics, "JitReportMetrics", 0)
 
 // If set, gather JIT function info and write to this file.
