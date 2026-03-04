@@ -51,7 +51,6 @@ public enum DataType
     DynamicStaticsInfo,
     EEClass,
     CoreLibBinder,
-    ArrayClass,
     MethodTableAuxiliaryData,
     GenericsDictInfo,
     TypeDesc,
@@ -85,6 +84,7 @@ public enum DataType
     SyncBlock,
     SyncTableEntry,
     InteropSyncBlockInfo,
+    SyncBlockCache,
     InstantiatedMethodDesc,
     DynamicMethodDesc,
     StoredSigMethodDesc,
@@ -110,6 +110,7 @@ public enum DataType
     HashMap,
     Bucket,
     UnwindInfo,
+    UnwindCode,
     NonVtableSlot,
     MethodImpl,
     NativeCodeSlot,
@@ -122,6 +123,7 @@ public enum DataType
     DynamicILBlobTable,
     EEJitManager,
     PatchpointInfo,
+    PortableEntryPoint,
 
     TransitionBlock,
     DebuggerEval,
@@ -139,6 +141,11 @@ public enum DataType
     HijackFrame,
     TailCallFrame,
     StubDispatchFrame,
+    ComCallWrapper,
+    SimpleComCallWrapper,
+    RCWCleanupList,
+    RCW,
+    CtxEntry,
 
 
     /* GC Data Types */
@@ -148,4 +155,8 @@ public enum DataType
     CFinalize,
     HeapSegment,
     OomHistory,
+    HandleTableMap,
+    HandleTableBucket,
+    HandleTable,
+    TableSegment,
 }

@@ -2085,7 +2085,7 @@ public:
     #define SKIPFUNCLETS                    0x0002
 
     // UNUSED                               0x0004
-    
+
     #define QUICKUNWIND                     0x0008 // do not restore all registers during unwind
 
     #define HANDLESKIPPEDFRAMES             0x0010 // temporary to handle skipped frames for appdomain unload
@@ -3761,6 +3761,8 @@ struct cdac_data<Thread>
     static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
     static constexpr size_t RuntimeThreadLocals = offsetof(Thread, m_pRuntimeThreadLocals);
     static constexpr size_t Frame = offsetof(Thread, m_pFrame);
+    static constexpr size_t CachedStackBase = offsetof(Thread, m_CacheStackBase);
+    static constexpr size_t CachedStackLimit = offsetof(Thread, m_CacheStackLimit);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t Link = offsetof(Thread, m_Link);
