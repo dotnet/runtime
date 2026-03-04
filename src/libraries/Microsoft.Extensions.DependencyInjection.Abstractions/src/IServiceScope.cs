@@ -9,19 +9,10 @@ namespace Microsoft.Extensions.DependencyInjection
     /// Defines a disposable service scope.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// The <see cref="System.IDisposable.Dispose"/> method ends the scope lifetime. Once <see cref="System.IDisposable.Dispose"/>
+    /// The <see cref="System.IDisposable.Dispose"/> method ends the scope lifetime. Once Dispose
     /// is called, any scoped services and any transient services that have been resolved from
     /// <see cref="Microsoft.Extensions.DependencyInjection.IServiceScope.ServiceProvider"/> will be
     /// disposed.
-    /// </para>
-    /// <para>
-    /// If the scope implementation also implements <see cref="System.IAsyncDisposable"/>, prefer calling
-    /// <see cref="System.IAsyncDisposable.DisposeAsync"/> over <see cref="System.IDisposable.Dispose"/>. If
-    /// any resolved service implements <see cref="System.IAsyncDisposable"/> but not <see cref="System.IDisposable"/>,
-    /// calling <see cref="System.IDisposable.Dispose"/> will throw an <see cref="System.InvalidOperationException"/>.
-    /// Consider using <see cref="AsyncServiceScope"/> to ensure <see cref="System.IAsyncDisposable.DisposeAsync"/> is always called.
-    /// </para>
     /// </remarks>
     public interface IServiceScope : IDisposable
     {

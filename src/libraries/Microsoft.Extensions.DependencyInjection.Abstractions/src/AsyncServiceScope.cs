@@ -30,25 +30,13 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <inheritdoc />
         public IServiceProvider ServiceProvider => _serviceScope.ServiceProvider;
 
-        /// <summary>
-        /// Ends the scope lifetime and disposes all resolved services.
-        /// </summary>
-        /// <remarks>
-        /// Prefer calling <see cref="DisposeAsync"/> over this method. If any resolved service implements
-        /// <see cref="IAsyncDisposable"/> but not <see cref="IDisposable"/>, this method throws an
-        /// <see cref="InvalidOperationException"/>. Use <see cref="DisposeAsync"/> to properly handle all
-        /// disposable services, or explicitly perform sync-over-async on the caller side if synchronous
-        /// disposal is required.
-        /// </remarks>
+        /// <inheritdoc />
         public void Dispose()
         {
             _serviceScope.Dispose();
         }
 
-        /// <summary>
-        /// Asynchronously ends the scope lifetime and disposes all resolved services that implement <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/>.
-        /// </summary>
-        /// <returns>A value task that represents the asynchronous operation.</returns>
+        /// <inheritdoc />
         public ValueTask DisposeAsync()
         {
             if (_serviceScope is IAsyncDisposable ad)
