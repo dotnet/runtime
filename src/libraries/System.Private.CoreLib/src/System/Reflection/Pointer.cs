@@ -14,12 +14,14 @@ namespace System.Reflection
         private readonly void* _ptr;
         private readonly RuntimeType _ptrType;
 
+        [RequiresUnsafe]
         private Pointer(void* ptr, RuntimeType ptrType)
         {
             _ptr = ptr;
             _ptrType = ptrType;
         }
 
+        [RequiresUnsafe]
         public static object Box(void* ptr, Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -32,6 +34,7 @@ namespace System.Reflection
             return new Pointer(ptr, rtType);
         }
 
+        [RequiresUnsafe]
         public static void* Unbox(object ptr)
         {
             if (ptr is Pointer p)

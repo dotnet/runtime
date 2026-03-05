@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -15,6 +16,7 @@ internal static partial class Interop
         internal static partial IntPtr GetLoadLibraryError();
 
         [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetProcAddress")]
+        [RequiresUnsafe]
         internal static partial IntPtr GetProcAddress(IntPtr handle, byte* symbol);
 
         [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetProcAddress", StringMarshalling = StringMarshalling.Utf8)]

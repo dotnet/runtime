@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -58,6 +59,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe bool TryGetUserNameFromPasswd(uint uid, byte* buf, int bufLen, out string? username)
         {
             // Call getpwuid_r to get the passwd struct
@@ -95,9 +97,11 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwUidR", SetLastError = false)]
+        [RequiresUnsafe]
         internal static unsafe partial int GetPwUidR(uint uid, out Passwd pwd, byte* buf, int bufLen);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwNamR", StringMarshalling = StringMarshalling.Utf8, SetLastError = false)]
+        [RequiresUnsafe]
         internal static unsafe partial int GetPwNamR(string name, out Passwd pwd, byte* buf, int bufLen);
     }
 }

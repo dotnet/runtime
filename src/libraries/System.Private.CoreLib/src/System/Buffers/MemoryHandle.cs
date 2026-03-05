@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Buffers
@@ -21,6 +22,7 @@ namespace System.Buffers
         /// <param name="pinnable">reference to manually managed object, or default if there is no memory manager</param>
         /// <param name="handle">handle used to pin array buffers</param>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public MemoryHandle(void* pointer, GCHandle handle = default, IPinnable? pinnable = default)
         {
             _pointer = pointer;
@@ -32,6 +34,7 @@ namespace System.Buffers
         /// Returns the pointer to memory, where the memory is assumed to be pinned and hence the address won't change.
         /// </summary>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public void* Pointer => _pointer;
 
         /// <summary>

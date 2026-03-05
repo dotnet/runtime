@@ -57,6 +57,7 @@ namespace System
         }
 
         [NonVersionable]
+        [RequiresUnsafe]
         public unsafe UIntPtr(void* value)
         {
             _value = (nuint)value;
@@ -116,9 +117,11 @@ namespace System
         public static explicit operator nuint(ulong value) => checked((nuint)value);
 
         [NonVersionable]
+        [RequiresUnsafe]
         public static unsafe explicit operator nuint(void* value) => (nuint)value;
 
         [NonVersionable]
+        [RequiresUnsafe]
         public static unsafe explicit operator void*(nuint value) => (void*)value;
 
         [NonVersionable]
@@ -159,6 +162,7 @@ namespace System
         }
 
         [NonVersionable]
+        [RequiresUnsafe]
         public unsafe void* ToPointer() => (void*)_value;
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />

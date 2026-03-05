@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 
 namespace System.Threading
@@ -16,11 +17,13 @@ namespace System.Threading
     /// </summary>
     internal static unsafe class LowLevelFutex
     {
+        [RequiresUnsafe]
         internal static void WaitOnAddress(int* address, int comparand)
         {
             Interop.Sys.LowLevelFutex_WaitOnAddress(address, comparand);
         }
 
+        [RequiresUnsafe]
         internal static bool WaitOnAddressTimeout(int* address, int comparand, int milliseconds)
         {
             Debug.Assert(milliseconds >= -1);
@@ -33,6 +36,7 @@ namespace System.Threading
             return Interop.Sys.LowLevelFutex_WaitOnAddressTimeout(address, comparand, milliseconds);
         }
 
+        [RequiresUnsafe]
         internal static void WakeByAddressSingle(int* address)
         {
             Interop.Sys.LowLevelFutex_WakeByAddressSingle(address);

@@ -450,6 +450,7 @@ namespace System
 
         // IndexOfNullByte processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
         // This behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
+        [RequiresUnsafe]
         internal static unsafe int IndexOfNullByte(byte* searchSpace)
         {
             const int Length = int.MaxValue;
@@ -1290,6 +1291,7 @@ namespace System
             => (nuint)(uint)((length - (int)offset) & ~(Vector512<byte>.Count - 1));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe nuint UnalignedCountVector128(byte* searchSpace)
         {
             nint unaligned = (nint)searchSpace & (Vector128<byte>.Count - 1);

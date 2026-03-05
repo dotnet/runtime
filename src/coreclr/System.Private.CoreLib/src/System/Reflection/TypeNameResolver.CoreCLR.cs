@@ -131,6 +131,7 @@ namespace System.Reflection
         }
 
         // Used by VM
+        [RequiresUnsafe]
         internal static unsafe RuntimeType? GetTypeHelper(char* pTypeName, RuntimeAssembly? requestingAssembly,
             bool throwOnError, bool requireAssemblyQualifiedName, IntPtr unsafeAccessorMethod)
         {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -11,6 +12,7 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCwd", SetLastError = true)]
+        [RequiresUnsafe]
         private static unsafe partial byte* GetCwd(byte* buffer, int bufferLength);
 
         internal static unsafe string GetCwd()
@@ -47,6 +49,7 @@ internal static partial class Interop
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe string? GetCwdHelper(byte* ptr, int bufferSize)
         {
             // Call the real getcwd

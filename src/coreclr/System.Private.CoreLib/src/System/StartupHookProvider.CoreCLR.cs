@@ -12,6 +12,7 @@ namespace System
 {
     internal static partial class StartupHookProvider
     {
+        [RequiresUnsafe]
         private static unsafe void ManagedStartup(char* pDiagnosticStartupHooks)
         {
             if (IsSupported)

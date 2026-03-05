@@ -41,6 +41,7 @@ namespace System.Reflection
             // ensures the RuntimeAssembly is kept alive for as long as the stream lives
             private readonly RuntimeAssembly _manifestAssembly;
 
+            [RequiresUnsafe]
             internal unsafe ManifestResourceStream(RuntimeAssembly manifestAssembly, byte* pointer, long length, long capacity, FileAccess access) : base(pointer, length, capacity, access)
             {
                 _manifestAssembly = manifestAssembly;
@@ -267,6 +268,7 @@ namespace System.Reflection
 
         // GetResource will return a pointer to the resources in memory.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetResource", StringMarshalling = StringMarshalling.Utf16)]
+        [RequiresUnsafe]
         private static unsafe partial byte* GetResource(QCallAssembly assembly,
                                                        string resourceName,
                                                        out uint length);
@@ -395,6 +397,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalLoad")]
+        [RequiresUnsafe]
         private static unsafe partial void InternalLoad(NativeAssemblyNameParts* pAssemblyNameParts,
                                                 ObjectHandleOnStack requestingAssembly,
                                                 StackCrawlMarkHandle stackMark,

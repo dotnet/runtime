@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using EventMetadata = System.Diagnostics.Tracing.EventSource.EventMetadata;
 
@@ -220,6 +221,7 @@ namespace System.Diagnostics.Tracing
 
         // Copy src to buffer and modify the offset.
         // Note: We know the buffer size ahead of time to make sure no buffer overflow.
+        [RequiresUnsafe]
         internal static unsafe void WriteToBuffer(byte* buffer, uint bufferLength, ref uint offset, byte* src, uint srcLength)
         {
             Debug.Assert(bufferLength >= (offset + srcLength));
@@ -230,6 +232,7 @@ namespace System.Diagnostics.Tracing
             offset += srcLength;
         }
 
+        [RequiresUnsafe]
         internal static unsafe void WriteToBuffer<T>(byte* buffer, uint bufferLength, ref uint offset, T value) where T : unmanaged
         {
             Debug.Assert(bufferLength >= (offset + sizeof(T)));
@@ -251,6 +254,7 @@ namespace System.Diagnostics.Tracing
             TypeInfo = typeInfo;
         }
 
+        [RequiresUnsafe]
         internal unsafe bool GenerateMetadata(byte* pMetadataBlob, ref uint offset, uint blobSize)
         {
             TypeCode typeCode = GetTypeCodeExtended(ParameterType);
@@ -306,6 +310,7 @@ namespace System.Diagnostics.Tracing
             return true;
         }
 
+        [RequiresUnsafe]
         private static unsafe bool GenerateMetadataForProperty(PropertyAnalysis property, byte* pMetadataBlob, ref uint offset, uint blobSize)
         {
             Debug.Assert(property != null);
@@ -373,6 +378,7 @@ namespace System.Diagnostics.Tracing
             return true;
         }
 
+        [RequiresUnsafe]
         internal unsafe bool GenerateMetadataV2(byte* pMetadataBlob, ref uint offset, uint blobSize)
         {
             if (TypeInfo == null)
@@ -380,6 +386,7 @@ namespace System.Diagnostics.Tracing
             return GenerateMetadataForNamedTypeV2(ParameterName, TypeInfo, pMetadataBlob, ref offset, blobSize);
         }
 
+        [RequiresUnsafe]
         private static unsafe bool GenerateMetadataForNamedTypeV2(string name, TraceLoggingTypeInfo typeInfo, byte* pMetadataBlob, ref uint offset, uint blobSize)
         {
             Debug.Assert(pMetadataBlob != null);
@@ -400,6 +407,7 @@ namespace System.Diagnostics.Tracing
             return GenerateMetadataForTypeV2(typeInfo, pMetadataBlob, ref offset, blobSize);
         }
 
+        [RequiresUnsafe]
         private static unsafe bool GenerateMetadataForTypeV2(TraceLoggingTypeInfo? typeInfo, byte* pMetadataBlob, ref uint offset, uint blobSize)
         {
             Debug.Assert(typeInfo != null);

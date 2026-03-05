@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Runtime.CompilerServices;
@@ -28,6 +29,7 @@ internal static unsafe partial class GenericsHelpers
     }
 
     [DebuggerHidden]
+    [RequiresUnsafe]
     public static IntPtr MethodWithSlotAndModule(IntPtr methodHnd, GenericHandleArgs * pArgs)
     {
         return GenericHandleWorker(methodHnd, IntPtr.Zero, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
@@ -40,6 +42,7 @@ internal static unsafe partial class GenericsHelpers
     }
 
     [DebuggerHidden]
+    [RequiresUnsafe]
     public static IntPtr ClassWithSlotAndModule(IntPtr classHnd, GenericHandleArgs * pArgs)
     {
         return GenericHandleWorker(IntPtr.Zero, classHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);

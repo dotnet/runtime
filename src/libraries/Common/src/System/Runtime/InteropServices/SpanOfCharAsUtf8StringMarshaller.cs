@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -60,6 +61,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Converts the current managed ReadOnlySpan&lt;char&gt; to an unmanaged string.
             /// </summary>
             /// <returns>An unmanaged string.</returns>
+            [RequiresUnsafe]
             public byte* ToUnmanaged() => _unmanagedValue;
 
             /// <summary>

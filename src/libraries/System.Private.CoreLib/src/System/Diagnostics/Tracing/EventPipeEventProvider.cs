@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Tracing
@@ -17,6 +18,7 @@ namespace System.Diagnostics.Tracing
             _eventProvider = new WeakReference<EventProvider>(eventProvider);
         }
 
+        [RequiresUnsafe]
         protected override unsafe void HandleEnableNotification(
                                     EventProvider target,
                                     byte* additionalData,
@@ -59,6 +61,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         private static unsafe void Callback(byte* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
@@ -99,6 +102,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Write an event.
+        [RequiresUnsafe]
         internal override unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
@@ -137,6 +141,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
+        [RequiresUnsafe]
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
             byte* pMetadata, uint metadataLength)
         {

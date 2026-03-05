@@ -713,14 +713,17 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static Vector256<T> ISimdVector<Vector256<T>, T>.Load(T* source) => Vector256.Load(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAligned(T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static Vector256<T> ISimdVector<Vector256<T>, T>.LoadAligned(T* source) => Vector256.LoadAligned(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static Vector256<T> ISimdVector<Vector256<T>, T>.LoadAlignedNonTemporal(T* source) => Vector256.LoadAlignedNonTemporal(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
@@ -821,14 +824,17 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static void ISimdVector<Vector256<T>, T>.Store(Vector256<T> source, T* destination) => source.Store(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAligned(TSelf, T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static void ISimdVector<Vector256<T>, T>.StoreAligned(Vector256<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
         [Intrinsic]
+        [RequiresUnsafe]
         static void ISimdVector<Vector256<T>, T>.StoreAlignedNonTemporal(Vector256<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />

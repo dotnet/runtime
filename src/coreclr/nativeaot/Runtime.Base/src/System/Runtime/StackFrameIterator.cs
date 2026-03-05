@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
+
 #if !NATIVEAOT
 using System.Runtime.ExceptionServices;
 #endif
@@ -31,7 +33,11 @@ namespace System.Runtime
 
         [FieldOffset(AsmOffsets.OFFSETOF__StackFrameIterator__m_AdjustedControlPC)]
         internal byte* ControlPC;
+
+        [RequiresUnsafe]
         internal byte* OriginalControlPC { get { return (byte*)_pRegDisplay->ControlPC; } }
+
+        [RequiresUnsafe]
         internal void* RegisterSet { get { return _pRegDisplay; } }
         internal UIntPtr SP { get { return _pRegDisplay->SP; } }
         internal UIntPtr FramePointer { get { return _pRegDisplay->m_pCurrentContext->FP; } }
@@ -62,6 +68,7 @@ namespace System.Runtime
 #endif // NATIVEAOT
 
         [StackTraceHidden]
+        [RequiresUnsafe]
         internal bool Init(EH.PAL_LIMITED_CONTEXT* pStackwalkCtx, bool instructionFault = false, bool* fIsExceptionIntercepted = null)
         {
             return InternalCalls.RhpSfiInit(ref this, pStackwalkCtx, instructionFault, fIsExceptionIntercepted);
@@ -72,11 +79,13 @@ namespace System.Runtime
             return Next(null, null, null);
         }
 
+        [RequiresUnsafe]
         internal bool Next(uint* uExCollideClauseIdx, bool* fIsExceptionIntercepted)
         {
             return Next(uExCollideClauseIdx, null, fIsExceptionIntercepted);
         }
 
+        [RequiresUnsafe]
         internal bool Next(uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted)
         {
             return InternalCalls.RhpSfiNext(ref this, uExCollideClauseIdx, fUnwoundReversePInvoke, fIsExceptionIntercepted);

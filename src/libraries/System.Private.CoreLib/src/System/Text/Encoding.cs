@@ -568,6 +568,7 @@ namespace System.Text
         // which is really slow, so this method should be avoided if you're calling
         // a 3rd party encoding.
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public virtual unsafe int GetByteCount(char* chars, int count)
         {
             ArgumentNullException.ThrowIfNull(chars);
@@ -690,6 +691,7 @@ namespace System.Text
         // when we copy the buffer so that we don't overflow byteCount either.
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public virtual unsafe int GetBytes(char* chars, int charCount,
                                               byte* bytes, int byteCount)
         {
@@ -769,6 +771,7 @@ namespace System.Text
         // We expect this to be the workhorse for NLS Encodings, but for existing
         // ones we need a working (if slow) default implementation)
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public virtual unsafe int GetCharCount(byte* bytes, int count)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -839,6 +842,7 @@ namespace System.Text
         // when we copy the buffer so that we don't overflow charCount either.
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public virtual unsafe int GetChars(byte* bytes, int byteCount,
                                               char* chars, int charCount)
         {
@@ -901,6 +905,7 @@ namespace System.Text
         }
 
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe string GetString(byte* bytes, int byteCount)
         {
             ArgumentNullException.ThrowIfNull(bytes);
@@ -1162,6 +1167,7 @@ namespace System.Text
             public override int GetByteCount(char[] chars, int index, int count, bool flush) =>
                 _encoding.GetByteCount(chars, index, count);
 
+            [RequiresUnsafe]
             public override unsafe int GetByteCount(char* chars, int count, bool flush) =>
                 _encoding.GetByteCount(chars, count);
 
@@ -1189,6 +1195,7 @@ namespace System.Text
                                          byte[] bytes, int byteIndex, bool flush) =>
                 _encoding.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
 
+            [RequiresUnsafe]
             public override unsafe int GetBytes(char* chars, int charCount,
                                                 byte* bytes, int byteCount, bool flush) =>
                 _encoding.GetBytes(chars, charCount, bytes, byteCount);
@@ -1216,6 +1223,7 @@ namespace System.Text
             public override int GetCharCount(byte[] bytes, int index, int count, bool flush) =>
                 _encoding.GetCharCount(bytes, index, count);
 
+            [RequiresUnsafe]
             public override unsafe int GetCharCount(byte* bytes, int count, bool flush) =>
                 // By default just call the encoding version, no flush by default
                 _encoding.GetCharCount(bytes, count);
@@ -1245,6 +1253,7 @@ namespace System.Text
                                          char[] chars, int charIndex, bool flush) =>
                 _encoding.GetChars(bytes, byteIndex, byteCount, chars, charIndex);
 
+            [RequiresUnsafe]
             public override unsafe int GetChars(byte* bytes, int byteCount,
                                                 char* chars, int charCount, bool flush) =>
                 // By default just call the encoding's version
@@ -1264,6 +1273,7 @@ namespace System.Text
             private unsafe byte* _bytes;
             private readonly DecoderFallbackBuffer _fallbackBuffer;
 
+            [RequiresUnsafe]
             internal unsafe EncodingCharBuffer(Encoding enc, DecoderNLS? decoder, char* charStart, int charCount,
                                                     byte* byteStart, int byteCount)
             {
@@ -1411,6 +1421,7 @@ namespace System.Text
             private readonly EncoderNLS? _encoder;
             internal EncoderFallbackBuffer fallbackBuffer;
 
+            [RequiresUnsafe]
             internal unsafe EncodingByteBuffer(Encoding inEncoding, EncoderNLS? inEncoder,
                         byte* inByteStart, int inByteCount, char* inCharStart, int inCharCount)
             {

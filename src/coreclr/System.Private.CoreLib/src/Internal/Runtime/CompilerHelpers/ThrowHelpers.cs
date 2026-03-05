@@ -12,10 +12,12 @@ namespace Internal.Runtime.CompilerHelpers
     {
         [DoesNotReturn]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowAmbiguousResolutionException")]
+        [RequiresUnsafe]
         private static partial void ThrowAmbiguousResolutionException(MethodTable* targetType, MethodTable* interfaceType, void* methodDesc);
 
         [DoesNotReturn]
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static void ThrowAmbiguousResolutionException(
             void* method,           // MethodDesc*
             void* interfaceType,    // MethodTable*
@@ -26,10 +28,12 @@ namespace Internal.Runtime.CompilerHelpers
 
         [DoesNotReturn]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowEntryPointNotFoundException")]
+        [RequiresUnsafe]
         private static partial void ThrowEntryPointNotFoundException(MethodTable* targetType, MethodTable* interfaceType, void* methodDesc);
 
         [DoesNotReturn]
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static void ThrowEntryPointNotFoundException(
             void* method,           // MethodDesc*
             void* interfaceType,    // MethodTable*
@@ -40,11 +44,13 @@ namespace Internal.Runtime.CompilerHelpers
 
         [DoesNotReturn]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowMethodAccessException")]
+        [RequiresUnsafe]
         private static partial void ThrowMethodAccessExceptionInternal(void* caller, void* callee);
 
         // implementation of CORINFO_HELP_METHOD_ACCESS_EXCEPTION
         [DoesNotReturn]
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static void ThrowMethodAccessException(
             void* caller,   // MethodDesc*
             void* callee)   // MethodDesc*
@@ -54,11 +60,13 @@ namespace Internal.Runtime.CompilerHelpers
 
         [DoesNotReturn]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowFieldAccessException")]
+        [RequiresUnsafe]
         private static partial void ThrowFieldAccessExceptionInternal(void* caller, void* callee);
 
         // implementation of CORINFO_HELP_FIELD_ACCESS_EXCEPTION
         [DoesNotReturn]
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static void ThrowFieldAccessException(
             void* caller,   // MethodDesc*
             void* callee)   // FieldDesc*
@@ -68,11 +76,13 @@ namespace Internal.Runtime.CompilerHelpers
 
         [DoesNotReturn]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowClassAccessException")]
+        [RequiresUnsafe]
         private static partial void ThrowClassAccessExceptionInternal(void* caller, void* callee);
 
         // implementation of CORINFO_HELP_CLASS_ACCESS_EXCEPTION
         [DoesNotReturn]
         [DebuggerHidden]
+        [RequiresUnsafe]
         internal static void ThrowClassAccessException(
             void* caller,   // MethodDesc*
             void* callee)   // Type handle
