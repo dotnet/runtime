@@ -39,7 +39,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -52,7 +51,6 @@ bool Lowering::IsCallTargetInRange(void* addr)
 //
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -68,7 +66,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 //
 bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 #endif
@@ -88,7 +85,6 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 //
 GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -103,7 +99,6 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -121,7 +116,6 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 //
 GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -136,7 +130,6 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -148,7 +141,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -163,7 +155,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 //
 void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -176,7 +167,6 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
 
 void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -202,7 +192,6 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //
 GenTree* Lowering::LowerCast(GenTree* tree)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -217,7 +206,6 @@ GenTree* Lowering::LowerCast(GenTree* tree)
 //
 void Lowering::LowerRotate(GenTree* tree)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -237,7 +225,6 @@ const int POST_INDEXED_ADDRESSING_MAX_DISTANCE = 16;
 //
 bool Lowering::TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -254,7 +241,6 @@ bool Lowering::TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store)
 //
 bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclVarCommon* store)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -279,7 +265,6 @@ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclV
 //
 void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -291,7 +276,6 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -306,7 +290,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -319,7 +302,6 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -338,7 +320,6 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 //
 GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -350,7 +331,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 #endif // FEATURE_HW_INTRINSICS
@@ -382,7 +362,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 //
 void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -400,7 +379,8 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 //
 void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 {
-    _ASSERTE(!"NYI");
+    //_ASSERTE(!"NYI");
+    return;
 }
 
 //------------------------------------------------------------------------
@@ -411,7 +391,6 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 //
 void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -423,7 +402,6 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 //
 void Lowering::ContainCheckMul(GenTreeOp* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -435,7 +413,6 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
     // ARM doesn't have a div instruction with an immediate operand
 }
@@ -448,7 +425,6 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 //
 void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -460,7 +436,6 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 //
 void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -472,7 +447,6 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 //
 void Lowering::ContainCheckCast(GenTreeCast* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -484,7 +458,6 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -496,7 +469,6 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckSelect(GenTreeOp* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -508,7 +480,6 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
 //
 void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -522,7 +493,6 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 //----------------------------------------------------------------------------------------------
@@ -537,7 +507,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
@@ -550,7 +519,6 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 //
 void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
 {
-    EX_THROW(HRException, (E_FAIL));
     _ASSERTE(!"NYI");
 }
 
