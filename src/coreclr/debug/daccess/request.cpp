@@ -443,14 +443,19 @@ ClrDataAccess::GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum *
     else
     {
         DacMethodTableSlotEnumerator *methodTableSlotEnumerator = new (nothrow) DacMethodTableSlotEnumerator();
-        *enumerator = methodTableSlotEnumerator;
-        if (*enumerator == NULL)
+        if (methodTableSlotEnumerator == NULL)
         {
             hr = E_OUTOFMEMORY;
         }
         else
         {
             hr = methodTableSlotEnumerator->Init(mTable);
+
+            if (SUCCEEDED(hr))
+                hr = methodTableSlotEnumerator->QueryInterface(__uuidof(ISOSMethodEnum), (void**)enumerator);
+
+            if (FAILED(hr))
+                delete methodTableSlotEnumerator;
         }
     }
 
