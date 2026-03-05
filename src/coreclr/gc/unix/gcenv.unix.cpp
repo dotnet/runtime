@@ -697,12 +697,12 @@ bool GCToOSInterface::VirtualCommitThp(void* address, size_t size, uint16_t node
 #ifdef _DEBUG
             if (rc == 0)
             {
-                printf("THP: madvise(MADV_HUGEPAGE) succeeded for %p, size=%zu MB\n",
+                dprintf(1, "THP: madvise(MADV_HUGEPAGE) succeeded for %p, size=%zu MB\n",
                        address, size / (1024 * 1024));
             }
             else
             {
-                printf("THP: madvise(MADV_HUGEPAGE) failed for %p, errno=%d\n", address, errno);
+                dprintf(1, "THP: madvise(MADV_HUGEPAGE) failed for %p, errno=%d\n", address, errno);
             }
 #endif // _DEBUG
             (void)rc;
@@ -710,7 +710,7 @@ bool GCToOSInterface::VirtualCommitThp(void* address, size_t size, uint16_t node
         else
         {
 #ifdef _DEBUG
-            printf("THP: Skipping madvise for small allocation %p, size=%zu KB (< 2MB threshold)\n",
+            dprintf(1, "THP: Skipping madvise for small allocation %p, size=%zu KB (< 2MB threshold)\n",
                    address, size / 1024);
 #endif // _DEBUG
         }
