@@ -159,7 +159,23 @@ internal class TestPlaceholderTarget : Target
     }
     public override void WriteBuffer(ulong address, Span<byte> buffer) => throw new NotImplementedException();
 
-    public override string ReadUtf8String(ulong address) => throw new NotImplementedException();
+    public override string ReadUtf8String(ulong address)
+    {
+        // Read bytes until we find the null terminator
+        ulong end = address;
+        while (Read<byte>(end) != 0)
+        {
+            end += 1;
+        }
+
+        int length = (int)(end - address);
+        if (length == 0)
+            return string.Empty;
+
+        Span<byte> span = new byte[length];
+        ReadBuffer(address, span);
+        return System.Text.Encoding.UTF8.GetString(span);
+    }
     public override string ReadUtf16String(ulong address)
     {
         // Read characters until we find the null terminator

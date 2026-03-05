@@ -80,4 +80,83 @@ public unsafe class LoaderTests
             Assert.Equal(string.Empty, actual);
         }
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetModuleSimpleName(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+
+        string expected = "TestModule";
+
+        TargetPointer moduleAddr = loader.AddModule(simpleName: expected);
+        TargetPointer moduleAddrEmpty = loader.AddModule();
+
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
+        ILoader contract = target.Contracts.Loader;
+        Assert.NotNull(contract);
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+            string actual = contract.GetModuleSimpleName(handle);
+            Assert.Equal(expected, actual);
+        }
+        {
+            Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddrEmpty);
+            string actual = contract.GetModuleSimpleName(handle);
+            Assert.Equal(string.Empty, actual);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetDomainAssemblyForModule(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+
+        TargetPointer expectedDA = new TargetPointer(0xABCD_0000);
+        TargetPointer moduleAddr = loader.AddModule(domainAssembly: expectedDA);
+
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
+        ILoader contract = target.Contracts.Loader;
+        Assert.NotNull(contract);
+
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        TargetPointer actual = contract.GetDomainAssemblyForModule(handle);
+        Assert.Equal(expectedDA, actual);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetAppDomain(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockLoader loader = new(builder);
+
+        TargetPointer expectedAppDomain = new TargetPointer(0x1234_5678);
+        loader.SetAppDomainGlobal(expectedAppDomain);
+
+        // Need a module to set up types, but the test is about globals
+        loader.AddModule();
+
+        var target = new TestPlaceholderTarget(arch, builder.GetMemoryContext().ReadFromTarget, loader.Types, loader.Globals);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Loader == ((IContractFactory<ILoader>)new LoaderFactory()).CreateContract(target, 1)));
+
+        ILoader contract = target.Contracts.Loader;
+        Assert.NotNull(contract);
+
+        TargetPointer actual = contract.GetAppDomain();
+        Assert.Equal(expectedAppDomain, actual);
+    }
 }
