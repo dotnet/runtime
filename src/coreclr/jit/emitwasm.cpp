@@ -185,7 +185,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             break;
         case EC_INDIR_R:
             ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
-            id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void*)params.wasmSignature);
+            id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void*)params.wasmSignature);
             id->idIns(ins);
             id->idInsFmt(IF_CALL_INDIRECT);
             break;

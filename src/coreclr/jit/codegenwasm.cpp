@@ -2259,38 +2259,52 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     params.argSize = argSize;
     params.retSize = retSize;
 
-    CorInfoWasmType *types = nullptr;
-    size_t typeCount = 0;
+    CorInfoWasmType* types           = nullptr;
+    size_t           typeCount       = 0;
+    bool             helperIsManaged = false;
 
-#define _SIG(helper_id, ...) \
-    case helper_id: \
-    { \
-        static CorInfoWasmType helper_id ## _types [] = {__VA_ARGS__}; \
-        types = helper_id ## _types; \
-        typeCount = ArrLen(helper_id ## _types); \
-        break; \
+    const bool MANAGED = true, UNMANAGED = false;
+
+#define _SIG(helper_id, is_managed, ...)                                                                               \
+    case helper_id:                                                                                                    \
+    {                                                                                                                  \
+        static CorInfoWasmType helper_id##_types[] = {__VA_ARGS__};                                                    \
+        types                                      = helper_id##_types;                                                \
+        typeCount                                  = ArrLen(helper_id##_types);                                        \
+        helperIsManaged                            = is_managed;                                                       \
+        break;                                                                                                         \
     }
 
     switch (helper)
     {
         // Managed throw helpers with no args
-        _SIG(CORINFO_HELP_RNGCHKFAIL,                CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
-        _SIG(CORINFO_HELP_OVERFLOW,                  CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
-        _SIG(CORINFO_HELP_THROWDIVZERO,              CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
-        _SIG(CORINFO_HELP_THROWNULLREF,              CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */, CORINFO_WASM_TYPE_I32 /* pep */);
+        _SIG(CORINFO_HELP_RNGCHKFAIL, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */,
+             CORINFO_WASM_TYPE_I32 /* pep */);
+        _SIG(CORINFO_HELP_OVERFLOW, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */,
+             CORINFO_WASM_TYPE_I32 /* pep */);
+        _SIG(CORINFO_HELP_THROWDIVZERO, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */,
+             CORINFO_WASM_TYPE_I32 /* pep */);
+        _SIG(CORINFO_HELP_THROWNULLREF, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32 /* sp */,
+             CORINFO_WASM_TYPE_I32 /* pep */);
         // RhpAssignRef
-        _SIG(CORINFO_HELP_ASSIGN_REF,                CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
+        _SIG(CORINFO_HELP_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32,
+             CORINFO_WASM_TYPE_I32);
         // RhpCheckedAssignRef
-        _SIG(CORINFO_HELP_CHECKED_ASSIGN_REF,        CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
+        _SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32,
+             CORINFO_WASM_TYPE_I32);
         // JIT_WriteBarrierEnsureNonHeapTarget
-        _SIG(CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
+        _SIG(CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+             CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
         // RhpByRefAssignRef
-        _SIG(CORINFO_HELP_ASSIGN_BYREF,              CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
+        _SIG(CORINFO_HELP_ASSIGN_BYREF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32,
+             CORINFO_WASM_TYPE_I32);
         // RhBulkMoveWithWriteBarrier
-        _SIG(CORINFO_HELP_BULK_WRITEBARRIER,         CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
+        _SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32,
+             CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
 
         default:
-            JITDUMP("Helper %d (%s) has no hard-coded signature\n", helper, GetCompiler()->eeGetMethodFullName(params.methHnd));
+            JITDUMP("Helper %d (%s) has no hard-coded signature\n", helper,
+                    GetCompiler()->eeGetMethodFullName(params.methHnd));
             NYI_WASM("signature for unrecognized helper in genEmitHelperCall");
             unreached();
     }
@@ -2764,9 +2778,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         }
         else
         {
-            // Load the sp onto the stack for the helper call.
-            // TODO-WASM: Implement a special calling convention for this helper that doesn't accept sp/pep.
-            emit->emitIns_I(INS_local_get, EA_PTRSIZE, WasmRegToIndex(GetStackPointerReg()));
             // Compute the actual dest/src of the slot being copied to pass to the helper.
             emit->emitIns_I(INS_local_get, attrDstAddr, WasmRegToIndex(dstReg));
             emit->emitIns_I(INS_I_const, attrDstAddr, dstOffset);
@@ -2774,7 +2785,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             emit->emitIns_I(INS_local_get, attrSrcAddr, WasmRegToIndex(srcReg));
             emit->emitIns_I(INS_I_const, attrSrcAddr, srcOffset);
             emit->emitIns(INS_I_add);
-            // TODO-WASM: don't load PEP in genEmitHelperCall for write barriers.
+            // NOTE: This helper's signature does omits SP/PEP so all we need on the stack is dst and src.
             // TODO-WASM-CQ: add a version of CORINFO_HELP_ASSIGN_BYREF that returns the updated dest/src
             // pointers as a multi-value tuple and use it here.
             genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
