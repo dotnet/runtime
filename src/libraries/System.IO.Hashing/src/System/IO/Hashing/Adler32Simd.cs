@@ -84,14 +84,13 @@ file static class Adler32Simd
         bufRef = ref Unsafe.Add(ref bufRef, loopVectors * (uint)Vector128<byte>.Count);
 
         Vector128<byte> weights = Vector128.CreateSequence((byte)16, unchecked((byte)-1));
-        Vector128<uint> vps;
 
         if ((vectors & 1) != 0)
         {
             Vector128<byte> bytes = Vector128.LoadUnsafe(ref bufRef);
             bufRef = ref Unsafe.Add(ref bufRef, (uint)Vector128<byte>.Count);
 
-            vps = vs1;
+            Vector128<uint> vps = vs1;
 
             vs1 = TAccumulate.Accumulate(vs1, bytes);
             vs2 = TDotProduct.DotProduct(vs2, bytes, weights);
@@ -106,7 +105,7 @@ file static class Adler32Simd
             Vector128<byte> bytes = Vector128.LoadUnsafe(ref Unsafe.Subtract(ref bufRef, (uint)Vector128<byte>.Count - len));
             bytes &= Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(MaskBytes), len);
 
-            vps = vs1;
+            Vector128<uint> vps = vs1;
 
             vs1 = TAccumulate.Accumulate(vs1, bytes);
             vs2 = TDotProduct.DotProduct(vs2, bytes, weights);
@@ -170,14 +169,13 @@ file struct AdlerVector128 : ISimdStrategy
                 vps += vs1;
 
                 vs1 = TAccumulate.Accumulate(vs1, bytes1, bytes2);
-
                 vs2 = TDotProduct.DotProduct(vs2, bytes1, weights1);
                 vs3 = TDotProduct.DotProduct(vs3, bytes2, weights2);
             }
             while (--blocks != 0);
 
-            vs2 += vs3;
             vs2 += vps << 5;
+            vs2 += vs3;
 
             vs1 = QuickModBase(vs1);
             vs2 = QuickModBase(vs2);
@@ -227,14 +225,13 @@ file struct AdlerVector256 : ISimdStrategy
                 wps += ws1;
 
                 ws1 = TAccumulate.Accumulate(ws1, bytes1, bytes2);
-
                 ws2 = TDotProduct.DotProduct(ws2, bytes1, weights1);
                 ws3 = TDotProduct.DotProduct(ws3, bytes2, weights2);
             }
             while (--blocks != 0);
 
-            ws2 += ws3;
             ws2 += wps << 6;
+            ws2 += ws3;
 
             ws1 = QuickModBase(ws1);
             ws2 = QuickModBase(ws2);
@@ -294,14 +291,14 @@ file struct AccumulateArm64 : ISimdAccumulate
         => AdvSimd.Arm64.AddAcrossWidening(bytes).AsUInt32().ToVector128Unsafe() + sums;
 
     public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes)
-        => throw new NotImplementedException();
+        => throw new UnreachableException();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector128<uint> Accumulate(Vector128<uint> sums, Vector128<byte> bytes1, Vector128<byte> bytes2)
         => AdvSimd.AddPairwiseWideningAndAdd(sums, AdvSimd.AddPairwiseWideningAndAdd(AdvSimd.AddPairwiseWidening(bytes1), bytes2));
 
     public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes1, Vector256<byte> bytes2)
-        => throw new NotImplementedException();
+        => throw new UnreachableException();
 }
 
 file struct AccumulateXplat : ISimdAccumulate
@@ -315,7 +312,7 @@ file struct AccumulateXplat : ISimdAccumulate
     }
 
     public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes)
-        => throw new NotImplementedException();
+        => throw new UnreachableException();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector128<uint> Accumulate(Vector128<uint> sums, Vector128<byte> bytes1, Vector128<byte> bytes2)
@@ -327,7 +324,7 @@ file struct AccumulateXplat : ISimdAccumulate
     }
 
     public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes1, Vector256<byte> bytes2)
-        => throw new NotImplementedException();
+        => throw new UnreachableException();
 }
 
 file struct DotProductX86 : ISimdDotProduct
@@ -358,7 +355,7 @@ file struct DotProductArm64 : ISimdDotProduct
     }
 
     public static Vector256<uint> DotProduct(Vector256<uint> addend, Vector256<byte> left, Vector256<byte> right)
-        => throw new NotImplementedException();
+        => throw new UnreachableException();
 }
 
 file struct DotProductArm64Dp : ISimdDotProduct
@@ -368,7 +365,7 @@ file struct DotProductArm64Dp : ISimdDotProduct
         => Dp.DotProduct(addend, left, right);
 
     public static Vector256<uint> DotProduct(Vector256<uint> addend, Vector256<byte> left, Vector256<byte> right)
-        => throw new NotImplementedException();
+        => throw new UnreachableException();
 }
 
 file struct DotProductXplat : ISimdDotProduct
@@ -383,7 +380,7 @@ file struct DotProductXplat : ISimdDotProduct
     }
 
     public static Vector256<uint> DotProduct(Vector256<uint> addend, Vector256<byte> left, Vector256<byte> right)
-        => throw new NotImplementedException();
+        => throw new UnreachableException();
 }
 
 file interface ISimdAccumulate
