@@ -20,7 +20,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 namespace System.Diagnostics.CodeAnalysis
 {
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
     public sealed class RequiresUnsafeAttribute : Attribute
     { }
 }";

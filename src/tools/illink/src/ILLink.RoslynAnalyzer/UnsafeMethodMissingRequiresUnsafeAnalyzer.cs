@@ -5,8 +5,6 @@
 using System.Collections.Immutable;
 using ILLink.Shared;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer
@@ -29,43 +27,47 @@ namespace ILLink.RoslynAnalyzer
                 if (context.Compilation.GetTypeByMetadataName (RequiresUnsafeAnalyzer.FullyQualifiedRequiresUnsafeAttribute) is null)
                     return;
 
-                context.RegisterSyntaxNodeAction (
-                    AnalyzeNode,
-                    SyntaxKind.MethodDeclaration,
-                    SyntaxKind.ConstructorDeclaration,
-                    SyntaxKind.LocalFunctionStatement);
+                context.RegisterSymbolAction (
+                    AnalyzeMethod,
+                    SymbolKind.Method);
             });
         }
 
-        private static void AnalyzeNode (SyntaxNodeAnalysisContext context)
+        private static void AnalyzeMethod (SymbolAnalysisContext context)
         {
-            if (!HasUnsafeModifier (context.Node))
+            if (context.Symbol is not IMethodSymbol method)
                 return;
 
-            var symbol = context.SemanticModel.GetDeclaredSymbol (context.Node, context.CancellationToken);
-            if (symbol is null)
+            if (!HasPointerInSignature (method))
                 return;
 
-            if (symbol.HasAttribute (RequiresUnsafeAnalyzer.RequiresUnsafeAttributeName))
+            if (method.HasAttribute (RequiresUnsafeAnalyzer.RequiresUnsafeAttributeName))
                 return;
 
-            var location = GetDiagnosticLocation (context.Node);
-            context.ReportDiagnostic (Diagnostic.Create (s_rule, location, symbol.GetDisplayName ()));
+            // For property/indexer accessors, check the containing property instead
+            if (method.AssociatedSymbol is IPropertySymbol property
+                && property.HasAttribute (RequiresUnsafeAnalyzer.RequiresUnsafeAttributeName))
+                return;
+
+            foreach (var location in method.Locations) {
+                context.ReportDiagnostic (Diagnostic.Create (s_rule, location, method.GetDisplayName ()));
+            }
         }
 
-        private static bool HasUnsafeModifier (SyntaxNode node) => node switch {
-            MethodDeclarationSyntax method => method.Modifiers.Any (SyntaxKind.UnsafeKeyword),
-            ConstructorDeclarationSyntax ctor => ctor.Modifiers.Any (SyntaxKind.UnsafeKeyword),
-            LocalFunctionStatementSyntax localFunc => localFunc.Modifiers.Any (SyntaxKind.UnsafeKeyword),
-            _ => false,
-        };
+        private static bool HasPointerInSignature (IMethodSymbol method)
+        {
+            if (IsPointerType (method.ReturnType))
+                return true;
 
-        private static Location GetDiagnosticLocation (SyntaxNode node) => node switch {
-            MethodDeclarationSyntax method => method.Identifier.GetLocation (),
-            ConstructorDeclarationSyntax ctor => ctor.Identifier.GetLocation (),
-            LocalFunctionStatementSyntax localFunc => localFunc.Identifier.GetLocation (),
-            _ => node.GetLocation (),
-        };
+            foreach (var param in method.Parameters) {
+                if (IsPointerType (param.Type))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsPointerType (ITypeSymbol type) => type is IPointerTypeSymbol or IFunctionPointerTypeSymbol;
     }
 }
 #endif

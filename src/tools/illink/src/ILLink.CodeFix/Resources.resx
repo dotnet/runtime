@@ -136,6 +136,6 @@
     <value>Add DynamicallyAccessedMembers attribute to source of warning</value>
   </data>
   <data name="UnsafeMethodMissingRequiresUnsafeCodeFixTitle" xml:space="preserve">
-    <value>Add RequiresUnsafe attribute to unsafe method</value>
+    <value>Add RequiresUnsafe attribute to method with pointer types</value>
   </data>
 </root>

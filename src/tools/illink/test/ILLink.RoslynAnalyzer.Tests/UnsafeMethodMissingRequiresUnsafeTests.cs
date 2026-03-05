@@ -21,7 +21,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
             namespace System.Diagnostics.CodeAnalysis
             {
-                [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
+                [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
                 public sealed class RequiresUnsafeAttribute : Attribute { }
             }
             """;
@@ -84,6 +84,21 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 public class C
                 {
                     [RequiresUnsafe]
+                    public unsafe int* M() => default;
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            await VerifyNoDiagnostic(source);
+        }
+
+        [Fact]
+        public async Task UnsafeMethodWithoutPointerTypes_NoDiagnostic()
+        {
+            var source = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C
+                {
                     public unsafe void M() { }
                 }
                 """ + RequiresUnsafeAttributeDefinition;
@@ -107,29 +122,14 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
         }
 
         [Fact]
-        public async Task UnsafeClassNonUnsafeMethod_NoDiagnostic()
-        {
-            var source = """
-                using System.Diagnostics.CodeAnalysis;
-
-                public unsafe class C
-                {
-                    public void M() { }
-                }
-                """ + RequiresUnsafeAttributeDefinition;
-
-            await VerifyNoDiagnostic(source);
-        }
-
-        [Fact]
-        public async Task CodeFix_UnsafeMethod_AddsAttribute()
+        public async Task CodeFix_MethodReturningPointer_AddsAttribute()
         {
             var source = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    public unsafe void M() { }
+                    public unsafe int* M() => default;
                 }
                 """ + RequiresUnsafeAttributeDefinition;
 
@@ -139,7 +139,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 public class C
                 {
                     [RequiresUnsafe]
-                    public unsafe void M() { }
+                    public unsafe int* M() => default;
                 }
                 """ + RequiresUnsafeAttributeDefinition;
 
@@ -155,14 +155,14 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
         }
 
         [Fact]
-        public async Task CodeFix_UnsafeConstructor_AddsAttribute()
+        public async Task CodeFix_MethodTakingPointerParam_AddsAttribute()
         {
             var source = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    public unsafe C() { }
+                    public unsafe void M(int* p) { }
                 }
                 """ + RequiresUnsafeAttributeDefinition;
 
@@ -172,7 +172,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 public class C
                 {
                     [RequiresUnsafe]
-                    public unsafe C() { }
+                    public unsafe void M(int* p) { }
                 }
                 """ + RequiresUnsafeAttributeDefinition;
 
@@ -181,24 +181,21 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 fixedSource,
                 baselineExpected: new[] {
                     VerifyCS.Diagnostic(DiagnosticId.UnsafeMethodMissingRequiresUnsafe)
-                        .WithSpan(5, 19, 5, 20)
-                        .WithArguments("C.C()")
+                        .WithSpan(5, 24, 5, 25)
+                        .WithArguments("C.M(Int32*)")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult> ());
         }
 
         [Fact]
-        public async Task CodeFix_UnsafeLocalFunction_AddsAttribute()
+        public async Task CodeFix_MethodTakingFunctionPointer_AddsAttribute()
         {
             var source = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    public void M()
-                    {
-                        unsafe void LocalFunc() { }
-                    }
+                    public unsafe void M(delegate*<void> f) { }
                 }
                 """ + RequiresUnsafeAttributeDefinition;
 
@@ -207,10 +204,8 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    public void M()
-                    {
-                        [RequiresUnsafe] unsafe void LocalFunc() { }
-                    }
+                    [RequiresUnsafe]
+                    public unsafe void M(delegate*<void> f) { }
                 }
                 """ + RequiresUnsafeAttributeDefinition;
 
@@ -219,10 +214,59 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 fixedSource,
                 baselineExpected: new[] {
                     VerifyCS.Diagnostic(DiagnosticId.UnsafeMethodMissingRequiresUnsafe)
-                        .WithSpan(7, 21, 7, 30)
-                        .WithArguments("LocalFunc()")
+                        .WithSpan(5, 24, 5, 25)
+                        .WithArguments("C.M(delegate*<Void>)")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult> ());
+        }
+
+        [Fact]
+        public async Task CodeFix_PropertyReturningPointer_AddsAttribute()
+        {
+            var source = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public unsafe class C
+                {
+                    public int* P => default;
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            var fixedSource = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public unsafe class C
+                {
+                    [RequiresUnsafe]
+                    public int* P => default;
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            await VerifyCodeFix(
+                source,
+                fixedSource,
+                baselineExpected: new[] {
+                    VerifyCS.Diagnostic(DiagnosticId.UnsafeMethodMissingRequiresUnsafe)
+                        .WithSpan(5, 22, 5, 29)
+                        .WithArguments("C.P.get")
+                },
+                fixedExpected: Array.Empty<DiagnosticResult> ());
+        }
+
+        [Fact]
+        public async Task PropertyAlreadyAttributed_NoDiagnostic()
+        {
+            var source = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public unsafe class C
+                {
+                    [RequiresUnsafe]
+                    public int* P => default;
+                }
+                """ + RequiresUnsafeAttributeDefinition;
+
+            await VerifyNoDiagnostic(source);
         }
     }
 }

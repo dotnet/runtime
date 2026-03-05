@@ -38,10 +38,11 @@ namespace ILLink.CodeFix
                 return;
 
             var node = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
-            var declarationNode = node is Microsoft.CodeAnalysis.CSharp.Syntax.BaseMethodDeclarationSyntax
-                or Microsoft.CodeAnalysis.CSharp.Syntax.LocalFunctionStatementSyntax
-                ? node
-                : node.Parent;
+            var declarationNode = node.AncestorsAndSelf().FirstOrDefault(
+                n => n is Microsoft.CodeAnalysis.CSharp.Syntax.BaseMethodDeclarationSyntax
+                  or Microsoft.CodeAnalysis.CSharp.Syntax.LocalFunctionStatementSyntax
+                  or Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax
+                  or Microsoft.CodeAnalysis.CSharp.Syntax.IndexerDeclarationSyntax);
             if (declarationNode is null)
                 return;
 
