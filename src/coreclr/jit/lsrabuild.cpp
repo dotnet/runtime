@@ -320,6 +320,15 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
             }
             if (!useRegConflict)
             {
+                // The use-reg may be busy at this point due to being a
+                // delay-free use from the previous location.
+                if (isRegInUse(useReg, interval->registerType))
+                {
+                    useRegConflict = true;
+                }
+            }
+            if (!useRegConflict)
+            {
                 // This is case #2.  Use the useRegAssignment
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE2, interval));
                 defRefPosition->registerAssignment = useRegAssignment;
