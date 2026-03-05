@@ -7808,7 +7808,7 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
         if (sigType == TYP_STRUCT)
         {
             var_types normSigType = impNormStructType(classHnd);
-            sigType == (normSigType == TYP_HALF) ? TYP_HALF : sigType;
+            sigType = (normSigType == TYP_HALF) ? TYP_HALF : sigType;
         }
 #endif
 
