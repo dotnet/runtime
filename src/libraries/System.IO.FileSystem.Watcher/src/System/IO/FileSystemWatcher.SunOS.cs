@@ -37,10 +37,6 @@
 // - Attributes/Security/CreationTime: FILE_ATTRIB on individual files
 // - LastAccess: FILE_ACCESS on individual files
 //
-// Resource Limits:
-// - Max 50 subdirectories per directory
-// - Max 1000 files watched per directory (when watching attributes)
-//
 // Why not inotify?  There is an inotify implementation on some illumos distributions.
 // This implementation does not use inotify because that would restrict us to only
 // those distributions that have it, and even for those that do, the developers have
@@ -290,8 +286,6 @@ namespace System.IO
 
             private void AssociateFiles(DirectorySnapshot snapshot)
             {
-                int filesAssociated = 0;
-
                 foreach ((string name, FileEntry entry) in snapshot.SortedEntries)
                 {
 
@@ -333,7 +327,6 @@ namespace System.IO
                             // Only add to maps on success
                             _cookieToNameMap[cookie] = name;
                             _nameToWatchMap[name] = (cookie, buffer);
-                            filesAssociated++;
                         }
                     }
                 }
@@ -341,8 +334,6 @@ namespace System.IO
 
             private void CreateSubdirectoryWatchers(DirectorySnapshot snapshot)
             {
-                int subdirCount = 0;
-
                 foreach ((string name, FileEntry entry) in snapshot.SortedEntries)
                 {
                     if (!entry.IsDirectory)
@@ -371,7 +362,6 @@ namespace System.IO
                             {
                                 _subdirectoryWatchers.Add(childWatcher);
                             }
-                            subdirCount++;
                         }
                     }
                     catch (Exception ex)
