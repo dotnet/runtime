@@ -523,7 +523,11 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
         public void NotReadyDriveAsPath_ThrowsDirectoryNotFoundException()
         {   // Behavior is suspect, should really have thrown IOException similar to the SubDirectory case
-            string drive = s_notReadyDrive ?? throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+            var drive = IOServices.GetNotReadyDrive();
+            if (drive is null)
+            {
+                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+            }
 
             Assert.Throws<DirectoryNotFoundException>(() =>
             {
@@ -535,7 +539,11 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // testing drive labels
         public void SubdirectoryOnNotReadyDriveAsPath_ThrowsIOException()
         {
-            string drive = s_notReadyDrive ?? throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+            var drive = IOServices.GetNotReadyDrive();
+            if (drive is null)
+            {
+                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+            }
 
             // 'Device is not ready'
             Assert.Throws<IOException>(() =>
@@ -543,8 +551,6 @@ namespace System.IO.Tests
                 Create(Path.Combine(drive, "Subdirectory"));
             });
         }
-
-        private static readonly string? s_notReadyDrive = OperatingSystem.IsWindows() ? IOServices.GetNotReadyDrive() : null;
 
 #if !TEST_WINRT // Cannot set current directory to root from appcontainer with it's default ACL
         /*

@@ -306,7 +306,11 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void NotReadyDriveAsPath_ReturnsFalse()
         {
-            string drive = s_notReadyDrive ?? throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+            var drive = IOServices.GetNotReadyDrive();
+            if (drive is null)
+            {
+                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+            }
 
             bool result = Exists(drive);
 
@@ -317,14 +321,16 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void SubdirectoryOnNotReadyDriveAsPath_ReturnsFalse()
         {
-            string drive = s_notReadyDrive ?? throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+            var drive = IOServices.GetNotReadyDrive();
+            if (drive is null)
+            {
+                throw new SkipTestException("Unable to find a not-ready drive, such as CD-Rom with no disc inserted.");
+            }
 
             bool result = Exists(Path.Combine(drive, "Subdirectory"));
 
             Assert.False(result);
         }
-
-        private static readonly string? s_notReadyDrive = OperatingSystem.IsWindows() ? IOServices.GetNotReadyDrive() : null;
 
         // Not all drives may be accessible (locked, no rights, etc.), and as such would return false.
         // eg. Create a new volume, bitlocker it, and lock it. This new volume is no longer accessible
