@@ -160,31 +160,24 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         #region Random input generation tests
-        public static IEnumerable<object[]> SampledMatchesMatchAsExpected_TestData()
+        /// <summary>Test random input generation correctness</summary>
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task SampledMatchesMatchAsExpected()
         {
             string[] patterns = [@"pa[5\$s]{2}w[o0]rd$", @"\w\d+", @"\d{10}"];
             foreach (string pattern in patterns)
             {
                 Regex re = new Regex(pattern, RegexHelpers.RegexOptionNonBacktracking);
-                // Generate 3 inputs
                 List<string> inputs = new(SampleMatchesViaReflection(re, 3, pattern.GetHashCode()));
                 foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
                 {
+                    Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern);
                     foreach (string input in inputs)
                     {
-                        yield return new object[] { engine, pattern, input };
+                        Assert.True(regex.IsMatch(input));
                     }
                 }
             }
-        }
-
-        /// <summary>Test random input generation correctness</summary>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        [MemberData(nameof(SampledMatchesMatchAsExpected_TestData))]
-        public async Task SampledMatchesMatchAsExpected(RegexEngine engine, string pattern, string input)
-        {
-            Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern);
-            Assert.True(regex.IsMatch(input));
         }
 
         private static IEnumerable<string> SampleMatchesViaReflection(Regex regex, int how_many_inputs, int randomseed)
