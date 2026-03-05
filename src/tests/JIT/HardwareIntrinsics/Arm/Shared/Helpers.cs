@@ -7797,7 +7797,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return even;
         }
 
-        public static T[] Match<T>(T[] mask, T[] left, T[] right)
+        public static T[] Match<T>(T[] mask, T[] left, T[] right, bool isNoMatch = false)
             where T : unmanaged, IBinaryInteger<T>
         {
             T[] result = new T[left.Length];
@@ -7814,7 +7814,14 @@ namespace JIT.HardwareIntrinsics.Arm
                             break;
                         }
                     }
-                    result[i] = found ? T.One : T.Zero;
+                    if (isNoMatch)
+                    {
+                        result[i] = found ? T.Zero : T.One;
+                    }
+                    else
+                    {
+                        result[i] = found ? T.One : T.Zero;
+                    }
                 }
                 else
                 {
@@ -7826,30 +7833,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static T[] NoMatch<T>(T[] mask, T[] left, T[] right)
             where T : unmanaged, IBinaryInteger<T>
-        {
-            T[] result = new T[left.Length];
-            for (int i = 0; i < left.Length; i++)
-            {
-                if (mask[i] != T.Zero)
-                {
-                    bool found = false;
-                    for (int j = 0; j < right.Length; j++)
-                    {
-                        if (left[i] == right[j])
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    result[i] = found ? T.Zero : T.One;
-                }
-                else
-                {
-                    result[i] = T.Zero;
-                }
-            }
-            return result;
-        }
+            => Match(mask, left, right, isNoMatch: true);
 
         public static T[] SubtractBorrowWideningEven<T>(T[] op1, T[] op2, T[] op3)
             where T : unmanaged, IBinaryInteger<T>
