@@ -6343,9 +6343,22 @@ PhaseStatus Compiler::optAssertionPropMain()
                     printf("\n");
                 }
 #endif
+                // Record BBJ_COND state before morphing so we can fix up
+                // bbAssertionOut if fgFoldConditional converts to BBJ_ALWAYS.
+                bool      wasCond  = block->KindIs(BBJ_COND);
+                FlowEdge* trueEdge = wasCond ? block->GetTrueEdge() : nullptr;
+
                 // Re-morph the statement.
                 fgMorphBlockStmt(block, stmt DEBUGARG("optAssertionPropMain"));
                 madeChanges = true;
+
+                // If a BBJ_COND was folded to BBJ_ALWAYS taking the true edge,
+                // bbAssertionOut still has false-edge assertions. Update it to
+                // the true-edge assertions from bbJtrueAssertionOut.
+                if (wasCond && block->KindIs(BBJ_ALWAYS) && (block->GetTargetEdge() == trueEdge))
+                {
+                    BitVecOps::Assign(apTraits, block->bbAssertionOut, bbJtrueAssertionOut[block->bbNum]);
+                }
             }
 
             // Check if propagation removed statements starting from current stmt.
