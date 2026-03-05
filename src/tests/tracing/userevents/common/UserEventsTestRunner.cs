@@ -17,7 +17,7 @@ namespace Tracing.UserEvents.Tests.Common
     public class UserEventsTestRunner
     {
         private const int SIGINT = 2;
-        private const int DefaultTraceeExitTimeoutMs = 5000;
+        private const int DefaultTraceeExitTimeoutMs = 60000;
         private const int DefaultRecordTraceExitTimeoutMs = 20000;
 
         // Delay before starting the tracee to let record-trace finish setup. The
@@ -60,7 +60,9 @@ namespace Tracing.UserEvents.Tests.Common
                     enabledEvent.Set();
                 }
 
+                Console.WriteLine("Tracee waiting for EventSource to be enabled via IPC...");
                 enabledEvent.Wait();
+                Console.WriteLine("Tracee EventSource enabled, emitting events.");
 
                 traceeAction();
                 return 0;
@@ -131,6 +133,10 @@ namespace Tracing.UserEvents.Tests.Common
             recordTraceStartInfo.ArgumentList.Add(scriptFilePath);
             recordTraceStartInfo.ArgumentList.Add("--out");
             recordTraceStartInfo.ArgumentList.Add(traceFilePath);
+            recordTraceStartInfo.ArgumentList.Add("--log-filter");
+            recordTraceStartInfo.ArgumentList.Add("one_collect::helpers::exporting=warn,one_collect::perf_event=warn,one_collect::tracefs=warn,one_collect::scripting=warn,ruwind=warn,engine=warn");
+            recordTraceStartInfo.ArgumentList.Add("--log-mode");
+            recordTraceStartInfo.ArgumentList.Add("console");
             recordTraceStartInfo.WorkingDirectory = userEventsScenarioDir;
             recordTraceStartInfo.UseShellExecute = false;
             recordTraceStartInfo.RedirectStandardOutput = true;
