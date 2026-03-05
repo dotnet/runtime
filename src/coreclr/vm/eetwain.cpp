@@ -1991,6 +1991,14 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
     pContext->Xmm13 = fpRegs[7];
     pContext->Xmm14 = fpRegs[8];
     pContext->Xmm15 = fpRegs[9];
+
+    // ClrRestoreNonvolatileContextWorker uses fxrstor on this CONTEXT. Keep the
+    // FP control state at runtime defaults so resume-after-catch does not enable
+    // spurious FP traps (e.g. STATUS_FLOAT_INEXACT_RESULT).
+    pContext->FltSave.ControlWord = 0x27F;
+    pContext->FltSave.MxCsr = 0x1F80;
+    pContext->FltSave.MxCsr_Mask = 0x1FFF;
+    pContext->MxCsr = 0x1F80;
 #endif // TARGET_UNIX
 #elif defined(TARGET_X86)
     pContext->Edi = pRegs->Edi;
