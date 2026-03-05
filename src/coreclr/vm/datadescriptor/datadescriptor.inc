@@ -10,7 +10,7 @@
 // Tools can use this to display an advisory notice to users encouraging them to update. Changing
 // this value on its own is not considered a breaking change. See the RuntimeInfo.md data contract for details.
 // When incrementing this value, also implement the new functionality in the cDAC reader and update the
-// CurrentReaderVersion property on the IRuntimeInfo contract in
+// GetCurrentReaderVersion() method on the IRuntimeInfo contract in
 // src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
 // to match.
 #ifndef CDAC_RECOMMENDED_READER_VERSION

@@ -53,7 +53,7 @@ respective enum case-insensitively. If these globals are not available, the cont
 ### Reader versioning scheme
 
 When the .NET runtime team wants to signal that an update is recommended we update both the
-`CurrentReaderVersion` constant in the cDAC implementation and the `RecommendedReaderVersion`
+value returned by `GetCurrentReaderVersion()` in the cDAC implementation and the `RecommendedReaderVersion`
 global value in the runtime. This causes older tools on older cDAC versions to observe
-RecommendedReaderVersion > CurrentReaderVersion. The tool can notify the user that an update
+`GetRecommendedReaderVersion()` > `GetCurrentReaderVersion()`. The tool can notify the user that an update
 is recommended.
