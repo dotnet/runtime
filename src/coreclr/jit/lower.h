@@ -463,6 +463,7 @@ private:
     GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
+    bool     TryInvertMask(GenTree* node, unsigned simdSize, var_types simdBaseType);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
@@ -636,6 +637,12 @@ private:
 
 #ifdef TARGET_WASM
     ArrayStack<GenTree*> m_stackificationStack;
+
+    static void SetMultiplyUsed(GenTree* node)
+    {
+        assert(node->gtType != TYP_STRUCT);
+        node->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+    }
 #endif
 };
 

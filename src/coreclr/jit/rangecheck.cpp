@@ -511,6 +511,12 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
 {
     JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
 
+    if (IsOverBudget())
+    {
+        return false;
+    }
+    m_nVisitBudget--;
+
     // Add hashtable entry for expr.
     bool alreadyPresent = GetSearchPath()->Set(expr, nullptr, SearchPath::Overwrite);
     if (alreadyPresent)
@@ -1024,6 +1030,40 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             {
                 continue;
             }
+        }
+        // If we're not allowed to emit keBinOpArray, we still can deduce something useful from
+        // O2K_CHECKED_BOUND_ADD_CNS for never negative checked bounds
+        //
+        //  Example: "(uint)normalLclVN < span.Length"   means normalLclVN's range is [0..INT32_MAX-1]
+        //  Example: "(uint)normalLclVN <= array.Length" means normalLclVN's range is [0..Array.MaxLength]
+        //
+        else if (!canUseCheckedBounds && curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == normalLclVN) &&
+                 (curAssertion.GetOp2().KindIs(Compiler::O2K_CHECKED_BOUND_ADD_CNS)) &&
+                 (curAssertion.GetOp2().IsCheckedBoundNeverNegative()) &&
+                 (curAssertion.GetOp2().GetCheckedBoundConstant() == 0))
+        {
+            // We can assume that the checked bound is within [0..INT32_MAX] thanks to IsCheckedBoundNeverNegative,
+            // but let's see if we can do better: we could call GetRangeFromAssertions on the checked bound's VN,
+            // but that may lead to infinite recursion. Also, the checked bound is usually either arr.Length or
+            // span.Length anyway.
+            ValueNum checkedBoundVN = curAssertion.GetOp2().GetCheckedBound();
+
+            int maxValue = INT32_MAX;
+            if (comp->vnStore->IsVNArrLen(checkedBoundVN))
+            {
+                maxValue = CORINFO_Array_MaxLength;
+            }
+            else
+            {
+                int cns;
+                if (comp->vnStore->IsVNIntegralConstant(checkedBoundVN, &cns) && (cns >= 0))
+                {
+                    maxValue = cns;
+                }
+            }
+
+            cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+            limit   = Limit(Limit::keConstant, maxValue);
         }
         // Current assertion is of the form "i <relop> (checkedBndVN + cns)"
         else if (curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
@@ -1789,6 +1829,13 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     ValueNumStore* vnStore = m_compiler->vnStore;
 
     JITDUMP("Does overflow [%06d]?\n", Compiler::dspTreeID(expr));
+
+    if (IsOverBudget())
+    {
+        return true;
+    }
+    m_nVisitBudget--;
+
     GetSearchPath()->Set(expr, block, SearchPath::Overwrite);
 
     bool overflows = true;
