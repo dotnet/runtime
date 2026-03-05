@@ -471,13 +471,12 @@ enum ReadyToRunHelper
 
     READYTORUN_HELPER_GetCurrentManagedThreadId = 0x112,
 
+    READYTORUN_HELPER_AllocContinuation         = 0x113,
+    READYTORUN_HELPER_AllocContinuationClass    = 0x114,
+    READYTORUN_HELPER_AllocContinuationMethod   = 0x115,
+
     READYTORUN_HELPER_InitClass                 = 0x116,
     READYTORUN_HELPER_InitInstClass             = 0x117,
-
-    // Helpers for runtime async (see System.Runtime.CompilerServices.AsyncHelpers)
-    READYTORUN_HELPER_AllocContinuation              = 0x120,
-    READYTORUN_HELPER_AllocContinuationClass         = 0x121,
-    READYTORUN_HELPER_AllocContinuationMethod        = 0x122,
 };
 
 #include "readytoruninstructionset.h"

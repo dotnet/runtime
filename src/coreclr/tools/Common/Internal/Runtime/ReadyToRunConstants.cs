@@ -356,13 +356,13 @@ namespace Internal.ReadyToRunConstants
 
         GetCurrentManagedThreadId   = 0x112,
 
+        AllocContinuation              = 0x113,
+        AllocContinuationClass         = 0x114,
+        AllocContinuationMethod        = 0x115,
+
         InitClass                   = 0x116,
         InitInstClass               = 0x117,
 
-        // Helpers for runtime async (see System.Runtime.CompilerServices.AsyncHelpers)
-        AllocContinuation              = 0x120,
-        AllocContinuationClass         = 0x121,
-        AllocContinuationMethod        = 0x122,
         // **********************************************************************************************
         //
         // These are not actually part of the R2R file format. We have them here because it's convenient.
