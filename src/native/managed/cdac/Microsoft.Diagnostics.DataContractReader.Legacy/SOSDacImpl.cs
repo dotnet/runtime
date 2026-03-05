@@ -1510,10 +1510,9 @@ public sealed unsafe partial class SOSDacImpl
         }
     }
 
-    int ISOSDacInterface.GetHandleEnum(out ISOSHandleEnum? ppHandleEnum)
+    int ISOSDacInterface.GetHandleEnum(DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
     {
         int hr = HResults.S_OK;
-        ppHandleEnum = default;
         try
         {
             IGC gc = _target.Contracts.GC;
@@ -1522,14 +1521,16 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
             if (_legacyImpl is not null)
             {
-                int hrLocal = _legacyImpl.GetHandleEnum(out legacyHandleEnum);
+                DacComNullableByRef<ISOSHandleEnum> legacyOut = new(isNullRef: false);
+                int hrLocal = _legacyImpl.GetHandleEnum(legacyOut);
                 Debug.ValidateHResult(hr, hrLocal);
+                legacyHandleEnum = legacyOut.Interface;
             }
 #endif
-            ppHandleEnum = new SOSHandleEnum(_target, supportedHandleTypes, legacyHandleEnum);
+            ppHandleEnum.Interface = new SOSHandleEnum(_target, supportedHandleTypes, legacyHandleEnum);
             // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
             // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
-            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum);
+            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum.Interface);
         }
         catch (System.Exception ex)
         {
@@ -1537,28 +1538,29 @@ public sealed unsafe partial class SOSDacImpl
         }
         return hr;
     }
-    int ISOSDacInterface.GetHandleEnumForGC(uint gen, void** ppHandleEnum)
+    int ISOSDacInterface.GetHandleEnumForGC(uint gen, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
         => _legacyImpl is not null ? _legacyImpl.GetHandleEnumForGC(gen, ppHandleEnum) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetHandleEnumForTypes([In, MarshalUsing(CountElementName = "count")] uint[] types, uint count, out ISOSHandleEnum? ppHandleEnum)
+    int ISOSDacInterface.GetHandleEnumForTypes([In, MarshalUsing(CountElementName = "count")] uint[] types, uint count, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
     {
         int hr = HResults.S_OK;
-        ppHandleEnum = null;
         try
         {
             ISOSHandleEnum? legacyHandleEnum = null;
 #if DEBUG
             if (_legacyImpl is not null)
             {
-                int hrLocal = _legacyImpl.GetHandleEnumForTypes(types, count, out legacyHandleEnum);
+                DacComNullableByRef<ISOSHandleEnum> legacyOut = new(isNullRef: false);
+                int hrLocal = _legacyImpl.GetHandleEnumForTypes(types, count, legacyOut);
                 Debug.ValidateHResult(hr, hrLocal);
+                legacyHandleEnum = legacyOut.Interface;
             }
 #endif
             IGC gc = _target.Contracts.GC;
             HandleType[] handleTypes = gc.GetHandleTypes(types);
-            ppHandleEnum = new SOSHandleEnum(_target, handleTypes, legacyHandleEnum);
+            ppHandleEnum.Interface = new SOSHandleEnum(_target, handleTypes, legacyHandleEnum);
             // COMPAT: In the legacy DAC, this API leaks a ref-count of the returned enumerator.
             // Manually leak a refcount here to match previous behavior and avoid breaking customer code.
-            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum);
+            ComInterfaceMarshaller<ISOSHandleEnum>.ConvertToUnmanaged(ppHandleEnum.Interface);
         }
         catch (System.Exception ex)
         {
@@ -2735,19 +2737,20 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetModule(ClrDataAddress addr, out IXCLRDataModule? mod)
+    int ISOSDacInterface.GetModule(ClrDataAddress addr, DacComNullableByRef<IXCLRDataModule> mod)
     {
-        mod = default;
-
         IXCLRDataModule? legacyModule = null;
         if (_legacyImpl is not null)
         {
-            int hr = _legacyImpl.GetModule(addr, out legacyModule);
+            DacComNullableByRef<IXCLRDataModule> legacyOut = new(isNullRef: false);
+            int hr = _legacyImpl.GetModule(addr, legacyOut);
             if (hr < 0)
                 return hr;
+            legacyModule = legacyOut.Interface;
         }
 
-        mod = new ClrDataModule(addr.ToTargetPointer(_target), _target, legacyModule);
+        mod.Interface = new ClrDataModule(addr.ToTargetPointer(_target), _target, legacyModule);
+
         return HResults.S_OK;
     }
 
@@ -3467,7 +3470,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetStackReferences(int osThreadID, void** ppEnum)
+    int ISOSDacInterface.GetStackReferences(int osThreadID, DacComNullableByRef<ISOSStackRefEnum> ppEnum)
         => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
@@ -5255,11 +5258,11 @@ public sealed unsafe partial class SOSDacImpl
         => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeapNames(count, ppNames, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
         => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, count, pLoaderHeaps, pKinds, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface13.GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum)
+    int ISOSDacInterface13.GetHandleTableMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
         => _legacyImpl13 is not null ? _legacyImpl13.GetHandleTableMemoryRegions(ppEnum) : HResults.E_NOTIMPL;
-    int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum)
+    int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
         => _legacyImpl13 is not null ? _legacyImpl13.GetGCBookkeepingMemoryRegions(ppEnum) : HResults.E_NOTIMPL;
-    int ISOSDacInterface13.GetGCFreeRegions(/*ISOSMemoryEnum*/ void** ppEnum)
+    int ISOSDacInterface13.GetGCFreeRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
         => _legacyImpl13 is not null ? _legacyImpl13.GetGCFreeRegions(ppEnum) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.LockedFlush()
         => _legacyImpl13 is not null ? _legacyImpl13.LockedFlush() : HResults.E_NOTIMPL;
@@ -5581,10 +5584,9 @@ public sealed unsafe partial class SOSDacImpl
         }
     }
 
-    int ISOSDacInterface15.GetMethodTableSlotEnumerator(ClrDataAddress mt, out ISOSMethodEnum? enumerator)
+    int ISOSDacInterface15.GetMethodTableSlotEnumerator(ClrDataAddress mt, DacComNullableByRef<ISOSMethodEnum> enumerator)
     {
         int hr = HResults.S_OK;
-        enumerator = default;
 
         try
         {
@@ -5598,12 +5600,14 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
             if (_legacyImpl15 is not null)
             {
-                int hrLocal = _legacyImpl15.GetMethodTableSlotEnumerator(mt, out legacyMethodEnum);
+                DacComNullableByRef<ISOSMethodEnum> legacyOut = new(isNullRef: false);
+                int hrLocal = _legacyImpl15.GetMethodTableSlotEnumerator(mt, legacyOut);
                 Debug.ValidateHResult(hr, hrLocal);
+                legacyMethodEnum = legacyOut.Interface;
             }
 #endif
 
-            enumerator = new SOSMethodEnum(_target, methodTableHandle, legacyMethodEnum);
+            enumerator.Interface = new SOSMethodEnum(_target, methodTableHandle, legacyMethodEnum);
         }
         catch (System.Exception ex)
         {
