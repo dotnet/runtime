@@ -1640,6 +1640,16 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     genConsumeAddress(tree->Addr());
+
+    // In some cases the indir may not fault.
+    // Tolerate these.
+    //
+    if (!tree->IndirMayFault(m_compiler))
+    {
+        GetEmitter()->emitIns(INS_drop);
+        return;
+    }
+
     genEmitNullCheck(REG_NA);
 }
 
