@@ -2867,6 +2867,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 #endif
 
+    call->gtDirectCallAddress = nullptr; // Clear out any stale data from the union.
     call->ClearOtherRegs();
 
 #if HAS_FIXED_REGISTER_SET
