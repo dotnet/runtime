@@ -67,7 +67,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         {
             byte[] localContextBuf = new byte[contextBufSize];
             int hrLocal = _legacyImpl.GetContext(contextFlags, contextBufSize, null, localContextBuf);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
 
             if (hr == HResults.S_OK)
             {
@@ -136,7 +136,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         {
             int hrLocal = _legacyImpl.Next();
 #if DEBUG
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
 #endif
         }
 
@@ -174,7 +174,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             {
                 hrLocal = _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, localOutBufferPtr);
             }
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
 
             for (int i = 0; i < outBufferSize; i++)
             {

@@ -374,7 +374,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 #if DEBUG
         if (_legacyProcess is not null)
         {
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
         return hr;
@@ -440,7 +440,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 #if DEBUG
         if (_legacyProcess is not null)
         {
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
 
@@ -550,7 +550,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         {
             uint flagsLocal;
             int hrLocal = _legacyProcess.GetOtherNotificationFlags(&flagsLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             Debug.Assert(*flags == flagsLocal);
         }
 #endif
@@ -595,7 +595,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             {
                 hrLocal = ex.HResult;
             }
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(flags == flagsLocal);
@@ -650,7 +650,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         if (_legacyProcess2 is not null)
         {
             int hrLocal = _legacyProcess2.GetGcNotification(gcEvtArgs);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
         return hr;
@@ -674,7 +674,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         {
             // update the DAC cache
             int hrLocal = _legacyProcess2.SetGcNotification(gcEvtArgs);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
         return hr;

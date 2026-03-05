@@ -91,7 +91,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             uint numArgsLocal;
             int hrLocal = _legacyImpl.GetNumArguments(&numArgsLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*numArgs == numArgsLocal, $"cDAC: {*numArgs}, DAC: {numArgsLocal}");
         }
@@ -162,7 +162,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             uint numLocalsLocal;
             int hrLocal = _legacyImpl.GetNumLocalVariables(&numLocalsLocal);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*numLocals == numLocalsLocal, $"cDAC: {*numLocals}, DAC: {numLocalsLocal}");
         }
@@ -221,7 +221,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
 
