@@ -217,28 +217,40 @@ namespace ILCompiler.ObjectWriter
 
         private class WebcilSegment
         {
-            public WebcilHeader header;
+            public WebcilHeader Header;
             public WebcilSection[] Sections;
+            public Dictionary<int, WebcilSection> indexToSection;
+
             public WebcilSegment(WebcilHeader header, WebcilSection[] sections)
             {
-                this.header = header;
-                this.Sections = sections;
+                Header = header;
+                Sections = sections;
+            }
+
+            public int EmitHeader(Stream output)
+            {
+                return 0;
             }
         }
 
         const int WebcilSectionAlignment = 16;
         private WebcilSegment BuildWebcilDataSegment()
         {
-            IEnumerable<WasmSection> dataSections = _sections.Where(s => s is not WasmDataSection && s.Type == WasmSectionType.Data);
             uint sizeOfHeaders = (uint)WebcilHeader.EncodeSize();
 
             uint pointerToRawData = (uint)AlignmentHelper.AlignUp((int)sizeOfHeaders, (int)WebcilSectionAlignment);
             uint virtualAddress = pointerToRawData;
 
-            List<WebcilSection> webcilSections = new();
-            foreach (WasmSection wasmSection in dataSections)
+            ArrayBuilder<WebcilSection> webcilSections = new ArrayBuilder<WebcilSection>();
+            foreach (WasmSection section in _sections)
             {
-                uint rawSectionSize = (uint)wasmSection.Stream.Length;
+                if (section is not WebcilSection)
+                {
+                    continue;
+                }
+                WebcilSection webcilSection = section as WebcilSection;
+
+                uint rawSectionSize = (uint)section.Stream.Length;
                 uint alignedSectionSize = (uint)AlignmentHelper.AlignUp((int)rawSectionSize, (int)WebcilSectionAlignment);
                 uint virtualSize = alignedSectionSize;
                 WebcilSectionHeader sectionHeader = new WebcilSectionHeader
@@ -248,10 +260,11 @@ namespace ILCompiler.ObjectWriter
                     SizeOfRawData = alignedSectionSize,
                     PointerToRawData = pointerToRawData
                 };
+                webcilSection.Header = sectionHeader;
+                webcilSections.Add(webcilSection);
 
                 pointerToRawData += alignedSectionSize;
                 virtualAddress += virtualSize;
-                webcilSections.Add(new WebcilSection(wasmSection.Name, sectionHeader, wasmSection.Stream));
             }
 
             WebcilHeader header = new WebcilHeader
@@ -297,15 +310,17 @@ namespace ILCompiler.ObjectWriter
         private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
             WasmSectionType sectionType = GetWasmSectionType(section);
-            WasmSection wasmSection;
-            if (section == WasmObjectNodeSection.CombinedDataSection)
+            WasmSection wasmSection = null;
+            if (sectionType == WasmSectionType.Data)
             {
-                wasmSection = CreateCombinedDataSection();
+                // This is a section which is internally wrapping a Webcil section
+                wasmSection = new WebcilSection(new Utf8String(section.Name), default(WebcilSectionHeader), sectionStream, sectionIndex);
             }
             else
             {
                 wasmSection = new WasmSection(sectionType, sectionStream, new Utf8String(section.Name));
             }
+
 
             Debug.Assert(_sections.Count == sectionIndex);
             _sections.Add(wasmSection);
@@ -324,17 +339,10 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128(numPages); // memory limits: initial size in pages (64kb each)
         }
 
+        private WebcilSegment _webcilSegment = null;
         private protected override void EmitSectionsAndLayout()
         {
-            GetOrCreateSection(WasmObjectNodeSection.CombinedDataSection);
-            WebcilSegment segment = BuildWebcilDataSegment();
-            foreach (var section in segment.Sections)
-            {
-                Console.WriteLine("Section: " + section.Name);
-                Console.WriteLine($"Raw Data Size: {section.Header.SizeOfRawData}");
-                Console.WriteLine($"Raw address: {section.Header.PointerToRawData}");
-                Console.WriteLine($"Virtual Address: {section.Header.VirtualAddress}");
-            }
+            _webcilSegment = BuildWebcilDataSegment();
 
             WriteTableSection();
 
@@ -362,6 +370,7 @@ namespace ILCompiler.ObjectWriter
             return _sections[index];
         }
 
+        // Sections excluding Webcil Data segment
         readonly string[] SectionOrder =
         [
             ObjectNodeSection.WasmTypeSection.Name,
@@ -370,7 +379,6 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.TableSection.Name,
             WasmObjectNodeSection.ExportSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
-            WasmObjectNodeSection.CombinedDataSection.Name,
         ];
 
         private int[] _sectionEmitOrder = null;
@@ -413,7 +421,28 @@ namespace ILCompiler.ObjectWriter
 
                 section.Emit(outputFileStream);
             }
+
+            // Emit WebCIL segment at the end of the file
+            Debug.Assert(_webcilSegment != null); // should have been built in EmitSectionsAndLayout
+            _webcilSegment.EmitHeader(outputFileStream);
+            foreach (WebcilSection section in _webcilSegment.Sections)
+            {
+                if (_resolvableRelocations.TryGetValue(section.Index, out List<SymbolicRelocation> relocations))
+                {
+                    using (Stream originalStream = section.Stream)
+                    {
+                        MemoryStream stream = new MemoryStream((int)originalStream.Length);
+                        originalStream.Position = 0;
+                        originalStream.CopyTo(stream);
+                        ResolveRelocations(stream, relocations);
+                        section.Stream = stream;
+                        // originalStream may be disposed, section.Stream now points to resolved stream
+                    }
+                }
+                section.Emit(outputFileStream);
+            }
         }
+
 
         Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
 
@@ -534,6 +563,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private Dictionary<Utf8String, SymbolDefinition> _definedSymbols;
         // For now, this function just prepares the function, exports, and type sections for emission by prepending the counts.
         private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
         {
@@ -556,6 +586,9 @@ namespace ILCompiler.ObjectWriter
             PrependCount(_sections[exportIdx], _numExports);
 
             PrependCount(SectionByName(WasmObjectNodeSection.ImportSection.Name), _numImports);
+
+            // Register defined symbols for future use during relocation resolution
+            _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
         }
     }
 
@@ -781,5 +814,27 @@ namespace ILCompiler.ObjectWriter
 
             return headerSize + (int)_stream.Length;
         }
+    }
+
+    internal class WebcilSection : WasmSection
+    {
+        public readonly int Index; 
+        public WebcilSectionHeader Header;
+        public readonly Stream _stream;
+
+        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int index)
+            : base(WasmSectionType.Data, stream, name)
+        {
+            Header = header;
+            _stream = stream;
+            Index = index;
+        }
+
+        public override int EncodeSize()
+        {
+            return (int)_stream.Length;
+        }
+
+        public override int Emit(Stream outputFileStream) => throw new NotImplementedException();
     }
 }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.JitInterface;
 using Internal.Pgo;
 using Internal.Text;
@@ -278,6 +279,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_nonRelocationDependencies != null)
             {
                 dependencyList.AddRange(_nonRelocationDependencies);
+            }
+
+            if (factory.Target.Architecture is TargetArchitecture.Wasm32)
+            {
+                DependencyNode node = factory.WasmTypeNode(WasmLowering.GetSignature(_method));
+                dependencyList.Add(node, "wasmMethodsNeedExplicitSignatures");
             }
 
             return dependencyList;

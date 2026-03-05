@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Buffers.Binary;
 using System;
 using Internal.Text;
+using System.Security.Cryptography.X509Certificates;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -84,26 +85,7 @@ namespace ILCompiler.ObjectWriter
             BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(12, 4), PointerToRawData);
 
             outputStream.Write(header);
-        }
-    }
 
-    internal readonly struct WebcilSection
-    {
-        public readonly Utf8String Name;
-        public readonly WebcilSectionHeader Header;
-        public readonly Stream _stream;
-        public Stream Stream => _stream;
-
-        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream)
-        {
-            Header = header;
-            _stream = stream;
-            Name = name;
-        }
-
-        public uint EncodeSize()
-        {
-            return (uint)_stream.Length;
         }
     }
 }
