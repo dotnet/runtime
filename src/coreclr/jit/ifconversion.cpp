@@ -404,12 +404,6 @@ void OptIfConversionDsc::IfConvertDump()
             }
         }
     }
-    else if (m_finalBlock != nullptr)
-    {
-        // After the transformation Then/Else blocks are empty. Instead,
-        // dump unique successor of the SELECT (previously JTRUE) block where flows merge
-        m_compiler->fgDumpBlock(m_finalBlock);
-    }
 }
 #endif
 
@@ -780,7 +774,7 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     // Remove flow into Then/Else blocks and update their weights
     auto RemoveFlowInto = [&](BasicBlock* block) {
         m_compiler->fgRemoveAllRefPreds(block, m_startBlock);
-        block->bbWeight = 0.0;
+        block->bbWeight = BB_ZERO_WEIGHT;
         assert(block->bbPreds == nullptr);
     };
     RemoveFlowInto(m_startBlock->GetFalseTarget());
