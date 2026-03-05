@@ -1013,8 +1013,6 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
     uint32_t methodFlags;
     IfFailThrow(sig.GetData(&methodFlags));
 
-
-
     bool sigIsAsync = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
     if (sigIsAsync != pMD->IsAsyncVariantMethod())
         return false;

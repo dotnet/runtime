@@ -284,7 +284,6 @@ namespace Internal.JitInterface
         CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
         CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
 
-        // Helpers for runtime async (see System.Runtime.CompilerServices.AsyncHelpers)
         CORINFO_HELP_ALLOC_CONTINUATION,
         CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
         CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
