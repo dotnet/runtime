@@ -8,7 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [ComImport]
 [Guid("1D83B63E-D0C1-4473-9E6D-E53BFB3CF9A3")]
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-internal interface IStringHolder
+public interface IStringHolder
 {
     [PreserveSig]
     int AssignCopy([MarshalAs(UnmanagedType.LPWStr)] string psz);
