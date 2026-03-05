@@ -13,7 +13,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, IWasmCodeNode 
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, IWasmCodeNode
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
