@@ -1417,9 +1417,9 @@ NESTED_ENTRY CallInterpreterFunclet, _TEXT, NoHandler
     str         r12, [sp, #4]
 
     // Load isFilter from original stack location and store as 5th param (1st stack arg)
-    // After PROLOG_WITH_TRANSITION_BLOCK, original stack args are at __PWTB_TransitionBlock offset
+    // After PROLOG_WITH_TRANSITION_BLOCK, original stack args are past the ArgumentRegisters
     // The 5th param (isFilter) was pushed before our stack allocation
-    ldr         r12, [sp, #8 + __PWTB_TransitionBlock + SIZEOF__ArgumentRegisters]
+    ldr         r12, [sp, #8 + __PWTB_ArgumentRegisters + SIZEOF__ArgumentRegisters]
     str         r12, [sp, #0]
 
     // r0-r3 remain unchanged
