@@ -277,8 +277,20 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             return TargetPointer.Null;
         if (range.IsRangeList)
         {
+            // An address may fall within a precode RangeSection without actually being a
+            // valid precode (e.g., a MethodDesc address that shares the same memory range).
+            // GetMethodDescFromStubAddress throws InvalidOperationException when the bytes
+            // at the address don't match any known precode type. The DAC's C++ implementation
+            // returns NULL in this case, so we match that behavior by returning TargetPointer.Null.
             IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
-            return precodeStubs.GetMethodDescFromStubAddress(entrypoint);
+            try
+            {
+                return precodeStubs.GetMethodDescFromStubAddress(entrypoint);
+            }
+            catch (InvalidOperationException)
+            {
+                return TargetPointer.Null;
+            }
         }
         else
         {
@@ -341,6 +353,21 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
 
         return info.RelativeOffset;
+    }
+
+    JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
+    {
+        TargetPointer eeJitManagerPtr = _target.ReadGlobalPointer(Constants.Globals.EEJitManagerAddress);
+        TargetPointer eeJitManagerAddr = _target.ReadPointer(eeJitManagerPtr);
+
+        Data.EEJitManager jitManager = _target.ProcessedData.GetOrAdd<Data.EEJitManager>(eeJitManagerAddr);
+
+        return new JitManagerInfo
+        {
+            ManagerAddress = eeJitManagerAddr,
+            CodeType = 0, // miManaged | miIL
+            HeapListAddress = jitManager.AllCodeHeaps,
+        };
     }
 
     private RangeSection RangeSectionFromCodeBlockHandle(CodeBlockHandle codeInfoHandle)

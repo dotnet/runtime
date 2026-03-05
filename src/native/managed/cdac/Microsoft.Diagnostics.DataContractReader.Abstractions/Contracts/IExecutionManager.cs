@@ -35,6 +35,13 @@ public struct ExceptionClauseInfo
     public TargetPointer? ModuleAddr;
 }
 
+public struct JitManagerInfo
+{
+    public TargetPointer ManagerAddress;
+    public uint CodeType;
+    public TargetPointer HeapListAddress;
+}
+
 public interface IExecutionManager : IContract
 {
     static string IContract.Name { get; } = nameof(ExecutionManager);
@@ -51,6 +58,7 @@ public interface IExecutionManager : IContract
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion) => throw new NotImplementedException();
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager
