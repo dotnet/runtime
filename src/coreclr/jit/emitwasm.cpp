@@ -143,6 +143,17 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
+void emitter::emitAddressConstant(void* address)
+{
+    // Load our module base from __r2r_start, then load our address constant, then sum them.
+    // FIXME-WASM: Make this a named constant or a reloc that crossgen2 fills in.
+    emitIns_I(INS_global_get, EA_4BYTE, 1 /* __r2r_start */);
+    // emitIns_I(INS_i32_const_address, EA_PTRSIZE, address);
+    // FIXME-WASM: Just a hack for now because const_address relocations throw in crossgen2.
+    emitIns_I(INS_i32_const, EA_PTRSIZE, (int32_t)(((size_t)address) & 0xFFFFFFFFu));
+    emitIns(INS_i32_add);
+}
+
 /*****************************************************************************
  *
  *  Add a call instruction (direct or indirect).
