@@ -151,7 +151,7 @@ namespace System.Reflection.Context.Tests
             Assert.False(_publicField.IsStatic);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMetadataTokenSupported))]
         public void MetadataToken_ReturnsValue()
         {
             Assert.True(_publicField.MetadataToken > 0);
