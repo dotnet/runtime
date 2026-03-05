@@ -3247,7 +3247,7 @@ public sealed unsafe partial class SOSDacImpl
             {
                 if (pNeeded == null)
                 {
-                    hr = HResults.E_INVALIDARG;
+                    throw new ArgumentException();
                 }
                 else
                 {
@@ -3267,8 +3267,7 @@ public sealed unsafe partial class SOSDacImpl
                 {
                     if (itemIndex >= count)
                     {
-                        hr = HResults.E_INVALIDARG;
-                        break;
+                        throw new ArgumentException();
                     }
 
                     interfaceData[itemIndex].methodTable = methodTable.ToClrDataAddress(_target);
