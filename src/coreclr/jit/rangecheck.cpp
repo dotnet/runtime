@@ -2025,8 +2025,8 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     }
     else if (expr->OperIs(GT_ARR_LENGTH))
     {
-        ValueNum arrLenVN = m_compiler->vnStore->VNConservativeNormalValue(expr->gtVNPair);
-        if (arrLenVN == m_preferredBound)
+        ValueNum arrLenVN = m_compiler->optConservativeNormalVN(expr);
+        if ((arrLenVN != ValueNumStore::NoVN) && (arrLenVN == m_preferredBound))
         {
             // If the ARR_LENGTH VN matches the bounds check's length VN, represent it symbolically
             // so the PHI merge can combine it with other symbolic ranges referencing the same bound.
