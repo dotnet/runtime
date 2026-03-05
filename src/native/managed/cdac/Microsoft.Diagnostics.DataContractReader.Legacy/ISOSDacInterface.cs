@@ -387,6 +387,13 @@ public struct DacpGcHeapAnalyzeData
     public int heap_analyze_success; // BOOL
 }
 
+public struct DacpCOMInterfacePointerData
+{
+    public ClrDataAddress methodTable;
+    public ClrDataAddress interfacePtr;
+    public ClrDataAddress comContext;
+}
+
 [GeneratedComInterface]
 [Guid("286CA186-E763-4F61-9760-487D43AE4341")]
 public unsafe partial interface ISOSEnum

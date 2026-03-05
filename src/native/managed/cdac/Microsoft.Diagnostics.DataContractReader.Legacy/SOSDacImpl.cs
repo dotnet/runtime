@@ -3232,7 +3232,79 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetRCWData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetRCWData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, void* interfaces, uint* pNeeded)
-        => _legacyImpl is not null ? _legacyImpl.GetRCWInterfaces(rcw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (rcw == 0)
+                throw new ArgumentException();
+
+            TargetPointer rcwPtr = rcw.ToTargetPointer(_target);
+            IBuiltInCOM contract = _target.Contracts.BuiltInCOM;
+            IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> entries = contract.GetRCWInterfaces(rcwPtr);
+
+            if (interfaces == null)
+            {
+                if (pNeeded == null)
+                {
+                    hr = HResults.E_INVALIDARG;
+                }
+                else
+                {
+                    uint c = 0;
+                    foreach (var _ in entries)
+                        c++;
+                    *pNeeded = c;
+                }
+            }
+            else
+            {
+                NativeMemory.Clear(interfaces, (nuint)(count * (uint)sizeof(DacpCOMInterfacePointerData)));
+
+                DacpCOMInterfacePointerData* interfaceData = (DacpCOMInterfacePointerData*)interfaces;
+                uint itemIndex = 0;
+                foreach (var (methodTable, unknown) in entries)
+                {
+                    if (itemIndex >= count)
+                    {
+                        hr = HResults.E_INVALIDARG;
+                        break;
+                    }
+
+                    interfaceData[itemIndex].methodTable = methodTable.ToClrDataAddress(_target);
+                    interfaceData[itemIndex].interfacePtr = unknown.ToClrDataAddress(_target);
+                    interfaceData[itemIndex].comContext = 0; // context cookie is not tracked per-entry in the managed contract
+                    itemIndex++;
+                }
+
+                if (hr == HResults.S_OK && pNeeded != null)
+                    *pNeeded = itemIndex;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            // When querying the count only, validate pNeeded against the legacy implementation.
+            // We cannot validate the full interface data because comContext is not tracked per-entry
+            // in the managed contract and will differ from the legacy implementation.
+            if (interfaces == null && hr == HResults.S_OK)
+            {
+                uint pNeededLocal;
+                int hrLocal = _legacyImpl.GetRCWInterfaces(rcw, count, null, &pNeededLocal);
+                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                if (hr == HResults.S_OK)
+                    Debug.Assert(pNeeded == null || *pNeeded == pNeededLocal, $"cDAC: {(pNeeded == null ? "null" : (*pNeeded).ToString())}, DAC: {pNeededLocal}");
+            }
+        }
+#endif
+
+        return hr;
+    }
     int ISOSDacInterface.GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded)
     {
         int hr = HResults.S_OK;
