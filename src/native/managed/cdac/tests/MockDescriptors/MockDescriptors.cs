@@ -91,6 +91,16 @@ internal partial class MockDescriptors
         BaseTypeFields = ObjectFields
     };
 
+    private static readonly TypeFields SyncBlockCacheFields = new TypeFields()
+    {
+        DataType = DataType.SyncBlockCache,
+        Fields =
+        [
+            new(nameof(Data.SyncBlockCache.FreeSyncTableIndex), DataType.uint32),
+            new(nameof(Data.SyncBlockCache.CleanupBlockList), DataType.pointer),
+        ]
+    };
+
     private static readonly TypeFields SyncTableEntryFields = new TypeFields()
     {
         DataType = DataType.SyncTableEntry,

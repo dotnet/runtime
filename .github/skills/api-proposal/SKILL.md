@@ -203,18 +203,7 @@ public partial class JsonNamingPolicy
 }
 ```
 
-When existing members ARE needed for context (e.g., to show sibling overloads), use `diff` blocks or `csharp` blocks with `// EXISTING` and `// NEW` markers. Prefer `// EXISTING`/`// NEW` markers when the diff format would be unwieldy (e.g., many existing members with a few additions interspersed):
-
-```diff
-namespace System.Text.Json;
-
-public partial class JsonNamingPolicy
-{
-     public static JsonNamingPolicy CamelCase { get; }
-+    public static JsonNamingPolicy SnakeLowerCase { get; }
-+    public static JsonNamingPolicy SnakeUpperCase { get; }
-}
-```
+When existing members ARE needed for context (e.g., to show sibling overloads), comment out those existing members in the snippet and add a `// EXISTING` marker immediately above them. This makes it easy for the meeting chair to delete them when posting final approval notes:
 
 ```csharp
 namespace System.Text.Json;
@@ -222,9 +211,8 @@ namespace System.Text.Json;
 public partial class JsonNamingPolicy
 {
     // EXISTING
-    public static JsonNamingPolicy CamelCase { get; }
+    // public static JsonNamingPolicy CamelCase { get; }
 
-    // NEW
     public static JsonNamingPolicy SnakeLowerCase { get; }
     public static JsonNamingPolicy SnakeUpperCase { get; }
 }

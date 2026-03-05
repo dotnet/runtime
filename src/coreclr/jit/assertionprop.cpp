@@ -5590,15 +5590,36 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 //
 ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const BasicBlock* blockPred) const
 {
-    if ((blockPred->KindIs(BBJ_COND) && blockPred->TrueTargetIs(block)))
+    assert(block != nullptr);
+    if (blockPred->KindIs(BBJ_COND))
     {
-        if (bbJtrueAssertionOut != nullptr)
+        if (blockPred->TrueTargetIs(block))
         {
-            return bbJtrueAssertionOut[blockPred->bbNum];
+            if (bbJtrueAssertionOut != nullptr)
+            {
+                return bbJtrueAssertionOut[blockPred->bbNum];
+            }
+            return BitVecOps::MakeEmpty(apTraits);
         }
-        return BitVecOps::MakeEmpty(apTraits);
+
+        // If block is not the false target either, the edge doesn't exist
+        // (e.g. a stale PHI arg pred after edge redirection by RBO).
+        // Return empty to avoid using assertions from an unrelated edge.
+        if (!blockPred->FalseTargetIs(block))
+        {
+            return BitVecOps::MakeEmpty(apTraits);
+        }
+        return blockPred->bbAssertionOut;
     }
-    return blockPred->bbAssertionOut;
+
+    for (BasicBlock* const pred : block->PredBlocks())
+    {
+        if (pred == blockPred)
+        {
+            return blockPred->bbAssertionOut;
+        }
+    }
+    return BitVecOps::MakeEmpty(apTraits);
 }
 
 #include "dataflow.h"
@@ -6172,7 +6193,7 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
 {
     // TODO-Review: EH successor/predecessor iteration seems broken.
     // See: SELF_HOST_TESTS_ARM\jit\Directed\ExcepFilters\fault\fault.exe
-    if (block->bbCatchTyp == BBCT_FAULT)
+    if (block->CatchTypeIs(BBCT_FAULT))
     {
         return stmt;
     }
@@ -6275,9 +6296,9 @@ PhaseStatus Compiler::optAssertionPropMain()
         }
     }
 
-    for (int i = 0; i < switchBlocks.Height(); i++)
+    for (BasicBlock* const switchBlock : switchBlocks.BottomUpOrder())
     {
-        madeChanges |= optCreateJumpTableImpliedAssertions(switchBlocks.Bottom(i));
+        madeChanges |= optCreateJumpTableImpliedAssertions(switchBlock);
     }
 
     if (optAssertionCount == 0)
@@ -6336,7 +6357,7 @@ PhaseStatus Compiler::optAssertionPropMain()
 
         // TODO-Review: EH successor/predecessor iteration seems broken.
         // SELF_HOST_TESTS_ARM\jit\Directed\ExcepFilters\fault\fault.exe
-        if (block->bbCatchTyp == BBCT_FAULT)
+        if (block->CatchTypeIs(BBCT_FAULT))
         {
             continue;
         }
