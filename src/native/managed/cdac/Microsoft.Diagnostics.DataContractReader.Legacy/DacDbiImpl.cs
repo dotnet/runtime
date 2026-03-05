@@ -574,7 +574,14 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetNativeCodeInfoForAddr(ulong codeAddress, nint pCodeInfo, ulong* pVmModule, uint* pFunctionToken) => _legacy is not null ? _legacy.GetNativeCodeInfoForAddr(codeAddress, pCodeInfo, pVmModule, pFunctionToken) : HResults.E_NOTIMPL;
 
-    public int IsValueType(ulong th, int* pResult) => _legacy is not null ? _legacy.IsValueType(th, pResult) : HResults.E_NOTIMPL;
+    public int IsValueType(ulong th, int* pResult)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        TypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer(th));
+        CorElementType elementType = rts.GetSignatureCorElementType(typeHandle);
+        *pResult = elementType == CorElementType.ValueType ? 1 : 0;
+        return HResults.S_OK;
+    }
 
     public int HasTypeParams(ulong th, int* pResult) => _legacy is not null ? _legacy.HasTypeParams(th, pResult) : HResults.E_NOTIMPL;
 
@@ -865,7 +872,24 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetArrayLayout(nint id, nint pLayout) => _legacy is not null ? _legacy.GetArrayLayout(id, pLayout) : HResults.E_NOTIMPL;
 
-    public int GetGCHeapInformation(nint pHeapInfo) => _legacy is not null ? _legacy.GetGCHeapInformation(pHeapInfo) : HResults.E_NOTIMPL;
+    public int GetGCHeapInformation(nint pHeapInfo)
+    {
+        // COR_HEAPINFO: { BOOL areGCStructuresValid(4), DWORD pointerSize(4),
+        //                  DWORD numHeaps(4), BOOL concurrent(4), CorDebugGCType gcType(4) }
+        // CorDebugGCType: CorDebugWorkstationGC=0, CorDebugServerGC=1
+        IGC gc = _target.Contracts.GC;
+        int* p = (int*)pHeapInfo;
+        p[0] = gc.GetGCStructuresValid() ? 1 : 0;
+        p[1] = _target.PointerSize;
+        p[2] = (int)gc.GetGCHeapCount();
+
+        string[] identifiers = gc.GetGCIdentifiers();
+        bool isServer = System.Array.Exists(identifiers, id => id == GCIdentifiers.Server);
+        bool isConcurrent = System.Array.Exists(identifiers, id => id == GCIdentifiers.Background);
+        p[3] = isConcurrent ? 1 : 0;
+        p[4] = isServer ? 1 : 0; // CorDebugServerGC=1
+        return HResults.S_OK;
+    }
 
     public int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW) => _legacy is not null ? _legacy.GetPEFileMDInternalRW(vmPEAssembly, pAddrMDInternalRW) : HResults.E_NOTIMPL;
 
