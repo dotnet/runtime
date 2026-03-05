@@ -233,17 +233,17 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Theory]
-        [InlineData("\"Hello World!\"", typeof(string))]
-        [InlineData("42", typeof(JsonElement))]
-        [InlineData("true", typeof(bool))]
-        [InlineData("false", typeof(bool))]
-        public static void GetValue_Object(string json, Type expectedType)
+        [InlineData("\"Hello World!\"")]
+        [InlineData("42")]
+        [InlineData("true")]
+        [InlineData("false")]
+        public static void GetValue_Object(string json)
         {
             JsonValue jValue = JsonSerializer.Deserialize<JsonValue>(json);
 
             object result = jValue.GetValue<object>();
             Assert.NotNull(result);
-            Assert.IsType(expectedType, result);
+            Assert.IsType<JsonElement>(result);
         }
 
         [Fact]
