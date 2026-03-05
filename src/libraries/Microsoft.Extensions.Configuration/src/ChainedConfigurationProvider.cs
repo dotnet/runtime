@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private readonly IConfiguration _config;
         private readonly bool _shouldDisposeConfig;
+        private bool _loaded;
 
         /// <summary>
         /// Initializes a new instance from the source configuration.
@@ -60,7 +61,22 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Loads configuration values from the source represented by this <see cref="IConfigurationProvider"/>.
         /// </summary>
-        public void Load() => (_config as IConfigurationRoot)?.Reload();
+        public void Load()
+        {
+            if (!_loaded)
+            {
+                _loaded = true;
+                return;
+            }
+
+            if (_config is IConfigurationRoot root)
+            {
+                foreach (IConfigurationProvider provider in root.Providers)
+                {
+                    provider.Load();
+                }
+            }
+        }
 
         /// <summary>
         /// Returns the immediate descendant configuration keys for a given parent path based on the data of this

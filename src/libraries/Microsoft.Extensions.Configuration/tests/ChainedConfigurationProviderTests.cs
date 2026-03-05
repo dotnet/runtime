@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Microsoft.Extensions.Configuration.Memory;
 using Xunit;
@@ -66,14 +67,11 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddConfiguration(innerConfig)
                 .Build();
 
-            string? valueBefore = outerConfig["Random"];
-            Assert.NotNull(valueBefore);
+            Assert.Equal("1", outerConfig["Random"]);
 
             outerConfig.Reload();
 
-            string? valueAfter = outerConfig["Random"];
-            Assert.NotNull(valueAfter);
-            Assert.NotEqual(valueBefore, valueAfter);
+            Assert.Equal("2", outerConfig["Random"]);
         }
 
         [Fact]
@@ -87,14 +85,73 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddConfiguration(innerConfig.GetSection("Section"))
                 .Build();
 
-            string? valueBefore = outerConfig["Random"];
-            Assert.NotNull(valueBefore);
+            Assert.Equal("1", outerConfig["Random"]);
 
             outerConfig.Reload();
 
-            string? valueAfter = outerConfig["Random"];
-            Assert.NotNull(valueAfter);
-            Assert.Equal(valueBefore, valueAfter);
+            Assert.Equal("1", outerConfig["Random"]);
+        }
+
+        [Fact]
+        public void ChainedConfiguration_BuildingOuterConfigurationRoot_DoesNotReloadInnerConfigurationRoot()
+        {
+            var innerProvider = new CountingValueConfigurationProvider("Value");
+            var innerConfig = new ConfigurationRoot(new[] { innerProvider });
+
+            int notifications = 0;
+            innerConfig.GetReloadToken().RegisterChangeCallback(_ => notifications++, state: null);
+
+            var outerConfig = new ConfigurationBuilder()
+                .AddConfiguration(innerConfig)
+                .Build();
+
+            Assert.Equal(1, innerProvider.LoadCount);
+            Assert.Equal("1", innerConfig["Value"]);
+            Assert.Equal("1", outerConfig["Value"]);
+            Assert.Equal(0, notifications);
+        }
+
+        [Fact]
+        public void ChainedConfiguration_AddingToConfigurationManager_DoesNotReloadInnerConfigurationRoot()
+        {
+            var innerProvider = new CountingValueConfigurationProvider("Value");
+            var innerConfig = new ConfigurationRoot(new[] { innerProvider });
+
+            int notifications = 0;
+            innerConfig.GetReloadToken().RegisterChangeCallback(_ => notifications++, state: null);
+
+            var outerConfig = new ConfigurationManager();
+            outerConfig.AddConfiguration(innerConfig);
+
+            Assert.Equal(1, innerProvider.LoadCount);
+            Assert.Equal("1", innerConfig["Value"]);
+            Assert.Equal("1", outerConfig["Value"]);
+            Assert.Equal(0, notifications);
+        }
+
+        [Fact]
+        public void ChainedConfiguration_ReloadingOuterConfigurationRoot_RaisesSingleOuterNotificationAndNoInnerNotification()
+        {
+            var innerProvider = new CountingValueConfigurationProvider("Value");
+            var innerConfig = new ConfigurationRoot(new[] { innerProvider });
+
+            var outerConfig = new ConfigurationBuilder()
+                .AddConfiguration(innerConfig)
+                .Build();
+
+            int innerNotifications = 0;
+            int outerNotifications = 0;
+
+            innerConfig.GetReloadToken().RegisterChangeCallback(_ => innerNotifications++, state: null);
+            outerConfig.GetReloadToken().RegisterChangeCallback(_ => outerNotifications++, state: null);
+
+            outerConfig.Reload();
+
+            Assert.Equal(2, innerProvider.LoadCount);
+            Assert.Equal("2", innerConfig["Value"]);
+            Assert.Equal("2", outerConfig["Value"]);
+            Assert.Equal(1, outerNotifications);
+            Assert.Equal(0, innerNotifications);
         }
 
         private class TestConfigurationProvider : ConfigurationProvider
@@ -117,12 +174,26 @@ namespace Microsoft.Extensions.Configuration.Test
         private class RandomValueConfigurationProvider : ConfigurationProvider
         {
             private readonly string _key;
+            private int _value;
 
             public RandomValueConfigurationProvider(string key)
                 => _key = key;
 
             public override void Load()
-                => Data[_key] = Guid.NewGuid().ToString();
+                => Data[_key] = (++_value).ToString(CultureInfo.InvariantCulture);
+        }
+
+        private class CountingValueConfigurationProvider : ConfigurationProvider
+        {
+            private readonly string _key;
+
+            public CountingValueConfigurationProvider(string key)
+                => _key = key;
+
+            public int LoadCount { get; private set; }
+
+            public override void Load()
+                => Data[_key] = (++LoadCount).ToString(CultureInfo.InvariantCulture);
         }
     }
 }
