@@ -320,12 +320,14 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Not supported on Wasi.")]
-        public void EnableBroadcast_ExplicitlyDisabled_NotAutoEnabled()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void EnableBroadcast_ExplicitlyDisabled_NotAutoEnabled(bool setTrueFirst)
         {
             using (var udpClient = new UdpClient())
             {
+                if (setTrueFirst) udpClient.EnableBroadcast = true;
                 udpClient.EnableBroadcast = false;
 
                 // Sending to a broadcast address should not auto-enable
@@ -345,30 +347,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Not supported on Wasi.")]
-        public void EnableBroadcast_ExplicitlyEnabledThenDisabled_NotAutoEnabled()
-        {
-            using (var udpClient = new UdpClient())
-            {
-                udpClient.EnableBroadcast = true;
-                udpClient.EnableBroadcast = false;
-
-                // After toggling enable then disable, sending to a broadcast
-                // address should still not auto-enable broadcast.
-                try
-                {
-                    udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.Broadcast, UnusedPort));
-                }
-                catch (SocketException)
-                {
-                }
-
-                Assert.False(udpClient.EnableBroadcast);
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [SkipOnPlatform(TestPlatforms.Wasi, "Not supported on Wasi.")]
         public void EnableBroadcast_NotExplicitlySet_AutoEnabled()
         {
             using (var udpClient = new UdpClient())
