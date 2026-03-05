@@ -510,7 +510,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private static FileHandleType MapUnixFileTypeToFileType(Interop.Sys.FileStatus status)
-            => status.Mode & Interop.Sys.FileTypes.S_IFMT switch
+            => (status.Mode & Interop.Sys.FileTypes.S_IFMT) switch
             {
                 Interop.Sys.FileTypes.S_IFREG => FileHandleType.RegularFile,
                 Interop.Sys.FileTypes.S_IFDIR => FileHandleType.Directory,
