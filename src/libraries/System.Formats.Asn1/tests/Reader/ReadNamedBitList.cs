@@ -479,7 +479,7 @@ namespace System.Formats.Asn1.Tests.Reader
             byte[] actual = new byte[allTheBytes.Length];
             bits.CopyTo(actual, 0);
 
-            Assert.Equal(actual, actual);
+            Assert.Equal(allTheBytes, actual);
         }
 
         [Theory]
