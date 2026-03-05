@@ -321,6 +321,11 @@ namespace System.Reflection.Emit
             return TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
         }
 
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            return Type.MakeFunctionPointerSignatureType(this, parameterTypes, isUnmanaged);
+        }
+
         #region Public Static Methods
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
