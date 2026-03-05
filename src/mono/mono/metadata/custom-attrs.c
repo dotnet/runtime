@@ -1276,6 +1276,16 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 				goto fail;
 			}
 
+			/* Covariant return: derived property has a different return type than the base where the setter was found */
+			if (firstNotNullPropInHierarchy != prop &&
+			    firstNotNullPropInHierarchy->get && prop->get &&
+			    !mono_metadata_type_equal (
+			        mono_method_signature_internal (firstNotNullPropInHierarchy->get)->ret,
+			        mono_method_signature_internal (prop->get)->ret)) {
+				mono_error_set_generic_error (error, "System.Reflection", "CustomAttributeFormatException", "Could not find the setter for %s", name);
+				goto fail;
+			}
+
 			/* can we have more that 1 arg in a custom attr named property? */
 			prop_type = prop->get? mono_method_signature_internal (prop->get)->ret :
 			     mono_method_signature_internal (setMethod)->params [mono_method_signature_internal (setMethod)->param_count - 1];

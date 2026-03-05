@@ -328,7 +328,11 @@ namespace System.Tests
         [Fact]
         public static void GetCustomAttributesWithCovariantOverrideAndSetterOnBaseClass_Throws()
         {
-            Assert.Throws<CustomAttributeFormatException>(() => typeof(ClassWithDerivedCovariantAttr).GetCustomAttributes(true));
+            Type expectedExceptionType = PlatformDetection.IsNativeAot
+                ? typeof(AmbiguousMatchException)
+                : typeof(CustomAttributeFormatException);
+
+            Assert.Throws(expectedExceptionType, () => typeof(ClassWithDerivedCovariantAttr).GetCustomAttributes(true));
         }
 
         private static void GenericAttributesTestHelper<TGenericParameter>(Func<Type, Attribute[]> getCustomAttributes)
