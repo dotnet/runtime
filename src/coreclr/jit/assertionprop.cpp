@@ -6344,20 +6344,50 @@ PhaseStatus Compiler::optAssertionPropMain()
                 }
 #endif
                 // Record BBJ_COND state before morphing so we can fix up
-                // bbAssertionOut if fgFoldConditional converts to BBJ_ALWAYS.
-                bool      wasCond  = block->KindIs(BBJ_COND);
-                FlowEdge* trueEdge = wasCond ? block->GetTrueEdge() : nullptr;
+                // assertion out sets if morph changes the block's edges.
+                bool        wasCond = block->KindIs(BBJ_COND);
+                BasicBlock* trueBb  = wasCond ? block->GetTrueTarget() : nullptr;
+                BasicBlock* falseBb = wasCond ? block->GetFalseTarget() : nullptr;
 
                 // Re-morph the statement.
                 fgMorphBlockStmt(block, stmt DEBUGARG("optAssertionPropMain"));
                 madeChanges = true;
 
-                // If a BBJ_COND was folded to BBJ_ALWAYS taking the true edge,
-                // bbAssertionOut still has false-edge assertions. Update it to
-                // the true-edge assertions from bbJtrueAssertionOut.
-                if (wasCond && block->KindIs(BBJ_ALWAYS) && (block->GetTargetEdge() == trueEdge))
+                // Fix up assertion out sets if morphing changed the block's edges in a way
+                // that affects the semantics of the assertions.
+                //
+                if (wasCond)
                 {
-                    BitVecOps::Assign(apTraits, block->bbAssertionOut, bbJtrueAssertionOut[block->bbNum]);
+                    if (!block->KindIs(BBJ_COND))
+                    {
+                        if (block->GetUniqueSucc() == trueBb)
+                        {
+                            // BBJ_COND was folded (e.g. to BBJ_ALWAYS).
+                            // Fix up bbAssertionOut to match the retained edge.
+                            //
+                            BitVecOps::Assign(apTraits, block->bbAssertionOut, bbJtrueAssertionOut[block->bbNum]);
+                        }
+                        else if (block->GetUniqueSucc() == falseBb)
+                        {
+                            // bbAssertionOut already has the false-edge assertions.
+                        }
+                        else
+                        {
+                            // Converted to something unexpected (e.g. BBJ_SWITCH) — conservatively
+                            // just propagate the IN assertions, which is better than losing all assertions.
+                            //
+                            BitVecOps::Assign(apTraits, block->bbAssertionOut, block->bbAssertionIn);
+                            // We can also quickly walk over the trees and accumulate more assertions if needed.
+                        }
+                    }
+                    else if ((block->GetTrueTarget() != trueBb) || (block->GetFalseTarget() != falseBb))
+                    {
+                        // Conservatively clear assertions if edges changed in any way that we don't expect.
+                        // We still can be smart here and handle e.g. edge flip.
+                        //
+                        BitVecOps::Assign(apTraits, block->bbAssertionOut, block->bbAssertionIn);
+                        BitVecOps::Assign(apTraits, bbJtrueAssertionOut[block->bbNum], block->bbAssertionIn);
+                    }
                 }
             }
 
