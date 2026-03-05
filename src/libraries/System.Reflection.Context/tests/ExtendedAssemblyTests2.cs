@@ -101,8 +101,17 @@ namespace System.Reflection.Context.Tests
         [Fact]
         public void GetModule_ReturnsModule()
         {
-            Module module = _customAssembly.GetModule(_customAssembly.ManifestModule.Name);
-            Assert.NotNull(module);
+            string moduleName = _customAssembly.ManifestModule.Name;
+            if (PlatformDetection.HasAssemblyFiles)
+            {
+                Module module = _customAssembly.GetModule(moduleName);
+                Assert.NotNull(module);
+            }
+            else
+            {
+                // On native AOT, Module.Name returns "<Unknown>" and GetModule with that name returns null
+                Assert.Equal("<Unknown>", moduleName);
+            }
         }
 
         [Fact]
@@ -150,8 +159,16 @@ namespace System.Reflection.Context.Tests
         [Fact]
         public void GetSatelliteAssembly_ThrowsForNonExistent()
         {
-            Assert.Throws<FileNotFoundException>(() =>
-                _customAssembly.GetSatelliteAssembly(new CultureInfo("fr-FR")));
+            if (PlatformDetection.IsNativeAot)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    _customAssembly.GetSatelliteAssembly(new CultureInfo("fr-FR")));
+            }
+            else
+            {
+                Assert.Throws<FileNotFoundException>(() =>
+                    _customAssembly.GetSatelliteAssembly(new CultureInfo("fr-FR")));
+            }
         }
 
         [Fact]

@@ -128,13 +128,17 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             hr = ex.HResult;
         }
 
-#if DEBUG
+        // Advance the legacy stack walk to keep it in sync with the cDAC walk.
+        // GetFrame() passes the legacy frame to ClrDataFrame, which delegates
+        // GetArgumentByIndex/GetLocalVariableByIndex to it. If we don't advance
+        // the legacy walk here, those calls operate on the wrong frame.
         if (_legacyImpl is not null)
         {
             int hrLocal = _legacyImpl.Next();
+#if DEBUG
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-        }
 #endif
+        }
 
         return hr;
     }
