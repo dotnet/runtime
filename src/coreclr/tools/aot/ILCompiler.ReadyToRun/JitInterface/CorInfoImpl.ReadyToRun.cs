@@ -1299,22 +1299,6 @@ namespace Internal.JitInterface
             return _compilation.NodeFactory.GetReadyToRunHelperCell(id);
         }
 
-        // CORINFO_ACCESS_ANY = 0x0000, // Normal access
-        // CORINFO_ACCESS_THIS = 0x0001, // Accessed via the this reference
-        // CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT = 0x0002, // Prefer access to a method via slot over using the temporary entrypoint
-
-        // CORINFO_ACCESS_NONNULL = 0x0004, // Instance is guaranteed non-null
-
-        // CORINFO_ACCESS_LDFTN = 0x0010, // Accessed via ldftn
-        // CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE = 0x0020, // Method might be attributed with UnmanagedCallersOnlyAttribute.
-
-        // // Field access flags
-        // CORINFO_ACCESS_GET = 0x0100, // Field get (ldfld)
-        // CORINFO_ACCESS_SET = 0x0200, // Field set (stfld)
-        // CORINFO_ACCESS_ADDRESS = 0x0400, // Field address (ldflda)
-        // CORINFO_ACCESS_INIT_ARRAY = 0x0800, // Field use for InitializeArray
-        // // UNUSED = 0x4000,
-        // CORINFO_ACCESS_INLINECHECK = 0x8000, // Return fieldFlags and fieldAccessor only. Used by JIT64 during inlining.
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
         {
             DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);

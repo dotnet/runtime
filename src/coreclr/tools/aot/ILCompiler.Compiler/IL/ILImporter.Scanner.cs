@@ -465,11 +465,13 @@ namespace Internal.IL
 
                     _dependencies.Add(_factory.ConstructedTypeSymbol(_compilation.TypeSystemContext.ContinuationType), asyncReason);
 
+                    DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+
                     _dependencies.Add(_compilation.GetHelperEntrypoint(ReadyToRunHelper.AllocContinuation), asyncReason);
-                    _dependencies.Add(_compilation.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "CaptureExecutionContext"u8, null), asyncReason);
-                    _dependencies.Add(_compilation.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "RestoreExecutionContext"u8, null), asyncReason);
-                    _dependencies.Add(_compilation.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "CaptureContinuationContext"u8, null), asyncReason);
-                    _dependencies.Add(_compilation.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "RestoreContextsOnSuspension"u8, null), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null)), asyncReason);
+                    _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
                 }
 
                 // If this is the task await pattern, we're actually going to call the variant
