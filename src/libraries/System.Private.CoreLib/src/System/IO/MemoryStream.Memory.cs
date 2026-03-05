@@ -11,7 +11,7 @@ namespace System.IO
     {
         /// <summary>Initializes a new non-writable instance of the <see cref="MemoryStream"/> class based on the specified <see cref="ReadOnlyMemory{T}"/>.</summary>
         /// <param name="memory">The read-only memory from which to create the current stream.</param>
-        internal MemoryStream(ReadOnlyMemory<byte> memory)
+        public MemoryStream(ReadOnlyMemory<byte> memory)
         {
             _memoryData = new MemoryData(memory);
             _length = _capacity = memory.Length;
@@ -20,7 +20,7 @@ namespace System.IO
 
         /// <summary>Initializes a new writable instance of the <see cref="MemoryStream"/> class based on the specified <see cref="Memory{T}"/>.</summary>
         /// <param name="memory">The memory from which to create the current stream.</param>
-        internal MemoryStream(Memory<byte> memory)
+        public MemoryStream(Memory<byte> memory)
             : this(memory, true)
         {
         }
@@ -28,7 +28,7 @@ namespace System.IO
         /// <summary>Initializes a new instance of the <see cref="MemoryStream"/> class based on the specified <see cref="Memory{T}"/> with the <see cref="CanWrite"/> property set as specified.</summary>
         /// <param name="memory">The memory from which to create the current stream.</param>
         /// <param name="writable"><see langword="true"/> to enable writing; otherwise, <see langword="false"/>.</param>
-        internal MemoryStream(Memory<byte> memory, bool writable)
+        public MemoryStream(Memory<byte> memory, bool writable)
         {
             _memoryData = new MemoryData(memory, writable);
             _length = _capacity = memory.Length;
