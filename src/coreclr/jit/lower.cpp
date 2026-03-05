@@ -7507,13 +7507,13 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
 // Lower stub dispatched virtual calls.
 GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 {
-    GenTreeCall * temp = comp->gtNewHelperCallNode(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, TYP_I_IMPL);
+    GenTreeCall * temp = m_compiler->gtNewHelperCallNode(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, TYP_I_IMPL);
 
     call->gtCallAddr = temp->gtCallAddr;
     call->gtCallType          = CT_USER_FUNC;
     call->gtFlags &= ~GTF_CALL_VIRT_STUB;
 
-    CORINFO_CONST_LOOKUP helperLookup = comp->compGetHelperFtn(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT);
+    CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT);
     call->gtDirectCallAddress         = helperLookup.addr;
 
     return nullptr;

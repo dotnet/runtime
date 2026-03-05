@@ -16,12 +16,8 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a section of the executable where interface dispatch cells
     /// are stored.
     /// </summary>
-    public class InterfaceDispatchCellSectionNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public class InterfaceDispatchCellSectionNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int _size;
-
-        public int Size => _size;
-
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
             if (relocsOnly)
@@ -36,8 +32,6 @@ namespace ILCompiler.DependencyAnalysis
                 symbols.Add(node);
                 totalSize += node.Size;
             }
-
-            _size = totalSize;
 
             return new ObjectData(new byte[totalSize], Array.Empty<Relocation>(), factory.Target.PointerSize, symbols.ToArray());
         }
