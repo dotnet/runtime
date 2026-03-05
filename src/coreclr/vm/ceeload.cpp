@@ -3686,8 +3686,10 @@ LPCWSTR GetCommandLineForDiagnostics()
     // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
     if (pCmdLine == nullptr)
     {
+#ifdef TARGET_WINDOWS
         // Use the result from GetCommandLineW() instead
         pCmdLine = GetCommandLineW();
+#endif // HOST_WINDOWS
     }
 
     return pCmdLine;
