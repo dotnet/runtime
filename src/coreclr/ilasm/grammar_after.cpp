@@ -171,7 +171,7 @@ unsigned GetDoubleW(_In_ __nullterminated char* begNum, unsigned L, double** ppR
     if(L > 254) L = 254;
     // L must be even in the Unicode case, so the null
     // termination isn't split across two WCHARs
-    L &= ~(size_t)1;
+    L &= ~1u;
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;
     dbuff[L+1] = 0;
