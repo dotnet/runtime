@@ -56,40 +56,6 @@ namespace System.IO
 {
     public partial class FileSystemWatcher
     {
-        // Configuration for resource limits (loaded once at module initialization)
-        private static readonly int s_maxSubdirectoriesPerDirectory = GetConfigurationInt32(
-            "System.IO.FileSystem.Watcher.Illumos.MaxSubdirectoriesPerDirectory",
-            "DOTNET_SYSTEM_IO_FSW_ILLUMOS_MAXSUBDIRS",
-            50);
-
-        private static readonly int s_maxFilesWatchedPerDirectory = GetConfigurationInt32(
-            "System.IO.FileSystem.Watcher.Illumos.MaxFilesWatchedPerDirectory",
-            "DOTNET_SYSTEM_IO_FSW_ILLUMOS_MAXFILES",
-            1000);
-
-        private static int GetConfigurationInt32(string appCtxSettingName, string envVarName, int defaultValue)
-        {
-            // First check AppContext
-            switch (AppContext.GetData(appCtxSettingName))
-            {
-                case uint value:
-                    return (int)value;
-                case int value:
-                    return value;
-                case string str when int.TryParse(str, out int parsed):
-                    return parsed;
-            }
-
-            // Fall back to environment variable
-            string? envVar = Environment.GetEnvironmentVariable(envVarName);
-            if (envVar != null && int.TryParse(envVar, out int envValue))
-            {
-                return envValue;
-            }
-
-            return defaultValue;
-        }
-
         private void StartRaisingEvents()
         {
             if (IsSuspended())
@@ -190,10 +156,6 @@ namespace System.IO
 
             // Cancellation state
             private volatile bool _isCancelling;
-
-            // Limit tracking - report error only once per directory when runtime limit is exceeded
-            private bool _hasReportedFileLimit;
-            private bool _hasReportedSubdirLimit;
 
             private nuint GetNextCookie()
             {
@@ -332,16 +294,6 @@ namespace System.IO
 
                 foreach ((string name, FileEntry entry) in snapshot.SortedEntries)
                 {
-                    if (filesAssociated >= s_maxFilesWatchedPerDirectory)
-                    {
-                        if (!_hasReportedFileLimit && _weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
-                        {
-                            _hasReportedFileLimit = true;
-                            watcher.OnError(new ErrorEventArgs(
-                                new IOException(SR.Format(SR.FSW_MaxFilesWatchedExceeded, s_maxFilesWatchedPerDirectory, _directoryPath))));
-                        }
-                        break;
-                    }
 
                     string fullPath = System.IO.Path.Combine(_directoryPath, name);
                     nuint cookie = GetNextCookie();
@@ -395,17 +347,6 @@ namespace System.IO
                 {
                     if (!entry.IsDirectory)
                         continue;
-
-                    if (subdirCount >= s_maxSubdirectoriesPerDirectory)
-                    {
-                        if (!_hasReportedSubdirLimit && _weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
-                        {
-                            _hasReportedSubdirLimit = true;
-                            watcher.OnError(new ErrorEventArgs(
-                                new IOException(SR.Format(SR.FSW_MaxSubdirectoriesExceeded, s_maxSubdirectoriesPerDirectory, _directoryPath))));
-                        }
-                        break;
-                    }
 
                     string subdirPath = System.IO.Path.Combine(_directoryPath, name);
                     string subdirRelativePath = string.IsNullOrEmpty(_relativePath)
@@ -743,48 +684,13 @@ namespace System.IO
                 // If hybrid mode, associate the new file
                 if (_watchIndividualFiles)
                 {
-                    if (_nameToWatchMap.Count < s_maxFilesWatchedPerDirectory)
-                    {
-                        AssociateSingleFile(name, newEntry);
-                    }
-                    else if (!_hasReportedFileLimit)
-                    {
-                        _hasReportedFileLimit = true;
-                        if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcherInstance))
-                        {
-                            watcherInstance.OnError(new ErrorEventArgs(
-                                new IOException(SR.Format(SR.FSW_MaxFilesWatchedExceeded, s_maxFilesWatchedPerDirectory, _directoryPath))));
-                        }
-                    }
+                    AssociateSingleFile(name, newEntry);
                 }
 
                 // If subdirectory, create watcher
                 if (isDir && _includeSubdirectories)
                 {
-                    bool createSubdirWatcher = false;
-                    bool reportSubdirLimit = false;
-                    lock (_subdirectoryWatchers)
-                    {
-                        if (_subdirectoryWatchers.Count < s_maxSubdirectoriesPerDirectory)
-                        {
-                            createSubdirWatcher = true;
-                        }
-                        else if (!_hasReportedSubdirLimit)
-                        {
-                            _hasReportedSubdirLimit = true;
-                            reportSubdirLimit = true;
-                        }
-                    }
-                    if (createSubdirWatcher)
-                    {
-                        CreateSingleSubdirectoryWatcher(name);
-                    }
-                    else if (reportSubdirLimit &&
-                             _weakWatcher.TryGetTarget(out FileSystemWatcher? watcherInstance))
-                    {
-                        watcherInstance.OnError(new ErrorEventArgs(
-                            new IOException(SR.Format(SR.FSW_MaxSubdirectoriesExceeded, s_maxSubdirectoriesPerDirectory, _directoryPath))));
-                    }
+                    CreateSingleSubdirectoryWatcher(name);
                 }
             }
 
