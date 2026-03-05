@@ -375,6 +375,7 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(r2rEntryPoint != (PCODE)NULL);
         PRECONDITION(stubType != DynamicMethodDesc::StubNotSet);
+        PRECONDITION(CheckPointer(pamTracker));
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
