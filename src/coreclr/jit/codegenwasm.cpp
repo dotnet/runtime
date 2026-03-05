@@ -1644,13 +1644,14 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     // In some cases the indir may not fault.
     // Tolerate these.
     //
-    if (!tree->IndirMayFault(m_compiler))
+    if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        genEmitNullCheck(REG_NA);
+    }
+    else
     {
         GetEmitter()->emitIns(INS_drop);
-        return;
     }
-
-    genEmitNullCheck(REG_NA);
 }
 
 //---------------------------------------------------------------------
