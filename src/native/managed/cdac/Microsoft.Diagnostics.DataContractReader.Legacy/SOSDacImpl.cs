@@ -3994,6 +3994,7 @@ public sealed unsafe partial class SOSDacImpl
         int hr = HResults.S_OK;
         List<DACEHInfo> clausesLocal = new();
         int E_ABORT = unchecked((int)0x80004004);
+        uint lastIndex = 0;
 
         try
         {
@@ -4012,7 +4013,6 @@ public sealed unsafe partial class SOSDacImpl
 
             List<ExceptionClauseInfo> exceptionClauses = executionManager.GetExceptionClauses(codeBlockHandle);
             uint numClauses = (uint)exceptionClauses.Count;
-            uint lastIndex = 0;
             for (uint i = 0; i < numClauses; i++)
             {
                 ExceptionClauseInfo clause = exceptionClauses[(int)i];
