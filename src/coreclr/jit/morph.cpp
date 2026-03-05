@@ -1040,6 +1040,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
         sortedArgs[argCount++] = &arg;
     }
 
+#if HAS_FIXED_REGISTER_SET
     // Set the beginning and end for the new argument table
     unsigned curInx;
     int      regCount      = 0;
@@ -1294,6 +1295,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
     // and regArgsRemaining should be zero
     assert(begTab == (endTab + 1));
     assert(argsRemaining == 0);
+#endif // HAS_FIXED_REGISTER_SET
 }
 
 //------------------------------------------------------------------------------
