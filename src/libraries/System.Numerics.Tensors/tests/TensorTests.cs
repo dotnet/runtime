@@ -1921,6 +1921,26 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static void TensorConcatenateNonDenseDestinationTests()
+        {
+            Tensor<int> backing = Tensor.CreateFromShape<int>([2, 3]);
+            TensorSpan<int> destination = backing.AsTensorSpan().Slice([0..2, 1..3]);
+            Assert.False(destination.IsDense);
+
+            Tensor<int> t0 = Tensor.Create([1, 2]);
+            Tensor<int> t1 = Tensor.Create([3, 4]);
+
+            Tensor.ConcatenateOnDimension(-1, [t0, t1], destination);
+
+            Assert.Equal(0, backing[0, 0]);
+            Assert.Equal(1, backing[0, 1]);
+            Assert.Equal(2, backing[0, 2]);
+            Assert.Equal(0, backing[1, 0]);
+            Assert.Equal(3, backing[1, 1]);
+            Assert.Equal(4, backing[1, 2]);
+        }
+
+        [Fact]
         public static void TensorTransposeTests()
         {
             Tensor<float> t0 = Tensor.Create<float>(Enumerable.Sequence<float>(0, 4, 1).ToArray(), lengths: [2, 2]);
