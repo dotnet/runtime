@@ -166,18 +166,13 @@ unsigned GetDoubleAU(_In_ __nullterminated char* begNum, unsigned L, double** pp
 
 unsigned GetDoubleW(_In_ __nullterminated char* begNum, unsigned L, double** ppRes)
 {
-    alignas(WCHAR) static char dbuff[256];
+    WCHAR dbuff[128] = {0};
     char* pdummy = NULL;
     if(L > 254) L = 254;
-    // L must be even in the Unicode case, so the null
-    // termination isn't split across two WCHARs
-    L &= ~1u;
-    memcpy(dbuff,begNum,L);
-    dbuff[L] = 0;
-    dbuff[L+1] = 0;
-    // CodeQL [SM02986] Cast to WCHAR is safe because dbuff is properly aligned and we ensure proper null termination above
-    *ppRes = new double(u16_strtod((const WCHAR*)dbuff, (WCHAR**)&pdummy));
-    return ((unsigned)(pdummy - dbuff));
+    L &= ~1u; // round down to WCHAR boundary
+    memcpy(dbuff, begNum, L);
+    *ppRes = new double(u16_strtod(dbuff, (WCHAR**)&pdummy));
+    return ((unsigned)(pdummy - (char*)dbuff));
 }
 /*--------------------------------------------------------------------------*/
 char* yygetline(int Line)
