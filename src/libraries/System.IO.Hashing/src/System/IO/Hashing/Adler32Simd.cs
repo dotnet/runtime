@@ -242,12 +242,12 @@ file struct AdlerVector256 : ISimdStrategy
             Vector256<byte> bytes = Vector256.LoadUnsafe(ref sourceRef);
             sourceRef = ref Unsafe.Add(ref sourceRef, (uint)Vector256<byte>.Count);
 
-            Vector256<uint> w_ps = ws1;
+            Vector256<uint> wps = ws1;
 
             ws1 = TAccumulate.Accumulate(ws1, bytes);
             ws2 = TDotProduct.DotProduct(ws2, bytes, weights2);
 
-            ws2 += w_ps << 5;
+            ws2 += wps << 5;
         }
 
         vs1 = ws1.GetLower() + ws1.GetUpper();
