@@ -51,7 +51,7 @@ public sealed class DacComNullableByRef<T> where T : class
 }
 
 /// <summary>
-/// Stateful marshallers for <see cref="DacComNullableByRef{T}"/>.
+/// Stateful marshalers for <see cref="DacComNullableByRef{T}"/>.
 /// Native type is <c>void**</c>.
 /// </summary>
 [CustomMarshaller(typeof(DacComNullableByRef<>), MarshalMode.UnmanagedToManagedIn, typeof(DacComNullableByRefMarshaller<>.UnmanagedToManaged))]

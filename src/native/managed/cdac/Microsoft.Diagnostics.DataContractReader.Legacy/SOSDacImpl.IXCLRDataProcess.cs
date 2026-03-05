@@ -40,7 +40,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
     int IXCLRDataProcess.GetTaskByOSThreadID(uint osThreadID, DacComNullableByRef<IXCLRDataTask> task)
     {
-        // Find the thread correspending to the OS thread ID
+        // Find the thread corresponding to the OS thread ID
         Contracts.IThread contract = _target.Contracts.Thread;
         TargetPointer thread = contract.GetThreadStoreData().FirstThread;
         TargetPointer matchingThread = TargetPointer.Null;
