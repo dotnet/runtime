@@ -3944,7 +3944,7 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
     internal sealed class TraverseEhInfoExpected
     {
-        public TraverseEhInfoExpected(List<DACEHInfo> elements, bool expectAbort, int? abortIndex = null)
+        public TraverseEhInfoExpected(List<DACEHInfo> elements, bool expectAbort, uint? abortIndex = null)
         {
             Elements = elements;
             ExpectAbort = expectAbort;
@@ -3953,7 +3953,7 @@ public sealed unsafe partial class SOSDacImpl
 
         public List<DACEHInfo> Elements { get; }
         public bool ExpectAbort { get; }
-        public int? AbortIndex { get; }
+        public uint? AbortIndex { get; }
         public int CallbackCount { get; set; }
     }
 
@@ -4012,7 +4012,7 @@ public sealed unsafe partial class SOSDacImpl
 
             List<ExceptionClauseInfo> exceptionClauses = executionManager.GetExceptionClauses(codeBlockHandle);
             uint numClauses = (uint)exceptionClauses.Count;
-            int lastIndex = 0;
+            uint lastIndex = 0;
             for (uint i = 0; i < numClauses; i++)
             {
                 ExceptionClauseInfo clause = exceptionClauses[(int)i];
