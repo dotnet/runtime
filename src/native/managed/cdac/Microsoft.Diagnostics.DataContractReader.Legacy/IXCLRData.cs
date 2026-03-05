@@ -447,7 +447,7 @@ public unsafe partial interface IXCLRDataTask
     int GetProcess(/*IXCLRDataProcess*/ void** process);
 
     [PreserveSig]
-    int GetCurrentAppDomain(/*IXCLRDataAppDomain*/ void** appDomain);
+    int GetCurrentAppDomain(out IXCLRDataAppDomain? appDomain);
 
     [PreserveSig]
     int GetUniqueID(ulong* id);
@@ -595,7 +595,7 @@ public unsafe partial interface IXCLRDataAppDomain
     [PreserveSig]
     int GetFlags(uint* flags);
     [PreserveSig]
-    int IsSameObject(/*IXCLRDataAppDomain*/ void* appDomain);
+    int IsSameObject(IXCLRDataAppDomain* appDomain);
     [PreserveSig]
     int GetManagedObject(/*IXCLRDataValue*/ void** value);
     [PreserveSig]
