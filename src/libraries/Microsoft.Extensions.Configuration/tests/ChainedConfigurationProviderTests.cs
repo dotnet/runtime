@@ -66,29 +66,29 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AddConfiguration(innerConfig)
                 .Build();
 
-            Assert.Equal("1", outerConfig["Random"]);
+            Assert.Equal("1", outerConfig["SomeValue"]);
 
             outerConfig.Reload();
 
-            Assert.Equal("2", outerConfig["Random"]);
+            Assert.Equal("2", outerConfig["SomeValue"]);
         }
 
         [Fact]
         public void ChainedConfiguration_ReloadDoesNotPropagateToInnerConfigurationSection()
         {
             var innerConfig = new ConfigurationBuilder()
-                .Add(new CountingValueConfigurationSource("Section:Random"))
+                .Add(new CountingValueConfigurationSource("Section:SomeValue"))
                 .Build();
 
             var outerConfig = new ConfigurationBuilder()
                 .AddConfiguration(innerConfig.GetSection("Section"))
                 .Build();
 
-            Assert.Equal("1", outerConfig["Random"]);
+            Assert.Equal("1", outerConfig["SomeValue"]);
 
             outerConfig.Reload();
 
-            Assert.Equal("1", outerConfig["Random"]);
+            Assert.Equal("1", outerConfig["SomeValue"]);
         }
 
         [Fact]
@@ -163,7 +163,7 @@ namespace Microsoft.Extensions.Configuration.Test
         {
             private readonly string _key;
 
-            public CountingValueConfigurationSource(string key = "Random")
+            public CountingValueConfigurationSource(string key = "SomeValue")
                 => _key = key;
 
             public IConfigurationProvider Build(IConfigurationBuilder builder)
