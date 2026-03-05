@@ -22,7 +22,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
         _legacyImpl = legacyImpl;
     }
 
-    int IXCLRDataAppDomain.GetProcess(IXCLRDataProcess** process)
+    int IXCLRDataAppDomain.GetProcess(/*IXCLRDataProcess*/ void** process)
         => _legacyImpl is not null ? _legacyImpl.GetProcess(process) : HResults.E_NOTIMPL;
 
     int IXCLRDataAppDomain.GetName(uint bufLen, uint* nameLen, char* name)
