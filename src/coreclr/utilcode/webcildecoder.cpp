@@ -393,12 +393,6 @@ BOOL WebcilDecoder::HasStrongNameSignature() const
     return CorDecoderHelpers::HasStrongNameSignature(*this);
 }
 
-PTR_CVOID WebcilDecoder::GetStrongNameSignature(COUNT_T *pSize) const
-{
-    WRAPPER_NO_CONTRACT;
-    return CorDecoderHelpers::GetStrongNameSignature(*this, pSize);
-}
-
 // ------------------------------------------------------------
 // Entry point
 // ------------------------------------------------------------
@@ -449,11 +443,14 @@ const WebcilSectionHeader *WebcilDecoder::RvaToSection(RVA rva) const
     while (section < sectionEnd)
     {
         // Webcil is always flat — check both virtual range and raw data range
-        if (rva >= section->VirtualAddress &&
-            rva < section->VirtualAddress + section->VirtualSize &&
-            rva < section->VirtualAddress + section->SizeOfRawData)
+        // Use subtraction-based checks to avoid uint32 overflow
+        if (rva >= section->VirtualAddress)
         {
-            return section;
+            uint32_t offset = rva - section->VirtualAddress;
+            if (offset < section->VirtualSize && offset < section->SizeOfRawData)
+            {
+                return section;
+            }
         }
 
         section++;
@@ -475,10 +472,13 @@ const WebcilSectionHeader *WebcilDecoder::OffsetToSection(COUNT_T fileOffset) co
 
     while (section < sectionEnd)
     {
-        if (fileOffset >= section->PointerToRawData &&
-            fileOffset < section->PointerToRawData + section->SizeOfRawData)
+        if (fileOffset >= section->PointerToRawData)
         {
-            return section;
+            COUNT_T offsetWithinSection = fileOffset - section->PointerToRawData;
+            if (offsetWithinSection < section->SizeOfRawData)
+            {
+                return section;
+            }
         }
 
         section++;
@@ -711,9 +711,9 @@ COUNT_T WebcilDecoder::GetVirtualSize() const
 
     for (uint16_t i = 0; i < pHeader->CoffSections; i++)
     {
-        COUNT_T sectionEnd = section[i].VirtualAddress + section[i].VirtualSize;
-        if (sectionEnd > maxVA)
-            maxVA = sectionEnd;
+        S_UINT32 sectionEnd = S_UINT32(section[i].VirtualAddress) + S_UINT32(section[i].VirtualSize);
+        if (!sectionEnd.IsOverflow() && sectionEnd.Value() > maxVA)
+            maxVA = sectionEnd.Value();
     }
 
     return maxVA > 0 ? maxVA : m_size;
@@ -773,6 +773,15 @@ TADDR WebcilDecoder::GetDirectoryEntryData(int entry, COUNT_T *pSize) const
 
         if (pSize != NULL)
             *pSize = debugSize;
+
+        // Validate the debug directory range is within a section
+        const WebcilSectionHeader *section = RvaToSection(debugRva);
+        if (section == NULL)
+        {
+            if (pSize != NULL)
+                *pSize = 0;
+            return (TADDR)0;
+        }
 
         return GetRvaData(debugRva);
     }

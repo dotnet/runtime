@@ -730,12 +730,6 @@ inline CHECK PEDecoder::CheckStrongNameSignature() const
     return CheckDirectory(&GetCorHeader()->StrongNameSignature, IMAGE_SCN_MEM_WRITE, NULL_OK);
 }
 
-inline PTR_CVOID PEDecoder::GetStrongNameSignature(COUNT_T *pSize) const
-{
-    WRAPPER_NO_CONTRACT;
-    return CorDecoderHelpers::GetStrongNameSignature(*this, pSize);
-}
-
 inline BOOL PEDecoder::HasTls() const
 {
     CONTRACTL

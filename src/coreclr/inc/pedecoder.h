@@ -273,7 +273,6 @@ class PEDecoder
 
     BOOL HasStrongNameSignature() const;
     CHECK CheckStrongNameSignature() const;
-    PTR_CVOID GetStrongNameSignature(COUNT_T *pSize = NULL) const;
     BOOL IsStrongNameSigned() const;
 
     BOOL HasTls() const;

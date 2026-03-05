@@ -250,9 +250,14 @@ internal readonly struct Loader_1 : ILoader
             uint sizeOfRawData = _target.Read<uint>(sectionPtr + 8);   // SizeOfRawData at offset 8
             uint pointerToRawData = _target.Read<uint>(sectionPtr + 12); // PointerToRawData at offset 12
 
-            if ((uint)rva >= virtualAddress && (uint)rva < virtualAddress + virtualSize && (uint)rva < virtualAddress + sizeOfRawData)
+            uint rvaUnsigned = (uint)rva;
+            if (rvaUnsigned >= virtualAddress)
             {
-                return (uint)(rva - virtualAddress) + pointerToRawData;
+                uint offset = rvaUnsigned - virtualAddress;
+                if (offset < virtualSize && offset < sizeOfRawData)
+                {
+                    return offset + pointerToRawData;
+                }
             }
         }
 

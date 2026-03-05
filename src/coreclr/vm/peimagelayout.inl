@@ -473,12 +473,6 @@ inline CHECK PEImageLayout::CheckStrongNameSignature() const
     CHECK_OK;
 }
 
-inline PTR_CVOID PEImageLayout::GetStrongNameSignature(COUNT_T *pSize) const
-{
-    WRAPPER_NO_CONTRACT;
-    DECODER_DISPATCH(GetStrongNameSignature(pSize))
-}
-
 inline BOOL PEImageLayout::IsStrongNameSigned() const
 {
     WRAPPER_NO_CONTRACT;

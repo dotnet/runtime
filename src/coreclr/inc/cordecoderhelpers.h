@@ -111,27 +111,6 @@ inline BOOL HasStrongNameSignature(const TDecoder& decoder)
     return (decoder.GetCorHeader()->StrongNameSignature.VirtualAddress != 0);
 }
 
-template<typename TDecoder>
-inline PTR_CVOID GetStrongNameSignature(const TDecoder& decoder, COUNT_T *pSize)
-{
-    CONTRACT(PTR_CVOID)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(decoder.HasCorHeader());
-        PRECONDITION(HasStrongNameSignature(decoder));
-        PRECONDITION(CheckPointer(pSize, NULL_OK));
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &decoder.GetCorHeader()->StrongNameSignature;
-
-    if (pSize != NULL)
-        *pSize = VAL32(pDir->Size);
-
-    RETURN dac_cast<PTR_CVOID>(decoder.GetRvaData(VAL32(pDir->VirtualAddress)));
-}
-
 // ------------------------------------------------------------
 // Metadata
 // ------------------------------------------------------------
@@ -244,8 +223,9 @@ inline CHECK CheckResource(const TDecoder& decoder, COUNT_T offset)
     CHECK(decoder.CheckRva(rva, sizeof(DWORD)));
 
     // Make sure resource is within resource section
+    COUNT_T resourceSize = GET_UNALIGNED_VAL32((LPVOID)decoder.GetRvaData(rva));
     CHECK(CheckBounds(VAL32(pDir->VirtualAddress), VAL32(pDir->Size),
-                      rva + sizeof(DWORD), GET_UNALIGNED_VAL32((LPVOID)decoder.GetRvaData(rva))));
+                      rva + sizeof(DWORD), resourceSize));
 
     CHECK_OK;
 }
@@ -273,6 +253,7 @@ inline const void *GetResource(const TDecoder& decoder, COUNT_T offset, COUNT_T 
     if (pSize != NULL)
         *pSize = GET_UNALIGNED_VAL32(resourceBlob);
 
+    // ECMA-335 II.24.2.4: Each resource entry is preceded by a 4-byte length prefix.
     RETURN (const void *)((BYTE *)resourceBlob + sizeof(DWORD));
 }
 

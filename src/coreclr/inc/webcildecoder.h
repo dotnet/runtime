@@ -113,7 +113,6 @@ public:
     // COR header data accessors — delegate to CorDecoderHelpers
     BOOL IsStrongNameSigned() const;
     BOOL HasStrongNameSignature() const;
-    PTR_CVOID GetStrongNameSignature(COUNT_T *pSize = NULL) const;
     PTR_CVOID GetMetadata(COUNT_T *pSize = NULL) const;
     BOOL HasManagedEntryPoint() const;
     ULONG GetEntryPointToken() const;
