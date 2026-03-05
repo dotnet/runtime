@@ -1214,11 +1214,12 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
 MAIN_LOOP:
     try
     {
-        SAVE_THE_RESUME_IP;
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         while (true)
         {
+            SAVE_THE_RESUME_IP;
+
             // Interpreter-TODO: This is only needed to enable SOS see the exact location in the interpreted method.
             // Neither the GC nor the managed debugger needs that as they walk the stack when the runtime is suspended
             // and we can save the IP to the frame at the suspension time.

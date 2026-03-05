@@ -1914,6 +1914,10 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
     Thread *pThread = GetThread();
     InterpreterFrame *pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
 
+#if defined(TARGET_LOONGARCH64)
+    CONTEXT preservedContext = *pContext;
+#endif
+
     // Build a context from the callee-saved registers, SP, and IP saved from
     // InterpExecMethod's try block. This avoids OS-based unwinding (PAL_VirtualUnwind /
     // VirtualUnwindCallFrame). The saved IP is inside the try block, which is required
@@ -2006,6 +2010,9 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
     pContext->Ebx = pRegs->Ebx;
     pContext->Ebp = pRegs->Ebp;
 #elif defined(TARGET_LOONGARCH64)
+    DWORD loongArchContextFlags = preservedContext.ContextFlags & (CONTEXT_LSX | CONTEXT_LASX);
+    pContext->ContextFlags |= loongArchContextFlags;
+
     pContext->Fp = pRegs->fp;
     pContext->Ra = pRegs->ra;
     pContext->S0 = pRegs->s0;
@@ -2017,11 +2024,35 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
     pContext->S6 = pRegs->s6;
     pContext->S7 = pRegs->s7;
     pContext->S8 = pRegs->s8;
-    // Restore FP callee-saved f24-f31
+
+    // Preserve floating-point control state and vector mode from the incoming context.
+    pContext->Fcc = preservedContext.Fcc;
+    pContext->Fcsr = preservedContext.Fcsr;
+
+    // Restore FP callee-saved f24-f31.
+    // SaveInterpCalleeSavedRegisters captures only the low 64-bit lane, so for LSX/LASX
+    // we preserve upper lanes from the incoming context and overwrite lane 0.
     UINT64* fpRegs = (UINT64*)pInterpreterFrame->GetFPCalleeSavedRegisters();
     for (int i = 0; i < 8; i++)
     {
-        pContext->F[24 + i] = fpRegs[i];
+        int regIndex = 24 + i;
+        if ((loongArchContextFlags & CONTEXT_LASX) != 0)
+        {
+            // LASX stores each FP register in 4x UINT64 slots.
+            memcpy(&pContext->F[regIndex * 4], &preservedContext.F[regIndex * 4], sizeof(UINT64) * 4);
+            pContext->F[regIndex * 4] = fpRegs[i];
+        }
+        else if ((loongArchContextFlags & CONTEXT_LSX) != 0)
+        {
+            // LSX stores each FP register in 2x UINT64 slots.
+            memcpy(&pContext->F[regIndex * 2], &preservedContext.F[regIndex * 2], sizeof(UINT64) * 2);
+            pContext->F[regIndex * 2] = fpRegs[i];
+        }
+        else
+        {
+            // Scalar FPU context stores each FP register in a single UINT64 slot.
+            pContext->F[regIndex] = fpRegs[i];
+        }
     }
 #elif defined(TARGET_RISCV64)
     pContext->Fp = pRegs->fp;
