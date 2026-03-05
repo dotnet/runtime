@@ -511,8 +511,6 @@ struct TernaryLogicInfo
 
 struct HWIntrinsicInfo
 {
-    // 32-bit: 36-bytes (34+2 trailing padding)
-    // 64-bit: 40-bytes (38+2 trailing padding)
 
     const char*     name;  // 4 or 8-bytes
     HWIntrinsicFlag flags; // 4-bytes
