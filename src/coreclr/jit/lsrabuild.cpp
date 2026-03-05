@@ -353,7 +353,7 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
         // This is case #4.
         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE4, interval));
         useRefPosition->registerAssignment = defRegAssignment;
-        useRefPosition->isFixedRegRef = false;
+        useRefPosition->isFixedRegRef      = false;
         return;
     }
     if ((defReg != REG_NA) && (useReg != REG_NA))
