@@ -65,7 +65,7 @@
 #include "excep.h"
 #include "comcache.h"
 #include "threads.h"
-#include "comcache.h"
+#include "cdacdata.h"
 
 class Object;
 class ComCallWrapper;
@@ -169,7 +169,7 @@ struct RCW
      {
          MarshalingType_Unknown = 0,      /* The MarshalingType has not been set*/
          MarshalingType_Inhibit = 1,      /* Type implements INoMarshal */
-         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller */
+         MarshalingType_FreeThreaded = 2, /* Type aggregates the FreeThreaded marshaller. [cDAC] [BuiltInCOM]: Contract depends on this value. */
      };
 
     //-------------------------------------------------
@@ -518,7 +518,7 @@ public:
             DWORD       m_fAllowEagerSTACleanup:1; // this RCW can be cleaned up eagerly (as opposed to via CleanupUnusedObjectsInCurrentContext)
 
             // Reserve 2 bits for marshaling type
-            DWORD       m_MarshalingType:2;        // Marshaling type of the COM object.
+            DWORD       m_MarshalingType:2;        // Marshaling type of the COM object. [cDAC] [BuiltInCOM]: Contract depends on the bit position of this field within m_dwFlags.
 
             DWORD       m_Detached:1;              // set if the RCW was found dead during GC
         };
@@ -542,6 +542,8 @@ private :
 
     // IUnkEntry needs to access m_UnkEntry field
     friend IUnkEntry;
+    // cdac_data<RCW> needs access to m_UnkEntry
+    friend struct ::cdac_data<RCW>;
 
 private :
     static RCW* CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT);
@@ -579,6 +581,16 @@ private :
         CtxEntry *pCtxEntry = m_UnkEntry.GetCtxEntry();
         RETURN pCtxEntry;
     }
+};
+
+template<>
+struct cdac_data<RCW>
+{
+    static constexpr size_t NextCleanupBucket = offsetof(RCW, m_pNextCleanupBucket);
+    static constexpr size_t NextRCW = offsetof(RCW, m_pNextRCW);
+    static constexpr size_t Flags = offsetof(RCW, m_Flags);
+    static constexpr size_t CtxCookie = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxCookie);
+    static constexpr size_t CtxEntry = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxEntry);
 };
 
 inline RCW::CreationFlags operator|(RCW::CreationFlags lhs, RCW::CreationFlags rhs)
@@ -1271,6 +1283,7 @@ class RCWCleanupList
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif // DACCESS_COMPILE
+    friend struct ::cdac_data<RCWCleanupList>;
 
 public:
     RCWCleanupList()
@@ -1356,6 +1369,12 @@ private:
 
     // Fast check for whether threads should help cleanup wrappers in their contexts
     BOOL                m_doCleanupInContexts;
+};
+
+template<>
+struct cdac_data<RCWCleanupList>
+{
+    static constexpr size_t FirstBucket = offsetof(RCWCleanupList, m_pFirstBucket);
 };
 
 FORCEINLINE void CtxEntryHolderRelease(CtxEntry *p)

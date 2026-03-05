@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported 'out' parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported 'out' parameter modifier</target>
+        <target state="translated">引数 '{0}' はサポートされていない 'out' パラメーター修飾子を使用しています</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported 'out' parameter modifier</source>
-        <target state="new">Argument is using the unsupported 'out' parameter modifier</target>
+        <target state="translated">引数がサポートされていない 'out' パラメーター修飾子を使用しています</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -49,22 +49,22 @@
       </trans-unit>
       <trans-unit id="LoggingMethodHasAllowsRefStructConstraintMessage">
         <source>Logging methods cannot have type parameters with 'allows ref struct' constraints</source>
-        <target state="new">Logging methods cannot have type parameters with 'allows ref struct' constraints</target>
+        <target state="translated">ログ メソッドには 'ref 構造体の許容' 制約を持つ型パラメーターを指定できません</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustBePartialMessage">
         <source>Logging methods must be 'partial'</source>
-        <target state="new">Logging methods must be 'partial'</target>
+        <target state="translated">ログ メソッドは 'partial' である必要があります</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodMustReturnVoidMessage">
         <source>Logging methods must return 'void'</source>
-        <target state="new">Logging methods must return 'void'</target>
+        <target state="translated">ログ メソッドは 'void' を返す必要があります</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodShouldBeStaticMessage">
         <source>Logging methods must be 'static'</source>
-        <target state="new">Logging methods must be 'static'</target>
+        <target state="translated">ログ メソッドは 'static' である必要があります</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
@@ -144,7 +144,7 @@
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</source>
-        <target state="new">Remove redundant qualifier ('Info:', 'Warning:', 'Error:', etc) from the logging message since it is implicit in the specified log level.</target>
+        <target state="translated">指定されたログ レベルに暗黙的に含まれているため、ログ メッセージから冗長な修飾子 ('Info:'、'Warning:'、'Error:' など) を削除してください。</target>
         <note />
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageTitle">
@@ -204,22 +204,22 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsMessage">
         <source>Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported 'params' or 'scoped' parameter modifier</target>
+        <target state="translated">引数 '{0}' は、サポートされていない 'params' または 'scoped' パラメーター修飾子を使用しています</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterParamsTitle">
         <source>Argument is using the unsupported 'params' or 'scoped' parameter modifier</source>
-        <target state="new">Argument is using the unsupported 'params' or 'scoped' parameter modifier</target>
+        <target state="translated">引数がサポートされていない 'params' または 'scoped' パラメーター修飾子を使用しています</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructMessage">
         <source>Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</source>
-        <target state="new">Parameter '{0}' is a 'ref struct', which is not supported by the logging source generator</target>
+        <target state="translated">パラメーター '{0}' は 'ref struct' であり、ログ ソース ジェネレーターではサポートされていません</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterRefStructTitle">
         <source>Logging method parameter is a 'ref struct'</source>
-        <target state="new">Logging method parameter is a 'ref struct'</target>
+        <target state="translated">ログ メソッド パラメーターは 'ref struct' です</target>
         <note />
       </trans-unit>
     </body>
