@@ -2265,9 +2265,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 #define _SIG(helper_id, ...) \
     case helper_id: \
     { \
-        static CorInfoWasmType helper_id ## _types[] = {__VA_ARGS__}; \
+        static CorInfoWasmType helper_id ## _types [] = {__VA_ARGS__}; \
         types = helper_id ## _types; \
-        typeCount = sizeof(helper_id ## _types) / sizeof(CorInfoWasmType); \
+        typeCount = ArrLen(helper_id ## _types); \
         break; \
     }
 
@@ -2290,8 +2290,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         _SIG(CORINFO_HELP_BULK_WRITEBARRIER,         CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32);
 
         default:
-            printf("Helper %d (%s) has no hard-coded signature\n", helper, GetCompiler()->eeGetMethodFullName(params.methHnd));
-            NYI_WASM("signature for unrecognized helper");
+            JITDUMP("Helper %d (%s) has no hard-coded signature\n", helper, GetCompiler()->eeGetMethodFullName(params.methHnd));
+            NYI_WASM("signature for unrecognized helper in genEmitHelperCall");
             unreached();
     }
 
