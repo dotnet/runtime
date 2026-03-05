@@ -12,7 +12,7 @@ Sample apps use the "public" properties `WasmEnableThreads` to enable the releva
 
 ## Libraries feature defines ##
 
-We use the `FeatureWasmManagedThreads` property in the libraries projects to conditionally define
+We use the `WasmEnableThreads` property in the libraries projects to conditionally define
 `FEATURE_WASM_MANAGED_THREADS` which is used to affect how the libraries are built for the multi-threaded
 runtime.
 
