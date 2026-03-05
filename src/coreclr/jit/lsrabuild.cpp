@@ -336,7 +336,7 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
         // This is case #3.
         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE3, interval));
         defRefPosition->registerAssignment = useRegAssignment;
-        defRefPosition->isFixedRegRef = false;
+        defRefPosition->isFixedRegRef      = false;
         return;
     }
     if ((useReg != REG_NA) && !defRegConflict && canChangeUseAssignment)
@@ -1155,7 +1155,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                         continue;
                     }
 
-                Interval*  interval   = getIntervalForLocalVar(varIndex);
+                Interval* interval = getIntervalForLocalVar(varIndex);
                 updateIntervalPreferencesForKill(interval, killMask);
             }
         }
@@ -1197,7 +1197,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 //
 void LinearScan::updateIntervalPreferencesForKill(Interval* interval, regMaskTP killMask)
 {
-    const bool isCallKill = ((killMask.getLow() == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
+    const bool       isCallKill   = ((killMask.getLow() == RBM_INT_CALLEE_TRASH) || (killMask == RBM_CALLEE_TRASH));
     SingleTypeRegSet regsKillMask = killMask.GetRegSetForType(interval->registerType);
 
     if (isCallKill)
