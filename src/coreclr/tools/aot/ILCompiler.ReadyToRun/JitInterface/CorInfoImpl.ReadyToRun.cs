@@ -1301,36 +1301,19 @@ namespace Internal.JitInterface
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
         {
-            DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
-            var captureExecutionContextMethHnd = asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null);
-            var restoreExecutionContextMethHnd = asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null);
-            var captureContinuationContextMethHnd = asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null);
-            var captureContextsMethHnd = asyncHelpers.GetKnownMethod("CaptureContexts"u8, null);
-            var restoreContextsMethHnd = asyncHelpers.GetKnownMethod("RestoreContexts"u8, null);
-            var restoreContextsOnSuspensionMethHnd = asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null);
             var method = HandleToObject(ftn);
-            if (method == captureExecutionContextMethHnd
-                || method == restoreExecutionContextMethHnd
-                || method == captureContinuationContextMethHnd
-                || method == captureContextsMethHnd
-                || method == restoreContextsMethHnd
-                || method == restoreContextsOnSuspensionMethHnd)
-            {
-                var entrypoint = _compilation.NodeFactory.MethodEntrypoint(
-                    new MethodWithToken(
-                        method,
-                        _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(method, true, true),
-                        null,
-                        false,
-                        MethodBeingCompiled),
+
+            var entrypoint = _compilation.NodeFactory.MethodEntrypoint(
+                new MethodWithToken(
+                    method,
+                    _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(method, true, true),
+                    null,
                     false,
-                    false,
-                    false);
-                pResult = CreateConstLookupToSymbol(entrypoint);
-            }
-            else{
-                throw new RequiresRuntimeJitException(method.ToString());
-            }
+                    MethodBeingCompiled),
+                false,
+                false,
+                false);
+            pResult = CreateConstLookupToSymbol(entrypoint);
         }
 
         private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)

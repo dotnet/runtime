@@ -7019,6 +7019,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assert(!compIsForInlining());
 
+                if (IsReadyToRun())
+                {
+                    implReadyToRunUnsupported();
+                }
+
                 if ((info.compFlags & CORINFO_FLG_SYNCH) || block->hasTryIndex() || block->hasHndIndex())
                 {
                     /* CEE_JMP does not make sense in some "protected" regions. */
