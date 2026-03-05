@@ -71,6 +71,30 @@ public unsafe class ClrDataFrameDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void GetContext_ExactSizeBuffer_Succeeds(TestConfiguration config)
+    {
+        InitializeDumpTest(config, "StackWalk", "full");
+
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+        IStackDataFrameHandle firstFrame = stackWalk.CreateStackWalk(crashingThread).First();
+
+        ClrDataFrame frame = new ClrDataFrame(Target, firstFrame, legacyImpl: null);
+        IXCLRDataFrame xclrFrame = frame;
+
+        byte[] rawContext = stackWalk.GetRawContext(firstFrame);
+        byte[] contextBuf = new byte[rawContext.Length];
+        uint contextSize;
+        int hr = xclrFrame.GetContext(0, (uint)contextBuf.Length, &contextSize, contextBuf);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal((uint)rawContext.Length, contextSize);
+        Assert.True(contextBuf.SequenceEqual(rawContext), "Context bytes should match raw context");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     public void GetContext_BufferTooSmall_ReturnsInvalidArg(TestConfiguration config)
     {
         InitializeDumpTest(config, "StackWalk", "full");
@@ -82,7 +106,8 @@ public unsafe class ClrDataFrameDumpTests : DumpTestBase
         ClrDataFrame frame = new ClrDataFrame(Target, firstFrame, legacyImpl: null);
         IXCLRDataFrame xclrFrame = frame;
 
-        byte[] tinyBuf = new byte[1];
+        byte[] rawContext = stackWalk.GetRawContext(firstFrame);
+        byte[] tinyBuf = new byte[rawContext.Length + 1];
         int hr = xclrFrame.GetContext(0, (uint)tinyBuf.Length, null, tinyBuf);
 
         Assert.Equal(System.HResults.E_INVALIDARG, hr);
@@ -104,13 +129,11 @@ public unsafe class ClrDataFrameDumpTests : DumpTestBase
         ClrDataFrame frame = new ClrDataFrame(Target, firstFrame, legacyImpl: null);
         IXCLRDataFrame xclrFrame = frame;
 
-        void* appDomainPtr;
-        int hr = xclrFrame.GetAppDomain(&appDomainPtr);
+        DacComNullableByRef<IXCLRDataAppDomain> appDomainOut = new(isNullRef: false);
+        int hr = xclrFrame.GetAppDomain(appDomainOut);
 
         Assert.Equal(System.HResults.S_OK, hr);
-        Assert.True(appDomainPtr is not null, "Expected non-null AppDomain pointer");
-
-        Marshal.Release((nint)appDomainPtr);
+        Assert.NotNull(appDomainOut.Interface);
     }
 
     [ConditionalTheory]
@@ -120,6 +143,53 @@ public unsafe class ClrDataFrameDumpTests : DumpTestBase
     {
         InitializeDumpTest(config, "StackWalk", "full");
 
+        IXCLRDataAppDomain appDomain = GetAppDomainFromFirstFrame(config);
+
+        ulong uniqueId;
+        int hr = appDomain.GetUniqueID(&uniqueId);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(1ul, uniqueId);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void GetAppDomain_GetName_ReturnsNonEmptyName(TestConfiguration config)
+    {
+        InitializeDumpTest(config, "StackWalk", "full");
+
+        IXCLRDataAppDomain appDomain = GetAppDomainFromFirstFrame(config);
+
+        uint nameLen;
+        int hr = appDomain.GetName(0, &nameLen, null);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.True(nameLen > 1, "Expected non-empty AppDomain name");
+
+        char* nameBuf = stackalloc char[(int)nameLen];
+        hr = appDomain.GetName(nameLen, &nameLen, nameBuf);
+        Assert.Equal(System.HResults.S_OK, hr);
+
+        string name = new string(nameBuf);
+        Assert.False(string.IsNullOrEmpty(name), "Expected non-empty AppDomain name string");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void GetAppDomain_GetFlags_ReturnsDefault(TestConfiguration config)
+    {
+        InitializeDumpTest(config, "StackWalk", "full");
+
+        IXCLRDataAppDomain appDomain = GetAppDomainFromFirstFrame(config);
+
+        uint flags;
+        int hr = appDomain.GetFlags(&flags);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(0u, flags); // CLRDATA_DOMAIN_DEFAULT
+    }
+
+    private IXCLRDataAppDomain GetAppDomainFromFirstFrame(TestConfiguration config)
+    {
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
         IStackDataFrameHandle firstFrame = stackWalk.CreateStackWalk(crashingThread).First();
@@ -127,24 +197,10 @@ public unsafe class ClrDataFrameDumpTests : DumpTestBase
         ClrDataFrame frame = new ClrDataFrame(Target, firstFrame, legacyImpl: null);
         IXCLRDataFrame xclrFrame = frame;
 
-        void* appDomainPtr;
-        int hr = xclrFrame.GetAppDomain(&appDomainPtr);
+        DacComNullableByRef<IXCLRDataAppDomain> appDomainOut = new(isNullRef: false);
+        int hr = xclrFrame.GetAppDomain(appDomainOut);
         Assert.Equal(System.HResults.S_OK, hr);
 
-        try
-        {
-            StrategyBasedComWrappers cw = new();
-            IXCLRDataAppDomain appDomain = (IXCLRDataAppDomain)cw.GetOrCreateObjectForComInstance(
-                (nint)appDomainPtr, CreateObjectFlags.UniqueInstance);
-
-            ulong uniqueId;
-            int hrId = appDomain.GetUniqueID(&uniqueId);
-            Assert.Equal(System.HResults.S_OK, hrId);
-            Assert.Equal(1ul, uniqueId);
-        }
-        finally
-        {
-            Marshal.Release((nint)appDomainPtr);
-        }
+        return appDomainOut.Interface!;
     }
 }

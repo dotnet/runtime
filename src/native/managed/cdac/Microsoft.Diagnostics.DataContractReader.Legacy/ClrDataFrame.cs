@@ -49,10 +49,11 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             if (contextSize is not null)
                 *contextSize = (uint)context.Length;
 
-            if (context.Length > contextBufSize)
+            if (contextBufSize > context.Length)
                 return HResults.E_INVALIDARG;
 
-            context.CopyTo(contextBuf);
+            if (contextBufSize > 0)
+                Array.Copy(context, 0, contextBuf, 0, (int)contextBufSize);
         }
         catch (System.Exception ex)
         {
@@ -81,21 +82,18 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         return hr;
     }
 
-    int IXCLRDataFrame.GetAppDomain(void** appDomain)
+    int IXCLRDataFrame.GetAppDomain(DacComNullableByRef<IXCLRDataAppDomain> appDomain)
     {
         int hr = HResults.S_OK;
-        *appDomain = null;
-        StrategyBasedComWrappers cw = new();
 
         IXCLRDataAppDomain? legacyAppDomain = null;
         if (_legacyImpl is not null)
         {
-            void* legacyAppDomainPtr;
-            int hrLegacy = _legacyImpl.GetAppDomain(&legacyAppDomainPtr);
-            if (hrLegacy >= 0 && legacyAppDomainPtr is not null)
+            DacComNullableByRef<IXCLRDataAppDomain> legacyAppDomainOut = new(isNullRef: false);
+            int hrLegacy = _legacyImpl.GetAppDomain(legacyAppDomainOut);
+            if (hrLegacy >= 0)
             {
-                legacyAppDomain = (IXCLRDataAppDomain)cw.GetOrCreateObjectForComInstance(
-                    (nint)legacyAppDomainPtr, CreateObjectFlags.UniqueInstance);
+                legacyAppDomain = legacyAppDomainOut.Interface;
             }
         }
 
@@ -106,15 +104,10 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
             if (appDomainAddr != TargetPointer.Null)
             {
-                IXCLRDataAppDomain appDomainImpl = new ClrDataAppDomain(_target, appDomainAddr, legacyAppDomain);
-                nint appDomainImplPtr = cw.GetOrCreateComInterfaceForObject(appDomainImpl, CreateComInterfaceFlags.None);
-                Marshal.QueryInterface(appDomainImplPtr, typeof(IXCLRDataAppDomain).GUID, out nint ptrToAppDomain);
-                Marshal.Release(appDomainImplPtr);
-                *appDomain = (void*)ptrToAppDomain;
+                appDomain.Interface = new ClrDataAppDomain(_target, appDomainAddr, legacyAppDomain);
             }
             else
             {
-                *appDomain = null;
                 hr = HResults.S_FALSE;
             }
         }

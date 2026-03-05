@@ -27,7 +27,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
         _legacyImpl = legacyImpl;
     }
 
-    int IXCLRDataAppDomain.GetProcess(void** process)
+    int IXCLRDataAppDomain.GetProcess(DacComNullableByRef<IXCLRDataProcess> process)
         => _legacyImpl is not null ? _legacyImpl.GetProcess(process) : HResults.E_NOTIMPL;
 
     int IXCLRDataAppDomain.GetName(uint bufLen, uint* nameLen, char* name)
@@ -38,18 +38,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
             ILoader loader = _target.Contracts.Loader;
             string friendlyName = loader.GetAppDomainFriendlyName();
 
-            if (nameLen is not null)
-                *nameLen = (uint)(friendlyName.Length + 1);
-
-            if (name is not null && bufLen > 0)
-            {
-                int charsToCopy = Math.Min(friendlyName.Length, (int)bufLen - 1);
-                friendlyName.AsSpan(0, charsToCopy).CopyTo(new Span<char>(name, (int)bufLen));
-                name[charsToCopy] = '\0';
-
-                if ((uint)friendlyName.Length >= bufLen)
-                    hr = HResults.S_FALSE;
-            }
+            OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, friendlyName);
         }
         catch (System.Exception ex)
         {
@@ -61,7 +50,9 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
         {
             uint nameLenLocal;
             int hrLocal = _legacyImpl.GetName(bufLen, &nameLenLocal, null);
-            Debug.Assert(hrLocal == hr || hr == HResults.S_FALSE, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK && nameLen is not null)
+                Debug.Assert(*nameLen == nameLenLocal, $"cDAC: {*nameLen}, DAC: {nameLenLocal}");
         }
 #endif
 
