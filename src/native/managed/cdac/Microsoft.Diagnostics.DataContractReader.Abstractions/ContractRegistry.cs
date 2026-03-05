@@ -102,6 +102,10 @@ public abstract class ContractRegistry
     /// Gets an instance of the BuiltInCOM contract for the target.
     /// </summary>
     public virtual IBuiltInCOM BuiltInCOM => GetContract<IBuiltInCOM>();
+    /// <summary>
+    /// Gets an instance of the Debugger contract for the target.
+    /// </summary>
+    public virtual IDebugger Debugger => GetContract<IDebugger>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
 }

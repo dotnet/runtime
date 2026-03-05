@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices.Marshalling;
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using Data = Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -31,16 +30,7 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int IsLeftSideInitialized(int* pResult)
     {
-        TargetPointer debuggerPtr = _target.ReadGlobalPointer(Constants.Globals.Debugger);
-        if (debuggerPtr != TargetPointer.Null)
-        {
-            Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
-            *pResult = debugger.LeftSideInitialized != 0 ? 1 : 0;
-        }
-        else
-        {
-            *pResult = 0;
-        }
+        *pResult = _target.Contracts.Debugger.IsLeftSideInitialized() ? 1 : 0;
 #if DEBUG
         if (_legacy is not null)
         {
@@ -57,7 +47,7 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
     {
         // In .NET Core (single AppDomain), the only valid appdomainId is DefaultADID=1.
         // Return the global AppDomain pointer.
-        TargetPointer appDomain = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        TargetPointer appDomain = new TargetPointer(_target.Contracts.Loader.GetAppDomain().Value);
         *pRetVal = appDomain.Value;
 #if DEBUG
         if (_legacy is not null)
@@ -120,8 +110,9 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetModuleSimpleName(ulong vmModule, IStringHolder pStrFilename)
     {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(new TargetPointer(vmModule));
-        string name = _target.ReadUtf8String(module.SimpleName.Value);
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle mh = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+        string name = loader.GetModuleSimpleName(mh);
         return pStrFilename.AssignCopy(name);
     }
 
@@ -212,12 +203,11 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return HResults.S_OK;
     }
 
-    public unsafe int GetDomainAssemblyData(ulong vmDomainAssembly, nint pData)
+    public int GetDomainAssemblyData(ulong vmDomainAssembly, nint pData)
     {
         // DomainAssemblyInfo: { VMPTR_AppDomain vmAppDomain; VMPTR_DomainAssembly vmDomainAssembly; }
-        // Zero-init then fill
         ulong* p = (ulong*)pData;
-        p[0] = _target.ReadGlobalPointer(Constants.Globals.AppDomain).Value;
+        p[0] = _target.Contracts.Loader.GetAppDomain().Value;
         p[1] = vmDomainAssembly;
         return HResults.S_OK;
     }
@@ -225,9 +215,10 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
     public unsafe int GetModuleForDomainAssembly(ulong vmDomainAssembly, ulong* pModule)
     {
         // DomainAssembly → Assembly → Module
-        Data.DomainAssembly da = _target.ProcessedData.GetOrAdd<Data.DomainAssembly>(new TargetPointer(vmDomainAssembly));
         ILoader loader = _target.Contracts.Loader;
-        ModuleHandle mh = loader.GetModuleHandleFromAssemblyPtr(da.Assembly);
+        ModuleHandle daMh = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmDomainAssembly));
+        TargetPointer assembly = loader.GetAssembly(daMh);
+        ModuleHandle mh = loader.GetModuleHandleFromAssemblyPtr(assembly);
         *pModule = loader.GetModule(mh).Value;
         return HResults.S_OK;
     }
@@ -247,7 +238,7 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
     public int EnumerateAppDomains(nint fpCallback, nint pUserData)
     {
         // Single AppDomain in .NET Core - call callback once with the global AppDomain
-        TargetPointer appDomain = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
         ((delegate* unmanaged<ulong, nint, void>)fpCallback)(appDomain.Value, pUserData);
         return HResults.S_OK;
     }
@@ -259,9 +250,8 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         var flags = AssemblyIterationFlags.IncludeLoading | AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution;
         foreach (ModuleHandle mh in loader.GetModuleHandles(new TargetPointer(vmAppDomain), flags))
         {
-            TargetPointer moduleAddr = loader.GetModule(mh);
-            Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(moduleAddr);
-            ((delegate* unmanaged<ulong, nint, void>)fpCallback)(module.DomainAssembly.Value, pUserData);
+            TargetPointer domainAssembly = loader.GetDomainAssemblyForModule(mh);
+            ((delegate* unmanaged<ulong, nint, void>)fpCallback)(domainAssembly.Value, pUserData);
         }
         return HResults.S_OK;
     }
@@ -271,9 +261,10 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         // In .NET Core, each assembly has exactly one module. The callback receives
         // the DomainAssembly pointer (same as input).
         ILoader loader = _target.Contracts.Loader;
-        // Verify the assembly is loaded by reading the DomainAssembly → Assembly → Module chain
-        Data.DomainAssembly da = _target.ProcessedData.GetOrAdd<Data.DomainAssembly>(new TargetPointer(vmAssembly));
-        ModuleHandle mh = loader.GetModuleHandleFromAssemblyPtr(da.Assembly);
+        // vmAssembly is a DomainAssembly pointer. Read its Assembly then get the module.
+        ModuleHandle daMh = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmAssembly));
+        TargetPointer assembly = loader.GetAssembly(daMh);
+        ModuleHandle mh = loader.GetModuleHandleFromAssemblyPtr(assembly);
         if (loader.IsAssemblyLoaded(mh))
         {
             ((delegate* unmanaged<ulong, nint, void>)fpCallback)(vmAssembly, pUserData);
@@ -349,30 +340,26 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetThreadHandle(ulong vmThread, nint pRetVal)
     {
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(new TargetPointer(vmThread));
-        *(ulong*)pRetVal = thread.ThreadHandle.Value;
+        IThread threadContract = _target.Contracts.Thread;
+        TargetPointer handle = threadContract.GetThreadHandle(new TargetPointer(vmThread));
+        *(ulong*)pRetVal = handle.Value;
         return HResults.S_OK;
     }
 
     public int GetThreadObject(ulong vmThread, ulong* pRetVal)
     {
-        const uint TS_Dead = 0x800;
-        const uint TS_Unstarted = 0x400;
-        const uint TS_Detached = 0x0040;
-
         IThread threadContract = _target.Contracts.Thread;
         ThreadData threadData = threadContract.GetThreadData(new TargetPointer(vmThread));
 
-        if ((threadData.State & TS_Dead) != 0 ||
-            (threadData.State & TS_Unstarted) != 0 ||
-            (threadData.State & TS_Detached) != 0)
+        if ((threadData.State & ThreadState.Dead) != 0 ||
+            (threadData.State & ThreadState.Unstarted) != 0 ||
+            ((uint)threadData.State & 0x0040) != 0) // TS_Detached
         {
             return unchecked((int)0x8013132d); // CORDBG_E_BAD_THREAD_STATE
         }
 
-        // Read ExposedObject (named "GCHandle" in data descriptor)
-        Target.TypeInfo type = _target.GetTypeInfo(DataType.Thread);
-        TargetPointer exposedObject = _target.ReadPointer(new TargetPointer(vmThread) + (ulong)type.Fields["GCHandle"].Offset);
+        // Read ExposedObject via contract
+        TargetPointer exposedObject = threadContract.GetExposedObject(new TargetPointer(vmThread));
         *pRetVal = exposedObject.Value;
 #if DEBUG
         if (_legacy is not null)
@@ -412,34 +399,8 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetPartialUserState(ulong vmThread, int* pRetVal)
     {
-        // Thread state flags
-        const uint TS_Background = 0x200;
-        const uint TS_Unstarted = 0x400;
-        const uint TS_Dead = 0x800;
-        const uint TS_Interruptible = 0x2000000;
-        const uint TS_TPWorkerThread = 0x1000000;
-        // ThreadStateNC flags
-        const uint TSNC_DebuggerSleepWaitJoin = 0x04000000;
-        // CorDebugUserState
-        const int USER_BACKGROUND = 0x4;
-        const int USER_UNSTARTED = 0x8;
-        const int USER_STOPPED = 0x10;
-        const int USER_WAIT_SLEEP_JOIN = 0x20;
-        const int USER_THREADPOOL = 0x100;
-
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(new TargetPointer(vmThread));
-        uint ts = thread.State;
-        uint tsnc = thread.StateNC;
-        int result = 0;
-
-        if ((ts & TS_Background) != 0) result |= USER_BACKGROUND;
-        if ((ts & TS_Unstarted) != 0) result |= USER_UNSTARTED;
-        if ((ts & TS_Dead) != 0) result |= USER_STOPPED;
-        if ((ts & TS_Interruptible) != 0 || (tsnc & TSNC_DebuggerSleepWaitJoin) != 0)
-            result |= USER_WAIT_SLEEP_JOIN;
-        if ((ts & TS_TPWorkerThread) != 0) result |= USER_THREADPOOL;
-
-        *pRetVal = result;
+        IThread threadContract = _target.Contracts.Thread;
+        *pRetVal = threadContract.GetPartialUserState(new TargetPointer(vmThread));
         return HResults.S_OK;
     }
 
@@ -518,21 +479,9 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetCurrentException(ulong vmThread, ulong* pRetVal)
     {
-        // Read ExceptionTracker → ThrownObjectHandle
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(new TargetPointer(vmThread));
-        TargetPointer tracker = thread.ExceptionTracker;
-        if (tracker != TargetPointer.Null)
-        {
-            Data.ExceptionInfo exInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(tracker);
-            *pRetVal = exInfo.ThrownObjectHandle.Value;
-        }
-        else
-        {
-            // No active exception tracker - return null handle
-            // Note: native also checks IsLastThrownObjectUnhandled() for unhandled fallback,
-            // which requires ExceptionState flags not yet in the data descriptor.
-            *pRetVal = 0;
-        }
+        IThread threadContract = _target.Contracts.Thread;
+        TargetPointer handle = threadContract.GetCurrentExceptionHandle(new TargetPointer(vmThread));
+        *pRetVal = handle.Value;
         return HResults.S_OK;
     }
 
@@ -540,8 +489,8 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetCurrentCustomDebuggerNotification(ulong vmThread, ulong* pRetVal)
     {
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(new TargetPointer(vmThread));
-        *pRetVal = thread.CurrNotification.Value;
+        IThread threadContract = _target.Contracts.Thread;
+        *pRetVal = threadContract.GetCurrentCustomDebuggerNotification(new TargetPointer(vmThread)).Value;
         return HResults.S_OK;
     }
 
@@ -550,8 +499,7 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            *pRetVal = _target.ReadPointer(appDomainPointer).Value;
+            *pRetVal = _target.Contracts.Loader.GetAppDomain().Value;
         }
         catch (System.Exception ex)
         {
@@ -782,15 +730,8 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int GetAttachStateFlags(int* pRetVal)
     {
-        // Read CLRJitAttachState global (ULONG at the pointer address)
-        if (_target.TryReadGlobalPointer("CLRJitAttachState", out TargetPointer? addr))
-        {
-            *pRetVal = (int)_target.Read<uint>(addr.Value.Value);
-        }
-        else
-        {
-            *pRetVal = 0;
-        }
+        IDebugger debuggerContract = _target.Contracts.Debugger;
+        *pRetVal = debuggerContract.GetAttachStateFlags();
         return HResults.S_OK;
     }
 
@@ -957,11 +898,15 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
     public int GetDefinesBitField(uint* pDefines)
     {
         if (pDefines == null) return HResults.E_INVALIDARG;
-        TargetPointer debuggerPtr = _target.ReadGlobalPointer(Constants.Globals.Debugger);
-        if (debuggerPtr == TargetPointer.Null)
+        try
+        {
+            IDebugger debuggerContract = _target.Contracts.Debugger;
+            *pDefines = debuggerContract.GetDefinesBitField();
+        }
+        catch
+        {
             return unchecked((int)0x80131c23); // CORDBG_E_NOTREADY
-        Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
-        *pDefines = debugger.Defines;
+        }
 #if DEBUG
         if (_legacy is not null)
         {
@@ -977,11 +922,15 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
     public int GetMDStructuresVersion(uint* pMDStructuresVersion)
     {
         if (pMDStructuresVersion == null) return HResults.E_INVALIDARG;
-        TargetPointer debuggerPtr = _target.ReadGlobalPointer(Constants.Globals.Debugger);
-        if (debuggerPtr == TargetPointer.Null)
+        try
+        {
+            IDebugger debuggerContract = _target.Contracts.Debugger;
+            *pMDStructuresVersion = debuggerContract.GetMDStructuresVersion();
+        }
+        catch
+        {
             return unchecked((int)0x80131c23); // CORDBG_E_NOTREADY
-        Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerPtr);
-        *pMDStructuresVersion = debugger.MDStructuresVersion;
+        }
 #if DEBUG
         if (_legacy is not null)
         {
@@ -1029,23 +978,16 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int MetadataUpdatesApplied(byte* pResult)
     {
-        // Read global pointer to g_metadataUpdatesApplied, then read the bool value
-        if (_target.TryReadGlobalPointer(Constants.Globals.MetadataUpdatesApplied, out TargetPointer? addr))
-        {
-            *pResult = _target.Read<byte>(addr.Value.Value);
-        }
-        else
-        {
-            // FEATURE_METADATA_UPDATER not enabled - metadata updates never applied
-            *pResult = 0;
-        }
+        IDebugger debuggerContract = _target.Contracts.Debugger;
+        *pResult = debuggerContract.MetadataUpdatesApplied() ? (byte)1 : (byte)0;
         return HResults.S_OK;
     }
 
     public unsafe int GetDomainAssemblyFromModule(ulong vmModule, ulong* pVmDomainAssembly)
     {
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(new TargetPointer(vmModule));
-        *pVmDomainAssembly = module.DomainAssembly.Value;
+        ILoader loader = _target.Contracts.Loader;
+        ModuleHandle mh = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
+        *pVmDomainAssembly = loader.GetDomainAssemblyForModule(mh).Value;
         return HResults.S_OK;
     }
 
