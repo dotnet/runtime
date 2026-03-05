@@ -254,6 +254,7 @@ struct MethodDescCodeData final
 {
 #ifdef FEATURE_CODE_VERSIONING
     PTR_MethodDescVersioningState VersioningState;
+    NativeCodeVersion::OptimizationTier OptimizationTier;
 #endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
 #ifdef FEATURE_INTERPRETER
@@ -1936,8 +1937,10 @@ public:
 #ifdef FEATURE_CODE_VERSIONING
 #ifndef DACCESS_COMPILE
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+    HRESULT SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier);
 #endif // !DACCESS_COMPILE
     PTR_MethodDescVersioningState GetMethodDescVersionState();
+    NativeCodeVersion::OptimizationTier GetMethodDescOptimizationTier();
 #endif // FEATURE_CODE_VERSIONING
 
 public:
@@ -2319,20 +2322,6 @@ public:
 
 #ifdef FEATURE_TIERED_COMPILATION
 public:
-    bool WasTieringDisabledBeforeJitting() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_wasTieringDisabledBeforeJitting;
-    }
-
-    void SetWasTieringDisabledBeforeJitting()
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
-
-        m_wasTieringDisabledBeforeJitting = true;
-    }
-
     bool ShouldCountCalls() const
     {
         WRAPPER_NO_CONTRACT;
@@ -2441,7 +2430,6 @@ private:
 
 #ifdef FEATURE_TIERED_COMPILATION
 private:
-    bool m_wasTieringDisabledBeforeJitting;
     bool m_shouldCountCalls;
 #endif
 
