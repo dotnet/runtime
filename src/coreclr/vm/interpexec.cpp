@@ -3157,6 +3157,7 @@ SWITCH_OPCODE:
                             targetMethod = NonVirtualEntry2MethodDesc(actualTarget);
                         }
 
+                        // WASM-TODO: reconsider again when we have codegen or at least native relinking. then we can reach this point with non IL entrypoint
                         PTR_InterpByteCodeStart targetIp;
                         if ((targetIp = EnsureInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip)) != NULL)
                         {
