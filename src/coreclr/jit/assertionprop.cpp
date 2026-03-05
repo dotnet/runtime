@@ -6356,7 +6356,7 @@ PhaseStatus Compiler::optAssertionPropMain()
                 // Fix up assertion out sets if morphing changed the block's edges in a way
                 // that affects the semantics of the assertions.
                 //
-                if (wasCond)
+                if (wasCond && !optLocalAssertionProp)
                 {
                     if (!block->KindIs(BBJ_COND))
                     {
@@ -6378,6 +6378,7 @@ PhaseStatus Compiler::optAssertionPropMain()
                             //
                             BitVecOps::Assign(apTraits, block->bbAssertionOut, block->bbAssertionIn);
                             // We can also quickly walk over the trees and accumulate more assertions if needed.
+                            // NOTE: this is not valid for LocalAP as assertions may die in the middle of the block
                         }
                     }
                     else if ((block->GetTrueTarget() != trueBb) || (block->GetFalseTarget() != falseBb))
@@ -6387,6 +6388,7 @@ PhaseStatus Compiler::optAssertionPropMain()
                         //
                         BitVecOps::Assign(apTraits, block->bbAssertionOut, block->bbAssertionIn);
                         BitVecOps::Assign(apTraits, bbJtrueAssertionOut[block->bbNum], block->bbAssertionIn);
+                        // NOTE: this is not valid for LocalAP as assertions may die in the middle of the block
                     }
                 }
             }
