@@ -15,20 +15,6 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
     private readonly Target _target;
     private readonly IDacDbiInterface? _legacy;
 
-    // Call IStringHolder::AssignCopy(const WCHAR* psz).
-    // IStringHolder vtable: slot 0 = AssignCopy (no virtual destructor).
-    private static int StringHolderAssignCopy(nint pStringHolder, string value)
-    {
-        fixed (char* pStr = value)
-        {
-            nint vtable = *(nint*)pStringHolder;
-            // On Linux x64: default calling convention, this is first arg.
-            // On Windows x64: same (x64 has uniform calling convention).
-            var assignCopy = (delegate* unmanaged<nint, char*, int>)(*(nint*)vtable);
-            return assignCopy(pStringHolder, pStr);
-        }
-    }
-
     public DacDbiImpl(Target target, object? legacyObj)
     {
         _target = target;
@@ -126,25 +112,25 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return HResults.S_OK;
     }
 
-    public int GetAppDomainFullName(ulong vmAppDomain, nint pStrName)
+    public int GetAppDomainFullName(ulong vmAppDomain, IStringHolder pStrName)
     {
         string name = _target.Contracts.Loader.GetAppDomainFriendlyName();
-        return StringHolderAssignCopy(pStrName, name);
+        return pStrName.AssignCopy(name);
     }
 
-    public int GetModuleSimpleName(ulong vmModule, nint pStrFilename)
+    public int GetModuleSimpleName(ulong vmModule, IStringHolder pStrFilename)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(new TargetPointer(vmModule));
         string name = _target.ReadUtf8String(module.SimpleName.Value);
-        return StringHolderAssignCopy(pStrFilename, name);
+        return pStrFilename.AssignCopy(name);
     }
 
-    public int GetAssemblyPath(ulong vmAssembly, nint pStrFilename, int* pResult)
+    public int GetAssemblyPath(ulong vmAssembly, IStringHolder pStrFilename, int* pResult)
     {
         ILoader loader = _target.Contracts.Loader;
         ModuleHandle mh = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
         string path = loader.GetPath(mh);
-        int hr = StringHolderAssignCopy(pStrFilename, path ?? string.Empty);
+        int hr = pStrFilename.AssignCopy(path ?? string.Empty);
         if (hr < 0) return hr;
         *pResult = string.IsNullOrEmpty(path) ? 0 : 1;
         return HResults.S_OK;
@@ -152,20 +138,20 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
 
     public int ResolveTypeReference(nint pTypeRefInfo, nint pTargetRefInfo) => _legacy is not null ? _legacy.ResolveTypeReference(pTypeRefInfo, pTargetRefInfo) : HResults.E_NOTIMPL;
 
-    public int GetModulePath(ulong vmModule, nint pStrFilename, int* pResult)
+    public int GetModulePath(ulong vmModule, IStringHolder pStrFilename, int* pResult)
     {
         ILoader loader = _target.Contracts.Loader;
         ModuleHandle mh = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
         string path = loader.GetPath(mh);
         if (!string.IsNullOrEmpty(path))
         {
-            int hr = StringHolderAssignCopy(pStrFilename, path);
+            int hr = pStrFilename.AssignCopy(path);
             if (hr < 0) return hr;
             *pResult = 1; // TRUE
         }
         else
         {
-            StringHolderAssignCopy(pStrFilename, string.Empty);
+            pStrFilename.AssignCopy(string.Empty);
             *pResult = 0; // FALSE
         }
         return HResults.S_OK;
@@ -808,7 +794,7 @@ public sealed unsafe class DacDbiImpl : IDacDbiInterface
         return HResults.S_OK;
     }
 
-    public int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, byte* pResult) => _legacy is not null ? _legacy.GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwTimeStamp, dwImageSize, pStrFilename, pResult) : HResults.E_NOTIMPL;
+    public int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, IStringHolder pStrFilename, byte* pResult) => _legacy is not null ? _legacy.GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwTimeStamp, dwImageSize, pStrFilename, pResult) : HResults.E_NOTIMPL;
 
     public int IsThreadSuspendedOrHijacked(ulong vmThread, byte* pResult)
     {

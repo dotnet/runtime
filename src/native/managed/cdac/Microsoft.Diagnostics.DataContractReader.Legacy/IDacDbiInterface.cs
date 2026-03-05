@@ -52,19 +52,19 @@ public unsafe interface IDacDbiInterface
     int IsAssemblyFullyTrusted(ulong vmDomainAssembly, int* pResult);
 
     [PreserveSig]
-    int GetAppDomainFullName(ulong vmAppDomain, nint pStrName);
+    int GetAppDomainFullName(ulong vmAppDomain, IStringHolder pStrName);
 
     [PreserveSig]
-    int GetModuleSimpleName(ulong vmModule, nint pStrFilename);
+    int GetModuleSimpleName(ulong vmModule, IStringHolder pStrFilename);
 
     [PreserveSig]
-    int GetAssemblyPath(ulong vmAssembly, nint pStrFilename, int* pResult);
+    int GetAssemblyPath(ulong vmAssembly, IStringHolder pStrFilename, int* pResult);
 
     [PreserveSig]
     int ResolveTypeReference(nint pTypeRefInfo, nint pTargetRefInfo);
 
     [PreserveSig]
-    int GetModulePath(ulong vmModule, nint pStrFilename, int* pResult);
+    int GetModulePath(ulong vmModule, IStringHolder pStrFilename, int* pResult);
 
     [PreserveSig]
     int GetMetadata(ulong vmModule, nint pTargetBuffer);
@@ -376,7 +376,7 @@ public unsafe interface IDacDbiInterface
     int GetAttachStateFlags(int* pRetVal);
 
     [PreserveSig]
-    int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, byte* pResult);
+    int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, IStringHolder pStrFilename, byte* pResult);
 
     [PreserveSig]
     int IsThreadSuspendedOrHijacked(ulong vmThread, byte* pResult);
