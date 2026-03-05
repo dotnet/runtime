@@ -28,6 +28,19 @@ void emitter::emitIns(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// emitIns_BlockTy: Emit a block instruction with simple type signature
+//
+// Arguments:
+//   ins      - instruction to emit
+//   valType  - type of object left on the stack at block end (for the block sig),
+//              with WasmValueType::Invalid representing no object left on the stack.
+//
+void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
+{
+    emitIns_I(ins, EA_4BYTE, (cnsval_ssize_t)valType);
+}
+
+//------------------------------------------------------------------------
 // emitIns_I: Emit an instruction with an immediate operand.
 //
 // Arguments:
@@ -83,7 +96,20 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     int  offset    = lclOffset + offs;
     noway_assert(offset >= 0); // WASM address modes are unsigned.
 
-    emitIns_I(ins, attr, offset);
+    instrDesc* id  = emitNewInstrSC(attr, offset);
+    insFormat  fmt = emitInsFormat(ins);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    if (m_debugInfoSize > 0)
+    {
+        id->idDebugOnlyInfo()->idLclNum    = (unsigned)varx;
+        id->idDebugOnlyInfo()->idLclOffset = (unsigned)offs;
+    }
+
+    dispIns(id);
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
@@ -167,9 +193,9 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
             // TODO-WASM: Generate actual list of types and generate reloc
             // This is here to exercise the new JIT-EE API
-            CorInfoWasmType                 types[] = {CORINFO_WASM_TYPE_VOID};
+            CorInfoWasmType types[] = {CORINFO_WASM_TYPE_VOID, CORINFO_WASM_TYPE_I32, CORINFO_WASM_TYPE_I32};
             CORINFO_WASM_TYPE_SYMBOL_HANDLE typeHandle =
-                codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, 1);
+                codeGen->GetCompiler()->info.compCompHnd->getWasmTypeSymbol(types, 3);
 
             id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void*)typeHandle);
             id->idIns(ins);
@@ -548,6 +574,18 @@ size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bo
     }
 }
 
+size_t emitter::emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype)
+{
+    if (valtype == WasmValueType::Invalid)
+    {
+        return emitOutputByte(destination, 0x40 /* block type of void */);
+    }
+    else
+    {
+        return emitOutputByte(destination, GetWasmValueTypeCode(valtype));
+    }
+}
+
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     const bool SIGNED   = true;
@@ -567,9 +605,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         }
         case IF_BLOCK:
+        {
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputByte(dst, 0x40 /* block type of void */);
+            dst += emitOutputValtypeSig(dst, (WasmValueType)emitGetInsSC(id));
             break;
+        }
         case IF_ULEB128:
         {
             assert(!id->idIsCnsReloc());
@@ -780,13 +820,37 @@ void emitter::emitDispIns(
         }
     };
 
+    auto dispLclVarInfoIfAny = [this, id]() {
+        if (m_debugInfoSize > 0)
+        {
+            unsigned const lclNum = id->idDebugOnlyInfo()->idLclNum;
+            if (lclNum != BAD_VAR_NUM)
+            {
+                printf("      ;; V%02u", lclNum);
+                if (id->idDebugOnlyInfo()->idLclOffset != 0)
+                {
+                    printf("+%u", id->idDebugOnlyInfo()->idLclOffset);
+                }
+            }
+        }
+    };
+
     // The reference for the following style of display is wasm-objdump output.
     //
     switch (fmt)
     {
         case IF_OPCODE:
-        case IF_BLOCK:
             break;
+
+        case IF_BLOCK:
+        {
+            WasmValueType valType = (WasmValueType)emitGetInsSC(id);
+            if (valType != WasmValueType::Invalid)
+            {
+                printf(" %s", WasmValueTypeName(valType));
+            }
+            break;
+        }
 
         case IF_RAW_ULEB128:
         case IF_ULEB128:
@@ -796,6 +860,7 @@ void emitter::emitDispIns(
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
             dispHandleIfAny();
+            dispLclVarInfoIfAny();
         }
         break;
 
@@ -845,6 +910,7 @@ void emitter::emitDispIns(
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %lli", (int64_t)imm);
+            dispLclVarInfoIfAny();
         }
         break;
 
@@ -863,6 +929,7 @@ void emitter::emitDispIns(
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
             printf(" %u %llu", log2align, (uint64_t)offset);
+            dispLclVarInfoIfAny();
         }
         break;
 

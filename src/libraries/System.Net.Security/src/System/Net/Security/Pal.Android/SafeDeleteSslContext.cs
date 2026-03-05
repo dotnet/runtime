@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
@@ -306,6 +307,7 @@ namespace System.Net
             if (authOptions.ApplicationProtocols != null && authOptions.ApplicationProtocols.Count != 0
                 && Interop.AndroidCrypto.SSLSupportsApplicationProtocolsConfiguration())
             {
+                ValidateAlpnProtocolListSize(authOptions.ApplicationProtocols);
                 // Set application protocols if the platform supports it. Otherwise, we will silently ignore the option.
                 Interop.AndroidCrypto.SSLStreamSetApplicationProtocols(handle, authOptions.ApplicationProtocols);
             }
@@ -318,6 +320,19 @@ namespace System.Net
             if (!isServer && !string.IsNullOrEmpty(authOptions.TargetHost) && !IPAddress.IsValid(authOptions.TargetHost))
             {
                 Interop.AndroidCrypto.SSLStreamSetTargetHost(handle, authOptions.TargetHost);
+            }
+        }
+
+        private static void ValidateAlpnProtocolListSize(List<SslApplicationProtocol> applicationProtocols)
+        {
+            int protocolListSize = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                protocolListSize += protocol.Protocol.Length + 1;
+                if (protocolListSize > ushort.MaxValue)
+                {
+                    throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
+                }
             }
         }
     }

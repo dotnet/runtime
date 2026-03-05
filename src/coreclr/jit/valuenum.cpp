@@ -9257,6 +9257,41 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
             }
         }
 
+#if defined(TARGET_XARCH)
+        case NI_X86Base_BlendVariable:
+        case NI_AVX_BlendVariable:
+        case NI_AVX2_BlendVariable:
+        case NI_AVX512_BlendVariableMask:
+        {
+            if (IsVNConstant(arg2VN))
+            {
+                var_types maskType = tree->Op(3)->TypeGet();
+
+                // Handle `0 ? y : z`
+                ValueNum zeroVN = VNZeroForType(maskType);
+
+                if (arg2VN == zeroVN)
+                {
+                    return arg0VN;
+                }
+
+                // Handle `AllBitsSet ? y : z`
+                ValueNum allBitsVN = VNAllBitsForType(maskType, simdSize / genTypeSize(baseType));
+
+                if (arg2VN == allBitsVN)
+                {
+                    return arg1VN;
+                }
+            }
+            else if (arg0VN == arg1VN)
+            {
+                // Handle `x ? y : y`
+                return arg0VN;
+            }
+            break;
+        }
+#endif // TARGET_XARCH
+
         default:
         {
             break;
@@ -13707,8 +13742,6 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     {
         // Ignore the Wasm shadow stack pointer argument.
         //
-        // The Wasm shadow stack pointer is not counted in VNFuncArity
-        // so nArgs does not need adjusting.
         curArg = curArg->GetNext();
     }
 #endif // defined(TARGET_WASM)
@@ -13790,7 +13823,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
                 curArg = curArg->GetNext();
                 assert(nArgs == 3); // Our current maximum.
-                assert(curArg == nullptr);
+                assert((curArg == nullptr) || (curArg->GetWellKnownArg() == WellKnownArg::WasmPortableEntryPoint));
                 if (generateUniqueVN)
                 {
                     call->gtVNPair = vnStore->VNPairForFunc(call->TypeGet(), vnf, vnp0, vnp1, vnp2, vnpUniq);
@@ -13804,8 +13837,17 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         // Add the accumulated exceptions.
         call->gtVNPair = vnStore->VNPWithExc(call->gtVNPair, vnpExc);
     }
-    assert(curArg == nullptr || generateUniqueVN); // All arguments should be processed or we generate unique VN and do
-                                                   // not care.
+
+#if defined(TARGET_WASM)
+    if (!generateUniqueVN && (curArg != nullptr))
+    {
+        // We should have processed all arguments except for the PE arg, which we can ignore
+        assert(curArg->GetWellKnownArg() == WellKnownArg::WasmPortableEntryPoint);
+    }
+#else
+    // All arguments should be processed or we generate unique VN and do not care.
+    assert(curArg == nullptr || generateUniqueVN);
+#endif
 }
 
 //--------------------------------------------------------------------------------
