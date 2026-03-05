@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void ChainedConfiguration_ReloadPropagatesToInnerConfigurationRoot()
         {
             var innerConfig = new ConfigurationBuilder()
-                .Add(new RandomValueConfigurationSource())
+                .Add(new CountingValueConfigurationSource())
                 .Build();
 
             var outerConfig = new ConfigurationBuilder()
@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Configuration.Test
         public void ChainedConfiguration_ReloadDoesNotPropagateToInnerConfigurationSection()
         {
             var innerConfig = new ConfigurationBuilder()
-                .Add(new RandomValueConfigurationSource("Section:Random"))
+                .Add(new CountingValueConfigurationSource("Section:Random"))
                 .Build();
 
             var outerConfig = new ConfigurationBuilder()
@@ -160,27 +160,15 @@ namespace Microsoft.Extensions.Configuration.Test
                 => Data.Add(key, value);
         }
 
-        private class RandomValueConfigurationSource : IConfigurationSource
+        private class CountingValueConfigurationSource : IConfigurationSource
         {
             private readonly string _key;
 
-            public RandomValueConfigurationSource(string key = "Random")
+            public CountingValueConfigurationSource(string key = "Random")
                 => _key = key;
 
             public IConfigurationProvider Build(IConfigurationBuilder builder)
-                => new RandomValueConfigurationProvider(_key);
-        }
-
-        private class RandomValueConfigurationProvider : ConfigurationProvider
-        {
-            private readonly string _key;
-            private int _value;
-
-            public RandomValueConfigurationProvider(string key)
-                => _key = key;
-
-            public override void Load()
-                => Data[_key] = (++_value).ToString(CultureInfo.InvariantCulture);
+                => new CountingValueConfigurationProvider(_key);
         }
 
         private class CountingValueConfigurationProvider : ConfigurationProvider
