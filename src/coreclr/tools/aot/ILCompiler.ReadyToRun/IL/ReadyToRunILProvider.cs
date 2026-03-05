@@ -194,9 +194,11 @@ namespace Internal.IL
 
         public bool NeedsCrossModuleInlineableTokens(MethodDesc method)
         {
-            if (((!_compilationModuleGroup.VersionsWithMethodBody(method)
-                    && _compilationModuleGroup.CrossModuleInlineable(method))
-                || (NeedsTaskReturningThunk(method) || NeedsAsyncThunk(method) || method is AsyncResumptionStub))
+            bool regularCrossModuleInlineable = (!_compilationModuleGroup.VersionsWithMethodBody(method)
+                    && _compilationModuleGroup.CrossModuleInlineable(method));
+            bool requiredCrossModuleInliningForAsync = (NeedsTaskReturningThunk(method) || NeedsAsyncThunk(method) || method is AsyncResumptionStub)
+                     && !_compilationModuleGroup.VersionsWithModule(method.Context.SystemModule);
+            if ((regularCrossModuleInlineable || requiredCrossModuleInliningForAsync)
                 && !_manifestModuleWrappedMethods.ContainsKey(method))
             {
                 return true;
