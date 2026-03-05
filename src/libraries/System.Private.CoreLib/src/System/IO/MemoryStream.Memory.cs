@@ -11,17 +11,16 @@ namespace System.IO
     {
         /// <summary>Initializes a new non-writable instance of the <see cref="MemoryStream"/> class based on the specified <see cref="ReadOnlyMemory{T}"/>.</summary>
         /// <param name="memory">The read-only memory from which to create the current stream.</param>
-        public MemoryStream(ReadOnlyMemory<byte> memory)
+        internal MemoryStream(ReadOnlyMemory<byte> memory)
         {
             _memoryData = new MemoryData(memory);
-            _buffer = [];
             _length = _capacity = memory.Length;
             _isOpen = true;
         }
 
         /// <summary>Initializes a new writable instance of the <see cref="MemoryStream"/> class based on the specified <see cref="Memory{T}"/>.</summary>
         /// <param name="memory">The memory from which to create the current stream.</param>
-        public MemoryStream(Memory<byte> memory)
+        internal MemoryStream(Memory<byte> memory)
             : this(memory, true)
         {
         }
@@ -29,14 +28,48 @@ namespace System.IO
         /// <summary>Initializes a new instance of the <see cref="MemoryStream"/> class based on the specified <see cref="Memory{T}"/> with the <see cref="CanWrite"/> property set as specified.</summary>
         /// <param name="memory">The memory from which to create the current stream.</param>
         /// <param name="writable"><see langword="true"/> to enable writing; otherwise, <see langword="false"/>.</param>
-        public MemoryStream(Memory<byte> memory, bool writable)
+        internal MemoryStream(Memory<byte> memory, bool writable)
         {
             _memoryData = new MemoryData(memory, writable);
-            _buffer = [];
             _length = _capacity = memory.Length;
             _writable = writable;
             _isOpen = true;
         }
+
+        // These NoInlining wrappers ensure the JIT emits a tail call from ReadByte/WriteByte/Read/Write
+        // to an instance method on MemoryStream (keeping 'this' in rcx), instead of directly calling
+        // MemoryData methods (which would require moving 'this' to rdx to free rcx for the MemoryData receiver).
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private int MemoryRead(Span<byte> buffer) => _memoryData!.Read(this, buffer);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private int MemoryReadByte() => _memoryData!.ReadByte(this);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void MemoryWrite(ReadOnlySpan<byte> buffer) => _memoryData!.Write(this, buffer);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void MemoryWriteByte(byte value) => _memoryData!.WriteByte(this, value);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void MemorySetLength(long value) => _memoryData!.SetLength(this, value);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private byte[] MemoryToArray() => _memoryData!.ToArray(this);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void MemoryWriteTo(Stream stream) => _memoryData!.WriteTo(this, stream);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void MemoryCopyTo(Stream destination) => _memoryData!.CopyTo(this, destination);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private Task MemoryCopyToAsync(Stream destination, CancellationToken cancellationToken)
+            => _memoryData!.CopyToAsync(this, destination, cancellationToken);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private ReadOnlySpan<byte> MemoryInternalReadSpan(int count) => _memoryData!.InternalReadSpan(this, count);
 
         /// <summary>Holds only the <see cref="ReadOnlyMemory{T}"/> and <see cref="Memory{T}"/> references for Memory-backed streams.
         /// All other state (position, length, etc.) is stored in the enclosing <see cref="MemoryStream"/>.</summary>

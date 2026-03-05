@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -20,7 +21,7 @@ namespace System.IO
     // a stream "view" of the data.
     public partial class MemoryStream : Stream
     {
-        private byte[] _buffer;    // Either allocated internally or externally.
+        private byte[]? _buffer;    // Either allocated internally or externally.
         private readonly int _origin;       // For user-provided arrays, start at this origin
         private int _position;     // read/write head.
         private int _length;       // Number of bytes within the memory stream
@@ -37,6 +38,14 @@ namespace System.IO
         // When non-null, the stream is backed by Memory<byte> or ReadOnlyMemory<byte>.
         // Only set by the ReadOnlyMemory<byte>/Memory<byte> constructors.
         private readonly MemoryData? _memoryData;
+
+        [MemberNotNullWhen(true, nameof(_buffer))]
+        [MemberNotNullWhen(false, nameof(_memoryData))]
+        private bool IsArrayBacked
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _buffer is not null;
+        }
 
         private static int MemStreamMaxLength => Array.MaxLength;
 
@@ -183,7 +192,7 @@ namespace System.IO
 
         public virtual byte[] GetBuffer()
         {
-            if (_memoryData is not null)
+            if (!IsArrayBacked)
                 throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
             if (!_exposable)
                 throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
@@ -192,7 +201,7 @@ namespace System.IO
 
         public virtual bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
-            if (_memoryData is not null)
+            if (!IsArrayBacked)
             {
                 buffer = default;
                 return false;
@@ -213,6 +222,7 @@ namespace System.IO
         // PERF: Internal sibling of GetBuffer, always returns a buffer (cf. GetBuffer())
         internal byte[] InternalGetBuffer()
         {
+            Debug.Assert(IsArrayBacked);
             return _buffer;
         }
 
@@ -228,8 +238,8 @@ namespace System.IO
         {
             EnsureNotClosed();
 
-            if (_memoryData is not null)
-                return _memoryData.InternalReadSpan(this, count);
+            if (!IsArrayBacked)
+                return MemoryInternalReadSpan(count);
 
             int origPos = _position;
             int newPos = origPos + count;
@@ -268,12 +278,12 @@ namespace System.IO
         {
             EnsureNotClosed();
 
-            if (_memoryData is not null)
+            if (!IsArrayBacked)
             {
                 int n = Math.Min(_length - _position, count);
                 if (n <= 0)
                     return default;
-                return _memoryData.InternalReadSpan(this, n);
+                return MemoryInternalReadSpan(n);
             }
 
             int available = _length - _position;
@@ -311,8 +321,10 @@ namespace System.IO
                     throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
 
                 // MemoryStream has this invariant: _origin > 0 => !expandable (see ctors)
+                // Also: _expandable => IsArrayBacked (Memory-backed streams are never expandable)
                 if (_expandable && value != _capacity)
                 {
+                    Debug.Assert(IsArrayBacked);
                     if (value > 0)
                     {
                         byte[] newBuffer = new byte[value];
@@ -363,8 +375,8 @@ namespace System.IO
             ValidateBufferArguments(buffer, offset, count);
             EnsureNotClosed();
 
-            if (_memoryData is not null)
-                return _memoryData.Read(this, new Span<byte>(buffer, offset, count));
+            if (!IsArrayBacked)
+                return MemoryRead(new Span<byte>(buffer, offset, count));
 
             int n = _length - _position;
             if (n > count)
@@ -399,8 +411,8 @@ namespace System.IO
 
             EnsureNotClosed();
 
-            if (_memoryData is not null)
-                return _memoryData.Read(this, buffer);
+            if (!IsArrayBacked)
+                return MemoryRead(buffer);
 
             int n = Math.Min(_length - _position, buffer.Length);
             if (n <= 0)
@@ -475,8 +487,8 @@ namespace System.IO
         {
             EnsureNotClosed();
 
-            if (_memoryData is not null)
-                return _memoryData.ReadByte(this);
+            if (!IsArrayBacked)
+                return MemoryReadByte();
 
             if (_position >= _length)
                 return -1;
@@ -500,9 +512,9 @@ namespace System.IO
             ValidateCopyToArguments(destination, bufferSize);
             EnsureNotClosed();
 
-            if (_memoryData is not null)
+            if (!IsArrayBacked)
             {
-                _memoryData.CopyTo(this, destination);
+                MemoryCopyTo(destination);
                 return;
             }
 
@@ -527,8 +539,8 @@ namespace System.IO
             ValidateCopyToArguments(destination, bufferSize);
             EnsureNotClosed();
 
-            if (_memoryData is not null)
-                return _memoryData.CopyToAsync(this, destination, cancellationToken);
+            if (!IsArrayBacked)
+                return MemoryCopyToAsync(destination, cancellationToken);
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to ReadAsync() which a subclass might have overridden.
@@ -611,9 +623,9 @@ namespace System.IO
 
             EnsureWriteable();
 
-            if (_memoryData is not null)
+            if (!IsArrayBacked)
             {
-                _memoryData.SetLength(this, value);
+                MemorySetLength(value);
                 return;
             }
 
@@ -633,8 +645,8 @@ namespace System.IO
 
         public virtual byte[] ToArray()
         {
-            if (_memoryData is not null)
-                return _memoryData.ToArray(this);
+            if (!IsArrayBacked)
+                return MemoryToArray();
             int count = _length - _origin;
             if (count == 0)
                 return [];
@@ -649,9 +661,9 @@ namespace System.IO
             EnsureNotClosed();
             EnsureWriteable();
 
-            if (_memoryData is not null)
+            if (!IsArrayBacked)
             {
-                _memoryData.Write(this, new ReadOnlySpan<byte>(buffer, offset, count));
+                MemoryWrite(new ReadOnlySpan<byte>(buffer, offset, count));
                 return;
             }
 
@@ -706,9 +718,9 @@ namespace System.IO
             EnsureNotClosed();
             EnsureWriteable();
 
-            if (_memoryData is not null)
+            if (!IsArrayBacked)
             {
-                _memoryData.Write(this, buffer);
+                MemoryWrite(buffer);
                 return;
             }
 
@@ -798,9 +810,9 @@ namespace System.IO
             EnsureNotClosed();
             EnsureWriteable();
 
-            if (_memoryData is not null)
+            if (!IsArrayBacked)
             {
-                _memoryData.WriteByte(this, value);
+                MemoryWriteByte(value);
                 return;
             }
 
@@ -831,9 +843,9 @@ namespace System.IO
             ArgumentNullException.ThrowIfNull(stream);
             EnsureNotClosed();
 
-            if (_memoryData is not null)
+            if (!IsArrayBacked)
             {
-                _memoryData.WriteTo(this, stream);
+                MemoryWriteTo(stream);
                 return;
             }
 
