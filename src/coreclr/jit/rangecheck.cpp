@@ -1030,8 +1030,9 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     // (normalLclVN + negConst) u< bound, with bound non-negative.
                     // Since the comparison is unsigned, (normalLclVN + negConst) must not have wrapped,
                     // which means normalLclVN >= -negConst.
-                    cmpOper = GT_GE;
-                    limit   = Limit(Limit::keConstant, -addOpCns);
+                    cmpOper    = GT_GE;
+                    limit      = Limit(Limit::keConstant, -addOpCns);
+                    isUnsigned = false;
                 }
                 else
                 {
