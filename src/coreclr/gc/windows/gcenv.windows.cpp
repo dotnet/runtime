@@ -763,6 +763,18 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
     }
 }
 
+// Commit virtual memory range with THP support. It must be part of a range reserved using VirtualReserve.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualCommitThp(void* address, size_t size, uint16_t node)
+{
+    // On Windows, THP is handled differently - for now just call VirtualCommit
+    assert(false && "THP is a UNIX only feature");
+}
+
 // Decomit virtual memory range.
 // Parameters:
 //  address - starting virtual address

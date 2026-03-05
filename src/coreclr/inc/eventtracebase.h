@@ -71,6 +71,7 @@ enum EtwGCSettingFlags
     kEtwGCFlagFrozenSegs =      0x00000004,
     kEtwGCFlagHardLimitConfig = 0x00000008,
     kEtwGCFlagNoAffinitize =    0x00000010,
+    kEtwGCFlagUseTHP =          0x00000020,
 };
 
 #ifndef FEATURE_NATIVEAOT

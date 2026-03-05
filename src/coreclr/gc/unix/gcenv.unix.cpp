@@ -675,6 +675,50 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
     return VirtualCommitInner(address, size, node, /* newMemory */ false);
 }
 
+// Commit virtual memory range with THP support. It must be part of a range reserved using VirtualReserve.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualCommitThp(void* address, size_t size, uint16_t node)
+{
+    bool result = VirtualCommitInner(address, size, node, /* newMemory */ false);
+    if (result)
+    {
+#ifdef MADV_HUGEPAGE
+        // Only apply THP for allocations >= 2MB (one huge page)
+        // Smaller allocations won't benefit and just add syscall overhead
+        const size_t MIN_THP_SIZE = 2 * 1024 * 1024; // 2MB
+
+        if (size >= MIN_THP_SIZE)
+        {
+            int rc = madvise(address, size, MADV_HUGEPAGE);
+#ifdef _DEBUG
+            if (rc == 0)
+            {
+                printf("THP: madvise(MADV_HUGEPAGE) succeeded for %p, size=%zu MB\n",
+                       address, size / (1024 * 1024));
+            }
+            else
+            {
+                printf("THP: madvise(MADV_HUGEPAGE) failed for %p, errno=%d\n", address, errno);
+            }
+#endif // _DEBUG
+            (void)rc;
+        }
+        else
+        {
+#ifdef _DEBUG
+            printf("THP: Skipping madvise for small allocation %p, size=%zu KB (< 2MB threshold)\n",
+                   address, size / 1024);
+#endif // _DEBUG
+        }
+#endif // MADV_HUGEPAGE
+    }
+    return result;
+}
+
 // Commit virtual memory range.
 // Parameters:
 //  size      - size of the virtual memory range

@@ -137,6 +137,9 @@ struct EtwGCSettingsInfo
     uint32_t high_mem_percent_from_config;
     bool concurrent_gc_p;
     bool use_large_pages_p;
+#ifdef TARGET_UNIX
+    bool use_thp_p;
+#endif // TARGET_UNIX
     bool use_frozen_segments_p;
     // If this is false, it means the hardlimit was set implicitly by the container.
     bool hard_limit_config_p;

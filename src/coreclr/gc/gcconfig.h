@@ -77,6 +77,7 @@ public:
     BOOL_CONFIG  (GCNumaAware,               "GCNumaAware",               NULL,                                true,               "Enables numa allocations in the GC")                                                     \
     BOOL_CONFIG  (GCCpuGroup,                "GCCpuGroup",                "System.GC.CpuGroup",                false,              "Enables CPU groups in the GC")                                                            \
     BOOL_CONFIG  (GCLargePages,              "GCLargePages",              "System.GC.LargePages",              false,              "Enables using Large Pages in the GC")                                                     \
+    BOOL_CONFIG  (GCTHP,                     "GCTHP",                     "System.GC.THP",                     false,              "Enables Transparent Huge Pages in the GC")                                               \
     INT_CONFIG   (HeapVerifyLevel,           "HeapVerify",                NULL,                                HEAPVERIFY_NONE,    "When set verifies the integrity of the managed heap on entry and exit of each GC")       \
     INT_CONFIG   (LOHCompactionMode,         "GCLOHCompact",              NULL,                                0,                  "Specifies the LOH compaction mode")                                                      \
     INT_CONFIG   (LOHThreshold,              "GCLOHThreshold",            "System.GC.LOHThreshold",            LARGE_OBJECT_SIZE,  "Specifies the size that will make objects go on LOH")                                    \

@@ -282,6 +282,14 @@ public:
     //  true if it has succeeded, false if it has failed
     static bool VirtualCommit(void *address, size_t size, uint16_t node = NUMA_NODE_UNDEFINED);
 
+    // Commit virtual memory range with THP support. It must be part of a range reserved using VirtualReserve.
+    // Parameters:
+    //  address - starting virtual address
+    //  size    - size of the virtual memory range
+    // Return:
+    //  true if it has succeeded, false if it has failed
+    static bool VirtualCommitThp(void *address, size_t size, uint16_t node = NUMA_NODE_UNDEFINED);
+
     // Reserve and Commit virtual memory range for Large Pages
     // Parameters:
     //  size    - size of the virtual memory range

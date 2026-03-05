@@ -2886,6 +2886,9 @@ size_t gc_heap::eph_gen_starts_size = 0;
 heap_segment* gc_heap::segment_standby_list;
 #endif //USE_REGIONS
 bool          gc_heap::use_large_pages_p = 0;
+#ifdef TARGET_UNIX
+bool          gc_heap::use_thp_p = 0;
+#endif //TARGET_UNIX
 #ifdef HEAP_BALANCE_INSTRUMENTATION
 size_t        gc_heap::last_gc_end_time_us = 0;
 #endif //HEAP_BALANCE_INSTRUMENTATION
@@ -5665,6 +5668,16 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
     {
         for (int heap_no = 0; (reserve_success && (heap_no < num_heaps)); heap_no++)
         {
+#ifdef TARGET_UNIX
+            if (gc_heap::use_thp_p)
+            {
+                if (!GCToOSInterface::VirtualCommitThp(memory_details.initial_pinned_heap[heap_no].memory_base, pinned_size))
+                {
+                    reserve_success = FALSE;
+                }
+            }
+            else 
+#endif // TARGET_UNIX
             if (!GCToOSInterface::VirtualCommit(memory_details.initial_pinned_heap[heap_no].memory_base, pinned_size))
             {
                 reserve_success = FALSE;
@@ -7411,19 +7424,24 @@ void gc_heap::gc_thread_function ()
 
 bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number)
 {
+    uint16_t numa_node = NUMA_NODE_UNDEFINED;
 #ifdef MULTIPLE_HEAPS
     if (GCToOSInterface::CanEnableGCNumaAware())
     {
-        uint16_t numa_node = heap_select::find_numa_node_from_heap_no(h_number);
-        if (GCToOSInterface::VirtualCommit (addr, size, numa_node))
-            return true;
+        numa_node = heap_select::find_numa_node_from_heap_no(h_number);
     }
 #else //MULTIPLE_HEAPS
     UNREFERENCED_PARAMETER(h_number);
 #endif //MULTIPLE_HEAPS
 
-    //numa aware not enabled, or call failed --> fallback to VirtualCommit()
-    return GCToOSInterface::VirtualCommit(addr, size);
+    #ifdef TARGET_UNIX
+    if (use_thp_p)
+    {
+        return GCToOSInterface::VirtualCommitThp(addr, size, numa_node);
+    }
+#endif //TARGET_UNIX
+
+    return GCToOSInterface::VirtualCommit(addr, size, numa_node);
 }
 
 bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_number, bool* hard_limit_exceeded_p)
@@ -7510,9 +7528,26 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
 
     // If it's a valid heap number it means it's commiting for memory on the GC heap.
     // In addition if large pages is enabled, we set commit_succeeded_p to true because memory is already committed.
-    bool commit_succeeded_p = ((h_number >= 0) ? (use_large_pages_p ? true :
-                              virtual_alloc_commit_for_heap (address, size, h_number)) :
-                              GCToOSInterface::VirtualCommit(address, size));
+    bool commit_succeeded_p = false;
+    if (h_number >= 0)
+    {
+        // Heap memory commit
+        commit_succeeded_p = use_large_pages_p ? true : virtual_alloc_commit_for_heap (address, size, h_number);
+    }
+    else
+    {
+        // Bookkeeping memory commit (h_number < 0)
+#ifdef TARGET_UNIX
+        if (use_thp_p)
+        {
+            commit_succeeded_p = GCToOSInterface::VirtualCommitThp(address, size, NUMA_NODE_UNDEFINED);
+        }
+        else
+#endif //TARGET_UNIX
+        {
+            commit_succeeded_p = GCToOSInterface::VirtualCommit(address, size);
+        }
+    }
 
     if (!commit_succeeded_p && should_count)
     {
@@ -9470,6 +9505,11 @@ bool gc_heap::inplace_commit_card_table (uint8_t* from, uint8_t* to)
         bool succeed;
         if (commit_sizes[i] > 0)
         {
+            const size_t MIN_THP_SIZE = 2 * 1024 * 1024;
+            const char* thp_indicator = (commit_sizes[i] >= MIN_THP_SIZE) ? "[THP-CANDIDATE]" : "[TOO-SMALL]";
+            /*printf("[virtual_commit] %s Card/Seg table bookkeeping element#%d: addr=%p, size=%zu KB\n",
+                   thp_indicator, i, commit_begins[i], commit_sizes[i] / 1024);*/
+
             succeed = virtual_commit (commit_begins[i], commit_sizes[i], recorded_committed_bookkeeping_bucket);
             if (!succeed)
             {
@@ -9546,7 +9586,10 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 #else
     // in case of background gc, the mark array will be committed separately (per segment).
     size_t commit_size = card_table_element_layout[seg_mapping_table_element + 1];
-
+    const size_t MIN_THP_SIZE = 2 * 1024 * 1024;
+    const char* thp_indicator = (commit_size >= MIN_THP_SIZE) ? "[THP-CANDIDATE]" : "[TOO-SMALL]";
+    /*printf("[virtual_commit] %s Card table (non-regions): addr=%p, size=%zu KB\n",
+           thp_indicator, mem, commit_size / 1024);*/
     if (!virtual_commit (mem, commit_size, recorded_committed_bookkeeping_bucket))
     {
         dprintf (1, ("Card table commit failed"));
@@ -9722,6 +9765,11 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         {
             // in case of background gc, the mark array will be committed separately (per segment).
             commit_size = card_table_element_layout[seg_mapping_table_element + 1];
+
+            const size_t MIN_THP_SIZE = 2 * 1024 * 1024;
+            const char* thp_indicator = (commit_size >= MIN_THP_SIZE) ? "[THP-CANDIDATE]" : "[TOO-SMALL]";
+            /*printf("[virtual_commit] %s Card table (grow): addr=%p, size=%zu KB\n",
+                   thp_indicator, mem, commit_size / 1024);*/
 
             if (!virtual_commit (mem, commit_size, recorded_committed_bookkeeping_bucket))
             {
@@ -12413,7 +12461,10 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_he
 #else
         0;
 #endif //MULTIPLE_HEAPS
-
+    const size_t MIN_THP_SIZE = 2 * 1024 * 1024;
+    const char* thp_indicator = (initial_commit >= MIN_THP_SIZE) ? "[THP-CANDIDATE]" : "[TOO-SMALL]";
+    /*printf("[virtual_commit] %s Heap segment (make): addr=%p, size=%zu MB, oh=%d, heap=%d\n",
+           thp_indicator, new_pages, initial_commit / (1024 * 1024), oh, h_number);*/
     if (!virtual_commit (new_pages, initial_commit, oh, h_number))
     {
         log_init_error_to_host ("Committing %zd bytes for a region failed", initial_commit);
@@ -15791,7 +15842,10 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
     STRESS_LOG2(LF_GC, LL_INFO10000,
                 "Growing heap_segment: %zx high address: %zx\n",
                 (size_t)seg, (size_t)high_address);
-
+    const size_t MIN_THP_SIZE = 2 * 1024 * 1024;
+    const char* thp_indicator = (c_size >= MIN_THP_SIZE) ? "[THP-CANDIDATE]" : "[TOO-SMALL]";
+    /*printf("[virtual_commit] %s Segment growth: addr=%p, size=%zu MB, oh=%d, heap=%d\n",
+           thp_indicator, heap_segment_committed (seg), c_size / (1024 * 1024), heap_segment_oh (seg), heap_number);*/
     bool ret = virtual_commit (heap_segment_committed (seg), c_size, heap_segment_oh (seg), heap_number, hard_limit_exceeded_p);
     if (ret)
     {
@@ -38540,7 +38594,10 @@ BOOL gc_heap::commit_mark_array_by_range (uint8_t* begin, uint8_t* end, uint32_t
                             commit_start, commit_end,
                             size));
 #endif //SIMPLE_DPRINTF
-
+    const size_t MIN_THP_SIZE = 2 * 1024 * 1024;
+    const char* thp_indicator = (size >= MIN_THP_SIZE) ? "[THP-CANDIDATE]" : "[TOO-SMALL]";
+    /*printf("[virtual_commit] %s Mark array: addr=%p, size=%zu KB\n",
+           thp_indicator, commit_start, size / 1024);*/
     if (virtual_commit (commit_start, size, recorded_committed_mark_array_bucket))
     {
         // We can only verify the mark array is cleared from begin to end, the first and the last
@@ -49315,7 +49372,12 @@ HRESULT GCHeap::Initialize()
         log_init_error_to_host ("compute_hard_limit failed, check your heap hard limit related configs");
         return CLR_E_GC_BAD_HARD_LIMIT;
     }
-
+#ifdef TARGET_UNIX
+    gc_heap::use_thp_p = GCConfig::GetGCTHP() && gc_heap::ReadTHPEnabled();
+#ifdef _DEBUG
+    printf("\nGC:  using THP: %s\n", gc_heap::use_thp_p ? "true" : "false");
+#endif // _DEBUG
+#endif //TARGET_UNIX
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
     uint32_t max_nhp_from_config = (uint32_t)GCConfig::GetMaxHeapCount();
@@ -53359,6 +53421,9 @@ void GCHeap::DiagGetGCSettings(EtwGCSettingsInfo* etw_settings)
     etw_settings->concurrent_gc_p = false;
 #endif //BACKGROUND_GC
     etw_settings->use_large_pages_p = gc_heap::use_large_pages_p;
+#ifdef TARGET_UNIX
+    etw_settings->use_thp_p = gc_heap::use_thp_p;
+#endif // TARGET_UNIX
     etw_settings->use_frozen_segments_p = gc_heap::use_frozen_segments_p;
     etw_settings->hard_limit_config_p = gc_heap::hard_limit_config_p;
     etw_settings->no_affinitize_p =
@@ -53770,6 +53835,90 @@ int GCHeap::RefreshMemoryLimit()
     return gc_heap::refresh_memory_limit();
 }
 
+/*#ifdef TARGET_UNIX
+bool GCHeap::ReadTHPEnabled()
+{
+    const char* thp_enabled_path = "/sys/kernel/mm/transparent_hugepage/enabled";
+    FILE* file = fopen(thp_enabled_path, "r");
+
+    if (file == nullptr)
+        return false;
+
+    char* line = nullptr;
+    size_t lineLen = 0;
+    bool is_enabled = false;
+
+    if (getline(&line, &lineLen, file) != -1)
+    {
+        if (strstr(line, "[madvise]") != nullptr)
+        {
+            is_enabled = true;
+            printf("\nGC: Transparent huge pages are enabled with madvise.\n");
+        }
+        else if (strstr(line, "[always]") != nullptr)
+        {
+            printf("\nGC: Transparent huge pages are always enabled.\n");
+            //is_enabled = true;
+        }
+        else if (strstr(line, "[never]") != nullptr)
+        {
+            printf("\nGC: Transparent huge pages are disabled.\n");
+        }
+        else
+        {
+            printf("\nGC: Unexpected content in %s: %s\n", thp_enabled_path, line);
+        }
+
+    }
+
+    free(line);  // getline allocates memory
+    fclose(file);
+    return is_enabled;
+}
+#endif // TARGET_UNIX*/
+
+#ifdef TARGET_UNIX
+bool gc_heap::ReadTHPEnabled()
+{
+    const char* thp_enabled_path = "/sys/kernel/mm/transparent_hugepage/enabled";
+    FILE* file = fopen(thp_enabled_path, "r");
+
+    if (file == nullptr)
+        return false;
+
+    char* line = nullptr;
+    size_t lineLen = 0;
+    bool is_enabled = false;
+
+    if (getline(&line, &lineLen, file) != -1)
+    {
+        if (strstr(line, "[madvise]") != nullptr)
+        {
+            is_enabled = true;
+            printf("\nGC: Transparent huge pages are enabled with madvise.\n");
+        }
+        else if (strstr(line, "[always]") != nullptr)
+        {
+            printf("\nGC: Transparent huge pages are always enabled.\n");
+            // is_enabled = true;  // Don't enable for [always] mode
+        }
+        else if (strstr(line, "[never]") != nullptr)
+        {
+            printf("\nGC: Transparent huge pages are disabled.\n");
+        }
+        else
+        {
+            printf("\nGC: Unexpected content in %s: %s\n", thp_enabled_path, line);
+        }
+    }
+
+    free(line);  // getline allocates memory
+    fclose(file);
+    return is_enabled;
+}
+#endif // TARGET_UNIX
+
+
 bool gc_heap::compute_hard_limit()
 {
     heap_hard_limit_oh[soh] = 0;
@@ -53780,6 +53929,10 @@ bool gc_heap::compute_hard_limit()
     heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
 
     use_large_pages_p = GCConfig::GetGCLargePages();
+    /*#ifdef TARGET_UNIX
+    use_thp_p = GCConfig::GetGCTHP();
+    printf("\nGC: Using Transparent large pages: %s, using THP: %s\n", use_large_pages_p ? "true" : "false", use_thp_p ? "true" : "false");
+#endif //TARGET_UNIX*/
 
     if (heap_hard_limit_oh[soh] || heap_hard_limit_oh[loh] || heap_hard_limit_oh[poh])
     {

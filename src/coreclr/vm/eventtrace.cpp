@@ -3845,7 +3845,10 @@ VOID ETW::EnumerationLog::SendGCRundownEvent()
 
         if (gcSettingsInfo.use_large_pages_p)
             dwEtwGCSettingFlags |= kEtwGCFlagLargePages;
-
+#ifdef TARGET_UNIX
+        if (gcSettingsInfo.use_thp_p)
+            dwEtwGCSettingFlags |= kEtwGCFlagUseTHP;
+#endif // TARGET_UNIX
         if (gcSettingsInfo.use_frozen_segments_p)
             dwEtwGCSettingFlags |= kEtwGCFlagFrozenSegs;
 
