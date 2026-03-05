@@ -1545,7 +1545,7 @@ namespace System
 
                 string remoteUrl = info.RemoteUrl ??= GetParts(components, UriFormat.SafeUnescaped);
 
-                if (IsUncOrDosPath)
+                if (IsFile)
                 {
                     return StringComparer.OrdinalIgnoreCase.GetHashCode(remoteUrl);
                 }
