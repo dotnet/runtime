@@ -5742,17 +5742,52 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 //   var tmp2 = Avx.Permute2x128(tmp1, tmp1, 0x4E);
                 //   return Avx.Add(tmp1, tmp2);
 
-                idx = m_compiler->gtNewIconNode(0xFF, TYP_INT);
-                BlockRange().InsertBefore(node, idx);
-
-                tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_AVX_DotProduct, simdBaseType,
-                                                            simdSize);
-                BlockRange().InsertAfter(idx, tmp1);
+                tmp1 = m_compiler->gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
+                BlockRange().InsertAfter(node, tmp1);
                 LowerNode(tmp1);
 
                 node->Op(1) = tmp1;
                 LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
                 ReplaceWithLclVar(tmp1Use);
+                tmp1 = node->Op(1);
+
+                tmp3 = m_compiler->gtClone(tmp1);
+                BlockRange().InsertAfter(tmp1, tmp3);
+
+                idx = m_compiler->gtNewIconNode(0xB1, TYP_INT);
+                BlockRange().InsertAfter(tmp3, idx);
+
+                tmp2 =
+                    m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, NI_AVX_Permute, simdBaseType, simdSize);
+                BlockRange().InsertAfter(idx, tmp2);
+                LowerNode(tmp2);
+
+                tmp1 = m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, tmp2, tmp3, simdBaseType, simdSize);
+                BlockRange().InsertAfter(tmp2, tmp1);
+                LowerNode(tmp1);
+
+                node->Op(1) = tmp1;
+                LIR::Use tmp1Use2(BlockRange(), &node->Op(1), node);
+                ReplaceWithLclVar(tmp1Use2);
+                tmp1 = node->Op(1);
+
+                tmp3 = m_compiler->gtClone(tmp1);
+                BlockRange().InsertAfter(tmp1, tmp3);
+
+                idx = m_compiler->gtNewIconNode(0x4E, TYP_INT);
+                BlockRange().InsertAfter(tmp3, idx);
+
+                tmp2 =
+                    m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, NI_AVX_Permute, simdBaseType, simdSize);
+                BlockRange().InsertAfter(idx, tmp2);
+                LowerNode(tmp2);
+
+                tmp1 = m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, tmp3, tmp2, simdBaseType, simdSize);
+                BlockRange().InsertAfter(tmp2, tmp1);
+
+                node->Op(1) = tmp1;
+                LIR::Use tmp1Use3(BlockRange(), &node->Op(1), node);
+                ReplaceWithLclVar(tmp1Use3);
                 tmp1 = node->Op(1);
 
                 tmp2 = m_compiler->gtClone(tmp1);
@@ -5791,8 +5826,80 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             case TYP_DOUBLE:
             {
                 assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX));
-                horizontalAdd = NI_AVX_HorizontalAdd;
-                break;
+
+                idx = m_compiler->gtNewIconNode(0x5, TYP_INT);
+                BlockRange().InsertBefore(node, idx);
+
+                tmp1 = m_compiler->gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
+                BlockRange().InsertAfter(idx, tmp1);
+                LowerNode(tmp1);
+
+                node->Op(1) = tmp1;
+                LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+                ReplaceWithLclVar(tmp1Use);
+                tmp1 = node->Op(1);
+
+                tmp2 = m_compiler->gtClone(tmp1);
+                BlockRange().InsertAfter(tmp1, tmp2);
+
+                tmp3 =
+                    m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, NI_AVX_Permute, simdBaseType, simdSize);
+                BlockRange().InsertAfter(tmp2, tmp3);
+                LowerNode(tmp3);
+
+                tmp1 = m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, tmp3, tmp2, simdBaseType, simdSize);
+                BlockRange().InsertAfter(tmp3, tmp1);
+
+                node->Op(1) = tmp1;
+                LIR::Use tmp1Use3(BlockRange(), &node->Op(1), node);
+                ReplaceWithLclVar(tmp1Use3);
+                tmp1 = node->Op(1);
+
+                tmp2 = m_compiler->gtClone(tmp1);
+                BlockRange().InsertAfter(tmp1, tmp2);
+
+                tmp3 = m_compiler->gtClone(tmp2);
+                BlockRange().InsertAfter(tmp2, tmp3);
+
+                idx = m_compiler->gtNewIconNode(0x01, TYP_INT);
+                BlockRange().InsertAfter(tmp3, idx);
+
+                tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp2, tmp3, idx, NI_AVX_Permute2x128,
+                                                            simdBaseType, simdSize);
+                BlockRange().InsertAfter(idx, tmp2);
+                LowerNode(tmp2);
+
+                tmp1 = m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, tmp1, tmp2, simdBaseType, simdSize);
+                BlockRange().InsertAfter(tmp2, tmp1);
+
+                if (!varTypeIsSIMD(node->gtType))
+                {
+                    // We're producing a scalar result, so we only need the result in element 0
+                    //
+                    // However, doing that would break/limit CSE and requires a partial write so
+                    // it's better to just broadcast the value to the entire vector
+
+                    LowerNode(tmp1);
+
+                    tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, NI_Vector256_ToScalar, simdBaseType,
+                                                                simdSize);
+                    BlockRange().InsertAfter(tmp1, tmp2);
+                    tmp1 = tmp2;
+                }
+
+                LIR::Use use;
+
+                if (BlockRange().TryGetUse(node, &use))
+                {
+                    use.ReplaceWith(tmp1);
+                }
+                else
+                {
+                    tmp1->SetUnusedValue();
+                }
+
+                BlockRange().Remove(node);
+                return LowerNode(tmp1);
             }
 
             default:
@@ -5840,7 +5947,82 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 else
                 {
                     assert(simdSize == 16);
-                    idx = m_compiler->gtNewIconNode(0xFF, TYP_INT);
+                    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                    {
+                        tmp1 = m_compiler->gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
+                        BlockRange().InsertAfter(node, tmp1);
+                        LowerNode(tmp1);
+
+                        node->Op(1) = tmp1;
+                        LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+                        ReplaceWithLclVar(tmp1Use);
+                        tmp1 = node->Op(1);
+
+                        tmp3 = m_compiler->gtClone(tmp1);
+                        BlockRange().InsertAfter(tmp1, tmp3);
+
+                        idx = m_compiler->gtNewIconNode(0xB1, TYP_INT);
+                        BlockRange().InsertAfter(tmp3, idx);
+
+                        tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, NI_AVX_Permute, simdBaseType,
+                                                                    simdSize);
+                        BlockRange().InsertAfter(idx, tmp2);
+                        LowerNode(tmp2);
+
+                        tmp1 = m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, tmp2, tmp3, simdBaseType, simdSize);
+                        BlockRange().InsertAfter(tmp2, tmp1);
+                        LowerNode(tmp1);
+
+                        node->Op(1) = tmp1;
+                        LIR::Use tmp1Use2(BlockRange(), &node->Op(1), node);
+                        ReplaceWithLclVar(tmp1Use2);
+                        tmp1 = node->Op(1);
+
+                        tmp3 = m_compiler->gtClone(tmp1);
+                        BlockRange().InsertAfter(tmp1, tmp3);
+
+                        idx = m_compiler->gtNewIconNode(0x4E, TYP_INT);
+                        BlockRange().InsertAfter(tmp3, idx);
+
+                        tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, NI_AVX_Permute, simdBaseType,
+                                                                    simdSize);
+                        BlockRange().InsertAfter(idx, tmp2);
+                        LowerNode(tmp2);
+
+                        tmp1 = m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, tmp3, tmp2, simdBaseType, simdSize);
+                        BlockRange().InsertAfter(tmp2, tmp1);
+
+                        if (!varTypeIsSIMD(node->gtType))
+                        {
+                            // We're producing a scalar result, so we only need the result in element 0
+                            //
+                            // However, doing that would break/limit CSE and requires a partial write so
+                            // it's better to just broadcast the value to the entire vector
+
+                            LowerNode(tmp1);
+
+                            tmp3 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, NI_Vector128_ToScalar,
+                                                                        simdBaseType, simdSize);
+                            BlockRange().InsertAfter(tmp1, tmp3);
+                            tmp1 = tmp3;
+                        }
+
+                        LIR::Use use;
+
+                        if (BlockRange().TryGetUse(node, &use))
+                        {
+                            use.ReplaceWith(tmp1);
+                        }
+                        else
+                        {
+                            tmp2->SetUnusedValue();
+                        }
+
+                        BlockRange().Remove(node);
+                        return LowerNode(tmp1);
+                    }
+
+                    idx = m_compiler->gtNewIconNode(0x7F, TYP_INT);
                 }
                 BlockRange().InsertBefore(node, idx);
 
@@ -5882,30 +6064,63 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 //   var tmp3 = Avx.DotProduct(op1, op2, 0x31);
                 //   return tmp3.ToScalar();
 
+                if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    idx = m_compiler->gtNewIconNode(0x1, TYP_INT);
+                    BlockRange().InsertBefore(node, idx);
+
+                    tmp1 = m_compiler->gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
+                    BlockRange().InsertAfter(idx, tmp1);
+                    LowerNode(tmp1);
+
+                    node->Op(1) = tmp1;
+                    LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+                    ReplaceWithLclVar(tmp1Use);
+                    tmp1 = node->Op(1);
+
+                    tmp2 = m_compiler->gtClone(tmp1);
+                    BlockRange().InsertAfter(tmp1, tmp2);
+
+                    tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp1, idx, NI_AVX_Permute, simdBaseType,
+                                                                simdSize);
+                    BlockRange().InsertAfter(tmp2, tmp1);
+                    LowerNode(tmp1);
+
+                    tmp3 = m_compiler->gtNewSimdBinOpNode(GT_ADD, simdType, tmp1, tmp2, simdBaseType, simdSize);
+                    BlockRange().InsertAfter(tmp1, tmp3);
+
+                    if (!varTypeIsSIMD(node->gtType))
+                    {
+                        // We're producing a scalar result, so we only need the result in element 0
+                        //
+                        // However, doing that would break/limit CSE and requires a partial write so
+                        // it's better to just broadcast the value to the entire vector
+
+                        LowerNode(tmp3);
+
+                        tmp2 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, tmp3, NI_Vector128_ToScalar, simdBaseType,
+                                                                    simdSize);
+                        BlockRange().InsertAfter(tmp3, tmp2);
+                        tmp3 = tmp2;
+                    }
+
+                    LIR::Use use;
+
+                    if (BlockRange().TryGetUse(node, &use))
+                    {
+                        use.ReplaceWith(tmp3);
+                    }
+                    else
+                    {
+                        tmp3->SetUnusedValue();
+                    }
+
+                    BlockRange().Remove(node);
+                    return LowerNode(tmp3);
+                }
+
                 idx = m_compiler->gtNewIconNode(0x33, TYP_INT);
                 BlockRange().InsertBefore(node, idx);
-
-                if (varTypeIsSIMD(node->gtType))
-                {
-                    // We're producing a vector result, so just emit DotProduct directly
-                    node->ResetHWIntrinsicId(NI_X86Base_DotProduct, m_compiler, op1, op2, idx);
-                }
-                else
-                {
-                    // We're producing a scalar result, so we only need the result in element 0
-                    //
-                    // However, doing that would break/limit CSE and requires a partial write so
-                    // it's better to just broadcast the value to the entire vector
-
-                    tmp3 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, idx, NI_X86Base_DotProduct,
-                                                                simdBaseType, simdSize);
-                    BlockRange().InsertAfter(idx, tmp3);
-                    LowerNode(tmp3);
-
-                    node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp3);
-                }
-
-                return LowerNode(node);
             }
 
             default:
