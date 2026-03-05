@@ -983,7 +983,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         return;
     }
 
-    if (normalLclVN == ValueNumStore::NoVN)
+    if (!comp->optAssertionHasAssertionsForVN(normalLclVN))
     {
         return;
     }
