@@ -331,6 +331,10 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
             useRegConflict = true;
         }
     }
+    // Case #3 is currently disabled; the logic is sound, but part of LSRA does
+    // not like the fact that a fixed reg def can end up with multiple
+    // candidate registers on it. (The single candidate was case #2).
+#if 0
     if ((defReg != REG_NA) && !useRegConflict)
     {
         // This is case #3.
@@ -338,6 +342,7 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
         defRefPosition->registerAssignment = useRegAssignment;
         return;
     }
+#endif
     if ((useReg != REG_NA) && !defRegConflict && canChangeUseAssignment)
     {
         // This is case #4.
