@@ -4,7 +4,7 @@ For WebAssembly documentation including building, testing, and debugging, see [W
 
 ## Building the runtime
 
-commit~be479c82/src/mono/wasm/threads.md
+Build the runtime with `/p:WasmEnableThreads=true` to enable experimental support for multi-threading.
 
 ## Building sample apps ##
 
