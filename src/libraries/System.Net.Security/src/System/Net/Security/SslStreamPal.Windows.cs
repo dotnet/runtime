@@ -289,8 +289,8 @@ namespace System.Net.Security
             return;
         }
 
-        // This is the legacy crypto API used on older Windows builds (pre-18836).
-        // It only supports TLS up to 1.2.
+        // This is legacy crypto API used on older Windows versions.
+        // It only supports TLS up to 1.2
         public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslAuthenticationOptions authOptions)
         {
             X509Certificate2? certificate = authOptions.CertificateContext?.TargetCertificate;
