@@ -38,33 +38,25 @@ namespace System.IO.Hashing
 
                 ulong fullPoly = (1UL << 32) | Polynomial;
 
-                ulong k1 = ReflectConstant(CrcPolynomialHelper.ComputeFoldingConstantCrc32(fullPoly, 4 * 128 + 32), 33);
-                ulong k2 = ReflectConstant(CrcPolynomialHelper.ComputeFoldingConstantCrc32(fullPoly, 4 * 128 - 32), 33);
-                ulong k3 = ReflectConstant(CrcPolynomialHelper.ComputeFoldingConstantCrc32(fullPoly, 128 + 32), 33);
-                ulong k4 = ReflectConstant(CrcPolynomialHelper.ComputeFoldingConstantCrc32(fullPoly, 128 - 32), 33);
-                ulong k5 = ReflectConstant(CrcPolynomialHelper.ComputeFoldingConstantCrc32(fullPoly, 64), 33);
+                ulong k1 = ReflectConstant33(CrcPolynomialHelper.ComputeFoldingConstantCrc32(fullPoly, 4 * 128 + 32));
+                ulong k2 = ReflectConstant33(CrcPolynomialHelper.ComputeFoldingConstantCrc32(fullPoly, 4 * 128 - 32));
+                ulong k3 = ReflectConstant33(CrcPolynomialHelper.ComputeFoldingConstantCrc32(fullPoly, 128 + 32));
+                ulong k4 = ReflectConstant33(CrcPolynomialHelper.ComputeFoldingConstantCrc32(fullPoly, 128 - 32));
+                ulong k5 = ReflectConstant33(CrcPolynomialHelper.ComputeFoldingConstantCrc32(fullPoly, 64));
                 ulong mu = CrcPolynomialHelper.ComputeBarrettConstantCrc32(fullPoly);
 
                 _k1k2 = Vector128.Create(k1, k2);
                 _k3k4 = Vector128.Create(k3, k4);
                 _k4 = k4;
                 _k6 = k5;
-                _polyMu = Vector128.Create(ReflectConstant(fullPoly, 33), ReflectConstant(mu, 33));
+                _polyMu = Vector128.Create(ReflectConstant33(fullPoly), ReflectConstant33(mu));
 
                 canVectorize = true;
 
-                static ulong ReflectConstant(ulong value, int width)
+                static ulong ReflectConstant33(ulong value)
                 {
-                    ulong result = 0;
-                    for (int i = 0; i < width; i++)
-                    {
-                        if (((value >> i) & 1) != 0)
-                        {
-                            result |= 1UL << (width - 1 - i);
-                        }
-                    }
-
-                    return result;
+                    ulong reversed = Crc64ParameterSet.ReverseBits(value);
+                    return reversed >> 31;
                 }
             }
 

@@ -96,7 +96,7 @@ namespace System.IO.Hashing
             return crc ^ FinalXorValue;
         }
 
-        private static ulong ReverseBits(ulong value)
+        internal static ulong ReverseBits(ulong value)
         {
 #if NET
             if (System.Runtime.Intrinsics.Arm.ArmBase.Arm64.IsSupported)

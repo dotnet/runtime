@@ -3,6 +3,7 @@
 
 #if NET
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.IO.Hashing
@@ -26,14 +27,14 @@ namespace System.IO.Hashing
             int polyDeg = poly.Degree;
 
             UInt640 value = new(1);
-            value.ShiftLeftEquals(power);
+            value <<= power;
 
             while (value.Degree >= polyDeg)
             {
                 int shift = value.Degree - polyDeg;
                 UInt640 polyShifted = poly;
-                polyShifted.ShiftLeftEquals(shift);
-                value.XorEquals(ref polyShifted);
+                polyShifted <<= shift;
+                value ^= polyShifted;
             }
 
             return value.ToUInt64();
@@ -56,7 +57,7 @@ namespace System.IO.Hashing
             int polyDeg = poly.Degree;
 
             UInt640 value = new(1);
-            value.ShiftLeftEquals(power);
+            value <<= power;
 
             UInt640 quotient = default;
 
@@ -64,12 +65,12 @@ namespace System.IO.Hashing
             {
                 int shift = value.Degree - polyDeg;
                 UInt640 polyShifted = poly;
-                polyShifted.ShiftLeftEquals(shift);
-                value.XorEquals(ref polyShifted);
+                polyShifted <<= shift;
+                value ^= polyShifted;
 
                 UInt640 bit = new(1);
-                bit.ShiftLeftEquals(shift);
-                quotient.XorEquals(ref bit);
+                bit <<= shift;
+                quotient ^= bit;
             }
 
             return quotient.ToUInt64();
@@ -110,8 +111,10 @@ namespace System.IO.Hashing
                 }
             }
 
-            internal void ShiftLeftEquals(int count)
+            public void operator <<=(int count)
             {
+                Debug.Assert(count >= 0);
+
                 int wordShift = count >> 6; // count / 64
                 int bitShift = count & 63;  // count % 64
 
@@ -139,7 +142,7 @@ namespace System.IO.Hashing
                 }
             }
 
-            internal void XorEquals(ref UInt640 other)
+            public void operator ^=(in UInt640 other)
             {
                 for (int i = 0; i < Length; i++)
                 {
