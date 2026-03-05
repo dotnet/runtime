@@ -6360,14 +6360,17 @@ PhaseStatus Compiler::optAssertionPropMain()
                 {
                     if (!block->KindIs(BBJ_COND))
                     {
-                        if (block->GetUniqueSucc() == trueBb)
+                        // NOTE: if trueBb == falseBb then we don't know how assertions may change
+                        // so we take the conservative path in that case.
+                        //
+                        if ((block->GetUniqueSucc() == trueBb) && (trueBb != falseBb))
                         {
                             // BBJ_COND was folded (e.g. to BBJ_ALWAYS).
                             // Fix up bbAssertionOut to match the retained edge.
                             //
                             BitVecOps::Assign(apTraits, block->bbAssertionOut, bbJtrueAssertionOut[block->bbNum]);
                         }
-                        else if (block->GetUniqueSucc() == falseBb)
+                        else if ((block->GetUniqueSucc() == falseBb) && (trueBb != falseBb))
                         {
                             // bbAssertionOut already has the false-edge assertions.
                         }
