@@ -78,7 +78,7 @@ inline bool varTypeIsSIMD(T vt)
 }
 
 template <class T>
-inline bool varTypeIsAccelerated(T vt)
+inline bool varTypeIsStructPrimitive(T vt)
 {
 #ifdef FEATURE_SIMD
     return (varTypeIsSIMD(vt) || (TypeGet(vt) == TYP_HALF));

@@ -1888,7 +1888,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     var_types simdReturnType = impNormStructType(call->gtRetClsHnd);
     if (simdReturnType != call->TypeGet())
     {
-        assert(varTypeIsAccelerated(simdReturnType));
+        assert(varTypeIsStructPrimitive(simdReturnType));
         JITDUMP("changing the type of a call [%06u] from %s to %s\n", dspTreeID(call), varTypeName(call->TypeGet()),
                 varTypeName(simdReturnType));
         call->ChangeType(simdReturnType);
@@ -7808,7 +7808,7 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
         if (sigType == TYP_STRUCT)
         {
             var_types normSigType = impNormStructType(classHnd);
-            sigType = (normSigType == TYP_HALF) ? TYP_HALF : sigType;
+            sigType               = (normSigType == TYP_HALF) ? TYP_HALF : sigType;
         }
 #endif
 
@@ -12491,6 +12491,8 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
 
 int Compiler::lookupHalfRoundingMode(NamedIntrinsic ni)
 {
+#ifdef FEATURE_HW_INTRINSICS
+#if defined(TARGET_XARCH)
     switch (ni)
     {
         case NI_System_Half_Round:
@@ -12505,6 +12507,9 @@ int Compiler::lookupHalfRoundingMode(NamedIntrinsic ni)
             noway_assert(!"Should have one of the above Half intrinsics");
             return -1;
     }
+#endif
+#endif
+    return NI_Illegal;
 }
 
 NamedIntrinsic Compiler::lookupHalfConversionIntrinsic(var_types fromType, var_types toType)
