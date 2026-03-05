@@ -485,7 +485,7 @@ void Lowering::AfterLowerBlocks()
         ArrayStack<GenTree**> m_stack;
         unsigned              m_minimumTempLclNum;
         Temporary*            m_availableTemps[static_cast<unsigned>(WasmValueType::Count)] = {};
-        Temporary*            m_unusedTemps[static_cast<unsigned>(WasmValueType::Count)]    = {};
+        Temporary*            m_unusedTempNodes                                             = nullptr;
         bool                  m_anyChanges                                                  = false;
 
     public:
@@ -511,11 +511,7 @@ void Lowering::AfterLowerBlocks()
 
             JITDUMP(FMT_BB ": %s\n", block->bbNum,
                     m_anyChanges ? "stackified with some changes" : "already in WASM value stack order");
-
-            for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
-            {
-                assert((m_unusedTemps[static_cast<unsigned>(type)] == nullptr) && "Some temporaries were not released");
-            }
+            assert((m_unusedTempNodes == nullptr) && "Some temporaries were not released");
         }
 
         GenTree* StackifyTree(GenTree* root)
@@ -636,12 +632,11 @@ void Lowering::AfterLowerBlocks()
             assert(varTypeIsEnregisterable(type));
 
             unsigned   lclNum;
-            unsigned   index = static_cast<unsigned>(ActualTypeToWasmValueType(type));
-            Temporary* local = Remove(&m_availableTemps[index]);
+            Temporary* local = Remove(&m_availableTemps[static_cast<unsigned>(ActualTypeToWasmValueType(type))]);
             if (local != nullptr)
             {
                 lclNum = local->LclNum;
-                Append(&m_unusedTemps[index], local);
+                Append(&m_unusedTempNodes, local); // Free the node for later recycling.
                 assert(m_compiler->lvaGetDesc(lclNum)->TypeGet() == genActualType(type));
             }
             else
@@ -657,7 +652,11 @@ void Lowering::AfterLowerBlocks()
 
         void ReleaseTemporariesDefinedBy(GenTree* node)
         {
-            assert(IsDataFlowRoot(node)); // We rely on the node not moving after this call.
+            // We rely in this function on the lifetime of temporaries beginning (recall this is backwards traversal)
+            // at exactly "node"'s position, and not shrinking or extending after this call. This is currently true
+            // because we never move dataflow roots, and we only begin processing them after all subsequent nodes
+            // have already been stackified and thus won't move either.
+            assert(IsDataFlowRoot(node));
             if (!node->OperIs(GT_STORE_LCL_VAR))
             {
                 return;
@@ -669,8 +668,7 @@ void Lowering::AfterLowerBlocks()
                 return;
             }
 
-            unsigned   index = static_cast<unsigned>(ActualTypeToWasmValueType(node->TypeGet()));
-            Temporary* local = Remove(&m_unusedTemps[index]);
+            Temporary* local = Remove(&m_unusedTempNodes); // See if we have any free nodes in the pool.
             if (local == nullptr)
             {
                 local = new (m_compiler, CMK_Lower) Temporary();
@@ -678,7 +676,7 @@ void Lowering::AfterLowerBlocks()
             local->LclNum = lclNum;
 
             JITDUMP("Temporary V%02u is now free and can be re-used\n", lclNum);
-            Append(&m_availableTemps[index], local);
+            Append(&m_availableTemps[static_cast<unsigned>(ActualTypeToWasmValueType(node->TypeGet()))], local);
         }
 
         Temporary* Remove(Temporary** pTemps)
