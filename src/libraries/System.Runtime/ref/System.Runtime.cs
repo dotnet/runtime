@@ -18,6 +18,7 @@ namespace Microsoft.Win32.SafeHandles
     }
     public sealed partial class SafeFileHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
+        public static void CreateAnonymousPipe(out Microsoft.Win32.SafeHandles.SafeFileHandle readHandle, out Microsoft.Win32.SafeHandles.SafeFileHandle writeHandle, bool asyncRead = false, bool asyncWrite = false) { throw null; }
         public SafeFileHandle() : base (default(bool)) { }
         public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
         public override bool IsInvalid { get { throw null; } }

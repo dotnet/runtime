@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.Pipes;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -80,6 +81,59 @@ namespace System.IO.Tests
                     Assert.Equal((options & FileOptions.Asynchronous) != 0, createdFromIntPtr.IsAsync);
                 }
             }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void SafeFileHandle_CreateAnonymousPipe_SetsIsAsyncAndTransfersData(bool asyncRead, bool asyncWrite)
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
+            Assert.Equal(asyncRead, readHandle.IsAsync);
+            Assert.Equal(asyncWrite, writeHandle.IsAsync);
+
+            using Stream readStream = CreatePipeReadStream(readHandle, asyncRead);
+            using Stream writeStream = CreatePipeWriteStream(writeHandle, asyncWrite);
+
+            byte[] expected = [1, 2, 3, 4];
+            writeStream.Write(expected);
+            writeStream.Flush();
+
+            byte[] actual = new byte[expected.Length];
+            int bytesRead = 0;
+            while (bytesRead < actual.Length)
+            {
+                int read = readStream.Read(actual, bytesRead, actual.Length - bytesRead);
+                if (read == 0)
+                {
+                    break;
+                }
+
+                bytesRead += read;
+            }
+
+            Assert.Equal(expected.Length, bytesRead);
+            Assert.Equal(expected, actual);
+        }
+
+        private static Stream CreatePipeReadStream(SafeFileHandle readHandle, bool asyncRead) =>
+            !OperatingSystem.IsWindows() && asyncRead
+                ? new AnonymousPipeClientStream(PipeDirection.In, TransferOwnershipToPipeHandle(readHandle))
+                : new FileStream(readHandle, FileAccess.Read, 1, asyncRead);
+
+        private static Stream CreatePipeWriteStream(SafeFileHandle writeHandle, bool asyncWrite) =>
+            !OperatingSystem.IsWindows() && asyncWrite
+                ? new AnonymousPipeClientStream(PipeDirection.Out, TransferOwnershipToPipeHandle(writeHandle))
+                : new FileStream(writeHandle, FileAccess.Write, 1, asyncWrite);
+
+        private static SafePipeHandle TransferOwnershipToPipeHandle(SafeFileHandle handle)
+        {
+            SafePipeHandle pipeHandle = new SafePipeHandle(handle.DangerousGetHandle(), ownsHandle: true);
+            handle.SetHandleAsInvalid();
+            handle.Dispose();
+            return pipeHandle;
         }
 
         [Theory]

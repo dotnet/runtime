@@ -12,6 +12,8 @@ internal static partial class Interop
         internal enum PipeFlags
         {
             O_CLOEXEC = 0x0010,
+            AsyncReads = 0x0400,
+            AsyncWrites = 0x0800,
         }
 
         /// <summary>

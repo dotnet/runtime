@@ -40,6 +40,7 @@ namespace Microsoft.Win32.SafeHandles
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
         private volatile NullableBool _supportsRandomAccess = NullableBool.Undefined;
+        private volatile int _isAsync = -1;
         private bool _deleteOnClose;
         private bool _isLocked;
 
@@ -53,7 +54,25 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(new IntPtr(-1));
         }
 
-        public bool IsAsync { get; private set; }
+        public bool IsAsync
+        {
+            get
+            {
+                int isAsync = _isAsync;
+                if (isAsync == -1)
+                {
+                    if (Interop.Sys.Fcntl.GetIsNonBlocking(this, out bool isNonBlocking) != 0)
+                    {
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), Path);
+                    }
+
+                    _isAsync = isAsync = isNonBlocking ? 1 : 0;
+                }
+
+                return isAsync != 0;
+            }
+            private set => _isAsync = value ? 1 : 0;
+        }
 
         internal bool CanSeek => !IsClosed && GetCanSeek();
 
@@ -159,6 +178,38 @@ namespace Microsoft.Win32.SafeHandles
                 long h = (long)handle;
                 return h < 0 || h > int.MaxValue;
             }
+        }
+
+        private static unsafe partial void CreateAnonymousPipeCore(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        {
+            readHandle = new SafeFileHandle();
+            writeHandle = new SafeFileHandle();
+
+            int* fds = stackalloc int[2];
+            Interop.Sys.PipeFlags flags = Interop.Sys.PipeFlags.O_CLOEXEC;
+            if (asyncRead)
+            {
+                flags |= Interop.Sys.PipeFlags.AsyncReads;
+            }
+
+            if (asyncWrite)
+            {
+                flags |= Interop.Sys.PipeFlags.AsyncWrites;
+            }
+
+            if (Interop.Sys.Pipe(fds, flags) != 0)
+            {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                readHandle.Dispose();
+                writeHandle.Dispose();
+                throw Interop.GetExceptionForIoErrno(error);
+            }
+
+            readHandle.SetHandle(new IntPtr(fds[Interop.Sys.ReadEndOfPipe]));
+            writeHandle.SetHandle(new IntPtr(fds[Interop.Sys.WriteEndOfPipe]));
+
+            readHandle.IsAsync = asyncRead;
+            writeHandle.IsAsync = asyncWrite;
         }
 
         // Specialized Open that returns the file length and permissions of the opened file.

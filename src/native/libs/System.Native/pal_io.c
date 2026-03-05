@@ -567,32 +567,32 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
     errno = ENOTSUP;
     return -1;
 #else // TARGET_WASM
-    switch (flags)
+    if ((flags & ~(PAL_O_CLOEXEC | PAL_O_ASYNC_READ | PAL_O_ASYNC_WRITE)) != 0)
     {
-        case 0:
-            break;
-        case PAL_O_CLOEXEC:
+        assert_msg(false, "Unknown pipe flag", (int)flags);
+        errno = EINVAL;
+        return -1;
+    }
+
+    int32_t pipeFlags = 0;
+    if ((flags & PAL_O_CLOEXEC) != 0)
+    {
 #if HAVE_O_CLOEXEC
-            flags = O_CLOEXEC;
+        pipeFlags = O_CLOEXEC;
 #endif
-            break;
-        default:
-            assert_msg(false, "Unknown pipe flag", (int)flags);
-            errno = EINVAL;
-            return -1;
     }
 
     int32_t result;
 #if HAVE_PIPE2
     // If pipe2 is available, use it.  This will handle O_CLOEXEC if it was set.
-    while ((result = pipe2(pipeFds, flags)) < 0 && errno == EINTR);
+    while ((result = pipe2(pipeFds, pipeFlags)) < 0 && errno == EINTR);
 #elif HAVE_PIPE
     // Otherwise, use pipe.
     while ((result = pipe(pipeFds)) < 0 && errno == EINTR);
 
     // Then, if O_CLOEXEC was specified, use fcntl to configure the file descriptors appropriately.
 #if HAVE_O_CLOEXEC
-    if ((flags & O_CLOEXEC) != 0 && result == 0)
+    if ((pipeFlags & O_CLOEXEC) != 0 && result == 0)
 #else
     if ((flags & PAL_O_CLOEXEC) != 0 && result == 0)
 #endif
@@ -614,6 +614,46 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 #else /* HAVE_PIPE */
     result = -1;
 #endif /* HAVE_PIPE */
+
+    if (result == 0 && ((flags & (PAL_O_ASYNC_READ | PAL_O_ASYNC_WRITE)) != 0))
+    {
+        if ((flags & PAL_O_ASYNC_READ) != 0)
+        {
+            int fdFlags;
+            while ((fdFlags = fcntl(pipeFds[0], F_GETFL)) < 0 && errno == EINTR);
+            if (fdFlags < 0)
+            {
+                result = -1;
+            }
+            else
+            {
+                while ((result = fcntl(pipeFds[0], F_SETFL, fdFlags | O_NONBLOCK)) < 0 && errno == EINTR);
+            }
+        }
+
+        if (result == 0 && (flags & PAL_O_ASYNC_WRITE) != 0)
+        {
+            int fdFlags;
+            while ((fdFlags = fcntl(pipeFds[1], F_GETFL)) < 0 && errno == EINTR);
+            if (fdFlags < 0)
+            {
+                result = -1;
+            }
+            else
+            {
+                while ((result = fcntl(pipeFds[1], F_SETFL, fdFlags | O_NONBLOCK)) < 0 && errno == EINTR);
+            }
+        }
+
+        if (result != 0)
+        {
+            int tmpErrno = errno;
+            close(pipeFds[0]);
+            close(pipeFds[1]);
+            errno = tmpErrno;
+        }
+    }
+
     return result;
 #endif // TARGET_WASM
 }
