@@ -277,6 +277,57 @@ namespace System.Collections.Generic
             return -1;
         }
 
+        private bool Contains(ref Entry item)
+        {
+            Entry[] entries = _entries!;
+            uint collisionCount = 0;
+            IEqualityComparer<T>? comparer = _comparer;
+
+            int hashCode = item.HashCode;
+            int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
+
+            // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
+            if (typeof(T).IsValueType && comparer == null)
+            {
+                while (i >= 0)
+                {
+                    ref Entry entry = ref entries[i];
+                    if (entry.HashCode == hashCode && EqualityComparer<T>.Default.Equals(entry.Value, item.Value))
+                    {
+                        return true;
+                    }
+                    i = entry.Next;
+
+                    if (++collisionCount > (uint)entries.Length)
+                    {
+                        // The chain of entries forms a loop, which means a concurrent update has happened.
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
+                }
+            }
+            else
+            {
+                Debug.Assert(comparer is not null);
+                while (i >= 0)
+                {
+                    ref Entry entry = ref entries[i];
+                    if (entry.HashCode == hashCode && comparer.Equals(entry.Value, item.Value))
+                    {
+                        return true;
+                    }
+                    i = entry.Next;
+
+                    if (++collisionCount > (uint)entries.Length)
+                    {
+                        // The chain of entries forms a loop, which means a concurrent update has happened.
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>Gets a reference to the specified hashcode's bucket, containing an index into <see cref="_entries"/>.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ref int GetBucketRef(int hashCode)
@@ -351,6 +402,53 @@ namespace System.Collections.Generic
             }
 
             return false;
+        }
+
+        private void RemoveAt(Entry[] entries, int removeIndex)
+        {
+            uint collisionCount = 0;
+            int last = -1;
+            ref int bucket = ref GetBucketRef(entries[removeIndex].HashCode);
+            int i = bucket - 1; // Value in buckets is 1-based
+
+            while (i >= 0)
+            {
+                ref Entry entry = ref entries[i];
+                if (i == removeIndex)
+                {
+                    if (last < 0)
+                    {
+                        bucket = entry.Next + 1; // Value in buckets is 1-based
+                    }
+                    else
+                    {
+                        entries[last].Next = entry.Next;
+                    }
+
+                    Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
+                    entry.Next = StartOfFreeList - _freeList;
+
+                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    {
+                        entry.Value = default!;
+                    }
+
+                    _freeList = i;
+                    _freeCount++;
+                    return;
+                }
+
+                last = i;
+                i = entry.Next;
+
+                if (++collisionCount > (uint)entries.Length)
+                {
+                    // The chain of entries forms a loop; which means a concurrent update has happened.
+                    // Break out of the loop and throw, rather than looping forever.
+                    break;
+                }
+            }
+            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
         }
 
         /// <summary>Gets the number of elements that are contained in the set.</summary>
@@ -957,8 +1055,8 @@ namespace System.Collections.Generic
                 }
             }
 
-            (int uniqueCount, int unfoundCount) = CheckUniqueAndUnfoundElements(other, returnIfUnfound: false);
-            return uniqueCount == Count && unfoundCount >= 0;
+            (int uniqueCount, _) = CheckUniqueAndUnfoundElements(other, returnIfUnfound: false);
+            return uniqueCount == Count;
         }
 
         /// <summary>Determines whether a <see cref="HashSet{T}"/> object is a proper subset of the specified collection.</summary>
@@ -1001,11 +1099,11 @@ namespace System.Collections.Generic
                 }
             }
 
-            (int uniqueCount, int unfoundCount) = CheckUniqueAndUnfoundElements(other, returnIfUnfound: false);
+            (int uniqueCount, int unfoundCount) = CheckUniqueAndUnfoundElements(other, returnIfUnfound: Count == 0);
             return uniqueCount == Count && unfoundCount > 0;
         }
 
-        /// <summary>Determines whether a <see cref="HashSet{T}"/> object is a proper superset of the specified collection.</summary>
+        /// <summary>Determines whether a <see cref="HashSet{T}"/> object is a superset of the specified collection.</summary>
         /// <param name="other">The collection to compare to the current <see cref="HashSet{T}"/> object.</param>
         /// <returns>true if the <see cref="HashSet{T}"/> object is a superset of <paramref name="other"/>; otherwise, false.</returns>
         public bool IsSupersetOf(IEnumerable<T> other)
@@ -1030,12 +1128,10 @@ namespace System.Collections.Generic
                     return true;
                 }
 
-                // Try to compare based on counts alone if other is a hashset with same equality comparer.
-                if (other is HashSet<T> otherAsSet &&
-                    EqualityComparersAreEqual(this, otherAsSet) &&
-                    otherAsSet.Count > Count)
+                // Faster if other is a hashset with the same equality comparer
+                if (other is HashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
                 {
-                    return false;
+                    return otherAsSet.Count <= Count && otherAsSet.IsSubsetOfHashSetWithSameComparer(this);
                 }
             }
 
@@ -1112,6 +1208,18 @@ namespace System.Collections.Generic
             if (other == this)
             {
                 return true;
+            }
+
+            // Faster if other is a hashset with the same effective equality comparer
+            if (other is HashSet<T> otherAsSet && EffectiveEqualityComparersAreEqual(this, otherAsSet))
+            {
+                if (otherAsSet.Count == 0)
+                {
+                    return false;
+                }
+
+                return otherAsSet.Count < Count ? otherAsSet.OverlapsHashSetWithSameComparer(this)
+                    : OverlapsHashSetWithSameComparer(otherAsSet);
             }
 
             foreach (T element in other)
@@ -1259,11 +1367,6 @@ namespace System.Collections.Generic
                 }
             }
         }
-
-        /// <summary>
-        /// Similar to <see cref="Comparer"/> but surfaces the actual comparer being used to hash entries.
-        /// </summary>
-        internal IEqualityComparer<T> EffectiveComparer => _comparer ?? EqualityComparer<T>.Default;
 
         /// <summary>Ensures that this hash set can hold the specified number of elements without growing.</summary>
         public int EnsureCapacity(int capacity)
@@ -1538,17 +1641,57 @@ namespace System.Collections.Generic
         ///
         /// If callers are concerned about whether this is a proper subset, they take care of that.
         /// </summary>
-        internal bool IsSubsetOfHashSetWithSameComparer(HashSet<T> other)
+        private bool IsSubsetOfHashSetWithSameComparer(HashSet<T> other)
         {
-            foreach (T item in this)
+            Entry[] entries = _entries!;
+            int count = _count;
+            if (count <= 0 || count > entries.Length)
+                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+
+            if (typeof(T).IsValueType || EffectiveEqualityComparersAreEqual(this, other))
             {
-                if (!other.Contains(item))
+                for (int i = 0; i < count; i++)
                 {
-                    return false;
+                    ref Entry entry = ref entries[i];
+                    if (entry.Next >= -1 && !other.Contains(ref entry))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    ref Entry entry = ref entries[i];
+                    if (entry.Next >= -1 && !other.Contains(entry.Value))
+                    {
+                        return false;
+                    }
                 }
             }
 
             return true;
+        }
+
+        private bool OverlapsHashSetWithSameComparer(HashSet<T> other)
+        {
+            Debug.Assert(EffectiveEqualityComparersAreEqual(this, other));
+            Entry[] entries = _entries!;
+            int count = _count;
+            if (count <= 0 || count > entries.Length)
+                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+
+            for (int i = 0; i < count; i++)
+            {
+                ref Entry entry = ref entries[i];
+                if (entry.Next >= -1 && other.Contains(ref entry))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -1557,16 +1700,30 @@ namespace System.Collections.Generic
         /// </summary>
         private void IntersectWithHashSetWithSameComparer(HashSet<T> other)
         {
-            Entry[]? entries = _entries;
-            for (int i = 0; i < _count; i++)
+            Entry[] entries = _entries!;
+            int count = _count;
+            if (count <= 0 || count > entries.Length)
+                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+
+            if (typeof(T).IsValueType || EffectiveEqualityComparersAreEqual(this, other))
             {
-                ref Entry entry = ref entries![i];
-                if (entry.Next >= -1)
+                for (int i = 0; i < count; i++)
                 {
-                    T item = entry.Value;
-                    if (!other.Contains(item))
+                    ref Entry entry = ref entries[i];
+                    if (entry.Next >= -1 && !other.Contains(ref entry))
                     {
-                        Remove(item);
+                        RemoveAt(entries, i);
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    ref Entry entry = ref entries![i];
+                    if (entry.Next >= -1 && !other.Contains(entry.Value))
+                    {
+                        RemoveAt(entries, i);
                     }
                 }
             }
@@ -1574,7 +1731,7 @@ namespace System.Collections.Generic
 
         /// <summary>
         /// Iterate over other. If contained in this, mark an element in bit array corresponding to
-        /// its position in _slots. If anything is unmarked (in bit array), remove it.
+        /// its position in _entries. If anything is unmarked (in bit array), remove it.
         ///
         /// This attempts to allocate on the stack, if below StackAllocThreshold.
         /// </summary>
@@ -1587,9 +1744,8 @@ namespace System.Collections.Generic
             int originalCount = _count;
             int intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
-            Span<int> span = stackalloc int[StackAllocThreshold];
             BitHelper bitHelper = (uint)intArrayLength <= StackAllocThreshold ?
-                new BitHelper(span.Slice(0, intArrayLength), clear: true) :
+                new BitHelper(stackalloc int[StackAllocThreshold].Slice(0, intArrayLength), clear: true) :
                 new BitHelper(new int[intArrayLength], clear: false);
 
             // Mark if contains: find index of in slots array and mark corresponding element in bit array.
@@ -1602,14 +1758,20 @@ namespace System.Collections.Generic
                 }
             }
 
-            // If anything unmarked, remove it. Perf can be optimized here if BitHelper had a
-            // FindFirstUnmarked method.
-            for (int i = 0; i < originalCount; i++)
+            // If anything unmarked, remove it.
+            int i = bitHelper.FindFirstUnmarked();
+            if (i >= 0)
             {
-                ref Entry entry = ref _entries![i];
-                if (entry.Next >= -1 && !bitHelper.IsMarked(i))
+                Entry[] entries = _entries!;
+                if (originalCount <= 0 || originalCount > entries.Length)
+                    ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+
+                for (; i < originalCount; i++)
                 {
-                    Remove(entry.Value);
+                    if (entries[i].Next >= -1 && bitHelper.IsUnmarked(i))
+                    {
+                        RemoveAt(entries, i);
+                    }
                 }
             }
         }
@@ -1655,20 +1817,20 @@ namespace System.Collections.Generic
             int originalCount = _count;
             int intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
-            Span<int> itemsToRemoveSpan = stackalloc int[StackAllocThreshold / 2];
-            BitHelper itemsToRemove = intArrayLength <= StackAllocThreshold / 2 ?
-                new BitHelper(itemsToRemoveSpan.Slice(0, intArrayLength), clear: true) :
+            BitHelper itemsToRemove = (uint)intArrayLength <= StackAllocThreshold / 2 ?
+                new BitHelper(stackalloc int[StackAllocThreshold / 2].Slice(0, intArrayLength), clear: true) :
                 new BitHelper(new int[intArrayLength], clear: false);
 
-            Span<int> itemsAddedFromOtherSpan = stackalloc int[StackAllocThreshold / 2];
-            BitHelper itemsAddedFromOther = intArrayLength <= StackAllocThreshold / 2 ?
-                new BitHelper(itemsAddedFromOtherSpan.Slice(0, intArrayLength), clear: true) :
+            BitHelper itemsAddedFromOther = (uint)intArrayLength <= StackAllocThreshold / 2 ?
+                new BitHelper(stackalloc int[StackAllocThreshold / 2].Slice(0, intArrayLength), clear: true) :
                 new BitHelper(new int[intArrayLength], clear: false);
 
+            int firstMarkedForRemove = originalCount;
             foreach (T item in other)
             {
-                int location;
-                if (AddIfNotPresent(item, out location))
+                bool added = AddIfNotPresent(item, out int tmp);
+                int location = tmp;
+                if (added)
                 {
                     // wasn't already present in collection; flag it as something not to remove
                     // *NOTE* if location is out of range, we should ignore. BitHelper will
@@ -1680,22 +1842,25 @@ namespace System.Collections.Generic
                 else
                 {
                     // already there...if not added from other, mark for remove.
-                    // *NOTE* Even though BitHelper will check that location is in range, we want
-                    // to check here. There's no point in checking items beyond originalCount
-                    // because they could not have been in the original collection
-                    if (location < originalCount && !itemsAddedFromOther.IsMarked(location))
+                    // *NOTE* BitHelper will check that location is in range.
+                    if (itemsAddedFromOther.IsUnmarked(location))
                     {
                         itemsToRemove.MarkBit(location);
+                        if (location < firstMarkedForRemove)
+                        {
+                            firstMarkedForRemove = location;
+                        }
                     }
                 }
             }
 
             // if anything marked, remove it
-            for (int i = 0; i < originalCount; i++)
+            Entry[] entries = _entries!;
+            for (int i = firstMarkedForRemove; i < originalCount; i++)
             {
                 if (itemsToRemove.IsMarked(i))
                 {
-                    Remove(_entries![i].Value);
+                    RemoveAt(entries, i);
                 }
             }
         }
@@ -1725,27 +1890,10 @@ namespace System.Collections.Generic
         /// because unfoundCount must be 0.</param>
         private (int UniqueCount, int UnfoundCount) CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
         {
-            // Need special case in case this has no elements.
-            if (_count == 0)
-            {
-                int numElementsInOther = 0;
-                foreach (T item in other)
-                {
-                    numElementsInOther++;
-                    break; // break right away, all we want to know is whether other has 0 or 1 elements
-                }
+            int intArrayLength = BitHelper.ToIntArrayLength(_count);
 
-                return (UniqueCount: 0, UnfoundCount: numElementsInOther);
-            }
-
-            Debug.Assert((_buckets != null) && (_count > 0), "_buckets was null but count greater than 0");
-
-            int originalCount = _count;
-            int intArrayLength = BitHelper.ToIntArrayLength(originalCount);
-
-            Span<int> span = stackalloc int[StackAllocThreshold];
-            BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
-                new BitHelper(span.Slice(0, intArrayLength), clear: true) :
+            BitHelper bitHelper = (uint)intArrayLength <= StackAllocThreshold ?
+                new BitHelper(stackalloc int[StackAllocThreshold].Slice(0, intArrayLength), clear: true) :
                 new BitHelper(new int[intArrayLength], clear: false);
 
             int unfoundCount = 0; // count of items in other not found in this
@@ -1756,10 +1904,8 @@ namespace System.Collections.Generic
                 int index = FindItemIndex(item);
                 if (index >= 0)
                 {
-                    if (!bitHelper.IsMarked(index))
+                    if (bitHelper.TryMarkBit(index))
                     {
-                        // Item hasn't been seen yet.
-                        bitHelper.MarkBit(index);
                         uniqueFoundCount++;
                     }
                 }
@@ -1781,13 +1927,15 @@ namespace System.Collections.Generic
         /// speed up if it knows the other item has unique elements. I.e. if they're using
         /// different equality comparers, then uniqueness assumption between sets break.
         /// </summary>
-        internal static bool EqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2) => set1.Comparer.Equals(set2.Comparer);
+        private static bool EqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2)
+            => set1._comparer == set2._comparer || set1.Comparer.Equals(set2.Comparer);
 
         /// <summary>
         /// Checks if effective equality comparers are equal. This is used for algorithms that
         /// require that both collections use identical hashing implementations for their entries.
         /// </summary>
-        internal static bool EffectiveEqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2) => set1.EffectiveComparer.Equals(set2.EffectiveComparer);
+        private static bool EffectiveEqualityComparersAreEqual(HashSet<T> set1, HashSet<T> set2)
+            => set1._comparer == set2._comparer || set1._comparer?.Equals(set2._comparer) == true;
 
         #endregion
 
