@@ -424,17 +424,22 @@ namespace System.Text.RegularExpressions.Symbolic
             // Counterexample: (R{2,∞})* cannot match a single R, so it's NOT equivalent to R*.
             // This is critical for performance: without it, deeply nested patterns like ((a)*)*
             // cause exponential blowup in derivative computation (https://github.com/dotnet/runtime/issues/84188).
+            // The blowup occurs during lazy DFA construction within matching, not just pattern compilation,
+            // so it violates the engine's linear-time-in-input-length guarantee.
             // Additional requirements:
             //  - No effects (captures), since collapsing loops would change capture group bindings.
             //  - Same laziness for both loops, since mixing greedy/lazy changes match priorities
             //    (e.g. (?:0*)+? is not equivalent to 0*? — the former prefers fewer outer iterations
             //    each greedily consuming, while the latter prefers less overall).
-            if (upper == int.MaxValue && body._kind == SymbolicRegexNodeKind.Loop && body._upper == int.MaxValue
+            // This is a while loop (not if + recursive CreateLoop call) so that arbitrary nesting
+            // depth is handled without consuming stack proportional to the depth.
+            while (upper == int.MaxValue && body._kind == SymbolicRegexNodeKind.Loop && body._upper == int.MaxValue
                 && (body._lower == 0 || (body._lower == 1 && lower == 0))
                 && !body._info.ContainsEffect && isLazy == body.IsLazy)
             {
                 Debug.Assert(body._left is not null);
-                return CreateLoop(builder, body._left, 0, int.MaxValue, isLazy);
+                lower = 0;
+                body = body._left;
             }
             return Create(builder, SymbolicRegexNodeKind.Loop, body, null, lower, upper, default, SymbolicRegexInfo.Loop(body._info, lower, isLazy));
         }
