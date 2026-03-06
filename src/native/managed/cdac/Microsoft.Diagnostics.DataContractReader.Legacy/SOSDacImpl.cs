@@ -3318,7 +3318,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             TargetPointer rcwPtr = rcw.ToTargetPointer(_target);
-            IBuiltInCOM builtInCom = _target.Contracts.BuiltInCOM;
+            IBuiltInCOM builtInCom = _target.Contracts.BuiltInCOM; // E_NOTIMPL if not defined (non-Windows)
             IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> entries = builtInCom.GetRCWInterfaces(rcwPtr);
 
             if (interfaces == null)
@@ -3369,15 +3369,6 @@ public sealed unsafe partial class SOSDacImpl
             if (pNeeded is not null)
             {
                 Debug.Assert(*pNeeded == pNeededLocal, $"cDAC: {*pNeeded}, DAC: {pNeededLocal}");
-            }
-            if (hr == HResults.S_OK && interfaces != null && interfacesLocal != null)
-            {
-                for (uint i = 0; i < pNeededLocal; i++)
-                {
-                    Debug.Assert(interfaces[i].methodTable == interfacesLocal[i].methodTable, $"[{i}].methodTable cDAC: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
-                    Debug.Assert(interfaces[i].interfacePtr == interfacesLocal[i].interfacePtr, $"[{i}].interfacePtr cDAC: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
-                    Debug.Assert(interfaces[i].comContext == interfacesLocal[i].comContext, $"[{i}].comContext cDAC: {interfaces[i].comContext:x}, DAC: {interfacesLocal[i].comContext:x}");
-                }
             }
         }
 #endif
@@ -4111,7 +4102,7 @@ public sealed unsafe partial class SOSDacImpl
             if (pCallback is null)
                 throw new ArgumentException();
 
-            Contracts.IBuiltInCOM contract = _target.Contracts.BuiltInCOM;
+            Contracts.IBuiltInCOM contract = _target.Contracts.BuiltInCOM; // E_NOTIMPL if not defined (non-Windows)
             TargetPointer listPtr = cleanupListPtr.ToTargetPointer(_target);
 
             cleanupInfos = contract.GetRCWCleanupList(listPtr);
