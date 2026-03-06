@@ -451,8 +451,10 @@ namespace ILCompiler.ObjectWriter
 
                 if (node is IWasmCodeNode codeNode && _nodeFactory.Target.IsWasm)
                 {
-                    Debug.Assert(codeNode.GetWasmTypeSignature(_nodeFactory) != null, $"Wasm code node {codeNode.GetType()} has null signature");
+                    Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
 
+                    // TODO-Wasm: eventually this should check IWasmMethodCodeNode
+                    // Once we have signatures implemented for all code-carrying nodes
                     if (node is IMethodBodyNode methodNode)
                     {
                         // Record only information we can get from the MethodDesc here. The actual

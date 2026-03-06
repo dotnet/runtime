@@ -24,7 +24,5 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int ClassCode => 737788182;
 
-        // TODO-Wasm: Get signature
-        public override WasmTypeNode GetWasmTypeSignature(NodeFactory factory) => null;
     }
 }

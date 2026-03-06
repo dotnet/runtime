@@ -15,7 +15,7 @@ using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.Depend
 namespace ILCompiler.DependencyAnalysis
 {
     [DebuggerTypeProxy(typeof(MethodCodeNodeDebugView))]
-    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, ISymbolDefinitionNode, ISpecialUnboxThunkNode, IWasmCodeNode
+    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, ISymbolDefinitionNode, ISpecialUnboxThunkNode, IWasmMethodCodeNode
     {
         private MethodDesc _method;
         private ObjectData _methodCode;
@@ -72,8 +72,6 @@ namespace ILCompiler.DependencyAnalysis
             CodeBasedDependencyAlgorithm.AddConditionalDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
             return dependencies ?? (IEnumerable<CombinedDependencyListEntry>)Array.Empty<CombinedDependencyListEntry>();
         }
-
-        public WasmTypeNode GetWasmTypeSignature(NodeFactory factory) => null;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

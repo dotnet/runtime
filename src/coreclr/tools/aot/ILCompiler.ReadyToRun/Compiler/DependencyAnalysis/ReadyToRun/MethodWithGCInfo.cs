@@ -14,7 +14,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, IWasmCodeNode 
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, IWasmMethodCodeNode
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -262,11 +262,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return writer.ToArray();
         }
 
-        public WasmTypeNode GetWasmTypeSignature(NodeFactory factory)
-        {
-            return factory.WasmTypeNode(_method);
-        }
-
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencyList = new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
@@ -279,15 +274,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (ISymbolNode node in _fixups)
             {
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
-            }
-
-            if (factory.Target.IsWasm)
-            {
-                // All methods require an explicit signature declaration in Wasm which we materialize as a separate node,
-                // so we need to make sure this signature node is always created and marked as a dependency. 
-                WasmTypeNode signature = GetWasmTypeSignature(factory);
-                Debug.Assert(signature != null);
-                dependencyList.Add(signature, "WASM methods require signature");
             }
 
             if (_nonRelocationDependencies != null)
