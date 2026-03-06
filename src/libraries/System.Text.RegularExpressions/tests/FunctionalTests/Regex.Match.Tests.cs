@@ -2505,6 +2505,25 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, $@"{b2}\w+{b2}", "one two three", 1 };
                 yield return new object[] { engine, $@"{b2}\w+{b2}", "one two", 0 };
             }
+
+            // Nested loop simplification correctness. The NonBacktracking engine simplifies
+            // certain nested loop patterns (e.g. (R*)* → R*) during construction. These tests
+            // verify the simplification produces results consistent across all engines.
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                // Patterns that ARE simplified: (R*)*, (R+)*, (R*)+ all collapse to R*
+                yield return new object[] { engine, @"^(?:(?:a)*)*$", "aaa", 1 };
+                yield return new object[] { engine, @"^(?:(?:a)+)*$", "aaa", 1 };
+                yield return new object[] { engine, @"^(?:(?:a)*)+$", "aaa", 1 };
+
+                // (R{2,})* must NOT be simplified to R* — a single R is not in the language
+                yield return new object[] { engine, @"^(?:(?:a){2,})*$", "a", 0 };
+                yield return new object[] { engine, @"^(?:(?:a){2,})*$", "aa", 1 };
+                yield return new object[] { engine, @"^(?:(?:a){2,})*$", "", 1 };
+
+                // Mixed laziness: greedy inner with lazy outer must not be conflated
+                yield return new object[] { engine, @"(?:(?:a*)+?)", "aaa", 2 };
+            }
         }
 
         [Theory]
@@ -2579,13 +2598,14 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                if (engine != RegexEngine.NonBacktracking) // Hangs, or effectively hangs. https://github.com/dotnet/runtime/issues/84188
-                {
-                    yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
-                }
+                // NonBacktracking uses a lower nesting depth to avoid stack overflow in the recursive
+                // derivative processing. 120 levels is still well beyond what would previously hang
+                // (previously, even 20 levels would cause >60s execution time).
+                int depth = RegexHelpers.IsNonBacktracking(engine) ? 120 : 2000;
 
-                yield return new object[] { engine, "(", "[aA]", ")+", "aA", 2000, 3000 };
-                yield return new object[] { engine, "(", "ab", "){0,1}", "ab", 2000, 1000 };
+                yield return new object[] { engine, "(", "a", ")*", "a", depth, 1000 };
+                yield return new object[] { engine, "(", "[aA]", ")+", "aA", depth, 3000 };
+                yield return new object[] { engine, "(", "ab", "){0,1}", "ab", depth, 1000 };
             }
         }
 
