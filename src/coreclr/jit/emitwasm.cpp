@@ -178,7 +178,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
     }
 
-    assert(params.wasmSignature);
+    assert(params.wasmSignature != nullptr);
 
     /*
         We need to allocate the appropriate instruction descriptor based
