@@ -219,6 +219,7 @@ namespace System.Runtime.CompilerServices
         // Mono:AddByteOffset
         [NonVersionable]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
             where T : allows ref struct
@@ -680,6 +681,7 @@ namespace System.Runtime.CompilerServices
         // AOT:AddByteOffset
         // Mono:AddByteOffset
         [NonVersionable]
+        [RequiresUnsafe]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AddByteOffset<T>(ref T source, nint byteOffset)
             where T : allows ref struct
@@ -950,6 +952,7 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]
+        [RequiresUnsafe]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T SubtractByteOffset<T>(ref T source, nint byteOffset)
             where T : allows ref struct
@@ -970,6 +973,7 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET
         [NonVersionable]
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T SubtractByteOffset<T>(ref T source, nuint byteOffset)
             where T : allows ref struct
