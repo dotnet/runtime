@@ -359,7 +359,8 @@ NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() con
 #ifndef DACCESS_COMPILE
 void NativeCodeVersion::SetOptimizationTier(OptimizationTier tier)
 {
-    WRAPPER_NO_CONTRACT;
+    STANDARD_VM_CONTRACT;
+
     if (m_storageKind == StorageKind::Explicit)
     {
         AsNode()->SetOptimizationTier(tier);

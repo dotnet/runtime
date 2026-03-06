@@ -1267,6 +1267,8 @@ const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *conf
 // This function should be called before SetNativeCode() for consistency with usage of FinalizeOptimizationTierForTier0Jit
 bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Load()
 {
+    STANDARD_VM_CONTRACT;
+
     _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
     _ASSERTE(!JitSwitchedToOptimized());
     bool shouldTier = true;
@@ -1309,6 +1311,8 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Load()
 // version, and it should have already been finalized.
 bool PrepareCodeConfig::FinalizeOptimizationTierForTier0LoadOrJit()
 {
+    STANDARD_VM_CONTRACT;
+
     _ASSERTE(GetMethodDesc()->IsEligibleForTieredCompilation());
 
     if (IsForMulticoreJit())

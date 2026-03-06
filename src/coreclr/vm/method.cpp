@@ -263,18 +263,14 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
     return S_OK;
 }
 
-HRESULT MethodDesc::SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier)
+void MethodDesc::SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier)
 {
-    WRAPPER_NO_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
-    HRESULT hr;
-    IfFailRet(EnsureCodeDataExists(NULL));
+    IfFailThrow(EnsureCodeDataExists(NULL));
 
     _ASSERTE(m_codeData != NULL);
-    if (InterlockedExchangeT(&m_codeData->OptimizationTier, tier) != NativeCodeVersion::OptimizationTierUnknown)
-        return S_FALSE;
-
-    return S_OK;
+    VolatileStoreWithoutBarrier(&m_codeData->OptimizationTier, tier);
 }
 #endif // FEATURE_CODE_VERSIONING
 

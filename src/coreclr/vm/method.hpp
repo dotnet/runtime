@@ -1937,7 +1937,7 @@ public:
 #ifdef FEATURE_CODE_VERSIONING
 #ifndef DACCESS_COMPILE
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
-    HRESULT SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier);
+    void SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier);
 #endif // !DACCESS_COMPILE
     PTR_MethodDescVersioningState GetMethodDescVersionState();
     NativeCodeVersion::OptimizationTier GetMethodDescOptimizationTier();

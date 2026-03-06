@@ -330,13 +330,7 @@ public:
     static void StaticInitialize();
 #endif // !DACCESS_COMPILE
 
-public:
-    bool IsCallCountingEnabled(NativeCodeVersion codeVersion);
-
 #ifndef DACCESS_COMPILE
-public:
-    void DisableCallCounting(NativeCodeVersion codeVersion);
-
 public:
     static bool SetCodeEntryPoint(
         NativeCodeVersion activeCodeVersion,
