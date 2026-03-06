@@ -2072,30 +2072,6 @@ PAL_GetTransportPipeName(
 
 /*++
 Function:
-  GetCommandLineW
-
-See MSDN doc.
---*/
-LPWSTR
-PALAPI
-GetCommandLineW(
-    VOID)
-{
-    PERF_ENTRY(GetCommandLineW);
-    ENTRY("GetCommandLineW()\n");
-
-    LPWSTR lpwstr = g_lpwstrCmdLine ? g_lpwstrCmdLine : (LPWSTR)W("");
-
-    LOGEXIT("GetCommandLineW returns LPWSTR %p (%S)\n",
-          g_lpwstrCmdLine,
-          lpwstr);
-    PERF_EXIT(GetCommandLineW);
-
-    return lpwstr;
-}
-
-/*++
-Function:
   OpenProcess
 
 See MSDN doc.

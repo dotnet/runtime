@@ -3400,15 +3400,6 @@ SetLastError(
          IN DWORD dwErrCode);
 
 PALIMPORT
-LPWSTR
-PALAPI
-GetCommandLineW();
-
-#ifdef UNICODE
-#define GetCommandLine GetCommandLineW
-#endif
-
-PALIMPORT
 VOID
 PALAPI
 RtlRestoreContext(
