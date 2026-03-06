@@ -16,5 +16,8 @@
         <MicrosoftNetCoreAppRefPackDir Condition="'$(MicrosoftNetCoreAppRefPackDir)' == ''" >$(RepositoryRoot)artifacts/bin/microsoft.netcore.app.ref/</MicrosoftNetCoreAppRefPackDir>
         <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">$(RepositoryRoot)artifacts/bin/microsoft.netcore.app.runtime.$(TargetRid)/$(Configuration)/</MicrosoftNetCoreAppRuntimePackDir>
         <UseLocalAppHostPack>false</UseLocalAppHostPack>
+        <!-- In Docker context, Versions.props isn't available so ProductVersion is unset.
+             Default to NetCoreAppCurrentVersion.0 so the app roll-forwards to the testhost runtime. -->
+        <ProductVersion Condition="'$(ProductVersion)' == ''">$(NetCoreAppCurrentVersion).0</ProductVersion>
     </PropertyGroup>
 </Project>
