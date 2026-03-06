@@ -12,7 +12,7 @@ License notice for ASP.NET
 -------------------------------
 
 Copyright (c) .NET Foundation. All rights reserved.
-Licensed under the MIT license (MIT)
+Licensed under the MIT License (MIT)
 
 Available at
 https://github.com/dotnet/aspnetcore/blob/main/LICENSE.txt
