@@ -91,7 +91,8 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
         }
 
         regNumber         reg = MakeWasmReg(m_localIndex++, genActualType(abiType));
-        ABIPassingSegment seg = ABIPassingSegment::InRegister(reg, 0, genTypeSize(abiType));
+        unsigned  segmentSize = min(structLayout->GetSize(), genTypeSize(abiType));
+        ABIPassingSegment seg = ABIPassingSegment::InRegister(reg, 0, segmentSize);
         return ABIPassingInformation::FromSegment(comp, passByRef, seg);
     }
 
