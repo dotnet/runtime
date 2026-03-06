@@ -23,7 +23,7 @@ struct ReverseThunkMapValue
 
 struct ReverseThunkMapEntry
 {
-    ULONG key;
+    ULONG hashCode;
     ReverseThunkMapValue value;
 };
 

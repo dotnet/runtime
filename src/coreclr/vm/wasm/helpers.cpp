@@ -658,7 +658,7 @@ namespace
         newTable->Reallocate(g_ReverseThunksCount * HashToReverseThunkHash::s_density_factor_denominator / HashToReverseThunkHash::s_density_factor_numerator + 1);
         for (size_t i = 0; i < g_ReverseThunksCount; i++)
         {
-            newTable->Add(g_ReverseThunks[i].key, &g_ReverseThunks[i].value);
+            newTable->Add(g_ReverseThunks[i].hashCode, &g_ReverseThunks[i].value);
         }
 
         HashToReverseThunkHash **ppCache = &reverseThunkCache;
