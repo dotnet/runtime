@@ -64,6 +64,7 @@ public:
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
         CORJIT_FLAG_ASYNC                   = 31, // Generate code for use as an async function
+        CORJIT_FLAG_PORTABLE_ENTRY_POINTS   = 32,
     };
 
     CORJIT_FLAGS()
