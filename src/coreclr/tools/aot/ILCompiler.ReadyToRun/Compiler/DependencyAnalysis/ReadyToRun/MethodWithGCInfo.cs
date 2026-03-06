@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.JitInterface;
 using Internal.Pgo;
 using Internal.Text;
