@@ -29,10 +29,17 @@ internal static class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void MethodB()
     {
-        int localValue = Environment.TickCount;
-        if (localValue < 0)
-            return;
-        MethodC();
+        // The try/finally ensures localObj is stored as a real IL local variable,
+        // because the evaluation stack is empty at finally-block entry per ECMA-335.
+        object localObj = new object();
+        try
+        {
+            MethodC();
+        }
+        finally
+        {
+            GC.KeepAlive(localObj);
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
