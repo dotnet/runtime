@@ -61,7 +61,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
     public void BundlerFriendlyBootConfigHasNoHotReloadLibraryInitializer()
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_BundlerFriendlyBootConfigHasNoHotReloadLibraryInitializer");
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_BundlerFriendlyBootConfigHasNoHotReloadLibraryInitializer");
 
         BuildProject(info, config);
 
