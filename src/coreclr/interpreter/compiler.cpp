@@ -929,7 +929,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
     if (opcode == INTOP_HANDLE_CONTINUATION_SUSPEND)
     {
         // Capture meaningful start IP for async suspend diagnostics
-        ((InterpAsyncSuspendData*)GetDataItemAtIndex(ins->data[0]))->resumeInfo.DiagnosticIP = (size_t)startIp;
+        ((InterpAsyncSuspendData*)GetDataItemAtIndex(ins->data[0]))->resumeInfo.DiagnosticIP = (size_t)(startIp - m_pMethodCode);
     }
 
     if (opcode == INTOP_SWITCH)
