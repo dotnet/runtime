@@ -1198,7 +1198,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 
 //------------------------------------------------------------------------
 // updateIntervalPreferencesForKill:
-//   Update the specified interval to tke into account that some registers will
+//   Update the specified interval to take into account that some registers will
 //   be killed while it is live.
 //
 // Arguments:
