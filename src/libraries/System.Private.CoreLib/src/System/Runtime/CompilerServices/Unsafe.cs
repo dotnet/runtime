@@ -103,6 +103,7 @@ namespace System.Runtime.CompilerServices
         // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static ref T Add<T>(ref T source, int elementOffset)
             where T : allows ref struct
         {
@@ -131,6 +132,7 @@ namespace System.Runtime.CompilerServices
         // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static ref T Add<T>(ref T source, nint elementOffset)
             where T : allows ref struct
         {
@@ -188,6 +190,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static ref T Add<T>(ref T source, nuint elementOffset)
             where T : allows ref struct
         {
@@ -837,6 +840,7 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_INT_SUBTRACT
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static ref T Subtract<T>(ref T source, int elementOffset)
             where T : allows ref struct
         {
@@ -892,6 +896,7 @@ namespace System.Runtime.CompilerServices
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_SUBTRACT
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static ref T Subtract<T>(ref T source, nint elementOffset)
             where T : allows ref struct
         {
@@ -919,6 +924,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public static ref T Subtract<T>(ref T source, nuint elementOffset)
             where T : allows ref struct
         {
