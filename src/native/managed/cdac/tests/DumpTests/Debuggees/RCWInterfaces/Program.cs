@@ -7,68 +7,113 @@ using System.Runtime.Versioning;
 
 /// <summary>
 /// Debuggee for cDAC dump tests — exercises the BuiltInCOM contract's GetRCWInterfaces API.
-/// Creates a COM RCW with a populated inline interface entry cache, then crashes
-/// to produce a dump for analysis.
+/// Creates a real RCW for an unmanaged COM object with populated interface cache,
+/// then crashes to produce a dump for analysis.
 /// This debuggee is Windows-only, as RCW support requires FEATURE_COMINTEROP.
 /// </summary>
 internal static class Program
 {
-    [ComVisible(true)]
-    [Guid("6B29FC40-CA47-1067-B31D-00DD010662DA")]
+    private const int S_OK = 0;
+    private const int S_FALSE = 1;
+    private const int RpcEChangedMode = unchecked((int)0x80010106);
+    private const uint CoInitMultithreaded = 0;
+
+    private static readonly Guid CLSID_StdGlobalInterfaceTable = new("00000323-0000-0000-C000-000000000046");
+    private static readonly Guid IID_IUnknown = new("00000000-0000-0000-C000-000000000046");
+
+    [ComImport]
+    [Guid("00000146-0000-0000-C000-000000000046")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface ITestInterface
+    private interface IGlobalInterfaceTable
     {
-        void DoNothing();
+        [PreserveSig]
+        int RegisterInterfaceInGlobal(IntPtr pUnk, ref Guid riid, out int pdwCookie);
+
+        [PreserveSig]
+        int RevokeInterfaceFromGlobal(int dwCookie);
+
+        [PreserveSig]
+        int GetInterfaceFromGlobal(int dwCookie, ref Guid riid, out IntPtr ppv);
     }
 
-    [ComVisible(true)]
-    [ClassInterface(ClassInterfaceType.None)]
-    [Guid("EA5B4A62-3F3F-4B3B-8D7C-1234567890AB")]
-    public class TestComObject : ITestInterface
-    {
-        public void DoNothing() { }
-    }
+    [DllImport("ole32.dll")]
+    private static extern int CoInitializeEx(IntPtr pvReserved, uint dwCoInit);
+
+    [DllImport("ole32.dll")]
+    private static extern void CoUninitialize();
 
     private static void Main()
     {
         if (OperatingSystem.IsWindows())
         {
-            CreateRCWOnWindows();
+            CreateRcwOnWindows();
         }
 
         Environment.FailFast("cDAC dump test: RCWInterfaces debuggee intentional crash");
     }
 
     [SupportedOSPlatform("windows")]
-    private static void CreateRCWOnWindows()
+    private static void CreateRcwOnWindows()
     {
-        // Create a managed COM-visible object and get its CCW IUnknown
-        var comObject = new TestComObject();
-        IntPtr pUnknown = Marshal.GetIUnknownForObject(comObject);
+        bool callCoUninitialize = false;
+        int coInitializeResult = CoInitializeEx(IntPtr.Zero, CoInitMultithreaded);
+        if (coInitializeResult == S_OK || coInitializeResult == S_FALSE)
+        {
+            callCoUninitialize = true;
+        }
+        else if (coInitializeResult != RpcEChangedMode)
+        {
+            Marshal.ThrowExceptionForHR(coInitializeResult);
+        }
+
+        IntPtr rcwIUnknown = IntPtr.Zero;
+        IntPtr fetchedIUnknown = IntPtr.Zero;
+        GCHandle rcwHandle = default;
 
         try
         {
-            // GetUniqueObjectForIUnknown creates a real RCW (bypasses identity lookup),
-            // so we get an actual RCW wrapping the CCW. Casting to ITestInterface
-            // triggers a QueryInterface which populates the inline interface entry cache.
-            object rcwObject = Marshal.GetUniqueObjectForIUnknown(pUnknown);
+            Type comType = Type.GetTypeFromCLSID(CLSID_StdGlobalInterfaceTable, throwOnError: true)!;
+            object rcwObject = Activator.CreateInstance(comType)!;
 
-            if (rcwObject is ITestInterface iface)
-            {
-                iface.DoNothing();
-            }
+            IGlobalInterfaceTable globalInterfaceTable = (IGlobalInterfaceTable)rcwObject;
+
+            rcwIUnknown = Marshal.GetIUnknownForObject(rcwObject);
+
+            Guid iidIUnknown = IID_IUnknown;
+            int registerResult = globalInterfaceTable.RegisterInterfaceInGlobal(rcwIUnknown, ref iidIUnknown, out int cookie);
+            Marshal.ThrowExceptionForHR(registerResult);
+
+            int getResult = globalInterfaceTable.GetInterfaceFromGlobal(cookie, ref iidIUnknown, out fetchedIUnknown);
+            Marshal.ThrowExceptionForHR(getResult);
+
+            int revokeResult = globalInterfaceTable.RevokeInterfaceFromGlobal(cookie);
+            Marshal.ThrowExceptionForHR(revokeResult);
 
             // Pin the RCW object in a strong GC handle so the dump test can find it
             // by walking the strong handle table (matching how GCRoots debuggee works).
-            GCHandle rcwHandle = GCHandle.Alloc(rcwObject, GCHandleType.Normal);
+            rcwHandle = GCHandle.Alloc(rcwObject, GCHandleType.Normal);
+            GC.KeepAlive(globalInterfaceTable);
             GC.KeepAlive(rcwHandle);
             GC.KeepAlive(rcwObject);
         }
         finally
         {
-            Marshal.Release(pUnknown);
-        }
+            if (fetchedIUnknown != IntPtr.Zero)
+            {
+                Marshal.Release(fetchedIUnknown);
+            }
 
-        GC.KeepAlive(comObject);
+            if (rcwIUnknown != IntPtr.Zero)
+            {
+                Marshal.Release(rcwIUnknown);
+            }
+
+            GC.KeepAlive(rcwHandle);
+
+            if (callCoUninitialize)
+            {
+                CoUninitialize();
+            }
+        }
     }
 }

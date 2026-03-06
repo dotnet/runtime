@@ -3315,8 +3315,8 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             TargetPointer rcwPtr = rcw.ToTargetPointer(_target);
-            IBuiltInCOM contract = _target.Contracts.BuiltInCOM;
-            IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> entries = contract.GetRCWInterfaces(rcwPtr);
+            IBuiltInCOM builtInCom = _target.Contracts.BuiltInCOM;
+            IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> entries = builtInCom.GetRCWInterfaces(rcwPtr);
 
             if (interfaces == null)
             {
@@ -3333,7 +3333,7 @@ public sealed unsafe partial class SOSDacImpl
             {
                 NativeMemory.Clear(interfaces, (nuint)(count * (uint)sizeof(DacpCOMInterfacePointerData)));
 
-                TargetPointer ctxCookie = contract.GetRCWContext(rcwPtr);
+                TargetPointer ctxCookie = builtInCom.GetRCWContext(rcwPtr);
                 uint itemIndex = 0;
                 foreach (var (methodTable, unknown) in entries)
                 {
