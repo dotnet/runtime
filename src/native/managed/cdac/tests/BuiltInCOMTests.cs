@@ -22,6 +22,11 @@ public class BuiltInCOMTests
         DataType = DataType.RCW,
         Fields =
         [
+            new(nameof(Data.RCW.NextCleanupBucket), DataType.pointer),
+            new(nameof(Data.RCW.NextRCW), DataType.pointer),
+            new(nameof(Data.RCW.Flags), DataType.uint32),
+            new(nameof(Data.RCW.CtxCookie), DataType.pointer),
+            new(nameof(Data.RCW.CtxEntry), DataType.pointer),
             new(nameof(Data.RCW.InterfaceEntries), DataType.pointer),
         ]
     };
@@ -72,7 +77,8 @@ public class BuiltInCOMTests
         TargetTestHelpers targetTestHelpers,
         Dictionary<DataType, Target.TypeInfo> types,
         MockMemorySpace.BumpAllocator allocator,
-        (TargetPointer MethodTable, TargetPointer Unknown)[] entries)
+        (TargetPointer MethodTable, TargetPointer Unknown)[] entries,
+        TargetPointer ctxCookie = default)
     {
         Target.TypeInfo rcwTypeInfo = types[DataType.RCW];
         Target.TypeInfo entryTypeInfo = types[DataType.InterfaceEntry];
@@ -83,6 +89,11 @@ public class BuiltInCOMTests
         uint totalSize = entriesOffset + entrySize * TestRCWInterfaceCacheSize;
         MockMemorySpace.HeapFragment fragment = allocator.Allocate(totalSize, "RCW with inline entries");
         Span<byte> data = fragment.Data;
+
+        // Write RCW header fields
+        targetTestHelpers.WritePointer(
+            data.Slice(rcwTypeInfo.Fields[nameof(Data.RCW.CtxCookie)].Offset),
+            ctxCookie);
 
         // Write the inline interface entries starting at entriesOffset
         for (int i = 0; i < entries.Length && i < TestRCWInterfaceCacheSize; i++)
@@ -187,6 +198,28 @@ public class BuiltInCOMTests
                     contract.GetRCWInterfaces(rcwAddress).ToList();
 
                 Assert.Empty(results);
+            });
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRCWContext_ReturnsCtxCookie(MockTarget.Architecture arch)
+    {
+        TargetPointer rcwAddress = default;
+        TargetPointer expectedCookie = new TargetPointer(0xC00C_1E00);
+
+        BuiltInCOMContractHelper(arch,
+            (builder, targetTestHelpers, types) =>
+            {
+                MockMemorySpace.BumpAllocator allocator = builder.CreateAllocator(AllocationRangeStart, AllocationRangeEnd);
+                rcwAddress = AddRCWWithInlineEntries(builder, targetTestHelpers, types, allocator, [], expectedCookie);
+            },
+            (target) =>
+            {
+                IBuiltInCOM contract = target.Contracts.BuiltInCOM;
+                TargetPointer result = contract.GetRCWContext(rcwAddress);
+
+                Assert.Equal(expectedCookie, result);
             });
     }
 }

@@ -13,6 +13,8 @@ public bool IsHandleWeak(TargetPointer ccw);
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr);
 // Enumerate the interface entries cached in an RCW.
 public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw);
+// Get the COM context cookie for an RCW.
+public TargetPointer GetRCWContext(TargetPointer rcw);
 ```
 
 ## Version 1
@@ -116,18 +118,24 @@ public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPt
 
 public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw)
 {
-    // InterfaceEntries is the address of the inline array (address + offset of m_aInterfaceEntries)
-    var rcwData = /* read RCW: InterfaceEntries = address + offset */;
+    // InterfaceEntries is an inline array — the offset gives the address of the first element.
+    TargetPointer interfaceEntriesAddr = rcw + /* RCW::InterfaceEntries offset */;
     uint cacheSize = _target.ReadGlobal<uint>("RCWInterfaceCacheSize");
     uint entrySize = /* size of InterfaceEntry */;
 
     for (uint i = 0; i < cacheSize; i++)
     {
-        TargetPointer entryAddress = rcwData.InterfaceEntries + i * entrySize;
-        var entry = /* read InterfaceEntry from entryAddress */;
+        TargetPointer entryAddress = interfaceEntriesAddr + i * entrySize;
+        TargetPointer methodTable = _target.ReadPointer(entryAddress + /* InterfaceEntry::MethodTable offset */);
+        TargetPointer unknown = _target.ReadPointer(entryAddress + /* InterfaceEntry::Unknown offset */);
         // An entry is free if Unknown == null (matches InterfaceEntry::IsFree())
-        if (entry.Unknown != TargetPointer.Null)
-            yield return (entry.MethodTable, entry.Unknown);
+        if (unknown != TargetPointer.Null)
+            yield return (methodTable, unknown);
     }
+}
+
+public TargetPointer GetRCWContext(TargetPointer rcw)
+{
+    return _target.ReadPointer(rcw + /* RCW::CtxCookie offset */);
 }
 ```

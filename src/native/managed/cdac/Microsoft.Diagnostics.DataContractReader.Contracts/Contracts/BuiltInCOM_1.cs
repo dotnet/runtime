@@ -97,4 +97,11 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             }
         }
     }
+
+    public TargetPointer GetRCWContext(TargetPointer rcw)
+    {
+        Data.RCW rcwData = _target.ProcessedData.GetOrAdd<Data.RCW>(rcw);
+
+        return rcwData.CtxCookie;
+    }
 }

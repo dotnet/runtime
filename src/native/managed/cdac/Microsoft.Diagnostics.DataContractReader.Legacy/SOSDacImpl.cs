@@ -3306,7 +3306,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetRCWData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetRCWData(addr, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, void* interfaces, uint* pNeeded)
+    int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, DacpCOMInterfacePointerData* interfaces, uint* pNeeded)
     {
         int hr = HResults.S_OK;
         try
@@ -3336,7 +3336,7 @@ public sealed unsafe partial class SOSDacImpl
             {
                 NativeMemory.Clear(interfaces, (nuint)(count * (uint)sizeof(DacpCOMInterfacePointerData)));
 
-                DacpCOMInterfacePointerData* interfaceData = (DacpCOMInterfacePointerData*)interfaces;
+                TargetPointer ctxCookie = contract.GetRCWContext(rcwPtr);
                 uint itemIndex = 0;
                 foreach (var (methodTable, unknown) in entries)
                 {
@@ -3345,9 +3345,9 @@ public sealed unsafe partial class SOSDacImpl
                         throw new ArgumentException();
                     }
 
-                    interfaceData[itemIndex].methodTable = methodTable.ToClrDataAddress(_target);
-                    interfaceData[itemIndex].interfacePtr = unknown.ToClrDataAddress(_target);
-                    interfaceData[itemIndex].comContext = 0; // context cookie is not tracked per-entry in the managed contract
+                    interfaces[itemIndex].methodTable = methodTable.ToClrDataAddress(_target);
+                    interfaces[itemIndex].interfacePtr = unknown.ToClrDataAddress(_target);
+                    interfaces[itemIndex].comContext = ctxCookie.ToClrDataAddress(_target);
                     itemIndex++;
                 }
 
@@ -3363,16 +3363,23 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            // When querying the count only, validate pNeeded against the legacy implementation.
-            // We cannot validate the full interface data because comContext is not tracked per-entry
-            // in the managed contract and will differ from the legacy implementation.
-            if (interfaces == null && hr == HResults.S_OK)
+            uint pNeededLocal = 0;
+            int hrLocal;
+            DacpCOMInterfacePointerData[]? interfacesLocal = count > 0 && interfaces != null ? new DacpCOMInterfacePointerData[count] : null;
+            fixed (DacpCOMInterfacePointerData* dataLocal = interfacesLocal)
             {
-                uint pNeededLocal;
-                int hrLocal = _legacyImpl.GetRCWInterfaces(rcw, count, null, &pNeededLocal);
-                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-                if (hr == HResults.S_OK)
-                    Debug.Assert(pNeeded == null || *pNeeded == pNeededLocal, $"cDAC: {(pNeeded == null ? "null" : (*pNeeded).ToString())}, DAC: {pNeededLocal}");
+                hrLocal = _legacyImpl.GetRCWInterfaces(rcw, count, dataLocal, pNeeded == null ? null : &pNeededLocal);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK && interfaces != null && interfacesLocal != null)
+            {
+                Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC: {(pNeeded is null ? "null" : (*pNeeded).ToString())}, DAC: {pNeededLocal}");
+                for (uint i = 0; i < pNeededLocal; i++)
+                {
+                    Debug.Assert(interfaces[i].methodTable == interfacesLocal[i].methodTable, $"[{i}].methodTable cDAC: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
+                    Debug.Assert(interfaces[i].interfacePtr == interfacesLocal[i].interfacePtr, $"[{i}].interfacePtr cDAC: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
+                    Debug.Assert(interfaces[i].comContext == interfacesLocal[i].comContext, $"[{i}].comContext cDAC: {interfaces[i].comContext:x}, DAC: {interfacesLocal[i].comContext:x}");
+                }
             }
         }
 #endif

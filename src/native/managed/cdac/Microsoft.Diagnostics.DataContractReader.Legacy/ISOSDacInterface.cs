@@ -699,7 +699,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetRCWData(ClrDataAddress addr, /*struct DacpRCWData */ void* data);
     [PreserveSig]
-    int GetRCWInterfaces(ClrDataAddress rcw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
+    int GetRCWInterfaces(ClrDataAddress rcw, uint count, DacpCOMInterfacePointerData* interfaces, uint* pNeeded);
     [PreserveSig]
     int GetCCWData(ClrDataAddress ccw, /*struct DacpCCWData */ void* data);
     [PreserveSig]

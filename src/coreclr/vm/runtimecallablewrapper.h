@@ -591,6 +591,7 @@ struct cdac_data<RCW>
     static constexpr size_t Flags = offsetof(RCW, m_Flags);
     static constexpr size_t CtxCookie = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxCookie);
     static constexpr size_t CtxEntry = offsetof(RCW, m_UnkEntry) + offsetof(IUnkEntry, m_pCtxEntry);
+    static constexpr size_t InterfaceEntries = offsetof(RCW, m_aInterfaceEntries);
 };
 
 inline RCW::CreationFlags operator|(RCW::CreationFlags lhs, RCW::CreationFlags rhs)
@@ -1411,10 +1412,5 @@ public:
 
 };
 
-template<>
-struct cdac_data<RCW>
-{
-    static constexpr size_t InterfaceEntries = offsetof(RCW, m_aInterfaceEntries);
-};
 
 #endif // _RUNTIMECALLABLEWRAPPER_H
