@@ -3364,11 +3364,20 @@ public sealed unsafe partial class SOSDacImpl
             uint pNeededLocal = 0;
             int hrLocal;
             DacpCOMInterfacePointerData[]? interfacesLocal = count > 0 && interfaces != null ? new DacpCOMInterfacePointerData[count] : null;
-            hrLocal = _legacyImpl.GetRCWInterfaces(rcw, count, interfacesLocal, pNeeded == null ? null : &pNeededLocal);
+            hrLocal = _legacyImpl.GetRCWInterfaces(rcw, count, interfacesLocal, &pNeededLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (pNeeded is not null)
             {
                 Debug.Assert(*pNeeded == pNeededLocal, $"cDAC: {*pNeeded}, DAC: {pNeededLocal}");
+            }
+            if (hr == HResults.S_OK && interfaces is not null)
+            {
+                for (int i = 0; i < (int)pNeededLocal; i++)
+                {
+                    Debug.Assert(interfaces[i].methodTable == interfacesLocal![i].methodTable, $"cDAC: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
+                    Debug.Assert(interfaces[i].interfacePtr == interfacesLocal![i].interfacePtr, $"cDAC: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
+                    Debug.Assert(interfaces[i].comContext == interfacesLocal![i].comContext, $"cDAC: {interfaces[i].comContext:x}, DAC: {interfacesLocal[i].comContext:x}");
+                }
             }
         }
 #endif
