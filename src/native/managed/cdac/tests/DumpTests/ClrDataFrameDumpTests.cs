@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
@@ -107,6 +105,7 @@ public unsafe class ClrDataFrameDumpTests : DumpTestBase
         IXCLRDataFrame xclrFrame = frame;
 
         byte[] rawContext = stackWalk.GetRawContext(firstFrame);
+        Assert.True(rawContext.Length > 0, "Raw context should not be empty for this test.");
         byte[] tinyBuf = new byte[rawContext.Length - 1];
         int hr = xclrFrame.GetContext(0, (uint)tinyBuf.Length, null, tinyBuf);
 

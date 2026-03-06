@@ -77,43 +77,61 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 
     int IXCLRDataAppDomain.GetUniqueID(ulong* id)
     {
-        if (id is null)
-            return HResults.E_INVALIDARG;
+        int hr = HResults.S_OK;
+        try
+        {
+            if (id is null)
+                throw new ArgumentNullException(nameof(id));
 
-        *id = DefaultADID;
+            *id = DefaultADID;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
 
 #if DEBUG
         if (_legacyImpl is not null)
         {
             ulong idLocal;
             int hrLocal = _legacyImpl.GetUniqueID(&idLocal);
-            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK:x}, DAC: {hrLocal:x}");
-            Debug.Assert(*id == idLocal, $"cDAC: {*id}, DAC: {idLocal}");
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0)
+                Debug.Assert(*id == idLocal, $"cDAC: {*id}, DAC: {idLocal}");
         }
 #endif
 
-        return HResults.S_OK;
+        return hr;
     }
 
     int IXCLRDataAppDomain.GetFlags(uint* flags)
     {
-        if (flags is null)
-            return HResults.E_INVALIDARG;
+        int hr = HResults.S_OK;
+        try
+        {
+            if (flags is null)
+                throw new ArgumentNullException(nameof(flags));
 
-        // CLRDATA_DOMAIN_DEFAULT = 0
-        *flags = 0;
+            // CLRDATA_DOMAIN_DEFAULT = 0
+            *flags = 0;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
 
 #if DEBUG
         if (_legacyImpl is not null)
         {
             uint flagsLocal;
             int hrLocal = _legacyImpl.GetFlags(&flagsLocal);
-            Debug.Assert(hrLocal == HResults.S_OK, $"cDAC: {HResults.S_OK:x}, DAC: {hrLocal:x}");
-            Debug.Assert(*flags == flagsLocal, $"cDAC: {*flags}, DAC: {flagsLocal}");
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0)
+                Debug.Assert(*flags == flagsLocal, $"cDAC: {*flags}, DAC: {flagsLocal}");
         }
 #endif
 
-        return HResults.S_OK;
+        return hr;
     }
 
     int IXCLRDataAppDomain.IsSameObject(IXCLRDataAppDomain* appDomain)
