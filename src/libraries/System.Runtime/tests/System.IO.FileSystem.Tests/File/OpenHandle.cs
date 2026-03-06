@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO.Pipes;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -88,7 +89,7 @@ namespace System.IO.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public void SafeFileHandle_CreateAnonymousPipe_SetsIsAsyncAndTransfersData(bool asyncRead, bool asyncWrite)
+        public async Task SafeFileHandle_CreateAnonymousPipe_SetsIsAsyncAndTransfersData(bool asyncRead, bool asyncWrite)
         {
             SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
             Assert.Equal(asyncRead, readHandle.IsAsync);
@@ -102,7 +103,7 @@ namespace System.IO.Tests
 
             if (!OperatingSystem.IsWindows() && asyncWrite)
             {
-                writeStream.WriteAsync(expected).GetAwaiter().GetResult();
+                await writeStream.WriteAsync(expected);
             }
             else
             {
@@ -111,7 +112,7 @@ namespace System.IO.Tests
 
             if (!OperatingSystem.IsWindows() && asyncRead)
             {
-                readStream.ReadExactlyAsync(actual).GetAwaiter().GetResult();
+                await readStream.ReadExactlyAsync(actual);
             }
             else
             {

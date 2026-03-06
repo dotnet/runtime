@@ -180,7 +180,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        public static unsafe partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        private static unsafe partial void CreateAnonymousPipeCore(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
         {
             int* fds = stackalloc int[2];
             Interop.Sys.PipeFlags flags = Interop.Sys.PipeFlags.O_CLOEXEC;

@@ -22,7 +22,7 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
-        public static unsafe partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        private static unsafe partial void CreateAnonymousPipeCore(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
 
