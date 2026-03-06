@@ -116,6 +116,7 @@ namespace System.IO.Compression
                 Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
                 Share = FileShare.None,
                 BufferSize = ZipFile.FileStreamBufferSize,
+                PreallocationSize = source.Length,
                 Options = useAsync ? FileOptions.Asynchronous : FileOptions.None
             };
 
