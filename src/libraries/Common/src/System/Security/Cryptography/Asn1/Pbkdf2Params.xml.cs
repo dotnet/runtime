@@ -23,9 +23,9 @@ namespace System.Security.Cryptography.Asn1
         {
             Pbkdf2Params decoded = default;
             ReadOnlyMemory<byte> rebind = default;
-            AsnValueReader reader;
+            ValueAsnReader reader;
 
-            reader = new AsnValueReader(DefaultPrf, AsnEncodingRules.DER);
+            reader = new ValueAsnReader(DefaultPrf, AsnEncodingRules.DER);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out decoded.Prf);
             reader.ThrowIfNotEmpty();
         }
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, encoded, out Pbkdf2Params decoded);
                 reader.ThrowIfNotEmpty();
@@ -84,12 +84,12 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out Pbkdf2Params decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out Pbkdf2Params decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Pbkdf2Params decoded)
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Pbkdf2Params decoded)
         {
             try
             {
@@ -101,11 +101,11 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Pbkdf2Params decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out Pbkdf2Params decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnValueReader defaultReader;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader defaultReader;
 
             System.Security.Cryptography.Asn1.Pbkdf2SaltChoice.Decode(ref sequenceReader, rebind, out decoded.Salt);
 
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Asn1
             }
             else
             {
-                defaultReader = new AsnValueReader(DefaultPrf, AsnEncodingRules.DER);
+                defaultReader = new ValueAsnReader(DefaultPrf, AsnEncodingRules.DER);
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref defaultReader, rebind, out decoded.Prf);
             }
 
