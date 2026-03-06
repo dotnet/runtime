@@ -16,8 +16,6 @@ namespace System.Net.Http
     {
         #region Fields
 
-        private const int CrLfLength = 2;
-        private const int DashDashLength = 2;
         private const int ColonSpaceLength = 2;
         private const int CommaSpaceLength = 2;
 
@@ -30,7 +28,6 @@ namespace System.Net.Http
         private readonly List<HttpContent> _nestedContent;
         private readonly byte[] _startBoundaryBytes;   // "--{boundary}\r\n"
         private readonly byte[] _endBoundaryBytes;     // "\r\n--{boundary}--\r\n"
-        private readonly int _boundaryLength;
 
         #endregion Fields
 
@@ -52,7 +49,6 @@ namespace System.Net.Http
             byte[] boundaryBytes = HttpRuleParser.DefaultHttpEncoding.GetBytes(boundary);
             _startBoundaryBytes = [.. DashDashBytes, .. boundaryBytes, .. CrLfBytes];
             _endBoundaryBytes = [.. CrLfBytes, .. DashDashBytes, .. boundaryBytes, .. DashDashBytes, .. CrLfBytes];
-            _boundaryLength = boundary.Length;
 
             string quotedBoundary = boundary;
             if (!quotedBoundary.StartsWith('\"'))
@@ -352,12 +348,12 @@ namespace System.Net.Http
         protected internal override bool TryComputeLength(out long length)
         {
             // Start Boundary.
-            long currentLength = DashDashLength + _boundaryLength + CrLfLength;
+            long currentLength = _startBoundaryBytes.Length;
 
             if (_nestedContent.Count > 1)
             {
                 // Internal boundaries
-                currentLength += (_nestedContent.Count - 1) * (CrLfLength + DashDashLength + _boundaryLength + CrLfLength);
+                currentLength += (_nestedContent.Count - 1) * (CrLfBytes.Length + _startBoundaryBytes.Length);
             }
 
             foreach (HttpContent content in _nestedContent)
@@ -381,10 +377,10 @@ namespace System.Net.Http
                         currentLength += (valueCount - 1) * CommaSpaceLength;
                     }
 
-                    currentLength += CrLfLength;
+                    currentLength += CrLfBytes.Length;
                 }
 
-                currentLength += CrLfLength;
+                currentLength += CrLfBytes.Length;
 
                 // Content.
                 if (!content.TryComputeLength(out long tempContentLength))
@@ -396,7 +392,7 @@ namespace System.Net.Http
             }
 
             // Terminating boundary.
-            currentLength += CrLfLength + DashDashLength + _boundaryLength + DashDashLength + CrLfLength;
+            currentLength += _endBoundaryBytes.Length;
 
             length = currentLength;
             return true;
