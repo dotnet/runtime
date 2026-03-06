@@ -89,8 +89,14 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     {
         Data.RCW rcwData = _target.ProcessedData.GetOrAdd<Data.RCW>(rcw);
 
-        foreach (Data.InterfaceEntry entry in rcwData.InterfaceEntries)
+        uint cacheSize = _target.ReadGlobal<uint>(Constants.Globals.RCWInterfaceCacheSize);
+        Target.TypeInfo entryTypeInfo = _target.GetTypeInfo(DataType.InterfaceEntry);
+        uint entrySize = entryTypeInfo.Size!.Value;
+
+        for (uint i = 0; i < cacheSize; i++)
         {
+            TargetPointer entryAddress = rcwData.InterfaceEntries + i * entrySize;
+            Data.InterfaceEntry entry = _target.ProcessedData.GetOrAdd<Data.InterfaceEntry>(entryAddress);
             if (entry.Unknown != TargetPointer.Null)
             {
                 yield return (entry.MethodTable, entry.Unknown);

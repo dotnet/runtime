@@ -3309,7 +3309,9 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetRCWData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetRCWData(addr, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, DacpCOMInterfacePointerData* interfaces, uint* pNeeded)
+    // Note: if FEATURE_COMINTEROP is not defined (e.g. macOS/Linux), BuiltInCOM contract will not be available
+    // and accessing _target.Contracts.BuiltInCOM will throw, resulting in E_NOTIMPL being returned.
+    int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded)
     {
         int hr = HResults.S_OK;
         try
@@ -3334,8 +3336,6 @@ public sealed unsafe partial class SOSDacImpl
             }
             else
             {
-                NativeMemory.Clear(interfaces, (nuint)(count * (uint)sizeof(DacpCOMInterfacePointerData)));
-
                 TargetPointer ctxCookie = builtInCom.GetRCWContext(rcwPtr);
                 uint itemIndex = 0;
                 foreach (var (methodTable, unknown) in entries)
@@ -3351,7 +3351,7 @@ public sealed unsafe partial class SOSDacImpl
                     itemIndex++;
                 }
 
-                if (hr == HResults.S_OK && pNeeded != null)
+                if (pNeeded != null)
                     *pNeeded = itemIndex;
             }
         }
@@ -3366,15 +3366,13 @@ public sealed unsafe partial class SOSDacImpl
             uint pNeededLocal = 0;
             int hrLocal;
             DacpCOMInterfacePointerData[]? interfacesLocal = count > 0 && interfaces != null ? new DacpCOMInterfacePointerData[count] : null;
-            fixed (DacpCOMInterfacePointerData* dataLocal = interfacesLocal)
-            {
-                hrLocal = _legacyImpl.GetRCWInterfaces(rcw, count, dataLocal, pNeeded == null ? null : &pNeededLocal);
-            }
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            hrLocal = _legacyImpl.GetRCWInterfaces(rcw, count, interfacesLocal, pNeeded == null ? null : &pNeededLocal);
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK && interfaces != null && interfacesLocal != null)
             {
+                uint verifyCount = pNeeded is null ? 0 : Math.Min(*pNeeded, pNeededLocal);
                 Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC: {(pNeeded is null ? "null" : (*pNeeded).ToString())}, DAC: {pNeededLocal}");
-                for (uint i = 0; i < pNeededLocal; i++)
+                for (uint i = 0; i < verifyCount; i++)
                 {
                     Debug.Assert(interfaces[i].methodTable == interfacesLocal[i].methodTable, $"[{i}].methodTable cDAC: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
                     Debug.Assert(interfaces[i].interfacePtr == interfacesLocal[i].interfacePtr, $"[{i}].interfacePtr cDAC: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");

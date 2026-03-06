@@ -59,8 +59,8 @@ public class RCWInterfacesDumpTests : DumpTestBase
         List<(TargetPointer MethodTable, TargetPointer Unknown)> interfaces =
             builtInCOM.GetRCWInterfaces(rcwPtr).ToList();
 
-        // The debuggee performs a QI for ITestInterface, so the entry cache
-        // should have at least one entry (ITestInterface + possibly IUnknown)
+        // The debuggee interacts with the RCW via IGlobalInterfaceTable / IUnknown,
+        // so the entry cache should have at least one cached interface entry
         Assert.True(interfaces.Count >= 1,
             $"Expected at least one cached interface entry in the RCW, got {interfaces.Count}");
 
