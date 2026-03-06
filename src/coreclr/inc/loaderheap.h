@@ -175,10 +175,12 @@ enum class LoaderHeapImplementationKind
     Interleaved
 };
 
+typedef DPTR(class UnlockedLoaderHeapBaseTraversable) PTR_UnlockedLoaderHeapBaseTraversable;
 class UnlockedLoaderHeapBaseTraversable
 {
 protected:
 #ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
     UnlockedLoaderHeapBaseTraversable() {}
 #else
     UnlockedLoaderHeapBaseTraversable() :
@@ -196,10 +198,17 @@ public:
 typedef bool EnumPageRegionsCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved);
     void EnumPageRegions (EnumPageRegionsCallback *pCallback, PTR_VOID pvArgs);
 #endif
-    
+    virtual ~UnlockedLoaderHeapBaseTraversable() {}
+    friend struct cdac_data<UnlockedLoaderHeapBaseTraversable>;
 protected:
     // Linked list of ClrVirtualAlloc'd pages
     PTR_LoaderHeapBlock m_pFirstBlock;
+};
+
+template<>
+struct cdac_data<UnlockedLoaderHeapBaseTraversable>
+{
+    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock);
 };
 
 //===============================================================================
@@ -207,10 +216,8 @@ protected:
 // common handling for LoaderHeap events, and the data structures used for bump
 // pointer allocation (although not the actual allocation routines).
 //===============================================================================
-typedef DPTR(class UnlockedLoaderHeapBase) PTR_UnlockedLoaderHeapBase;
 class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable, public ILoaderHeapBackout
 {
-    friend struct cdac_data<UnlockedLoaderHeapBase>;
 #ifdef _DEBUG
     friend class LoaderHeapSniffer;
 #endif
@@ -281,12 +288,6 @@ public:
     size_t              m_dwDebugWastedBytes;
     static DWORD        s_dwNumInstancesOfLoaderHeaps;
 #endif
-};
-
-template<>
-struct cdac_data<UnlockedLoaderHeapBase>
-{
-    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBase, m_pFirstBlock);
 };
 
 //===============================================================================
@@ -607,7 +608,6 @@ protected:
 typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
 class ExplicitControlLoaderHeap : public UnlockedLoaderHeapBaseTraversable
 {
-    friend struct cdac_data<ExplicitControlLoaderHeap>;
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif
@@ -700,12 +700,6 @@ public:
     void *AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs);
 
     void SetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory);
-};
-
-template<>
-struct cdac_data<ExplicitControlLoaderHeap>
-{
-    static constexpr size_t FirstBlock = offsetof(ExplicitControlLoaderHeap, m_pFirstBlock);
 };
 
 //===============================================================================

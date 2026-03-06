@@ -3577,7 +3577,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFun
 
     SOSDacEnter();
 
-    hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBase(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pFunc);
+    hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBaseTraversable(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pFunc);
 
     SOSDacLeave();
     return hr;
@@ -3591,22 +3591,11 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind
     if (loaderHeapAddr == 0 || pCallback == 0)
         return E_INVALIDARG;
 
+    if (kind != LoaderHeapKindNormal && kind != LoaderHeapKindExplicitControl)
+        return E_NOTIMPL;
+
     SOSDacEnter();
-
-    switch (kind)
-    {
-        case LoaderHeapKindNormal:
-            hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBase(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
-            break;
-
-        case LoaderHeapKindExplicitControl:
-            hr = TraverseLoaderHeapBlock(PTR_ExplicitControlLoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
-            break;
-
-        default:
-            hr = E_NOTIMPL;
-            break;
-    }
+    hr = TraverseLoaderHeapBlock(PTR_UnlockedLoaderHeapBaseTraversable(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pCallback);
 
     SOSDacLeave();
     return hr;
