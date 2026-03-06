@@ -18,12 +18,12 @@ struct ReverseThunkMapValue
 {
     MethodDesc** Target;
     void* EntryPoint;
+    const char* Source;
 };
 
 struct ReverseThunkMapEntry
 {
-    ULONG key;
-    ULONG fallbackKey;
+    ULONG hashCode;
     ReverseThunkMapValue value;
 };
 
