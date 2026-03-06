@@ -289,15 +289,10 @@ inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsi
     return start <= value && value <= end;
 }
 
-#define HISTOGRAM_MAX_SIZE_COUNT 64
+#include "dumpable.h"
+#include "histogram.h"
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
-
-class Dumpable
-{
-public:
-    virtual void dump(FILE* output) = 0;
-};
 
 // Helper class record and display a simple single value.
 class Counter : public Dumpable
@@ -310,32 +305,7 @@ public:
     {
     }
 
-    void dump(FILE* output);
-};
-
-// Helper class to record and display a histogram of different values.
-// Usage like:
-// static unsigned s_buckets[] = { 1, 2, 5, 10, 0 }; // Must have terminating 0
-// static Histogram s_histogram(s_buckets);
-// ...
-// s_histogram.record(someValue);
-//
-// The histogram can later be dumped with the dump function, or automatically
-// be dumped on shutdown of the JIT library using the DumpOnShutdown helper
-// class (see below). It will display how many recorded values fell into each
-// of the buckets (<= 1, <= 2, <= 5, <= 10, > 10).
-class Histogram : public Dumpable
-{
-public:
-    Histogram(const unsigned* const sizeTable);
-
-    void dump(FILE* output);
-    void record(unsigned size);
-
-private:
-    unsigned              m_sizeCount;
-    const unsigned* const m_sizeTable;
-    LONG                  m_counts[HISTOGRAM_MAX_SIZE_COUNT];
+    void dump(FILE* output) const override;
 };
 
 // Helper class to record and display counts of node types. Use like:
@@ -363,7 +333,7 @@ public:
     {
     }
 
-    void dump(FILE* output);
+    void dump(FILE* output) const override;
     void record(genTreeOps oper);
 
 private:
@@ -384,7 +354,7 @@ private:
 class DumpOnShutdown
 {
 public:
-    DumpOnShutdown(const char* name, Dumpable* histogram);
+    DumpOnShutdown(const char* name, const Dumpable* dumpable);
     static void DumpAll();
 };
 
@@ -4339,6 +4309,14 @@ inline bool Compiler::PreciseRefCountsRequired()
     return opts.OptimizationEnabled();
 }
 
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
+{
+    return VisitOperandUses([visitor](GenTree** use) {
+        return visitor(*use);
+    });
+}
+
 #define RETURN_IF_ABORT(expr)                                                                                          \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -4346,8 +4324,22 @@ inline bool Compiler::PreciseRefCountsRequired()
             return VisitResult::Abort;                                                                                 \
     } while (0)
 
+//------------------------------------------------------------------------
+// VisitOperandUses: Call a functor for each use of a node's operands.
+//
+// Same as "GenTree::VisitOperands", but the TVisitor takes a "GenTree**
+// use" argument instead of "GenTree* operand", allowing for operand
+// modification.
+//
+// Arguments:
+//    visitor - The visitor, see "VisitOperands"
+//
+// Return Value:
+//    The visit result as returned by the visitor ("Continue" for nodes
+//    without operands).
+//
 template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
+GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
 {
     switch (OperGet())
     {
@@ -4392,7 +4384,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_GCPOLL:
             return VisitResult::Continue;
 
-        // Unary operators with an optional operand
+            // Unary operators with an optional operand
         case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:
@@ -4402,7 +4394,7 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
             }
             FALLTHROUGH;
 
-        // Standard unary operators
+            // Standard unary operators
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
@@ -4434,48 +4426,48 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
         case GT_RETURN_SUSPEND:
-            return visitor(this->AsUnOp()->gtOp1);
+            return visitor(&this->AsUnOp()->gtOp1);
 
-// Variadic nodes
+            // Variadic nodes
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            for (GenTree* operand : this->AsMultiOp()->Operands())
+            for (GenTree** use : this->AsMultiOp()->UseEdges())
             {
-                RETURN_IF_ABORT(visitor(operand));
+                RETURN_IF_ABORT(visitor(use));
             }
             return VisitResult::Continue;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
-        // Special nodes
+            // Special nodes
         case GT_PHI:
             for (GenTreePhi::Use& use : AsPhi()->Uses())
             {
-                RETURN_IF_ABORT(visitor(use.GetNode()));
+                RETURN_IF_ABORT(visitor(&use.NodeRef()));
             }
             return VisitResult::Continue;
 
         case GT_FIELD_LIST:
             for (GenTreeFieldList::Use& field : AsFieldList()->Uses())
             {
-                RETURN_IF_ABORT(visitor(field.GetNode()));
+                RETURN_IF_ABORT(visitor(&field.NodeRef()));
             }
             return VisitResult::Continue;
 
         case GT_CMPXCHG:
         {
             GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
-            RETURN_IF_ABORT(visitor(cmpXchg->Addr()));
-            RETURN_IF_ABORT(visitor(cmpXchg->Data()));
-            return visitor(cmpXchg->Comparand());
+            RETURN_IF_ABORT(visitor(&cmpXchg->Addr()));
+            RETURN_IF_ABORT(visitor(&cmpXchg->Data()));
+            return visitor(&cmpXchg->Comparand());
         }
 
         case GT_ARR_ELEM:
         {
             GenTreeArrElem* const arrElem = this->AsArrElem();
-            RETURN_IF_ABORT(visitor(arrElem->gtArrObj));
+            RETURN_IF_ABORT(visitor(&arrElem->gtArrObj));
             for (unsigned i = 0; i < arrElem->gtArrRank; i++)
             {
-                RETURN_IF_ABORT(visitor(arrElem->gtArrInds[i]));
+                RETURN_IF_ABORT(visitor(&arrElem->gtArrInds[i]));
             }
             return VisitResult::Continue;
         }
@@ -4486,28 +4478,21 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
 
             for (CallArg& arg : call->gtArgs.EarlyArgs())
             {
-                RETURN_IF_ABORT(visitor(arg.GetEarlyNode()));
+                RETURN_IF_ABORT(visitor(&arg.EarlyNodeRef()));
             }
 
             for (CallArg& arg : call->gtArgs.LateArgs())
             {
-                RETURN_IF_ABORT(visitor(arg.GetLateNode()));
+                RETURN_IF_ABORT(visitor(&arg.LateNodeRef()));
             }
 
             if (call->gtCallType == CT_INDIRECT)
             {
-                if (!call->IsVirtualStub() && (call->gtCallCookie != nullptr))
-                {
-                    RETURN_IF_ABORT(visitor(call->gtCallCookie));
-                }
-                if (call->gtCallAddr != nullptr)
-                {
-                    RETURN_IF_ABORT(visitor(call->gtCallAddr));
-                }
+                RETURN_IF_ABORT(visitor(&call->gtCallAddr));
             }
             if (call->gtControlExpr != nullptr)
             {
-                return visitor(call->gtControlExpr);
+                return visitor(&call->gtControlExpr);
             }
             return VisitResult::Continue;
         }
@@ -4515,24 +4500,22 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
         case GT_SELECT:
         {
             GenTreeConditional* const cond = this->AsConditional();
-            RETURN_IF_ABORT(visitor(cond->gtCond));
-            RETURN_IF_ABORT(visitor(cond->gtOp1));
-            return visitor(cond->gtOp2);
+            RETURN_IF_ABORT(visitor(&cond->gtCond));
+            RETURN_IF_ABORT(visitor(&cond->gtOp1));
+            return visitor(&cond->gtOp2);
         }
 
         // Binary nodes
         default:
             assert(this->OperIsBinary());
-            GenTree* op1 = gtGetOp1();
-            if (op1 != nullptr)
+            if (AsOp()->gtOp1 != nullptr)
             {
-                RETURN_IF_ABORT(visitor(op1));
+                RETURN_IF_ABORT(visitor(&AsOp()->gtOp1));
             }
 
-            GenTree* op2 = gtGetOp2();
-            if (op2 != nullptr)
+            if (AsOp()->gtOp2 != nullptr)
             {
-                return visitor(op2);
+                return visitor(&AsOp()->gtOp2);
             }
             return VisitResult::Continue;
     }
@@ -5440,10 +5423,34 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     //
     BitVecTraits traits(fgBBNumMax + 1, this);
     BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
+    BitVec       actualPreds   = BitVecOps::MakeEmpty(&traits);
+
+    // Given an ssaDef and its block, we must consider two edge cases:
+    //  1) ssaDef->GetBlock()->PredBlocks() contains blocks that do not exist in AsPhi()->Uses()
+    //  2) AsPhi()->Uses() contains blocks that do not exist in ssaDef->GetBlock()->PredBlocks()
+    //
+    // We conservatively terminate the walk if either mismatch occurs.
+    //
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    {
+        BitVecOps::AddElemD(&traits, actualPreds, pred->bbNum);
+    }
 
     for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
     {
-        GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
+        GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
+
+        if (!BitVecOps::IsMember(&traits, actualPreds, phiArg->gtPredBB->bbNum))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": phi-pred " FMT_BB " not a block pred\n",
+                    ssaDef->GetBlock()->bbNum, phiArg->gtPredBB->bbNum);
+
+            // We probably can just ignore this phi-pred if we know for sure phiArg->gtPredBB never reaches
+            // the ssaDef's block. For now, conservatively fail the phi inference in this case.
+            // Alternatively, we can request optRepeat here.
+            return AssertVisit::Abort;
+        }
+
         const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
         ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
@@ -5456,6 +5463,8 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
 
     // Verify the set of phi-preds covers the set of block preds
     //
+    // We can just do BitVecOps::Equal(&traits, visitedBlocks, actualPreds), but
+    // re-iterating the preds is cheaper.
     for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
     {
         if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
