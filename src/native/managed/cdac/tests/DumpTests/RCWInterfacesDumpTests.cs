@@ -51,6 +51,10 @@ public class RCWInterfacesDumpTests : DumpTestBase
 
         Assert.NotEqual(TargetPointer.Null, rcwPtr);
 
+        // Assert that the cookie is not null
+        TargetPointer cookie = builtInCOM.GetRCWContext(rcwPtr);
+        Assert.NotEqual(TargetPointer.Null, cookie);
+
         // Call GetRCWInterfaces on the found RCW — must not throw
         List<(TargetPointer MethodTable, TargetPointer Unknown)> interfaces =
             builtInCOM.GetRCWInterfaces(rcwPtr).ToList();
