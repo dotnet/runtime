@@ -511,6 +511,12 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
 {
     JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
 
+    if (IsOverBudget())
+    {
+        return false;
+    }
+    m_nVisitBudget--;
+
     // Add hashtable entry for expr.
     bool alreadyPresent = GetSearchPath()->Set(expr, nullptr, SearchPath::Overwrite);
     if (alreadyPresent)
@@ -977,7 +983,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
         return;
     }
 
-    if (normalLclVN == ValueNumStore::NoVN)
+    if (!comp->optAssertionHasAssertionsForVN(normalLclVN))
     {
         return;
     }
@@ -1823,6 +1829,13 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     ValueNumStore* vnStore = m_compiler->vnStore;
 
     JITDUMP("Does overflow [%06d]?\n", Compiler::dspTreeID(expr));
+
+    if (IsOverBudget())
+    {
+        return true;
+    }
+    m_nVisitBudget--;
+
     GetSearchPath()->Set(expr, block, SearchPath::Overwrite);
 
     bool overflows = true;
