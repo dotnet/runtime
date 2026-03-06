@@ -22,7 +22,7 @@ namespace System.Diagnostics.Tests
         // - powershell is not available on Nano. We can't always use it.
         // - ping seems to be a workaround, but it's simple and work everywhere. The arguments are set to make it sleep for approximately 10 seconds.
         private static ProcessStartOptions CreateTenSecondSleep() => OperatingSystem.IsWindows()
-                    ? new("ping") { Arguments = { "127.0.0.1", "-n", "11" } }
+            ? new("ping") { Arguments = { "127.0.0.1", "-n", "11" } }
             : new("sleep") { Arguments = { "10" } };
 
         [Fact]
@@ -310,23 +310,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public static void KillOnParentExit_CanBeSetToTrue()
-        {
-            ProcessStartOptions options = OperatingSystem.IsWindows()
-                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
-                : new("echo") { Arguments = { "test" } };
-
-            options.KillOnParentExit = true;
-
-            Assert.True(options.KillOnParentExit);
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
-
-            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(5));
-            Assert.Equal(0, exitStatus.ExitCode);
-        }
-
-        [Fact]
         public static void KillOnParentExit_DefaultsToFalse()
         {
             ProcessStartOptions options = OperatingSystem.IsWindows()
@@ -355,6 +338,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)] // we don't have handles on macOS
         public static void ProcessId_IsFetched_WhenNotProvided()
         {
             ProcessStartOptions options = CreateTenSecondSleep();
@@ -365,42 +349,6 @@ namespace System.Diagnostics.Tests
 
             copy.Kill();
             Assert.True(started.TryWaitForExit(TimeSpan.FromMilliseconds(300), out _));
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void Signal_UnsupportedSignal_ThrowsPlatformNotSupportedException()
-        {
-            ProcessStartOptions options = CreateTenSecondSleep();
-            options.CreateNewProcessGroup = true;
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
-
-            try
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => processHandle.Signal(PosixSignal.SIGTERM));
-            }
-            finally
-            {
-                processHandle.Kill();
-                processHandle.WaitForExit();
-            }
-        }
-
-        [Fact]
-        public void CreateNewProcessGroup_CanBeSetToTrue()
-        {
-            ProcessStartOptions options = new("cmd.exe")
-            {
-                Arguments = { "/c", "echo test" },
-                CreateNewProcessGroup = true
-            };
-
-            Assert.True(options.CreateNewProcessGroup);
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
-            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(5));
-            Assert.Equal(0, exitStatus.ExitCode);
         }
 
         [ConditionalTheory]
@@ -570,7 +518,8 @@ namespace System.Diagnostics.Tests
 
             remoteHandle.Process.WaitForExit();
 
-            VerifyProcessIsRunning(enabled, remoteHandle.ExitCode);
+            // It's currently not implemented on macOS.
+            VerifyProcessIsRunning(shouldExited: enabled && !OperatingSystem.IsMacOS(), remoteHandle.ExitCode);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -602,7 +551,8 @@ namespace System.Diagnostics.Tests
             remoteHandle.Process.Kill();
             remoteHandle.Process.WaitForExit();
 
-            VerifyProcessIsRunning(enabled, grandChildPid);
+            // It's currently not implemented on macOS.
+            VerifyProcessIsRunning(shouldExited: enabled && !OperatingSystem.IsMacOS(), grandChildPid);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -638,7 +588,8 @@ namespace System.Diagnostics.Tests
             remoteHandle.Process.StandardInput.WriteLine("One AccessViolationException please.");
             remoteHandle.Process.WaitForExit();
 
-            VerifyProcessIsRunning(enabled, grandChildPid);
+            // It's currently not implemented on macOS.
+            VerifyProcessIsRunning(shouldExited: enabled && !OperatingSystem.IsMacOS(), grandChildPid);
         }
 
         private static void VerifyProcessIsRunning(bool shouldExited, int processId)

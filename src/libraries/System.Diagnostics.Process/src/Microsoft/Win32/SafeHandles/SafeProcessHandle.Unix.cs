@@ -69,7 +69,7 @@ namespace Microsoft.Win32.SafeHandles
             return new SafeProcessHandle(pidfd, processId);
         }
 
-        private static SafeProcessHandle StartCore(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended)
+        private static unsafe SafeProcessHandle StartCore(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended)
         {
             // Prepare arguments array (argv)
             string[] argv = [options.FileName, .. options.Arguments];
@@ -78,21 +78,11 @@ namespace Microsoft.Win32.SafeHandles
             // If not accessed, pass null to use the current environment (environ)
             string[]? envp = options.HasEnvironmentBeenAccessed ? ProcessUtils.CreateEnvp(options.Environment) : null;
 
-            // Get file descriptors for stdin/stdout/stderr
-            int stdInFd = (int)inputHandle.DangerousGetHandle();
-            int stdOutFd = (int)outputHandle.DangerousGetHandle();
-            int stdErrFd = (int)errorHandle.DangerousGetHandle();
-
-            return StartProcessInternal(options.FileName, argv, envp, options, stdInFd, stdOutFd, stdErrFd, createSuspended);
-        }
-
-        private static unsafe SafeProcessHandle StartProcessInternal(string resolvedPath, string[] argv, string[]? envp,
-            ProcessStartOptions options, int stdinFd, int stdoutFd, int stderrFd, bool createSuspended)
-        {
             byte** argvPtr = null;
             byte** envpPtr = null;
             int* inheritedHandlesPtr = null;
             int inheritedHandlesCount = 0;
+            SafeHandle[]? handlesToRelease = null;
 
             try
             {
@@ -108,25 +98,29 @@ namespace Microsoft.Win32.SafeHandles
                 if (options.HasInheritedHandles)
                 {
                     inheritedHandlesCount = options.InheritedHandles.Count;
+                    handlesToRelease = new SafeHandle[inheritedHandlesCount];
                     inheritedHandlesPtr = (int*)NativeMemory.Alloc((nuint)inheritedHandlesCount, (nuint)sizeof(int));
 
+                    bool ignore = false;
                     for (int i = 0; i < inheritedHandlesCount; i++)
                     {
+                        options.InheritedHandles[i].DangerousAddRef(ref ignore);
                         inheritedHandlesPtr[i] = (int)options.InheritedHandles[i].DangerousGetHandle();
+                        handlesToRelease[i] = options.InheritedHandles[i];
                     }
                 }
 
                 // Call native library to spawn process
                 int result = Interop.Sys.SpawnProcess(
-                    resolvedPath,
+                    options.FileName,
                     argvPtr,
                     envpPtr,
                     options.WorkingDirectory,
                     inheritedHandlesPtr,
                     inheritedHandlesCount,
-                    stdinFd,
-                    stdoutFd,
-                    stderrFd,
+                    inputHandle,
+                    outputHandle,
+                    errorHandle,
                     options.KillOnParentExit ? 1 : 0,
                     createSuspended ? 1 : 0,
                     options.CreateNewProcessGroup ? 1 : 0,
@@ -145,6 +139,14 @@ namespace Microsoft.Win32.SafeHandles
                 ProcessUtils.FreeArray(envpPtr, envp?.Length ?? 0);
                 ProcessUtils.FreeArray(argvPtr, argv.Length);
                 NativeMemory.Free(inheritedHandlesPtr);
+
+                if (handlesToRelease is not null)
+                {
+                    foreach (SafeHandle safeHandle in handlesToRelease)
+                    {
+                        safeHandle.DangerousRelease();
+                    }
+                }
             }
         }
 
@@ -174,7 +176,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private int GetProcessIdCore() => throw new NotImplementedException();
+        private static int GetProcessIdCore() => throw new PlatformNotSupportedException();
 
         private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
         {
