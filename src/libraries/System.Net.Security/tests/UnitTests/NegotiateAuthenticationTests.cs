@@ -347,7 +347,7 @@ namespace System.Net.Security.Tests
             Assert.Null(empty);
         }
 
-        [ConditionalTheory(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
+        [ConditionalTheory(typeof(NegotiateAuthenticationTests), nameof(UseManagedNtlm))]
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(true, true)]
