@@ -147,9 +147,8 @@ public class LoaderHeapTests
         TargetPointer firstBlock = loader.GetFirstLoaderHeapBlock(heapFragment.Address, LoaderHeapKind.Normal);
         Assert.Equal((TargetPointer)blockFragment.Address, firstBlock);
 
-        LoaderHeapBlockData data = loader.GetLoaderHeapBlockData(firstBlock);
-        Assert.Equal(virtualAddress, data.VirtualAddress.Value);
-        Assert.Equal(virtualSize, data.VirtualSize.Value);
+        Assert.Equal(virtualAddress, loader.GetLoaderHeapBlockAddress(firstBlock).Value);
+        Assert.Equal(virtualSize, loader.GetLoaderHeapBlockSize(firstBlock).Value);
 
         TargetPointer nextBlock = loader.GetNextLoaderHeapBlock(firstBlock);
         Assert.Equal(TargetPointer.Null, nextBlock);
@@ -185,9 +184,8 @@ public class LoaderHeapTests
         TargetPointer firstBlock = loader.GetFirstLoaderHeapBlock(heapFragment.Address, LoaderHeapKind.ExplicitControl);
         Assert.Equal((TargetPointer)blockFragment.Address, firstBlock);
 
-        LoaderHeapBlockData data = loader.GetLoaderHeapBlockData(firstBlock);
-        Assert.Equal(virtualAddress, data.VirtualAddress.Value);
-        Assert.Equal(virtualSize, data.VirtualSize.Value);
+        Assert.Equal(virtualAddress, loader.GetLoaderHeapBlockAddress(firstBlock).Value);
+        Assert.Equal(virtualSize, loader.GetLoaderHeapBlockSize(firstBlock).Value);
 
         TargetPointer nextBlock = loader.GetNextLoaderHeapBlock(firstBlock);
         Assert.Equal(TargetPointer.Null, nextBlock);
@@ -231,8 +229,7 @@ public class LoaderHeapTests
         TargetPointer block = loader.GetFirstLoaderHeapBlock(heapFragment.Address, LoaderHeapKind.Normal);
         while (block != TargetPointer.Null)
         {
-            LoaderHeapBlockData data = loader.GetLoaderHeapBlockData(block);
-            blocks.Add((data.VirtualAddress.Value, data.VirtualSize.Value));
+            blocks.Add((loader.GetLoaderHeapBlockAddress(block).Value, loader.GetLoaderHeapBlockSize(block).Value));
             block = loader.GetNextLoaderHeapBlock(block);
         }
 
@@ -279,8 +276,7 @@ public class LoaderHeapTests
         TargetPointer block = loader.GetFirstLoaderHeapBlock(heapFragment.Address, LoaderHeapKind.ExplicitControl);
         while (block != TargetPointer.Null)
         {
-            LoaderHeapBlockData data = loader.GetLoaderHeapBlockData(block);
-            blocks.Add((data.VirtualAddress.Value, data.VirtualSize.Value));
+            blocks.Add((loader.GetLoaderHeapBlockAddress(block).Value, loader.GetLoaderHeapBlockSize(block).Value));
             block = loader.GetNextLoaderHeapBlock(block);
         }
 

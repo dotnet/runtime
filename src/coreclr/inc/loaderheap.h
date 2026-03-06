@@ -17,9 +17,7 @@
 #include "utilcode.h"
 #include "ex.h"
 #include "executableallocator.h"
-
-// Forward declaration for cDAC data exposure
-template<typename T> struct cdac_data;
+#include "../vm/cdacdata.h"
 
 //==============================================================================
 // Interface used to back out loader heap allocations.
@@ -179,7 +177,6 @@ enum class LoaderHeapImplementationKind
 
 class UnlockedLoaderHeapBaseTraversable
 {
-    friend struct cdac_data<UnlockedLoaderHeapBaseTraversable>;
 protected:
 #ifdef DACCESS_COMPILE
     UnlockedLoaderHeapBaseTraversable() {}
@@ -205,12 +202,6 @@ protected:
     PTR_LoaderHeapBlock m_pFirstBlock;
 };
 
-template<>
-struct cdac_data<UnlockedLoaderHeapBaseTraversable>
-{
-    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock);
-};
-
 //===============================================================================
 // This is the base class for LoaderHeap and InterleavedLoaderHeap. It holds the
 // common handling for LoaderHeap events, and the data structures used for bump
@@ -219,6 +210,7 @@ struct cdac_data<UnlockedLoaderHeapBaseTraversable>
 typedef DPTR(class UnlockedLoaderHeapBase) PTR_UnlockedLoaderHeapBase;
 class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable, public ILoaderHeapBackout
 {
+    friend struct cdac_data<UnlockedLoaderHeapBase>;
 #ifdef _DEBUG
     friend class LoaderHeapSniffer;
 #endif
@@ -289,6 +281,12 @@ public:
     size_t              m_dwDebugWastedBytes;
     static DWORD        s_dwNumInstancesOfLoaderHeaps;
 #endif
+};
+
+template<>
+struct cdac_data<UnlockedLoaderHeapBase>
+{
+    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBase, m_pFirstBlock);
 };
 
 //===============================================================================
@@ -609,6 +607,7 @@ protected:
 typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
 class ExplicitControlLoaderHeap : public UnlockedLoaderHeapBaseTraversable
 {
+    friend struct cdac_data<ExplicitControlLoaderHeap>;
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif
@@ -701,6 +700,12 @@ public:
     void *AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs);
 
     void SetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory);
+};
+
+template<>
+struct cdac_data<ExplicitControlLoaderHeap>
+{
+    static constexpr size_t FirstBlock = offsetof(ExplicitControlLoaderHeap, m_pFirstBlock);
 };
 
 //===============================================================================

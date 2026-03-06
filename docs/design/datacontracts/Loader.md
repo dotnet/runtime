@@ -88,12 +88,6 @@ TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 
 // Loader heap traversal
-readonly struct LoaderHeapBlockData
-{
-    public TargetPointer VirtualAddress { get; init; }
-    public TargetNUInt VirtualSize { get; init; }
-}
-
 enum LoaderHeapKind
 {
     Normal = 0,          // UnlockedLoaderHeap / LoaderHeap
@@ -103,8 +97,10 @@ enum LoaderHeapKind
 // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
 // Throws NotImplementedException for unknown kind values.
 TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap, LoaderHeapKind kind);
-// Returns the address and size of virtual memory for the given loader heap block
-LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block);
+// Returns the size of the reserved virtual memory region for the given loader heap block
+TargetNUInt GetLoaderHeapBlockSize(TargetPointer block);
+// Returns the start address of the reserved virtual memory for the given loader heap block
+TargetPointer GetLoaderHeapBlockAddress(TargetPointer block);
 // Returns the next block in the loader heap linked list, or TargetPointer.Null if there are no more blocks
 TargetPointer GetNextLoaderHeapBlock(TargetPointer block);
 ```
@@ -788,7 +784,7 @@ class InstMethodHashTable
 }
 ```
 
-#### GetFirstLoaderHeapBlock, GetLoaderHeapBlockData, GetNextLoaderHeapBlock
+#### GetFirstLoaderHeapBlock, GetLoaderHeapBlockAddress, GetLoaderHeapBlockSize, GetNextLoaderHeapBlock
 
 Both `UnlockedLoaderHeap`/`LoaderHeap` (normal) and `ExplicitControlLoaderHeap` (explicit-control) inherit from
 `UnlockedLoaderHeapBaseTraversable`, which holds `m_pFirstBlock`. Each kind maps to a separate cDAC type
@@ -808,13 +804,14 @@ TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap, LoaderHe
     };
 }
 
-LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)
+TargetPointer ILoader.GetLoaderHeapBlockAddress(TargetPointer block)
 {
-    return new LoaderHeapBlockData
-    {
-        VirtualAddress = target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */),
-        VirtualSize = target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */),
-    };
+    return target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */);
+}
+
+TargetNUInt ILoader.GetLoaderHeapBlockSize(TargetPointer block)
+{
+    return target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */);
 }
 
 TargetPointer ILoader.GetNextLoaderHeapBlock(TargetPointer block)

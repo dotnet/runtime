@@ -564,14 +564,16 @@ internal readonly struct Loader_1 : ILoader
         };
     }
 
-    LoaderHeapBlockData ILoader.GetLoaderHeapBlockData(TargetPointer block)
+    TargetNUInt ILoader.GetLoaderHeapBlockSize(TargetPointer block)
     {
         Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
-        return new LoaderHeapBlockData
-        {
-            VirtualAddress = blockData.VirtualAddress,
-            VirtualSize = blockData.VirtualSize,
-        };
+        return blockData.VirtualSize;
+    }
+
+    TargetPointer ILoader.GetLoaderHeapBlockAddress(TargetPointer block)
+    {
+        Data.LoaderHeapBlock blockData = _target.ProcessedData.GetOrAdd<Data.LoaderHeapBlock>(block);
+        return blockData.VirtualAddress;
     }
 
     TargetPointer ILoader.GetNextLoaderHeapBlock(TargetPointer block)
