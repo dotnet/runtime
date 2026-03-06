@@ -35,6 +35,7 @@ namespace System.Text.RegularExpressions.Tests
             if (PlatformDetection.IsNetCore)
             {
                 Assert.Equal(RegexOptionNonBacktracking, Enum.Parse(typeof(RegexOptions), "NonBacktracking"));
+                Assert.Equal(RegexOptionAnyNewLine, Enum.Parse(typeof(RegexOptions), "AnyNewLine"));
             }
         }
 

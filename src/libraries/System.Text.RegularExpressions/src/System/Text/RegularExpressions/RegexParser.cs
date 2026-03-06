@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -20,7 +20,6 @@ namespace System.Text.RegularExpressions
         private const int OptionStackDefaultSize = 32;
         private const int MaxValueDiv10 = int.MaxValue / 10;
         private const int MaxValueMod10 = int.MaxValue % 10;
-
 
         private RegexNode? _stack;
         private RegexNode? _group;

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -3317,6 +3317,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"$", "\u2029", RegexHelpers.RegexOptionAnyNewLine, true, "" };
             }
         }
+
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support AnyNewLine")]
         [MemberData(nameof(AnyNewLine_EndZ_TestData))]
@@ -3394,6 +3395,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, @"\Z", "\v", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"\Z", "\f", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"\Z", "\u0085", RegexHelpers.RegexOptionAnyNewLine, true, "" };
+                yield return new object[] { engine, @"\Z", "\u2028", RegexHelpers.RegexOptionAnyNewLine, true, "" };
                 yield return new object[] { engine, @"\Z", "\u2029", RegexHelpers.RegexOptionAnyNewLine, true, "" };
             }
         }
