@@ -2519,6 +2519,8 @@ public class InterpreterTest
         if (!ArrayMD1()) return false;
         if (!ArrayObj(1)) return false;
         if (!ArrayStruct(1)) return false;
+        TestAsyncThrowAfterYield();
+
 
         return true;
     }
@@ -3052,5 +3054,36 @@ public class InterpreterTest
         {
             return true;
         }
+    }
+
+    public static void TestAsyncThrowAfterYield()
+    {
+        Task.Run(AsyncEntry).Wait();
+    }
+
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+    public static async Task AsyncEntry()
+    {
+        int result = await Handler();
+        Assert.Equal(42, result);
+    }
+
+    public static async Task<int> Handler()
+    {
+        try
+        {
+            return await Throw(42);
+        }
+        catch (IntegerException ex)
+        {
+            return ex.Value;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static async Task<int> Throw(int value)
+    {
+        await Task.Yield();
+        throw new IntegerException(value);
     }
 }
