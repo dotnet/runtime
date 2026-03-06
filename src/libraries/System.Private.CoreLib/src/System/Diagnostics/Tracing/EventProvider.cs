@@ -769,6 +769,7 @@ namespace System.Diagnostics.Tracing
             _liveSessions = null;
         }
 
+        [RequiresUnsafe]
         protected override unsafe void HandleEnableNotification(
                                     EventProvider target,
                                     byte *additionalData,
@@ -869,6 +870,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Write an event.
+        [RequiresUnsafe]
         internal override unsafe EventProvider.WriteEventErrorCode EventWriteTransfer(
             in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
@@ -902,6 +904,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Define an EventPipeEvent handle.
+        [RequiresUnsafe]
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion,
             uint level, byte* pMetadata, uint metadataLength)
         {
