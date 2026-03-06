@@ -4507,6 +4507,11 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
 
+            if (this.MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Browser)
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
+            }
+
             return (uint)sizeof(CORJIT_FLAGS);
         }
 
