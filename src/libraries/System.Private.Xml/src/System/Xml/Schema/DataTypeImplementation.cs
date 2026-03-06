@@ -109,8 +109,8 @@ namespace System.Xml.Schema
         private static XmlSchemaSimpleType s__untypedAtomicType = null!;
         private static XmlSchemaSimpleType s_yearMonthDurationType = null!;
         private static XmlSchemaSimpleType s_dayTimeDurationType = null!;
-        private static volatile XmlSchemaSimpleType? s_normalizedStringTypeV1Compat;
-        private static volatile XmlSchemaSimpleType? s_tokenTypeV1Compat;
+        private static XmlSchemaSimpleType? s_normalizedStringTypeV1Compat;
+        private static XmlSchemaSimpleType? s_tokenTypeV1Compat;
 
         private const int anySimpleTypeIndex = 11;
 

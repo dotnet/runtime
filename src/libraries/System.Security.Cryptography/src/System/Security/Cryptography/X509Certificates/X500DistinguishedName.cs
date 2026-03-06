@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class X500DistinguishedName : AsnEncodedData
     {
-        private volatile string? _lazyDistinguishedName;
+        private string? _lazyDistinguishedName;
         private List<X500RelativeDistinguishedName>? _parsedAttributes;
 
         public X500DistinguishedName(byte[] encodedDistinguishedName)
