@@ -16,7 +16,7 @@ namespace System.Xml
 {
     internal sealed partial class XmlSqlBinaryReader : XmlReader, IXmlNamespaceResolver
     {
-        private static volatile Type?[] s_tokenTypeMap = null!;
+        private static Type?[] s_tokenTypeMap = null!;
 
         private static ReadOnlySpan<byte> XsdKatmaiTimeScaleToValueLengthMap => // 8
         [
