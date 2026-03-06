@@ -143,6 +143,9 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
+//------------------------------------------------------------------------
+// emitAddressConstant: Emit a memory address constant, like an indirection cell.
+// This will automatically make use of relocations and the module base (__r2r_start).
 void emitter::emitAddressConstant(void* address)
 {
     // Load our module base from __r2r_start, then load our address constant, then sum them.

@@ -2129,11 +2129,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     ArrayStack<CorInfoWasmType> typeStack(GetCompiler()->getAllocator(CMK_ArrayStack));
 
-    if (call->gtReturnType == TYP_STRUCT)
+    if (call->TypeIs(TYP_STRUCT))
     {
         typeStack.Push(GetCompiler()->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
     }
-    else if (call->gtReturnType == TYP_VOID)
+    else if (call->TypeIs(TYP_VOID))
     {
         typeStack.Push(CORINFO_WASM_TYPE_VOID);
     }
