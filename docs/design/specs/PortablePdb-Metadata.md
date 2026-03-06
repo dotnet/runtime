@@ -81,6 +81,8 @@ The values for which _HashAlgorithm_ has defined meaning are listed in the follo
 |:-------------------------------------|:---------------------|
 | ff1816ec-aa5e-4d10-87f7-6f4963833460 | SHA-1 hash           |
 | 8829d00f-11b8-4213-878b-770e8597ac16 | SHA-256 hash         |
+| d99cfeb1-8c43-444a-8a6c-b61269d2a0bf | SHA-384 hash         |
+| ef2d1afc-6550-46d6-b14b-d70afe9a5566 | SHA-512 hash         |
 
 Otherwise, the meaning of _Language_, _HashAlgorithm_ and _Hash_ values is undefined and the reader can interpret them arbitrarily.
 

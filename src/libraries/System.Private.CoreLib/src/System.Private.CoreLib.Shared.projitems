@@ -15,7 +15,8 @@
     <IsApplePlatform Condition="'$(TargetsOSX)' == 'true' or '$(IsiOSLike)' == 'true'">true</IsApplePlatform>
     <IsMobileLike Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(IsiOSLike)' == 'true' or '$(TargetsAndroid)' == 'true'">true</IsMobileLike>
     <SupportsArmIntrinsics Condition="'$(Platform)' == 'arm64'">true</SupportsArmIntrinsics>
-    <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm'">true</SupportsWasmIntrinsics>
+    <SupportsWasmIntrinsics Condition="'$(Platform)' == 'wasm' and '$(FeatureMono)' == 'true'">true</SupportsWasmIntrinsics>
+    <SupportsWasmIntrinsics Condition="'$(SupportsWasmIntrinsics)' == ''">false</SupportsWasmIntrinsics>
     <SupportsX86Intrinsics Condition="'$(Platform)' == 'x64' or '$(Platform)' == 'x86'">true</SupportsX86Intrinsics>
     <SupportsX86Intrinsics Condition="'$(Platform)' == 'x86' and '$(FeatureMono)' == 'true'">false</SupportsX86Intrinsics>
     <NotSupportedOnMono Condition="'$(FeatureMono)' == 'true'">.PlatformNotSupported</NotSupportedOnMono>
@@ -46,6 +47,7 @@
     <DefineConstants Condition="'$(TargetsLinux)' == 'true'">$(DefineConstants);TARGET_LINUX</DefineConstants>
     <DefineConstants Condition="'$(TargetsFreeBSD)' == 'true'">$(DefineConstants);TARGET_FREEBSD</DefineConstants>
     <DefineConstants Condition="'$(TargetsNetBSD)' == 'true'">$(DefineConstants);TARGET_NETBSD</DefineConstants>
+    <DefineConstants Condition="'$(TargetsOpenBSD)' == 'true'">$(DefineConstants);TARGET_OPENBSD</DefineConstants>
     <DefineConstants Condition="'$(Targetsillumos)' == 'true'">$(DefineConstants);TARGET_ILLUMOS</DefineConstants>
     <DefineConstants Condition="'$(TargetsSolaris)' == 'true'">$(DefineConstants);TARGET_SOLARIS</DefineConstants>
     <DefineConstants Condition="'$(TargetsHaiku)' == 'true'">$(DefineConstants);TARGET_HAIKU</DefineConstants>
@@ -604,6 +606,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Parsing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\BFloat16.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\BitOperations.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Colors\Argb.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Colors\Argb.T.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Colors\Rgba.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Colors\Rgba.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix3x2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix3x2.Impl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix4x4.cs" />
@@ -778,9 +784,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureByRefType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureCallingConvention.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureConstructedGenericType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureFunctionPointerType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureGenericMethodParameterType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureGenericParameterType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureHasElementType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureModifiedType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignaturePointerType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureTypeExtensions.cs" />
@@ -1846,9 +1854,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.WaitOnAddress.cs">
-      <Link>Common\Interop\Windows\Mincore\Interop.WaitOnAddress.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CriticalSection.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CriticalSection.cs</Link>
     </Compile>
@@ -2486,9 +2491,6 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LowLevelMonitor.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LowLevelMonitor.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Futex.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.Futex.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LSeek.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.LSeek.cs</Link>
     </Compile>
@@ -2736,6 +2738,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2$(NotSupportedOnMono).cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v1$(NotSupportedOnMono).cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v2$(NotSupportedOnMono).cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512Bmm$(NotSupportedOnMono).cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnniInt8$(NotSupportedOnMono).cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnniInt16$(NotSupportedOnMono).cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512BW$(NotSupportedOnMono).cs" />
@@ -2772,6 +2775,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512F.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v1.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v2.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512Bmm.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnniInt8.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnniInt16.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512Vbmi.PlatformNotSupported.cs" />
@@ -2843,9 +2847,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true') or '$(TargetsWasi)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelThreadBlocker.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'"  />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or ('$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' == 'true')" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Portable.cs" Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(FeatureWasmManagedThreads)' == 'true'" />

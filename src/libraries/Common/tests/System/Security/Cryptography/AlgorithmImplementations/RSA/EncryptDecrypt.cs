@@ -355,7 +355,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [ConditionalFact(nameof(PlatformSupportsEmptyRSAEncryption))]
+        [ConditionalFact(typeof(EncryptDecrypt), nameof(PlatformSupportsEmptyRSAEncryption))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RoundtripEmptyArray()
         {
@@ -473,7 +473,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsSha2Oaep))]
+        [ConditionalFact(typeof(EncryptDecrypt), nameof(SupportsSha2Oaep))]
         public void RsaDecryptOaepWrongAlgorithm()
         {
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
