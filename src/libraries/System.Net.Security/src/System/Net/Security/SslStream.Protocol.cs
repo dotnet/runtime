@@ -51,7 +51,7 @@ namespace System.Net.Security
             }
         }
 
-        internal static bool EnableServerAIADownloads
+        internal static bool EnableServerAiaDownloads
         {
             get
             {
