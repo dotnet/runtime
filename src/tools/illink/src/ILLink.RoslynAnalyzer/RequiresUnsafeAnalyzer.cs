@@ -84,14 +84,10 @@ namespace ILLink.RoslynAnalyzer
                     return true;
                 if (node is ConstructorDeclarationSyntax ctor && ctor.Modifiers.Any(SyntaxKind.UnsafeKeyword))
                     return true;
+                if (node is FieldDeclarationSyntax field && field.Modifiers.Any(SyntaxKind.UnsafeKeyword))
+                    return true;
                 if (node is TypeDeclarationSyntax type && type.Modifiers.Any(SyntaxKind.UnsafeKeyword))
                     return true;
-
-                // Break out of lambdas/anonymous methods - they create a new scope
-                if (node.IsKind(SyntaxKind.AnonymousMethodExpression)
-                    || node.IsKind(SyntaxKind.SimpleLambdaExpression)
-                    || node.IsKind(SyntaxKind.ParenthesizedLambdaExpression))
-                    break;
 
                 node = node.Parent;
             }

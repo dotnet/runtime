@@ -396,6 +396,70 @@ namespace System.Diagnostics.CodeAnalysis
 
             await VerifyRequiresUnsafeAnalyzer(source: src);
         }
+
+        [Fact]
+        public async Task RequiresUnsafeInsideLambdaInUnsafeMethod()
+        {
+            var src = """
+            using System;
+            using System.Diagnostics.CodeAnalysis;
+
+            public class C
+            {
+                [RequiresUnsafe]
+                public int M1() => 0;
+
+                public unsafe void M2()
+                {
+                    Action a = () => M1();
+                    a();
+                }
+            }
+            """;
+
+            await VerifyRequiresUnsafeAnalyzer(source: src);
+        }
+
+        [Fact]
+        public async Task RequiresUnsafeInsideAnonymousDelegateInUnsafeMethod()
+        {
+            var src = """
+            using System;
+            using System.Diagnostics.CodeAnalysis;
+
+            public class C
+            {
+                [RequiresUnsafe]
+                public int M1() => 0;
+
+                public unsafe void M2()
+                {
+                    Action a = delegate { M1(); };
+                    a();
+                }
+            }
+            """;
+
+            await VerifyRequiresUnsafeAnalyzer(source: src);
+        }
+
+        [Fact]
+        public async Task RequiresUnsafeInsideUnsafeFieldInitializer()
+        {
+            var src = """
+            using System.Diagnostics.CodeAnalysis;
+
+            public class C
+            {
+                [RequiresUnsafe]
+                public static int M1() => 0;
+
+                private static unsafe int _field = M1();
+            }
+            """;
+
+            await VerifyRequiresUnsafeAnalyzer(source: src);
+        }
     }
 }
 #endif

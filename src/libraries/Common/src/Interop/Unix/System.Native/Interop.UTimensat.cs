@@ -24,11 +24,9 @@ internal static partial class Interop
         /// Returns 0 on success; otherwise, returns -1
         /// </returns>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_UTimensat", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        [RequiresUnsafe]
         internal static unsafe partial int UTimensat(string path, TimeSpec* times);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FUTimens", SetLastError = true)]
-        [RequiresUnsafe]
         internal static unsafe partial int FUTimens(SafeHandle fd, TimeSpec* times);
     }
 }

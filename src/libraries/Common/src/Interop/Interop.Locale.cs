@@ -9,17 +9,14 @@ internal static partial class Interop
     internal static partial class Globalization
     {
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleName", StringMarshalling = StringMarshalling.Utf16)]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetLocaleName(string localeName, char* value, int valueLength);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoString", StringMarshalling = StringMarshalling.Utf16)]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetLocaleInfoString(string localeName, uint localeStringData, char* value, int valueLength, string? uiLocaleName = null);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetDefaultLocaleName", StringMarshalling = StringMarshalling.Utf16)]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetDefaultLocaleName(char* value, int valueLength);
 
@@ -28,7 +25,6 @@ internal static partial class Interop
         internal static partial bool IsPredefinedLocale(string localeName);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleTimeFormat", StringMarshalling = StringMarshalling.Utf16)]
-        [RequiresUnsafe]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool GetLocaleTimeFormat(string localeName, [MarshalAs(UnmanagedType.Bool)] bool shortFormat, char* value, int valueLength);
 

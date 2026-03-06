@@ -32,10 +32,8 @@ namespace System
             public NumberBufferKind Kind;
             public Span<byte> Digits;
 
-            [RequiresUnsafe]
             public readonly byte* DigitsPtr => (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(Digits)); // safe since constructor expects Digits to refer to unmovable memory
 
-            [RequiresUnsafe]
             public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength) : this(kind, new Span<byte>(digits, digitsLength))
             {
                 Debug.Assert(digits != null);

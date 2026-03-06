@@ -11,7 +11,6 @@ namespace System
 {
     internal static partial class Number
     {
-        [RequiresUnsafe]
         private static unsafe bool TryParseNumber<TChar>(scoped ref TChar* str, TChar* strEnd, NumberStyles styles, ref NumberBuffer number, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -325,7 +324,6 @@ namespace System
         private static uint NormalizeSpaceReplacingChar(uint c) => IsSpaceReplacingChar(c) ? '\u0020' : c;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         private static unsafe TChar* MatchNegativeSignChars<TChar>(TChar* p, TChar* pEnd, NumberFormatInfo info)
             where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -339,7 +337,6 @@ namespace System
             return ret;
         }
 
-        [RequiresUnsafe]
         private static unsafe TChar* MatchChars<TChar>(TChar* p, TChar* pEnd, ReadOnlySpan<TChar> value)
             where TChar : unmanaged, IUtfChar<TChar>
         {

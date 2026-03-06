@@ -938,7 +938,6 @@ namespace System.Runtime
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
-        [RequiresUnsafe]
         private static void DebugScanCallFrame(int passNumber, byte* ip, UIntPtr sp)
         {
             Debug.Assert(ip != null, "IP address must not be null");
@@ -956,7 +955,6 @@ namespace System.Runtime
 
         // Caclulate the code offset from the start of the method as if the hot and cold regions were
         // stored sequentially in memory.
-        [RequiresUnsafe]
         private static uint CalculateCodeOffset(byte* pbControlPC, in MethodRegionInfo methodRegionInfo)
         {
             uint codeOffset = (uint)(pbControlPC - methodRegionInfo._hotStartAddress);
@@ -989,7 +987,6 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
-        [RequiresUnsafe]
         private static bool FindFirstPassHandler(object exception, uint idxStart,
             ref StackFrameIterator frameIter, out uint tryRegionIdx, out byte* pHandler)
         {
@@ -1114,7 +1111,6 @@ namespace System.Runtime
 #endif // DEBUG && !INPLACE_RUNTIME && NATIVEAOT
 
 
-        [RequiresUnsafe]
         private static bool ShouldTypedClauseCatchThisException(object exception, MethodTable* pClauseType, bool tryUnwrapException)
         {
 #if NATIVEAOT

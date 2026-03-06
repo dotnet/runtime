@@ -9,7 +9,6 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32)]
-        [RequiresUnsafe]
         internal static unsafe partial BOOL FreeEnvironmentStringsW(char* lpszEnvironmentBlock);
     }
 }

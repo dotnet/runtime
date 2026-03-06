@@ -14,10 +14,8 @@ internal static partial class Interop
         internal static partial int GetCalendars(string localeName, CalendarId[] calendars, int calendarsCapacity);
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetCalendarInfo", StringMarshalling = StringMarshalling.Utf16)]
-        [RequiresUnsafe]
         internal static unsafe partial ResultCode GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType calendarDataType, char* result, int resultCapacity);
 
-        [RequiresUnsafe]
         internal static unsafe bool EnumCalendarInfo(delegate* unmanaged<char*, IntPtr, void> callback, string localeName, CalendarId calendarId, CalendarDataType calendarDataType, IntPtr context)
         {
             return EnumCalendarInfo((IntPtr)callback, localeName, calendarId, calendarDataType, context);

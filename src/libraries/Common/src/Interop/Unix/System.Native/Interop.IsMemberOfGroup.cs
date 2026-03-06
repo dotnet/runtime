@@ -54,7 +54,6 @@ internal static partial class Interop
         private static partial uint GetEGid();
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetGroups", SetLastError = true)]
-        [RequiresUnsafe]
         private static unsafe partial int GetGroups(int ngroups, uint* groups);
     }
 }

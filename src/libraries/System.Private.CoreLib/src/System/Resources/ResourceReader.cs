@@ -172,7 +172,6 @@ namespace System.Resources
             }
         }
 
-        [RequiresUnsafe]
         private static unsafe int ReadUnalignedI4(int* p)
         {
             return BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(p, sizeof(int)));

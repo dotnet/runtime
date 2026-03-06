@@ -12,7 +12,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostName", SetLastError = true)]
-        [RequiresUnsafe]
         private static unsafe partial int GetHostName(byte* name, int nameLength);
 
         internal static unsafe string GetHostName()

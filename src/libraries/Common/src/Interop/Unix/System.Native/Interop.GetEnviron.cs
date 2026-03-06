@@ -10,11 +10,9 @@ internal static partial class Interop
     internal unsafe partial class Sys
     {
         [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_GetEnviron")]
-        [RequiresUnsafe]
         internal static unsafe partial byte** GetEnviron();
 
         [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_FreeEnviron")]
-        [RequiresUnsafe]
         internal static unsafe partial void FreeEnviron(byte** environ);
     }
 }

@@ -106,7 +106,6 @@ namespace System.Resources
 
         // This method is to handle potentially misaligned data accesses.
         // The byte* must point to little endian Unicode characters.
-        [RequiresUnsafe]
         internal static unsafe int CompareOrdinal(byte* a, int byteLen, string b)
         {
             Debug.Assert((byteLen & 1) == 0, "CompareOrdinal is expecting a UTF-16 string length, which must be even!");

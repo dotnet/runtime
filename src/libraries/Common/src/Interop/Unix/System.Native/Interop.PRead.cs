@@ -9,7 +9,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_PRead", SetLastError = true)]
-        [RequiresUnsafe]
         internal static unsafe partial int PRead(SafeHandle fd, byte* buffer, int bufferSize, long fileOffset);
     }
 }

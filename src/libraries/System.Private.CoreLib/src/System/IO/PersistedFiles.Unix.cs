@@ -95,7 +95,6 @@ namespace System.IO
         /// <param name="bufLen">The length of <paramref name="buf"/>.</param>
         /// <param name="path">The resulting path; null if the user didn't have an entry.</param>
         /// <returns>true if the call was successful (path may still be null); false is a larger buffer is needed.</returns>
-        [RequiresUnsafe]
         private static unsafe bool TryGetHomeDirectoryFromPasswd(byte* buf, int bufLen, out string? path)
         {
             // Call getpwuid_r to get the passwd struct

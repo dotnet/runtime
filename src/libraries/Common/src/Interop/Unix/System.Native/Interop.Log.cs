@@ -10,11 +10,9 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Log")]
-        [RequiresUnsafe]
         internal static unsafe partial void Log(byte* buffer, int count);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LogError")]
-        [RequiresUnsafe]
         internal static unsafe partial void LogError(byte* buffer, int count);
     }
 }

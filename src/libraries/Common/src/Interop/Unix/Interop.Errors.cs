@@ -203,7 +203,6 @@ internal static partial class Interop
         internal static partial int ConvertErrorPalToPlatform(Error error);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_StrErrorR")]
-        [RequiresUnsafe]
         private static unsafe partial byte* StrErrorR(int platformErrno, byte* buffer, int bufferSize);
 #endif
     }

@@ -61,7 +61,6 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Converts the current managed ReadOnlySpan&lt;char&gt; to an unmanaged string.
             /// </summary>
             /// <returns>An unmanaged string.</returns>
-            [RequiresUnsafe]
             public byte* ToUnmanaged() => _unmanagedValue;
 
             /// <summary>
