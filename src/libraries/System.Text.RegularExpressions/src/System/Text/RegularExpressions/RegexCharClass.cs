@@ -103,10 +103,8 @@ namespace System.Text.RegularExpressions
 
         internal const string NotNewLineClass = "\x01\x02\x00\x0A\x0B";
         internal const string NotAnyNewLineClass = "\x01\x06\x00\x0A\x0E\x85\x86\u2028\u202A";
-        /// <summary>Character class for [\v\f\r\u0085\u2028\u2029] — all AnyNewLine chars except LF, used in $ and \Z lowering.</summary>
-        internal const string AnyNewLineExceptLfClass = "\x00\x06\x00\x0B\x0E\x85\x86\u2028\u202A";
-        /// <summary>Character class for [\n\v\f\u0085\u2028\u2029] — all AnyNewLine chars except CR, used in ^ lowering.</summary>
-        internal const string AnyNewLineExceptCrClass = "\x00\x06\x00\x0A\x0D\x85\x86\u2028\u202A";
+        /// <summary>Character class for [\n\v\f\r\u0085\u2028\u2029] — all AnyNewLine chars, used in anchor lowering.</summary>
+        internal const string AnyNewLineClass = "\x00\x06\x00\x0A\x0E\x85\x86\u2028\u202A";
 
         internal const string AnyClass = "\x00\x01\x00\x00";
         private const string EmptyClass = "\x00\x00\x00";
