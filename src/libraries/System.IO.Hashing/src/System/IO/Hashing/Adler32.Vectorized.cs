@@ -67,15 +67,16 @@ file static class Adler32Simd
     {
         Debug.Assert(source.Length >= Vector128<byte>.Count);
 
+        ref byte bufRef = ref MemoryMarshal.GetReference(source);
+        uint totalLength = (uint)source.Length;
+        uint totalVectors = totalLength / (uint)Vector128<byte>.Count;
+
+        uint loopVectors = totalVectors & ~1u;
+        uint tailVectors = totalVectors - loopVectors;
+        uint tailLength = totalLength - totalVectors * (uint)Vector128<byte>.Count;
+
         uint s1 = (ushort)adler;
         uint s2 = adler >>> 16;
-
-        ref byte bufRef = ref MemoryMarshal.GetReference(source);
-        uint len = (uint)source.Length;
-
-        uint vectors = len / (uint)Vector128<byte>.Count;
-        uint loopVectors = vectors & ~1u;
-        len -= vectors * (uint)Vector128<byte>.Count;
 
         Vector128<uint> vs1 = Vector128.CreateScalar(s1);
         Vector128<uint> vs2 = Vector128.CreateScalar(s2);
@@ -85,8 +86,10 @@ file static class Adler32Simd
 
         Vector128<byte> weights = Vector128.CreateSequence((byte)16, unchecked((byte)-1));
 
-        if ((vectors & 1) != 0)
+        if (tailVectors != 0)
         {
+            Debug.Assert(tailVectors == 1);
+
             Vector128<byte> bytes = Vector128.LoadUnsafe(ref bufRef);
             bufRef = ref Unsafe.Add(ref bufRef, (uint)Vector128<byte>.Count);
 
@@ -98,19 +101,19 @@ file static class Adler32Simd
             vs2 += vps << 4;
         }
 
-        if (len != 0)
+        if (tailLength != 0)
         {
-            Debug.Assert(len < (uint)Vector128<byte>.Count);
+            Debug.Assert(tailLength < (uint)Vector128<byte>.Count);
 
-            Vector128<byte> bytes = Vector128.LoadUnsafe(ref Unsafe.Subtract(ref bufRef, (uint)Vector128<byte>.Count - len));
-            bytes &= Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(MaskBytes), len);
+            Vector128<byte> bytes = Vector128.LoadUnsafe(ref Unsafe.Subtract(ref bufRef, (uint)Vector128<byte>.Count - tailLength));
+            bytes &= Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(MaskBytes), tailLength);
 
             Vector128<uint> vps = vs1;
 
             vs1 = TAccumulate.Accumulate(vs1, bytes);
             vs2 = TDotProduct.DotProduct(vs2, bytes, weights);
 
-            vs2 += vps * Vector128.Create(len);
+            vs2 += vps * Vector128.Create(tailLength);
         }
 
         s1 = Vector128.Sum(vs1) % Adler32.ModBase;
@@ -147,6 +150,8 @@ file struct AdlerVector128 : ISimdStrategy
         where TAccumulate : struct, ISimdAccumulate
         where TDotProduct : struct, ISimdDotProduct
     {
+        Debug.Assert(uint.IsEvenInteger(vectors));
+
         const uint blockSize = 2;
 
         Vector128<byte> weights1 = Vector128.CreateSequence((byte)32, unchecked((byte)-1));
@@ -196,10 +201,31 @@ file struct AdlerVector256 : ISimdStrategy
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes)
+        => Avx2.SumAbsoluteDifferences(bytes, default).AsUInt32() + sums;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes1, Vector256<byte> bytes2)
+    {
+        Vector256<byte> zero = default;
+        Vector256<uint> sad = Avx2.SumAbsoluteDifferences(bytes1, zero).AsUInt32();
+        return sad + Avx2.SumAbsoluteDifferences(bytes2, zero).AsUInt32() + sums;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Vector256<uint> DotProduct(Vector256<uint> addend, Vector256<byte> left, Vector256<byte> right)
+    {
+        Vector256<short> mad = Avx2.MultiplyAddAdjacent(left, right.AsSByte());
+        return Avx2.MultiplyAddAdjacent(mad, Vector256<short>.One).AsUInt32() + addend;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static (Vector128<uint> vs1, Vector128<uint> vs2) VectorLoop<TAccumulate, TDotProduct>(Vector128<uint> vs1, Vector128<uint> vs2, ref byte sourceRef, uint vectors)
         where TAccumulate : struct, ISimdAccumulate
         where TDotProduct : struct, ISimdDotProduct
     {
+        Debug.Assert(uint.IsEvenInteger(vectors));
+
         const uint blockSize = 4;
 
         Vector256<byte> weights1 = Vector256.CreateSequence((byte)64, unchecked((byte)-1));
@@ -224,9 +250,9 @@ file struct AdlerVector256 : ISimdStrategy
 
                 wps += ws1;
 
-                ws1 = TAccumulate.Accumulate(ws1, bytes1, bytes2);
-                ws2 = TDotProduct.DotProduct(ws2, bytes1, weights1);
-                ws3 = TDotProduct.DotProduct(ws3, bytes2, weights2);
+                ws1 = Accumulate(ws1, bytes1, bytes2);
+                ws2 = DotProduct(ws2, bytes1, weights1);
+                ws3 = DotProduct(ws3, bytes2, weights2);
             }
             while (--blocks != 0);
 
@@ -237,15 +263,15 @@ file struct AdlerVector256 : ISimdStrategy
             ws2 = QuickModBase(ws2);
         }
 
-        if ((vectors & 2) != 0)
+        if (vectors != 0)
         {
-            Vector256<byte> bytes = Vector256.LoadUnsafe(ref sourceRef);
-            sourceRef = ref Unsafe.Add(ref sourceRef, (uint)Vector256<byte>.Count);
+            Debug.Assert(vectors == 2);
 
+            Vector256<byte> bytes = Vector256.LoadUnsafe(ref sourceRef);
             Vector256<uint> wps = ws1;
 
-            ws1 = TAccumulate.Accumulate(ws1, bytes);
-            ws2 = TDotProduct.DotProduct(ws2, bytes, weights2);
+            ws1 = Accumulate(ws1, bytes);
+            ws2 = DotProduct(ws2, bytes, weights2);
 
             ws2 += wps << 5;
         }
@@ -264,23 +290,11 @@ file struct AccumulateX86 : ISimdAccumulate
         => Sse2.SumAbsoluteDifferences(bytes, default).AsUInt32() + sums;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes)
-        => Avx2.SumAbsoluteDifferences(bytes, default).AsUInt32() + sums;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector128<uint> Accumulate(Vector128<uint> sums, Vector128<byte> bytes1, Vector128<byte> bytes2)
     {
         Vector128<byte> zero = default;
         Vector128<uint> sad = Sse2.SumAbsoluteDifferences(bytes1, zero).AsUInt32();
         return sad + Sse2.SumAbsoluteDifferences(bytes2, zero).AsUInt32() + sums;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes1, Vector256<byte> bytes2)
-    {
-        Vector256<byte> zero = default;
-        Vector256<uint> sad = Avx2.SumAbsoluteDifferences(bytes1, zero).AsUInt32();
-        return sad + Avx2.SumAbsoluteDifferences(bytes2, zero).AsUInt32() + sums;
     }
 }
 
@@ -290,15 +304,9 @@ file struct AccumulateArm64 : ISimdAccumulate
     public static Vector128<uint> Accumulate(Vector128<uint> sums, Vector128<byte> bytes)
         => AdvSimd.Arm64.AddAcrossWidening(bytes).AsUInt32().ToVector128Unsafe() + sums;
 
-    public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes)
-        => throw new UnreachableException();
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector128<uint> Accumulate(Vector128<uint> sums, Vector128<byte> bytes1, Vector128<byte> bytes2)
         => AdvSimd.AddPairwiseWideningAndAdd(sums, AdvSimd.AddPairwiseWideningAndAdd(AdvSimd.AddPairwiseWidening(bytes1), bytes2));
-
-    public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes1, Vector256<byte> bytes2)
-        => throw new UnreachableException();
 }
 
 file struct AccumulateXplat : ISimdAccumulate
@@ -311,9 +319,6 @@ file struct AccumulateXplat : ISimdAccumulate
         return sums + sl + sh;
     }
 
-    public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes)
-        => throw new UnreachableException();
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector128<uint> Accumulate(Vector128<uint> sums, Vector128<byte> bytes1, Vector128<byte> bytes2)
     {
@@ -322,9 +327,6 @@ file struct AccumulateXplat : ISimdAccumulate
         (Vector128<uint> sl, Vector128<uint> sh) = Vector128.Widen(b1l + b1h + b2l + b2h);
         return sums + sl + sh;
     }
-
-    public static Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes1, Vector256<byte> bytes2)
-        => throw new UnreachableException();
 }
 
 file struct DotProductX86 : ISimdDotProduct
@@ -334,13 +336,6 @@ file struct DotProductX86 : ISimdDotProduct
     {
         Vector128<short> mad = Ssse3.MultiplyAddAdjacent(left, right.AsSByte());
         return Sse2.MultiplyAddAdjacent(mad, Vector128<short>.One).AsUInt32() + addend;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Vector256<uint> DotProduct(Vector256<uint> addend, Vector256<byte> left, Vector256<byte> right)
-    {
-        Vector256<short> mad = Avx2.MultiplyAddAdjacent(left, right.AsSByte());
-        return Avx2.MultiplyAddAdjacent(mad, Vector256<short>.One).AsUInt32() + addend;
     }
 }
 
@@ -353,9 +348,6 @@ file struct DotProductArm64 : ISimdDotProduct
         mad = AdvSimd.MultiplyWideningUpperAndAdd(mad, left, right);
         return AdvSimd.AddPairwiseWideningAndAdd(addend, mad);
     }
-
-    public static Vector256<uint> DotProduct(Vector256<uint> addend, Vector256<byte> left, Vector256<byte> right)
-        => throw new UnreachableException();
 }
 
 file struct DotProductArm64Dp : ISimdDotProduct
@@ -363,9 +355,6 @@ file struct DotProductArm64Dp : ISimdDotProduct
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector128<uint> DotProduct(Vector128<uint> addend, Vector128<byte> left, Vector128<byte> right)
         => Dp.DotProduct(addend, left, right);
-
-    public static Vector256<uint> DotProduct(Vector256<uint> addend, Vector256<byte> left, Vector256<byte> right)
-        => throw new UnreachableException();
 }
 
 file struct DotProductXplat : ISimdDotProduct
@@ -378,27 +367,18 @@ file struct DotProductXplat : ISimdDotProduct
         (Vector128<uint> ml, Vector128<uint> mh) = Vector128.Widen(ll * rl + lh * rh);
         return addend + ml + mh;
     }
-
-    public static Vector256<uint> DotProduct(Vector256<uint> addend, Vector256<byte> left, Vector256<byte> right)
-        => throw new UnreachableException();
 }
 
 file interface ISimdAccumulate
 {
     static abstract Vector128<uint> Accumulate(Vector128<uint> sums, Vector128<byte> bytes);
 
-    static abstract Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes);
-
     static abstract Vector128<uint> Accumulate(Vector128<uint> sums, Vector128<byte> bytes1, Vector128<byte> bytes2);
-
-    static abstract Vector256<uint> Accumulate(Vector256<uint> sums, Vector256<byte> bytes1, Vector256<byte> bytes2);
 }
 
 file interface ISimdDotProduct
 {
     static abstract Vector128<uint> DotProduct(Vector128<uint> addend, Vector128<byte> left, Vector128<byte> right);
-
-    static abstract Vector256<uint> DotProduct(Vector256<uint> addend, Vector256<byte> left, Vector256<byte> right);
 }
 
 file interface ISimdStrategy
