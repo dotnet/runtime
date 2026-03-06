@@ -16906,7 +16906,7 @@ bool emitter::IsMovInstruction(instruction ins)
 //----------------------------------------------------------------------------------------
 // IsRedundantMov:
 //    Check if the current `mov` instruction is redundant and can be omitted.
-//    A `mov` is redundant in following 3 cases:
+//    A `mov` is redundant in following 4 cases:
 //
 //    1. Move to same register
 //       (Except 4-byte movement like "mov w1, w1" which zeros out upper bits of x1 register)
@@ -16950,6 +16950,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 
     if (ins == INS_sve_movprfx)
     {
+        // The optimization below does not apply to movprfx.
         return false;
     }
 
