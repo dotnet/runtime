@@ -41,7 +41,7 @@ public class RCWInterfacesDumpTests : DumpTestBase
             if (objectAddress == TargetPointer.Null)
                 continue;
 
-            if (objectContract.GetBuiltInComData(objectAddress, out TargetPointer rcw, out _)
+            if (objectContract.GetBuiltInComData(objectAddress, out TargetPointer rcw, out _, out _)
                 && rcw != TargetPointer.Null)
             {
                 rcwPtr = rcw;
