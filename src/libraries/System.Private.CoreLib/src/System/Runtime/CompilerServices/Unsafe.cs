@@ -160,7 +160,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void* Add<T>(void* source, int elementOffset)
             where T : allows ref struct
         {
@@ -866,7 +865,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void* Subtract<T>(void* source, int elementOffset)
             where T : allows ref struct
         {
