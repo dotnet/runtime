@@ -944,7 +944,7 @@ public struct SOSMemoryRegion
 public unsafe partial interface ISOSMemoryEnum : ISOSEnum
 {
     [PreserveSig]
-    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegion, uint* pNeeded);
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegions, uint* pNeeded);
 }
 
 [GeneratedComInterface]
@@ -960,11 +960,11 @@ public unsafe partial interface ISOSDacInterface13
     [PreserveSig]
     int GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded);
     [PreserveSig]
-    int GetHandleTableMemoryRegions(out ISOSMemoryEnum? ppEnum);
+    int GetHandleTableMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum);
     [PreserveSig]
-    int GetGCBookkeepingMemoryRegions(out ISOSMemoryEnum? ppEnum);
+    int GetGCBookkeepingMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum);
     [PreserveSig]
-    int GetGCFreeRegions(out ISOSMemoryEnum? ppEnum);
+    int GetGCFreeRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum);
     [PreserveSig]
     int LockedFlush();
 }
