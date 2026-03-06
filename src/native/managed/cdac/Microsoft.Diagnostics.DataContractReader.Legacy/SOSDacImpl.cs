@@ -3313,7 +3313,7 @@ public sealed unsafe partial class SOSDacImpl
     {
         int hr = HResults.S_OK;
 #if DEBUG
-        int numWritten;
+        int numWritten = 0;
 #endif
         try
         {
@@ -3378,7 +3378,7 @@ public sealed unsafe partial class SOSDacImpl
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(numWritten == pNeededLocal, $"cDAC: {numWritten}, DAC: {pNeededLocal}");
-                if (interfacesLocal is not null)
+                if (interfacesLocal is not null && interfaces is not null)
                 {
                     for (int i = 0; i < (int)pNeededLocal; i++)
                     {
