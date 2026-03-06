@@ -40,9 +40,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 459923351;
 
-        // TODO-Wasm: Get proper signature
-        public WasmTypeNode GetWasmTypeSignature(NodeFactory factory) => null;
-
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             foreach (DependencyListEntry entry in base.GetStaticDependencies(factory))

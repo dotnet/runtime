@@ -1087,6 +1087,8 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmTypeNodes.GetOrAdd(funcType);
         }
 
+        // TODO-Wasm: Do not use WasmFuncType directly as the key for better
+        // memory efficiency on lookup
         public WasmTypeNode WasmTypeNode(MethodDesc method)
         {
             WasmFuncType funcType = WasmLowering.GetSignature(method);

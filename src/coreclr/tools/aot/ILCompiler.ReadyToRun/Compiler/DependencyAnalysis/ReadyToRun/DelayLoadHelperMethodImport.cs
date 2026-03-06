@@ -70,9 +70,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodDesc Method => _method.Method;
 
-        // TODO-Wasm: Get proper signature
-        public WasmTypeNode GetWasmTypeSignature(NodeFactory factory) => null;
-
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             DelayLoadHelperMethodImport otherNode = (DelayLoadHelperMethodImport)other;

@@ -1576,6 +1576,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
 
+        // TODO-Wasm: Do not use WasmFuncType directly as the key for better
+        // memory efficiency on lookup
         public WasmTypeNode WasmTypeNode(MethodDesc desc)
         {
             // TODO-Wasm: Construct proper function type based on the passed in MethodDesc
