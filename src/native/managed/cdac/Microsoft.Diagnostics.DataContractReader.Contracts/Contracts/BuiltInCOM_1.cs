@@ -18,6 +18,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         LayoutComplete = 0x10,
     }
 
+    // Mirrors the anonymous enum in class ComCallWrapper in src/coreclr/vm/comcallablewrapper.h
     private enum ComWrapperFlags : uint
     {
         Slot_Basic = 0,
