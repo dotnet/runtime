@@ -8433,7 +8433,7 @@ protected:
     AssertionIndex optAssertionCount  = 0; // total number of assertions in the assertion table
     AssertionIndex optMaxAssertionCount;
     bool           optCrossBlockLocalAssertionProp;
-    unsigned       optAssertionOverflow;
+    int            optAssertionOverflow;
     bool           optCanPropLclVar;
     bool           optCanPropEqual;
     bool           optCanPropNonNull;

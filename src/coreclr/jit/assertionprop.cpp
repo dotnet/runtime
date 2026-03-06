@@ -6294,6 +6294,10 @@ PhaseStatus Compiler::optAssertionPropMain()
         madeChanges |= optCreateJumpTableImpliedAssertions(switchBlock);
     }
 
+    assert(!optLocalAssertionProp);
+    Metrics.GlobalAssertionCount    = optAssertionCount;
+    Metrics.GlobalAssertionOverflow = optAssertionOverflow;
+
     if (optAssertionCount == 0)
     {
         // Zero out the bbAssertionIn values, as these can be referenced in RangeCheck::MergeAssertion
