@@ -124,6 +124,9 @@ internal sealed class PInvokeCollector {
             if (!MethodHasCallbackAttributes(method))
                 return false;
 
+            if (IsUnsupportedOnBrowser(method.DeclaringType))
+                return false;
+
             if (TryIsMethodGetParametersUnsupported(method, out string? reason))
             {
                 Log.Warning("WASM0001", $"Skipping callback '{method.DeclaringType!.FullName}::{method.Name}' because '{reason}'.");
@@ -156,6 +159,31 @@ internal sealed class PInvokeCollector {
                 {
                     if (cattr.AttributeType.FullName == "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute" ||
                         cattr.AttributeType.Name == "MonoPInvokeCallbackAttribute")
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // Assembly not found, ignore
+                }
+            }
+
+            return false;
+        }
+
+        static bool IsUnsupportedOnBrowser(Type? type)
+        {
+            if (type is null)
+                return false;
+
+            foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(type))
+            {
+                try
+                {
+                    if (cattr.AttributeType.FullName == "System.Runtime.Versioning.UnsupportedOSPlatformAttribute" &&
+                        cattr.ConstructorArguments.Count > 0 &&
+                        cattr.ConstructorArguments[0].Value?.ToString() == "browser")
                     {
                         return true;
                     }

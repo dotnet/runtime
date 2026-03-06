@@ -21,7 +21,7 @@
     </type>
   </assembly>
 
-  <assembly fullname="System.Private.CoreLib">
+  <assembly fullname="System.Private.CoreLib" feature="System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting" featurevalue="true">
     <!-- Rooting GetFunctionPointer allows for a reasonable error experience when using any form of native hosting on a trimmed app. -->
     <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
       <method name="GetFunctionPointer" />
