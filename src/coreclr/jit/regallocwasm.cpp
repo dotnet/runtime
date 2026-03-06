@@ -523,7 +523,9 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
 
     var_types    storeType = lclNode->TypeGet();
-    bool         isStruct  = storeType == TYP_STRUCT;
+    // Check that both the storeType AND the value being stored are structs. If there is a mismatch, we will
+    //  crash later on while trying to create a STORE_BLK because the value has no layout.
+    bool         isStruct  = (storeType == TYP_STRUCT) && value->TypeIs(TYP_STRUCT);
     uint16_t     offset    = lclNode->GetLclOffs();
     ClassLayout* layout    = isStruct ? lclNode->GetLayout(m_compiler) : nullptr;
     lclNode->SetOper(GT_LCL_ADDR);
@@ -538,7 +540,10 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     }
     else
     {
-        store = m_compiler->gtNewStoreIndNode(storeType, lclNode, value, indFlags);
+        store = m_compiler->gtNewStoreIndNode(
+            storeType == TYP_STRUCT ? value->TypeGet() : storeType,
+            lclNode, value, indFlags
+        );
     }
     CurrentRange().InsertAfter(lclNode, store);
     CurrentRange().Remove(lclNode);
