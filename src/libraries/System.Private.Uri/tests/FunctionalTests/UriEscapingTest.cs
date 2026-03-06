@@ -300,6 +300,18 @@ namespace System.PrivateUri.Tests
             }
         }
 
+        [Theory]
+        [InlineData("aa%", 0)]
+        [InlineData("aa%", 1)]
+        [InlineData("aaa%41", 0)]
+        [InlineData("aaa%41", 1)]
+        [InlineData("aaa%41", 2)]
+        public void TryUnescapeDataString_SmallDestination_ReturnsFalse(string input, int destinationLength)
+        {
+            Assert.False(Uri.TryUnescapeDataString(input, new char[destinationLength], out int charsWritten));
+            Assert.Equal(0, charsWritten);
+        }
+
         [Fact]
         public void UriEscapeUnescapeDataString_LongInputs()
         {

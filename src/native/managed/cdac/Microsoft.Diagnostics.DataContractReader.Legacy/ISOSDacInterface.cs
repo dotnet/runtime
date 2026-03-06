@@ -108,6 +108,12 @@ public struct DacpThreadData
     public ClrDataAddress nextThread;
 }
 
+public struct DacpAllocData
+{
+    public ClrDataAddress allocBytes;
+    public ClrDataAddress allocBytesLoh;
+}
+
 public struct DacpModuleData
 {
     public enum TransientFlags : uint
@@ -395,6 +401,26 @@ public unsafe partial interface ISOSEnum
     int GetCount(uint* pCount);
 }
 
+public enum JitTypes
+{
+    TYPE_UNKNOWN = 0,
+    TYPE_JIT,
+    TYPE_PJIT,
+    TYPE_INTERPRETER
+}
+
+public struct DacpCodeHeaderData
+{
+    public ClrDataAddress GCInfo;
+    public JitTypes JITType;
+    public ClrDataAddress MethodDescPtr;
+    public ClrDataAddress MethodStart;
+    public uint MethodSize;
+    public ClrDataAddress ColdRegionStart;
+    public uint ColdRegionSize;
+    public uint HotRegionSize;
+}
+
 public struct DacpFieldDescData
 {
     public CorElementType Type;
@@ -410,6 +436,123 @@ public struct DacpFieldDescData
     public int bIsStatic;
     public ClrDataAddress NextField;
 };
+
+public struct DacpJitManagerInfo
+{
+    public ClrDataAddress managerAddr;
+    public uint codeType;
+    public ClrDataAddress ptrHeapList;
+};
+
+public struct DacpSyncBlockData
+{
+    public enum COMFlagsEnum : uint
+    {
+        HasCCW = 0x1,
+        HasRCW = 0x2,
+        HasCCF = 0x4
+    }
+    public ClrDataAddress Object;
+    public Interop.BOOL bFree;
+    public ClrDataAddress SyncBlockPointer;
+    public uint COMFlags;
+    public uint MonitorHeld;
+    public uint Recursion;
+    public ClrDataAddress HoldingThread;
+    public uint AdditionalThreadCount;
+    public ClrDataAddress appDomainPtr;
+    public uint SyncBlockCount;
+};
+
+public struct DacpSyncBlockCleanupData
+{
+    public ClrDataAddress SyncBlockPointer;
+    public ClrDataAddress nextSyncBlock;
+    public ClrDataAddress blockRCW;
+    public ClrDataAddress blockClassFactory;
+    public ClrDataAddress blockCCW;
+};
+
+public struct SOSHandleData
+{
+    public ClrDataAddress AppDomain;
+    public ClrDataAddress Handle;
+    public ClrDataAddress Secondary;
+    public uint Type;
+    public int StrongReference; // BOOL
+    public uint RefCount;
+    public uint JupiterRefCount;
+    public int IsPegged; // BOOL
+}
+
+[GeneratedComInterface]
+[Guid("3E269830-4A2B-4301-8EE2-D6805B29B2FA")]
+public unsafe partial interface ISOSHandleEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSHandleData[] handles, uint* pNeeded);
+}
+
+public enum SOSStackSourceType : uint
+{
+    SOS_StackSourceIP = 0,
+    SOS_StackSourceFrame = 1
+}
+
+public struct SOSStackRefData
+{
+    public int HasRegisterInformation; // BOOL
+    public int Register;
+    public int Offset;
+    public ClrDataAddress Address;
+    public ClrDataAddress Object;
+    public uint Flags;
+    public SOSStackSourceType SourceType;
+    public ClrDataAddress Source;
+    public ClrDataAddress StackPointer;
+}
+
+public struct SOSStackRefError
+{
+    public SOSStackSourceType SourceType;
+    public ClrDataAddress Source;
+    public ClrDataAddress StackPointer;
+}
+
+[GeneratedComInterface]
+[Guid("774F4E1B-FB7B-491B-976D-A8130FE355E9")]
+public unsafe partial interface ISOSStackRefErrorEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSStackRefError[] refs, uint* pFetched);
+}
+
+[GeneratedComInterface]
+[Guid("8FA642BD-9F10-4799-9AA3-512AE78C77EE")]
+public unsafe partial interface ISOSStackRefEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSStackRefData[] refs, uint* pFetched);
+
+    [PreserveSig]
+    int EnumerateErrors(DacComNullableByRef<ISOSStackRefErrorEnum> ppEnum);
+}
+
+public struct SOSMemoryRegion
+{
+    public ClrDataAddress Start;
+    public ClrDataAddress Size;
+    public ClrDataAddress ExtraData;
+    public int Heap;
+}
+
+[GeneratedComInterface]
+[Guid("E4B860EC-337A-40C0-A591-F09A9680690F")]
+public unsafe partial interface ISOSMemoryEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegions, uint* pNeeded);
+}
 
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
@@ -444,7 +587,7 @@ public unsafe partial interface ISOSDacInterface
 
     // Modules
     [PreserveSig]
-    int GetModule(ClrDataAddress addr, out IXCLRDataModule? mod);
+    int GetModule(ClrDataAddress addr, DacComNullableByRef<IXCLRDataModule> mod);
     [PreserveSig]
     int GetModuleData(ClrDataAddress moduleAddr, DacpModuleData* data);
     [PreserveSig]
@@ -478,9 +621,9 @@ public unsafe partial interface ISOSDacInterface
 
     // JIT Data
     [PreserveSig]
-    int GetCodeHeaderData(ClrDataAddress ip, /*struct DacpCodeHeaderData*/ void* data);
+    int GetCodeHeaderData(ClrDataAddress ip, DacpCodeHeaderData* data);
     [PreserveSig]
-    int GetJitManagerList(uint count, /*struct DacpJitManagerInfo*/ void* managers, uint* pNeeded);
+    int GetJitManagerList(uint count, DacpJitManagerInfo* managers, uint* pNeeded);
     [PreserveSig]
     int GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded);
     [PreserveSig]
@@ -566,17 +709,17 @@ public unsafe partial interface ISOSDacInterface
 
     // SyncBlock
     [PreserveSig]
-    int GetSyncBlockData(uint number, /*struct DacpSyncBlockData */ void* data);
+    int GetSyncBlockData(uint number, DacpSyncBlockData* data);
     [PreserveSig]
-    int GetSyncBlockCleanupData(ClrDataAddress addr, /*struct DacpSyncBlockCleanupData */ void* data);
+    int GetSyncBlockCleanupData(ClrDataAddress addr, DacpSyncBlockCleanupData* data);
 
     // Handles
     [PreserveSig]
-    int GetHandleEnum(/*ISOSHandleEnum*/ void** ppHandleEnum);
+    int GetHandleEnum(DacComNullableByRef<ISOSHandleEnum> ppHandleEnum);
     [PreserveSig]
-    int GetHandleEnumForTypes([In, MarshalUsing(CountElementName = nameof(count))] uint[] types, uint count, /*ISOSHandleEnum*/ void** ppHandleEnum);
+    int GetHandleEnumForTypes([In, MarshalUsing(CountElementName = nameof(count))] uint[] types, uint count, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum);
     [PreserveSig]
-    int GetHandleEnumForGC(uint gen, /*ISOSHandleEnum*/ void** ppHandleEnum);
+    int GetHandleEnumForGC(uint gen, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum);
 
     // EH
     [PreserveSig]
@@ -616,7 +759,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetCCWInterfaces(ClrDataAddress ccw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
     [PreserveSig]
-    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ void* pCallback, void* token);
+    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ delegate* unmanaged[Stdcall]</*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token);
 
     // GC Reference Functions
 
@@ -624,12 +767,12 @@ public unsafe partial interface ISOSDacInterface
      * Enumerates all references on a given callstack.
      */
     [PreserveSig]
-    int GetStackReferences(int osThreadID, /*ISOSStackRefEnum*/ void** ppEnum);
+    int GetStackReferences(int osThreadID, DacComNullableByRef<ISOSStackRefEnum> ppEnum);
     [PreserveSig]
     int GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded);
 
     [PreserveSig]
-    int GetThreadAllocData(ClrDataAddress thread, /*struct DacpAllocData */ void* data);
+    int GetThreadAllocData(ClrDataAddress thread, DacpAllocData* data);
     [PreserveSig]
     int GetHeapAllocData(uint count, /*struct DacpGenerationAllocData */ void* data, uint* pNeeded);
 
@@ -810,13 +953,13 @@ public unsafe partial interface ISOSDacInterface8
 
     // WKS
     [PreserveSig]
-    int GetGenerationTable(uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
+    int GetGenerationTable(uint cGenerations, DacpGenerationData* pGenerationData, uint* pNeeded);
     [PreserveSig]
     int GetFinalizationFillPointers(uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
 
     // SVR
     [PreserveSig]
-    int GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
+    int GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, DacpGenerationData* pGenerationData, uint* pNeeded);
     [PreserveSig]
     int GetFinalizationFillPointersSvr(ClrDataAddress heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
 
@@ -878,11 +1021,11 @@ public unsafe partial interface ISOSDacInterface13
     [PreserveSig]
     int GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded);
     [PreserveSig]
-    int GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    int GetHandleTableMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum);
     [PreserveSig]
-    int GetGCBookkeepingMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    int GetGCBookkeepingMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum);
     [PreserveSig]
-    int GetGCFreeRegions(/*ISOSMemoryEnum*/ void** ppEnum);
+    int GetGCFreeRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum);
     [PreserveSig]
     int LockedFlush();
 }
@@ -922,7 +1065,7 @@ public unsafe partial interface ISOSMethodEnum : ISOSEnum
 public unsafe partial interface ISOSDacInterface15
 {
     [PreserveSig]
-    int GetMethodTableSlotEnumerator(ClrDataAddress mt, out ISOSMethodEnum? enumerator);
+    int GetMethodTableSlotEnumerator(ClrDataAddress mt, DacComNullableByRef<ISOSMethodEnum> enumerator);
 }
 
 [GeneratedComInterface]

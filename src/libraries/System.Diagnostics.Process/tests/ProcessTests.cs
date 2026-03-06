@@ -409,7 +409,7 @@ namespace System.Diagnostics.Tests
 
         private static bool IsNotAppSandbox => PlatformDetection.IsNotAppSandbox;
 
-        [ConditionalFact(nameof(UseShellExecuteExecuteOrderIsRunnablePlatform), nameof(IsNotAppSandbox))]
+        [ConditionalFact(typeof(ProcessTests), nameof(UseShellExecuteExecuteOrderIsRunnablePlatform), nameof(IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_ExecuteOrder()
         {

@@ -122,4 +122,77 @@ public unsafe class ThreadTests
 
         Assert.Equal(expectedCount, count);
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadAllocContext(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder);
+
+        long allocBytes = 1024;
+        long allocBytesLoh = 4096;
+
+        TargetPointer addr = thread.AddThread(1, new TargetNUInt(1234), allocBytes, allocBytesLoh);
+
+        Target target = CreateTarget(thread);
+        IThread contract = target.Contracts.Thread;
+        Assert.NotNull(contract);
+
+        contract.GetThreadAllocContext(addr, out long resultAllocBytes, out long resultAllocBytesLoh);
+        Assert.Equal(allocBytes, resultAllocBytes);
+        Assert.Equal(allocBytesLoh, resultAllocBytesLoh);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetThreadAllocContext_ZeroValues(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder);
+
+        TargetPointer addr = thread.AddThread(1, new TargetNUInt(1234));
+
+        Target target = CreateTarget(thread);
+        IThread contract = target.Contracts.Thread;
+        Assert.NotNull(contract);
+
+        contract.GetThreadAllocContext(addr, out long allocBytes, out long allocBytesLoh);
+        Assert.Equal(0, allocBytes);
+        Assert.Equal(0, allocBytesLoh);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetStackLimits(MockTarget.Architecture arch)
+    {
+        // Set up the target
+        TargetTestHelpers helpers = new(arch);
+        MockMemorySpace.Builder builder = new(helpers);
+        MockDescriptors.Thread thread = new(builder);
+
+        uint id = 1;
+        TargetNUInt osId = new TargetNUInt(1234);
+        TargetPointer stackBase = new TargetPointer(0xAA00);
+        TargetPointer stackLimit = new TargetPointer(0xA000);
+
+        // Add thread and set stack limits
+        TargetPointer addr = thread.AddThread(id, osId);
+        thread.SetStackLimits(addr, stackBase, stackLimit);
+        Target target = CreateTarget(thread);
+
+        // Validate the expected stack limit values
+        IThread contract = target.Contracts.Thread;
+        Assert.NotNull(contract);
+        Target.TypeInfo threadType = target.GetTypeInfo(DataType.Thread);
+        TargetPointer expectedFrameAddr = addr + (ulong)threadType.Fields[nameof(Data.Thread.Frame)].Offset;
+        TargetPointer outStackBase, outStackLimit, outFrameAddress;
+
+        contract.GetStackLimitData(addr, out outStackBase, out outStackLimit, out outFrameAddress);
+        Assert.Equal(stackBase, outStackBase);
+        Assert.Equal(stackLimit, outStackLimit);
+        Assert.Equal(expectedFrameAddr, outFrameAddress);
+    }
 }

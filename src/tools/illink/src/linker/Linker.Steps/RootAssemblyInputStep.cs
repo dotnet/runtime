@@ -52,6 +52,13 @@ namespace Mono.Linker.Steps
                         return;
                     }
 
+                    var existingEntryPointAssembly = Annotations.GetEntryPointAssembly();
+                    if (existingEntryPointAssembly is not null && existingEntryPointAssembly != assembly)
+                    {
+                        Context.LogError(null, DiagnosticId.MultipleEntryPointRoots, assembly.Name.ToString(), existingEntryPointAssembly.Name.ToString());
+                        return;
+                    }
+
                     Annotations.Mark(ep.DeclaringType, di, origin);
                     Annotations.AddPreservedMethod(ep.DeclaringType, ep);
                     Annotations.SetEntryPointAssembly(assembly);
