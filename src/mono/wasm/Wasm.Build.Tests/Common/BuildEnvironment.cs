@@ -143,7 +143,7 @@ namespace Wasm.Build.Tests
                 EnvVars["WasmFingerprintAssets"] = "false";
             }
 
-            if (EnvironmentVariables.RuntimeFlavor == "CoreCLR")
+            if (IsCoreClrRuntime)
             {
                 EnvVars["WasmTestSupport"] = "true";
                 EnvVars["WasmTestExitOnUnhandledError"] = "true";
