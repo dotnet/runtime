@@ -57,23 +57,23 @@ namespace System.Security.Cryptography
             return oid;
         }
 
-        internal static Oid GetSharedOrNewOid(ref ValueAsnReader ValueAsnReader)
+        internal static Oid GetSharedOrNewOid(ref ValueAsnReader valueAsnReader)
         {
-            Oid? ret = GetSharedOrNullOid(ref ValueAsnReader);
+            Oid? ret = GetSharedOrNullOid(ref valueAsnReader);
 
             if (ret is not null)
             {
                 return ret;
             }
 
-            string oidValue = ValueAsnReader.ReadObjectIdentifier();
+            string oidValue = valueAsnReader.ReadObjectIdentifier();
             return new Oid(oidValue, null);
         }
 
-        internal static Oid? GetSharedOrNullOid(ref ValueAsnReader ValueAsnReader, Asn1Tag? expectedTag = null)
+        internal static Oid? GetSharedOrNullOid(ref ValueAsnReader valueAsnReader, Asn1Tag? expectedTag = null)
         {
 #if NET
-            Asn1Tag tag = ValueAsnReader.PeekTag();
+            Asn1Tag tag = valueAsnReader.PeekTag();
 
             // This isn't a valid OID, so return null and let whatever's going to happen happen.
             if (tag.IsConstructed)
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography
                 return null;
             }
 
-            ReadOnlySpan<byte> contentBytes = ValueAsnReader.PeekContentBytes();
+            ReadOnlySpan<byte> contentBytes = valueAsnReader.PeekContentBytes();
 
             Oid? ret = contentBytes switch
             {
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography
             if (ret is not null)
             {
                 // Move to the next item.
-                ValueAsnReader.ReadEncodedValue();
+                valueAsnReader.ReadEncodedValue();
             }
 
             return ret;
