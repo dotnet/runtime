@@ -15,11 +15,11 @@ internal static class Program
 
     private static void Main()
     {
-        MethodA();
+        MethodA(0);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void MethodA()
+    private static void MethodA(int depth)
     {
         MethodB();
     }

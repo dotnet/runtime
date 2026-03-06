@@ -191,23 +191,23 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (md == TargetPointer.Null)
                 continue;
 
+            string? name = DumpTestHelpers.GetMethodName(Target, md);
+            if (name is not "MethodA")
+                continue;
+
             ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
             IXCLRDataFrame xclrFrame = frame;
             uint numArgs;
             int hr = xclrFrame.GetNumArguments(&numArgs);
 
-            // S_OK means >=1 arg, S_FALSE means 0 args; either is valid.
-            Assert.True(hr == System.HResults.S_OK || hr == System.HResults.S_FALSE,
-                $"Expected S_OK or S_FALSE, got 0x{hr:X8}");
-            if (hr == System.HResults.S_FALSE)
-                Assert.Equal(0u, numArgs);
-            if (hr == System.HResults.S_OK)
-                Assert.True(numArgs > 0, "S_OK should imply numArgs > 0");
+            // MethodA(int depth) is static with 1 parameter → numArgs == 1.
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal(1u, numArgs);
 
-            return; // One successful check is enough.
+            return;
         }
 
-        Assert.Fail("No managed frames with MethodDesc found");
+        Assert.Fail("MethodA not found on the crashing thread's stack");
     }
 
     // ========== GetNumLocalVariables ==========
