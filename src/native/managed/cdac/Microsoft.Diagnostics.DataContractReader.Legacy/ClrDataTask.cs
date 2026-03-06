@@ -23,8 +23,33 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 
     int IXCLRDataTask.GetProcess(/*IXCLRDataProcess*/ void** process)
         => _legacyImpl is not null ? _legacyImpl.GetProcess(process) : HResults.E_NOTIMPL;
-    int IXCLRDataTask.GetCurrentAppDomain(/*IXCLRDataAppDomain*/ void** appDomain)
-        => _legacyImpl is not null ? _legacyImpl.GetCurrentAppDomain(appDomain) : HResults.E_NOTIMPL;
+    int IXCLRDataTask.GetCurrentAppDomain(out IXCLRDataAppDomain? appDomain)
+    {
+        int hr = HResults.S_OK, hrLocal = HResults.S_OK;
+        appDomain = null;
+        IXCLRDataAppDomain? legacyAppDomain = null;
+
+        if (_legacyImpl is not null)
+        {
+            hrLocal = _legacyImpl.GetCurrentAppDomain(out legacyAppDomain);
+        }
+        try
+        {
+            TargetPointer currentAppDomain = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.AppDomain));
+            appDomain = new ClrDataAppDomain(currentAppDomain, legacyAppDomain);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            System.Diagnostics.Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+        }
+#endif
+        return hr;
+    }
     int IXCLRDataTask.GetUniqueID(ulong* id)
         => _legacyImpl is not null ? _legacyImpl.GetUniqueID(id) : HResults.E_NOTIMPL;
     int IXCLRDataTask.GetFlags(uint* flags)

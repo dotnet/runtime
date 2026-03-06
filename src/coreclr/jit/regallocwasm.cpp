@@ -103,8 +103,7 @@ void WasmRegAlloc::IdentifyCandidates()
 //
 void WasmRegAlloc::InitializeCandidate(LclVarDsc* varDsc)
 {
-    var_types type = genActualType(varDsc->GetRegisterType());
-    regNumber reg  = AllocateVirtualRegister(type);
+    regNumber reg = AllocateVirtualRegister(varDsc->GetRegisterType());
     varDsc->SetRegNum(reg);
     varDsc->lvLRACandidate = true;
 }
@@ -173,7 +172,7 @@ void WasmRegAlloc::AllocateFramePointer()
 //
 regNumber WasmRegAlloc::AllocateVirtualRegister(var_types type)
 {
-    WasmValueType wasmType = TypeToWasmValueType(type);
+    WasmValueType wasmType = ActualTypeToWasmValueType(type);
     return AllocateVirtualRegister(wasmType);
 }
 
@@ -213,7 +212,7 @@ regNumber WasmRegAlloc::AllocateVirtualRegister(WasmValueType type)
 //
 regNumber WasmRegAlloc::AllocateTemporaryRegister(var_types type)
 {
-    WasmValueType wasmType = TypeToWasmValueType(type);
+    WasmValueType wasmType = ActualTypeToWasmValueType(type);
     unsigned      index    = m_temporaryRegs[static_cast<unsigned>(wasmType)].Push();
     return MakeWasmReg(index, wasmType);
 }
@@ -592,7 +591,7 @@ void WasmRegAlloc::RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node)
 
     // Note how due to the fact we're processing nodes in stack order,
     // we don't need to maintain free/busy sets, only a simple stack.
-    regNumber reg = AllocateTemporaryRegister(genActualType(node));
+    regNumber reg = AllocateTemporaryRegister(node->TypeGet());
     assert((node->GetRegNum() == REG_NA) && "Trying to double-assign a temporary register");
     node->SetRegNum(reg);
 }
@@ -637,7 +636,7 @@ void WasmRegAlloc::ConsumeTemporaryRegForOperand(GenTree* operand DEBUGARG(const
 //
 regNumber WasmRegAlloc::RequestInternalRegister(GenTree* node, var_types type)
 {
-    regNumber reg = AllocateTemporaryRegister(genActualType(type));
+    regNumber reg = AllocateTemporaryRegister(type);
     m_codeGen->internalRegisters.Add(node, reg);
     return reg;
 }
