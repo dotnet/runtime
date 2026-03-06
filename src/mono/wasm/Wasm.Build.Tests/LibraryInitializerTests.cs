@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.Playwright;
+using Microsoft.NET.Sdk.WebAssembly;
 using Xunit.Abstractions;
 using Xunit;
 
@@ -54,5 +54,23 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             ExpectedExitCode: 1);
         RunResult result = await RunForPublishWithWebServer(options);
         Assert.True(result.ConsoleOutput.Any(m => AbortStartupOnErrorRegex.IsMatch(m)), "The library initializer test didn't emit expected error message");
+    }
+
+    [Fact]
+    [TestCategory("bundler-friendly")]
+    public void BundlerFriendlyBootConfigHasNoHotReloadLibraryInitializer()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_BundlerFriendlyBootConfigHasNoHotReloadLibraryInitializer");
+
+        BuildProject(info, config);
+
+        // bin/{config}/{targetframework}/wwwroot/_framework/dotnet.js
+        string bootConfigPath = _provider.GetBootConfigPath(GetBinFrameworkDir(config, forPublish: false));
+        BootJsonData bootJson = _provider.GetBootJson(bootConfigPath);
+
+        Assert.DoesNotContain(((AssetsData)bootJson.resources).libraryInitializers, f => f.name.Contains("Microsoft.DotNet.HotReload.WebAssembly.Browser"));
+        Assert.DoesNotContain(((AssetsData)bootJson.resources).modulesAfterConfigLoaded, f => f.name.Contains("Microsoft.DotNet.HotReload.WebAssembly.Browser"));
+        Assert.DoesNotContain(((AssetsData)bootJson.resources).assembly, f => f.name.Contains("Microsoft.DotNet.HotReload.WebAssembly.Browser"));
     }
 }

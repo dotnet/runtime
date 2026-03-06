@@ -20,9 +20,9 @@ namespace Wasm.Build.Tests;
 
 public class WasmTemplateTestsBase : BuildTestBase
 {
-    private readonly WasmSdkBasedProjectProvider _provider;
     private readonly string _extraBuildArgsBuild = "-p:WasmEnableHotReload=false";
     private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false -p:WasmEnableHotReload=false";
+    protected readonly WasmSdkBasedProjectProvider _provider;
     protected readonly PublishOptions _defaultPublishOptions;
     protected readonly BuildOptions _defaultBuildOptions;
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
