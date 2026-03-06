@@ -381,10 +381,7 @@ namespace Microsoft.Win32.SafeHandles
 
                         bool addedRef = false;
                         handle.DangerousAddRef(ref addedRef);
-                        if (addedRef)
-                        {
-                            handlesToRelease[handleIndex++] = handle;
-                        }
+                        handlesToRelease[handleIndex++] = handle;
                         handlesToInherit[handleCount++] = handlePtr;
                     }
                 }
