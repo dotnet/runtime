@@ -27,6 +27,9 @@ internal static class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void MethodB()
     {
+        int localValue = Environment.TickCount;
+        if (localValue < 0)
+            return;
         MethodC();
     }
 

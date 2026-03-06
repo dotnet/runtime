@@ -228,23 +228,25 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (md == TargetPointer.Null)
                 continue;
 
-            MethodDescHandle mdh = rts.GetMethodDescHandle(md);
-            if (!rts.IsIL(mdh))
+            string? name = DumpTestHelpers.GetMethodName(Target, md);
+            if (name is not "MethodB")
                 continue;
+
+            MethodDescHandle mdh = rts.GetMethodDescHandle(md);
+            Assert.True(rts.IsIL(mdh), "MethodB should be an IL method");
 
             ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
             IXCLRDataFrame xclrFrame = frame;
             uint numLocals;
             int hr = xclrFrame.GetNumLocalVariables(&numLocals);
 
-            // The method might not have locals; that's fine.
-            Assert.True(hr == System.HResults.S_OK || hr < 0,
-                $"Unexpected HRESULT 0x{hr:X8}");
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.True(numLocals >= 1, $"MethodB should have at least 1 local variable, got {numLocals}");
 
-            return; // One check is enough.
+            return;
         }
 
-        Assert.Fail("No IL managed frames found");
+        Assert.Fail("MethodB not found on the crashing thread's stack");
     }
 
     // ========== GetMethodInstance ==========
