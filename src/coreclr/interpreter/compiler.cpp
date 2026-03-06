@@ -193,7 +193,10 @@ void* MemPoolAllocator::Alloc(size_t sz) const
     {
         sz = sizeof(void*); // Arena allocator does not support zero-length allocations, so allocate something of minimum size instead.
     }
-    return m_compiler->getAllocator(m_memKind).allocate<int8_t>(sz);
+
+    // allocate is non-const; cast away constness of m_allocator to avoid an extra copy per allocation.
+    auto* allocator = const_cast<InterpAllocator*>(&m_allocator);
+    return allocator->allocate<int8_t>(sz);
 }
 void MemPoolAllocator::Free(void* ptr) const { /* no-op */ }
 
@@ -277,12 +280,11 @@ void InterpCompiler::CopyToInterpGenericLookup(InterpGenericLookup* dst, const C
     assert(!src->indirectSecondOffset);
 }
 
-// Interpreter-FIXME Use specific allocators for their intended purpose
-// Allocator for data that is kept alive throughout application execution,
-// being freed only if the associated method gets freed.
+// Temporary allocator for method data during compilation.
+// Data allocated here is copied to the final unified allocation during FinalizeMethodData.
 void* InterpCompiler::AllocMethodData(size_t numBytes)
 {
-    return malloc(numBytes);
+    return getAllocator(IMK_MethodData).allocate<uint8_t>(numBytes);
 }
 
 static int GetDataLen(int opcode)
@@ -1850,29 +1852,192 @@ void InterpCompiler::BuildEHInfo()
     }
 }
 
-InterpMethod* InterpCompiler::CreateInterpMethod()
+void InterpCompiler::PrepareInterpMethod()
 {
+    // Store method data for later finalization
+    m_initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
+    m_unmanagedCallersOnly = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
+    m_publishSecretStubParam = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
+
+    // Reserve space in the builder for each section
+    // Bytecode section
+    m_methodDataBuilder.SetBytecodeSize(m_methodCodeSize * sizeof(int32_t));
+
+    // InterpMethod section
+    m_methodDataBuilder.AllocateInterpMethod();
+
+    // DataItems section
     int numDataItems = m_dataItems.GetSize();
-    void **pDataItems = (void**)AllocMethodData(numDataItems * sizeof(void*));
+    if (numDataItems > 0)
+    {
+        m_methodDataBuilder.AllocateDataItems(numDataItems);
+    }
 
-    for (int i = 0; i < numDataItems; i++)
-        pDataItems[i] = m_dataItems.Get(i);
+    // AsyncSuspendData section - reserve space for all async suspend data
+    for (int32_t i = 0; i < m_asyncSuspendDataItems.GetSize(); i++)
+    {
+        m_methodDataBuilder.AllocateAsyncSuspendData();
+    }
 
-    bool initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
-
-    bool unmanagedCallersOnly = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
-    bool publishSecretStubParam = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
-
-    void* pMethodData = AllocMethodData(sizeof(InterpMethod));
-    InterpMethod *pMethod = new (pMethodData) InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, initLocals, unmanagedCallersOnly, publishSecretStubParam);
-
-    return pMethod;
+    // IntervalMaps section - reserve space tracked via m_varIntervalMaps
+    for (int32_t i = 0; i < m_varIntervalMaps.GetSize(); i++)
+    {
+        // Count entries in this interval map (terminated by entry with countBytes == 0)
+        InterpIntervalMapEntry* pMap = *m_varIntervalMaps.Get(i);
+        int32_t count = 0;
+        while (pMap[count].countBytes != 0)
+        {
+            count++;
+        }
+        count++; // Include the terminator entry
+        m_methodDataBuilder.AllocateIntervalMap(count);
+    }
 }
 
 int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
 {
     *pCodeSize = m_methodCodeSize;
     return m_pMethodCode;
+}
+
+uint32_t InterpCompiler::GetTotalAllocationSize()
+{
+    return m_methodDataBuilder.GetTotalSize();
+}
+
+InterpMethod* InterpCompiler::FinalizeMethodData(void* baseAddressRW, void* baseAddressRX)
+{
+    uint8_t* rwBase = (uint8_t*)baseAddressRW;
+    uint8_t* rxBase = (uint8_t*)baseAddressRX;
+
+    // Get section offsets
+    uint32_t headerOffset = m_methodDataBuilder.GetSectionOffset(InterpMethodDataSection::Header);
+    uint32_t bytecodeOffset = m_methodDataBuilder.GetSectionOffset(InterpMethodDataSection::Bytecode);
+    uint32_t interpMethodOffset = m_methodDataBuilder.GetSectionOffset(InterpMethodDataSection::InterpMethod);
+    uint32_t dataItemsOffset = m_methodDataBuilder.GetSectionOffset(InterpMethodDataSection::DataItems);
+    uint32_t asyncSuspendDataOffset = m_methodDataBuilder.GetSectionOffset(InterpMethodDataSection::AsyncSuspendData);
+    uint32_t intervalMapsOffset = m_methodDataBuilder.GetSectionOffset(InterpMethodDataSection::IntervalMaps);
+
+    const uint32_t bytecodeSectionSize = m_methodDataBuilder.GetSectionSize(InterpMethodDataSection::Bytecode);
+    const uint32_t interpMethodSectionSize = m_methodDataBuilder.GetSectionSize(InterpMethodDataSection::InterpMethod);
+    const uint32_t dataItemsSectionSize = m_methodDataBuilder.GetSectionSize(InterpMethodDataSection::DataItems);
+    const uint32_t asyncSuspendDataSectionSize = m_methodDataBuilder.GetSectionSize(InterpMethodDataSection::AsyncSuspendData);
+    const uint32_t intervalMapsSectionSize = m_methodDataBuilder.GetSectionSize(InterpMethodDataSection::IntervalMaps);
+
+    assert((uint64_t)m_methodCodeSize * sizeof(int32_t) <= bytecodeSectionSize);
+    assert(sizeof(InterpMethod) <= interpMethodSectionSize);
+
+    // Copy bytecode
+    memcpy(rwBase + bytecodeOffset, m_pMethodCode, m_methodCodeSize * sizeof(int32_t));
+
+    // Calculate data items pointer in final allocation
+    int numDataItems = m_dataItems.GetSize();
+    void** pDataItems = (numDataItems > 0) ? (void**)(rxBase + dataItemsOffset) : nullptr;
+
+    assert((uint64_t)numDataItems * sizeof(void*) <= dataItemsSectionSize);
+
+    // Copy data items
+    if (numDataItems > 0)
+    {
+        void** pDataItemsRW = (void**)(rwBase + dataItemsOffset);
+        for (int i = 0; i < numDataItems; i++)
+        {
+            pDataItemsRW[i] = m_dataItems.Get(i);
+        }
+    }
+
+    // Construct InterpMethod in the final allocation
+    InterpMethod* pMethodRW = (InterpMethod*)(rwBase + interpMethodOffset);
+    InterpMethod* pMethodRX = (InterpMethod*)(rxBase + interpMethodOffset);
+    new (pMethodRW) InterpMethod(m_methodHnd, m_ILLocalsOffset, m_totalVarsStackSize, pDataItems, 
+                                  m_initLocals, m_unmanagedCallersOnly, m_publishSecretStubParam);
+
+    // Copy async suspend data and fix up pointers
+    uint32_t currentAsyncOffset = asyncSuspendDataOffset;
+    uint32_t currentIntervalMapOffset = intervalMapsOffset;
+    const uint32_t asyncSuspendDataSectionEnd = asyncSuspendDataOffset + asyncSuspendDataSectionSize;
+    const uint32_t intervalMapsSectionEnd = intervalMapsOffset + intervalMapsSectionSize;
+    
+    InterpByteCodeStart* pByteCodeStart = (InterpByteCodeStart*)rxBase;
+    
+    for (int32_t i = 0; i < m_asyncSuspendDataItems.GetSize(); i++)
+    {
+        assert(currentAsyncOffset + sizeof(InterpAsyncSuspendData) <= asyncSuspendDataSectionEnd);
+
+        InterpAsyncSuspendData* srcData = m_asyncSuspendDataItems.Get(i);
+        InterpAsyncSuspendData* dstDataRW = (InterpAsyncSuspendData*)(rwBase + currentAsyncOffset);
+        
+        // Copy the struct
+        memcpy(dstDataRW, srcData, sizeof(InterpAsyncSuspendData));
+        
+        // Fix up the methodStartIP to point to the final bytecode start
+        dstDataRW->methodStartIP = pByteCodeStart;
+        
+        // Fix up interval map pointers if they exist
+        // Note: The interval maps were allocated via AllocMethodData in the old model,
+        // we need to copy them to the new allocation and fix up the pointers
+        if (srcData->liveLocalsIntervals != nullptr)
+        {
+            // Count entries
+            int32_t count = 0;
+            while (srcData->liveLocalsIntervals[count].countBytes != 0) count++;
+            count++; // Include terminator
+
+            uint32_t mapSize = (uint32_t)count * sizeof(InterpIntervalMapEntry);
+            assert(currentIntervalMapOffset + mapSize <= intervalMapsSectionEnd);
+            
+            InterpIntervalMapEntry* dstMapRW = (InterpIntervalMapEntry*)(rwBase + currentIntervalMapOffset);
+            InterpIntervalMapEntry* dstMapRX = (InterpIntervalMapEntry*)(rxBase + currentIntervalMapOffset);
+            memcpy(dstMapRW, srcData->liveLocalsIntervals, mapSize);
+            dstDataRW->liveLocalsIntervals = dstMapRX;
+            currentIntervalMapOffset += mapSize;
+        }
+        
+        if (srcData->zeroedLocalsIntervals != nullptr)
+        {
+            // Count entries
+            int32_t count = 0;
+            while (srcData->zeroedLocalsIntervals[count].countBytes != 0) count++;
+            count++; // Include terminator
+
+            uint32_t mapSize = (uint32_t)count * sizeof(InterpIntervalMapEntry);
+            assert(currentIntervalMapOffset + mapSize <= intervalMapsSectionEnd);
+            
+            InterpIntervalMapEntry* dstMapRW = (InterpIntervalMapEntry*)(rwBase + currentIntervalMapOffset);
+            InterpIntervalMapEntry* dstMapRX = (InterpIntervalMapEntry*)(rxBase + currentIntervalMapOffset);
+            memcpy(dstMapRW, srcData->zeroedLocalsIntervals, mapSize);
+            dstDataRW->zeroedLocalsIntervals = dstMapRX;
+            currentIntervalMapOffset += mapSize;
+        }
+        
+        currentAsyncOffset += sizeof(InterpAsyncSuspendData);
+    }
+
+    assert(currentAsyncOffset <= asyncSuspendDataSectionEnd);
+    assert(currentIntervalMapOffset <= intervalMapsSectionEnd);
+
+    // Fix up data item pointers that reference async suspend data
+    // These pointers were recorded during compilation and now need to point to the final locations
+    if (numDataItems > 0)
+    {
+        void** pDataItemsRW = (void**)(rwBase + dataItemsOffset);
+        for (int32_t i = 0; i < m_dataItemAsyncSuspendRefs.GetSize(); i++)
+        {
+            DataItemAsyncSuspendRef ref = m_dataItemAsyncSuspendRefs.Get(i);
+            // Calculate the final address of this async suspend data in the RX allocation
+            InterpAsyncSuspendData* finalAddr = (InterpAsyncSuspendData*)(rxBase + asyncSuspendDataOffset + 
+                                                                          ref.asyncSuspendDataIndex * sizeof(InterpAsyncSuspendData));
+            pDataItemsRW[ref.dataItemIndex] = finalAddr;
+        }
+    }
+
+    // Write the InterpMethod pointer to the header (InterpByteCodeStart)
+    *(InterpMethod**)(rwBase + headerOffset) = pMethodRX;
+
+    // Record the finalized base addresses in the method data builder
+    m_methodDataBuilder.Finalize(baseAddressRW, baseAddressRX);
+
+    return pMethodRX;
 }
 
 InterpreterStackMap* InterpCompiler::GetInterpreterStackMap(CORINFO_CLASS_HANDLE classHandle)
@@ -1895,6 +2060,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData* pRetryData,
                                InterpArenaAllocator *arenaAllocator)
     : m_arenaAllocator(arenaAllocator)
+    , m_methodDataBuilder()
     , m_stackmapsByClass(getAllocator(IMK_StackMapHash))
     , m_pRetryData(pRetryData)
     , m_pInitLocalsIns(nullptr)
@@ -1904,6 +2070,10 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     , m_leavesTable(GetMemPoolAllocator(IMK_EHClause))
     , m_dataItems(GetMemPoolAllocator(IMK_DataItem))
     , m_asyncSuspendDataItems(GetMemPoolAllocator(IMK_DataItem))
+    , m_dataItemAsyncSuspendRefs(GetMemPoolAllocator(IMK_DataItem))
+    , m_initLocals(false)
+    , m_unmanagedCallersOnly(false)
+    , m_publishSecretStubParam(false)
     , m_globalVarsWithRefsStackTop(0)
     , m_varIntervalMaps(GetMemPoolAllocator(IMK_IntervalMap))
 #ifdef DEBUG
@@ -1943,7 +2113,7 @@ InterpCompiler::~InterpCompiler()
     m_compHnd->freeArray(m_pILToNativeMap);
 }
 
-InterpMethod* InterpCompiler::CompileMethod()
+bool InterpCompiler::CompileMethod()
 {
 #ifdef DEBUG
     if (IsInterpDumpActive() || InterpConfig.InterpList())
@@ -1981,7 +2151,7 @@ InterpMethod* InterpCompiler::CompileMethod()
     if (m_pRetryData->NeedsRetry())
     {
         INTERP_DUMP("Retrying compilation due to %s\n", m_pRetryData->GetReasonString());
-        return nullptr;
+        return false;
     }
 
 #ifdef DEBUG
@@ -2008,7 +2178,8 @@ InterpMethod* InterpCompiler::CompileMethod()
     }
 #endif
 
-    return CreateInterpMethod();
+    PrepareInterpMethod();
+    return true;
 }
 
 void InterpCompiler::PatchInitLocals(CORINFO_METHOD_INFO* methodInfo)
@@ -5890,6 +6061,13 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
     AddIns(handleContinuationOpcode);
     int32_t suspendDataIndex = GetDataItemIndex(suspendData);
+    
+    // Track this data item -> async suspend data reference for fixup during finalization
+    DataItemAsyncSuspendRef ref;
+    ref.dataItemIndex = suspendDataIndex;
+    ref.asyncSuspendDataIndex = m_asyncSuspendDataItems.GetSize() - 1;  // suspendData was just added
+    m_dataItemAsyncSuspendRefs.Add(ref);
+    
     m_pLastNewIns->data[0] = suspendDataIndex;
     m_pLastNewIns->data[1] = GetDataForHelperFtn(helperFuncForAllocatingContinuation);
     PushInterpType(InterpTypeO, NULL);
@@ -10932,14 +11110,6 @@ void InterpCompiler::UnlinkUnreachableBBlocks()
             prevBB = nextBB;
             nextBB = nextBB->pNextBB;
         }
-    }
-}
-
-void InterpCompiler::UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *pByteCodeStart)
-{
-    for (int32_t i = 0; i < m_asyncSuspendDataItems.GetSize(); i++)
-    {
-        m_asyncSuspendDataItems.Get(i)->methodStartIP = pByteCodeStart;
     }
 }
 
