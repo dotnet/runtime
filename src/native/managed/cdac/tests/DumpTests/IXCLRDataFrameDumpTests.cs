@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
+using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
@@ -31,7 +32,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         uint contextSize;
         int hr = frame.GetContext(0, (uint)contextBuf.Length, &contextSize, contextBuf);
 
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
         Assert.True(contextSize > 0, "Expected non-zero context size");
         Assert.True(contextBuf.Take((int)contextSize).Any(b => b != 0), "Expected non-zero context bytes");
     }
@@ -49,7 +50,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         uint contextSize;
         int hr = frame.GetContext(0, (uint)contextBuf.Length, &contextSize, contextBuf);
 
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
 
         byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         Assert.Equal((uint)rawContext.Length, contextSize);
@@ -69,7 +70,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         uint contextSize;
         int hr = frame.GetContext(0, (uint)contextBuf.Length, &contextSize, contextBuf);
 
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
         Assert.Equal((uint)rawContext.Length, contextSize);
         Assert.True(contextBuf.SequenceEqual(rawContext), "Context bytes should match raw context exactly");
     }
@@ -90,7 +91,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         uint contextSize;
         int hr = frame.GetContext(0, (uint)tinyBuf.Length, &contextSize, tinyBuf);
 
-        Assert.Equal(System.HResults.E_INVALIDARG, hr);
+        AssertHResult(HResults.E_INVALIDARG, hr);
         Assert.Equal((uint)rawContext.Length, contextSize);
     }
 
@@ -114,7 +115,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         uint contextSize;
         int hr = frame.GetContext(0, (uint)oversized, &contextSize, contextBuf);
 
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
         Assert.Equal((uint)rawContext.Length, contextSize);
         Assert.True(contextBuf.AsSpan(0, rawContext.Length).SequenceEqual(rawContext), "Copied bytes should match raw context");
         for (int i = rawContext.Length; i < oversized; i++)
@@ -134,7 +135,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         DacComNullableByRef<IXCLRDataAppDomain> appDomainOut = new(isNullRef: false);
         int hr = frame.GetAppDomain(appDomainOut);
 
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
         Assert.NotNull(appDomainOut.Interface);
     }
 
@@ -149,7 +150,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         DacComNullableByRef<IXCLRDataAppDomain> appDomainOut = new(isNullRef: false);
         int hr = frame.GetAppDomain(appDomainOut);
 
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
         ClrDataAppDomain appDomain = Assert.IsType<ClrDataAppDomain>(appDomainOut.Interface);
         Assert.NotEqual(TargetPointer.Null, appDomain.Address);
     }
@@ -167,8 +168,8 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         int hr1 = frame.GetAppDomain(out1);
         int hr2 = frame.GetAppDomain(out2);
 
-        Assert.Equal(System.HResults.S_OK, hr1);
-        Assert.Equal(System.HResults.S_OK, hr2);
+        AssertHResult(HResults.S_OK, hr1);
+        AssertHResult(HResults.S_OK, hr2);
         ClrDataAppDomain ad1 = Assert.IsType<ClrDataAppDomain>(out1.Interface);
         ClrDataAppDomain ad2 = Assert.IsType<ClrDataAppDomain>(out2.Interface);
         Assert.Equal(ad1.Address, ad2.Address);
@@ -201,7 +202,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             int hr = xclrFrame.GetNumArguments(&numArgs);
 
             // MethodA(int depth) is static with 1 parameter → numArgs == 1.
-            Assert.Equal(System.HResults.S_OK, hr);
+            AssertHResult(HResults.S_OK, hr);
             Assert.Equal(1u, numArgs);
 
             return;
@@ -240,7 +241,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             uint numLocals;
             int hr = xclrFrame.GetNumLocalVariables(&numLocals);
 
-            Assert.Equal(System.HResults.S_OK, hr);
+            AssertHResult(HResults.S_OK, hr);
             Assert.True(numLocals >= 1, $"MethodB should have at least 1 local variable, got {numLocals}");
 
             return;
@@ -272,7 +273,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             DacComNullableByRef<IXCLRDataMethodInstance> methodOut = new(isNullRef: false);
             int hr = xclrFrame.GetMethodInstance(methodOut);
 
-            Assert.Equal(System.HResults.S_OK, hr);
+            AssertHResult(HResults.S_OK, hr);
             Assert.NotNull(methodOut.Interface);
 
             return; // One check is enough.

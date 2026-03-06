@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
+using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
@@ -30,7 +32,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         uint nameLen;
         int hr = appDomain.GetName(0, &nameLen, null);
 
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
         Assert.True(nameLen > 1, "Expected nameLen > 1 (name + null terminator)");
     }
 
@@ -44,7 +46,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
 
         uint nameLen;
         int hr = appDomain.GetName(0, &nameLen, null);
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
         Assert.True(nameLen <= 1024, "AppDomain name unexpectedly long");
 
         char[] nameBuf = new char[nameLen];
@@ -54,7 +56,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
             hr = appDomain.GetName(nameLen, &nameLen2, pName);
         }
 
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
         string name = new string(nameBuf, 0, (int)nameLen2 - 1);
         Assert.False(string.IsNullOrEmpty(name), "Expected non-empty AppDomain name");
     }
@@ -74,7 +76,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         fixed (char* pName = nameBuf)
         {
             int hr = appDomain.GetName(nameLen, null, pName);
-            Assert.Equal(System.HResults.S_OK, hr);
+            AssertHResult(HResults.S_OK, hr);
             Assert.Equal('\0', pName[nameLen - 1]);
         }
     }
@@ -97,7 +99,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         fixed (char* pName = nameBuf)
         {
             int hr = appDomain.GetName(truncLen, &reportedLen, pName);
-            Assert.Equal(System.HResults.S_FALSE, hr);
+            AssertHResult(HResults.S_FALSE, hr);
         }
 
         // neededLen is always the full size, even on truncation.
@@ -159,7 +161,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         ulong id;
         int hr = appDomain.GetUniqueID(&id);
 
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
         Assert.Equal(1ul, id);
     }
 
@@ -176,7 +178,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         uint flags;
         int hr = appDomain.GetFlags(&flags);
 
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
         Assert.Equal(0u, flags);
     }
 
@@ -193,7 +195,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
 
         DacComNullableByRef<IXCLRDataAppDomain> appDomainOut = new(isNullRef: false);
         int hr = xclrFrame.GetAppDomain(appDomainOut);
-        Assert.Equal(System.HResults.S_OK, hr);
+        AssertHResult(HResults.S_OK, hr);
 
         return appDomainOut.Interface!;
     }
