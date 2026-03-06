@@ -1412,5 +1412,4 @@ public:
 
 };
 
-
 #endif // _RUNTIMECALLABLEWRAPPER_H

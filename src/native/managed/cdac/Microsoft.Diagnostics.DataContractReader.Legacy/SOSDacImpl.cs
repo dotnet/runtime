@@ -3326,10 +3326,7 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 else
                 {
-                    uint c = 0;
-                    foreach (var _ in entries)
-                        c++;
-                    *pNeeded = c;
+                    *pNeeded = (uint)entries.Count();
                 }
             }
             else
