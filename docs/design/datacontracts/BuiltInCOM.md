@@ -118,7 +118,7 @@ public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
     // For each node, iterate the IPtrs[] slots:
     //   - skip null slots
     //   - skip slots where ComMethodTable.Flags does not have LayoutComplete set
-    //   - yield COMInterfacePointerData { InterfacePointer = address of slot, MethodTable }
+    //   - yield COMInterfacePointerData { InterfacePointerAddress = address of slot, MethodTable }
     //   - slot 0 of the first wrapper (IUnknown/IDispatch) yields null MethodTable
 }
 
