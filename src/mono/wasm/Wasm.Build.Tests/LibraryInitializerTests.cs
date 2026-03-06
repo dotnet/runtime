@@ -63,7 +63,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_BundlerFriendlyBootConfigHasNoHotReloadLibraryInitializer");
 
-        BuildProject(info, config);
+        BuildProject(info, config, new BuildOptions());
 
         // bin/{config}/{targetframework}/wwwroot/_framework/dotnet.js
         string bootConfigPath = _provider.GetBootConfigPath(GetBinFrameworkDir(config, forPublish: false));
