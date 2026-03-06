@@ -794,8 +794,8 @@ HRESULT EEConfig::sync()
         {
             // Initial tier for R2R is always just OptimizationTier0
             // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
-            // 1 - OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
-            // 2 - OptimizationTier0Instrumented - instrument all ILOnly code
+            // OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
+            // OptimizationTier0Instrumented - instrument all ILOnly code
             if (g_pConfig->TieredPGO_InstrumentOnlyHotCode())
             {
                 tieredCompilation_DefaultTier = (DWORD)NativeCodeVersion::OptimizationTier0;

@@ -488,12 +488,7 @@ bool CallCountingManager::SetCodeEntryPoint(
     _ASSERTE(createTieringBackgroundWorkerRef == nullptr || !*createTieringBackgroundWorkerRef);
 
     if (!methodDesc->IsEligibleForTieredCompilation() ||
-        (
-            // For a default code version that is not tier 0, call counting will have been disabled by this time (checked
-            // below). Avoid the redundant and not-insignificant expense of GetOptimizationTier() on a default code version.
-            !activeCodeVersion.IsDefaultVersion() &&
-            activeCodeVersion.IsFinalTier()
-        ) ||
+        activeCodeVersion.IsFinalTier() ||
         !g_pConfig->TieredCompilation_CallCounting())
     {
         methodDesc->SetCodeEntryPoint(codeEntryPoint);

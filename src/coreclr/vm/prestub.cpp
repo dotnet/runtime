@@ -1273,7 +1273,7 @@ bool PrepareCodeConfig::FinalizeOptimizationTierForTier0Load()
     _ASSERTE(!JitSwitchedToOptimized());
     bool shouldTier = true;
 
-    switch (GetMethodDesc()->GetMethodDescOptimizationTier())
+    switch (GetCodeVersion().GetOptimizationTier())
     {
         case NativeCodeVersion::OptimizationTier0: // This is the default when we may tier up further
             break;
