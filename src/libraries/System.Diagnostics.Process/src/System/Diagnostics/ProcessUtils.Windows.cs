@@ -14,7 +14,7 @@ namespace System.Diagnostics
             applicationName.Append(resolvedFilePath);
             applicationName.NullTerminate();
 
-            // From: https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
+            // From: https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
             // "Because argv[0] is the module name, C programmers generally repeat the module name as the first token in the command line."
             // The truth is that some programs REQUIRE it (example: findstr). That is why we repeat it.
             PasteArguments.AppendArgument(ref commandLine, resolvedFilePath);

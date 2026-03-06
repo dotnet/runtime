@@ -28,7 +28,7 @@ namespace System.IO.Ports.Tests
         private enum ThrowAt { Set, Open };
 
         #region Test Cases
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(StopBits_Property), nameof(HasNullModem))]
         public void StopBits_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -46,42 +46,42 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(StopBits_Property), nameof(HasNullModem))]
         public void StopBits_1_BeforeOpen()
         {
             Debug.WriteLine("Verifying 1 StopBits before open");
             VerifyStopBitsBeforeOpen((int)StopBits.One);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(StopBits_Property), nameof(HasNullModem))]
         public void StopBits_2_BeforeOpen()
         {
             Debug.WriteLine("Verifying 2 StopBits before open");
             VerifyStopBitsBeforeOpen((int)StopBits.Two);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(StopBits_Property), nameof(HasNullModem))]
         public void StopBits_1_AfterOpen()
         {
             Debug.WriteLine("Verifying 1 StopBits after open");
             VerifyStopBitsAfterOpen((int)StopBits.One);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(StopBits_Property), nameof(HasNullModem))]
         public void StopBits_2_AfterOpen()
         {
             Debug.WriteLine("Verifying 2 StopBits after open");
             VerifyStopBitsAfterOpen((int)StopBits.Two);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(StopBits_Property), nameof(HasOneSerialPort))]
         public void StopBits_Int32MinValue()
         {
             Debug.WriteLine("Verifying Int32.MinValue StopBits");
             VerifyException(int.MinValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(StopBits_Property), nameof(HasOneSerialPort))]
         public void StopBits_Neg1()
         {
             Debug.WriteLine("Verifying -1 StopBits");
@@ -89,7 +89,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(StopBits_Property), nameof(HasOneSerialPort))]
         public void StopBits_0()
         {
             Debug.WriteLine("Verifying 0 StopBits");
@@ -97,7 +97,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(StopBits_Property), nameof(HasOneSerialPort))]
         public void StopBits_4()
         {
             Debug.WriteLine("Verifying 4 StopBits");
@@ -105,7 +105,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(StopBits_Property), nameof(HasOneSerialPort))]
         public void StopBits_Int32MaxValue()
         {
             Debug.WriteLine("Verifying Int32.MaxValue StopBits");

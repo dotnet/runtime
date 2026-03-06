@@ -94,7 +94,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(s.IsEmpty);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(8, 10)]
         [InlineData(16, 100)]
         [InlineData(128, 100)]
@@ -128,7 +128,7 @@ namespace System.Collections.Concurrent.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(8, 10)]
         [InlineData(16, 100)]
         [InlineData(128, 100)]
@@ -181,7 +181,7 @@ namespace System.Collections.Concurrent.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => stack.TryPopRange(new int[1], 0, 10));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void Concurrent_Push_TryPop_WithSuspensions()
         {
             int items = 10;

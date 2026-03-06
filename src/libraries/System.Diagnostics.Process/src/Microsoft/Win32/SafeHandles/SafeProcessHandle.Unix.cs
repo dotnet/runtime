@@ -105,7 +105,7 @@ namespace Microsoft.Win32.SafeHandles
                 }
 
                 // Allocate and copy inherited handles if provided
-                if (options.HasInheritedHandlesBeenAccessed && options.InheritedHandles.Count > 0)
+                if (options.HasInheritedHandles)
                 {
                     inheritedHandlesCount = options.InheritedHandles.Count;
                     inheritedHandlesPtr = (int*)NativeMemory.Alloc((nuint)inheritedHandlesCount, (nuint)sizeof(int));
@@ -173,6 +173,8 @@ namespace Microsoft.Win32.SafeHandles
                     return true;
             }
         }
+
+        private int GetProcessIdCore() => throw new NotImplementedException();
 
         private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
         {

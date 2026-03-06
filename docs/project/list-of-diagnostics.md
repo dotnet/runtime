@@ -137,7 +137,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1008`__ | One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface |
 |  __`SYSLIB1009`__ | Logging methods must be static |
 |  __`SYSLIB1010`__ | Logging methods must be partial |
-|  __`SYSLIB1011`__ | Logging methods cannot be generic |
+|  __`SYSLIB1011`__ | Logging methods cannot use the `allows ref struct` constraint |
 |  __`SYSLIB1012`__ | Redundant qualifier in logging message |
 |  __`SYSLIB1013`__ | Don't include exception parameters as templates in the logging message |
 |  __`SYSLIB1014`__ | Logging template has no corresponding method argument |
@@ -154,8 +154,8 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1025`__ | Multiple logging methods cannot use the same event name within a class |
 |  __`SYSLIB1026`__ | C# language version not supported by the logging source generator. |
 |  __`SYSLIB1027`__ | Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field |
-|  __`SYSLIB1028`__ | _`SYSLIB1001`-`SYSLIB1029` reserved for logging._ |
-|  __`SYSLIB1029`__ | _`SYSLIB1001`-`SYSLIB1029` reserved for logging._ |
+|  __`SYSLIB1028`__ | Argument is using the unsupported params parameter modifier |
+|  __`SYSLIB1029`__ | Logging method parameter is a ref struct |
 |  __`SYSLIB1030`__ | JsonSourceGenerator did not generate serialization metadata for type |
 |  __`SYSLIB1031`__ | JsonSourceGenerator encountered a duplicate JsonTypeInfo property name |
 |  __`SYSLIB1032`__ | JsonSourceGenerator encountered a context class that is not partial |
