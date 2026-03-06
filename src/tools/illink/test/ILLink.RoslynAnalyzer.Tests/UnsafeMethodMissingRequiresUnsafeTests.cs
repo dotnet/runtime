@@ -5,6 +5,7 @@
 using System;
 using System.Threading.Tasks;
 using ILLink.Shared;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
@@ -150,6 +151,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     VerifyCS.Diagnostic(DiagnosticId.UnsafeMethodMissingRequiresUnsafe)
                         .WithSpan(5, 24, 5, 25)
                         .WithArguments("C.M()")
+                        .WithSeverity(DiagnosticSeverity.Info)
                 },
                 fixedExpected: Array.Empty<DiagnosticResult> ());
         }
@@ -183,6 +185,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     VerifyCS.Diagnostic(DiagnosticId.UnsafeMethodMissingRequiresUnsafe)
                         .WithSpan(5, 24, 5, 25)
                         .WithArguments("C.M(Int32*)")
+                        .WithSeverity(DiagnosticSeverity.Info)
                 },
                 fixedExpected: Array.Empty<DiagnosticResult> ());
         }
@@ -216,6 +219,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     VerifyCS.Diagnostic(DiagnosticId.UnsafeMethodMissingRequiresUnsafe)
                         .WithSpan(5, 24, 5, 25)
                         .WithArguments("C.M(delegate*<Void>)")
+                        .WithSeverity(DiagnosticSeverity.Info)
                 },
                 fixedExpected: Array.Empty<DiagnosticResult> ());
         }
@@ -249,6 +253,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     VerifyCS.Diagnostic(DiagnosticId.UnsafeMethodMissingRequiresUnsafe)
                         .WithSpan(5, 22, 5, 29)
                         .WithArguments("C.P.get")
+                        .WithSeverity(DiagnosticSeverity.Info)
                 },
                 fixedExpected: Array.Empty<DiagnosticResult> ());
         }
