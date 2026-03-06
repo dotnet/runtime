@@ -58,7 +58,6 @@ namespace System
 
         [CLSCompliant(false)]
         [NonVersionable]
-        [RequiresUnsafe]
         public unsafe IntPtr(void* value)
         {
             _value = (nint)value;
@@ -119,12 +118,10 @@ namespace System
 
         [CLSCompliant(false)]
         [NonVersionable]
-        [RequiresUnsafe]
         public static unsafe explicit operator nint(void* value) => (nint)value;
 
         [CLSCompliant(false)]
         [NonVersionable]
-        [RequiresUnsafe]
         public static unsafe explicit operator void*(nint value) => (void*)value;
 
         [NonVersionable]
@@ -166,7 +163,6 @@ namespace System
 
         [CLSCompliant(false)]
         [NonVersionable]
-        [RequiresUnsafe]
         public unsafe void* ToPointer() => (void*)_value;
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
