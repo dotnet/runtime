@@ -127,7 +127,6 @@ namespace System.Runtime.InteropServices
         ///     <para>This method is a thin wrapper over the C <c>malloc</c> API.</para>
         /// </remarks>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static void* Alloc(nuint byteCount)
         {
             // The C standard does not define what happens when size == 0, we want an "empty" allocation
@@ -151,7 +150,6 @@ namespace System.Runtime.InteropServices
         ///     <para>This method is a thin wrapper over the C <c>calloc</c> API.</para>
         /// </remarks>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static void* AllocZeroed(nuint elementCount, nuint elementSize)
         {
             void* result;

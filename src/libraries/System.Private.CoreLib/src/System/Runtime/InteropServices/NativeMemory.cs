@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices
         ///     <para>This method is a thin wrapper over the C <c>malloc</c> API.</para>
         /// </remarks>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static void* Alloc(nuint elementCount, nuint elementSize)
         {
             nuint byteCount = GetByteCount(elementCount, elementSize);
@@ -35,7 +34,6 @@ namespace System.Runtime.InteropServices
         ///     <para>This method is a thin wrapper over the C <c>calloc</c> API.</para>
         /// </remarks>
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public static void* AllocZeroed(nuint byteCount)
         {
             return AllocZeroed(byteCount, elementSize: 1);
