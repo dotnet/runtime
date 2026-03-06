@@ -3011,11 +3011,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compProcedureSplitting = false;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
-    // Async methods must not be hot/cold split — the runtime's stack walker and EH
-    // dispatch assume funclets are not split. The caller should clear PROCSPLIT for
-    // async methods before invoking the JIT.
-    assert(!compIsAsync() || !opts.compProcedureSplitting);
-
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
 #endif // DEBUG

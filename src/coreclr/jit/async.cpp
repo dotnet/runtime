@@ -45,6 +45,22 @@
 #include "jitstd/algorithm.h"
 #include "async.h"
 
+namespace
+{
+GenTreeCall* gtNewCallNodeWithEntryPoint(Compiler* compiler, CORINFO_METHOD_HANDLE handle, var_types type)
+{
+    GenTreeCall* call = compiler->gtNewCallNode(CT_USER_FUNC, handle, type);
+
+#ifdef FEATURE_READYTORUN
+    CORINFO_CONST_LOOKUP entryPoint;
+    compiler->info.compCompHnd->getFunctionEntryPoint(handle, &entryPoint);
+    call->setEntryPoint(entryPoint);
+#endif
+
+    return call;
+}
+} // anonymous namespace
+
 //------------------------------------------------------------------------
 // Compiler::SaveAsyncContexts:
 //   Insert code in async methods that saves and restores contexts.
@@ -163,18 +179,12 @@ PhaseStatus Compiler::SaveAsyncContexts()
     // For OSR, we did this in the tier0 method.
     if (!opts.IsOSR())
     {
-        GenTreeCall* captureCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
+        GenTreeCall* captureCall = gtNewCallNodeWithEntryPoint(this, asyncInfo->captureContextsMethHnd, TYP_VOID);
         captureCall->gtArgs.PushFront(this,
                                       NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
         captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
         lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvHasLdAddrOp = true;
         lvaGetDesc(lvaAsyncExecutionContextVar)->lvHasLdAddrOp       = true;
-
-#ifdef FEATURE_READYTORUN
-        CORINFO_CONST_LOOKUP captureEntryPoint;
-        info.compCompHnd->getFunctionEntryPoint(asyncInfo->captureContextsMethHnd, &captureEntryPoint);
-        captureCall->setEntryPoint(captureEntryPoint);
-#endif
 
         CORINFO_CALL_INFO callInfo = {};
         callInfo.hMethod           = captureCall->gtCallMethHnd;
@@ -202,19 +212,11 @@ PhaseStatus Compiler::SaveAsyncContexts()
         resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
     }
 
-    GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    GenTreeCall* restoreCall = gtNewCallNodeWithEntryPoint(this, asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
-
-#ifdef FEATURE_READYTORUN
-    {
-        CORINFO_CONST_LOOKUP restoreEntryPoint;
-        info.compCompHnd->getFunctionEntryPoint(asyncInfo->restoreContextsMethHnd, &restoreEntryPoint);
-        restoreCall->setEntryPoint(restoreEntryPoint);
-    }
-#endif
 
     Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
     fgInsertStmtAtEnd(faultBB, restoreStmt);
@@ -376,19 +378,11 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
         resumed               = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
     }
 
-    GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    GenTreeCall* restoreCall = gtNewCallNodeWithEntryPoint(this, asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
-
-#ifdef FEATURE_READYTORUN
-    {
-        CORINFO_CONST_LOOKUP restoreEntryPoint;
-        info.compCompHnd->getFunctionEntryPoint(asyncInfo->restoreContextsMethHnd, &restoreEntryPoint);
-        restoreCall->setEntryPoint(restoreEntryPoint);
-    }
-#endif
 
     // This restore is an inline candidate (unlike the fault one)
     CORINFO_CALL_INFO callInfo = {};
@@ -2138,19 +2132,10 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
         GenTree*     contContextElementPlaceholder = m_compiler->gtNewZeroConNode(TYP_BYREF);
         GenTree*     flagsPlaceholder              = m_compiler->gtNewZeroConNode(TYP_BYREF);
         GenTreeCall* captureCall =
-            m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureContinuationContextMethHnd, TYP_VOID);
+            gtNewCallNodeWithEntryPoint(m_compiler, m_asyncInfo->captureContinuationContextMethHnd, TYP_VOID);
 
         captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(flagsPlaceholder));
         captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(contContextElementPlaceholder));
-
-#ifdef FEATURE_READYTORUN
-        {
-            CORINFO_CONST_LOOKUP entryPoint;
-            m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->captureContinuationContextMethHnd,
-                                                                &entryPoint);
-            captureCall->setEntryPoint(entryPoint);
-        }
-#endif
 
         m_compiler->compCurBB = suspendBB;
         m_compiler->fgMorphTree(captureCall);
@@ -2191,16 +2176,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
     if (layout.ExecutionContextOffset != UINT_MAX)
     {
         GenTreeCall* captureExecContext =
-            m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->captureExecutionContextMethHnd, TYP_REF);
-
-#ifdef FEATURE_READYTORUN
-        {
-            CORINFO_CONST_LOOKUP entryPoint;
-            m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->captureExecutionContextMethHnd,
-                                                                &entryPoint);
-            captureExecContext->setEntryPoint(entryPoint);
-        }
-#endif
+            gtNewCallNodeWithEntryPoint(m_compiler, m_asyncInfo->captureExecutionContextMethHnd, TYP_REF);
 
         m_compiler->compCurBB = suspendBB;
         m_compiler->fgMorphTree(captureExecContext);
@@ -2242,20 +2218,11 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
     GenTree*     execContextPlaceholder = m_compiler->gtNewNull();
     GenTree*     syncContextPlaceholder = m_compiler->gtNewNull();
     GenTreeCall* restoreCall =
-        m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
+        gtNewCallNodeWithEntryPoint(m_compiler, m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
 
     restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(syncContextPlaceholder));
     restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(execContextPlaceholder));
     restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(resumedPlaceholder));
-
-#ifdef FEATURE_READYTORUN
-    {
-        CORINFO_CONST_LOOKUP entryPoint;
-        m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->restoreContextsOnSuspensionMethHnd,
-                                                            &entryPoint);
-        restoreCall->setEntryPoint(entryPoint);
-    }
-#endif
 
     m_compiler->compCurBB = suspendBB;
     m_compiler->fgMorphTree(restoreCall);
@@ -2454,17 +2421,8 @@ void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& 
     {
         GenTree*     valuePlaceholder = m_compiler->gtNewZeroConNode(TYP_REF);
         GenTreeCall* restoreCall =
-            m_compiler->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
+            gtNewCallNodeWithEntryPoint(m_compiler, m_asyncInfo->restoreExecutionContextMethHnd, TYP_VOID);
         restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(valuePlaceholder));
-
-#ifdef FEATURE_READYTORUN
-        {
-            CORINFO_CONST_LOOKUP entryPoint;
-            m_compiler->info.compCompHnd->getFunctionEntryPoint(m_asyncInfo->restoreExecutionContextMethHnd,
-                                                                &entryPoint);
-            restoreCall->setEntryPoint(entryPoint);
-        }
-#endif
 
         m_compiler->compCurBB = resumeBB;
         m_compiler->fgMorphTree(restoreCall);

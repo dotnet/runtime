@@ -5099,25 +5099,10 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     // We have to use R12 since we assume the argument registers are in use
                     params.callType = EC_INDIR_R;
                     params.ireg     = REG_INDIRECT_CALL_TARGET_REG;
-#ifdef TARGET_ARM64
-                    // On ARM64, R2R delay-load thunks expect the import cell address
-                    // in REG_R2R_INDIRECT_PARAM (x11). Load the cell address into x11
-                    // first, then load the target through x11 into the call target register.
                     if (addrInfo.accessType == IAT_PVALUE)
                     {
-                        instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, REG_R2R_INDIRECT_PARAM, (ssize_t)addrInfo.addr);
-                        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, params.ireg, REG_R2R_INDIRECT_PARAM, 0);
+                        GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, params.ireg, params.ireg, 0);
                         regSet.verifyRegUsed(params.ireg);
-                    }
-                    else
-#endif
-                    {
-                        instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, params.ireg, (ssize_t)addrInfo.addr);
-                        if (addrInfo.accessType == IAT_PVALUE)
-                        {
-                            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, params.ireg, params.ireg, 0);
-                            regSet.verifyRegUsed(params.ireg);
-                        }
                     }
                     break;
 
