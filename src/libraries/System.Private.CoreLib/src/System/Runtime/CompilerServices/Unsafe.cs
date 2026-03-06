@@ -27,7 +27,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void* AsPointer<T>(ref readonly T value)
             where T : allows ref struct
         {
