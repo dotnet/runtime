@@ -2276,24 +2276,33 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     switch (helper)
     {
         // Managed throw helpers with no args
-        HELPER_SIG(CORINFO_HELP_RNGCHKFAIL, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
-        HELPER_SIG(CORINFO_HELP_OVERFLOW, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
-        HELPER_SIG(CORINFO_HELP_THROWDIVZERO, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
-        HELPER_SIG(CORINFO_HELP_THROWNULLREF, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_RNGCHKFAIL, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I /* sp */,
+                   CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_OVERFLOW, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I /* sp */,
+                   CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_THROWDIVZERO, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
+        HELPER_SIG(CORINFO_HELP_THROWNULLREF, MANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I /* sp */, CORINFO_WASM_TYPE_I /* pep */);
         // RhpAssignRef
-        HELPER_SIG(CORINFO_HELP_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+        HELPER_SIG(CORINFO_HELP_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I);
         // RhpCheckedAssignRef
-        HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+        HELPER_SIG(CORINFO_HELP_CHECKED_ASSIGN_REF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I);
         // JIT_WriteBarrierEnsureNonHeapTarget
-        HELPER_SIG(CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+        HELPER_SIG(CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
         // RhpByRefAssignRef
-        HELPER_SIG(CORINFO_HELP_ASSIGN_BYREF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+        HELPER_SIG(CORINFO_HELP_ASSIGN_BYREF, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I);
         // RhBulkMoveWithWriteBarrier
-        HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+        HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
+                   CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
 
         default:
             printf("Helper '%s' has no hard-coded signature in genEmitHelperCall\n", helper,
-                    m_compiler->eeGetMethodFullName(params.methHnd));
+                   m_compiler->eeGetMethodFullName(params.methHnd));
             unreached();
     }
 
