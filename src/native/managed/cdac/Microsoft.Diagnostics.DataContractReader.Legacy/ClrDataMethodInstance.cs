@@ -93,7 +93,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             void* legacyModPtr = null;
             int hrLocal = _legacyImpl.GetTokenAndScope(validateToken ? &tokenLocal : null, validateMod ? &legacyModPtr : null);
 
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
 
             if (validateToken)
             {
@@ -172,7 +172,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 hrLocal = _legacyImpl.GetName(flags, bufLen, &nameLenLocal, nameBuf is null ? null : pNameBufLocal);
             }
 
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             if (nameLen is not null)
                 Debug.Assert(nameLenLocal == *nameLen, $"cDAC: {*nameLen:x}, DAC: {nameLenLocal:x}");
 
@@ -210,10 +210,18 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         try
         {
             TargetCodePointer pCode = address.ToTargetCodePointer(_target);
-            List<OffsetMapping> map = _target.Contracts.DebugInfo.GetMethodNativeMap(
+
+            // No debug info exists at all (e.g. ILStubs).
+            // This matches the DAC where GetBoundariesAndVars returns FALSE -> E_FAIL.
+            if (!_target.Contracts.DebugInfo.HasDebugInfo(pCode))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            IEnumerable<OffsetMapping> mapEnumerable = _target.Contracts.DebugInfo.GetMethodNativeMap(
                 pCode,
                 preferUninstrumented: false,
-                out uint codeOffset).ToList();
+                out uint codeOffset);
+
+            List<OffsetMapping> map = [.. mapEnumerable];
 
             uint hits = 0;
             for (int i = 0; i < map.Count; i++)
@@ -262,8 +270,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                     validateIlOffsets ? localIlOffsetsPtr : null);
             }
 
-            // DAC function returns odd failure codes it doesn't make sense to match directly
-            Debug.Assert(hrLocal == hr || (hrLocal < 0 && hr < 0), $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
 
             if (hr == HResults.S_OK)
             {
@@ -297,10 +304,18 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         {
             TargetCodePointer pCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
             TargetPointer codeStart = pCode.ToAddress(_target);
-            List<OffsetMapping> map = _target.Contracts.DebugInfo.GetMethodNativeMap(
+
+            // No debug info exists at all (e.g. ILStubs).
+            // This matches the DAC where GetBoundariesAndVars returns FALSE -> E_FAIL.
+            if (!_target.Contracts.DebugInfo.HasDebugInfo(pCode))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            IEnumerable<OffsetMapping> mapEnumerable = _target.Contracts.DebugInfo.GetMethodNativeMap(
                 pCode,
                 preferUninstrumented: false,
-                out uint _).ToList();
+                out uint _);
+
+            List<OffsetMapping> map = [.. mapEnumerable];
 
             if (maps is not null)
             {
@@ -346,7 +361,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             uint mapNeededLocal;
             ClrDataILAddressMap[]? mapsLocal = mapLen > 0 ? new ClrDataILAddressMap[mapLen] : null;
             int hrLocal = _legacyImpl.GetILAddressMap(mapLen, &mapNeededLocal, mapsLocal);
-            Debug.Assert(hrLocal == hr, $"HResult - cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
 
             if (hr == HResults.S_OK)
             {
@@ -412,7 +427,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             ClrDataAddress addrLocal;
             int hrLocal = _legacyImpl.GetRepresentativeEntryAddress(&addrLocal);
 
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
             Debug.Assert(addrLocal == *addr, $"cDAC: {*addr:x}, DAC: {addrLocal:x}");
         }
 #endif

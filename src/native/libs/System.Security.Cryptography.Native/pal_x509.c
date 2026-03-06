@@ -6,9 +6,14 @@
 #include "../Common/pal_safecrt.h"
 #include <assert.h>
 #include <dirent.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+
+#ifndef NAME_MAX
+#error "NAME_MAX is not defined"
+#endif
 
 c_static_assert(PAL_X509_V_OK == X509_V_OK);
 c_static_assert(PAL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT);
@@ -445,12 +450,14 @@ static DIR* OpenUserStore(const char* storePath, char** pathTmp, size_t* pathTmp
         return NULL;
     }
 
-    struct dirent* ent = NULL;
     size_t storePathLen = strlen(storePath);
 
     // d_name is a fixed length char[], not a char*.
+    // The traditional declaration (eg. SunOS) is d_name[1]
+    // so we can't assume sizeof(ent->d_name) will work,
+    // so just use NAME_MAX which is the POSIX way.
     // Leave one byte for '\0' and one for '/'
-    size_t allocSize = storePathLen + sizeof(ent->d_name) + 2;
+    size_t allocSize = storePathLen + NAME_MAX + 2;
     char* tmp = (char*)calloc(allocSize, sizeof(char));
     if (!tmp)
     {
@@ -480,10 +487,16 @@ static X509* ReadNextPublicCert(DIR* dir, X509Stack* tmpStack, char* pathTmp, si
 
     while ((next = readdir(dir)) != NULL)
     {
-        size_t len = strnlen(next->d_name, sizeof(next->d_name));
+        size_t len = strnlen(next->d_name, NAME_MAX);
 
         if (len > 4 && 0 == strncasecmp(".pfx", next->d_name + len - 4, 4))
         {
+            if (len >= remaining)
+            {
+                // Filename too long for buffer, skip it
+                continue;
+            }
+
             memcpy_s(nextFileWrite, remaining, next->d_name, len);
             // if d_name was full-length it might not have a trailing null.
             nextFileWrite[len] = 0;
