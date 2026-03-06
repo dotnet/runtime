@@ -115,6 +115,13 @@ namespace System.Formats.Tar
                 _name = paxEaName;
             }
 
+            // GNU sparse format 1.0 (encoded via PAX) stores the real file name in 'GNU.sparse.name',
+            // which overrides the placeholder path (e.g. 'GNUSparseFile.0/...') stored in the 'path' attribute.
+            if (ExtendedAttributes.TryGetValue(PaxEaGnuSparseName, out string? gnuSparseName))
+            {
+                _name = gnuSparseName;
+            }
+
             // The 'linkName' header field only fits 100 bytes, so we always store the full linkName text to the dictionary.
             if (ExtendedAttributes.TryGetValue(PaxEaLinkName, out string? paxEaLinkName))
             {
@@ -137,6 +144,13 @@ namespace System.Formats.Tar
             if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaSize, out long size))
             {
                 _size = size;
+            }
+
+            // GNU sparse format 1.0 (encoded via PAX) stores the real (expanded) file size in 'GNU.sparse.realsize'.
+            // This is stored separately so that the archive data size (_size) is preserved for correct data stream reading.
+            if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaGnuSparseRealSize, out long gnuSparseRealSize))
+            {
+                _gnuSparseRealSize = gnuSparseRealSize;
             }
 
             // The 'uid' header field only fits 8 bytes, or the user could've stored an override in the extended attributes
