@@ -12,6 +12,13 @@ public struct CodeBlockHandle
     public CodeBlockHandle(TargetPointer address) => Address = address;
 }
 
+public struct JitManagerInfo
+{
+    public TargetPointer ManagerAddress;
+    public uint CodeType;
+    public TargetPointer HeapListAddress;
+}
+
 public interface IExecutionManager : IContract
 {
     static string IContract.Name { get; } = nameof(ExecutionManager);
@@ -19,12 +26,15 @@ public interface IExecutionManager : IContract
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize) => throw new NotImplementedException();
+    uint GetJITType(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint) => throw new NotImplementedException();
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte) => throw new NotImplementedException();
-    // **Currently GetGCInfo only supports X86**
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion) => throw new NotImplementedException();
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
 }
 
 public readonly struct ExecutionManager : IExecutionManager

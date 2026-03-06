@@ -1204,10 +1204,9 @@ public:
             // need fewer than 5 iterations.
             for (int iters = 0; iters < 10; iters++)
             {
-                for (int i = 0; i < m_candidateStores.Height(); i++)
+                for (const CandidateStore& candidateStore : m_candidateStores.BottomUpOrder())
                 {
-                    const CandidateStore& candidateStore = m_candidateStores.BottomRef(i);
-                    GenTreeLclVarCommon*  store          = candidateStore.Store;
+                    GenTreeLclVarCommon* store = candidateStore.Store;
 
                     assert(store->TypeIs(TYP_STRUCT));
                     assert(store->Data()->gtEffectiveVal()->OperIsLocalRead());
