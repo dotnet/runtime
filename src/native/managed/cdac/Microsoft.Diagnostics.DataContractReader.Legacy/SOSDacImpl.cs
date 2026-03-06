@@ -3312,6 +3312,9 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded)
     {
         int hr = HResults.S_OK;
+#if DEBUG
+        int numWritten;
+#endif
         try
         {
             if (rcw == 0)
@@ -3330,6 +3333,9 @@ public sealed unsafe partial class SOSDacImpl
                 else
                 {
                     *pNeeded = (uint)entries.Count();
+#if DEBUG
+                    numWritten = (int)*pNeeded;
+#endif
                 }
             }
             else
@@ -3351,6 +3357,9 @@ public sealed unsafe partial class SOSDacImpl
 
                 if (pNeeded != null)
                     *pNeeded = itemIndex;
+#if DEBUG
+                numWritten = (int)itemIndex;
+#endif
             }
         }
         catch (System.Exception ex)
@@ -3364,19 +3373,19 @@ public sealed unsafe partial class SOSDacImpl
             uint pNeededLocal = 0;
             int hrLocal;
             DacpCOMInterfacePointerData[]? interfacesLocal = count > 0 && interfaces != null ? new DacpCOMInterfacePointerData[count] : null;
-            hrLocal = _legacyImpl.GetRCWInterfaces(rcw, count, interfacesLocal, &pNeededLocal);
+            hrLocal = _legacyImpl.GetRCWInterfaces(rcw, count, interfacesLocal, pNeeded == null && interfacesLocal == null ? null : &pNeededLocal);
             Debug.ValidateHResult(hr, hrLocal);
-            if (pNeeded is not null)
+            if (hr == HResults.S_OK)
             {
-                Debug.Assert(*pNeeded == pNeededLocal, $"cDAC: {*pNeeded}, DAC: {pNeededLocal}");
-            }
-            if (hr == HResults.S_OK && interfaces is not null)
-            {
-                for (int i = 0; i < (int)pNeededLocal; i++)
+                Debug.Assert(numWritten == pNeededLocal, $"cDAC: {numWritten}, DAC: {pNeededLocal}");
+                if (interfacesLocal is not null)
                 {
-                    Debug.Assert(interfaces[i].methodTable == interfacesLocal![i].methodTable, $"cDAC: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
-                    Debug.Assert(interfaces[i].interfacePtr == interfacesLocal![i].interfacePtr, $"cDAC: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
-                    Debug.Assert(interfaces[i].comContext == interfacesLocal![i].comContext, $"cDAC: {interfaces[i].comContext:x}, DAC: {interfacesLocal[i].comContext:x}");
+                    for (int i = 0; i < (int)pNeededLocal; i++)
+                    {
+                        Debug.Assert(interfaces[i].methodTable == interfacesLocal![i].methodTable, $"cDAC: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
+                        Debug.Assert(interfaces[i].interfacePtr == interfacesLocal![i].interfacePtr, $"cDAC: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
+                        Debug.Assert(interfaces[i].comContext == interfacesLocal![i].comContext, $"cDAC: {interfaces[i].comContext:x}, DAC: {interfacesLocal[i].comContext:x}");
+                    }
                 }
             }
         }
