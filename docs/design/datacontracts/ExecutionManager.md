@@ -62,16 +62,17 @@ public struct ExceptionClauseInfo
         Finally = 0x1,
         Filter = 0x2,
         Typed = 0x3,
+        Unknown = 0x4
     }
     public ExceptionClauseFlags ClauseType;
     public bool? IsCatchAllHandler;
-    public TargetPointer TryStartPC;
-    public TargetPointer TryEndPC;
-    public TargetPointer HandlerStartPC;
-    public TargetPointer HandlerEndPC;
-    public TargetPointer? FilterOffset;
-    public TargetPointer? ClassToken;
-    public TargetPointer? TypeHandle;
+    public uint TryStartPC;
+    public uint TryEndPC;
+    public uint HandlerStartPC;
+    public uint HandlerEndPC;
+    public uint? FilterOffset;
+    public uint? ClassToken;
+    public TargetNUInt? TypeHandle;
     public TargetPointer? ModuleAddr;
 }
 ```
@@ -168,6 +169,11 @@ Global variables used:
 | `GCInfoVersion` | uint32 | JITted code GCInfo version |
 | `FeatureOnStackReplacement` | uint8 | 1 if FEATURE_ON_STACK_REPLACEMENT is enabled, 0 otherwise |
 | `FeaturePortableEntrypoints` | uint8 | 1 if FEATURE_PORTABLE_ENTRYPOINTS is enabled, 0 otherwise |
+
+Contract constants used:
+| Name | Type | Purpose | Value |
+| --- | --- | --- | --- |
+| `CachedClass` | `uint` | Bit flag to indicate exception clause contains a cached TypeHandle | `0x10000000` |
 
 Contracts used:
 | Contract Name |

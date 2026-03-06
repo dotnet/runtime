@@ -746,7 +746,7 @@ public unsafe partial interface ISOSDacInterface
 
     // EH
     [PreserveSig]
-    int TraverseEHInfo(ClrDataAddress ip, /*DUMPEHINFO*/ delegate* unmanaged[Stdcall]<uint, uint, DACEHInfo*, void*, int> pCallback, void* token);
+    int TraverseEHInfo(ClrDataAddress ip, /*DUMPEHINFO*/ delegate* unmanaged<uint, uint, DACEHInfo*, void*, int> pCallback, void* token);
     [PreserveSig]
     int GetNestedExceptionData(ClrDataAddress exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException);
 

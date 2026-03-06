@@ -3960,7 +3960,7 @@ public sealed unsafe partial class SOSDacImpl
         public int CallbackCount { get; set; }
     }
 
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    [UnmanagedCallersOnly]
     private static int TraverseEHInfoCallback(uint clauseIndex, uint totalClauses, DACEHInfo* pEHInfo, void* expectedEhInfo)
     {
         var expected = (TraverseEhInfoExpected)GCHandle.FromIntPtr((nint)expectedEhInfo).Target!;
@@ -3969,14 +3969,16 @@ public sealed unsafe partial class SOSDacImpl
         {
             DACEHInfo expectedEhClause = expected.Elements[(int)clauseIndex];
             Debug.Assert(pEHInfo->clauseType == expectedEhClause.clauseType, $"cDAC: {expectedEhClause.clauseType}, DAC: {pEHInfo->clauseType}");
-            Debug.Assert(pEHInfo->filterOffset == expectedEhClause.filterOffset, $"cDAC: {expectedEhClause.filterOffset:x}, DAC: {pEHInfo->filterOffset:x}");
-            Debug.Assert(pEHInfo->isCatchAllHandler == expectedEhClause.isCatchAllHandler, $"cDAC: {expectedEhClause.isCatchAllHandler}, DAC: {pEHInfo->isCatchAllHandler}");
-            Debug.Assert(pEHInfo->tokCatch == expectedEhClause.tokCatch, $"cDAC: {expectedEhClause.tokCatch:x}, DAC: {pEHInfo->tokCatch:x}");
-            Debug.Assert(pEHInfo->moduleAddr == expectedEhClause.moduleAddr, $"cDAC: {expectedEhClause.moduleAddr:x}, DAC: {pEHInfo->moduleAddr:x}");
             Debug.Assert(pEHInfo->tryStartOffset == expectedEhClause.tryStartOffset, $"cDAC: {expectedEhClause.tryStartOffset:x}, DAC: {pEHInfo->tryStartOffset:x}");
             Debug.Assert(pEHInfo->tryEndOffset == expectedEhClause.tryEndOffset, $"cDAC: {expectedEhClause.tryEndOffset:x}, DAC: {pEHInfo->tryEndOffset:x}");
             Debug.Assert(pEHInfo->handlerStartOffset == expectedEhClause.handlerStartOffset, $"cDAC: {expectedEhClause.handlerStartOffset:x}, DAC: {pEHInfo->handlerStartOffset:x}");
             Debug.Assert(pEHInfo->handlerEndOffset == expectedEhClause.handlerEndOffset, $"cDAC: {expectedEhClause.handlerEndOffset:x}, DAC: {pEHInfo->handlerEndOffset:x}");
+            Debug.Assert(pEHInfo->isDuplicateClause == expectedEhClause.isDuplicateClause, $"cDAC: {expectedEhClause.isDuplicateClause}, DAC: {pEHInfo->isDuplicateClause}");
+            Debug.Assert(pEHInfo->filterOffset == expectedEhClause.filterOffset, $"cDAC: {expectedEhClause.filterOffset:x}, DAC: {pEHInfo->filterOffset:x}");
+            Debug.Assert(pEHInfo->isCatchAllHandler == expectedEhClause.isCatchAllHandler, $"cDAC: {expectedEhClause.isCatchAllHandler}, DAC: {pEHInfo->isCatchAllHandler}");
+            Debug.Assert(pEHInfo->moduleAddr == expectedEhClause.moduleAddr, $"cDAC: {expectedEhClause.moduleAddr:x}, DAC: {pEHInfo->moduleAddr:x}");
+            Debug.Assert(pEHInfo->mtCatch == expectedEhClause.mtCatch, $"cDAC: {expectedEhClause.mtCatch:x}, DAC: {pEHInfo->mtCatch:x}");
+            Debug.Assert(pEHInfo->tokCatch == expectedEhClause.tokCatch, $"cDAC: {expectedEhClause.tokCatch:x}, DAC: {pEHInfo->tokCatch:x}");
         }
         else
         {
@@ -3992,7 +3994,7 @@ public sealed unsafe partial class SOSDacImpl
         return 1; // Return non-zero to continue enumeration
     }
 #endif
-    int ISOSDacInterface.TraverseEHInfo(ClrDataAddress ip, delegate* unmanaged[Stdcall]<uint, uint, DACEHInfo*, void*, int> pCallback, void* token)
+    int ISOSDacInterface.TraverseEHInfo(ClrDataAddress ip, delegate* unmanaged<uint, uint, DACEHInfo*, void*, int> pCallback, void* token)
     {
         int hr = HResults.S_OK;
         List<DACEHInfo> clausesLocal = new();
@@ -4029,16 +4031,16 @@ public sealed unsafe partial class SOSDacImpl
                     _ => DACEHInfo.EHClauseType.EHUnknown,
                 };
 
-                ehInfo.filterOffset = clause.FilterOffset is TargetPointer filterOffset ? filterOffset.ToClrDataAddress(_target) : 0;
+                ehInfo.filterOffset = clause.FilterOffset is uint filterOffset ? (ulong)filterOffset : 0;
                 ehInfo.isCatchAllHandler = clause.IsCatchAllHandler is true ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-                ehInfo.tokCatch = clause.ClassToken is TargetPointer classToken ? (uint)classToken.Value : 0;
+                ehInfo.tokCatch = clause.ClassToken is uint classToken ? classToken : 0;
                 ehInfo.moduleAddr = clause.ModuleAddr is TargetPointer moduleAddr ? moduleAddr.ToClrDataAddress(_target) : 0;
-                ehInfo.mtCatch = clause.TypeHandle is TargetPointer th ? th.ToClrDataAddress(_target) : 0;
+                ehInfo.mtCatch = clause.TypeHandle is TargetNUInt th ? new TargetPointer(th.Value).ToClrDataAddress(_target) : 0;
 
-                ehInfo.tryStartOffset = clause.TryStartPC.ToClrDataAddress(_target);
-                ehInfo.tryEndOffset = clause.TryEndPC.ToClrDataAddress(_target);
-                ehInfo.handlerStartOffset = clause.HandlerStartPC.ToClrDataAddress(_target);
-                ehInfo.handlerEndOffset = clause.HandlerEndPC.ToClrDataAddress(_target);
+                ehInfo.tryStartOffset = (ulong)clause.TryStartPC;
+                ehInfo.tryEndOffset = (ulong)clause.TryEndPC;
+                ehInfo.handlerStartOffset = (ulong)clause.HandlerStartPC;
+                ehInfo.handlerEndOffset = (ulong)clause.HandlerEndPC;
                 clausesLocal.Add(ehInfo);
 
                 if (pCallback(i, numClauses, &ehInfo, token) == 0)
@@ -4061,10 +4063,10 @@ public sealed unsafe partial class SOSDacImpl
             try
             {
                 void* tokenDebug = GCHandle.ToIntPtr(expectedHandle).ToPointer();
-                delegate* unmanaged[Stdcall]<uint, uint, DACEHInfo*, void*, int> callbackDebugPtr = &TraverseEHInfoCallback;
+                delegate* unmanaged<uint, uint, DACEHInfo*, void*, int> callbackDebugPtr = &TraverseEHInfoCallback;
 
                 int hrLocal = _legacyImpl.TraverseEHInfo(ip, callbackDebugPtr, tokenDebug);
-                Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+                Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.Exact);
             }
             finally
             {

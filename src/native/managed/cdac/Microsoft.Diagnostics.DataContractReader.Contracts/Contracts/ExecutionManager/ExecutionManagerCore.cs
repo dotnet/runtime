@@ -412,14 +412,14 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
                 : _target.ProcessedData.GetOrAdd<EEExceptionClause>(addr);
 
             ExceptionClauseInfo.ExceptionClauseFlags flags = GetExceptionClauseFlags(entry.Flags);
-            TargetPointer? filterOffset = IsFilterHandler(flags) ? entry.FilterOffset : null;
-            TargetPointer? typeHandle = null;
+            uint? filterOffset = IsFilterHandler(flags) ? entry.FilterOffset : null;
+            TargetNUInt? typeHandle = null;
             bool? isCatchAllHandler = null;
             TargetPointer? moduleAddr = null;
-            TargetPointer? classToken = null;
+            uint? classToken = null;
             if (HasCachedTypeHandle(entry))
             {
-                typeHandle = ((EEExceptionClause)entry).TypeHandle.Value;
+                typeHandle = ((EEExceptionClause)entry).TypeHandle;
             }
             else if (!IsFaultOrFinally(flags))
             {

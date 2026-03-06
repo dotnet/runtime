@@ -25,13 +25,13 @@ public struct ExceptionClauseInfo
     }
     public ExceptionClauseFlags ClauseType;
     public bool? IsCatchAllHandler;
-    public TargetPointer TryStartPC;
-    public TargetPointer TryEndPC;
-    public TargetPointer HandlerStartPC;
-    public TargetPointer HandlerEndPC;
-    public TargetPointer? FilterOffset;
-    public TargetPointer? ClassToken;
-    public TargetPointer? TypeHandle;
+    public uint TryStartPC;
+    public uint TryEndPC;
+    public uint HandlerStartPC;
+    public uint HandlerEndPC;
+    public uint? FilterOffset;
+    public uint? ClassToken;
+    public TargetNUInt? TypeHandle;
     public TargetPointer? ModuleAddr;
 }
 
