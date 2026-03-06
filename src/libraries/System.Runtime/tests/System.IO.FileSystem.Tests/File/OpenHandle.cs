@@ -98,23 +98,26 @@ namespace System.IO.Tests
             using Stream writeStream = CreatePipeWriteStream(writeHandle, asyncWrite);
 
             byte[] expected = [1, 2, 3, 4];
-            writeStream.Write(expected);
-            writeStream.Flush();
-
             byte[] actual = new byte[expected.Length];
-            int bytesRead = 0;
-            while (bytesRead < actual.Length)
-            {
-                int read = readStream.Read(actual, bytesRead, actual.Length - bytesRead);
-                if (read == 0)
-                {
-                    break;
-                }
 
-                bytesRead += read;
+            if (!OperatingSystem.IsWindows() && asyncWrite)
+            {
+                writeStream.WriteAsync(expected).GetAwaiter().GetResult();
+            }
+            else
+            {
+                writeStream.Write(expected);
             }
 
-            Assert.Equal(expected.Length, bytesRead);
+            if (!OperatingSystem.IsWindows() && asyncRead)
+            {
+                readStream.ReadExactlyAsync(actual).GetAwaiter().GetResult();
+            }
+            else
+            {
+                readStream.ReadExactly(actual);
+            }
+
             Assert.Equal(expected, actual);
         }
 
