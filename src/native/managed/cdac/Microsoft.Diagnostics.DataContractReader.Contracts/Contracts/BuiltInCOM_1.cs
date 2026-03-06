@@ -47,47 +47,52 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     }
 
     // Mirrors ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
-    // Handles three cases:
-    //   1. Address is a COM IP into a ComCallWrapper     → apply ThisMask to get the CCW
-    //   2. Address is a COM IP into a SimpleComCallWrapper → navigate via vtable + wrapper
-    //   3. Address is a direct ComCallWrapper pointer     → use directly
+    // Handles two cases:
+    //   1. Address is a COM IP into a ComCallWrapper          → apply ThisMask to get the CCW
+    //   2. Address is a COM IP into a SimpleComCallWrapper    → navigate via vtable + wrapper
     // After resolving, if the wrapper is linked (not the start), navigate to the start
     // wrapper via SimpleComCallWrapper.MainWrapper.
+    // Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
     public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer)
     {
         int pointerSize = _target.PointerSize;
-        TargetPointer ccw = interfacePointer;
 
         // Try to interpret interfacePointer as a COM interface pointer (IP).
         // Read the vtable pointer stored at the address, then read AddRef (slot 1) from that vtable.
-        if (_target.TryReadPointer(interfacePointer, out TargetPointer vtable) && vtable != TargetPointer.Null
-            && _target.TryReadCodePointer(vtable + (ulong)pointerSize, out TargetCodePointer addRefValue))
+        if (!_target.TryReadPointer(interfacePointer, out TargetPointer vtable) || vtable == TargetPointer.Null
+            || !_target.TryReadCodePointer(vtable + (ulong)pointerSize, out TargetCodePointer addRefValue))
         {
+            return TargetPointer.Null;
+        }
 
-            TargetPointer tearOffAddRef      = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRef);
-            TargetPointer tearOffSimple      = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimple);
-            TargetPointer tearOffSimpleInner = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimpleInner);
+        TargetPointer tearOffAddRef      = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRef);
+        TargetPointer tearOffSimple      = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimple);
+        TargetPointer tearOffSimpleInner = _target.ReadGlobalPointer(Constants.Globals.TearOffAddRefSimpleInner);
 
+        TargetPointer ccw;
+        if (addRefValue == tearOffAddRef)
+        {
+            // Standard CCW IP: apply ThisMask to get the aligned ComCallWrapper pointer.
             ulong thisMask = _target.ReadGlobal<ulong>(Constants.Globals.CCWThisMask);
+            ccw = new TargetPointer(interfacePointer & thisMask);
+        }
+        else if (addRefValue == tearOffSimple || addRefValue == tearOffSimpleInner)
+        {
+            // SimpleComCallWrapper IP: use GetStdInterfaceKind to find the SCCW base, then get MainWrapper.
+            // GetStdInterfaceKind reads from just before the vtable array:
+            TargetPointer descBase = vtable - (ulong)pointerSize;
+            int interfaceKind = _target.Read<int>(descBase);
 
-            if (addRefValue == tearOffAddRef)
-            {
-                // Standard CCW IP: apply ThisMask to get the aligned ComCallWrapper pointer.
-                ccw = new TargetPointer(interfacePointer & thisMask);
-            }
-            else if (addRefValue == tearOffSimple || addRefValue == tearOffSimpleInner)
-            {
-                // SimpleComCallWrapper IP: use GetStdInterfaceKind to find the SCCW base, then get MainWrapper.
-                // GetStdInterfaceKind reads from just before the vtable array:
-                TargetPointer descBase = vtable - (ulong)pointerSize;
-                int interfaceKind = _target.Read<int>(descBase);
-
-                Target.TypeInfo sccwTypeInfo = _target.GetTypeInfo(DataType.SimpleComCallWrapper);
-                ulong vtablePtrOffset = (ulong)sccwTypeInfo.Fields[nameof(Data.SimpleComCallWrapper.VTablePtr)].Offset;
-                TargetPointer sccwAddr = interfacePointer - (ulong)(interfaceKind * pointerSize) - vtablePtrOffset;
-                Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(sccwAddr);
-                ccw = sccw.MainWrapper;
-            }
+            Target.TypeInfo sccwTypeInfo = _target.GetTypeInfo(DataType.SimpleComCallWrapper);
+            ulong vtablePtrOffset = (ulong)sccwTypeInfo.Fields[nameof(Data.SimpleComCallWrapper.VTablePtr)].Offset;
+            TargetPointer sccwAddr = interfacePointer - (ulong)(interfaceKind * pointerSize) - vtablePtrOffset;
+            Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(sccwAddr);
+            ccw = sccw.MainWrapper;
+        }
+        else
+        {
+            // AddRef function does not match any known CCW tear-off: not a recognised COM IP.
+            return TargetPointer.Null;
         }
 
         Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
@@ -106,6 +111,17 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         int pointerSize = _target.PointerSize;
         // LinkedWrapperTerminator = (PTR_ComCallWrapper)-1: all pointer-sized bits set
         TargetPointer linkedWrapperTerminator = pointerSize == 8 ? TargetPointer.Max64Bit : TargetPointer.Max32Bit;
+
+        // Navigate to the start of the linked chain, mirroring ComCallWrapper::GetStartWrapper in the runtime.
+        // This ensures enumeration always begins at the first wrapper even when a mid-chain CCW is supplied.
+        {
+            Data.ComCallWrapper firstCheck = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
+            if (firstCheck.Next != TargetPointer.Null)
+            {
+                Data.SimpleComCallWrapper sccwFirst = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(firstCheck.SimpleWrapper);
+                ccw = sccwFirst.MainWrapper;
+            }
+        }
 
         bool isFirst = true;
         TargetPointer current = ccw;

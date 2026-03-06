@@ -23,11 +23,11 @@ public interface IBuiltInCOM : IContract
     static string IContract.Name { get; } = nameof(BuiltInCOM);
     ulong GetRefCount(TargetPointer address) => throw new NotImplementedException();
     bool IsHandleWeak(TargetPointer address) => throw new NotImplementedException();
-    // Resolves a COM interface pointer (or direct CCW pointer) to the start ComCallWrapper.
-    // Throws MemoryReadException if the address refers to unreadable memory.
+    // Resolves a COM interface pointer to the start ComCallWrapper.
+    // Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
     TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer) => throw new NotImplementedException();
-    // Enumerates COM interfaces exposed by the start ComCallWrapper.
-    // ccw must be the start ComCallWrapper; call GetCCWFromInterfacePointer first to resolve an interface pointer.
+    // Enumerates COM interfaces exposed by the ComCallWrapper chain.
+    // ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
     IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw) => throw new NotImplementedException();
     IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr) => throw new NotImplementedException();
 }

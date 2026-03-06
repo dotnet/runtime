@@ -312,7 +312,7 @@ public class BuiltInCOMTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetCCWInterfaces_LinkedWrapper_NavigatesToStartWrapper(MockTarget.Architecture arch)
+    public void GetCCWInterfaces_LinkedWrapper_WalksFullChainFromAnyWrapper(MockTarget.Architecture arch)
     {
         var helpers = new TargetTestHelpers(arch);
         var builder = new MockMemorySpace.Builder(helpers);
@@ -378,24 +378,28 @@ public class BuiltInCOMTests
 
         Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
 
-        // Pass the address of the SECOND (linked) wrapper to GetCCWFromInterfacePointer;
-        // it should navigate to the start (ccw1).
-        TargetPointer startCCW = target.Contracts.BuiltInCOM.GetCCWFromInterfacePointer(new TargetPointer(ccw2Frag.Address));
-        Assert.Equal(ccw1Frag.Address, startCCW.Value);
+        // Passing the start CCW enumerates both wrappers' interfaces.
+        List<COMInterfacePointerData> interfacesFromStart =
+            target.Contracts.BuiltInCOM.GetCCWInterfaces(new TargetPointer(ccw1Frag.Address)).ToList();
 
-        List<COMInterfacePointerData> interfaces =
-            target.Contracts.BuiltInCOM.GetCCWInterfaces(startCCW).ToList();
-
-        // Both wrappers' interfaces are enumerated, starting from ccw1
-        Assert.Equal(2, interfaces.Count);
-
+        Assert.Equal(2, interfacesFromStart.Count);
         // ccw1 slot 0: IUnknown → MethodTable = Null (first wrapper, slot 0)
-        Assert.Equal(ccw1Frag.Address + (ulong)P, interfaces[0].InterfacePointerAddress.Value);
-        Assert.Equal(TargetPointer.Null.Value, interfaces[0].MethodTable.Value);
-
+        Assert.Equal(ccw1Frag.Address + (ulong)P, interfacesFromStart[0].InterfacePointerAddress.Value);
+        Assert.Equal(TargetPointer.Null.Value, interfacesFromStart[0].MethodTable.Value);
         // ccw2 slot 1
-        Assert.Equal(ccw2Frag.Address + (ulong)(2 * P), interfaces[1].InterfacePointerAddress.Value);
-        Assert.Equal(expectedMT, interfaces[1].MethodTable.Value);
+        Assert.Equal(ccw2Frag.Address + (ulong)(2 * P), interfacesFromStart[1].InterfacePointerAddress.Value);
+        Assert.Equal(expectedMT, interfacesFromStart[1].MethodTable.Value);
+
+        // Passing the second (non-start) CCW also navigates to the start and enumerates the full chain.
+        List<COMInterfacePointerData> interfacesFromLinked =
+            target.Contracts.BuiltInCOM.GetCCWInterfaces(new TargetPointer(ccw2Frag.Address)).ToList();
+
+        Assert.Equal(interfacesFromStart.Count, interfacesFromLinked.Count);
+        for (int i = 0; i < interfacesFromStart.Count; i++)
+        {
+            Assert.Equal(interfacesFromStart[i].InterfacePointerAddress.Value, interfacesFromLinked[i].InterfacePointerAddress.Value);
+            Assert.Equal(interfacesFromStart[i].MethodTable.Value, interfacesFromLinked[i].MethodTable.Value);
+        }
     }
 
     [Theory]
@@ -472,12 +476,13 @@ public class BuiltInCOMTests
         TargetPointer startCCWFromIP = target.Contracts.BuiltInCOM.GetCCWFromInterfacePointer(new TargetPointer(comIPAddr));
         Assert.Equal(ccwFrag.Address, startCCWFromIP.Value);
 
-        // Direct CCW pointer also resolves to itself (it's already the start wrapper).
-        TargetPointer startCCWDirect = target.Contracts.BuiltInCOM.GetCCWFromInterfacePointer(new TargetPointer(ccwFrag.Address));
-        Assert.Equal(ccwFrag.Address, startCCWDirect.Value);
+        // A direct CCW pointer is not a COM IP; GetCCWFromInterfacePointer returns Null.
+        TargetPointer nullResult = target.Contracts.BuiltInCOM.GetCCWFromInterfacePointer(new TargetPointer(ccwFrag.Address));
+        Assert.Equal(TargetPointer.Null, nullResult);
 
+        // GetCCWInterfaces works with either the resolved IP or the direct CCW pointer.
         List<COMInterfacePointerData> ifacesDirect =
-            target.Contracts.BuiltInCOM.GetCCWInterfaces(startCCWDirect).ToList();
+            target.Contracts.BuiltInCOM.GetCCWInterfaces(new TargetPointer(ccwFrag.Address)).ToList();
         List<COMInterfacePointerData> ifacesFromIP =
             target.Contracts.BuiltInCOM.GetCCWInterfaces(startCCWFromIP).ToList();
 

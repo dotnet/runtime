@@ -585,7 +585,11 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException();
 
             Contracts.IBuiltInCOM builtInCOMContract = _target.Contracts.BuiltInCOM;
+            // Try to resolve as a COM interface pointer; if not recognised, treat as a direct CCW pointer.
+            // GetCCWInterfaces navigates to the start of the chain in both cases.
             TargetPointer startCCW = builtInCOMContract.GetCCWFromInterfacePointer(ccw.ToTargetPointer(_target));
+            if (startCCW == TargetPointer.Null)
+                startCCW = ccw.ToTargetPointer(_target);
             IEnumerable<Contracts.COMInterfacePointerData> result =
                 builtInCOMContract.GetCCWInterfaces(startCCW);
 

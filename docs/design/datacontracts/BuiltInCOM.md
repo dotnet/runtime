@@ -8,10 +8,11 @@ This contract is for getting information related to built-in COM.
 public ulong GetRefCount(TargetPointer ccw);
 // Check whether the COM wrappers handle is weak.
 public bool IsHandleWeak(TargetPointer ccw);
-// Resolves a COM interface pointer (or direct CCW pointer) to the start ComCallWrapper.
-// Returns TargetPointer.Null if the address cannot be resolved.
+// Resolves a COM interface pointer to the start ComCallWrapper.
+// Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
 public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer);
-// Enumerate the COM interfaces exposed by the given start ComCallWrapper.
+// Enumerate the COM interfaces exposed by the ComCallWrapper chain.
+// ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
 public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw);
 ```
 
@@ -106,12 +107,14 @@ public bool IsHandleWeak(TargetPointer address)
 }
 
 // Mirrors ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
-// Resolves a COM IP or direct CCW pointer to the start ComCallWrapper.
+// Resolves a COM interface pointer to the start ComCallWrapper.
+// Returns TargetPointer.Null if interfacePointer is not a recognised COM IP.
 public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer) { ... }
 
 public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
 {
-    // Walk the linked list of ComCallWrapper nodes starting at ccw.
+    // Navigate to the start of the linked chain (ccw may be any wrapper in the chain).
+    // Walk the linked list of ComCallWrapper nodes starting at the start wrapper.
     // For each node, iterate the IPtrs[] slots:
     //   - skip null slots
     //   - skip slots where ComMethodTable.Flags does not have LayoutComplete set
