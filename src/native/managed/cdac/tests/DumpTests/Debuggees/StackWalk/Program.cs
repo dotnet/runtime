@@ -21,6 +21,8 @@ internal static class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void MethodA(int depth)
     {
+        if (depth < 0)
+            return;
         MethodB();
     }
 
