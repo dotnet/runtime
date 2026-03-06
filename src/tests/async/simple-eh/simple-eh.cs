@@ -14,7 +14,6 @@ using Xunit;
 public class Async2SimpleEH
 {
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124044", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     public static void TestThrowAfterYield()
     {
         Task.Run(AsyncEntry).Wait();
