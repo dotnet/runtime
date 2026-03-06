@@ -1,13 +1,5 @@
 # IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects
 
-include(FetchContent)
-
-FetchContent_Declare(
-    xz
-    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/xz
-    EXCLUDE_FROM_ALL
-)
-
 # turn off multithreading support to lower the binary size
 set(XZ_THREADS no)
 
@@ -35,7 +27,13 @@ set(HAVE_GETOPT_LONG ON)
 
 set(__CURRENT_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF)
-FetchContent_MakeAvailable(xz)
+
+# Use EXCLUDE_FROM_ALL to prevent xz's own install() rules from being
+# included in the build's install step.
+#
+# This can be replaced by using EXCLUDE_FROM_ALL in FetchContent_Declare on CMAKE 3.28+
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/xz/" "${CMAKE_BINARY_DIR}/_deps/xz-build" EXCLUDE_FROM_ALL)
+
 set(BUILD_SHARED_LIBS ${__CURRENT_BUILD_SHARED_LIBS})
 
 set(LZMA_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR}/xz/src/liblzma/api)
