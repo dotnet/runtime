@@ -7021,6 +7021,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (IsReadyToRun())
                 {
+                    // jmp is not supported on ReadyToRun
+                    // The call to the delayload method would not be properly set up to put the indirection cell address
+                    // in the correct register. See https://github.com/dotnet/runtime/issues/125252
                     implReadyToRunUnsupported();
                 }
 
