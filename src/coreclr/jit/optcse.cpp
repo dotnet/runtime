@@ -4867,9 +4867,6 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     lclDsc->lvIsCSE = true;
 
     // Propagate IsNeverNegative from the CSE expression to the temp.
-    // This is needed e.g. for Span.Length loads where morph normalized an unsigned comparison
-    // to signed (because both operands are non-negative), but the range check phase needs to
-    // know the index is non-negative to eliminate bounds checks.
     if (varTypeIsIntegral(cseLclVarTyp) && successfulCandidate->Expr()->IsNeverNegative(m_compiler))
     {
         lclDsc->SetIsNeverNegative(true);
