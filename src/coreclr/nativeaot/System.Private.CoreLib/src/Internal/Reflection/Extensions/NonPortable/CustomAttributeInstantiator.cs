@@ -103,9 +103,15 @@ namespace Internal.Reflection.Extensions.NonPortable
                 }
                 else
                 {
+                    Type argumentType = namedArgument.TypedValue.ArgumentType;
                     for (; ; )
                     {
-                        PropertyInfo? propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                        // Use type-qualified lookup to avoid AmbiguousMatchException
+                        // when a derived class covariant-overrides the property
+                        PropertyInfo? propertyInfo = argumentType != null
+                            ? walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly, 
+                                               binder: null, returnType: argumentType, types: [], modifiers: null)
+                            : walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
                         if (propertyInfo is not null)
                         {
