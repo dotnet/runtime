@@ -12,6 +12,7 @@
 #include "simdhash.h"
 #include "intrinsics.h"
 #include "interpalloc.h"
+#include "interpmethoddata.h"
 
 struct InterpException
 {
@@ -26,21 +27,6 @@ struct InterpException
 
 class InterpreterStackMap;
 class InterpCompiler;
-
-// MemPoolAllocator provides an allocator interface for use with TArray and other
-// data structures. It wraps the InterpCompiler's arena allocator with a specific
-// memory kind for statistics tracking.
-class MemPoolAllocator
-{
-    InterpCompiler* const m_compiler;
-    InterpMemKind m_memKind;
-public:
-    MemPoolAllocator(InterpCompiler* compiler, InterpMemKind memKind)
-        : m_compiler(compiler), m_memKind(memKind) {}
-    void* Alloc(size_t sz) const;
-    void Free(void* ptr) const;
-    InterpMemKind getMemKind() const { return m_memKind; }
-};
 
 class InterpDataItemIndexMap
 {
@@ -625,6 +611,9 @@ private:
     // All memory allocated via AllocMemPool is freed when the compiler is destroyed.
     InterpArenaAllocator *m_arenaAllocator;
 
+    // Builder for the unified method data allocation
+    InterpMethodDataBuilder m_methodDataBuilder;
+
     CORINFO_METHOD_HANDLE m_methodHnd;
     CORINFO_MODULE_HANDLE m_compScopeHnd;
     COMP_HANDLE m_compHnd;
@@ -706,6 +695,20 @@ private:
     TArray<void*, MemPoolAllocator> m_dataItems;
 
     TArray<InterpAsyncSuspendData*, MemPoolAllocator> m_asyncSuspendDataItems;
+
+    // Tracks which data items contain pointers to async suspend data
+    // First = data item index, Second = index into m_asyncSuspendDataItems
+    struct DataItemAsyncSuspendRef
+    {
+        int32_t dataItemIndex;
+        int32_t asyncSuspendDataIndex;
+    };
+    TArray<DataItemAsyncSuspendRef, MemPoolAllocator> m_dataItemAsyncSuspendRefs;
+
+    // Prepared InterpMethod data (stored temporarily until finalization)
+    bool m_initLocals;
+    bool m_unmanagedCallersOnly;
+    bool m_publishSecretStubParam;
 
     InterpDataItemIndexMap m_genericLookupToDataItemIndex;
     int32_t GetDataItemIndex(void* data)
@@ -811,7 +814,7 @@ public:
     InterpAllocator getAllocatorInstruction() { return getAllocator(IMK_Instruction); }
 
     // Legacy allocation methods - use getAllocator() for new code
-    MemPoolAllocator GetMemPoolAllocator(InterpMemKind imk) { return MemPoolAllocator(this, imk); }
+    MemPoolAllocator GetMemPoolAllocator(InterpMemKind imk) { return MemPoolAllocator(getAllocator(imk)); }
 
 private:
     // Instructions
@@ -1035,7 +1038,8 @@ private:
     int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*, MemPoolAllocator> *relocs);
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*, MemPoolAllocator> *relocs);
     void PatchRelocations(TArray<Reloc*, MemPoolAllocator> *relocs);
-    InterpMethod* CreateInterpMethod();
+    void PrepareInterpMethod();
+
     void CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
     void InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
     void CreateLeaveChainIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB);
@@ -1081,11 +1085,24 @@ public:
     InterpCompiler(COMP_HANDLE compHnd, CORINFO_METHOD_INFO* methodInfo, InterpreterRetryData *pretryData, InterpArenaAllocator *arenaAllocator);
     ~InterpCompiler();
 
-    InterpMethod* CompileMethod();
+    // Compile the method. Returns true on success, false if retry is needed.
+    bool CompileMethod();
+
+    // Get the total size needed for the unified method data allocation.
+    // Must be called after CompileMethod() succeeds.
+    uint32_t GetTotalAllocationSize();
+
+    // Finalize the method data into the provided allocation.
+    // baseAddressRW is the writable address, baseAddressRX is the executable address.
+    // Returns the InterpMethod pointer within the allocation.
+    InterpMethod* FinalizeMethodData(void* baseAddressRW, void* baseAddressRX);
+
     void BuildGCInfo(InterpMethod *pInterpMethod);
     void BuildEHInfo();
-    void UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *pByteCodeStart);
     void dumpMethodMemStats();
+
+    // Get the method data builder for additional customization
+    InterpMethodDataBuilder& GetMethodDataBuilder() { return m_methodDataBuilder; }
 
     int32_t* GetCode(int32_t *pCodeSize);
 
