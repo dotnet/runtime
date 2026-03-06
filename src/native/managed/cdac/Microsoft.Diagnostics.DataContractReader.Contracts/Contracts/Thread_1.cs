@@ -54,15 +54,15 @@ internal readonly struct Thread_1 : IThread
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
 
-        TargetPointer address = _target.ReadPointer(thread.ExceptionTracker);
         TargetPointer firstNestedException = TargetPointer.Null;
-        if (address != TargetPointer.Null)
+        if (thread.ExceptionTracker != TargetPointer.Null)
         {
-            Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(address);
+            Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(thread.ExceptionTracker);
             firstNestedException = exceptionInfo.PreviousNestedInfo;
         }
 
         return new ThreadData(
+            threadPointer,
             thread.Id,
             thread.OSId,
             (ThreadState)thread.State,

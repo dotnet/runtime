@@ -34,6 +34,12 @@ public sealed class RegisterAttribute : Attribute
     /// </summary>
     public RegisterType RegisterType { get; }
 
+    /// <summary>
+    /// Gets or sets the ISA register number (processor encoding).
+    /// -1 indicates no register number is assigned (e.g., segment registers, debug registers).
+    /// </summary>
+    public int RegisterNumber { get; set; } = -1;
+
     public RegisterAttribute(RegisterType registerType)
     {
         RegisterType = registerType;

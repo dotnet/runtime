@@ -74,18 +74,30 @@ This contract depends on the following descriptors:
 | `CalleeSavedRegisters` | For each callee saved register `r`, `r` | Register names associated with stored register values |
 | `TailCallFrame` (x86 Windows) | `CalleeSavedRegisters` | CalleeSavedRegisters data structure |
 | `TailCallFrame` (x86 Windows) | `ReturnAddress` | Frame's stored instruction pointer |
+| `ExceptionInfo` | `ExceptionFlags` | Bit flags from `ExceptionFlags` class (`exstatecommon.h`). Used for GC reference reporting during stack walks with funclet handling. |
+| `ExceptionInfo` | `StackLowBound` | Low bound of the stack range unwound by this exception |
+| `ExceptionInfo` | `StackHighBound` | High bound of the stack range unwound by this exception |
+| `ExceptionInfo` | `CSFEHClause` | Caller stack frame of the current EH clause |
+| `ExceptionInfo` | `CSFEnclosingClause` | Caller stack frame of the enclosing clause |
+| `ExceptionInfo` | `CallerOfActualHandlerFrame` | Stack frame of the caller of the catch handler |
+| `ExceptionInfo` | `PreviousNestedInfo` | Pointer to previous nested ExInfo |
+| `ExceptionInfo` | `PassNumber` | Exception handling pass (1 or 2) |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | For each FrameType `<frameType>`, `<frameType>##Identifier` | `FrameIdentifier` enum value | Identifier used to determine concrete type of Frames |
 
+Constants used:
+| Source | Name | Value | Purpose |
+| --- | --- | --- | --- |
+| `ExceptionFlags` (`exstatecommon.h`) | `Ex_UnwindHasStarted` | `0x00000004` | Bit flag in `ExceptionInfo.ExceptionFlags` indicating exception unwinding (2nd pass) has started. Used by `IsInStackRegionUnwoundBySpecifiedException` to skip ExInfo trackers still in the 1st pass. |
+
 Contracts used:
 | Contract Name |
 | --- |
 | `ExecutionManager` |
 | `Thread` |
-| `RuntimeTypeSystem` |
 
 
 ### Stackwalk Algorithm
@@ -360,21 +372,11 @@ string GetFrameName(TargetPointer frameIdentifier);
 TargetPointer GetMethodDescPtr(TargetPointer framePtr)
 ```
 
-`GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)` returns the method desc pointer associated with a `IStackDataFrameHandle`. Note there are two major differences between this API and the one above that operates on a TargetPointer.
-* This API can either be at a capital 'F' frame or a managed frame unlike the TargetPointer overload which only works at capital 'F' frames.
-* This API handles the special ReportInteropMD case which happens under the following conditions
-    1. The dataFrame is at an `InlinedCallFrame`
-    2. The dataFrame is in a `SW_SKIPPED_FRAME` state
-    3. The InlinedCallFrame's return address is managed code
-    4. The InlinedCallFrame's return address method has a MDContext arg
-
-  In this case, we report the actual interop MethodDesc. A pointer to the MethodDesc immediately follows the InlinedCallFrame in memory.
-This API is implemeted as follows:
-1. Try to get the current frame address `framePtr` with `GetFrameAddress`.
-2. If the address is not null, compute `reportInteropMD` as listed above. Otherwise skip to step 5.
-3. If `reportInteropMD`, dereference the pointer immediately following the InlinedCallFrame and return that value.
-4. If `!reportIteropMD`, return `GetMethodDescPtr(framePtr)`.
-5. Check if the current context IP is a managed context using the ExecutionManager contract. If it is a managed context, use the ExecutionManager context to find the related MethodDesc and return the pointer to it.
+`GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)` returns the method desc pointer associated with a `IStackDataFrameHandle`. Note this can either be at a capital 'F' frame or a managed frame unlike the above API which works only at capital 'F' frames.
+This API is implemented as follows:
+1. Try to get the current frame address with `GetFrameAddress`. If the address is not null, return `GetMethodDescPtr(<frameAddress>)`.
+   - Special case: For `InlinedCallFrame` at a `SW_SKIPPED_FRAME` position, if the frame's MethodDesc is an IL stub (`DynamicMethodDesc`), report the interop target MethodDesc instead. This ensures P/Invoke transitions show the target method rather than the internal stub.
+2. Check if the current context IP is a managed context using the ExecutionManager contract. If it is a managed context, use the ExecutionManager contract to find the related MethodDesc and return the pointer to it.
 ```csharp
 TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle)
 ```
