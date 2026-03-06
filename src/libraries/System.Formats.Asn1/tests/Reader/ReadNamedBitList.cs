@@ -37,6 +37,7 @@ namespace System.Formats.Asn1.Tests.Reader
             ReadOnlyMemory<byte> data,
             AsnEncodingRules ruleSet,
             AsnReaderOptions options = default);
+
         [Flags]
         public enum X509KeyUsageCSharpStyle
         {

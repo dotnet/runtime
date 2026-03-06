@@ -38,6 +38,7 @@ namespace System.Formats.Asn1.Tests.Reader
             ReadOnlyMemory<byte> data,
             AsnEncodingRules ruleSet,
             AsnReaderOptions options = default);
+
         public static IEnumerable<object[]> ValidEncodingData { get; } =
             new object[][]
             {

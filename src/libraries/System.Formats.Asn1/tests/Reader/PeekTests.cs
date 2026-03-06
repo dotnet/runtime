@@ -36,6 +36,7 @@ namespace System.Formats.Asn1.Tests.Reader
             ReadOnlyMemory<byte> data,
             AsnEncodingRules ruleSet,
             AsnReaderOptions options = default);
+
         [Fact]
         public void ReaderPeekTag_Valid()
         {
