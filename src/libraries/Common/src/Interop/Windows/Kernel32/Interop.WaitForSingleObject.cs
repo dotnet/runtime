@@ -10,8 +10,5 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static partial int WaitForSingleObject(SafeWaitHandle handle, int timeout);
-
-        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial int WaitForSingleObject(SafeHandle handle, int timeout);
     }
 }

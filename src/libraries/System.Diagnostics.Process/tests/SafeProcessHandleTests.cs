@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -324,51 +326,9 @@ namespace System.Diagnostics.Tests
             Assert.True(started.TryWaitForExit(TimeSpan.FromMilliseconds(300), out _));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [InlineData(PosixSignal.SIGINT)]
-        [InlineData(PosixSignal.SIGQUIT)]
-        public void Signal_TerminatesProcessInNewProcessGroup(PosixSignal signal)
-        {
-            // When a process is created with CREATE_NEW_PROCESS_GROUP specified, an implicit call to SetConsoleCtrlHandler(NULL,TRUE) is made.
-            // We need to re-enable the handler inside the child process.
-            // Since RemoteExecutor doesn't support SafeProcessHandle APIs yet, we use PowerShell.
-
-            const string script = """
-                Add-Type -TypeDefinition @"
-                using System;
-                using System.Runtime.InteropServices;
-
-                public class Kernel32 {
-                    [DllImport("kernel32.dll", SetLastError = true)]
-                    public static extern bool SetConsoleCtrlHandler(IntPtr handlerRoutine, bool add);
-                }
-                "@
-
-                [Kernel32]::SetConsoleCtrlHandler([IntPtr]::Zero, $false)
-                Start-Sleep -Seconds 5
-                """;
-
-            ProcessStartOptions options = OperatingSystem.IsWindows()
-                ? new("powershell.exe") { Arguments = { "-NoProfile", "-Command", script } }
-                : CreateTenSecondSleep();
-
-            options.CreateNewProcessGroup = true;
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
-
-            bool hasExited = processHandle.TryWaitForExit(TimeSpan.FromMilliseconds(200), out _); // let PWS start and set up the handler
-            Assert.False(hasExited, "Process should still be running before signal is sent");
-
-            processHandle.Signal(signal);
-
-            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(3000));
-
-            Assert.NotEqual(0, exitStatus.ExitCode);
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void Signal_UnsupportedSignal_ThrowsArgumentException()
+        public void Signal_UnsupportedSignal_ThrowsPlatformNotSupportedException()
         {
             ProcessStartOptions options = CreateTenSecondSleep();
             options.CreateNewProcessGroup = true;
@@ -377,7 +337,7 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                Assert.Throws<ArgumentException>(() => processHandle.Signal(PosixSignal.SIGTERM));
+                Assert.Throws<PlatformNotSupportedException>(() => processHandle.Signal(PosixSignal.SIGTERM));
             }
             finally
             {
@@ -450,6 +410,102 @@ namespace System.Diagnostics.Tests
             Task finishedTask = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromMilliseconds(300))); // give some time for the pipe to be closed
             Assert.Equal(createNewProcessGroup, finishedTask == readTask);
             Assert.Equal(createNewProcessGroup, readTask.IsCompleted);
+        }
+
+        [ConditionalTheory]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task InheritedHandles_DontLeak_ToNextSpawnedProcess(bool ownsHandle, bool spawnSecondProcessUsingOldApi)
+        {
+            ProcessStartOptions options = CreateTenSecondSleep();
+
+            using AnonymousPipeServerStream server = new(PipeDirection.In);
+            // Important: the handle should not leak no matter if it's owned (and can be disposed) or not.
+            using SafeFileHandle handleToInherit = new(server.ClientSafePipeHandle.DangerousGetHandle(), ownsHandle);
+            options.InheritedHandles.Add(handleToInherit);
+
+            using SafeProcessHandle firstProcessHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+
+            // The first process may need to make handleToInherit inheritable for the time of spawning the process.
+            // When it exits, the handle should not be inheritable anymore.
+
+            using SafeProcessHandle? secondHandle = spawnSecondProcessUsingOldApi
+                ? null
+                : SafeProcessHandle.Start(CreateTenSecondSleep(), input: null, output: null, error: null);
+
+            using Process? secondProcess = spawnSecondProcessUsingOldApi
+                ? Process.Start(ToProcessStartInfo(CreateTenSecondSleep()))
+                : null;
+
+            try
+            {
+                // close the parent copy
+                server.ClientSafePipeHandle.Dispose();
+                handleToInherit.Dispose();
+
+                // The pipe is currently opened by the child process.
+                Task<int> readTask = server.ReadAsync(new byte[1], 0, 1);
+                Task finishedTask = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromMilliseconds(300)));
+                Assert.NotSame(finishedTask, readTask);
+
+                firstProcessHandle.Kill();
+                await firstProcessHandle.WaitForExitAsync();
+
+                // If process handle was not inherited by the second process,
+                // the handle to the pipe was closed and EOF was reported.
+                finishedTask = await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromMilliseconds(300))); // give some time for the pipe to be closed
+                Assert.Same(finishedTask, readTask);
+                Assert.Equal(0, await readTask);
+            }
+            finally
+            {
+                secondHandle?.Kill();
+                secondProcess?.Kill();
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task KillProcessGroup_Kills_EntireProcessTree_OnWindows(bool createNewProcessGroupForGrandChild)
+        {
+            // We use RemoteExecutor to build for us the file name and arguments, so we can run it using the SafeProcessHandle API.
+            ProcessStartOptions options = MapToRemoteExecutorStartOptions(
+                static (enabledStr) =>
+                {
+                    ProcessStartOptions processStartOptions = CreateTenSecondSleep();
+                    processStartOptions.CreateNewProcessGroup = bool.Parse(enabledStr);
+
+                    using SafeProcessHandle started = SafeProcessHandle.Start(processStartOptions, input: null, output: null, error: null);
+                    Console.WriteLine(started.ProcessId);
+
+                    // This will block the child until parent kills it.
+                    Thread.Sleep(TimeSpan.FromHours(8));
+                    return 0;
+                },
+                arg: createNewProcessGroupForGrandChild.ToString());
+
+            options.CreateNewProcessGroup = true; // the child needs to have CreateNewProcessGroup enabled
+
+            using IDisposable server = CreateAnonymousPipe(out SafeFileHandle outputRead, out SafeFileHandle outputWrite);
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: outputWrite, error: Console.OpenStandardErrorHandle());
+            outputWrite.Dispose();
+
+            using StreamReader reader = new(new FileStream(outputRead, FileAccess.Read));
+            string? line = await reader.ReadLineAsync();
+            Assert.NotNull(line);
+            int grandChildPid = int.Parse(line);
+
+            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.Zero);
+            Assert.True(exitStatus.Canceled);
+
+            // On Windows CreateNewProcessGroup creates a new Job that gets derived by all child processes,
+            // even if they start their own group. When the parent job is terminated, entire process tree gets killed.
+            // On Unix CreateNewProcessGroup creates a new Process Group that gets derived by all child processes,
+            // unless they start their own group. When the parent group is killed, child process groups remain alive.
+            VerifyProcessIsRunning(shouldExited: OperatingSystem.IsWindows() || !createNewProcessGroupForGrandChild, grandChildPid);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -555,6 +611,72 @@ namespace System.Diagnostics.Tests
             catch (Win32Exception) when (shouldExited)
             {
             }
+        }
+
+        private static ProcessStartInfo ToProcessStartInfo(ProcessStartOptions options)
+        {
+            ProcessStartInfo info = new(options.FileName);
+            foreach (string argument in options.Arguments)
+            {
+                info.ArgumentList.Add(argument);
+            }
+
+            // Redirect STD OUT so the started process does not pollute test run output.
+            info.RedirectStandardOutput = true;
+
+            return info;
+        }
+
+        private static ProcessStartOptions MapToRemoteExecutorStartOptions(Func<string, int> method, string arg)
+        {
+            RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false, Start = false };
+            _ = RemoteExecutor.Invoke(method, arg: arg, remoteInvokeOptions);
+
+            ProcessStartOptions options = new(remoteInvokeOptions.StartInfo.FileName);
+            StringBuilder argumentBuilder = new();
+            bool isQuoted = false;
+
+            foreach (char c in remoteInvokeOptions.StartInfo.Arguments)
+            {
+                switch (c)
+                {
+                    case '"' when !isQuoted:
+                        isQuoted = true;
+                        break;
+
+                    case ' ' when !isQuoted:
+                    case '"' when isQuoted:
+                        if (argumentBuilder.Length > 0)
+                        {
+                            options.Arguments.Add(argumentBuilder.ToString());
+                            argumentBuilder.Clear();
+                        }
+                        isQuoted = false;
+                        break;
+
+                    default:
+                        argumentBuilder.Append(c);
+                        break;
+                }
+            }
+
+            if (argumentBuilder.Length > 0)
+            {
+                options.Arguments.Add(argumentBuilder.ToString());
+                argumentBuilder.Clear();
+            }
+
+            return options;
+        }
+
+        private static IDisposable CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle)
+        {
+            AnonymousPipeServerStream server = new(PipeDirection.Out);
+
+            writeHandle = new(server.SafePipeHandle.DangerousGetHandle(), ownsHandle: true);
+            readHandle = new(server.ClientSafePipeHandle.DangerousGetHandle(), ownsHandle: true);
+
+            return server;
         }
     }
 }

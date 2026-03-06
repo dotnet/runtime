@@ -72,9 +72,16 @@ namespace Microsoft.Win32.SafeHandles
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="processId"/> is negative or zero.</exception>
         /// <exception cref="Win32Exception">Thrown when the process could not be opened.</exception>
         /// <remarks>
+        /// <para>
         /// On Windows, this method uses OpenProcess with PROCESS_QUERY_LIMITED_INFORMATION, SYNCHRONIZE, and PROCESS_TERMINATE permissions.
+        /// </para>
+        /// <para>
         /// On Linux with pidfd support, this method uses the pidfd_open syscall.
+        /// </para>
+        /// <para>
         /// On other Unix systems, this method uses kill(pid, 0) to verify the process exists and the caller has permission to signal it.
+        /// The returned handle is prone to process ID reuse issues in this case.
+        /// </para>
         /// </remarks>
         public static SafeProcessHandle Open(int processId)
         {
@@ -270,21 +277,26 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         /// <param name="signal">The signal to send.</param>
         /// <exception cref="InvalidOperationException">Thrown when the handle is invalid.</exception>
-        /// <exception cref="ArgumentException">Thrown when the signal is not supported on the current platform.</exception>
+        /// <exception cref="PlatformNotSupportedException ">Thrown when the signal is not supported on the current platform.</exception>
         /// <exception cref="Win32Exception">Thrown when the signal operation fails.</exception>
         /// <remarks>
         /// <para>
-        /// On Windows, signals can only be sent to processes that have a console attached
-        /// and were started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> set to <see langword="true"/>.
-        /// The following signal mappings are used:
+        /// On Unix, all signals defined in PosixSignal are supported. Raw values can be provided for signal by casting them to PosixSignal.
         /// </para>
+        /// <para>
+        /// On Windows, this API provides best-effort simulation of Unix signals.
+        /// <see cref="PosixSignal.SIGINT"/> and <see cref="PosixSignal.SIGQUIT"/> can only be sent to a process
+        /// that is a root process of a process group, for example started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> or <see cref="ProcessStartInfo.CreateNewProcessGroup"/> options.
+        /// All processes in the group that share the same console as the process group root process receive the signal.
+        /// The following signal mappings are used:
         /// <list type="bullet">
-        /// <item><description><see cref="PosixSignal.SIGINT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_C_EVENT)</c>.</description></item>
+        /// <item><description>
+        /// <see cref="PosixSignal.SIGINT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_C_EVENT)</c>.
+        /// The root process of the process group must <see href="https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw#remarks">re-enable of this handler in order to receinve this signal.</see>
+        /// </description></item>
         /// <item><description><see cref="PosixSignal.SIGQUIT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT)</c>.</description></item>
         /// <item><description><see cref="PosixSignal.SIGKILL"/> is mapped to <see cref="Kill"/>.</description></item>
         /// </list>
-        /// <para>
-        /// On Unix/Linux, all signals defined in PosixSignal and raw signal numbers are supported.
         /// </para>
         /// </remarks>
         public void Signal(PosixSignal signal)
@@ -299,21 +311,26 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         /// <param name="signal">The signal to send.</param>
         /// <exception cref="InvalidOperationException">Thrown when the handle is invalid.</exception>
-        /// <exception cref="ArgumentException">Thrown when the signal is not supported on the current platform.</exception>
+        /// <exception cref="PlatformNotSupportedException ">Thrown when the signal is not supported on the current platform.</exception>
         /// <exception cref="Win32Exception">Thrown when the signal operation fails.</exception>
         /// <remarks>
         /// <para>
-        /// On Windows, signals can only be sent to processes that have a console attached
-        /// and were started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> set to <see langword="true"/>.
-        /// The following signal mappings are used:
+        /// On Unix, all signals defined in PosixSignal are supported. Raw values can be provided for signal by casting them to PosixSignal.
         /// </para>
-        /// <list type="bullet">
-        /// <item><description><see cref="PosixSignal.SIGINT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_C_EVENT)</c>.</description></item>
-        /// <item><description><see cref="PosixSignal.SIGQUIT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT)</c>.</description></item>
-        /// <item><description><see cref="PosixSignal.SIGKILL"/> is mapped to <see cref="KillProcessGroup"/>.</description></item>
-        /// </list>
         /// <para>
-        /// On Unix/Linux, all signals defined in PosixSignal and raw signal numbers are supported.
+        /// On Windows, this API provides best-effort simulation of Unix signals.
+        /// <see cref="PosixSignal.SIGINT"/> and <see cref="PosixSignal.SIGQUIT"/> can only be sent to a process
+        /// that is a root process of a process group, for example started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/> or <see cref="ProcessStartInfo.CreateNewProcessGroup"/> options.
+        /// All processes in the group that share the same console as the process group root process receive the signal.
+        /// The following signal mappings are used:
+        /// <list type="bullet">
+        /// <item><description>
+        /// <see cref="PosixSignal.SIGINT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_C_EVENT)</c>.
+        /// The root process of the process group must <see href="https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw#remarks">re-enable of this handler in order to receinve this signal.</see>
+        /// </description></item>
+        /// <item><description><see cref="PosixSignal.SIGQUIT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT)</c>.</description></item>
+        /// <item><description><see cref="PosixSignal.SIGKILL"/> is mapped to <see cref="Kill"/>.</description></item>
+        /// </list>
         /// </para>
         /// </remarks>
         public void SignalProcessGroup(PosixSignal signal)

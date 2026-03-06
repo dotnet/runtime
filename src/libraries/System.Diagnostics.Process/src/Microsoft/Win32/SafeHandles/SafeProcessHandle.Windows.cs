@@ -41,24 +41,19 @@ namespace Microsoft.Win32.SafeHandles
 
         private static unsafe SafeJobHandle CreateKillOnParentExitJob()
         {
-            SafeJobHandle jobHandle = Interop.Kernel32.CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
-            if (jobHandle.IsInvalid)
-            {
-                jobHandle.Dispose();
-                throw new Win32Exception();
-            }
-
             Interop.Kernel32.JOBOBJECT_EXTENDED_LIMIT_INFORMATION limitInfo = default;
             limitInfo.BasicLimitInformation.LimitFlags = Interop.Kernel32.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
 
-            if (!Interop.Kernel32.SetInformationJobObject(
+            SafeJobHandle jobHandle = Interop.Kernel32.CreateJobObjectW(IntPtr.Zero, IntPtr.Zero);
+            if (jobHandle.IsInvalid || !Interop.Kernel32.SetInformationJobObject(
                 jobHandle,
                 Interop.Kernel32.JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation,
                 ref limitInfo,
                 (uint)sizeof(Interop.Kernel32.JOBOBJECT_EXTENDED_LIMIT_INFORMATION)))
             {
+                int error = Marshal.GetLastPInvokeError();
                 jobHandle.Dispose();
-                throw new Win32Exception();
+                throw new Win32Exception(error);
             }
 
             return jobHandle;
@@ -304,10 +299,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 if (handlesToRelease is not null)
                 {
-                    foreach (SafeHandle? safeHandle in handlesToRelease)
-                    {
-                        safeHandle?.DangerousRelease();
-                    }
+                    CleanupHandles(handlesToRelease);
                 }
             }
 
@@ -363,27 +355,42 @@ namespace Microsoft.Win32.SafeHandles
 
                     if (!isDuplicate)
                     {
-                        if (!Interop.Kernel32.GetHandleInformation(handle, out int flags))
+                        if (!Interop.Kernel32.SetHandleInformation(
+                            handle,
+                            Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
+                            Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT))
                         {
                             throw new Win32Exception();
                         }
 
-                        if ((flags & Interop.Kernel32.HandleOptions.HANDLE_FLAG_INHERIT) == 0)
-                        {
-                            if (!Interop.Kernel32.SetHandleInformation(
-                                handle,
-                                Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
-                                Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT))
-                            {
-                                throw new Win32Exception();
-                            }
-                        }
-
-                        bool addedRef = false;
-                        handle.DangerousAddRef(ref addedRef);
+                        bool ignore = false;
+                        handle.DangerousAddRef(ref ignore);
                         handlesToRelease[handleIndex++] = handle;
                         handlesToInherit[handleCount++] = handlePtr;
                     }
+                }
+            }
+        }
+
+        private static void CleanupHandles(SafeHandle?[] handlesToRelease)
+        {
+            foreach (SafeHandle? safeHandle in handlesToRelease)
+            {
+                if (safeHandle is null)
+                {
+                    break;
+                }
+
+                safeHandle.DangerousRelease();
+
+                // Remove the inheritance flag for any provided handles,
+                // so they are not unintentionally inherited by child processes started after this point.
+                if (!Interop.Kernel32.SetHandleInformation(
+                    safeHandle,
+                    Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT,
+                    0)) // dwFlags: 0 = clear HANDLE_FLAG_INHERIT
+                {
+                    throw new Win32Exception();
                 }
             }
         }
@@ -392,15 +399,16 @@ namespace Microsoft.Win32.SafeHandles
 
         private ProcessExitStatus WaitForExitCore()
         {
-            Interop.Kernel32.WaitForSingleObject(this, Timeout.Infinite);
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            processWaitHandle.WaitOne(Timeout.Infinite);
 
             return new ProcessExitStatus(GetExitCode(), false);
         }
 
         private bool TryWaitForExitCore(int milliseconds, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
         {
-            int result = Interop.Kernel32.WaitForSingleObject(this, milliseconds);
-            if (result == Interop.Kernel32.WAIT_TIMEOUT)
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            if (!processWaitHandle.WaitOne(milliseconds))
             {
                 exitStatus = null;
                 return false;
@@ -413,11 +421,11 @@ namespace Microsoft.Win32.SafeHandles
         private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
         {
             bool wasKilledOnTimeout = false;
-            int result = Interop.Kernel32.WaitForSingleObject(this, milliseconds);
-            if (result == Interop.Kernel32.WAIT_TIMEOUT)
+            using Interop.Kernel32.ProcessWaitHandle processWaitHandle = new(this);
+            if (!processWaitHandle.WaitOne(milliseconds))
             {
                 wasKilledOnTimeout = KillCore(throwOnError: false, entireProcessGroup: _processGroupJobHandle is not null);
-                Interop.Kernel32.WaitForSingleObject(this, Timeout.Infinite);
+                processWaitHandle.WaitOne(Timeout.Infinite);
             }
 
             return new ProcessExitStatus(GetExitCode(), wasKilledOnTimeout);
@@ -560,7 +568,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 PosixSignal.SIGINT => Interop.Kernel32.CTRL_C_EVENT,
                 PosixSignal.SIGQUIT => Interop.Kernel32.CTRL_BREAK_EVENT,
-                _ => throw new ArgumentException(SR.Format(SR.SignalNotSupportedOnWindows, signal), nameof(signal))
+                _ => throw new PlatformNotSupportedException(SR.Format(SR.SignalNotSupportedOnWindows, signal))
             };
 
             if (!Interop.Kernel32.GenerateConsoleCtrlEvent(ctrlEvent, ProcessId))
