@@ -47,12 +47,10 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         return (simpleWrapper.Flags & (uint)CCWFlags.IsHandleWeak) != 0;
     }
 
-    // Mirrors ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
+    // See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
     // Handles two cases:
     //   1. Address is a COM IP into a ComCallWrapper          → apply ThisMask to get the CCW
     //   2. Address is a COM IP into a SimpleComCallWrapper    → navigate via vtable + wrapper
-    // After resolving, if the wrapper is linked (not the start), navigate to the start
-    // wrapper via SimpleComCallWrapper.MainWrapper.
     // Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
     public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer)
     {

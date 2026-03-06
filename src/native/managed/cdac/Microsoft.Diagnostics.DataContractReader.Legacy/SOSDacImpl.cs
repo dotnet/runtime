@@ -576,9 +576,12 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetCCWData(ccw, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, DacpCOMInterfacePointerData* interfaces, uint* pNeeded)
+    int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded)
     {
         int hr = HResults.S_OK;
+#if DEBUG
+        int numWritten = 0;
+#endif
         try
         {
             if (ccw == 0 || (interfaces == null && pNeeded == null))
@@ -596,25 +599,36 @@ public sealed unsafe partial class SOSDacImpl
             if (interfaces == null)
             {
                 uint c = (uint)result.Count();
-                *pNeeded = c;
+#if DEBUG
+                numWritten = (int)c;
+#endif
+                if (pNeeded is not null)
+                    *pNeeded = c;
             }
             else
             {
-                NativeMemory.Clear(interfaces, (nuint)(sizeof(DacpCOMInterfacePointerData) * count));
                 uint itemIndex = 0;
                 foreach (Contracts.COMInterfacePointerData item in result)
                 {
                     if (itemIndex >= count)
+                    {
+#if DEBUG
+                        numWritten = (int)itemIndex;
+#endif
                         throw new ArgumentException();
-
+                    }
                     interfaces[itemIndex].methodTable = item.MethodTable.ToClrDataAddress(_target);
                     interfaces[itemIndex].interfacePtr = item.InterfacePointerAddress.ToClrDataAddress(_target);
                     interfaces[itemIndex].comContext = 0;
                     itemIndex++;
                 }
-
+#if DEBUG
+                numWritten = (int)itemIndex;
+#endif
                 if (pNeeded is not null)
+                {
                     *pNeeded = itemIndex;
+                }
             }
         }
         catch (System.Exception ex)
@@ -625,19 +639,15 @@ public sealed unsafe partial class SOSDacImpl
         if (_legacyImpl is not null)
         {
             DacpCOMInterfacePointerData[]? interfacesLocal = count > 0 && interfaces != null ? new DacpCOMInterfacePointerData[(int)count] : null;
-            uint neededLocal = 0;
-            int hrLocal;
-            fixed (DacpCOMInterfacePointerData* interfacesLocalPtr = interfacesLocal)
-            {
-                hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocalPtr, &neededLocal);
-            }
+            uint pNeededLocal = 0;
+            int hrLocal = _legacyImpl.GetCCWInterfaces(ccw, count, interfacesLocal, pNeeded == null && interfacesLocal == null ? null : &pNeededLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
             {
-                Debug.Assert(pNeeded is null || *pNeeded == neededLocal, $"cDAC count: {(pNeeded is null ? "null" : (*pNeeded).ToString())}, DAC count: {neededLocal}");
-                if (interfaces != null)
+                Debug.Assert(pNeeded is null || *pNeeded == pNeededLocal, $"cDAC count: {(pNeeded is null ? "null" : (*pNeeded).ToString())}, DAC count: {pNeededLocal}");
+                if (interfaces != null && interfacesLocal != null)
                 {
-                    for (uint i = 0; i < neededLocal; i++)
+                    for (uint i = 0; i < (int)pNeededLocal; i++)
                     {
                         Debug.Assert(interfaces[i].methodTable == interfacesLocal![i].methodTable, $"cDAC methodTable[{i}]: {interfaces[i].methodTable:x}, DAC: {interfacesLocal[i].methodTable:x}");
                         Debug.Assert(interfaces[i].interfacePtr == interfacesLocal![i].interfacePtr, $"cDAC interfacePtr[{i}]: {interfaces[i].interfacePtr:x}, DAC: {interfacesLocal[i].interfacePtr:x}");
@@ -4126,7 +4136,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, int heaptype, void* pCallback)
         => _legacyImpl is not null ? _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, pCallback) : HResults.E_NOTIMPL;
-    #endregion ISOSDacInterface
+#endregion ISOSDacInterface
 
     #region ISOSDacInterface2
     int ISOSDacInterface2.GetObjectExceptionData(ClrDataAddress objectAddress, DacpExceptionObjectData* data)

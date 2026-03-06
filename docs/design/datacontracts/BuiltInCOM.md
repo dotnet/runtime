@@ -8,7 +8,7 @@ This contract is for getting information related to built-in COM.
 public ulong GetRefCount(TargetPointer ccw);
 // Check whether the COM wrappers handle is weak.
 public bool IsHandleWeak(TargetPointer ccw);
-// Resolves a COM interface pointer to the start ComCallWrapper.
+// Resolves a COM interface pointer to the ComCallWrapper.
 // Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
 public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer);
 // Enumerate the COM interfaces exposed by the ComCallWrapper chain.
@@ -106,8 +106,8 @@ public bool IsHandleWeak(TargetPointer address)
     return (flags & (uint)CCWFlags.IsHandleWeak) != 0;
 }
 
-// Mirrors ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
-// Resolves a COM interface pointer to the start ComCallWrapper.
+// See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
+// Resolves a COM interface pointer to the ComCallWrapper.
 // Returns TargetPointer.Null if interfacePointer is not a recognised COM IP.
 public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer) { ... }
 
@@ -140,7 +140,7 @@ public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPt
         bool isFreeThreaded = (flags & MarshalingTypeMask) == MarshalingTypeFreeThreaded << MarshalingTypeShift;
         TargetPointer ctxCookie = _target.ReadPointer(bucketPtr + /* RCW::CtxCookie offset */);
 
-        // m_pCtxEntry uses bit 0 for synchronization; strip it before dereferencing.
+        // CtxEntry uses bit 0 for synchronization; strip it before dereferencing.
         TargetPointer ctxEntry = _target.ReadPointer(bucketPtr + /* RCW::CtxEntry offset */) & ~(ulong)1;
         TargetPointer staThread = ctxEntry != TargetPointer.Null
             ? _target.ReadPointer(ctxEntry + /* CtxEntry::STAThread offset */)
