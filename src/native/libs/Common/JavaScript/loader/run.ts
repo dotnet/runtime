@@ -8,13 +8,13 @@ import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
-import { fetchDll, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded } from "./assets";
+import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded } from "./assets";
 import { initPolyfills } from "./polyfills";
-import { validateWasmFeatures } from "./bootstrap";
+import { validateEngineFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
-// WASM-TODO: downloadOnly - blazor render mode auto pre-download. Really no start.
+// WASM-TODO: downloadOnly - Blazor render mode auto pre-download. Really no start.
 // WASM-TODO: debugLevel
 
 // many things happen in parallel here, but order matters for performance!
@@ -24,7 +24,7 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
     try {
         runtimeState.creatingRuntime = true;
 
-        await validateWasmFeatures();
+        await validateEngineFeatures();
 
         if (typeof Module.onConfigLoaded === "function") {
             await Module.onConfigLoaded(loaderConfig);
@@ -48,19 +48,19 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         }
         const nativeModulePromise: Promise<JsModuleExports> = loadDotnetModule(loaderConfig.resources.jsModuleNative[0]);
         const runtimeModulePromise: Promise<JsModuleExports> = loadDotnetModule(loaderConfig.resources.jsModuleRuntime[0]);
-        const wasmNativePromise: Promise<Response> = fetchWasm(loaderConfig.resources.wasmNative[0]);
+        const wasmNativePromise: Promise<Response> = fetchMainWasm(loaderConfig.resources.wasmNative[0]);
 
-        const coreAssembliesPromise = Promise.all(loaderConfig.resources.coreAssembly.map(fetchDll));
+        const coreAssembliesPromise = Promise.all(loaderConfig.resources.coreAssembly.map(fetchAssembly));
         const coreVfsPromise = Promise.all((loaderConfig.resources.coreVfs || []).map(fetchVfs));
 
-        const assembliesPromise = Promise.all(loaderConfig.resources.assembly.map(fetchDll));
+        const icuResourceName = getIcuResourceName();
+        const icuDataPromise = icuResourceName ? Promise.all((loaderConfig.resources.icu || []).filter(asset => asset.name === icuResourceName).map(fetchIcu)) : Promise.resolve([]);
+
+        const assembliesPromise = Promise.all(loaderConfig.resources.assembly.map(fetchAssembly));
         const satelliteResourcesPromise = loaderConfig.loadAllSatelliteResources && loaderConfig.resources.satelliteResources
             ? fetchSatelliteAssemblies(Object.keys(loaderConfig.resources.satelliteResources))
             : Promise.resolve();
         const vfsPromise = Promise.all((loaderConfig.resources.vfs || []).map(fetchVfs));
-
-        const icuResourceName = getIcuResourceName();
-        const icuDataPromise = icuResourceName ? Promise.all((loaderConfig.resources.icu || []).filter(asset => asset.name === icuResourceName).map(fetchIcu)) : Promise.resolve([]);
 
         // WASM-TODO: also check that the debugger is linked in and check feature flags
         const isDebuggingSupported = loaderConfig.debugLevel != 0;
@@ -84,13 +84,13 @@ export async function createRuntime(downloadOnly: boolean): Promise<any> {
         await wasmNativePromise; // this is just to propagate errors
         if (!downloadOnly) {
             Module.runtimeKeepalivePush();
-            initializeCoreCLR();
+            await initializeCoreCLR();
         }
 
         await assembliesPromise;
         await satelliteResourcesPromise;
-        await corePDBsPromise;
         await pdbsPromise;
+        await corePDBsPromise;
         await runtimeModuleReady;
 
         verifyAllAssetsDownloaded();
@@ -113,7 +113,7 @@ export function abortStartup(reason: any): void {
     }
 }
 
-function initializeCoreCLR(): void {
+async function initializeCoreCLR(): Promise<void> {
     dotnetAssert.check(!runtimeState.dotnetReady, "CoreCLR should be initialized just once");
     const res = dotnetBrowserHostExports.initializeCoreCLR();
     if (res != 0) {

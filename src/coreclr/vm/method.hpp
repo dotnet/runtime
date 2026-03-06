@@ -1619,6 +1619,10 @@ public:
     void EnsurePortableEntryPoint();
 
     PCODE GetPortableEntryPoint();
+
+    PCODE GetPortableEntryPointIfExists();
+
+    void ResetPortableEntryPoint();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     //*******************************************************************************
@@ -1706,8 +1710,14 @@ public:
                                                                      TypeHandle instType,
                                                                      Instantiation methodInst);
 
+    inline bool HasAsyncOtherVariant() const
+    {
+        return IsAsyncVariantMethod() || ReturnsTaskOrValueTask();
+    }
+
     MethodDesc* GetAsyncOtherVariant(BOOL allowInstParam = TRUE)
     {
+        _ASSERTE(HasAsyncOtherVariant());
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
     }
 

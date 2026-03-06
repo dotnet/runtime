@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics.Colors;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -194,23 +195,45 @@ namespace System.Drawing.Primitives.Tests
         [InlineData(1, 2, 3, 4)]
         public void FromArgb_Roundtrips(int a, int r, int g, int b)
         {
-            Color c1 = Color.FromArgb(unchecked((int)((uint)a << 24 | (uint)r << 16 | (uint)g << 8 | (uint)b)));
-            Assert.Equal(a, c1.A);
-            Assert.Equal(r, c1.R);
-            Assert.Equal(g, c1.G);
-            Assert.Equal(b, c1.B);
+            {
+                Color c = Color.FromArgb(unchecked((int)((uint)a << 24 | (uint)r << 16 | (uint)g << 8 | (uint)b)));
+                Assert.Equal(a, c.A);
+                Assert.Equal(r, c.R);
+                Assert.Equal(g, c.G);
+                Assert.Equal(b, c.B);
+            }
+            {
+                Color c = Color.FromArgb(a, r, g, b);
+                Assert.Equal(a, c.A);
+                Assert.Equal(r, c.R);
+                Assert.Equal(g, c.G);
+                Assert.Equal(b, c.B);
+            }
+            {
 
-            Color c2 = Color.FromArgb(a, r, g, b);
-            Assert.Equal(a, c2.A);
-            Assert.Equal(r, c2.R);
-            Assert.Equal(g, c2.G);
-            Assert.Equal(b, c2.B);
+                Color c = Color.FromArgb(r, g, b);
+                Assert.Equal(255, c.A);
+                Assert.Equal(r, c.R);
+                Assert.Equal(g, c.G);
+                Assert.Equal(b, c.B);
+            }
+            {
 
-            Color c3 = Color.FromArgb(r, g, b);
-            Assert.Equal(255, c3.A);
-            Assert.Equal(r, c3.R);
-            Assert.Equal(g, c3.G);
-            Assert.Equal(b, c3.B);
+                Color c = Color.FromArgb(new Argb<byte>((byte)a, (byte)r, (byte)g, (byte)b));
+                Assert.Equal(a, c.A);
+                Assert.Equal(r, c.R);
+                Assert.Equal(g, c.G);
+                Assert.Equal(b, c.B);
+            }
+            {
+
+                // implicit operator Color(Argb<byte> argb)
+                Color c = new Argb<byte>((byte)a, (byte)r, (byte)g, (byte)b);
+                Assert.Equal(a, c.A);
+                Assert.Equal(r, c.R);
+                Assert.Equal(g, c.G);
+                Assert.Equal(b, c.B);
+            }
         }
 
         [Fact]
@@ -265,6 +288,28 @@ namespace System.Drawing.Primitives.Tests
         public void ToArgb(int argb, int alpha, int red, int green, int blue)
         {
             Assert.Equal(argb, Color.FromArgb(alpha, red, green, blue).ToArgb());
+        }
+
+        [Theory]
+        [InlineData(0x11, 0xcc, 0x88, 0x33)]
+        [InlineData(0xf1, 0xcc, 0x88, 0x33)]
+        public void ToArgbValue(int alpha, int red, int green, int blue)
+        {
+            {
+                var c = Color.FromArgb(alpha, red, green, blue).ToArgbValue();
+                Assert.Equal(alpha, c.A);
+                Assert.Equal(red, c.R);
+                Assert.Equal(green, c.G);
+                Assert.Equal(blue, c.B);
+            }
+            {
+                // explicit operator Argb<byte>(in Color color)
+                Argb<byte> c = (Argb<byte>)Color.FromArgb(alpha, red, green, blue);
+                Assert.Equal(alpha, c.A);
+                Assert.Equal(red, c.R);
+                Assert.Equal(green, c.G);
+                Assert.Equal(blue, c.B);
+            }
         }
 
         [Fact]

@@ -39,9 +39,7 @@ namespace System.Net
             // If it matches the primary domain, it's local (whether or not the hostname matches).
             EnsureNetworkChangeRegistration();
             string local = s_domainName ??= "." + IPGlobalProperties.GetIPGlobalProperties().DomainName;
-            return
-                local.Length == (hostString.Length - dot) &&
-                string.Compare(local, 0, hostString, dot, local.Length, StringComparison.OrdinalIgnoreCase) == 0;
+            return hostString.AsSpan(dot).Equals(local, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>Ensures we've registered with NetworkChange to clear out statically-cached state upon a network change notification.</summary>
