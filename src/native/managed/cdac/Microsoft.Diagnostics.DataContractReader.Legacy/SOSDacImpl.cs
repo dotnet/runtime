@@ -3868,6 +3868,20 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.TraverseEHInfo(ClrDataAddress ip, void* pCallback, void* token)
         => _legacyImpl is not null ? _legacyImpl.TraverseEHInfo(ip, pCallback, token) : HResults.E_NOTIMPL;
+
+#if DEBUG
+    private static List<(ulong VirtualAddress, nuint VirtualSize)> _debugTraverseLoaderHeapBlocks = new();
+    private static uint _debugTraverseLoaderDebugCount;
+
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    private static void TraverseLoaderHeapDebugCallback(ulong virtualAddress, nuint virtualSize, Interop.BOOL _)
+    {
+        List<(ulong VirtualAddress, nuint VirtualSize)> expected = _debugTraverseLoaderHeapBlocks;
+        bool found = expected.Remove((virtualAddress, virtualSize));
+        _debugTraverseLoaderDebugCount++;
+        Debug.Assert(found, $"Unexpected loader heap block: address={virtualAddress:x}, size={virtualSize:x}");
+    }
+#endif
     int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, delegate* unmanaged[Stdcall]<ulong, nuint, Interop.BOOL, void> pCallback)
     {
         int hr = HResults.S_OK;
@@ -4941,19 +4955,6 @@ public sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface13
 
-#if DEBUG
-    private static List<(ulong VirtualAddress, nuint VirtualSize)> _debugTraverseLoaderHeapBlocks = new();
-    private static uint _debugTraverseLoaderDebugCount;
-
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-    private static void TraverseLoaderHeapDebugCallback(ulong virtualAddress, nuint virtualSize, Interop.BOOL _)
-    {
-        List<(ulong VirtualAddress, nuint VirtualSize)> expected = _debugTraverseLoaderHeapBlocks;
-        bool found = expected.Remove((virtualAddress, virtualSize));
-        _debugTraverseLoaderDebugCount++;
-        Debug.Assert(found, $"Unexpected loader heap block: address={virtualAddress:x}, size={virtualSize:x}");
-    }
-#endif
     int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged[Stdcall]<ulong, nuint, Interop.BOOL, void> pCallback)
     {
         int hr = HResults.S_OK;
