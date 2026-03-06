@@ -48,7 +48,7 @@ namespace System.IO.Hashing
         private sealed class Ieee8023ParameterSet : ReflectedCrc32
         {
             // Pre-computed reflection table for the standard CRC-32 polynomial, 0x04C11DB7.
-            // See the GenerateTable method in Crc32ParameterSet.Table.cs
+            // See the GenerateLookupTable method in Crc32ParameterSet.Table.cs
             private static ReadOnlySpan<uint> CrcLookup =>
             [
                 0x0, 0x77073096, 0xEE0E612C, 0x990951BA, 0x76DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
