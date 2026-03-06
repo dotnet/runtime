@@ -41,13 +41,13 @@ Global variables used:
 | --- | --- | --- |
 | `ComRefcountMask` | `long` | Mask applied to `SimpleComCallWrapper.RefCount` to produce the visible refcount |
 | `RCWCleanupList` | `pointer` | Pointer to the global `g_pRCWCleanupList` instance |
+| `RCWInterfaceCacheSize` | `uint32` | Number of entries in the inline interface entry cache (`INTERFACE_ENTRY_CACHE_SIZE`) |
 
 ### Contract Constants:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `MarshalingTypeShift` | `int` | Bit position of `m_MarshalingType` within `RCW::RCWFlags::m_dwFlags` | `7` |
 | `MarshalingTypeFreeThreaded` | `int` | Enum value for marshaling type within `RCW::RCWFlags::m_dwFlags` | `2` |
-| `RCWInterfaceCacheSize` | `uint32` | Number of entries in the inline interface entry cache (`INTERFACE_ENTRY_CACHE_SIZE`) |
 
 Contracts used:
 | Contract Name |
