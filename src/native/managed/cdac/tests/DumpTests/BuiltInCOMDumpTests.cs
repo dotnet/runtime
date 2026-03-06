@@ -9,9 +9,10 @@ using Xunit;
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
 /// <summary>
-/// Dump-based integration tests for the BuiltInCOM contract's GetRCWInterfaces API.
-/// Uses the BuiltInCOM debuggee which creates a COM RCW and populates the
-/// inline interface entry cache before crashing.
+/// Dump-based integration tests for the BuiltInCOM contract.
+/// Uses the BuiltInCOM debuggee, which creates STA-context Shell.Link COM
+/// objects on a thread with eager cleanup disabled so that g_pRCWCleanupList
+/// is populated at crash time, giving TraverseRCWCleanupList real data to walk.
 /// </summary>
 public class BuiltInCOMDumpTests : DumpTestBase
 {
@@ -19,52 +20,28 @@ public class BuiltInCOMDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    [SkipOnOS(IncludeOnly = "windows", Reason = "COM interop (RCW) is only supported on Windows")]
-    public void GetRCWInterfaces_FindsRCWAndEnumeratesInterfaces(TestConfiguration config)
+    [SkipOnOS(IncludeOnly = "windows", Reason = "BuiltInCOM contract is only available on Windows")]
+    public void BuiltInCOM_RCWCleanupList_HasEntries(TestConfiguration config)
     {
         InitializeDumpTest(config);
-        IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
-        IObject objectContract = Target.Contracts.Object;
-        IGC gcContract = Target.Contracts.GC;
+        IBuiltInCOM contract = Target.Contracts.BuiltInCOM;
+        Assert.NotNull(contract);
 
-        Assert.NotNull(builtInCOM);
-        Assert.NotNull(objectContract);
-        Assert.NotNull(gcContract);
+        List<RCWCleanupInfo> items = contract.GetRCWCleanupList(TargetPointer.Null).ToList();
 
-        // Walk all strong GC handles to find objects with COM data (RCWs)
-        List<HandleData> strongHandles = gcContract.GetHandles([HandleType.Strong]);
-        TargetPointer rcwPtr = TargetPointer.Null;
+        // The STA thread created Shell.Link COM objects with eager cleanup disabled,
+        // so the cleanup list must be non-empty.
+        Assert.NotEmpty(items);
 
-        foreach (HandleData handleData in strongHandles)
+        foreach (RCWCleanupInfo info in items)
         {
-            TargetPointer objectAddress = Target.ReadPointer(handleData.Handle);
-            if (objectAddress == TargetPointer.Null)
-                continue;
+            // Every cleanup entry must have a valid RCW address.
+            Assert.NotEqual(TargetPointer.Null, info.RCW);
 
-            if (objectContract.GetBuiltInComData(objectAddress, out TargetPointer rcw, out _)
-                && rcw != TargetPointer.Null)
-            {
-                rcwPtr = rcw;
-                break;
-            }
-        }
-
-        Assert.NotEqual(TargetPointer.Null, rcwPtr);
-
-        // Call GetRCWInterfaces on the found RCW — must not throw
-        List<(TargetPointer MethodTable, TargetPointer Unknown)> interfaces =
-            builtInCOM.GetRCWInterfaces(rcwPtr).ToList();
-
-        // The debuggee performs a QI for ITestInterface, so the entry cache
-        // should have at least one entry (ITestInterface + possibly IUnknown)
-        Assert.True(interfaces.Count >= 1,
-            $"Expected at least one cached interface entry in the RCW, got {interfaces.Count}");
-
-        // Every returned entry must have non-null MethodTable and Unknown pointers
-        foreach ((TargetPointer mt, TargetPointer unk) in interfaces)
-        {
-            Assert.NotEqual(TargetPointer.Null, mt);
-            Assert.NotEqual(TargetPointer.Null, unk);
+            // Shell.Link is an STA-affiliated, non-free-threaded COM object,
+            // so the STA thread pointer must be set and IsFreeThreaded must be false.
+            Assert.False(info.IsFreeThreaded);
+            Assert.NotEqual(TargetPointer.Null, info.STAThread);
         }
     }
 }

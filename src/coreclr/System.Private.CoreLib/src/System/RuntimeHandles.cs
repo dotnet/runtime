@@ -813,6 +813,29 @@ namespace System
             return type!;
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakeFunctionPointer")]
+        private static partial void MakeFunctionPointer(nint* retAndParamTypes, int numArgs, [MarshalAs(UnmanagedType.Bool)] bool isUnmanaged, ObjectHandleOnStack type);
+
+        internal RuntimeType MakeFunctionPointer(Type[] parameterTypes, bool isUnmanaged)
+        {
+            int count = 1 + parameterTypes.Length;
+            nint[] retAndParamTypeHandles = new nint[count];
+
+            retAndParamTypeHandles[0] = GetNativeHandle().Value;
+            for (int i = 0; i < parameterTypes.Length; i++)
+                retAndParamTypeHandles[i + 1] = parameterTypes[i].TypeHandle.Value;
+
+            RuntimeType? type = null;
+            fixed (nint* pRetAndParamTypeHandles = retAndParamTypeHandles)
+            {
+                MakeFunctionPointer(pRetAndParamTypeHandles, parameterTypes.Length, isUnmanaged, ObjectHandleOnStack.Create(ref type));
+            }
+
+            GC.KeepAlive(m_type);
+            GC.KeepAlive(parameterTypes);
+            return type!;
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakePointer")]
         private static partial void MakePointer(QCallTypeHandle handle, ObjectHandleOnStack type);
 
@@ -2253,6 +2276,54 @@ namespace System
             try
             {
                 *ppResult = pResolver->GetStringLiteral(token);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ResolveToken(Resolver* pResolver, int token, IntPtr* pTypeHandle, IntPtr* pMethodHandle, IntPtr* pFieldHandle, Exception* pException)
+        {
+            try
+            {
+                pResolver->ResolveToken(token, out *pTypeHandle, out *pMethodHandle, out *pFieldHandle);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void ResolveSignature(Resolver* pResolver, int token, int fromMethod, byte[]* ppResult, Exception* pException)
+        {
+            try
+            {
+                *ppResult = pResolver->ResolveSignature(token, fromMethod);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void GetEHInfo(Resolver* pResolver, int EHNumber, byte[]* ppRawEHInfo, void* parsedEHInfo, Exception* pException)
+        {
+            try
+            {
+                byte[]? rawEHInfo = pResolver->GetRawEHInfo();
+                if (rawEHInfo != null)
+                {
+                    *ppRawEHInfo = rawEHInfo;
+                }
+                else
+                {
+                    *ppRawEHInfo = null;
+                    pResolver->GetEHInfo(EHNumber, parsedEHInfo);
+                }
             }
             catch (Exception ex)
             {

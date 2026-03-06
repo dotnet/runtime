@@ -690,6 +690,11 @@ private:
     int32_t m_nextCallGenericContextVar;
     int32_t m_nextCallAsyncContinuationVar;
 
+    // If true, the next await should be done as a tail await that just
+    // directly returns the continuation of the call instead of creating a new
+    // suspension point.
+    bool m_nextAwaitIsTail = false;
+
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
     TArray<LeavesTableEntry, MemPoolAllocator> m_leavesTable;
@@ -1021,6 +1026,7 @@ private:
     // Passes
     int32_t* m_pMethodCode;
     int32_t m_methodCodeSize; // code size measured in int32_t slots, instead of bytes
+    int32_t* m_pDebugMethodEnterSeqPointSlot = nullptr; // fixup slot for first seq point offset in INTOP_DEBUG_METHOD_ENTER
 
     void AllocOffsets();
     int32_t ComputeCodeSize();
