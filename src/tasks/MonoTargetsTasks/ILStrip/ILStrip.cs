@@ -74,16 +74,21 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         Log.LogMessage(MessageImportance.High, "IL stripping assemblies");
 
         int allowedParallelism = DisableParallelStripping ? 1 : Math.Min(Assemblies.Length, Environment.ProcessorCount);
+        int coresAcquired = 0;
         IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
-        try
+        if (be9 is not null)
         {
-            if (be9 is not null)
-                allowedParallelism = be9.RequestCores(allowedParallelism);
-        }
-        catch (NotImplementedException)
-        {
-            // RequestCores is not implemented in TaskHostFactory
-            be9 = null;
+            try
+            {
+                coresAcquired = be9.RequestCores(allowedParallelism);
+                if (coresAcquired > 0)
+                    allowedParallelism = coresAcquired;
+            }
+            catch
+            {
+                // RequestCores may not be supported in all host environments
+                coresAcquired = 0;
+            }
         }
 
         try
@@ -113,7 +118,8 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         }
         finally
         {
-            be9?.ReleaseCores(allowedParallelism);
+            if (coresAcquired > 0)
+                be9?.ReleaseCores(coresAcquired);
         }
 
         return !Log.HasLoggedErrors;
