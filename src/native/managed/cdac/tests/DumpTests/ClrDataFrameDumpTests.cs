@@ -163,12 +163,16 @@ public unsafe class ClrDataFrameDumpTests : DumpTestBase
         int hr = appDomain.GetName(0, &nameLen, null);
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.True(nameLen > 1, "Expected non-empty AppDomain name");
+        Assert.True(nameLen <= 1024, "AppDomain name unexpectedly long");
 
-        char* nameBuf = stackalloc char[(int)nameLen];
-        hr = appDomain.GetName(nameLen, &nameLen, nameBuf);
-        Assert.Equal(System.HResults.S_OK, hr);
+        char[] nameBuf = new char[nameLen];
+        fixed (char* nameBufPtr = nameBuf)
+        {
+            hr = appDomain.GetName(nameLen, &nameLen, nameBufPtr);
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
 
-        string name = new string(nameBuf);
+        string name = new string(nameBuf, 0, (int)nameLen - 1);
         Assert.False(string.IsNullOrEmpty(name), "Expected non-empty AppDomain name string");
     }
 

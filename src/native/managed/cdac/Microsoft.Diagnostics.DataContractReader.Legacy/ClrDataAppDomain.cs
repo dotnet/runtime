@@ -65,10 +65,26 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
         if (_legacyImpl is not null)
         {
             uint nameLenLocal;
-            int hrLocal = _legacyImpl.GetName(bufLen, &nameLenLocal, null);
+            char[] legacyNameBuf = new char[bufLen > 0 ? bufLen : 1];
+            int hrLocal;
+            fixed (char* pLegacyName = legacyNameBuf)
+            {
+                hrLocal = _legacyImpl.GetName(bufLen, &nameLenLocal, name is not null ? pLegacyName : null);
+            }
+
             Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0 && nameLen is not null)
-                Debug.Assert(*nameLen == nameLenLocal, $"cDAC: {*nameLen}, DAC: {nameLenLocal}");
+            if (hr >= 0)
+            {
+                if (nameLen is not null)
+                    Debug.Assert(*nameLen == nameLenLocal, $"cDAC: {*nameLen}, DAC: {nameLenLocal}");
+
+                if (name is not null && bufLen > 0)
+                {
+                    string dacName = new string(legacyNameBuf, 0, (int)nameLenLocal - 1);
+                    string cdacName = new string(name);
+                    Debug.Assert(dacName == cdacName, $"cDAC: {cdacName}, DAC: {dacName}");
+                }
+            }
         }
 #endif
 
@@ -91,13 +107,12 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (_legacyImpl is not null && hr >= 0)
         {
             ulong idLocal;
             int hrLocal = _legacyImpl.GetUniqueID(&idLocal);
             Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0)
-                Debug.Assert(*id == idLocal, $"cDAC: {*id}, DAC: {idLocal}");
+            Debug.Assert(*id == idLocal, $"cDAC: {*id}, DAC: {idLocal}");
         }
 #endif
 
@@ -121,13 +136,12 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
         }
 
 #if DEBUG
-        if (_legacyImpl is not null)
+        if (_legacyImpl is not null && hr >= 0)
         {
             uint flagsLocal;
             int hrLocal = _legacyImpl.GetFlags(&flagsLocal);
             Debug.ValidateHResult(hr, hrLocal);
-            if (hr >= 0)
-                Debug.Assert(*flags == flagsLocal, $"cDAC: {*flags}, DAC: {flagsLocal}");
+            Debug.Assert(*flags == flagsLocal, $"cDAC: {*flags}, DAC: {flagsLocal}");
         }
 #endif
 
