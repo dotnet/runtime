@@ -1054,7 +1054,7 @@ void CodeGen::genFloatToFloatCast(GenTree* tree)
 //
 void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
-    if (treeNode->gtOverflow())
+    if (treeNode->gtOverflowEx())
     {
         genCodeForBinaryOverflow(treeNode);
         return;
@@ -1640,7 +1640,18 @@ void CodeGen::genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
     genConsumeAddress(tree->Addr());
-    genEmitNullCheck(REG_NA);
+
+    // In some cases the indir may not fault.
+    // Tolerate these.
+    //
+    if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        genEmitNullCheck(REG_NA);
+    }
+    else
+    {
+        GetEmitter()->emitIns(INS_drop);
+    }
 }
 
 //---------------------------------------------------------------------
@@ -2039,6 +2050,12 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     // so that liveness is updated appropriately.
     genConsumeAddress(addr);
     genConsumeRegs(data);
+
+    if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        regNumber addrReg = GetMultiUseOperandReg(addr);
+        genEmitNullCheck(addrReg);
+    }
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
@@ -2622,13 +2639,17 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     //  reg representing the operand of a GT_IND, or the frame pointer for LCL_VAR/LCL_FLD.
     if (source->OperIs(GT_IND))
     {
-        source = source->gtGetOp1();
+        bool doNullCheck = (source->gtFlags & GTF_IND_NONFAULTING) == 0;
+        source           = source->gtGetOp1();
         assert(!source->isContained());
         srcAddrType = source->TypeGet();
         srcReg      = GetMultiUseOperandReg(source);
         srcOffset   = 0;
 
-        genEmitNullCheck(srcReg);
+        if (doNullCheck)
+        {
+            genEmitNullCheck(srcReg);
+        }
     }
     else
     {
@@ -2657,7 +2678,10 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     emitter* emit = GetEmitter();
 
-    genEmitNullCheck(dstReg);
+    if ((cpObjNode->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        genEmitNullCheck(dstReg);
+    }
 
     // TODO-WASM: Remove the need to do this somehow
     // The dst and src may be on the evaluation stack, but we can't reliably use them, so drop them.
