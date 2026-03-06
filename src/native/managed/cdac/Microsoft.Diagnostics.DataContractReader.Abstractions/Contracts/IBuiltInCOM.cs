@@ -18,6 +18,8 @@ public interface IBuiltInCOM : IContract
     static string IContract.Name { get; } = nameof(BuiltInCOM);
     ulong GetRefCount(TargetPointer address) => throw new NotImplementedException();
     bool IsHandleWeak(TargetPointer address) => throw new NotImplementedException();
+    IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw) => throw new NotImplementedException();
+    TargetPointer GetRCWContext(TargetPointer rcw) => throw new NotImplementedException();
     IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr) => throw new NotImplementedException();
 }
 

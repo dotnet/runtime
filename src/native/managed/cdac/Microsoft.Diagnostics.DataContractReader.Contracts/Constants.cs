@@ -89,6 +89,7 @@ public static class Constants
 
         public const string ComRefcountMask = nameof(ComRefcountMask);
         public const string RCWCleanupList = nameof(RCWCleanupList);
+        public const string RCWInterfaceCacheSize = nameof(RCWInterfaceCacheSize);
 
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);

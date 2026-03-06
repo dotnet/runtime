@@ -11,6 +11,10 @@ public bool IsHandleWeak(TargetPointer ccw);
 // Enumerate entries in the RCW cleanup list.
 // If cleanupListPtr is Null, the global g_pRCWCleanupList is used.
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr);
+// Enumerate the interface entries cached in an RCW.
+public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw);
+// Get the COM context cookie for an RCW.
+public TargetPointer GetRCWContext(TargetPointer rcw);
 ```
 
 ## Version 1
@@ -28,12 +32,16 @@ Data descriptors used:
 | `RCW` | `CtxCookie` | COM context cookie for the RCW |
 | `RCW` | `CtxEntry` | Pointer to `CtxEntry` (bit 0 is a synchronization flag; must be masked off before use) |
 | `CtxEntry` | `STAThread` | STA thread pointer for the context entry |
+| `RCW` | `InterfaceEntries` | Offset of the inline interface entry cache array within the RCW struct |
+| `InterfaceEntry` | `MethodTable` | MethodTable pointer for the cached COM interface |
+| `InterfaceEntry` | `Unknown` | `IUnknown*` pointer for the cached COM interface |
 
 Global variables used:
 | Global Name | Type | Purpose |
 | --- | --- | --- |
 | `ComRefcountMask` | `long` | Mask applied to `SimpleComCallWrapper.RefCount` to produce the visible refcount |
 | `RCWCleanupList` | `pointer` | Pointer to the global `g_pRCWCleanupList` instance |
+| `RCWInterfaceCacheSize` | `uint32` | Number of entries in the inline interface entry cache (`INTERFACE_ENTRY_CACHE_SIZE`) |
 
 ### Contract Constants:
 | Name | Type | Purpose | Value |
@@ -106,5 +114,28 @@ public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPt
 
         bucketPtr = _target.ReadPointer(bucketPtr + /* RCW::NextCleanupBucket offset */);
     }
+}
+
+public IEnumerable<(TargetPointer MethodTable, TargetPointer Unknown)> GetRCWInterfaces(TargetPointer rcw)
+{
+    // InterfaceEntries is an inline array — the offset gives the address of the first element.
+    TargetPointer interfaceEntriesAddr = rcw + /* RCW::InterfaceEntries offset */;
+    uint cacheSize = _target.ReadGlobal<uint>("RCWInterfaceCacheSize");
+    uint entrySize = /* size of InterfaceEntry */;
+
+    for (uint i = 0; i < cacheSize; i++)
+    {
+        TargetPointer entryAddress = interfaceEntriesAddr + i * entrySize;
+        TargetPointer methodTable = _target.ReadPointer(entryAddress + /* InterfaceEntry::MethodTable offset */);
+        TargetPointer unknown = _target.ReadPointer(entryAddress + /* InterfaceEntry::Unknown offset */);
+        // An entry is free if Unknown == null (matches InterfaceEntry::IsFree())
+        if (unknown != TargetPointer.Null)
+            yield return (methodTable, unknown);
+    }
+}
+
+public TargetPointer GetRCWContext(TargetPointer rcw)
+{
+    return _target.ReadPointer(rcw + /* RCW::CtxCookie offset */);
 }
 ```

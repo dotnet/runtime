@@ -15,6 +15,8 @@ internal sealed class RCW : IData<RCW>
         Flags = target.Read<uint>(address + (ulong)type.Fields[nameof(Flags)].Offset);
         CtxCookie = target.ReadPointer(address + (ulong)type.Fields[nameof(CtxCookie)].Offset);
         CtxEntry = target.ReadPointer(address + (ulong)type.Fields[nameof(CtxEntry)].Offset);
+        // Store only the base address of the inline cache; entries are read on demand by the contract.
+        InterfaceEntries = address + (ulong)type.Fields[nameof(InterfaceEntries)].Offset;
     }
 
     public TargetPointer NextCleanupBucket { get; init; }
@@ -22,4 +24,5 @@ internal sealed class RCW : IData<RCW>
     public uint Flags { get; init; }
     public TargetPointer CtxCookie { get; init; }
     public TargetPointer CtxEntry { get; init; }
+    public TargetPointer InterfaceEntries { get; init; }
 }
