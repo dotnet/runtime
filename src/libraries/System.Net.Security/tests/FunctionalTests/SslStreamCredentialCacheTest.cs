@@ -39,8 +39,8 @@ namespace System.Net.Security.Tests
                 if (Capability.IsTrustedRootCertificateInstalled())
                 {
                     // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
-                    // Starting with Windows 8, the "Management of trusted issuers for client authentication" has changed:
-                    // The behavior to send the Trusted Issuers List by default is off.
+                    // On Windows, the "Management of trusted issuers for client authentication" is configured
+                    // such that the behavior to send the Trusted Issuers List by default is off.
 
                     Assert.True(client.IsMutuallyAuthenticated);
                     Assert.True(server.IsMutuallyAuthenticated);
