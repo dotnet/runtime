@@ -2301,8 +2301,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
 
         default:
-            printf("Helper '%s' has no hard-coded signature in genEmitHelperCall\n", helper,
-                   m_compiler->eeGetMethodFullName(params.methHnd));
+            JITDUMP("Helper '%s' has no hard-coded signature\n", m_compiler->eeGetMethodFullName(params.methHnd));
+            NYI_WASM("Missing signature for helper in genEmitHelperCall");
             unreached();
     }
 
