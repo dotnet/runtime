@@ -256,6 +256,16 @@ internal partial class MockDescriptors
             ]
         };
 
+        private static readonly MockDescriptors.TypeFields EEJitManagerFields = new()
+        {
+            DataType = DataType.EEJitManager,
+            Fields =
+            [
+                new(nameof(Data.EEJitManager.StoreRichDebugInfo), DataType.uint8),
+                new(nameof(Data.EEJitManager.AllCodeHeaps), DataType.pointer),
+            ]
+        };
+
         internal int Version { get; }
 
         internal MockMemorySpace.Builder Builder { get; }
@@ -269,11 +279,13 @@ internal partial class MockDescriptors
         private readonly MockMemorySpace.BumpAllocator _nibbleMapAllocator;
         private readonly MockMemorySpace.BumpAllocator _allocator;
 
-        internal ExecutionManager(int version, MockTarget.Architecture arch, AllocationRange allocationRange)
-            : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange)
+        internal TargetPointer EEJitManagerAddress { get; }
+
+        internal ExecutionManager(int version, MockTarget.Architecture arch, AllocationRange allocationRange, TargetPointer allCodeHeaps = default)
+            : this(version, new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange, allCodeHeaps)
         { }
 
-        internal ExecutionManager(int version, MockMemorySpace.Builder builder, AllocationRange allocationRange)
+        internal ExecutionManager(int version, MockMemorySpace.Builder builder, AllocationRange allocationRange, TargetPointer allCodeHeaps = default)
         {
             Version = version;
             Builder = builder;
@@ -292,14 +304,30 @@ internal partial class MockDescriptors
                     RealCodeHeaderFields,
                     ReadyToRunInfoFields(Builder.TargetTestHelpers),
                     MockDescriptors.ModuleFields,
+                    EEJitManagerFields,
                 ]).Concat(MockDescriptors.HashMap.GetTypes(Builder.TargetTestHelpers))
                 .Concat(_rfBuilder.Types)
                 .ToDictionary();
+
+            // Allocate and populate the EEJitManager instance
+            var jitManagerTypeInfo = Types[DataType.EEJitManager];
+            MockMemorySpace.HeapFragment eeJitManagerFragment = _allocator.Allocate(jitManagerTypeInfo.Size.Value, "EEJitManager");
+            Builder.AddHeapFragment(eeJitManagerFragment);
+            EEJitManagerAddress = eeJitManagerFragment.Address;
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+            Span<byte> jmData = Builder.BorrowAddressRange(eeJitManagerFragment.Address, (int)jitManagerTypeInfo.Size.Value);
+            Builder.TargetTestHelpers.WritePointer(jmData.Slice(jitManagerTypeInfo.Fields[nameof(Data.EEJitManager.AllCodeHeaps)].Offset, pointerSize), allCodeHeaps);
+
+            // Allocate the global pointer that holds the EEJitManager address
+            MockMemorySpace.HeapFragment eeJitManagerGlobalPointer = _allocator.Allocate((ulong)pointerSize, "EEJitManagerGlobalPointer");
+            Builder.AddHeapFragment(eeJitManagerGlobalPointer);
+            Builder.TargetTestHelpers.WritePointer(eeJitManagerGlobalPointer.Data, EEJitManagerAddress);
 
             Globals =
             [
                 (nameof(Constants.Globals.ExecutionManagerCodeRangeMapAddress), ExecutionManagerCodeRangeMapAddress),
                 (nameof(Constants.Globals.StubCodeBlockLast), 0x0Fu),
+                (nameof(Constants.Globals.EEJitManagerAddress), eeJitManagerGlobalPointer.Address),
             ];
             Globals = Globals
                 .Concat(MockDescriptors.HashMap.GetGlobals(Builder.TargetTestHelpers))

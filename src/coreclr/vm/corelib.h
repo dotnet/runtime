@@ -98,8 +98,8 @@ DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, ACCESSTYPE,        _accessType)
 
 DEFINE_CLASS(APPCONTEXT,            System,                 AppContext)
 DEFINE_METHOD(APPCONTEXT,   SETUP,              Setup,          SM_PtrPtrChar_PtrPtrChar_Int_PtrException_RetVoid)
-DEFINE_METHOD(APPCONTEXT,   ON_PROCESS_EXIT,    OnProcessExit,  SM_RetVoid)
-DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  SM_Obj_RetVoid)
+DEFINE_METHOD(APPCONTEXT,   ON_PROCESS_EXIT,    OnProcessExit,  SM_PtrException_RetVoid)
+DEFINE_METHOD(APPCONTEXT,   ON_UNHANDLED_EXCEPTION,     OnUnhandledException,  SM_PtrObj_PtrException_RetVoid)
 DEFINE_METHOD(APPCONTEXT,   ON_FIRST_CHANCE_EXCEPTION,  OnFirstChanceException, SM_PtrException_PtrException_RetVoid)
 
 DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
@@ -308,6 +308,7 @@ DEFINE_METHOD(EXCEPTION,            GET_DESCRIPTION_BSTR,   GetDescriptionBstr, 
 DEFINE_METHOD(EXCEPTION,            GET_SOURCE_BSTR,        GetSourceBstr,              SM_PtrException_PtrException_RetIntPtr)
 DEFINE_METHOD(EXCEPTION,            GET_HELP_CONTEXT_BSTR,  GetHelpContextBstr,         SM_PtrException_PtrIntPtr_PtrUInt_PtrException_RetVoid)
 #endif // FEATURE_COMINTEROP
+DEFINE_METHOD(EXCEPTION,            CREATE_TARGET_INVOCATION_EXCEPTION, CreateTargetInvocationException, SM_PtrException_PtrObj_PtrException_RetVoid)
 
 
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
@@ -661,11 +662,10 @@ DEFINE_CLASS(RESOLVER,              System,                 Resolver)
 DEFINE_METHOD(RESOLVER,             GET_JIT_CONTEXT,        GetJitContext,              SM_PtrResolver_PtrInt_PtrClass_PtrException_RetVoid)
 DEFINE_METHOD(RESOLVER,             GET_CODE_INFO,          GetCodeInfo,                SM_PtrResolver_PtrInt_PtrInt_PtrInt_PtrArrByte_PtrException_RetVoid)
 DEFINE_METHOD(RESOLVER,             GET_LOCALS_SIGNATURE,   GetLocalsSignature,         SM_PtrResolver_PtrArrByte_PtrException_RetVoid)
-DEFINE_METHOD(RESOLVER,             GET_EH_INFO,            GetEHInfo,                  IM_Int_VoidPtr_RetVoid)
-DEFINE_METHOD(RESOLVER,             GET_RAW_EH_INFO,        GetRawEHInfo,               IM_RetArrByte)
+DEFINE_METHOD(RESOLVER,             GET_EH_INFO,            GetEHInfo,                  SM_PtrResolver_Int_PtrArrByte_PtrVoid_PtrException_RetVoid)
 DEFINE_METHOD(RESOLVER,             GET_STRING_LITERAL,     GetStringLiteral,           SM_PtrResolver_Int_PtrStr_PtrException_RetVoid)
-DEFINE_METHOD(RESOLVER,             RESOLVE_TOKEN,          ResolveToken,               IM_Int_RefIntPtr_RefIntPtr_RefIntPtr_RetVoid)
-DEFINE_METHOD(RESOLVER,             RESOLVE_SIGNATURE,      ResolveSignature,           IM_IntInt_RetArrByte)
+DEFINE_METHOD(RESOLVER,             RESOLVE_TOKEN,          ResolveToken,               SM_PtrResolver_Int_PtrIntPtr_PtrIntPtr_PtrIntPtr_PtrException_RetVoid)
+DEFINE_METHOD(RESOLVER,             RESOLVE_SIGNATURE,      ResolveSignature,           SM_PtrResolver_Int_Int_PtrArrByte_PtrException_RetVoid)
 
 DEFINE_CLASS(RESOURCE_MANAGER,      Resources,              ResourceManager)
 
@@ -890,7 +890,7 @@ DEFINE_CLASS(EVENT_SOURCE,           Tracing,            EventSource)
 DEFINE_METHOD(EVENT_SOURCE,          INITIALIZE_DEFAULT_EVENT_SOURCES, InitializeDefaultEventSources, SM_PtrException_RetVoid)
 
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
-DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_RetVoid)
+DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_PtrException_RetVoid)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, CALL_STARTUP_HOOK, CallStartupHook, SM_PtrChar_PtrException_RetVoid)
 
 DEFINE_CLASS(STREAM,                IO,                     Stream)
