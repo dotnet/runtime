@@ -86,7 +86,7 @@ namespace System.Net.Security.Tests
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                     AuthenticateClientAsync(serverHost, clientCertificates, checkCertificateRevocation: false, protocols: clientProtocols),
                     AuthenticateServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false, protocols: serverProtocols));
-                if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10 &&
+                if (PlatformDetection.IsWindows &&
 #pragma warning disable 0618
                     clientProtocols.GetValueOrDefault() != SslProtocols.Default &&
                     serverProtocols.GetValueOrDefault() != SslProtocols.Default)
