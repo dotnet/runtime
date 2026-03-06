@@ -788,6 +788,8 @@ ClrDataAccess::GetThreadFromThinlockID(UINT thinLockId, CLRDATA_ADDRESS *pThread
 HRESULT
 ClrDataAccess::GetThreadAllocData(CLRDATA_ADDRESS addr, struct DacpAllocData *data)
 {
+    if (addr == 0)
+        return E_INVALIDARG;
     if (data == NULL)
         return E_POINTER;
 
@@ -848,6 +850,12 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
 
 HRESULT ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData)
 {
+    if (threadData == NULL)
+        return E_POINTER;
+
+    if (threadAddr == 0)
+        return E_INVALIDARG;
+
     SOSDacEnter();
 
     // marshal the Thread object from the target
@@ -1573,7 +1581,6 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
         PTR_StringObject str(TO_TADDR(obj));
         ULONG32 needed = (ULONG32)str->GetStringLength() + 1;
 
-        HRESULT hr;
         if (stringData && count > 0)
         {
             if (count > needed)
@@ -1785,7 +1792,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
     ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
     ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
-    ModuleData->dwTransientFlags = pModule->m_dwTransientFlags;
+    ModuleData->dwTransientFlags = (pModule->m_dwTransientFlags & Module::IS_EDIT_AND_CONTINUE) ? DacpModuleData::IsEditAndContinue : 0;
     ModuleData->LoaderAllocator = HOST_CDADDR(pModule->m_loaderAllocator);
 
     EX_TRY
@@ -2692,9 +2699,14 @@ ClrDataAccess::GetAppDomainConfigFile(CLRDATA_ADDRESS appDomain, int count,
 HRESULT
 ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS domain, CLRDATA_ADDRESS assembly, struct DacpAssemblyData *assemblyData)
 {
-    if (assembly == (CLRDATA_ADDRESS)NULL && domain == (CLRDATA_ADDRESS)NULL)
+    if (assembly == (CLRDATA_ADDRESS)NULL)
     {
         return E_INVALIDARG;
+    }
+
+    if (assemblyData == NULL)
+    {
+        return E_POINTER;
     }
 
     SOSDacEnter();
@@ -2728,6 +2740,11 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS domain, CLRDATA_ADDRESS assembly,
 HRESULT
 ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded)
 {
+    if ((assembly == (CLRDATA_ADDRESS)NULL) || (name == NULL && pNeeded == NULL) || (name != NULL && count == 0))
+    {
+        return E_INVALIDARG;
+    }
+
     SOSDacEnter();
     Assembly* pAssembly = PTR_Assembly(TO_TADDR(assembly));
 
@@ -3355,7 +3372,7 @@ HRESULT ClrDataAccess::GetHandleEnumForTypes(unsigned int types[], unsigned int 
 
     DacHandleWalker *walker = new DacHandleWalker();
 
-    HRESULT hr = walker->Init(this, types, count);
+    hr = walker->Init(this, types, count);
 
     if (SUCCEEDED(hr))
         hr = walker->QueryInterface(__uuidof(ISOSHandleEnum), (void**)ppHandleEnum);
@@ -3382,7 +3399,7 @@ HRESULT ClrDataAccess::GetHandleEnumForGC(unsigned int gen, ISOSHandleEnum **ppH
 
     DacHandleWalker *walker = new DacHandleWalker();
 
-    HRESULT hr = walker->Init(this, types, ARRAY_SIZE(types), gen);
+    hr = walker->Init(this, types, ARRAY_SIZE(types), gen);
     if (SUCCEEDED(hr))
         hr = walker->QueryInterface(__uuidof(ISOSHandleEnum), (void**)ppHandleEnum);
 
@@ -3828,7 +3845,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
 HRESULT
 ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyncBlockCleanupData *syncBlockCData)
 {
-    if (syncBlock == 0 || syncBlockCData == NULL)
+    if (syncBlockCData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
@@ -3866,6 +3883,10 @@ ClrDataAccess::GetSyncBlockCleanupData(CLRDATA_ADDRESS syncBlock, struct DacpSyn
             syncBlockCData->blockCCW = (CLRDATA_ADDRESS) dac_cast<TADDR>(pBlock->m_pInteropInfo->GetCCW());
 #endif // FEATURE_COMINTEROP
     }
+
+    // Maintain backwards compatibility with old versions of CLRMD. They will not properly iterate, but at least it will not infinite loop.
+    if (syncBlock == 0)
+        return E_INVALIDARG;
 
     SOSDacLeave();
     return hr;
@@ -4361,8 +4382,14 @@ BOOL ClrDataAccess::DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr)
         return FALSE;
     }
 
-    return (qiAddress == GetEEFuncEntryPoint(ManagedObjectWrapper_QueryInterface)
-        || qiAddress == GetEEFuncEntryPoint(TrackerTarget_QueryInterface));
+    for (unsigned int i = 0; i < g_numKnownQueryInterfaceImplementations; i++)
+    {
+        if (PINSTRToPCODE(qiAddress) == g_knownQueryInterfaceImplementations[i])
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
@@ -4587,6 +4614,8 @@ HRESULT ClrDataAccess::GetCCWInterfaces(CLRDATA_ADDRESS ccw, unsigned int count,
 
 HRESULT ClrDataAccess::GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data)
 {
+    if (objAddr == 0)
+        return E_INVALIDARG;
     if (data == NULL)
         return E_POINTER;
 
@@ -4845,7 +4874,6 @@ HRESULT ClrDataAccess::GetGenerationTable(unsigned int cGenerations, struct Dacp
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
     unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
     if (pNeeded != NULL)
     {
@@ -4891,7 +4919,6 @@ HRESULT ClrDataAccess::GetFinalizationFillPointers(unsigned int cFillPointers, C
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
     unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
     if (pNeeded != NULL)
     {
@@ -4932,7 +4959,6 @@ HRESULT ClrDataAccess::GetGenerationTableSvr(CLRDATA_ADDRESS heapAddr, unsigned 
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
 #ifdef FEATURE_SVR_GC
     unsigned int numGenerationTableEntries = (unsigned int)(g_gcDacGlobals->total_generation_count);
     if (pNeeded != NULL)
@@ -4982,7 +5008,6 @@ HRESULT ClrDataAccess::GetFinalizationFillPointersSvr(CLRDATA_ADDRESS heapAddr, 
 
     SOSDacEnter();
 
-    HRESULT hr = S_OK;
 #ifdef FEATURE_SVR_GC
     unsigned int numFillPointers = (unsigned int)(g_gcDacGlobals->total_generation_count + dac_finalize_queue::ExtraSegCount);
     if (pNeeded != NULL)
@@ -5132,7 +5157,7 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
     SOSDacEnter();
 
     // Default to having found no information.
-    HRESULT hr = S_FALSE;
+    hr = S_FALSE;
 
     if (pNeeded != NULL)
     {
@@ -5198,8 +5223,6 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
             }
         }
     }
-
-    hr = S_FALSE;
 
     SOSDacLeave();
     return hr;

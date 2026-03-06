@@ -4560,6 +4560,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
         case INS_sve_sqshrnt:
         case INS_sve_sqshrunt:
         case INS_sve_sri:
+        case INS_sve_uqshrnt:
         case INS_sve_uqrshrnt:
             // RMW instructions without movprfx support, use mov instead
             emitIns_Mov(INS_sve_mov, attr, reg1, reg2, /* canSkip */ true, opt);

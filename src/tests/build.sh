@@ -5,7 +5,6 @@ build_Tests()
     echo "${__MsgPrefix}Building Tests..."
 
     __ProjectFilesDir="$__TestDir"
-    __Exclude="$__RepoRootDir/src/tests/issues.targets"
 
     if [[ -f  "${__TestBinDir}/build_info.json" ]]; then
         rm  "${__TestBinDir}/build_info.json"
@@ -107,7 +106,6 @@ build_Tests()
     export __MonoBinDir
     export __MsgPrefix
     export __ErrMsgPrefix
-    export __Exclude
     export EnableNativeSanitizers
 
     # Generate build command
@@ -347,7 +345,6 @@ __SkipRestore=""
 __SkipRestorePackages=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=()
-__UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __Priority=0

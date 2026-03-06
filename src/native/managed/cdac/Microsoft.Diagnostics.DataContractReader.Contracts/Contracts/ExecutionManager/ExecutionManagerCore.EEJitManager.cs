@@ -44,6 +44,24 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             return true;
         }
 
+        public override void GetMethodRegionInfo(
+            RangeSection rangeSection,
+            TargetCodePointer jittedCodeAddress,
+            out uint hotSize,
+            out TargetPointer coldStart,
+            out uint coldSize)
+        {
+            // cold regions are not supported for JITted code
+            coldStart = TargetPointer.Null;
+            coldSize = 0;
+
+            IGCInfo gcInfo = Target.Contracts.GCInfo;
+            GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
+            IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+            hotSize = gcInfo.GetCodeLength(gcInfoHandle);
+            Debug.Assert(hotSize > 0);
+        }
+
         public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             if (rangeSection.IsRangeList)

@@ -93,7 +93,7 @@ namespace System
         internal static uint GetExceptionCount() => s_exceptionCount;
 
         [RuntimeExport("AppendExceptionStackFrame")]
-        private static void AppendExceptionStackFrame(object exceptionObj, IntPtr IP, int flags)
+        internal static void AppendExceptionStackFrame(object exceptionObj, IntPtr IP, int flags)
         {
             // This method is called by the runtime's EH dispatch code and is not allowed to leak exceptions
             // back into the dispatcher.
