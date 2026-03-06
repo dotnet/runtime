@@ -91,11 +91,12 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     {
         int hr = HResults.S_OK;
 
+        int hrLegacy = HResults.S_OK;
         IXCLRDataAppDomain? legacyAppDomain = null;
         if (_legacyImpl is not null)
         {
             DacComNullableByRef<IXCLRDataAppDomain> legacyAppDomainOut = new(isNullRef: false);
-            int hrLegacy = _legacyImpl.GetAppDomain(legacyAppDomainOut);
+            hrLegacy = _legacyImpl.GetAppDomain(legacyAppDomainOut);
             if (hrLegacy >= 0)
             {
                 legacyAppDomain = legacyAppDomainOut.Interface;
@@ -120,6 +121,13 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             hr = ex.HResult;
         }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Debug.ValidateHResult(hr, hrLegacy);
+        }
+#endif
 
         return hr;
     }
