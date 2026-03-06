@@ -161,18 +161,27 @@ activate = 1
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task SslStream_ServerDisablesCertificateDownloads_DefaultAndCompatSwitch(bool enableAIADownloads)
+        [InlineData(true, true, false)]
+        [InlineData(true, false, false)]
+        [InlineData(false, true, true)]
+        [InlineData(false, false, true)]
+        [InlineData(null, true, false)]
+        [InlineData(null, false, true)]
+        public async Task SslStream_ServerDisablesCertificateDownloads_DefaultAndCompatSwitch(bool? appCtxSwitchValue, bool envVarSet, bool shouldDisableDownloads)
         {
-            await RemoteExecutor.Invoke(async (enableAIADownloadsStr) =>
+            var psi = new ProcessStartInfo
             {
-                if (bool.Parse(enableAIADownloadsStr))
+                Environment = { { "DOTNET_SYSTEM_NET_SECURITY_ENABLESERVERAIADOWNLOADS", envVarSet ? "1" : "0" } }
+            };
+
+            await RemoteExecutor.Invoke(async (appCtxSwitchValueString, shouldDisableDownloadsString) =>
+            {
+                if (bool.TryParse(appCtxSwitchValueString, out bool value))
                 {
-                    AppContext.SetSwitch("System.Net.Security.EnableServerAIADownloads", true);
+                    AppContext.SetSwitch("System.Net.Security.EnableServerAiaDownloads", value);
                 }
 
-                bool disableCertificateDownloadsObserved = false;
+                bool? disableCertificateDownloadsObserved = false;
                 (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
                 using (clientStream)
                 using (serverStream)
@@ -183,6 +192,7 @@ activate = 1
                     disableCertificateDownloadsObserved = chain.ChainPolicy.DisableCertificateDownloads;
                     return true;
                 }))
+
                 using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
                 using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
                 {
@@ -203,10 +213,10 @@ activate = 1
                         client.AuthenticateAsClientAsync(clientOptions),
                         server.AuthenticateAsServerAsync(serverOptions));
 
-                    bool expectDisabled = !bool.Parse(enableAIADownloadsStr);
+                    bool expectDisabled = bool.Parse(shouldDisableDownloadsString);
                     Assert.Equal(expectDisabled, disableCertificateDownloadsObserved);
                 }
-            }, enableAIADownloads.ToString()).DisposeAsync();
+            }, appCtxSwitchValue.ToString(), shouldDisableDownloads.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
         }
     }
 }

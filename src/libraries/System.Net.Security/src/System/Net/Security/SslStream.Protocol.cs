@@ -18,11 +18,11 @@ namespace System.Net.Security
     {
         private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
         private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
-        private const string EnableServerAIADownloadsCtxSwitch = "System.Net.Security.EnableServerAIADownloads";
-        private const string EnableServerAIADownloadsEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_ENABLESERVERAIADOWNLOADS";
+        private const string EnableServerAiaDownloadsCtxSwitch = "System.Net.Security.EnableServerAiaDownloads";
+        private const string EnableServerAiaDownloadsEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_ENABLESERVERAIADOWNLOADS";
 
         private static volatile int s_disableTlsResume = -1;
-        private static volatile int s_enableServerAIADownloads = -1;
+        private static volatile int s_enableServerAiaDownloads = -1;
 
         internal static bool DisableTlsResume
         {
@@ -55,26 +55,26 @@ namespace System.Net.Security
         {
             get
             {
-                int enableServerAIADownloads = s_enableServerAIADownloads;
-                if (enableServerAIADownloads != -1)
+                int enableServerAiaDownloads = s_enableServerAiaDownloads;
+                if (enableServerAiaDownloads != -1)
                 {
-                    return enableServerAIADownloads != 0;
+                    return enableServerAiaDownloads != 0;
                 }
 
                 // First check for the AppContext switch, giving it priority over the environment variable.
-                if (AppContext.TryGetSwitch(EnableServerAIADownloadsCtxSwitch, out bool value))
+                if (AppContext.TryGetSwitch(EnableServerAiaDownloadsCtxSwitch, out bool value))
                 {
-                    s_enableServerAIADownloads = value ? 1 : 0;
+                    s_enableServerAiaDownloads = value ? 1 : 0;
                 }
                 else
                 {
                     // AppContext switch wasn't used. Check the environment variable.
-                    s_enableServerAIADownloads =
-                        Environment.GetEnvironmentVariable(EnableServerAIADownloadsEnvironmentVariable) is string envVar &&
+                    s_enableServerAiaDownloads =
+                        Environment.GetEnvironmentVariable(EnableServerAiaDownloadsEnvironmentVariable) is string envVar &&
                         (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
                 }
 
-                return s_enableServerAIADownloads != 0;
+                return s_enableServerAiaDownloads != 0;
             }
         }
 
