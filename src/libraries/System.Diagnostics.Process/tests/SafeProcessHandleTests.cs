@@ -630,7 +630,12 @@ namespace System.Diagnostics.Tests
         private static ProcessStartOptions MapToRemoteExecutorStartOptions(Func<string, int> method, string arg)
         {
             RemoteInvokeOptions remoteInvokeOptions = new() { CheckExitCode = false, Start = false };
-            _ = RemoteExecutor.Invoke(method, arg: arg, remoteInvokeOptions);
+            RemoteInvokeHandle invokeHandle = RemoteExecutor.Invoke(method, arg: arg, remoteInvokeOptions);
+
+            // RemoteInvokeHandle requires the users to Dispose it, otherwise its finalizer throws.
+            // There is no process associated with this object (because we have not started any), sod Dispose throws.
+            // That is why we disable this check by supressing the finalizer.
+            GC.SuppressFinalize(invokeHandle);
 
             ProcessStartOptions options = new(remoteInvokeOptions.StartInfo.FileName);
             StringBuilder argumentBuilder = new();
