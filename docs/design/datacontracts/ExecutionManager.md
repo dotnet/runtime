@@ -119,7 +119,7 @@ Data descriptors used:
 | `ReadyToRunInfo` | `NumHotColdMap` | Number of entries in the `HotColdMap` |
 | `ReadyToRunInfo` | `HotColdMap` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
 | `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | Pointer to an `ImageDataDirectory` for the delay load method call thunks |
-| `ReadyToRunInf` | `DebugInfo` | Pointer to an `ImageDataDirectory` for the debug info |
+| `ReadyToRunInfo` | `DebugInfo` | Pointer to an `ImageDataDirectory` for the debug info |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
 | `ReadyToRunInfo` | `LoadedImageBase` | Base address of the loaded R2R image |
 | `ReadyToRunInfo` | `Composite` | Pointer to the `ReadyToRunCoreInfo` used for section lookup |
@@ -137,16 +137,16 @@ Data descriptors used:
 | `PortableEntryPoint` | `MethodDesc` | Method desc of portable entrypoint (only defined if `FeaturePortableEntrypoints` is enabled) |
 | `EEILException` | `Clauses` | Start address of the inline array of `EE_ILEXCEPTION_CLAUSE` entries |
 | `EEExceptionClause` | `Flags` | Exception clause flags (`COR_ILEXCEPTION_CLAUSE_*` bit flags) |
-| `EEExceptionClause` | `TryStartPC` | IL offset of the start of the try block |
-| `EEExceptionClause` | `TryEndPC` | IL offset of the end of the try block |
-| `EEExceptionClause` | `HandlerStartPC` | IL offset of the start of the handler |
-| `EEExceptionClause` | `HandlerEndPC` | IL offset of the end of the handler |
+| `EEExceptionClause` | `TryStartPC` | Native offset of the start of the try block |
+| `EEExceptionClause` | `TryEndPC` | Native offset of the end of the try block |
+| `EEExceptionClause` | `HandlerStartPC` | Native offset of the start of the handler |
+| `EEExceptionClause` | `HandlerEndPC` | Native offset of the end of the handler |
 | `EEExceptionClause` | `TypeHandle` | Union field: TypeHandle (cached), ClassToken, or FilterOffset |
 | `R2RExceptionClause` | `Flags` | Exception clause flags |
-| `R2RExceptionClause` | `TryStartPC` | IL offset of the start of the try block |
-| `R2RExceptionClause` | `TryEndPC` | IL offset of the end of the try block |
-| `R2RExceptionClause` | `HandlerStartPC` | IL offset of the start of the handler |
-| `R2RExceptionClause` | `HandlerEndPC` | IL offset of the end of the handler |
+| `R2RExceptionClause` | `TryStartPC` | Native offset of the start of the try block |
+| `R2RExceptionClause` | `TryEndPC` | Native offset of the end of the try block |
+| `R2RExceptionClause` | `HandlerStartPC` | Native offset of the start of the handler |
+| `R2RExceptionClause` | `HandlerEndPC` | Native offset of the end of the handler |
 | `R2RExceptionClause` | `ClassToken` | Union field: ClassToken or FilterOffset |
 | `ReadyToRunCoreInfo` | `Header` | Pointer to the `READYTORUN_CORE_HEADER` |
 | `ReadyToRunCoreHeader` | `Flags` | ReadyToRun flags |
