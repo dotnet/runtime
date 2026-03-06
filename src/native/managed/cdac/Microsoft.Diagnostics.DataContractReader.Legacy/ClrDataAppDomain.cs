@@ -33,25 +33,32 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
     int IXCLRDataAppDomain.GetName(uint bufLen, uint* nameLen, char* name)
     {
         int hr = HResults.S_OK;
+        string friendlyName;
         try
         {
             ILoader loader = _target.Contracts.Loader;
-            string friendlyName = loader.GetAppDomainFriendlyName();
-
-            uint requiredLen = (uint)friendlyName.Length + 1;
-
-            if (nameLen is not null)
-                *nameLen = requiredLen;
-
-            OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, friendlyName);
-
-            // Match native DAC behavior: return S_FALSE when output is truncated.
-            if (name is not null && bufLen > 0 && bufLen < requiredLen)
-                hr = HResults.S_FALSE;
+            friendlyName = loader.GetAppDomainFriendlyName();
+        }
+        catch (VirtualReadException)
+        {
+            // Match native DAC / SOSDacImpl behavior: fall back to empty string
+            // when the FriendlyName pointer targets unreadable memory.
+            friendlyName = string.Empty;
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
+            friendlyName = string.Empty;
+        }
+
+        if (hr >= 0)
+        {
+            OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, friendlyName);
+
+            // Match native DAC behavior: return S_FALSE when output is truncated.
+            uint requiredLen = (uint)friendlyName.Length + 1;
+            if (name is not null && bufLen > 0 && bufLen < requiredLen)
+                hr = HResults.S_FALSE;
         }
 
 #if DEBUG
@@ -59,7 +66,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
         {
             uint nameLenLocal;
             int hrLocal = _legacyImpl.GetName(bufLen, &nameLenLocal, null);
-            Debug.ValidateHResult(hrLocal, hr);
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr >= 0 && nameLen is not null)
                 Debug.Assert(*nameLen == nameLenLocal, $"cDAC: {*nameLen}, DAC: {nameLenLocal}");
         }
@@ -70,6 +77,9 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 
     int IXCLRDataAppDomain.GetUniqueID(ulong* id)
     {
+        if (id is null)
+            return HResults.E_INVALIDARG;
+
         *id = DefaultADID;
 
 #if DEBUG
@@ -87,6 +97,9 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 
     int IXCLRDataAppDomain.GetFlags(uint* flags)
     {
+        if (flags is null)
+            return HResults.E_INVALIDARG;
+
         // CLRDATA_DOMAIN_DEFAULT = 0
         *flags = 0;
 

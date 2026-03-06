@@ -70,7 +70,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             byte[] localContextBuf = new byte[contextBufSize];
             int hrLocal = _legacyImpl.GetContext(contextFlags, contextBufSize, null, localContextBuf);
-            Debug.ValidateHResult(hrLocal, hr);
+            Debug.ValidateHResult(hr, hrLocal);
 
             if (hr == HResults.S_OK)
             {

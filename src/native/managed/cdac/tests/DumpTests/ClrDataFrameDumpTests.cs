@@ -107,7 +107,7 @@ public unsafe class ClrDataFrameDumpTests : DumpTestBase
         IXCLRDataFrame xclrFrame = frame;
 
         byte[] rawContext = stackWalk.GetRawContext(firstFrame);
-        byte[] tinyBuf = new byte[rawContext.Length + 1];
+        byte[] tinyBuf = new byte[rawContext.Length - 1];
         int hr = xclrFrame.GetContext(0, (uint)tinyBuf.Length, null, tinyBuf);
 
         Assert.Equal(System.HResults.E_INVALIDARG, hr);
