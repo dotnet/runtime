@@ -8911,6 +8911,8 @@ PhaseStatus Lowering::DoPhase()
         LowerBlock(block);
     }
 
+    AfterLowerBlocks();
+
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
@@ -9545,16 +9547,15 @@ void Lowering::LowerBlock(BasicBlock* block)
     {
         node = LowerNode(node);
     }
-    AfterLowerBlock();
 
     assert(CheckBlock(m_compiler, block));
 }
 
 #ifndef TARGET_WASM
 //------------------------------------------------------------------------
-// AfterLowerBlock: target-specific post-processing of the lowered block.
+// AfterLowerBlocks: target-specific post-processing of the lowered blocks.
 //
-void Lowering::AfterLowerBlock()
+void Lowering::AfterLowerBlocks()
 {
 }
 #endif // !TARGET_WASM

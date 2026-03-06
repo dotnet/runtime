@@ -464,6 +464,15 @@ public struct DacpSyncBlockData
     public uint SyncBlockCount;
 };
 
+public struct DacpSyncBlockCleanupData
+{
+    public ClrDataAddress SyncBlockPointer;
+    public ClrDataAddress nextSyncBlock;
+    public ClrDataAddress blockRCW;
+    public ClrDataAddress blockClassFactory;
+    public ClrDataAddress blockCCW;
+};
+
 public struct SOSHandleData
 {
     public ClrDataAddress AppDomain;
@@ -641,7 +650,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetSyncBlockData(uint number, DacpSyncBlockData* data);
     [PreserveSig]
-    int GetSyncBlockCleanupData(ClrDataAddress addr, /*struct DacpSyncBlockCleanupData */ void* data);
+    int GetSyncBlockCleanupData(ClrDataAddress addr, DacpSyncBlockCleanupData* data);
 
     // Handles
     [PreserveSig]
@@ -883,13 +892,13 @@ public unsafe partial interface ISOSDacInterface8
 
     // WKS
     [PreserveSig]
-    int GetGenerationTable(uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
+    int GetGenerationTable(uint cGenerations, DacpGenerationData* pGenerationData, uint* pNeeded);
     [PreserveSig]
     int GetFinalizationFillPointers(uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
 
     // SVR
     [PreserveSig]
-    int GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
+    int GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, DacpGenerationData* pGenerationData, uint* pNeeded);
     [PreserveSig]
     int GetFinalizationFillPointersSvr(ClrDataAddress heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
 

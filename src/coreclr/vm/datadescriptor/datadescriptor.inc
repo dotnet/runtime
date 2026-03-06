@@ -15,6 +15,20 @@
 //      to use the new data.
 //   4. Update the mock descriptors and tests in src/native/managed/cdac/tests/.
 
+// Increment this when making a change where we'd like to recommend users update their diagnostic tools.
+// Tools can use this to display an advisory notice to users encouraging them to update. Changing
+// this value on its own is not considered a breaking change. See the RuntimeInfo.md data contract for details.
+// When incrementing this value, also implement the new functionality in the cDAC reader and update the
+// GetCurrentReaderVersion() method on the IRuntimeInfo contract in
+// src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
+// to match.
+#ifndef CDAC_RECOMMENDED_READER_VERSION
+#define CDAC_RECOMMENDED_READER_VERSION 1
+#endif
+
+// When changes will break existing diagnostic tools (changes that are incompatible with the existing data contracts)
+// you should also update the contract versions at the bottom of this file for any contract that is being broken.
+
 
 CDAC_BASELINE("empty")
 CDAC_TYPES_BEGIN()
@@ -1089,6 +1103,7 @@ CDAC_TYPE_END(ComWrappersVtablePtrs)
 CDAC_TYPE_BEGIN(SyncBlockCache)
 CDAC_TYPE_INDETERMINATE(SyncBlockCache)
 CDAC_TYPE_FIELD(SyncBlockCache, /*uint32*/, FreeSyncTableIndex, cdac_data<SyncBlockCache>::FreeSyncTableIndex)
+CDAC_TYPE_FIELD(SyncBlockCache, /*pointer*/, CleanupBlockList, cdac_data<SyncBlockCache>::CleanupBlockList)
 CDAC_TYPE_END(SyncBlockCache)
 
 CDAC_TYPES_END()
@@ -1187,6 +1202,7 @@ CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 1)
 CDAC_GLOBAL(FeaturePortableEntrypoints, uint8, 0)
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
+CDAC_GLOBAL(RecommendedReaderVersion, uint32, CDAC_RECOMMENDED_READER_VERSION)
 CDAC_GLOBAL(DirectorySeparator, uint8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, uint32, SLOTS_PER_BUCKET)
 CDAC_GLOBAL(HashMapValueMask, uint64, VALUE_MASK)
@@ -1246,6 +1262,9 @@ CDAC_GLOBAL_POINTER(SyncBlockCache, &SyncBlockCache::s_pSyncBlockCache)
 CDAC_GLOBAL(SyncBlockMaskLockThreadId, uint32, SBLK_MASK_LOCK_THREADID)
 CDAC_GLOBAL(SyncBlockMaskLockRecursionLevel, uint32, SBLK_MASK_LOCK_RECLEVEL)
 CDAC_GLOBAL(SyncBlockRecursionLevelShift, uint32, SBLK_RECLEVEL_SHIFT)
+CDAC_GLOBAL(SyncBlockIsHashOrSyncBlockIndex, uint32, BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+CDAC_GLOBAL(SyncBlockIsHashCode, uint32, BIT_SBLK_IS_HASHCODE)
+CDAC_GLOBAL(SyncBlockIndexMask, uint32, MASK_SYNCBLOCKINDEX)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
