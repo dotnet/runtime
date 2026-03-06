@@ -502,6 +502,14 @@ namespace System.Formats.Tar.Tests
             Assert.NotNull(readEntry);
             Assert.Equal(RealName, readEntry.Name);
             Assert.Equal(RealSize, readEntry.Length);
+
+            // Verify the data stream still contains the stored sparse data (not the expanded real size),
+            // confirming that _size was not overridden by GNU.sparse.realsize.
+            Assert.NotNull(readEntry.DataStream);
+            Assert.Equal(storedData.Length, readEntry.DataStream.Length);
+            byte[] readData = new byte[storedData.Length];
+            Assert.Equal(storedData.Length, readEntry.DataStream.Read(readData));
+            Assert.Equal(storedData, readData);
         }
     }
 }
