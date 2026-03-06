@@ -95,35 +95,23 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             // AddRef function does not match any known CCW tear-off: not a recognised COM IP.
             return TargetPointer.Null;
         }
-
-        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
-        if (wrapper.Next != TargetPointer.Null)
-        {
-            Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
-            ccw = sccw.MainWrapper;
-        }
-
         return ccw;
     }
 
     public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
     {
+        // Navigate to the start of the linked chain, mirroring ComCallWrapper::GetStartWrapper in the runtime.
+        Data.ComCallWrapper firstCheck = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
+        if (firstCheck.Next != TargetPointer.Null)
+        {
+            Data.SimpleComCallWrapper sccwFirst = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(firstCheck.SimpleWrapper);
+            ccw = sccwFirst.MainWrapper;
+        }
+
         ulong comMethodTableSize = _target.GetTypeInfo(DataType.ComMethodTable).Size!.Value;
         int pointerSize = _target.PointerSize;
         // LinkedWrapperTerminator = (PTR_ComCallWrapper)-1: all pointer-sized bits set
         TargetPointer linkedWrapperTerminator = pointerSize == 8 ? TargetPointer.Max64Bit : TargetPointer.Max32Bit;
-
-        // Navigate to the start of the linked chain, mirroring ComCallWrapper::GetStartWrapper in the runtime.
-        // This ensures enumeration always begins at the first wrapper even when a mid-chain CCW is supplied.
-        {
-            Data.ComCallWrapper firstCheck = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
-            if (firstCheck.Next != TargetPointer.Null)
-            {
-                Data.SimpleComCallWrapper sccwFirst = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(firstCheck.SimpleWrapper);
-                ccw = sccwFirst.MainWrapper;
-            }
-        }
-
         bool isFirst = true;
         TargetPointer current = ccw;
         while (current != TargetPointer.Null)
