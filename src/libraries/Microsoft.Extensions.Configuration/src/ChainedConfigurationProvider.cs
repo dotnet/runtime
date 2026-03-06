@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private readonly IConfiguration _config;
         private readonly bool _shouldDisposeConfig;
-        private bool _loaded;
+        private bool _initialLoadCompleted;
 
         /// <summary>
         /// Initializes a new instance from the source configuration.
@@ -63,9 +63,11 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         public void Load()
         {
-            if (!_loaded)
+            if (!_initialLoadCompleted)
             {
-                _loaded = true;
+                // The initial load is a no-op since the chained configuration is expected to be already loaded by the
+                // time it is used as a source for another configuration. This way we avoid unnecessary change notifications.
+                _initialLoadCompleted = true;
                 return;
             }
 
