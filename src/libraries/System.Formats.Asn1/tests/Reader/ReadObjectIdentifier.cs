@@ -7,8 +7,35 @@ using Xunit;
 
 namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class ReadObjectIdentifier
+    public sealed class ReadObjectIdentifierAsnReaderTests : ReadObjectIdentifierBase
     {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateClassReader(data, ruleSet, options);
+        }
+    }
+
+    public sealed class ReadObjectIdentifierValueAsnReaderTests : ReadObjectIdentifierBase
+    {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateValueReader(data, ruleSet, options);
+        }
+    }
+
+    public abstract class ReadObjectIdentifierBase
+    {
+        internal abstract AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default);
+
         [Theory]
         [InlineData("Wrong tag", AsnEncodingRules.BER, "010100")]
         [InlineData("Wrong tag", AsnEncodingRules.CER, "010100")]
@@ -31,16 +58,18 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("Sub-Identifier with leading 0x80", AsnEncodingRules.BER, "060488378001")]
         [InlineData("Sub-Identifier with leading 0x80", AsnEncodingRules.CER, "060488378001")]
         [InlineData("Sub-Identifier with leading 0x80", AsnEncodingRules.DER, "060488378001")]
-        public static void ReadObjectIdentifier_Throws(
+        public void ReadObjectIdentifier_Throws(
             string description,
             AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadObjectIdentifier());
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.ReadObjectIdentifier());
         }
 
         [Theory]
@@ -59,13 +88,13 @@ namespace System.Formats.Asn1.Tests.Reader
             // this is
             // { joint-iso-itu-t(2) uuid(255) thatuuid(329800735698586629295641978511506172918) three(3) }
             "2.255.329800735698586629295641978511506172918.3")]
-        public static void ReadObjectIdentifier_Success(
+        public void ReadObjectIdentifier_Success(
             AsnEncodingRules ruleSet,
             string inputHex,
             string expectedValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             string oidValue = reader.ReadObjectIdentifier();
             Assert.Equal(expectedValue, oidValue);
@@ -96,10 +125,10 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("060383F01D", "2.63437")]
         [InlineData("06028370", "2.416")]
         [InlineData("060103", "0.3")]
-        public static void VerifyMultiByteParsing(string inputHex, string expectedValue)
+        public void VerifyMultiByteParsing(string inputHex, string expectedValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, AsnEncodingRules.DER);
+            AsnReaderWrapper reader = CreateWrapper(inputData, AsnEncodingRules.DER);
 
             string oidValue = reader.ReadObjectIdentifier();
             Assert.Equal(expectedValue, oidValue);
@@ -109,19 +138,21 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
         {
             byte[] inputData = "06028837".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.ReadIntegerBytes(Asn1Tag.Null));
+                static (ref reader) => reader.ReadObjectIdentifier(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadObjectIdentifier(new Asn1Tag(TagClass.ContextSpecific, 0)));
+                ref reader,
+                static (ref reader) => reader.ReadObjectIdentifier(new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
@@ -133,28 +164,33 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
         {
             byte[] inputData = "87028837".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.ReadIntegerBytes(Asn1Tag.Null));
+                static (ref reader) => reader.ReadObjectIdentifier(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<AsnContentException>(() => reader.ReadObjectIdentifier());
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.ReadObjectIdentifier());
 
             Assert.True(reader.HasData, "HasData after default tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadObjectIdentifier(new Asn1Tag(TagClass.Application, 0)));
+                ref reader,
+                static (ref reader) => reader.ReadObjectIdentifier(new Asn1Tag(TagClass.Application, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadObjectIdentifier(new Asn1Tag(TagClass.ContextSpecific, 1)));
+                ref reader,
+                static (ref reader) => reader.ReadObjectIdentifier(new Asn1Tag(TagClass.ContextSpecific, 1)));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
@@ -172,7 +208,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, "80028837", TagClass.ContextSpecific, 0)]
         [InlineData(AsnEncodingRules.CER, "4C028837", TagClass.Application, 12)]
         [InlineData(AsnEncodingRules.DER, "DF8A46028837", TagClass.Private, 1350)]
-        public static void ExpectedTag_IgnoresConstructed(
+        public void ExpectedTag_IgnoresConstructed(
             AsnEncodingRules ruleSet,
             string inputHex,
             TagClass tagClass,
@@ -181,19 +217,22 @@ namespace System.Formats.Asn1.Tests.Reader
             byte[] inputData = inputHex.HexToByteArray();
             Asn1Tag constructedTag = new Asn1Tag(tagClass, tagValue, true);
             Asn1Tag primitiveTag = new Asn1Tag(tagClass, tagValue, false);
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             string val1 = reader.ReadObjectIdentifier(constructedTag);
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
 
             string val2 = reader.ReadObjectIdentifier(primitiveTag);
             Assert.False(reader.HasData);
 
             Assert.Equal(val1, val2);
         }
+    }
 
+    public static class ReadObjectIdentifierDecoderTests
+    {
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
