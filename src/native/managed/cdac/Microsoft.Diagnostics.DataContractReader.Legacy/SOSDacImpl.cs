@@ -3346,6 +3346,9 @@ public sealed unsafe partial class SOSDacImpl
                 {
                     if (itemIndex >= count)
                     {
+#if DEBUG
+                        numWritten = (int)itemIndex;
+#endif
                         throw new ArgumentException();
                     }
 
