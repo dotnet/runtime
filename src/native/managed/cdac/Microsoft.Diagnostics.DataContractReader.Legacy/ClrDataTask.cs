@@ -23,20 +23,21 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 
     int IXCLRDataTask.GetProcess(/*IXCLRDataProcess*/ void** process)
         => _legacyImpl is not null ? _legacyImpl.GetProcess(process) : HResults.E_NOTIMPL;
-    int IXCLRDataTask.GetCurrentAppDomain(out IXCLRDataAppDomain? appDomain)
+    int IXCLRDataTask.GetCurrentAppDomain(DacComNullableByRef<IXCLRDataAppDomain> appDomain)
     {
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
-        appDomain = null;
         IXCLRDataAppDomain? legacyAppDomain = null;
 
         if (_legacyImpl is not null)
         {
-            hrLocal = _legacyImpl.GetCurrentAppDomain(out legacyAppDomain);
+            DacComNullableByRef<IXCLRDataAppDomain> legacyOut = new(isNullRef: false);
+            hrLocal = _legacyImpl.GetCurrentAppDomain(legacyOut);
+            legacyAppDomain = legacyOut.Interface;
         }
         try
         {
             TargetPointer currentAppDomain = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.AppDomain));
-            appDomain = new ClrDataAppDomain(currentAppDomain, legacyAppDomain);
+            appDomain.Interface = new ClrDataAppDomain(currentAppDomain, legacyAppDomain);
         }
         catch (System.Exception ex)
         {
@@ -56,17 +57,15 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
         => _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;
     int IXCLRDataTask.IsSameObject(IXCLRDataTask* task)
         => _legacyImpl is not null ? _legacyImpl.IsSameObject(task) : HResults.E_NOTIMPL;
-    int IXCLRDataTask.GetManagedObject(/*IXCLRDataValue*/ void** value)
+    int IXCLRDataTask.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
         => _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
     int IXCLRDataTask.GetDesiredExecutionState(uint* state)
         => _legacyImpl is not null ? _legacyImpl.GetDesiredExecutionState(state) : HResults.E_NOTIMPL;
     int IXCLRDataTask.SetDesiredExecutionState(uint state)
         => _legacyImpl is not null ? _legacyImpl.SetDesiredExecutionState(state) : HResults.E_NOTIMPL;
 
-    int IXCLRDataTask.CreateStackWalk(uint flags, out IXCLRDataStackWalk? stackWalk)
+    int IXCLRDataTask.CreateStackWalk(uint flags, DacComNullableByRef<IXCLRDataStackWalk> stackWalk)
     {
-        stackWalk = default;
-
         Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
         if (threadData.State.HasFlag(Contracts.ThreadState.Unstarted))
             return HResults.E_FAIL;
@@ -74,12 +73,14 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
         IXCLRDataStackWalk? legacyStackWalk = null;
         if (_legacyImpl is not null)
         {
-            int hr = _legacyImpl.CreateStackWalk(flags, out legacyStackWalk);
+            DacComNullableByRef<IXCLRDataStackWalk> legacyStackWalkOut = new(isNullRef: false);
+            int hr = _legacyImpl.CreateStackWalk(flags, legacyStackWalkOut);
             if (hr < 0)
                 return hr;
+            legacyStackWalk = legacyStackWalkOut.Interface;
         }
 
-        stackWalk = new ClrDataStackWalk(_address, flags, _target, legacyStackWalk);
+        stackWalk.Interface = new ClrDataStackWalk(_address, flags, _target, legacyStackWalk);
         return HResults.S_OK;
     }
 
