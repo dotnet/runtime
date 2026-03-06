@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -897,6 +898,153 @@ namespace System.Formats.Tar.Tests
             }
 
             writer.WriteEntry(entry);
+        }
+
+        // Raw PAX archive building helpers for constructing archives
+        // where header fields intentionally disagree with extended attributes.
+
+        protected static byte[] BuildRawPaxArchiveWithEAPathOverride(string headerName, string eaPath, byte[] fileContent)
+        {
+            using var ms = new MemoryStream();
+            byte[] eaData = BuildRawPaxExtendedAttributeData(eaPath, null);
+
+            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
+            ms.Write(eaData);
+            PadToTarBlockBoundary(ms);
+
+            WriteRawTarHeader(ms, headerName, Convert.ToInt32("644", 8), 0, 0, fileContent.Length, 1700000000, '0', "");
+            ms.Write(fileContent);
+            PadToTarBlockBoundary(ms);
+
+            ms.Write(new byte[1024]);
+            return ms.ToArray();
+        }
+
+        protected static byte[] BuildRawPaxArchiveWithSizeOverride(
+            string headerName, string eaPath, byte[] fileContent,
+            long headerSizeField, long eaSizeOverride)
+        {
+            using var ms = new MemoryStream();
+            var extraEAs = new Dictionary<string, string> { ["size"] = eaSizeOverride.ToString() };
+            byte[] eaData = BuildRawPaxExtendedAttributeData(eaPath, extraEAs);
+
+            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
+            ms.Write(eaData);
+            PadToTarBlockBoundary(ms);
+
+            WriteRawTarHeader(ms, headerName, Convert.ToInt32("644", 8), 0, 0, headerSizeField, 1700000000, '0', "");
+            ms.Write(fileContent);
+            PadToTarBlockBoundary(ms);
+
+            ms.Write(new byte[1024]);
+            return ms.ToArray();
+        }
+
+        protected static byte[] BuildRawPaxArchiveSymlink(
+            string headerName, string eaPath,
+            string headerLinkName, string eaLinkPath)
+        {
+            using var ms = new MemoryStream();
+            var extraEAs = new Dictionary<string, string> { ["linkpath"] = eaLinkPath };
+            byte[] eaData = BuildRawPaxExtendedAttributeData(eaPath, extraEAs);
+
+            WriteRawTarHeader(ms, "PaxHeaders.0/entry", 0, 0, 0, eaData.Length, 0, 'x', "");
+            ms.Write(eaData);
+            PadToTarBlockBoundary(ms);
+
+            WriteRawTarHeader(ms, headerName, Convert.ToInt32("777", 8), 0, 0, 0, 1700000000, '2', headerLinkName);
+
+            ms.Write(new byte[1024]);
+            return ms.ToArray();
+        }
+
+        protected static byte[] BuildRawPaxExtendedAttributeData(string eaPath, Dictionary<string, string> extraEAs)
+        {
+            var sb = new StringBuilder();
+            AppendRawPaxExtendedAttributeRecord(sb, "path", eaPath);
+            if (extraEAs is not null)
+            {
+                foreach (KeyValuePair<string, string> kvp in extraEAs)
+                {
+                    AppendRawPaxExtendedAttributeRecord(sb, kvp.Key, kvp.Value);
+                }
+            }
+
+            return Encoding.UTF8.GetBytes(sb.ToString());
+        }
+
+        protected static void WriteRawTarHeader(MemoryStream ms, string name, int mode, int uid, int gid,
+            long size, long mtime, char typeflag, string linkname)
+        {
+            byte[] header = new byte[512];
+            Encoding.UTF8.GetBytes(name.AsSpan(0, Math.Min(name.Length, 100)), header.AsSpan(0));
+            WriteRawOctalField(header, 100, 8, mode);
+            WriteRawOctalField(header, 108, 8, uid);
+            WriteRawOctalField(header, 116, 8, gid);
+            WriteRawOctalField(header, 124, 12, size);
+            WriteRawOctalField(header, 136, 12, mtime);
+            header[156] = (byte)typeflag;
+            if (!string.IsNullOrEmpty(linkname))
+            {
+                Encoding.UTF8.GetBytes(linkname.AsSpan(0, Math.Min(linkname.Length, 100)), header.AsSpan(157));
+            }
+
+            "ustar\0"u8.CopyTo(header.AsSpan(257));
+            "00"u8.CopyTo(header.AsSpan(263));
+
+            for (int i = 148; i < 156; i++)
+            {
+                header[i] = (byte)' ';
+            }
+
+            long checksum = 0;
+            for (int i = 0; i < 512; i++)
+            {
+                checksum += header[i];
+            }
+
+            WriteRawOctalField(header, 148, 7, checksum);
+            header[155] = (byte)' ';
+            ms.Write(header);
+        }
+
+        protected static void PadToTarBlockBoundary(MemoryStream ms)
+        {
+            int remainder = (int)(ms.Length % 512);
+            if (remainder != 0)
+            {
+                ms.Write(new byte[512 - remainder]);
+            }
+        }
+
+        private static void AppendRawPaxExtendedAttributeRecord(StringBuilder sb, string key, string value)
+        {
+            string content = $" {key}={value}\n";
+            int totalLen = content.Length + 1;
+            while (totalLen.ToString().Length + content.Length != totalLen)
+            {
+                totalLen = totalLen.ToString().Length + content.Length;
+            }
+
+            sb.Append($"{totalLen}{content}");
+        }
+
+        private static void WriteRawOctalField(byte[] buffer, int offset, int fieldLen, long value)
+        {
+            string octal = Convert.ToString(value, 8);
+            int maxDigits = fieldLen - 1;
+            octal = octal.PadLeft(maxDigits, '0');
+            if (octal.Length > maxDigits)
+            {
+                octal = octal[^maxDigits..];
+            }
+
+            for (int i = 0; i < octal.Length; i++)
+            {
+                buffer[offset + i] = (byte)octal[i];
+            }
+
+            buffer[offset + maxDigits] = 0;
         }
     }
 }

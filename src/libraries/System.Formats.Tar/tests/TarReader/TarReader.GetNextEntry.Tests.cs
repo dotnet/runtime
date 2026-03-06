@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -245,7 +247,7 @@ namespace System.Formats.Tar.Tests
                 oldStream = entry.DataStream;
 
                 entry.DataStream = new MemoryStream(); // Substitution, setter should dispose the previous stream
-                using(StreamWriter streamWriter = new StreamWriter(entry.DataStream, leaveOpen: true))
+                using (StreamWriter streamWriter = new StreamWriter(entry.DataStream, leaveOpen: true))
                 {
                     streamWriter.WriteLine("Substituted");
                 }
@@ -412,6 +414,114 @@ namespace System.Formats.Tar.Tests
             Assert.Equal("file2.txt", nextEntry.Name);
 
             Assert.Null(reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void PaxReader_EAPathOverridesHeaderName()
+        {
+            byte[] content = "test data"u8.ToArray();
+            byte[] archive = BuildRawPaxArchiveWithEAPathOverride("data/report.txt", "config/settings.txt", content);
+
+            using var stream = new MemoryStream(archive);
+            using var reader = new TarReader(stream);
+            TarEntry entry = reader.GetNextEntry();
+
+            Assert.NotNull(entry);
+            Assert.Equal("config/settings.txt", entry.Name);
+        }
+
+        [Fact]
+        public void PaxReader_EAPathOverridesHeaderName_TraversalInHeader()
+        {
+            byte[] content = "test data"u8.ToArray();
+            byte[] archive = BuildRawPaxArchiveWithEAPathOverride("../../escape.txt", "safe.txt", content);
+
+            using var stream = new MemoryStream(archive);
+            using var reader = new TarReader(stream);
+            TarEntry entry = reader.GetNextEntry();
+
+            Assert.NotNull(entry);
+            Assert.Equal("safe.txt", entry.Name);
+        }
+
+        [Fact]
+        public void PaxReader_EAPathOverridesHeaderName_TraversalInEA()
+        {
+            byte[] content = "test data"u8.ToArray();
+            byte[] archive = BuildRawPaxArchiveWithEAPathOverride("safe.txt", "../../escape.txt", content);
+
+            using var stream = new MemoryStream(archive);
+            using var reader = new TarReader(stream);
+            TarEntry entry = reader.GetNextEntry();
+
+            Assert.NotNull(entry);
+            Assert.Contains("..", entry.Name);
+        }
+
+        [Fact]
+        public void PaxReader_EALinkpathOverridesHeaderLinkname()
+        {
+            byte[] archive = BuildRawPaxArchiveSymlink("mylink", "mylink", "./safe.txt", "./other.txt");
+
+            using var stream = new MemoryStream(archive);
+            using var reader = new TarReader(stream);
+            TarEntry entry = reader.GetNextEntry();
+
+            Assert.NotNull(entry);
+            Assert.Equal("./other.txt", entry.LinkName);
+        }
+
+        [Fact]
+        public void PaxReader_EASizeOverridesHeaderSize_Larger()
+        {
+            byte[] actualData = "ABCDEFGHIJ"u8.ToArray();
+            long headerSize = 10;
+            long eaSize = 50;
+
+            byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, headerSize, eaSize);
+
+            using var stream = new MemoryStream(archive);
+            using var reader = new TarReader(stream);
+            TarEntry entry = reader.GetNextEntry(copyData: true);
+
+            Assert.NotNull(entry);
+            Assert.Equal(eaSize, entry.Length);
+        }
+
+        [Fact]
+        public void PaxReader_EASizeOverridesHeaderSize_Smaller()
+        {
+            byte[] actualData = new byte[100];
+            Array.Fill<byte>(actualData, (byte)'X');
+            long headerSize = 100;
+            long eaSize = 25;
+
+            byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, headerSize, eaSize);
+
+            using var stream = new MemoryStream(archive);
+            using var reader = new TarReader(stream);
+            TarEntry entry = reader.GetNextEntry(copyData: true);
+
+            Assert.NotNull(entry);
+            Assert.Equal(eaSize, entry.Length);
+        }
+
+        [Fact]
+        public void PaxReader_EntryLengthAndDataStreamLengthAreConsistent()
+        {
+            byte[] actualData = "ABCDEFGHIJ"u8.ToArray();
+            long headerSize = 10;
+            long eaSize = 50;
+
+            byte[] archive = BuildRawPaxArchiveWithSizeOverride("file.bin", "file.bin", actualData, headerSize, eaSize);
+
+            using var stream = new MemoryStream(archive);
+            using var reader = new TarReader(stream);
+            TarEntry entry = reader.GetNextEntry(copyData: true);
+
+            Assert.NotNull(entry);
+            Assert.NotNull(entry.DataStream);
+            Assert.Equal(entry.Length, entry.DataStream.Length);
         }
     }
 }
