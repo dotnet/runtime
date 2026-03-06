@@ -98,6 +98,24 @@ public readonly struct GCOomData
     public bool LohP { get; init; }
 }
 
+public enum FreeRegionKind
+{
+    FreeUnknownRegion = 0,
+    FreeGlobalHugeRegion = 1,
+    FreeGlobalRegion = 2,
+    FreeRegion = 3,
+    FreeSohSegment = 4,
+    FreeUohSegment = 5,
+}
+
+public readonly struct GCMemoryRegionData
+{
+    public TargetPointer Start { get; init; }
+    public ulong Size { get; init; }
+    public ulong ExtraData { get; init; }
+    public int Heap { get; init; }
+}
+
 public interface IGC : IContract
 {
     static string IContract.Name { get; } = nameof(GC);
@@ -128,6 +146,10 @@ public interface IGC : IContract
     HandleType[] GetHandleTypes(uint[] types) => throw new NotImplementedException();
 
     void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit) => throw new NotImplementedException();
+
+    IReadOnlyList<GCMemoryRegionData> GetHandleTableMemoryRegions() => throw new NotImplementedException();
+    IReadOnlyList<GCMemoryRegionData> GetGCBookkeepingMemoryRegions() => throw new NotImplementedException();
+    IReadOnlyList<GCMemoryRegionData> GetGCFreeRegions() => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

@@ -34,6 +34,13 @@ CDAC_TYPE_FIELD(GCHeap, /*pointer*/, InterestingData, cdac_data<GC_NAMESPACE::gc
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, CompactReasons, cdac_data<GC_NAMESPACE::gc_heap>::CompactReasons)
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, ExpandMechanisms, cdac_data<GC_NAMESPACE::gc_heap>::ExpandMechanisms)
 CDAC_TYPE_FIELD(GCHeap, /*pointer*/, InterestingMechanismBits, cdac_data<GC_NAMESPACE::gc_heap>::InterestingMechanismBits)
+#ifdef BACKGROUND_GC
+CDAC_TYPE_FIELD(GCHeap, /*pointer*/, FreeableSohSegment, cdac_data<GC_NAMESPACE::gc_heap>::FreeableSohSegment)
+CDAC_TYPE_FIELD(GCHeap, /*pointer*/, FreeableUohSegment, cdac_data<GC_NAMESPACE::gc_heap>::FreeableUohSegment)
+#endif // BACKGROUND_GC
+#ifdef USE_REGIONS
+CDAC_TYPE_FIELD(GCHeap, /*pointer*/, FreeRegions, cdac_data<GC_NAMESPACE::gc_heap>::FreeRegions)
+#endif // USE_REGIONS
 CDAC_TYPE_END(GCHeap)
 #endif // SERVER_GC
 
@@ -104,6 +111,18 @@ CDAC_TYPE_FIELD(TableSegment, /*uint8_t[]*/, RgValue, offsetof(TableSegment, rgV
 CDAC_TYPE_FIELD(TableSegment, /*uint8_t[]*/, RgUserData, offsetof(TableSegment, rgUserData))
 CDAC_TYPE_END(TableSegment)
 
+CDAC_TYPE_BEGIN(CardTableInfo)
+CDAC_TYPE_SIZE(sizeof(dac_card_table_info))
+CDAC_TYPE_FIELD(CardTableInfo, /*uint32*/, Recount, offsetof(dac_card_table_info, recount))
+CDAC_TYPE_FIELD(CardTableInfo, /*nuint*/, Size, offsetof(dac_card_table_info, size))
+CDAC_TYPE_FIELD(CardTableInfo, /*pointer*/, NextCardTable, offsetof(dac_card_table_info, next_card_table))
+CDAC_TYPE_END(CardTableInfo)
+
+CDAC_TYPE_BEGIN(RegionFreeList)
+CDAC_TYPE_SIZE(sizeof(dac_region_free_list))
+CDAC_TYPE_FIELD(RegionFreeList, /*pointer*/, HeadFreeRegion, offsetof(dac_region_free_list, head_free_region))
+CDAC_TYPE_END(RegionFreeList)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -125,6 +144,11 @@ CDAC_GLOBAL(HandleBlocksPerSegment, /*uint32*/, HANDLE_BLOCKS_PER_SEGMENT)
 CDAC_GLOBAL(HandleMaxInternalTypes, /*uint32*/, HANDLE_MAX_INTERNAL_TYPES)
 CDAC_GLOBAL(HandlesPerBlock, /*uint32*/, HANDLE_HANDLES_PER_BLOCK)
 CDAC_GLOBAL(BlockInvalid, /*uint8*/, BLOCK_INVALID)
+CDAC_GLOBAL(HandleSegmentSize, /*uint32*/, HANDLE_SEGMENT_SIZE)
+CDAC_GLOBAL(CardTableInfoSize, /*uint32*/, (uint32_t)sizeof(dac_card_table_info))
+#ifdef USE_REGIONS
+CDAC_GLOBAL(CountFreeRegionKinds, /*uint32*/, (uint32_t)FREE_REGION_KINDS)
+#endif // USE_REGIONS
 
 
 #ifndef SERVER_GC
@@ -149,9 +173,21 @@ CDAC_GLOBAL_POINTER(GCHeapInterestingData, cdac_data<GC_NAMESPACE::gc_heap>::Int
 CDAC_GLOBAL_POINTER(GCHeapCompactReasons, cdac_data<GC_NAMESPACE::gc_heap>::CompactReasons)
 CDAC_GLOBAL_POINTER(GCHeapExpandMechanisms, cdac_data<GC_NAMESPACE::gc_heap>::ExpandMechanisms)
 CDAC_GLOBAL_POINTER(GCHeapInterestingMechanismBits, cdac_data<GC_NAMESPACE::gc_heap>::InterestingMechanismBits)
+#ifdef BACKGROUND_GC
+CDAC_GLOBAL_POINTER(GCHeapFreeableSohSegment, cdac_data<GC_NAMESPACE::gc_heap>::FreeableSohSegment)
+CDAC_GLOBAL_POINTER(GCHeapFreeableUohSegment, cdac_data<GC_NAMESPACE::gc_heap>::FreeableUohSegment)
+#endif // BACKGROUND_GC
+#ifdef USE_REGIONS
+CDAC_GLOBAL_POINTER(GCHeapFreeRegions, cdac_data<GC_NAMESPACE::gc_heap>::FreeRegions)
+#endif // USE_REGIONS
 #endif // !SERVER_GC
 
 CDAC_GLOBAL_POINTER(HandleTableMap, &g_HandleTableMap)
+CDAC_GLOBAL_POINTER(BookkeepingStart, cdac_data<GC_NAMESPACE::gc_heap>::BookkeepingStart)
+#ifdef USE_REGIONS
+CDAC_GLOBAL_POINTER(GlobalFreeHugeRegions, cdac_data<GC_NAMESPACE::gc_heap>::GlobalFreeHugeRegions)
+CDAC_GLOBAL_POINTER(GlobalRegionsToDecommit, cdac_data<GC_NAMESPACE::gc_heap>::GlobalRegionsToDecommit)
+#endif // USE_REGIONS
 
 #ifdef SERVER_GC
 #define GC_TYPE server
