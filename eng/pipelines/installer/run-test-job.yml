@@ -1,0 +1,81 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  targetRid: ''
+  hostedOs: ''
+  timeoutInMinutes: 150
+  pool: ''
+  condition: true
+  shouldContinueOnError: false
+  variables: {}
+  dependsOn: []
+  dependsOnGlobalBuilds: []
+  helixQueues: []
+  buildArtifactName: ''
+  testArtifactName: ''
+  templatePath: 'templates'
+
+jobs:
+  - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
+    parameters:
+      enablePublishBuildArtifacts: true
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      condition: and(succeeded(), ${{ parameters.condition }})
+      helixRepo: dotnet/runtime
+      displayName: ${{ format('Installer Test {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      ${{ if eq(parameters.hostedOs, '') }}:
+        name: ${{ format('installer_test_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      ${{ if ne(parameters.hostedOs, '') }}:
+        name: ${{ format('installer_test_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.hostedOs, parameters.buildConfig) }}
+
+      pool: ${{ parameters.pool }}
+
+      ${{ if eq(parameters.osSubGroup, '_musl') }}:
+        disableComponentGovernance: true
+
+      dependsOn:
+      - ${{ each build in parameters.dependsOn }}:
+        - ${{ build }}
+      - ${{ each globalBuild in parameters.dependsOnGlobalBuilds }}:
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(globalBuild.buildConfig, parameters.buildConfig), globalBuild.nameSuffix) }}
+
+      workspace:
+        clean: all
+
+      variables:
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - group: DotNet-HelixApi-Access
+          - group: AzureDevOps-Artifact-Feeds-Pats
+
+        - ${{ parameters.variables }}
+
+      steps:
+      - checkout: self
+        clean: true
+        fetchDepth: $(checkoutFetchDepth)
+        fetchTags: false
+
+      - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
+
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+          artifactFileName: '${{ parameters.buildArtifactName }}$(archiveExtension)'
+          artifactName: '${{ parameters.buildArtifactName }}'
+          displayName: 'unified artifacts'
+
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/tests
+          artifactFileName: '${{ parameters.testArtifactName }}$(archiveExtension)'
+          artifactName: '${{ parameters.testArtifactName }}'
+          displayName: 'installer test artifacts'
+
+      - template: /eng/pipelines/installer/helix.yml
+        parameters:
+          osGroup: ${{ parameters.osGroup }}
+          archType: ${{ parameters.archType }}
+          helixQueues: ${{ parameters.helixQueues }}
+          creator: dotnet-bot

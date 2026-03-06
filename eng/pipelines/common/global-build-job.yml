@@ -2,7 +2,6 @@ parameters:
   buildConfig: ''
   nameSuffix: ''
   buildArgs: ''
-  skipBuild: false
   archType: ''
   hostedOs: ''
   osGroup: ''
@@ -215,31 +214,30 @@ jobs:
         - ${{ else }}:
           - ${{ preBuildStep }}
 
-    - ${{ if ne(parameters.skipBuild, true) }}:
-      # Build
-      - template: /eng/pipelines/common/templates/global-build-step.yml
-        parameters:
-          buildArgs: ${{ parameters.buildArgs }}
-          useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
-          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    # Build
+    - template: /eng/pipelines/common/templates/global-build-step.yml
+      parameters:
+        buildArgs: ${{ parameters.buildArgs }}
+        useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
+        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
-      - task: CopyFiles@2
-        displayName: Gather CMakeConfigureLog for publish to artifacts
-        inputs:
-          SourceFolder: 'artifacts/obj'
-          Contents: '**/CMakeConfigureLog.yaml'
-          TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
-        continueOnError: true
+    - task: CopyFiles@2
+      displayName: Gather CMakeConfigureLog for publish to artifacts
+      inputs:
+        SourceFolder: 'artifacts/obj'
+        Contents: '**/CMakeConfigureLog.yaml'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
+      continueOnError: true
+      condition: always()
+
+    - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage after Build
         condition: always()
 
-      - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
-        - script: |
-            du -sh $(Build.SourcesDirectory)/*
-            df -h
-          displayName: Disk Usage after Build
-          condition: always()
-
-      # If intended to send extra steps after regular build add them here.
+    # If intended to send extra steps after regular build add them here.
     - ${{ if ne(parameters.postBuildSteps,'') }}:
       - ${{ each postBuildStep in parameters.postBuildSteps }}:
         - ${{ if ne(postBuildStep.template, '') }}:
