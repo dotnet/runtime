@@ -858,7 +858,7 @@ namespace System.Numerics.Tensors
 
             InvokeSpanIntoSpan<ExpOperator_Single>(x, destination);
             float expSum = Sum(destination);
-            InvokeSpanScalarIntoSpan<DivideOperator_Single>(destination, expSum, destination);
+            InvokeSpanScalarIntoSpan<MultiplyOperator_Single>(destination, 1f / expSum, destination);
         }
 
         /// <summary>Computes the element-wise difference between single-precision floating-point numbers in the specified tensors.</summary>
