@@ -15,15 +15,15 @@ import { validateEngineFeatures } from "./bootstrap";
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
 async function callLibraryInitializers(modules: JsModuleExports[], resources: any[], methodName: string, args: any): Promise<void> {
-    for (let i = 0; i < modules.length; i++) {
+    await Promise.all(modules.map(async (module, i) => {
         try {
-            await (modules[i] as any)[methodName]?.(args);
+            await (module as any)[methodName]?.(args);
         } catch (err) {
             const name = (resources[i] as any).name || "unknown";
             const message = err instanceof Error ? err.message : String(err);
             throw new Error(`Failed to invoke '${methodName}' on library initializer '${name}': ${message}`, { cause: err });
         }
-    }
+    }));
 }
 
 // WASM-TODO: downloadOnly - Blazor render mode auto pre-download. Really no start.
