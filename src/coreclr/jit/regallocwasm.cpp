@@ -340,6 +340,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForBinop(node->AsOp());
             break;
 
+        case GT_STOREIND:
+            CollectReferencesForStoreInd(node->AsStoreInd());
+            break;
+
         case GT_STORE_BLK:
             CollectReferencesForBlockStore(node->AsBlk());
             break;
@@ -450,6 +454,19 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
     ConsumeTemporaryRegForOperand(binopNode->gtGetOp1() DEBUGARG("binop overflow check"));
 }
 
+//------------------------------------------------------------------------
+// CollectReferencesForStoreInd: Collect virtual register references for an indirect store
+//
+// Arguments:
+//    node - The GT_STOREIND node
+//
+void WasmRegAlloc::CollectReferencesForStoreInd(GenTreeStoreInd* node)
+{
+    GenTree* const addr = node->Addr();
+    ConsumeTemporaryRegForOperand(addr DEBUGARG("storeind null check"));
+}
+
+//------------------------------------------------------------------------
 // CollectReferencesForBlockStore: Collect virtual register references for a block store.
 //
 // Arguments:

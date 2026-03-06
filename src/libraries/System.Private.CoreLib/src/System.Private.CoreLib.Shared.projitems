@@ -47,6 +47,7 @@
     <DefineConstants Condition="'$(TargetsLinux)' == 'true'">$(DefineConstants);TARGET_LINUX</DefineConstants>
     <DefineConstants Condition="'$(TargetsFreeBSD)' == 'true'">$(DefineConstants);TARGET_FREEBSD</DefineConstants>
     <DefineConstants Condition="'$(TargetsNetBSD)' == 'true'">$(DefineConstants);TARGET_NETBSD</DefineConstants>
+    <DefineConstants Condition="'$(TargetsOpenBSD)' == 'true'">$(DefineConstants);TARGET_OPENBSD</DefineConstants>
     <DefineConstants Condition="'$(Targetsillumos)' == 'true'">$(DefineConstants);TARGET_ILLUMOS</DefineConstants>
     <DefineConstants Condition="'$(TargetsSolaris)' == 'true'">$(DefineConstants);TARGET_SOLARIS</DefineConstants>
     <DefineConstants Condition="'$(TargetsHaiku)' == 'true'">$(DefineConstants);TARGET_HAIKU</DefineConstants>

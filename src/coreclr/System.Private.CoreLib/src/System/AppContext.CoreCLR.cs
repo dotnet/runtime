@@ -11,6 +11,34 @@ namespace System
     {
         [UnmanagedCallersOnly]
         [RequiresUnsafe]
+        private static unsafe void OnProcessExit(Exception* pException)
+        {
+            try
+            {
+                OnProcessExit();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
+        private static unsafe void OnUnhandledException(object* pException, Exception* pOutException)
+        {
+            try
+            {
+                OnUnhandledException(*pException);
+            }
+            catch
+            {
+                // The VM does not expect exceptions to propagate out of this callback
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [RequiresUnsafe]
         internal static unsafe void OnFirstChanceException(Exception* pException, Exception* pOutException)
         {
             try
