@@ -38,7 +38,16 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
             ILoader loader = _target.Contracts.Loader;
             string friendlyName = loader.GetAppDomainFriendlyName();
 
+            uint requiredLen = (uint)friendlyName.Length + 1;
+
+            if (nameLen is not null)
+                *nameLen = requiredLen;
+
             OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, friendlyName);
+
+            // Match native DAC behavior: return S_FALSE when output is truncated.
+            if (name is not null && bufLen > 0 && bufLen < requiredLen)
+                hr = HResults.S_FALSE;
         }
         catch (System.Exception ex)
         {
@@ -50,8 +59,8 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
         {
             uint nameLenLocal;
             int hrLocal = _legacyImpl.GetName(bufLen, &nameLenLocal, null);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            if (hr == HResults.S_OK && nameLen is not null)
+            Debug.ValidateHResult(hrLocal, hr);
+            if (hr >= 0 && nameLen is not null)
                 Debug.Assert(*nameLen == nameLenLocal, $"cDAC: {*nameLen}, DAC: {nameLenLocal}");
         }
 #endif

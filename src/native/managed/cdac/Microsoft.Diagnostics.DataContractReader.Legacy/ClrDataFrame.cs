@@ -49,11 +49,16 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             if (contextSize is not null)
                 *contextSize = (uint)context.Length;
 
-            if (contextBufSize > context.Length)
-                return HResults.E_INVALIDARG;
-
-            if (contextBufSize > 0)
-                Array.Copy(context, 0, contextBuf, 0, (int)contextBufSize);
+            // Match native DAC behavior: fail when the buffer is too small,
+            // and on success copy the full context.
+            if (contextBufSize < (uint)context.Length)
+            {
+                hr = HResults.E_INVALIDARG;
+            }
+            else if (contextBufSize > 0 && context.Length > 0)
+            {
+                Array.Copy(context, 0, contextBuf, 0, context.Length);
+            }
         }
         catch (System.Exception ex)
         {
@@ -65,7 +70,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             byte[] localContextBuf = new byte[contextBufSize];
             int hrLocal = _legacyImpl.GetContext(contextFlags, contextBufSize, null, localContextBuf);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hrLocal, hr);
 
             if (hr == HResults.S_OK)
             {
