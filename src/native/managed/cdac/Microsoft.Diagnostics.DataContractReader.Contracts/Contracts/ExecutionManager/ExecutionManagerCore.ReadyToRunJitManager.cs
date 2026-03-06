@@ -279,7 +279,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 return;
 
             uint low = 0;
-            uint high = count - 1;
+            uint high = count - 2;
             uint entrySize = Target.GetTypeInfo(DataType.ExceptionLookupTableEntry).Size!.Value;
             while (high - low > 10)
             {
