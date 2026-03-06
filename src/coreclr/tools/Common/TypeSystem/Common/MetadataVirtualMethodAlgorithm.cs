@@ -850,6 +850,10 @@ namespace Internal.TypeSystem
 
         public static DefaultInterfaceMethodResolution ResolveVariantInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, MetadataType currentType, out MethodDesc impl)
         {
+            DefaultInterfaceMethodResolution resolution = FindDefaultInterfaceImplementation(interfaceMethod, currentType, allowVariance: false, out impl);
+            if (resolution != DefaultInterfaceMethodResolution.None)
+                return resolution;
+
             return FindDefaultInterfaceImplementation(interfaceMethod, currentType, allowVariance: true, out impl);
         }
 
@@ -942,72 +946,90 @@ namespace Internal.TypeSystem
             MethodDesc[] candidateMethods = new MethodDesc[consideredInterfaces.Length];
             int candidatesCount = 0;
 
-            foreach (MetadataType currentMT in consideredInterfaces)
+            // Walk interface from derived class to parent class
+            // (parent interface are laid out first in interface map)
+            MetadataType pMT = currentType;
+
+            while (pMT != null)
             {
-                if (!TryGetCandidateImplementation(currentMT, interfaceMethod, interfaceMT, allowVariance, out MethodDesc currentMD))
-                    continue;
+                MetadataType pParentMT = pMT.BaseType;
+                int dwParentInterfaces = pParentMT != null ? pParentMT.RuntimeInterfaces.Length : 0;
 
-                //
-                // Found a match. But is it a more specific match (we want most specific interfaces)
-                //
-                bool needToInsert = true;
-                bool seenMoreSpecific = false;
+                // Scanning only current class only if the current class have more interface than parent
+                int totalInterfaces = currentType.IsInterface && pMT == currentType
+                    ? consideredInterfaces.Length
+                    : pMT.RuntimeInterfaces.Length;
 
-                // We need to maintain the invariant that the candidates are always the most specific
-                // in all path scaned so far. There might be multiple incompatible candidates
-                for (int i = 0; i < candidatesCount; i++)
+                for (int index = dwParentInterfaces; index < totalInterfaces; index++)
                 {
-                    MetadataType candidateMT = candidateInterfaces[i];
-                    if (candidateMT is null)
+                    MetadataType currentMT = (MetadataType)consideredInterfaces[index];
+                    if (!TryGetCandidateImplementation(currentMT, interfaceMethod, interfaceMT, allowVariance, out MethodDesc currentMD))
                         continue;
 
-                    if (candidateMT == currentMT)
-                    {
-                        // A dup - we are done
-                        needToInsert = false;
-                        break;
-                    }
+                    //
+                    // Found a match. But is it a more specific match (we want most specific interfaces)
+                    //
+                    bool needToInsert = true;
+                    bool seenMoreSpecific = false;
 
-                    if (allowVariance && candidateMT.HasSameTypeDefinition(currentMT))
+                    // We need to maintain the invariant that the candidates are always the most specific
+                    // in all path scaned so far. There might be multiple incompatible candidates
+                    for (int i = 0; i < candidatesCount; i++)
                     {
-                        // Variant match on the same type - this is a tie
-                    }
-                    else if (currentMT.CanCastTo(candidateMT))
-                    {
-                        // pCurMT is a more specific choice than IFoo/IBar both overrides IBlah :
-                        if (!seenMoreSpecific)
+                        MetadataType candidateMT = candidateInterfaces[i];
+                        if (candidateMT is null)
+                            continue;
+
+                        if (candidateMT == currentMT)
                         {
-                            seenMoreSpecific = true;
-                            candidateInterfaces[i] = currentMT;
-                            candidateMethods[i] = currentMD;
+                            // A dup - we are done
+                            needToInsert = false;
+                            break;
+                        }
+
+                        if (allowVariance && candidateMT.HasSameTypeDefinition(currentMT))
+                        {
+                            // Variant match on the same type - this is a tie
+                        }
+                        else if (currentMT.CanCastTo(candidateMT))
+                        {
+                            // pCurMT is a more specific choice than IFoo/IBar both overrides IBlah :
+                            if (!seenMoreSpecific)
+                            {
+                                seenMoreSpecific = true;
+                                candidateInterfaces[i] = currentMT;
+                                candidateMethods[i] = currentMD;
+                            }
+                            else
+                            {
+                                candidateInterfaces[i] = null;
+                                candidateMethods[i] = null;
+                            }
+                            needToInsert = false;
+                        }
+                        else if (candidateMT.CanCastTo(currentMT))
+                        {
+                            // pCurMT is less specific - we don't need to scan more entries as this entry can
+                            // represent pCurMT (other entries are incompatible with pCurMT)
+                            needToInsert = false;
+                            break;
                         }
                         else
                         {
-                            candidateInterfaces[i] = null;
-                            candidateMethods[i] = null;
+                            // pCurMT is incompatible - keep scanning
                         }
-                        needToInsert = false;
                     }
-                    else if (candidateMT.CanCastTo(currentMT))
+
+                    if (needToInsert)
                     {
-                        // pCurMT is less specific - we don't need to scan more entries as this entry can
-                        // represent pCurMT (other entries are incompatible with pCurMT)
-                        needToInsert = false;
-                        break;
-                    }
-                    else
-                    {
-                        // pCurMT is incompatible - keep scanning
+                        Debug.Assert(candidatesCount < candidateInterfaces.Length);
+                        candidateInterfaces[candidatesCount] = currentMT;
+                        candidateMethods[candidatesCount] = currentMD;
+                        candidatesCount++;
                     }
                 }
 
-                if (needToInsert)
-                {
-                    Debug.Assert(candidatesCount < candidateInterfaces.Length);
-                    candidateInterfaces[candidatesCount] = currentMT;
-                    candidateMethods[candidatesCount] = currentMD;
-                    candidatesCount++;
-                }
+                pMT = pParentMT;
             }
 
             // scan to see if there are any conflicts
@@ -1026,8 +1048,8 @@ namespace Internal.TypeSystem
                     bestCandidateMD = candidateMethods[i];
 
                     // If this is a second pass lookup, we know this is a variant match. As such
-                    // we pick the first result as the winner and don't look for a conflict for instance methods.
-                    if (allowVariance && !interfaceMethod.Signature.IsStatic)
+                    // we pick the first result as the winner
+                    if (allowVariance)
                         break;
                 }
                 else if (bestCandidateMT != candidateInterfaces[i])
