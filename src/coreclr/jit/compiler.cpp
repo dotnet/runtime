@@ -6588,7 +6588,12 @@ void Compiler::compCompileFinish()
 #endif
         }
     }
-#endif // DEBUG
+#else  // DEBUG
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.report(this);
+    }
+#endif // !DEBUG
 }
 
 #ifdef PSEUDORANDOM_NOP_INSERTION

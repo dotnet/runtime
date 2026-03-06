@@ -67,7 +67,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         {
             byte[] localContextBuf = new byte[contextBufSize];
             int hrLocal = _legacyImpl.GetContext(contextFlags, contextBufSize, null, localContextBuf);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
 
             if (hr == HResults.S_OK)
             {
@@ -128,13 +128,17 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             hr = ex.HResult;
         }
 
-#if DEBUG
+        // Advance the legacy stack walk to keep it in sync with the cDAC walk.
+        // GetFrame() passes the legacy frame to ClrDataFrame, which delegates
+        // GetArgumentByIndex/GetLocalVariableByIndex to it. If we don't advance
+        // the legacy walk here, those calls operate on the wrong frame.
         if (_legacyImpl is not null)
         {
             int hrLocal = _legacyImpl.Next();
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-        }
+#if DEBUG
+            Debug.ValidateHResult(hr, hrLocal);
 #endif
+        }
 
         return hr;
     }
@@ -170,7 +174,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             {
                 hrLocal = _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, localOutBufferPtr);
             }
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
 
             for (int i = 0; i < outBufferSize; i++)
             {
