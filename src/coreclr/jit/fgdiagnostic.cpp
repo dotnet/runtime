@@ -3064,6 +3064,28 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(succBlock->bbTraversalStamp == curTraversalStamp);
         }
 
+        // Block that isn't BBJ_RETURN should not contain GT_RETURN node.
+        if (!block->KindIs(BBJ_RETURN))
+        {
+            for (Statement* const stmt : block->Statements())
+            {
+                GenTree* tree = stmt->GetRootNode();
+                assert(!tree->OperIs(GT_RETURN));
+            }
+        }
+
+        // If the block contains a GT_RETURN node it should be last.
+        if (block->KindIs(BBJ_RETURN))
+        {
+            for (Statement* const stmt : block->Statements())
+            {
+                GenTree* tree       = stmt->GetRootNode();
+                bool     isReturn   = tree->OperIs(GT_RETURN);
+                bool     isLastStmt = stmt->GetNextStmt() == nullptr;
+                assert(!(isReturn && !isLastStmt));
+            }
+        }
+
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
         // lowered GT_SWITCH_TABLE node then make sure it
         // ends with a conditional jump or a GT_SWITCH
