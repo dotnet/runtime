@@ -42,11 +42,6 @@ namespace Microsoft.Win32.SafeHandles
                     Debug.Assert(!tempReadHandle.IsInvalid);
                     Debug.Assert(!tempWriteHandle.IsInvalid);
 
-                    if (tempReadHandle.IsInvalid || tempWriteHandle.IsInvalid)
-                    {
-                        throw new Win32Exception(Interop.Errors.ERROR_INVALID_HANDLE);
-                    }
-
                     tempReadHandle._fileOptions = FileOptions.None;
                     tempWriteHandle._fileOptions = FileOptions.None;
                 }

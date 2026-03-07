@@ -202,13 +202,17 @@ namespace Microsoft.Win32.SafeHandles
 
             int readFd = fds[Interop.Sys.ReadEndOfPipe];
             int writeFd = fds[Interop.Sys.WriteEndOfPipe];
+            bool closeReadFd = true;
+            bool closeWriteFd = true;
 
             SafeFileHandle? tempReadHandle = null;
             SafeFileHandle? tempWriteHandle = null;
             try
             {
                 tempReadHandle = new SafeFileHandle((IntPtr)readFd, ownsHandle: true);
+                closeReadFd = false;
                 tempWriteHandle = new SafeFileHandle((IntPtr)writeFd, ownsHandle: true);
+                closeWriteFd = false;
 
                 tempReadHandle.IsAsync = asyncRead;
                 tempWriteHandle.IsAsync = asyncWrite;
@@ -223,6 +227,16 @@ namespace Microsoft.Win32.SafeHandles
             {
                 tempReadHandle?.Dispose();
                 tempWriteHandle?.Dispose();
+
+                if (closeReadFd)
+                {
+                    Interop.Sys.Close(readFd);
+                }
+
+                if (closeWriteFd)
+                {
+                    Interop.Sys.Close(writeFd);
+                }
             }
         }
 
