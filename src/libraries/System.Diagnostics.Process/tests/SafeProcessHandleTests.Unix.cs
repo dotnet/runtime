@@ -95,7 +95,7 @@ namespace System.Diagnostics.Tests
             using SafeProcessHandle copy = new(started.DangerousGetHandle(), ownsHandle: false);
             Assert.Throws<PlatformNotSupportedException>(() => copy.ProcessId);
 
-            copy.Kill();
+            started.Kill();
             Assert.True(started.TryWaitForExit(TimeSpan.FromMilliseconds(300), out _));
         }
     }

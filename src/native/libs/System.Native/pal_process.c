@@ -1082,7 +1082,7 @@ int32_t SystemNative_SpawnProcess(
     }
     if (out_pidfd != NULL)
     {
-        *out_pidfd = -1; // pidfd not supported on macOS
+        *out_pidfd = INT_MIN; // pidfd not supported on macOS (-1 is treated as invalid handle)
     }
     return 0;
 #else
@@ -1336,7 +1336,7 @@ int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int3
 
 int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd)
 {
-    *out_pidfd = -1;
+    *out_pidfd = INT_MIN;
 
     return kill(pid, 0);
 }
