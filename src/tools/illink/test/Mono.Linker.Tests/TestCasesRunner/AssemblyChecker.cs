@@ -832,7 +832,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             if (src.CustomAttributes.Any(attr => attr.AttributeType.Name == expectModifiedAttributeName))
             {
-                if (linkedValues.ToHashSet().SetEquals(srcValues.ToHashSet()))
+                if (linkedValues.SequenceEqual(srcValues))
                 {
                     yield return $"Expected method `{src} to have it's {propertyDescription} modified, however, the {propertyDescription} were the same as the original\n{FormattingUtils.FormatSequenceCompareFailureMessage(linkedValues, srcValues)}";
                 }
@@ -840,14 +840,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
             else if (expectedSequenceAttribute != null)
             {
                 var expected = getExpectFromSequenceAttribute(expectedSequenceAttribute).ToArray();
-                if (!linkedValues.ToHashSet().SetEquals(expected.ToHashSet()))
+                if (!linkedValues.SequenceEqual(expected))
                 {
                     yield return $"Expected method `{src} to have it's {propertyDescription} modified, however, the sequence of {propertyDescription} does not match the expected value\n{FormattingUtils.FormatSequenceCompareFailureMessage2(linkedValues, expected, srcValues)}";
                 }
             }
             else
             {
-                if (!linkedValues.ToHashSet().SetEquals(srcValues.ToHashSet()))
+                if (!linkedValues.SequenceEqual(srcValues))
                 {
                     yield return $"Expected method `{src} to have it's {propertyDescription} unchanged, however, the {propertyDescription} differ from the original\n{FormattingUtils.FormatSequenceCompareFailureMessage(linkedValues, srcValues)}";
                 }
