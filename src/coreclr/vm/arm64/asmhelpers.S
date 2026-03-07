@@ -16,6 +16,22 @@ LEAF_ENTRY GetCurrentSP, _TEXT
     ret lr
 LEAF_END GetCurrentSP, _TEXT
 
+// void SaveInterpCalleeSavedRegisters(CalleeSavedRegisters* regs, UINT64* fpRegs)
+// Saves callee-saved GP and FP registers into the provided buffers.
+LEAF_ENTRY SaveInterpCalleeSavedRegisters, _TEXT
+    stp x29, x30, [x0, #0]
+    stp x19, x20, [x0, #16]
+    stp x21, x22, [x0, #32]
+    stp x23, x24, [x0, #48]
+    stp x25, x26, [x0, #64]
+    stp x27, x28, [x0, #80]
+    stp d8,  d9,  [x1, #0]
+    stp d10, d11, [x1, #16]
+    stp d12, d13, [x1, #32]
+    stp d14, d15, [x1, #48]
+    ret lr
+LEAF_END SaveInterpCalleeSavedRegisters, _TEXT
+
 // DWORD64 __stdcall GetDataCacheZeroIDReg(void)
 LEAF_ENTRY GetDataCacheZeroIDReg, _TEXT
     mrs     x0, dczid_el0

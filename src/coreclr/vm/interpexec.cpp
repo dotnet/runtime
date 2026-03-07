@@ -197,9 +197,28 @@ static size_t CreateDispatchTokenForMethod(MethodDesc* pMD)
 #ifdef TARGET_WASM
 // Unused on WASM
 #define SAVE_THE_LOWEST_SP do {} while (0)
+#define SAVE_THE_RESUME_IP do {} while (0)
 #else
+
+extern "C" void STDCALL SaveInterpCalleeSavedRegisters(CalleeSavedRegisters* regs, void* fpRegs);
+
 // Save the lowest SP in the current method so that we can identify it by that during stackwalk
 #define SAVE_THE_LOWEST_SP pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP())
+// Save an IP inside InterpExecMethod and callee-saved registers for deterministic
+// ResumeAfterCatch. The IP is called from within the try block so it falls within
+// the try range recognized by the C++ exception handler.
+#if !defined(UNIX_AMD64_ABI) && !defined(UNIX_X86_ABI)
+#define SAVE_THE_RESUME_IP do { \
+    pInterpreterFrame->SetInterpExecMethodIP((TADDR)GetCurrentIP()); \
+    SaveInterpCalleeSavedRegisters(pInterpreterFrame->GetCalleeSavedRegisters(), \
+                                   pInterpreterFrame->GetFPCalleeSavedRegisters()); \
+} while (0)
+#else
+#define SAVE_THE_RESUME_IP do { \
+    pInterpreterFrame->SetInterpExecMethodIP((TADDR)GetCurrentIP()); \
+    SaveInterpCalleeSavedRegisters(pInterpreterFrame->GetCalleeSavedRegisters(), nullptr); \
+} while (0)
+#endif
 #endif // !TARGET_WASM
 
 // Call invoker helpers provided by platform.
@@ -1199,6 +1218,8 @@ MAIN_LOOP:
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         while (true)
         {
+            SAVE_THE_RESUME_IP;
+
             // Interpreter-TODO: This is only needed to enable SOS see the exact location in the interpreted method.
             // Neither the GC nor the managed debugger needs that as they walk the stack when the runtime is suspended
             // and we can save the IP to the frame at the suspension time.
