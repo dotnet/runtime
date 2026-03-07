@@ -1514,16 +1514,16 @@ public sealed unsafe partial class SOSDacImpl
             }
         }
 
-        int ISOSMemoryEnum.Next(uint count, SOSMemoryRegion[] memRegion, uint* pNeeded)
+        int ISOSMemoryEnum.Next(uint count, SOSMemoryRegion[] memRegions, uint* pNeeded)
         {
             if (pNeeded is null)
                 return HResults.E_POINTER;
-            if (memRegion is null)
+            if (memRegions is null)
                 return HResults.E_POINTER;
 
             uint written = 0;
             while (written < count && _index < _regions.Length)
-                memRegion[written++] = _regions[(int)_index++];
+                memRegions[written++] = _regions[(int)_index++];
 
             *pNeeded = written;
             return _index < _regions.Length ? HResults.S_FALSE : HResults.S_OK;
