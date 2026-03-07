@@ -109,18 +109,13 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     }
 
     // Navigates to the start of the ComCallWrapper chain.
-    // For any valid CCW, Next is non-null (either a real next wrapper or the LinkedWrapperTerminator),
-    // so we navigate via SimpleWrapper→MainWrapper to get the canonical start.
-    // For the start wrapper itself this returns the same address; for non-start wrappers it returns the start.
+    // Mirrors ComCallWrapper::GetStartWrapper: unconditionally follows SimpleWrapper→MainWrapper,
+    // which always returns the canonical start wrapper (for the start itself, it returns itself).
     private TargetPointer NavigateToStartWrapper(TargetPointer ccw)
     {
         Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
-        if (wrapper.Next != TargetPointer.Null)
-        {
-            Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
-            return sccw.MainWrapper;
-        }
-        return ccw;
+        Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+        return sccw.MainWrapper;
     }
 
     // See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
@@ -175,12 +170,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
     {
         // Navigate to the start of the linked chain, mirroring ComCallWrapper::GetStartWrapper in the runtime.
-        Data.ComCallWrapper firstCheck = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
-        if (firstCheck.Next != TargetPointer.Null)
-        {
-            Data.SimpleComCallWrapper sccwFirst = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(firstCheck.SimpleWrapper);
-            ccw = sccwFirst.MainWrapper;
-        }
+        ccw = NavigateToStartWrapper(ccw);
 
         ulong comMethodTableSize = _target.GetTypeInfo(DataType.ComMethodTable).Size!.Value;
         int pointerSize = _target.PointerSize;

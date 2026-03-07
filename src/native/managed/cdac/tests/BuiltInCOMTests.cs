@@ -419,6 +419,7 @@ public class BuiltInCOMTests
         Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
         Assert.False(target.Contracts.BuiltInCOM.IsExtendsCOMObject(new TargetPointer(ccwAddr)));
     }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetCCWInterfaces_SingleWrapper_SkipsNullAndIncompleteSlots(MockTarget.Architecture arch)
