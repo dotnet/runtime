@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -464,6 +465,51 @@ namespace System.Formats.Tar.Tests
 
             using TarReader reader = new TarReader(archiveStream);
             Assert.Throws<NotSupportedException>(() => reader.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GnuSparse10Pax_NameAndLengthResolvedFromExtendedAttributes(bool copyData)
+        {
+            // GNU sparse format 1.0 encodes the real file name and real file size in PAX extended attributes.
+            // When TarReader reads such an entry, Name should return the real file name (from GNU.sparse.name)
+            // and Length should return the real file size (from GNU.sparse.realsize), not the placeholder path
+            // or the stored sparse data size.
+            const string PlaceholderName = "GNUSparseFile.0/realfile.txt";
+            const string RealName = "realfile.txt";
+            const long RealSize = 1048576; // 1 MB real file size
+            byte[] storedData = new byte[512]; // Small stored sparse data
+            Array.Fill<byte>(storedData, 0x42);
+
+            var gnuSparseAttributes = new Dictionary<string, string>
+            {
+                ["GNU.sparse.name"] = RealName,
+                ["GNU.sparse.realsize"] = RealSize.ToString(),
+            };
+
+            using var archive = new MemoryStream();
+            using (var writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                var entry = new PaxTarEntry(TarEntryType.RegularFile, PlaceholderName, gnuSparseAttributes);
+                entry.DataStream = new MemoryStream(storedData);
+                writer.WriteEntry(entry);
+            }
+
+            archive.Position = 0;
+            using var reader = new TarReader(archive);
+            TarEntry readEntry = reader.GetNextEntry(copyData);
+            Assert.NotNull(readEntry);
+            Assert.Equal(RealName, readEntry.Name);
+            Assert.Equal(RealSize, readEntry.Length);
+
+            // Verify the data stream still contains the stored sparse data (not the expanded real size),
+            // confirming that _size was not overridden by GNU.sparse.realsize.
+            Assert.NotNull(readEntry.DataStream);
+            Assert.Equal(storedData.Length, readEntry.DataStream.Length);
+            byte[] readData = new byte[storedData.Length];
+            Assert.Equal(storedData.Length, readEntry.DataStream.Read(readData));
+            Assert.Equal(storedData, readData);
         }
     }
 }
