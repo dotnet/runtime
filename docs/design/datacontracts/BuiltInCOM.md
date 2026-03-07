@@ -8,14 +8,20 @@ This contract is for getting information related to built-in COM.
 public ulong GetRefCount(TargetPointer ccw);
 // Check whether the COM wrappers handle is weak.
 public bool IsHandleWeak(TargetPointer ccw);
+// Returns true if the CCW has been neutered (CLEANUP_SENTINEL bit set in the raw ref count).
+public bool IsNeutered(TargetPointer ccw);
+// Returns true if the managed class extends a COM object.
+public bool IsExtendsCOMObject(TargetPointer ccw);
+// Returns true if the CCW is aggregated.
+public bool IsAggregated(TargetPointer ccw);
 // Resolves a COM interface pointer to the ComCallWrapper.
 // Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
 public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer);
 // Enumerate the COM interfaces exposed by the ComCallWrapper chain.
 // ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
 public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw);
-// Returns the data for a ComCallWrapper.
-// ccw may be a ComCallWrapper address or a COM interface pointer into the CCW.
+// Returns aggregated CCW data for the given ComCallWrapper address.
+// ccw must be a ComCallWrapper address (resolve COM interface pointers first via GetCCWFromInterfacePointer).
 public CCWData GetCCWData(TargetPointer ccw);
 ```
 
@@ -135,6 +141,27 @@ public bool IsHandleWeak(TargetPointer address)
     return (flags & (uint)CCWFlags.IsHandleWeak) != 0;
 }
 
+public bool IsNeutered(TargetPointer address)
+{
+    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
+    ulong refCount = _target.Read<ulong>(ccw + /* SimpleComCallWrapper::RefCount offset */);
+    return (refCount & CleanupSentinel) != 0;
+}
+
+public bool IsExtendsCOMObject(TargetPointer address)
+{
+    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
+    uint flags = _target.Read<uint>(ccw + /* SimpleComCallWrapper::Flags offset */);
+    return (flags & (uint)CCWFlags.IsExtendsCom) != 0;
+}
+
+public bool IsAggregated(TargetPointer address)
+{
+    var ccw = _target.ReadPointer(address + /* ComCallWrapper::SimpleWrapper offset */);
+    uint flags = _target.Read<uint>(ccw + /* SimpleComCallWrapper::Flags offset */);
+    return (flags & (uint)CCWFlags.IsAggregated) != 0;
+}
+
 // See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
 // Resolves a COM interface pointer to the ComCallWrapper.
 // Returns TargetPointer.Null if interfacePointer is not a recognised COM IP.
@@ -149,6 +176,28 @@ public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
     //   - skip slots where ComMethodTable.Flags does not have LayoutComplete set
     //   - yield COMInterfacePointerData { InterfacePointerAddress = address of slot, MethodTable }
     //   - slot 0 of the first wrapper (IUnknown/IDispatch) yields null MethodTable
+}
+
+// See ClrDataAccess::GetCCWData in src/coreclr/debug/daccess/request.cpp.
+// ccw must be a ComCallWrapper address; resolve COM interface pointers first via GetCCWFromInterfacePointer.
+public CCWData GetCCWData(TargetPointer ccw)
+{
+    // Navigate to the start of the chain; then compose from the existing predicate APIs.
+    TargetPointer startCCW = NavigateToStartWrapper(ccw);
+    int refCount = (int)GetRefCount(startCCW);
+    return new CCWData
+    {
+        OuterIUnknown = /* SimpleComCallWrapper::OuterIUnknown */,
+        ManagedObject = /* *Handle (dereference the GC handle) */,
+        Handle        = /* ComCallWrapper::Handle (m_ppThis) */,
+        CCWAddress    = startCCW,
+        RefCount      = refCount,
+        InterfaceCount = GetCCWInterfaces(startCCW).Count(),
+        IsNeutered    = IsNeutered(startCCW),
+        HasStrongRef  = (refCount > 0) && !IsHandleWeak(startCCW),
+        IsExtendsCOMObject = IsExtendsCOMObject(startCCW),
+        IsAggregated  = IsAggregated(startCCW),
+    };
 }
 
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr)

@@ -37,14 +37,20 @@ public interface IBuiltInCOM : IContract
     static string IContract.Name { get; } = nameof(BuiltInCOM);
     ulong GetRefCount(TargetPointer address) => throw new NotImplementedException();
     bool IsHandleWeak(TargetPointer address) => throw new NotImplementedException();
+    // Returns true if the CCW has been neutered (CLEANUP_SENTINEL bit is set in the ref count).
+    bool IsNeutered(TargetPointer address) => throw new NotImplementedException();
+    // Returns true if the managed class extends a COM object (IsExtendsCom flag).
+    bool IsExtendsCOMObject(TargetPointer address) => throw new NotImplementedException();
+    // Returns true if the CCW is aggregated (IsAggregated flag).
+    bool IsAggregated(TargetPointer address) => throw new NotImplementedException();
     // Resolves a COM interface pointer to the start ComCallWrapper.
     // Returns TargetPointer.Null if interfacePointer is not a recognised COM interface pointer.
     TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer) => throw new NotImplementedException();
     // Enumerates COM interfaces exposed by the ComCallWrapper chain.
     // ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
     IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw) => throw new NotImplementedException();
-    // Returns CCW data for the given ComCallWrapper address.
-    // ccw may be a ComCallWrapper address or a COM interface pointer into the CCW.
+    // Returns aggregated CCW data for the given ComCallWrapper address.
+    // ccw must be a ComCallWrapper address (resolve COM interface pointers first via GetCCWFromInterfacePointer).
     CCWData GetCCWData(TargetPointer ccw) => throw new NotImplementedException();
     IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr) => throw new NotImplementedException();
 }

@@ -54,8 +54,29 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         return (simpleWrapper.Flags & (uint)CCWFlags.IsHandleWeak) != 0;
     }
 
+    public bool IsNeutered(TargetPointer address)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
+        Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+        return (simpleWrapper.RefCount & CleanupSentinel) != 0;
+    }
+
+    public bool IsExtendsCOMObject(TargetPointer address)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
+        Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+        return (simpleWrapper.Flags & (uint)CCWFlags.IsExtendsCom) != 0;
+    }
+
+    public bool IsAggregated(TargetPointer address)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
+        Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+        return (simpleWrapper.Flags & (uint)CCWFlags.IsAggregated) != 0;
+    }
+
     // See ClrDataAccess::GetCCWData in src/coreclr/debug/daccess/request.cpp.
-    // ccw must be a start-of-chain ComCallWrapper address (resolved via GetCCWFromInterfacePointer if needed).
+    // ccw must be a ComCallWrapper address; resolve COM interface pointers first via GetCCWFromInterfacePointer.
     public CCWData GetCCWData(TargetPointer ccw)
     {
         // Navigate to the start of the chain (mirrors DACGetCCWFromAddress → GetStartWrapper).
@@ -64,19 +85,13 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(startCCW);
         Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
 
-        ulong refCountRaw = simpleWrapper.RefCount;
-        ulong comRefcountMask = (ulong)_target.ReadGlobal<long>(Constants.Globals.ComRefcountMask);
-        int refCount = (int)(refCountRaw & comRefcountMask);
-        bool isNeutered = (refCountRaw & CleanupSentinel) != 0;
-        bool isHandleWeak = (simpleWrapper.Flags & (uint)CCWFlags.IsHandleWeak) != 0;
-        bool hasStrongRef = (refCount > 0) && !isHandleWeak;
+        int refCount = (int)GetRefCount(startCCW);
+        bool hasStrongRef = (refCount > 0) && !IsHandleWeak(startCCW);
 
         TargetPointer handle = wrapper.Handle;
         TargetPointer managedObject = handle != TargetPointer.Null
             ? _target.ReadPointer(handle)
             : TargetPointer.Null;
-
-        int interfaceCount = GetCCWInterfaces(startCCW).Count();
 
         return new CCWData
         {
@@ -85,17 +100,18 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
             Handle = handle,
             CCWAddress = startCCW,
             RefCount = refCount,
-            InterfaceCount = interfaceCount,
-            IsNeutered = isNeutered,
+            InterfaceCount = GetCCWInterfaces(startCCW).Count(),
+            IsNeutered = IsNeutered(startCCW),
             HasStrongRef = hasStrongRef,
-            IsExtendsCOMObject = (simpleWrapper.Flags & (uint)CCWFlags.IsExtendsCom) != 0,
-            IsAggregated = (simpleWrapper.Flags & (uint)CCWFlags.IsAggregated) != 0,
+            IsExtendsCOMObject = IsExtendsCOMObject(startCCW),
+            IsAggregated = IsAggregated(startCCW),
         };
     }
 
     // Navigates to the start of the ComCallWrapper chain.
-    // Mirrors ComCallWrapper::GetStartWrapper: if Next is non-null, the CCW is not the start,
-    // so we follow SimpleWrapper→MainWrapper to get the true start.
+    // For any valid CCW, Next is non-null (either a real next wrapper or the LinkedWrapperTerminator),
+    // so we navigate via SimpleWrapper→MainWrapper to get the canonical start.
+    // For the start wrapper itself this returns the same address; for non-start wrappers it returns the start.
     private TargetPointer NavigateToStartWrapper(TargetPointer ccw)
     {
         Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
