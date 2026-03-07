@@ -475,14 +475,14 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:http|https)://foo", "http(?>s?)://foo")]
         [InlineData("(?:ab|abc)d", "ab(?>c?)d")]
         [InlineData("(?:abc|abcd|abce|abcfg)h", "abc(?:|[de]|fg)h")]
-        // ReReduceTree: post-FinalOptimize cleanup. Each case shows the equivalent tree without re-reduce.
-        [InlineData("a|ab", "a")]                                          // Without re-reduce: a(?:)  — prefix extraction leaves Concat(a, Empty); re-reduce strips Empty
-        [InlineData(@"\n|\n\r|\r\n", @"(?>\n|\r\n)")]                      // Without re-reduce: (?>\n(?:)|\r\n)  — shared prefix \n leaves Concat(\n, Empty) in branch; re-reduce collapses it
-        [InlineData(@"[ab]+c[ab]+|[ab]+", @"(?>(?>[ab]+)(?:c(?>[ab]+))?)")]  // Without re-reduce: (?>[ab]+c[ab]+|[ab]+)  — quantified set prefix [ab]+ not extracted until re-reduce
-        [InlineData("ab|a|ac", "ab?")]                                     // Without re-reduce: a(?>b?)  — prefix extraction + Atomic context creates redundant Atomic(Oneloopatomic); re-reduce strips Atomic
-        [InlineData("ab|a|ac|d", "(?>ab?|d)")]                             // Without re-reduce: (?>a(?>b?)|d)  — same redundant Atomic removal, within a larger Alternate
-        [InlineData("a?b|a??b", "(?>a?(?>b))")]                            // Without re-reduce: (?>a?(?>[b]))  — greedy/lazy branches merge after atomic promotion; re-reduce converts single-char [b] to b
-        [InlineData("[ab]?c|[ab]??c", "(?>[ab]?(?>c))")]                   // Without re-reduce: (?>[ab]?(?>[c]))  — same single-char class simplification with set loop prefix
+        // FinalReduce: post-FinalOptimize re-reduction. Each case shows the equivalent tree without this pass.
+        [InlineData("a|ab", "a")]                                          // Without FinalReduce: a(?:)  — prefix extraction leaves Concat(a, Empty); FinalReduce strips Empty
+        [InlineData(@"\n|\n\r|\r\n", @"(?>\n|\r\n)")]                      // Without FinalReduce: (?>\n(?:)|\r\n)  — shared prefix \n leaves Concat(\n, Empty) in branch; FinalReduce collapses it
+        [InlineData(@"[ab]+c[ab]+|[ab]+", @"(?>(?>[ab]+)(?:c(?>[ab]+))?)")]  // Without FinalReduce: (?>[ab]+c[ab]+|[ab]+)  — quantified set prefix [ab]+ not extracted until FinalReduce
+        [InlineData("ab|a|ac", "ab?")]                                     // Without FinalReduce: a(?>b?)  — prefix extraction + Atomic context creates redundant Atomic(Oneloopatomic); FinalReduce strips Atomic
+        [InlineData("ab|a|ac|d", "(?>ab?|d)")]                             // Without FinalReduce: (?>a(?>b?)|d)  — same redundant Atomic removal, within a larger Alternate
+        [InlineData("a?b|a??b", "(?>a?(?>b))")]                            // Without FinalReduce: (?>a?(?>[b]))  — greedy/lazy branches merge after atomic promotion; FinalReduce converts single-char [b] to b
+        [InlineData("[ab]?c|[ab]??c", "(?>[ab]?(?>c))")]                   // Without FinalReduce: (?>[ab]?(?>[c]))  — same single-char class simplification with set loop prefix
         public void PatternsReduceIdentically(string actual, string expected)
         {
             // NOTE: RegexNode.ToString is only compiled into debug builds, so DEBUG is currently set on the unit tests project.

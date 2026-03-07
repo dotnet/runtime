@@ -394,11 +394,11 @@ namespace System.Text.RegularExpressions
                 // FinalOptimize can create patterns like Atomic(Alternate(X, Empty)) that ReduceAtomic
                 // would simplify to Loop?(X), or Concatenate(X, Empty) that ReduceConcatenation would
                 // simplify to X. A single re-reduce pass catches all such cases.
-                rootNode.ReReduceTree();
+                rootNode.FinalReduce();
 
                 // Optimization: unnecessary re-processing of starting loops.
-                // This runs after ReReduceTree so it operates on the final tree structure, since
-                // ReReduceTree may restructure alternations into concatenations with a leading loop.
+                // This runs after FinalReduce so it operates on the final tree structure, since
+                // FinalReduce may restructure alternations into concatenations with a leading loop.
                 // If an expression is guaranteed to begin with a single-character unbounded loop that isn't part of an alternation (in which case it
                 // wouldn't be guaranteed to be at the beginning) or a capture (in which case a back reference could be influenced by its length), then we
                 // can update the tree with a temporary node to indicate that the implementation should use that node's ending position in the input text
@@ -456,7 +456,7 @@ namespace System.Text.RegularExpressions
         /// created by the <see cref="FinalOptimize"/> passes, e.g. Concatenate(X, Empty)
         /// or Atomic wrappers that became redundant.
         /// </summary>
-        private void ReReduceTree()
+        private void FinalReduce()
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
@@ -465,7 +465,7 @@ namespace System.Text.RegularExpressions
 
             for (int i = 0, childCount = ChildCount(); i < childCount; i++)
             {
-                Child(i).ReReduceTree();
+                Child(i).FinalReduce();
                 ReplaceChild(i, Child(i)); // ReplaceChild reduces the node in place
             }
         }
