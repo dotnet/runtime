@@ -4866,6 +4866,12 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     lclDsc->lvType  = cseLclVarTyp;
     lclDsc->lvIsCSE = true;
 
+    // Propagate IsNeverNegative from the CSE expression to the temp.
+    if (varTypeIsIntegral(cseLclVarTyp) && successfulCandidate->Expr()->IsNeverNegative(m_compiler))
+    {
+        lclDsc->SetIsNeverNegative(true);
+    }
+
     // Record that we created a new LclVar for use as a CSE temp
     //
     m_addCSEcount++;
