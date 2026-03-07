@@ -8,8 +8,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Wasm.Build.Tests;
 using Xunit;
-using Xunit.Abstractions;
-
 #nullable enable
 
 namespace Wasm.Build.NativeRebuild.Tests;

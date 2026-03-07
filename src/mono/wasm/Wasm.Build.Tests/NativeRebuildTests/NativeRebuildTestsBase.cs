@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Wasm.Build.Tests;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 using System.Text;
 using System.Threading.Tasks;

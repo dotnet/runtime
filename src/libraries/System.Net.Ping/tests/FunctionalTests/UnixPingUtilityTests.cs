@@ -20,7 +20,7 @@ namespace System.Net.NetworkInformation.Tests
     {
         private const int IcmpHeaderLengthInBytes = 8;
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(0)]
         [InlineData(100)]
         [InlineData(1000)]
@@ -46,10 +46,7 @@ namespace System.Net.NetworkInformation.Tests
             p.BeginOutputReadLine();
             p.WaitForExit();
 
-            if (destinationNetUnreachable)
-            {
-                throw new SkipTestException($"Network doesn't route {TestSettings.UnreachableAddress}, skipping test.");
-            }
+            Assert.SkipWhen(destinationNetUnreachable, $"Network doesn't route {TestSettings.UnreachableAddress}, skipping test.");
 
             //ensure that the process takes longer than or within 10ms of 'timeout', with a 5s maximum
             Assert.InRange(stopWatch.ElapsedMilliseconds, timeout - 10, 5000);

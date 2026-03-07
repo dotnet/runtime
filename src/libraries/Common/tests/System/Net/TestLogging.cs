@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit.Abstractions;
+using Xunit;
 
 namespace System.Net.Test.Common
 {
@@ -13,9 +13,21 @@ namespace System.Net.Test.Common
         {
         }
 
+        public string Output => throw new NotSupportedException();
+
         public static TestLogging GetInstance()
         {
             return s_instance;
+        }
+
+        public void Write(string message)
+        {
+            EventSourceTestLogging.Log.TestMessage(message);
+        }
+
+        public void Write(string format, params object[] args)
+        {
+            EventSourceTestLogging.Log.TestMessage(string.Format(format, args));
         }
 
         public void WriteLine(string message)

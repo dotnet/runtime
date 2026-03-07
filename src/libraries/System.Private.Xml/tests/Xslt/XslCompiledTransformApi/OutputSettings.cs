@@ -5,8 +5,6 @@ using System.IO;
 using System.Text;
 using System.Xml.Xsl;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.XslCompiledTransformApiTests
 {
     //[TestCase(Name = "OutputSettings", Desc = "This testcase tests the OutputSettings on XslCompiledTransform", Param = "Debug")]

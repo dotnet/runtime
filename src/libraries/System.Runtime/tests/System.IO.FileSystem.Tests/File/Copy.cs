@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.IO.Tests
 {
     public partial class File_Copy_str_str : FileSystemTest

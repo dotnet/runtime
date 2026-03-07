@@ -1636,7 +1636,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(4)]
@@ -1653,10 +1653,7 @@ namespace System.Text.Json.Tests
         [InlineData(512)]
         public static void TestDepth(int depth)
         {
-            if (PlatformDetection.IsInterpreter && depth >= 256)
-            {
-                throw new SkipTestException("Takes very long to run on interpreter.");
-            }
+            Assert.SkipWhen(PlatformDetection.IsInterpreter && depth >= 256, "Takes very long to run on interpreter.");
 
             foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
             {

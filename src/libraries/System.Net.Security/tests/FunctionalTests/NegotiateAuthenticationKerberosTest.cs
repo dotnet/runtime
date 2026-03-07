@@ -4,8 +4,6 @@
 using System.Threading.Tasks;
 using System.Net.Security.Kerberos;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Security.Tests
 {
     [ConditionalClass(typeof(KerberosExecutor), nameof(KerberosExecutor.IsSupported))]

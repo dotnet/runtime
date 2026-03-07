@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tests;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {

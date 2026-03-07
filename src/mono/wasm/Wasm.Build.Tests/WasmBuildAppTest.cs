@@ -6,8 +6,6 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Linq;
 using Xunit;
-using Xunit.Abstractions;
-
 #nullable enable
 
 namespace Wasm.Build.Tests

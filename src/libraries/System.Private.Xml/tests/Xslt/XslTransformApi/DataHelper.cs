@@ -4,7 +4,7 @@
 using System;
 using System.Globalization;
 using System.Xml;
-using Xunit.Abstractions;
+using Xunit;
 
 public class CustomUrlResolver : XmlUrlResolver
 {

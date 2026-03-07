@@ -2,6 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <RootNamespace>System.Text.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EncoderFallbackBufferHelper.cs" />

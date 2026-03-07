@@ -10,7 +10,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -331,7 +330,7 @@ namespace System.Net.Http.Functional.Tests
                             break;
                         }
                     }
-                    
+
                     Assert.True(acceptEncodingValid, "Accept-Encoding missing or invalid");
 
                     using (HttpResponseMessage response = await clientTask)

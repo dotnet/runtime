@@ -2891,7 +2891,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData("Hello", 'l', 0, 5, 2)]
         [InlineData("Hello", 'x', 0, 5, -1)]
         [InlineData("Hello", 'l', 1, 4, 2)]
@@ -2944,10 +2944,7 @@ namespace System.Tests
             // This is by design. ICU ignores the null characters (i.e. null characters have no weights for the string comparison).
             // For desired behavior, use ordinal comparison instead of linguistic comparison.
             // This is a known difference between NLS and ICU (https://github.com/dotnet/runtime/issues/4673).
-            if (target == '\0' && PlatformDetection.IsIcuGlobalization)
-            {
-                throw new SkipTestException("Target \\0 is not supported in ICU");
-            }
+            Assert.SkipWhen(target == '\0' && PlatformDetection.IsIcuGlobalization, "Target \\0 is not supported in ICU");
 
             bool safeForCurrentCulture =
                 IsSafeForCurrentCultureComparisons(s)

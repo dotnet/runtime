@@ -4,6 +4,7 @@
 using System.Diagnostics.Eventing.Reader;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Diagnostics.Tests
 {
@@ -34,7 +35,7 @@ namespace System.Diagnostics.Tests
                 }
                 catch (EventLogNotFoundException)
                 {
-                    throw new SkipTestException(nameof(EventLogNotFoundException));
+                    throw SkipException.ForSkip(nameof(EventLogNotFoundException));
                 }
 
                 using (configuration)

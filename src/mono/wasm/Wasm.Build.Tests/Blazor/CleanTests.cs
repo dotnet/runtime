@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using Wasm.Build.NativeRebuild.Tests;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 #nullable enable

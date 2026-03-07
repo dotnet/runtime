@@ -811,7 +811,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Empty(services);
         }
 
-        public static TheoryData ServiceContainerPicksConstructorWithLongestMatchesData
+        public static TheoryData<IServiceCollection, TypeWithSupersetConstructors> ServiceContainerPicksConstructorWithLongestMatchesData
         {
             get
             {

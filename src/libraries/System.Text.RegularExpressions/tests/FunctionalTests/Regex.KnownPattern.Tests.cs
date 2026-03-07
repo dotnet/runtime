@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -1568,7 +1569,7 @@ namespace System.Text.RegularExpressions.Tests
         public async Task PatternsDataSet_GenerateInputsWithNonBacktracking_MatchWithAllEngines()
         {
             MethodInfo? sampleMatchesMI = typeof(Regex).GetMethod("SampleMatches", BindingFlags.NonPublic | BindingFlags.Instance) ??
-                throw new SkipTestException("Could not find Regex.SampleMatches");
+                throw SkipException.ForSkip("Could not find Regex.SampleMatches");
             Func<Regex, int, int, IEnumerable<string>> sampleMatches = sampleMatchesMI.CreateDelegate<Func<Regex, int, int, IEnumerable<string>>>();
 
             DataSetExpression[] entries = s_patternsDataSet.Value;

@@ -118,12 +118,8 @@ internal static class IOInputs
 
     public static IEnumerable<string> GetUncPathsWithoutShareName()
     {
-        foreach (char slash in new[] { Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar })
+        foreach (char slash in new[] { '\\', '/' })
         {
-            if (!PlatformDetection.IsWindows && slash == '/') // Unc paths must start with '\' on Unix
-            {
-                continue;
-            }
             string slashes = new string(slash, 2);
             yield return slashes;
             yield return slashes + " ";

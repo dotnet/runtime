@@ -50,9 +50,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)SingleFileTestRunner\SingleFileTestRunner.cs"
+    <!-- <Compile Include="$(CommonTestPath)SingleFileTestRunner\SingleFileTestRunner.cs"
              Link="Common\SingleFileTestRunner\SingleFileTestRunner.cs"
-             Condition="'$(CLRTestKind)' == '' and '$(IsFunctionalTest)' != 'true'" />
+             Condition="'$(CLRTestKind)' == '' and '$(IsFunctionalTest)' != 'true'" /> -->
   </ItemGroup>
 
   <ItemGroup>

@@ -7,8 +7,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Sockets.Tests
 {
     // Abstract base class for various different socket "modes" (sync, async, etc)

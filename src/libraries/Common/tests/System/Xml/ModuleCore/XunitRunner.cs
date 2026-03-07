@@ -7,13 +7,41 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Xunit.Abstractions;
+using Xunit;
 using Xunit.Sdk;
+using Xunit.v3;
 
 namespace OLEDB.Test.ModuleCore
 {
-    public class XmlInlineDataDiscoverer : IDataDiscoverer
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    public sealed class XmlTestsAttribute : DataAttribute
     {
+        private delegate CTestModule ModuleGenerator();
+
+        private string _methodName;
+
+        public XmlTestsAttribute(string methodName)
+        {
+            _methodName = methodName;
+        }
+
+        public static Func<CTestModule> GetGenerator(Type type, string methodName)
+        {
+            ModuleGenerator moduleGenerator = (ModuleGenerator)type.GetMethod(methodName).CreateDelegate(typeof(ModuleGenerator));
+            return new Func<CTestModule>(moduleGenerator);
+        }
+
+        public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod, DisposalTracker disposalTracker)
+        {
+            Func<CTestModule> moduleGenerator = GetGenerator(testMethod.DeclaringType, _methodName);
+            var testCases = new List<ITheoryDataRow>();
+            foreach (object[] testCase in GenerateTestCases(moduleGenerator))
+            {
+                testCases.Add(new TheoryDataRow(testCase));
+            }
+            return new ValueTask<IReadOnlyCollection<ITheoryDataRow>>(testCases);
+        }
+
         public static IEnumerable<object[]> GenerateTestCases(Func<CTestModule> moduleGenerator)
         {
             CModInfo.CommandLine = "";
@@ -37,63 +65,6 @@ namespace OLEDB.Test.ModuleCore
             }
         }
 
-        private static Type ToRuntimeType(ITypeInfo typeInfo)
-        {
-            var reflectionTypeInfo = typeInfo as IReflectionTypeInfo;
-            if (reflectionTypeInfo != null)
-                return reflectionTypeInfo.Type;
-
-            Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName == typeInfo.Assembly.Name);
-            if (assembly != null)
-            {
-                return assembly.GetType(typeInfo.Name);
-            }
-
-            throw new Exception($"Could not find runtime type `{typeInfo.Name}`");
-        }
-
-        private static Type GetDeclaringType(IMethodInfo methodInfo)
-        {
-            var reflectionMethodInfo = methodInfo as IReflectionMethodInfo;
-            if (reflectionMethodInfo != null)
-                return reflectionMethodInfo.MethodInfo.DeclaringType;
-
-            return ToRuntimeType(methodInfo.Type);
-        }
-
-        public virtual IEnumerable<object[]> GetData(IAttributeInfo dataAttribute, IMethodInfo testMethod)
-        {
-            string methodName = (string)dataAttribute.GetConstructorArguments().Single();
-            Func<CTestModule> moduleGenerator = XmlTestsAttribute.GetGenerator(GetDeclaringType(testMethod), methodName);
-            return GenerateTestCases(moduleGenerator);
-        }
-
-        public virtual bool SupportsDiscoveryEnumeration(IAttributeInfo dataAttribute, IMethodInfo testMethod) => true;
-    }
-
-    [DataDiscoverer("OLEDB.Test.ModuleCore.XmlInlineDataDiscoverer", "ModuleCore")]
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public sealed class XmlTestsAttribute : DataAttribute
-    {
-        private delegate CTestModule ModuleGenerator();
-
-        private string _methodName;
-
-        public XmlTestsAttribute(string methodName)
-        {
-            _methodName = methodName;
-        }
-
-        public static Func<CTestModule> GetGenerator(Type type, string methodName)
-        {
-            ModuleGenerator moduleGenerator = (ModuleGenerator)type.GetMethod(methodName).CreateDelegate(typeof(ModuleGenerator));
-            return new Func<CTestModule>(moduleGenerator);
-        }
-
-        public override IEnumerable<object[]> GetData(MethodInfo testMethod)
-        {
-            Func<CTestModule> moduleGenerator = GetGenerator(testMethod.DeclaringType, _methodName);
-            return XmlInlineDataDiscoverer.GenerateTestCases(moduleGenerator);
-        }
+        public override bool SupportsDiscoveryEnumeration() => true;
     }
 }

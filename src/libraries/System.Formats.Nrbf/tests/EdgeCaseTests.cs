@@ -4,6 +4,7 @@ using System.Runtime.Serialization.Formatters;
 using System.Runtime.Serialization.Formatters.Binary;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Formats.Nrbf.Tests;
 
@@ -83,7 +84,7 @@ public class EdgeCaseTests : ReadTests
         }
         catch (OutOfMemoryException) when (length == 2147483591)
         {
-            throw new SkipTestException("Not enough memory available to test max array size support");
+            throw SkipException.ForSkip("Not enough memory available to test max array size support");
         }
     }
 

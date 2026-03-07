@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
+    <RootNamespace>System.Security.Cryptography.Xml.Tests</RootNamespace>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>

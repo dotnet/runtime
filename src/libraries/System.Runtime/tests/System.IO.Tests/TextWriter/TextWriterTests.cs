@@ -685,16 +685,13 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetStringBuilderTestData))]
         public async Task WriteAsyncStringBuilderTest(bool isSynchronized, TestStringBuilderKind testStringBuilderKind)
         {
             StringBuilder testData = GetTestStringBuilder(testStringBuilderKind);
 
-            if (!isSynchronized && !PlatformDetection.IsMultithreadingSupported)
-            {
-                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
-            }
+            Assert.SkipUnless(isSynchronized && !PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
 
             using (CharArrayTextWriter ctw = NewTextWriter)
             {
@@ -705,16 +702,13 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetStringBuilderTestData))]
         public async Task WriteLineAsyncStringBuilderTest(bool isSynchronized, TestStringBuilderKind testStringBuilderKind)
         {
             StringBuilder testData = GetTestStringBuilder(testStringBuilderKind);
 
-            if (!isSynchronized && !PlatformDetection.IsMultithreadingSupported)
-            {
-                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
-            }
+            Assert.SkipUnless(isSynchronized && !PlatformDetection.IsMultithreadingSupported, nameof(PlatformDetection.IsMultithreadingSupported));
 
             using (CharArrayTextWriter ctw = NewTextWriter)
             {

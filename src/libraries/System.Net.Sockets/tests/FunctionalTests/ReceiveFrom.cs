@@ -4,7 +4,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace System.Net.Sockets.Tests
@@ -59,7 +58,7 @@ namespace System.Net.Sockets.Tests
             else
             {
                 await AssertThrowsSynchronously<ArgumentNullException>(() => ReceiveFromAsync(socket, new byte[1], null));
-            }   
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
@@ -190,10 +189,7 @@ namespace System.Net.Sockets.Tests
             IPAddress address = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
             using Socket receiver = new Socket(SocketType.Dgram, ProtocolType.Udp);
             using Socket sender = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            if (receiver.DualMode != true || sender.DualMode != true)
-            {
-                throw SkipException.ForSkip("DualMode not available");
-            }
+            Assert.SkipWhen(receiver.DualMode != true || sender.DualMode != true, "DualMode not available");
 
             ConfigureNonBlocking(sender);
             ConfigureNonBlocking(receiver);

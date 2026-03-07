@@ -5,7 +5,6 @@ using System.IO;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Net.Sockets.Tests

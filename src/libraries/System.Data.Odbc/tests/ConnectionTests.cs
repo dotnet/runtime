@@ -10,7 +10,7 @@ namespace System.Data.Odbc.Tests
     public class ConnectionTests : IntegrationTestBase
     {
         // Bug #96278 fixed only on .NET, not on .NET Framework
-        [ConditionalFact]
+        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void DbConnectionFactories_GetFactory_from_connection()
         {

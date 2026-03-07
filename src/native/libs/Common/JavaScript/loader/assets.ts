@@ -552,3 +552,8 @@ const leaveAfterInstantiation: { [key: string]: number | undefined } = {
     "dotnetwasm": 1,
     "webcil": 1,
 };
+
+const noThrottleNoRetry: { [key: string]: number | undefined } = {
+    "dotnetwasm": 1,
+    "symbols": 1,
+};

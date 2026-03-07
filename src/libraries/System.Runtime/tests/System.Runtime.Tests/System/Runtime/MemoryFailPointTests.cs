@@ -26,14 +26,11 @@ namespace System.Runtime.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sizeInMegabytes", () => new MemoryFailPoint(sizeInMegabytes));
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] //https://github.com/dotnet/runtime/issues/6879
         public void Ctor_LargeSizeInMegabytes_ThrowsInsufficientMemoryException()
         {
-            if (PlatformDetection.IsArmProcess)
-            {
-                throw new SkipTestException("[ActiveIssue: https://github.com/dotnet/runtime/issues/35805]");
-            }
+            Assert.SkipWhen(PlatformDetection.IsArmProcess, "[ActiveIssue: https://github.com/dotnet/runtime/issues/35805]");
 
             Assert.Throws<InsufficientMemoryException>(() => new MemoryFailPoint(int.MaxValue));
         }

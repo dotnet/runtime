@@ -80,55 +80,43 @@ namespace System.Dynamic.Tests
                 Assert.Contains(item, expected);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(KeyCollections))]
         [MemberData(nameof(ValueCollections))]
         public void ItemsAreRootHidden(object eo)
         {
             object view = GetDebugViewObject(eo);
-            if (view == null)
-            {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {eo}.");
-            }
+            Assert.SkipWhen(view == null, $"Didn't find DebuggerTypeProxyAttribute on {eo}.");
             PropertyInfo itemsProp = view.GetType().GetProperty("Items");
             var browsable = (DebuggerBrowsableAttribute)itemsProp.GetCustomAttribute(typeof(DebuggerBrowsableAttribute));
             Assert.Equal(DebuggerBrowsableState.RootHidden, browsable.State);
         }
 
-        [ConditionalTheory, MemberData(nameof(KeyCollections))]
+        [Theory, MemberData(nameof(KeyCollections))]
         public void KeyCollectionCorrectlyViewed(ICollection<string> keys)
         {
             object view = GetDebugViewObject(keys);
-            if (view == null)
-            {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {keys}.");
-            }
+            Assert.SkipWhen(view == null, $"Didn't find DebuggerTypeProxyAttribute on {keys}.");
             PropertyInfo itemsProp = view.GetType().GetProperty("Items");
             string[] items = (string[])itemsProp.GetValue(view);
             AssertSameCollectionIgnoreOrder(keys, items);
         }
 
-        [ConditionalTheory, MemberData(nameof(ValueCollections))]
+        [Theory, MemberData(nameof(ValueCollections))]
         public void ValueCollectionCorrectlyViewed(ICollection<object> keys)
         {
             object view = GetDebugViewObject(keys);
-            if (view == null)
-            {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {keys}.");
-            }
+            Assert.SkipWhen(view == null, $"Didn't find DebuggerTypeProxyAttribute on {keys}.");
             PropertyInfo itemsProp = view.GetType().GetProperty("Items");
             object[] items = (object[])itemsProp.GetValue(view);
             AssertSameCollectionIgnoreOrder(keys, items);
         }
 
-        [ConditionalTheory, MemberData(nameof(OneOfEachCollection))]
+        [Theory, MemberData(nameof(OneOfEachCollection))]
         public void ViewTypeThrowsOnNull(object collection)
         {
             Type debugViewType = GetDebugViewType(collection.GetType());
-            if (debugViewType == null)
-            {
-                throw new SkipTestException($"Didn't find DebuggerTypeProxyAttribute on {collection.GetType()}.");
-            }
+            Assert.SkipWhen(debugViewType == null, $"Didn't find DebuggerTypeProxyAttribute on {collection.GetType()}.");
             ConstructorInfo constructor = debugViewType.GetConstructors().Single();
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(new object[] {null}));
             var ane = (ArgumentNullException)tie.InnerException;

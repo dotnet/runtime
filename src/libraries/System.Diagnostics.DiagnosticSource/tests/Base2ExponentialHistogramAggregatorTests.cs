@@ -12,8 +12,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Diagnostics.Metrics
 {
     public class Base2ExponentialHistogramAggregatorTests

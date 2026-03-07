@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -605,10 +605,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, "one\0two\0three\0", true)]
         public async Task SendAsync_InvalidCharactersInResponseHeader_ReplacedWithSpaces(bool testHttp11, string value, bool testTrailers)
         {
-            if (!testHttp11 && UseVersion == HttpVersion.Version11)
-            {
-                throw new SkipTestException("This case is not valid for HTTP 1.1");
-            }
+            Assert.SkipUnless(testHttp11 && UseVersion == HttpVersion.Version11, "This case is not valid for HTTP 1.1");
 
             string expectedValue = value.Replace('\r', ' ').Replace('\n', ' ').Replace('\0', ' ');
             await LoopbackServerFactory.CreateClientAndServerAsync(

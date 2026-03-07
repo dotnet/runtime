@@ -4,7 +4,6 @@
 using System;
 using System.IO;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 using Wasm.Build.Tests;
 

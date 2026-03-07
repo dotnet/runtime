@@ -4,8 +4,6 @@
 using System.Net.Mail.Tests;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Mail.Tests
 {
     public abstract class SmtpClientConnectionTest<TSendMethod> : LoopbackServerTestBase<TSendMethod>

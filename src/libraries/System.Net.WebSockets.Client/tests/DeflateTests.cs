@@ -9,8 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.WebSockets.Client.Tests
 {
     //

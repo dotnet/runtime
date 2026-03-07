@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -66,7 +67,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void SafeFileHandle_PseudoFile_DoesNotThrow()
         {
@@ -76,7 +77,7 @@ namespace System.IO.Tests
                 ? "/proc/net/route" 
                 : File.Exists("/proc/version")
                     ? "/proc/version"
-                    : throw new SkipTestException("Can't find a pseudofile to test.");
+                    : throw SkipException.ForSkip("Can't find a pseudofile to test.");
 
             using FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             // This should not throw even if the file reports CanSeek = true but doesn't support seeking

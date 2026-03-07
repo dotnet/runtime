@@ -12,8 +12,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;

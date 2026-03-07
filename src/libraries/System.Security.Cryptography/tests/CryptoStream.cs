@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
@@ -332,7 +333,7 @@ namespace System.Security.Cryptography.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Could not create a large enough array");
+                throw SkipException.ForSkip("Could not create a large enough array");
             }
 
             // The input portion doesn't matter, the overflow happens before the call to the inner
@@ -367,7 +368,7 @@ namespace System.Security.Cryptography.Tests
             }
             catch (OutOfMemoryException)
             {
-                throw new SkipTestException("Could not create a large enough array");
+                throw SkipException.ForSkip("Could not create a large enough array");
             }
 
             // In the Read scenario the overflow comes from a reducing transform.

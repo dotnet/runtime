@@ -38,7 +38,7 @@ namespace System.Net.Http.Tests
             {
                 AppContext.SetSwitch("System.Net.Http.DisableUriRedaction", true);
 
-                Uri[] uris = GetRedactedUriString_Data.Select(a => a[0] == null ? null : new Uri((string)a[0], UriKind.RelativeOrAbsolute)).ToArray();
+                Uri[] uris = GetRedactedUriString_Data.Select(a => a.Data.Item1 == null ? null : new Uri((string)a.Data.Item1, UriKind.RelativeOrAbsolute)).ToArray();
 
                 foreach (Uri uri in uris)
                 {

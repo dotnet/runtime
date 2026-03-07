@@ -3,8 +3,10 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Sdk;
+using Xunit.v3;
 
 namespace System.Linq.Expressions.Tests
 {
@@ -25,26 +27,33 @@ namespace System.Linq.Expressions.Tests
             delegatedTo = new MemberDataAttribute(memberName, parameters);
         }
 
-        public override IEnumerable<object[]> GetData(MethodInfo testMethod)
+        public override async ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod, DisposalTracker disposalTracker)
         {
+            delegatedTo.MemberType ??= testMethod.ReflectedType;
+
+            var result = new List<ITheoryDataRow>();
+            var delegatedData = await delegatedTo.GetData(testMethod, disposalTracker);
+
             // Re-using the arrays would be a nice optimization, and safe since this is internal and we could
             // just not do the sort of uses that would break that, but xUnit pre-loads GetData() results and
             // we'd therefore end up with multiple copies of the last result.
-            foreach (object[] received in delegatedTo.GetData(testMethod))
+            foreach (ITheoryDataRow received in delegatedData)
             {
-                object[] withFalse = null;                
+                object?[] receivedData = received.GetData();
+
+                object[] withFalse = null;
                 if (PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly)
                 {
-                    withFalse = new object[received.Length + 1];
-                    withFalse[received.Length] = s_boxedFalse;
+                    withFalse = new object[receivedData.Length + 1];
+                    withFalse[receivedData.Length] = s_boxedFalse;
                 }
 
-                object[] withTrue = new object[received.Length + 1];
-                withTrue[received.Length] = s_boxedTrue;
+                object[] withTrue = new object[receivedData.Length + 1];
+                withTrue[receivedData.Length] = s_boxedTrue;
 
-                for (int i = 0; i != received.Length; ++i)
+                for (int i = 0; i != receivedData.Length; ++i)
                 {
-                    object arg = received[i];
+                    object arg = receivedData[i];
 
                     if (withFalse != null)
                         withFalse[i] = arg;
@@ -53,10 +62,14 @@ namespace System.Linq.Expressions.Tests
                 }
 
                 if (withFalse != null)
-                    yield return withFalse;
+                    result.Add(new TheoryDataRow(withFalse));
 
-                yield return withTrue;
+                result.Add(new TheoryDataRow(withTrue));
             }
+
+            return result;
         }
+
+        public override bool SupportsDiscoveryEnumeration() => true;
     }
 }

@@ -7,8 +7,6 @@ using System.Xml.Tests;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Xml.XslTransformApiTests
 {
     //[TestCase(Name = "Null argument tests", Desc = "This testcase passes NULL arguments to all XslTransform methods")]

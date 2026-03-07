@@ -11,8 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Sockets.Tests
 {
     [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support UnixDomainSocket")]

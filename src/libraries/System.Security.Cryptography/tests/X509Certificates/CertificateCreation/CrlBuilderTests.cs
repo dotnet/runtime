@@ -45,15 +45,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
         public static IEnumerable<object[]> NoHashAlgorithmCertKinds()
         {
-            if (MLDsa.IsSupported)
-            {
-                yield return new object[] { CertKind.MLDsa };
-            }
-
-            if (SlhDsa.IsSupported)
-            {
-                yield return new object[] { CertKind.SlhDsa };
-            }
+            yield return new object[] { CertKind.MLDsa };
+            yield return new object[] { CertKind.SlhDsa };
         }
 
         [Fact]
@@ -300,6 +293,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [SkipOnPlatform(TestPlatforms.Android, "No algorithms are supported")]
         public static void BuildPqcWithHashAlgorithm(CertKind certKind)
         {
+            Assert.SkipUnless(
+                (certKind == CertKind.MLDsa && MLDsa.IsSupported) || (certKind == CertKind.SlhDsa && SlhDsa.IsSupported),
+                $"{certKind} is not supported on this platform.");
+
             BuildCertificateAndRun(
                 certKind,
                 new X509Extension[]

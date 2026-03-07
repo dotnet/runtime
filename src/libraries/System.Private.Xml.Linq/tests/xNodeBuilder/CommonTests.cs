@@ -16,6 +16,8 @@ using Microsoft.Test.ModuleCore;
 using XmlCoreTest.Common;
 using Xunit;
 
+using TestResult = Microsoft.Test.ModuleCore.TestResult;
+
 namespace CoreXml.Test.XLinq
 {
     public partial class XNodeBuilderFunctionalTests : TestModule

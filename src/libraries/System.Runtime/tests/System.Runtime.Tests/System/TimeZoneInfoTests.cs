@@ -56,7 +56,7 @@ namespace System.Tests
 
         //  Due to ICU size limitations, full daylight/standard names are not included for the browser.
         //  Name abbreviations, if available, are used instead
-        public static IEnumerable<object[]> Platform_TimeZoneNamesTestData()
+        public static IReadOnlyCollection<TheoryDataRow<TimeZoneInfo, string, string, string, string, string>> Platform_TimeZoneNamesTestData()
         {
             if (PlatformDetection.IsBrowser || PlatformDetection.IsWasi)
                 return new TheoryData<TimeZoneInfo, string, string, string, string, string>
@@ -2359,10 +2359,7 @@ namespace System.Tests
             const string tzId = "America/Monterrey";
             const string tzPath = "/usr/share/zoneinfo/" + tzId;
 
-            if (!File.Exists(tzPath))
-            {
-                throw new SkipTestException($"The file {tzPath} does not exist.");
-            }
+            Assert.SkipUnless(File.Exists(tzPath), $"The file {tzPath} does not exist.");
 
             string tmp = Path.GetTempPath() + Path.GetRandomFileName();
             File.WriteAllBytes(tmp, File.ReadAllBytes(tzPath));
@@ -2766,14 +2763,11 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117731", TestPlatforms.Android)]
         public static void NoBackwardTimeZones()
         {
-            if (OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(26))
-            {
-                throw new SkipTestException("This test won't work on API level < 26");
-            }
+            Assert.SkipWhen(OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(26), "This test won't work on API level < 26");
 
             // Clear cached data to always ensure predictable results
             TimeZoneInfo.ClearCachedData();

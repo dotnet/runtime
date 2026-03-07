@@ -9,8 +9,6 @@ using System.Threading;
 using Microsoft.DotNet.XUnitExtensions;
 
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Sockets.Tests
 {
     [Collection(nameof(DisableParallelization))]

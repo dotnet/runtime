@@ -6,8 +6,6 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.NetworkInformation.Tests
 {
     public class IPGlobalPropertiesTest

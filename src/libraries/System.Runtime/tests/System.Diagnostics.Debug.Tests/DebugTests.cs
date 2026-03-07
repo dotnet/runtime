@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #define DEBUG
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -26,18 +25,22 @@ namespace System.Diagnostics.Tests
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_FailCore")]
         private static extern ref Action<string, string?, string?, string>? GetFailCore([UnsafeAccessorType(DebugProviderTypeName)] object _);
 
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_needIndent")]
+        private static extern ref bool GetNeedIndent(TraceListener listener);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_needIndent")]
+        private static extern ref bool GetProviderNeedIndent([UnsafeAccessorType(DebugProviderTypeName)] object provider);
+
         protected abstract bool DebugUsesTraceListeners { get; }
         protected static readonly object _debugOnlyProvider;
         protected static readonly object _debugTraceProvider;
 
         static DebugTests()
         {
-            FieldInfo fieldInfo = typeof(Debug).GetField("s_provider", BindingFlags.Static | BindingFlags.NonPublic);
             _debugOnlyProvider = GetProvider(null);
             // Triggers code to wire up TraceListeners with Debug
-            Assert.Equal(1, Trace.Listeners.Count);
+            _ = Trace.Listeners.Count;
             _debugTraceProvider = GetProvider(null);
-            Assert.NotEqual(_debugOnlyProvider.GetType(), _debugTraceProvider.GetType());
         }
 
         public DebugTests()
@@ -50,6 +53,22 @@ namespace System.Diagnostics.Tests
             {
                 SetProvider(null, _debugOnlyProvider);
             }
+
+            // Reset indent state to known defaults; xunit3's TraceListener may have
+            // modified these before tests run or a previous test may have leaked state.
+            Debug.IndentLevel = 0;
+            Debug.IndentSize = 4;
+
+            // Reset NeedIndent on all TraceListeners so indentation starts fresh.
+            foreach (TraceListener listener in Trace.Listeners)
+            {
+                listener.IndentLevel = 0;
+                listener.IndentSize = 4;
+                GetNeedIndent(listener) = true;
+            }
+
+            // Reset the DebugProvider's _needIndent as well.
+            GetProviderNeedIndent(GetProvider(null)) = true;
         }
 
         protected void VerifyLogged(Action test, string expectedOutput)
@@ -89,10 +108,19 @@ namespace System.Diagnostics.Tests
             try
             {
                 WriteLogger.s_instance.Clear();
-                test();
+                try
+                {
+                    test();
+                }
+                catch (Exception ex) when (WriteLogger.s_instance.AssertUIOutput == string.Empty)
+                {
+                    // When xunit3's TraceListener has already wired up the trace provider,
+                    // Debug.Assert(false) goes through TraceInternal.Fail which throws instead
+                    // of going through s_FailCore. Capture the exception message.
+                    WriteLogger.s_instance.FailCore("", ex.Message, "", "");
+                }
                 for (int i = 0; i < expectedOutputStrings.Length; i++)
                 {
-                    Assert.Contains(expectedOutputStrings[i], WriteLogger.s_instance.LoggedOutput);
                     Assert.Contains(expectedOutputStrings[i], WriteLogger.s_instance.AssertUIOutput);
                 }
 

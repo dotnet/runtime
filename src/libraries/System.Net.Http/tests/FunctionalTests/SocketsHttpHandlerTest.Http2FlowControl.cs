@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using Xunit.Abstractions;
+
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -243,7 +243,7 @@ namespace System.Net.Http.Functional.Tests
             string unexpectedPingReason = null;
             bool unexpectedFrameReceived = false;
             CancellationTokenSource stopFrameProcessingCts = new CancellationTokenSource();
-            
+
             CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stopFrameProcessingCts.Token, timeoutCts.Token);
             Task processFramesTask = ProcessIncomingFramesAsync(linkedCts.Token);
             byte[] buffer = new byte[dataPerFrame];
@@ -340,7 +340,7 @@ namespace System.Net.Http.Functional.Tests
                 catch (OperationCanceledException)
                 {
                 }
-                
+
 
                 output?.WriteLine("ProcessIncomingFramesAsync finished");
             }

@@ -71,7 +71,7 @@ namespace System.Management.Tests
             if (PlatformDetection.IsWindows10Version22000OrGreater)
             {
                 // https://github.com/dotnet/runtime/issues/70414
-                throw new SkipTestException("Unstable on Windows 11");
+                throw SkipException.ForSkip("Unstable on Windows 11");
             }
             // Retries are sometimes necessary as underlying API call can return
             // ERROR_NOT_READY or occasionally ERROR_INVALID_BLOCK or ERROR_NOT_ENOUGH_MEMORY

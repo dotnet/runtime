@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <RootNamespace>System.Security.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SecureStringTests.cs" />

@@ -21,8 +21,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Net.Test.Common;
 using Xunit;
-using Xunit.Abstractions;
-
 namespace System.Net.Mail.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "SmtpClient is not supported on Browser")]

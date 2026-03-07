@@ -57,15 +57,12 @@ namespace System.Net.Http.Tests
             { "abc\rfoo", "UTF-16" },
         };
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(RoundTrips_Data))]
         public void GetHeaderValue_RoundTrips_ReplacesDangerousCharacters(string input, string? encodingName)
         {
             bool isUnicode = input.Any(c => c > 255);
-            if (isUnicode && encodingName == null)
-            {
-                throw new SkipTestException("The test case is invalid for the default encoding.");
-            }
+            Assert.SkipWhen(isUnicode && encodingName == null, "The test case is invalid for the default encoding.");
 
             Encoding encoding = encodingName == null ? null : Encoding.GetEncoding(encodingName);
             byte[] encoded = (encoding ?? Encoding.Latin1).GetBytes(input);

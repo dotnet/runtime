@@ -4,7 +4,6 @@
 using System;
 using System.IO;
 using Xunit;
-using Xunit.Abstractions;
 using Wasm.Build.Tests;
 
 #nullable enable

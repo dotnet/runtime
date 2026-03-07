@@ -36,10 +36,7 @@ namespace BasicEventSourceTests
             _pendingCommands = new List<(string eventSourceName, EventCommand command, FilteringOptions options)>();
 
             // Today you have to be Admin to turn on ETW events (anyone can write ETW events).
-            if (TraceEventSession.IsElevated() != true)
-            {
-                throw new SkipTestException("Need to be elevated to run. ");
-            }
+            Assert.SkipWhen(TraceEventSession.IsElevated() != true, "Need to be elevated to run. ");
         }
 
         public override void Start()

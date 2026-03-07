@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
-using Xunit.Abstractions;
+using Xunit.v3;
 using Xunit.Sdk;
 
 namespace TestUtilities;
@@ -38,6 +38,12 @@ public class RandomTestCaseOrderer : ITestCaseOrderer
     }
 
     public IEnumerable<TTestCase> OrderTestCases<TTestCase>(IEnumerable<TTestCase> testCases) where TTestCase : ITestCase
+        => TryRandomize(testCases.ToList(), _diagnosticMessageSink, out List<TTestCase>? randomizedTests)
+                    ? randomizedTests
+                    : testCases;
+
+    public IReadOnlyCollection<TTestCase> OrderTestCases<TTestCase>(IReadOnlyCollection<TTestCase> testCases)
+		where TTestCase : notnull, ITestCase
         => TryRandomize(testCases.ToList(), _diagnosticMessageSink, out List<TTestCase>? randomizedTests)
                     ? randomizedTests
                     : testCases;
