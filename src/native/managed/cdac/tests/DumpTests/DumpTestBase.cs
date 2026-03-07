@@ -68,6 +68,14 @@ public abstract class DumpTestBase : IDisposable
     /// attributes on the calling test method. Call this as the first line of every test.
     /// </summary>
     protected void InitializeDumpTest(TestConfiguration config, [CallerMemberName] string callerName = "")
+        => InitializeDumpTest(config, DebuggeeName, DumpType, callerName);
+
+    /// <summary>
+    /// Loads the dump for the given <paramref name="config"/> using an explicit
+    /// <paramref name="debuggeeName"/> and <paramref name="dumpType"/>.
+    /// Use this overload when individual test methods need different debuggees.
+    /// </summary>
+    protected void InitializeDumpTest(TestConfiguration config, string debuggeeName, string dumpType, [CallerMemberName] string callerName = "")
     {
         string dumpRoot = GetDumpRoot();
         string versionDir = Path.Combine(dumpRoot, config.RuntimeVersion);
@@ -75,7 +83,7 @@ public abstract class DumpTestBase : IDisposable
 
         EvaluateSkipAttributes(config, callerName);
 
-        string dumpPath = Path.Combine(versionDir, DumpType, DebuggeeName, $"{DebuggeeName}.dmp");
+        string dumpPath = Path.Combine(versionDir, dumpType, debuggeeName, $"{debuggeeName}.dmp");
 
         Assert.True(File.Exists(dumpPath), $"Dump file not found: {dumpPath}");
 
