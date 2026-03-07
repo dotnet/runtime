@@ -173,6 +173,21 @@ internal readonly struct Thread_1 : IThread
         return threadLocalStaticBase;
     }
 
+    TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
+        TargetPointer exceptionTrackerPtr = _target.ReadPointer(thread.ExceptionTracker);
+
+        if (exceptionTrackerPtr == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exceptionTrackerPtr);
+        if (exceptionInfo.ThrownObjectHandle == TargetPointer.Null || _target.ReadPointer(exceptionInfo.ThrownObjectHandle) == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        return exceptionInfo.ThrownObjectHandle;
+    }
+
     byte[] IThread.GetWatsonBuckets(TargetPointer threadPointer)
     {
         TargetPointer readFrom;
