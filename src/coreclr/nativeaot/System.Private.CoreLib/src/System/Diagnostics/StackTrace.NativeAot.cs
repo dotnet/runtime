@@ -87,7 +87,7 @@ namespace System.Diagnostics
             }
 
             // Find the truncation point: the first StackTraceHidden frame from
-            // RuntimeAsyncTaskCore (i.e. DispatchContinuations) marks the boundary
+            // RuntimeAsyncTask (i.e. DispatchContinuations) marks the boundary
             // between user async frames and internal dispatch machinery.
             int truncateAt = FindAsyncDispatchBoundary(stackTrace, skipFrames, frameCount);
             if (truncateAt < 0)
@@ -130,7 +130,7 @@ namespace System.Diagnostics
                     out string? owningType, out _, out _, out bool isHidden, out _, out _);
 
                 if (isHidden && owningType is not null &&
-                    owningType.Contains("RuntimeAsyncTask", StringComparison.Ordinal))
+                    owningType.Contains("AsyncHelpers+RuntimeAsyncTask", StringComparison.Ordinal))
                 {
                     return i;
                 }

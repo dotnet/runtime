@@ -25,11 +25,14 @@ public class Async2EnvStackTrace
 
         // MiddleMethod captures Environment.StackTrace after InnerMethod completes
         // and MiddleMethod resumes via continuation dispatch.
-        // The async v2 continuation tracking should include MiddleMethod in the trace.
         Assert.Contains(nameof(MiddleMethod), stackTrace);
 
-        // The internal dispatch frame (RuntimeAsyncTaskCore.DispatchContinuations)
-        // should be filtered out of the visible stack trace.
+        // OuterMethod is NOT on the physical stack (it's a suspended caller),
+        // but async v2 continuation tracking should inject it into the trace.
+        Assert.Contains(nameof(OuterMethod), stackTrace);
+
+        // The internal dispatch frame (DispatchContinuations) should be
+        // filtered out of the visible stack trace.
         Assert.DoesNotContain("DispatchContinuations", stackTrace);
     }
 

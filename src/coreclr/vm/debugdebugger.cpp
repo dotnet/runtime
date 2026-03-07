@@ -187,128 +187,141 @@ bool DebugStackTrace::ExtractContinuationData(MethodTable* pContinuationMT, SArr
     }
     CONTRACTL_END;
 
-    // Look for thread static field t_nextContinuation: Type=DispatcherInfo*
-    // Which is a nested struct containing the field NextContinuation: Type=System.Runtime.CompilerServices.Continuation
-    // Continuation has a field "Resume" which is a fnptr to the method to invoke to resume the async method.
-    ApproxFieldDescIterator fieldIter(pContinuationMT, ApproxFieldDescIterator::STATIC_FIELDS);
+    // AsyncDispatcherInfo.t_current is a [ThreadStatic] field on AsyncDispatcherInfo,
+    // NOT on RuntimeAsyncTask<T>. Load the correct type from CoreLib.
+    TypeHandle thDispatcherInfo = ClassLoader::LoadTypeByNameThrowing(
+        pContinuationMT->GetModule()->GetAssembly(),
+        "System.Runtime.CompilerServices",
+        "AsyncDispatcherInfo",
+        ClassLoader::ReturnNullIfNotFound);
+
+    if (thDispatcherInfo.IsNull())
+        return false;
+
+    MethodTable* pDispatcherInfoMT = thDispatcherInfo.AsMethodTable();
+
+    // Find the t_current thread-static field on AsyncDispatcherInfo.
+    FieldDesc* pTCurrentField = NULL;
+    ApproxFieldDescIterator fieldIter(pDispatcherInfoMT, ApproxFieldDescIterator::STATIC_FIELDS);
     for (FieldDesc *field = fieldIter.Next(); field != NULL; field = fieldIter.Next())
     {
-        if (field->IsEnCNew() || !field->IsThreadStatic() || field->GetFieldType() != ELEMENT_TYPE_PTR)
+        if (!field->IsThreadStatic())
             continue;
 
-        TypeHandle  typeHandle = field->GetFieldTypeHandleThrowing();
-        if (typeHandle == NULL)
-        {
-            continue;
-        }
-        MethodTable* pFieldMT = typeHandle.GetMethodTable();
-        if (pFieldMT == NULL)
-        {
-            continue;
-        }
-        pFieldMT->EnsureTlsIndexAllocated();
         LPCUTF8 fieldName = field->GetName();
-
-        if (fieldName == nullptr || strcmp(fieldName, "t_dispatcherInfo"))
+        if (fieldName != nullptr && !strcmp(fieldName, "t_current"))
         {
-            continue;
+            pTCurrentField = field;
+            break;
         }
+    }
 
-        typedef struct
-        {
-            OBJECTREF* pNext;
-            OBJECTREF pContinuation; // System.Runtime.CompilerServices.Continuation
-        } DispatcherInfo;
+    if (pTCurrentField == NULL)
+        return false;
 
-        Thread * pThread = GetThread();
-        if (pThread == NULL)
-        {
-            continue;
-        }
-        PTR_BYTE base = pContinuationMT->GetNonGCThreadStaticsBasePointer(pThread);
-        if (base == NULL)
-        {
-            continue;
-        }
-        SIZE_T offset = field->GetOffset();
-        DispatcherInfo** ppDispatcherInfo = (DispatcherInfo**)((PTR_BYTE)base + (DWORD)offset);
-        if (ppDispatcherInfo == NULL || *ppDispatcherInfo == NULL)
-        {
-            continue;
-        }
+    Thread * pThread = GetThread();
+    if (pThread == NULL)
+        return false;
 
-        struct
+    pDispatcherInfoMT->EnsureTlsIndexAllocated();
+    PTR_BYTE base = pDispatcherInfoMT->GetNonGCThreadStaticsBasePointer(pThread);
+    if (base == NULL)
+        return false;
+
+    SIZE_T offset = pTCurrentField->GetOffset();
+
+    // AsyncDispatcherInfo layout (64-bit):
+    //   [0]  AsyncDispatcherInfo* Next           (unmanaged pointer)
+    //   [8]  Continuation?        NextContinuation (managed reference)
+    //   [16] Task?                CurrentTask      (managed reference)
+    typedef struct
+    {
+        void*     pNext;
+        OBJECTREF pContinuation;
+    } DispatcherInfoLayout;
+
+    DispatcherInfoLayout** ppDispatcherInfo = (DispatcherInfoLayout**)((PTR_BYTE)base + (DWORD)offset);
+    if (ppDispatcherInfo == NULL || *ppDispatcherInfo == NULL)
+        return false;
+
+    struct
+    {
+        OBJECTREF continuation;
+    } gc{};
+    gc.continuation = NULL;
+    GCPROTECT_BEGIN(gc)
+    {
+        DispatcherInfoLayout* pDispatcherInfo = *ppDispatcherInfo;
+        while (pDispatcherInfo != NULL)
         {
-            OBJECTREF continuation;
-        } gc{};
-        gc.continuation = NULL;
-        GCPROTECT_BEGIN(gc)
-        {
-            DispatcherInfo* pDispatcherInfo = *ppDispatcherInfo;
-            while (pDispatcherInfo != NULL)
+            if (pDispatcherInfo->pContinuation == NULL)
             {
-                if (pDispatcherInfo->pContinuation == NULL)
+                pDispatcherInfo = (DispatcherInfoLayout*)pDispatcherInfo->pNext;
+                continue;
+            }
+
+            OBJECTREF continuation = pDispatcherInfo->pContinuation;
+            while (continuation != NULL)
+            {
+                typedef struct
                 {
-                    break;
+                    PCODE Resume;
+                    PCODE DiagnosticIP;
+                } ResumeInfoLayout;
+                    
+                gc.continuation = continuation;
+                OBJECTREF pNext = nullptr;
+                ResumeInfoLayout * pResumeNext = nullptr;
+                int numFound = 0;
+
+                ApproxFieldDescIterator continuationFieldIter(continuation->GetMethodTable()->GetParentMethodTable(), ApproxFieldDescIterator::INSTANCE_FIELDS);
+                for (FieldDesc *continuationField = continuationFieldIter.Next(); continuationField != NULL && numFound < 2; continuationField = continuationFieldIter.Next())
+                {
+                    LPCUTF8 contFieldName = continuationField->GetName();
+                    if (!strcmp(contFieldName, "Next"))
+                    {
+                        pNext = (OBJECTREF)(Object*)continuation->GetPtrOffset(continuationField->GetOffset());
+                        numFound++;
+                    }
+                    else if (!strcmp(contFieldName, "ResumeInfo"))
+                    {
+                        pResumeNext = (ResumeInfoLayout*)continuation->GetPtrOffset(continuationField->GetOffset());
+                        numFound++;
+                    }
                 }
 
-                OBJECTREF continuation = pDispatcherInfo->pContinuation;
-                while (continuation != NULL)
+                if (pResumeNext != NULL && pResumeNext->Resume != NULL)
                 {
-                    typedef struct
-                    {
-                        PCODE Resume;
-                        PCODE DiagnosticIP;
-                    } ResumeInfo;
-                    
-                    gc.continuation = continuation;
-                    OBJECTREF pNext = nullptr;
-                    ResumeInfo * pResumeNext = nullptr;
-                    int numFound = 0;
+                    MethodDesc* pMD = NonVirtualEntry2MethodDesc((PCODE)pResumeNext->Resume);
 
-                    ApproxFieldDescIterator continuationFieldIter(continuation->GetMethodTable()->GetParentMethodTable(), ApproxFieldDescIterator::INSTANCE_FIELDS);
-                    for (FieldDesc *continuationField = continuationFieldIter.Next(); continuationField != NULL && numFound < 2; continuationField = continuationFieldIter.Next())
+                    // Only runtime async resume stubs are dynamic methods with
+                    // ILStubResolvers. Skip non-dynamic continuations (e.g. Task
+                    // infrastructure completion callbacks) to avoid crashes and
+                    // to keep only meaningful user-method frames.
+                    if (pMD != NULL && pMD->IsDynamicMethod())
                     {
-                        LPCUTF8 fieldName = continuationField->GetName();
-                        if (!strcmp(fieldName, "Next"))
-                        {
-                            pNext = (OBJECTREF)(Object*)continuation->GetPtrOffset(continuationField->GetOffset());
-                            numFound++;
-                        }
-                        else if (!strcmp(fieldName, "ResumeInfo"))
-                        {
-                            pResumeNext = (ResumeInfo*)continuation->GetPtrOffset(continuationField->GetOffset());
-                            numFound++;
-                        }
-                    }
-
-                    if (pResumeNext != NULL && pResumeNext->Resume != NULL)
-                    {
-                        MethodDesc* pMD = NonVirtualEntry2MethodDesc((PCODE)pResumeNext->Resume);
-
                         PTR_ILStubResolver pILResolver = pMD->AsDynamicMethodDesc()->GetILStubResolver();
                         if (pILResolver != nullptr)
                         {
-                            pContinuationResumeList->Append({ pILResolver->GetStubTargetMethodDesc(), pResumeNext->DiagnosticIP });
+                            MethodDesc* pTargetMD = pILResolver->GetStubTargetMethodDesc();
+                            if (pTargetMD != nullptr)
+                            {
+                                pContinuationResumeList->Append({ pTargetMD, pResumeNext->DiagnosticIP });
+                            }
                         }
                     }
-                    if (pNext == nullptr)
-                    {
-                        break;
-                    }
-                    continuation = pNext;
                 }
+                if (pNext == nullptr)
+                {
+                    break;
+                }
+                continuation = pNext;
+            }
 
-                // TODO: use DispatcherInfo's "Next" field to continue the list
-                //pDispatcherInfo = pNext;
-                break;
-            } // while pDispatcherInfo != NULL
-        }
-        GCPROTECT_END();
-
-        break;
-
-    } // foreach static field
+            pDispatcherInfo = (DispatcherInfoLayout*)pDispatcherInfo->pNext;
+        } // while pDispatcherInfo != NULL
+    }
+    GCPROTECT_END();
 
     return true;
 }
@@ -338,7 +351,8 @@ static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
     else if (pData->fAsyncFramesPresent)
     {
         DefineFullyQualifiedNameForClass();
-        if (!strcmp(GetFullyQualifiedNameForClassNestedAware(pFunc->GetMethodTable()), "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTaskCore") &&
+        LPCUTF8 pClassName = GetFullyQualifiedNameForClassNestedAware(pFunc->GetMethodTable());
+        if (strstr(pClassName, "AsyncHelpers+RuntimeAsyncTask") != nullptr &&
             !strcmp(pFunc->GetName(), "DispatchContinuations"))
         {
             // capture async v2 continuations
