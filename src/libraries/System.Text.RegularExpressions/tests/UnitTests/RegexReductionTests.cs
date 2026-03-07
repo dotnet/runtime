@@ -478,9 +478,9 @@ namespace System.Text.RegularExpressions.Tests
         // ReReduceTree: post-FinalOptimize cleanup. Each case shows the equivalent tree without re-reduce.
         [InlineData("a|ab", "a")]                                          // Without re-reduce: a(?:)  — prefix extraction leaves Concat(a, Empty); re-reduce strips Empty
         [InlineData(@"\n|\n\r|\r\n", @"(?>\n|\r\n)")]                      // Without re-reduce: (?>\n(?:)|\r\n)  — shared prefix \n leaves Concat(\n, Empty) in branch; re-reduce collapses it
-        [InlineData(@"[ab]+c[ab]+|[ab]+", @"(?>(?>[ab]+)(?:c(?>[ab]+))?)")]  // Without re-reduce: (?>([ab]+c[ab]+|[ab]+))  — quantified set prefix [ab]+ not extracted until re-reduce
+        [InlineData(@"[ab]+c[ab]+|[ab]+", @"(?>(?>[ab]+)(?:c(?>[ab]+))?)")]  // Without re-reduce: (?>[ab]+c[ab]+|[ab]+)  — quantified set prefix [ab]+ not extracted until re-reduce
         [InlineData("ab|a|ac", "ab?")]                                     // Without re-reduce: a(?>b?)  — prefix extraction + Atomic context creates redundant Atomic(Oneloopatomic); re-reduce strips Atomic
-        [InlineData("ab|a|ac|d", "(?>ab?|d)")]                             // Without re-reduce: (?>(?>b?)|d)  — same redundant Atomic removal, within a larger Alternate
+        [InlineData("ab|a|ac|d", "(?>ab?|d)")]                             // Without re-reduce: (?>a(?>b?)|d)  — same redundant Atomic removal, within a larger Alternate
         [InlineData("a?b|a??b", "(?>a?(?>b))")]                            // Without re-reduce: (?>a?(?>[b]))  — greedy/lazy branches merge after atomic promotion; re-reduce converts single-char [b] to b
         [InlineData("[ab]?c|[ab]??c", "(?>[ab]?(?>c))")]                   // Without re-reduce: (?>[ab]?(?>[c]))  — same single-char class simplification with set loop prefix
         public void PatternsReduceIdentically(string actual, string expected)
