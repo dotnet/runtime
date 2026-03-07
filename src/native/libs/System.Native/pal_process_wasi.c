@@ -160,7 +160,7 @@ int32_t SystemNative_TryWaitForExitCancellable(int32_t pidfd, int32_t pid, int32
     return -1;
 }
 
-int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal, int32_t* out_timeout)
+int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int32_t isGroupLeader, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal, int32_t* out_timeout)
 {
     errno = ENOTSUP;
     return -1;
