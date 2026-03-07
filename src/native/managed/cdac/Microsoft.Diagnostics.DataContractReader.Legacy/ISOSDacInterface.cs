@@ -755,7 +755,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetRCWInterfaces(ClrDataAddress rcw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
     [PreserveSig]
-    int GetCCWData(ClrDataAddress ccw, /*struct DacpCCWData */ void* data);
+    int GetCCWData(ClrDataAddress ccw, DacpCCWData* data);
     [PreserveSig]
     int GetCCWInterfaces(ClrDataAddress ccw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
@@ -794,6 +794,23 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded);
 };
+
+public struct DacpCCWData
+{
+    public ClrDataAddress outerIUnknown;
+    public ClrDataAddress managedObject;
+    public ClrDataAddress handle;
+    public ClrDataAddress ccwAddress;
+    public int refCount;
+    public int interfaceCount;
+    public Interop.BOOL isNeutered;
+    public int jupiterRefCount;
+    public Interop.BOOL isPegged;
+    public Interop.BOOL isGlobalPegged;
+    public Interop.BOOL hasStrongRef;
+    public Interop.BOOL isExtendsCOMObject;
+    public Interop.BOOL isAggregated;
+}
 
 public struct DacpCOMInterfacePointerData
 {

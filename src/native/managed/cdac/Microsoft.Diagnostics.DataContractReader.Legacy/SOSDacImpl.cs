@@ -591,8 +591,63 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, void* data)
-        => _legacyImpl is not null ? _legacyImpl.GetCCWData(ccw, data) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, DacpCCWData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (ccw == 0 || data == null)
+                throw new ArgumentException();
+
+            Contracts.IBuiltInCOM builtInCOMContract = _target.Contracts.BuiltInCOM;
+            // Try to resolve as a COM interface pointer; if not recognised, treat as a direct CCW pointer.
+            TargetPointer ccwPtr = builtInCOMContract.GetCCWFromInterfacePointer(ccw.ToTargetPointer(_target));
+            if (ccwPtr == TargetPointer.Null)
+                ccwPtr = ccw.ToTargetPointer(_target);
+
+            Contracts.CCWData ccwData = builtInCOMContract.GetCCWData(ccwPtr);
+
+            data->outerIUnknown = ccwData.OuterIUnknown.ToClrDataAddress(_target);
+            data->managedObject = ccwData.ManagedObject.ToClrDataAddress(_target);
+            data->handle = ccwData.Handle.ToClrDataAddress(_target);
+            data->ccwAddress = ccwData.CCWAddress.ToClrDataAddress(_target);
+            data->refCount = ccwData.RefCount;
+            data->interfaceCount = ccwData.InterfaceCount;
+            data->isNeutered = ccwData.IsNeutered ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->jupiterRefCount = 0;
+            data->isPegged = Interop.BOOL.FALSE;
+            data->isGlobalPegged = Interop.BOOL.FALSE;
+            data->hasStrongRef = ccwData.HasStrongRef ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isExtendsCOMObject = ccwData.IsExtendsCOMObject ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isAggregated = ccwData.IsAggregated ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            DacpCCWData dataLocal = default;
+            int hrLocal = _legacyImpl.GetCCWData(ccw, &dataLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(data->outerIUnknown == dataLocal.outerIUnknown, $"cDAC outerIUnknown: {data->outerIUnknown:x}, DAC: {dataLocal.outerIUnknown:x}");
+                Debug.Assert(data->managedObject == dataLocal.managedObject, $"cDAC managedObject: {data->managedObject:x}, DAC: {dataLocal.managedObject:x}");
+                Debug.Assert(data->handle == dataLocal.handle, $"cDAC handle: {data->handle:x}, DAC: {dataLocal.handle:x}");
+                Debug.Assert(data->ccwAddress == dataLocal.ccwAddress, $"cDAC ccwAddress: {data->ccwAddress:x}, DAC: {dataLocal.ccwAddress:x}");
+                Debug.Assert(data->refCount == dataLocal.refCount, $"cDAC refCount: {data->refCount}, DAC: {dataLocal.refCount}");
+                Debug.Assert(data->interfaceCount == dataLocal.interfaceCount, $"cDAC interfaceCount: {data->interfaceCount}, DAC: {dataLocal.interfaceCount}");
+                Debug.Assert(data->isNeutered == dataLocal.isNeutered, $"cDAC isNeutered: {data->isNeutered}, DAC: {dataLocal.isNeutered}");
+                Debug.Assert(data->hasStrongRef == dataLocal.hasStrongRef, $"cDAC hasStrongRef: {data->hasStrongRef}, DAC: {dataLocal.hasStrongRef}");
+                Debug.Assert(data->isExtendsCOMObject == dataLocal.isExtendsCOMObject, $"cDAC isExtendsCOMObject: {data->isExtendsCOMObject}, DAC: {dataLocal.isExtendsCOMObject}");
+                Debug.Assert(data->isAggregated == dataLocal.isAggregated, $"cDAC isAggregated: {data->isAggregated}, DAC: {dataLocal.isAggregated}");
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded)
     {
         int hr = HResults.S_OK;

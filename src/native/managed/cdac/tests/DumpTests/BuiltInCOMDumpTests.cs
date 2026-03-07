@@ -117,4 +117,42 @@ public class BuiltInCOMDumpTests : DumpTestBase
                 $"Expected positive ref count for CCW at 0x{ccwPtr:X}, got {refCount}");
         }
     }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "COM callable wrappers require Windows")]
+    public void BuiltInCOM_GetCCWData_FieldsAreConsistent(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IBuiltInCOM builtInCOM = Target.Contracts.BuiltInCOM;
+
+        List<TargetPointer> ccwPtrs = GetCCWPointersFromHandles();
+        Assert.True(ccwPtrs.Count >= 3, "Expected at least three objects with an active CCW from strong handles");
+
+        foreach (TargetPointer ccwPtr in ccwPtrs)
+        {
+            CCWData data = builtInCOM.GetCCWData(ccwPtr);
+
+            // The CCW address should round-trip back to the start of the chain.
+            Assert.NotEqual(TargetPointer.Null, data.CCWAddress);
+
+            // A live CCW (not neutered) should have a positive ref count and a strong ref.
+            Assert.False(data.IsNeutered,
+                $"Expected non-neutered CCW at 0x{ccwPtr:X}");
+            Assert.True(data.RefCount > 0,
+                $"Expected positive ref count for CCW at 0x{ccwPtr:X}, got {data.RefCount}");
+            Assert.True(data.HasStrongRef,
+                $"Expected strong ref for CCW at 0x{ccwPtr:X}");
+
+            // The managed object and handle should be populated.
+            Assert.NotEqual(TargetPointer.Null, data.Handle,
+                $"Expected non-null handle for CCW at 0x{ccwPtr:X}");
+            Assert.NotEqual(TargetPointer.Null, data.ManagedObject,
+                $"Expected non-null managed object for CCW at 0x{ccwPtr:X}");
+
+            // InterfaceCount should match GetCCWInterfaces().Count().
+            int ifaceCount = builtInCOM.GetCCWInterfaces(ccwPtr).Count();
+            Assert.Equal(ifaceCount, data.InterfaceCount);
+        }
+    }
 }

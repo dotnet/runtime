@@ -14,6 +14,9 @@ public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer);
 // Enumerate the COM interfaces exposed by the ComCallWrapper chain.
 // ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
 public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw);
+// Returns the data for a ComCallWrapper.
+// ccw may be a ComCallWrapper address or a COM interface pointer into the CCW.
+public CCWData GetCCWData(TargetPointer ccw);
 ```
 
 where `COMInterfacePointerData` is:
@@ -25,6 +28,25 @@ public struct COMInterfacePointerData
     // MethodTable for this interface, or TargetPointer.Null for slot 0 (IUnknown/IDispatch).
     public TargetPointer MethodTable;
 }
+```
+
+and `CCWData` is:
+``` csharp
+public struct CCWData
+{
+    public TargetPointer OuterIUnknown;      // outer IUnknown for aggregation (m_pOuter)
+    public TargetPointer ManagedObject;      // managed object pointer (dereferenced from Handle)
+    public TargetPointer Handle;             // GC handle holding the managed object (m_ppThis)
+    public TargetPointer CCWAddress;         // address of the start ComCallWrapper
+    public int RefCount;                     // COM reference count (masked with ComRefcountMask)
+    public int InterfaceCount;              // number of exposed COM interfaces
+    public bool IsNeutered;                  // true if the CLEANUP_SENTINEL bit is set
+    public bool HasStrongRef;               // true if RefCount > 0 and handle is not weak
+    public bool IsExtendsCOMObject;         // true if the managed class extends a COM object
+    public bool IsAggregated;               // true if the CCW is aggregated
+}
+```
+
 // Enumerate entries in the RCW cleanup list.
 // If cleanupListPtr is Null, the global g_pRCWCleanupList is used.
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr);
@@ -35,13 +57,15 @@ public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPt
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
+| `ComCallWrapper` | `Handle` | GC object handle (`m_ppThis`); dereference to get the managed object pointer |
 | `ComCallWrapper` | `SimpleWrapper` | Address of the associated `SimpleComCallWrapper` |
 | `ComCallWrapper` | `IPtr` | Base address of the COM interface pointer array |
 | `ComCallWrapper` | `Next` | Next wrapper in the linked chain (all-bits-set sentinel = end of list) |
 | `ComMethodTable` | `Flags` | Flags word; bit `0x10` (`LayoutComplete`) must be set for valid vtable |
 | `ComMethodTable` | `MethodTable` | Pointer to the managed `MethodTable` for this COM interface |
-| `SimpleComCallWrapper` | `RefCount` | The wrapper refcount value |
-| `SimpleComCallWrapper` | `Flags` | Bit flags for wrapper properties |
+| `SimpleComCallWrapper` | `OuterIUnknown` | Outer `IUnknown` pointer for aggregated CCWs (`m_pOuter`) |
+| `SimpleComCallWrapper` | `RefCount` | The wrapper refcount value (includes `CLEANUP_SENTINEL` bit) |
+| `SimpleComCallWrapper` | `Flags` | Bit flags for wrapper properties (aggregated, extends-COM, handle-weak, etc.) |
 | `SimpleComCallWrapper` | `MainWrapper` | Pointer back to the first (start) `ComCallWrapper` in the chain |
 | `SimpleComCallWrapper` | `VTablePtr` | Base address of the standard interface vtable pointer array (used for SCCW IP resolution) |
 | `RCWCleanupList` | `FirstBucket` | Head of the bucket linked list |
@@ -68,6 +92,7 @@ Global variables used:
 | --- | --- | --- | --- |
 | `MarshalingTypeShift` | `int` | Bit position of `m_MarshalingType` within `RCW::RCWFlags::m_dwFlags` | `7` |
 | `MarshalingTypeFreeThreaded` | `int` | Enum value for marshaling type within `RCW::RCWFlags::m_dwFlags` | `2` |
+| `CleanupSentinel` | `ulong` | Bit 31 of `SimpleComCallWrapper.RefCount`; set when the CCW is neutered | `0x80000000` |
 
 Contracts used:
 | Contract Name |
@@ -78,6 +103,8 @@ Contracts used:
 
 private enum CCWFlags
 {
+    IsAggregated = 0x1,
+    IsExtendsCom = 0x2,
     IsHandleWeak = 0x4,
 }
 
@@ -90,6 +117,8 @@ private enum ComMethodTableFlags : ulong
 private const int MarshalingTypeShift = 7;
 private const uint MarshalingTypeMask = 0x3u << MarshalingTypeShift;
 private const uint MarshalingTypeFreeThreaded = 2u; // matches RCW::MarshalingType_FreeThreaded
+// CLEANUP_SENTINEL: bit 31 of m_llRefCount; set when the CCW is neutered
+private const ulong CleanupSentinel = 0x80000000UL;
 
 public ulong GetRefCount(TargetPointer address)
 {
