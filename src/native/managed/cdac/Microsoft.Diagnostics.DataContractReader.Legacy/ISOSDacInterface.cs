@@ -663,7 +663,7 @@ public unsafe partial interface ISOSDacInterface
 
     // Heaps
     [PreserveSig]
-    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*VISITHEAP*/ delegate* unmanaged[Stdcall]</*ClrDataAddress*/ ulong, nuint, Interop.BOOL, void> pCallback);
+    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*VISITHEAP*/ delegate* unmanaged</*ClrDataAddress*/ ulong, nuint, Interop.BOOL, void> pCallback);
     [PreserveSig]
     int GetCodeHeapList(ClrDataAddress jitManager, uint count, /*struct DacpJitCodeHeapInfo*/ void* codeHeaps, uint* pNeeded);
     [PreserveSig]
@@ -943,7 +943,7 @@ public unsafe partial interface ISOSDacInterface12
 public unsafe partial interface ISOSDacInterface13
 {
     [PreserveSig]
-    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged[Stdcall]< /*ClrDataAddress*/ ulong, nuint, Interop.BOOL, void> pCallback);
+    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged< /*ClrDataAddress*/ ulong, nuint, Interop.BOOL, void> pCallback);
     [PreserveSig]
     int GetDomainLoaderAllocator(ClrDataAddress domainAddress, ClrDataAddress* pLoaderAllocator);
     [PreserveSig]

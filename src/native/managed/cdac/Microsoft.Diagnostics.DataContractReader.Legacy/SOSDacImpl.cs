@@ -3870,23 +3870,28 @@ public sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.TraverseEHInfo(ip, pCallback, token) : HResults.E_NOTIMPL;
 
 #if DEBUG
-    private static List<(ulong VirtualAddress, nuint VirtualSize)> _debugTraverseLoaderHeapBlocks = new();
+    [ThreadStatic]
+    private static List<(ulong VirtualAddress, nuint VirtualSize)>? _debugTraverseLoaderHeapBlocks;
+    [ThreadStatic]
     private static uint _debugTraverseLoaderDebugCount;
 
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    private static List<(ulong VirtualAddress, nuint VirtualSize)> DebugTraverseLoaderHeapBlocks
+        => _debugTraverseLoaderHeapBlocks ??= new();
+
+    [UnmanagedCallersOnly]
     private static void TraverseLoaderHeapDebugCallback(ulong virtualAddress, nuint virtualSize, Interop.BOOL _)
     {
-        List<(ulong VirtualAddress, nuint VirtualSize)> expected = _debugTraverseLoaderHeapBlocks;
+        List<(ulong VirtualAddress, nuint VirtualSize)> expected = DebugTraverseLoaderHeapBlocks;
         bool found = expected.Remove((virtualAddress, virtualSize));
         _debugTraverseLoaderDebugCount++;
         Debug.Assert(found, $"Unexpected loader heap block: address={virtualAddress:x}, size={virtualSize:x}");
     }
 #endif
-    int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, delegate* unmanaged[Stdcall]<ulong, nuint, Interop.BOOL, void> pCallback)
+    int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
     {
         int hr = HResults.S_OK;
 #if DEBUG
-        _debugTraverseLoaderHeapBlocks.Clear();
+        DebugTraverseLoaderHeapBlocks.Clear();
         _debugTraverseLoaderDebugCount = 0;
 #endif
         try
@@ -3915,7 +3920,7 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 pCallback(blockAddress.Value, (nuint)blockSize.Value, block == firstBlock ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 #if DEBUG
-                _debugTraverseLoaderHeapBlocks.Add((blockAddress.Value, (nuint)blockSize.Value));
+                DebugTraverseLoaderHeapBlocks.Add((blockAddress.Value, (nuint)blockSize.Value));
 #endif
                 block = loader.GetNextLoaderHeapBlock(block);
                 if (block == firstBlock)
@@ -3931,12 +3936,12 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            int cdacCount = _debugTraverseLoaderHeapBlocks.Count;
-            delegate* unmanaged[Stdcall]<ulong, nuint, Interop.BOOL, void> debugCallbackPtr = &TraverseLoaderHeapDebugCallback;
+            int cdacCount = DebugTraverseLoaderHeapBlocks.Count;
+            delegate* unmanaged<ulong, nuint, Interop.BOOL, void> debugCallbackPtr = &TraverseLoaderHeapDebugCallback;
             int hrLocal = _legacyImpl.TraverseLoaderHeap(loaderHeapAddr, debugCallbackPtr);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            Debug.Assert(_debugTraverseLoaderHeapBlocks.Count == 0,
-                $"cDAC found {cdacCount} blocks, DAC matched {_debugTraverseLoaderDebugCount}, {_debugTraverseLoaderHeapBlocks.Count} unmatched");
+            Debug.Assert(DebugTraverseLoaderHeapBlocks.Count == 0,
+                $"cDAC found {cdacCount} blocks, DAC matched {_debugTraverseLoaderDebugCount}, {DebugTraverseLoaderHeapBlocks.Count} unmatched");
             Debug.Assert(_debugTraverseLoaderDebugCount == (uint)cdacCount,
                 $"cDAC: {cdacCount} blocks, DAC: {_debugTraverseLoaderDebugCount} blocks");
         }
@@ -4955,11 +4960,11 @@ public sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface13
 
-    int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged[Stdcall]<ulong, nuint, Interop.BOOL, void> pCallback)
+    int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
     {
         int hr = HResults.S_OK;
 #if DEBUG
-        _debugTraverseLoaderHeapBlocks.Clear();
+        DebugTraverseLoaderHeapBlocks.Clear();
         _debugTraverseLoaderDebugCount = 0;
 #endif
         try
@@ -4988,7 +4993,7 @@ public sealed unsafe partial class SOSDacImpl
                 }
                 pCallback(blockAddress.Value, (nuint)blockSize.Value, block == firstBlock ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 #if DEBUG
-                _debugTraverseLoaderHeapBlocks.Add((blockAddress.Value, (nuint)blockSize.Value));
+                DebugTraverseLoaderHeapBlocks.Add((blockAddress.Value, (nuint)blockSize.Value));
 #endif
                 block = loader.GetNextLoaderHeapBlock(block);
                 if (block == firstBlock)
@@ -5004,12 +5009,12 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl13 is not null)
         {
-            int cdacCount = _debugTraverseLoaderHeapBlocks.Count;
-            delegate* unmanaged[Stdcall]<ulong, nuint, Interop.BOOL, void> debugCallbackPtr = &TraverseLoaderHeapDebugCallback;
+            int cdacCount = DebugTraverseLoaderHeapBlocks.Count;
+            delegate* unmanaged<ulong, nuint, Interop.BOOL, void> debugCallbackPtr = &TraverseLoaderHeapDebugCallback;
             int hrLocal = _legacyImpl13.TraverseLoaderHeap(loaderHeapAddr, kind, debugCallbackPtr);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
-            Debug.Assert(_debugTraverseLoaderHeapBlocks.Count == 0,
-                $"cDAC found {cdacCount} blocks, DAC matched {_debugTraverseLoaderDebugCount}, {_debugTraverseLoaderHeapBlocks.Count} unmatched");
+            Debug.Assert(DebugTraverseLoaderHeapBlocks.Count == 0,
+                $"cDAC found {cdacCount} blocks, DAC matched {_debugTraverseLoaderDebugCount}, {DebugTraverseLoaderHeapBlocks.Count} unmatched");
             Debug.Assert(_debugTraverseLoaderDebugCount == (uint)cdacCount,
                 $"cDAC: {cdacCount} blocks, DAC: {_debugTraverseLoaderDebugCount} blocks");
         }
