@@ -9,11 +9,11 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        private static volatile IntPtr s_evpMd5;
-        private static volatile IntPtr s_evpSha1;
-        private static volatile IntPtr s_evpSha256;
-        private static volatile IntPtr s_evpSha384;
-        private static volatile IntPtr s_evpSha512;
+        private static IntPtr s_evpMd5;
+        private static IntPtr s_evpSha1;
+        private static IntPtr s_evpSha256;
+        private static IntPtr s_evpSha384;
+        private static IntPtr s_evpSha512;
 
         [LibraryImport(Libraries.AndroidCryptoNative)]
         private static partial IntPtr CryptoNative_EvpMd5();
