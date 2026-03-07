@@ -774,6 +774,20 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     BasicBlock* falseBb = m_startBlock->GetFalseTarget();
     BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
 
+    // Change kind of JTRUE block and make it flow
+    // directly into block where flows merge (which is null in case of GT_RETURN)
+    if (m_mainOper == GT_RETURN)
+    {
+        m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
+    }
+    else
+    {
+        FlowEdge* newEdge =
+            m_doElseConversion ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
+        m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+    }
+    assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
+
     // Remove all Then/Else blocks
     auto removeBlocks = [&](BasicBlock* start) {
         m_compiler->fgRemoveAllRefPreds(start, m_startBlock);
@@ -792,20 +806,6 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     {
         removeBlocks(trueBb);
     }
-
-    // Change kind of JTRUE block and make it flow
-    // directly into block where flows merge (which is null in case of GT_RETURN)
-    if (m_mainOper == GT_RETURN)
-    {
-        m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
-    }
-    else
-    {
-        FlowEdge* newEdge =
-            m_doElseConversion ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
-        m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
-    }
-    assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
 
 #ifdef DEBUG
     if (m_compiler->verbose)
