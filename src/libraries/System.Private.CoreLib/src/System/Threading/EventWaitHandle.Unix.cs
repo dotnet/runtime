@@ -10,6 +10,40 @@ namespace System.Threading
 {
     public partial class EventWaitHandle
     {
+#if FEATURE_SINGLE_THREADED
+#pragma warning disable CA1822, IDE0060
+        private void CreateEventCore(bool initialState, EventResetMode mode)
+        {
+            ValidateMode(mode);
+        }
+
+        private void CreateEventCore(
+            bool initialState,
+            EventResetMode mode,
+            string? name,
+            NamedWaitHandleOptionsInternal options,
+            out bool createdNew)
+        {
+            ValidateMode(mode);
+            createdNew = true;
+        }
+
+        private static OpenExistingResult OpenExistingWorker(
+            string name,
+            NamedWaitHandleOptionsInternal options,
+            out EventWaitHandle? result)
+        {
+            result = null;
+            return OpenExistingResult.NameNotFound;
+        }
+
+        public bool Reset() => true;
+
+        public bool Set() => true;
+
+        internal static bool Set(SafeWaitHandle waitHandle) => true;
+#pragma warning restore CA1822, IDE0060
+#else
         private void CreateEventCore(bool initialState, EventResetMode mode)
         {
             ValidateMode(mode);
@@ -85,6 +119,7 @@ namespace System.Threading
                 waitHandle.DangerousRelease();
             }
         }
+#endif
 
         private SafeWaitHandle ValidateHandle()
         {

@@ -105,6 +105,7 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(90, 3, data);
         }
 
+#if !FEATURE_SINGLE_THREADED
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void ContentionLockCreated(Lock lockObj) =>
@@ -113,6 +114,7 @@ namespace System.Diagnostics.Tracing
 #pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
                 ObjectIDForEvents(lockObj));
 #pragma warning restore CS9216
+#endif
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(81, Level = EventLevel.Informational, Message = Messages.ContentionStart, Task = Tasks.Contention, Opcode = EventOpcode.Start, Version = 2, Keywords = Keywords.ContentionKeyword)]
@@ -144,6 +146,7 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(81, 5, data);
         }
 
+#if !FEATURE_SINGLE_THREADED
         [NonEvent]
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void ContentionStart(Lock lockObj) =>
@@ -155,6 +158,7 @@ namespace System.Diagnostics.Tracing
                 ObjectIDForEvents(lockObj),
 #pragma warning restore CS9216
                 (ulong)lockObj.OwningThreadId);
+#endif
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern", Justification = "Parameters to this method are primitive and are trimmer safe")]
         [Event(91, Level = EventLevel.Informational, Message = Messages.ContentionStop, Task = Tasks.Contention, Opcode = EventOpcode.Stop, Version = 1, Keywords = Keywords.ContentionKeyword)]

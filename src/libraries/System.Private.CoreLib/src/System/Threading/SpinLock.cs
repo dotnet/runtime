@@ -63,11 +63,13 @@ namespace System.Threading
 
         private volatile int _owner;
 
+#if !FEATURE_SINGLE_THREADED
         // After how many yields, call Sleep(1)
         private const int SLEEP_ONE_FREQUENCY = 40;
 
         // After how many yields, check the timeout
         private const int TIMEOUT_CHECK_FREQUENCY = 10;
+#endif
 
         // The thread tracking disabled mask
         private const int LOCK_ID_DISABLE_MASK = unchecked((int)0x80000000);        // 1000 0000 0000 0000 0000 0000 0000 0000
@@ -76,7 +78,9 @@ namespace System.Threading
         private const int LOCK_ANONYMOUS_OWNED = 0x1;                               // 0000 0000 0000 0000 0000 0000 0000 0001
 
         // Waiters mask if the thread tracking is disabled
+#if !FEATURE_SINGLE_THREADED
         private const int WAITERS_MASK = ~(LOCK_ID_DISABLE_MASK | 1);               // 0111 1111 1111 1111 1111 1111 1111 1110
+#endif
 
         // The Thread tacking is disabled and the lock bit is set, used in Enter fast path to make sure the id is disabled and lock is available
         private const int ID_DISABLED_AND_ANONYMOUS_OWNED = unchecked((int)0x80000001); // 1000 0000 0000 0000 0000 0000 0000 0001
@@ -86,17 +90,30 @@ namespace System.Threading
         // m_owner & LOCK_ANONYMOUS_OWNED = zero and the thread tracking is disabled
         private const int LOCK_UNOWNED = 0;
 
+#if !FEATURE_SINGLE_THREADED
         // The maximum number of waiters (only used if the thread tracking is disabled)
         // The actual maximum waiters count is this number divided by two because each waiter increments the waiters count by 2
         // The waiters count is calculated by m_owner & WAITERS_MASK 01111....110
         private const int MAXIMUM_WAITERS = WAITERS_MASK;
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int CompareExchange(ref int location, int value, int comparand, ref bool success)
         {
+#if FEATURE_SINGLE_THREADED
+            int result = location;
+            success = (result == comparand);
+            if (success)
+            {
+                location = value;
+            }
+
+            return result;
+#else
             int result = Interlocked.CompareExchange(ref location, value, comparand);
             success = (result == comparand);
             return result;
+#endif
         }
 
         /// <summary>
@@ -287,6 +304,21 @@ namespace System.Threading
                     nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
             }
 
+#if FEATURE_SINGLE_THREADED
+            if (IsThreadOwnerTrackingEnabled)
+            {
+                ContinueTryEnterWithThreadTracking(millisecondsTimeout, 0, ref lockTaken);
+                return;
+            }
+
+            // On single-threaded runtime, try to acquire the lock once. If it fails, no other
+            // thread can release it, so spinning would deadlock.
+            int observedOwner = _owner;
+            if ((observedOwner & LOCK_ANONYMOUS_OWNED) == LOCK_UNOWNED)
+            {
+                CompareExchange(ref _owner, observedOwner | 1, observedOwner, ref lockTaken);
+            }
+#else
             long startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout != 0)
             {
@@ -380,8 +412,10 @@ namespace System.Threading
                     }
                 }
             }
+#endif
         }
 
+#if !FEATURE_SINGLE_THREADED
         /// <summary>
         /// decrements the waiters, in case of the timeout is expired
         /// </summary>
@@ -400,6 +434,7 @@ namespace System.Threading
                 spinner.SpinOnce();
             }
         }
+#endif
 
         /// <summary>
         /// ContinueTryEnter for the thread tracking mode enabled
@@ -418,6 +453,14 @@ namespace System.Threading
                 throw new LockRecursionException(SR.SpinLock_TryEnter_LockRecursionException);
             }
 
+#if FEATURE_SINGLE_THREADED
+            // On single-threaded runtime, try to acquire the lock once. If it fails, no other
+            // thread can release it, so spinning would deadlock.
+            if (_owner == LockUnowned)
+            {
+                CompareExchange(ref _owner, newOwner, LockUnowned, ref lockTaken);
+            }
+#else
             SpinWait spinner = default;
 
             // Loop until the lock has been successfully acquired or, if specified, the timeout expires.
@@ -444,6 +487,7 @@ namespace System.Threading
                     return;
                 }
             }
+#endif
         }
 
         /// <summary>
@@ -462,7 +506,11 @@ namespace System.Threading
             if ((_owner & LOCK_ID_DISABLE_MASK) == 0)
                 ExitSlowPath(true);
             else
+#if FEATURE_SINGLE_THREADED
+                _owner--;
+#else
                 Interlocked.Decrement(ref _owner);
+#endif
         }
 
         /// <summary>
@@ -512,6 +560,17 @@ namespace System.Threading
                 ThrowHelper.ThrowSynchronizationLockException_LockExit();
             }
 
+#if FEATURE_SINGLE_THREADED
+            if (threadTrackingEnabled)
+            {
+                _owner = LOCK_UNOWNED;
+            }
+            else
+            {
+                int tmpOwner = _owner;
+                _owner = tmpOwner & (~LOCK_ANONYMOUS_OWNED);
+            }
+#else
             if (useMemoryBarrier)
             {
                 if (threadTrackingEnabled)
@@ -535,6 +594,7 @@ namespace System.Threading
                     _owner = tmpOwner & (~LOCK_ANONYMOUS_OWNED);
                 }
             }
+#endif
         }
 
         /// <summary>

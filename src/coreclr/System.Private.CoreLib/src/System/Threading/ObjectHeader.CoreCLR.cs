@@ -56,11 +56,41 @@ namespace System.Threading
             UseSlowPath = 2
         };
 
+#if !FEATURE_SINGLE_THREADED
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern HeaderLockResult AcquireInternal(object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern HeaderLockResult Release(object obj);
+#else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe HeaderLockResult Release(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+
+            fixed (byte* pObjectData = &obj.GetRawData())
+            {
+                int* pHeader = GetHeaderPtr(pObjectData);
+                int oldBits = *pHeader;
+
+                if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
+                    return HeaderLockResult.UseSlowPath;
+
+                int currentThreadID = ManagedThreadId.Current;
+                if ((oldBits & SBLK_MASK_LOCK_THREADID) != currentThreadID)
+                    return HeaderLockResult.Failure;
+
+                if ((oldBits & SBLK_MASK_LOCK_RECLEVEL) != 0)
+                {
+                    *pHeader = oldBits - SBLK_LOCK_RECLEVEL_INC;
+                    return HeaderLockResult.Success;
+                }
+
+                *pHeader = oldBits & ~SBLK_MASK_LOCK_THREADID;
+                return HeaderLockResult.Success;
+            }
+        }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int* GetHeaderPtr(byte* ppObjectData)
@@ -99,6 +129,45 @@ namespace System.Threading
         // back-off as it favors micro-contention scenario, which we expect.
         //
 
+#if FEATURE_SINGLE_THREADED
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe HeaderLockResult TryAcquireThinLock(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+
+            int currentThreadID = ManagedThreadId.Current;
+            if (currentThreadID > SBLK_MASK_LOCK_THREADID)
+                return HeaderLockResult.UseSlowPath;
+
+            fixed (byte* pObjectData = &obj.GetRawData())
+            {
+                int* pHeader = GetHeaderPtr(pObjectData);
+                int oldBits = *pHeader;
+
+                if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
+                    return HeaderLockResult.UseSlowPath;
+
+                if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
+                {
+                    int newBits = oldBits + SBLK_LOCK_RECLEVEL_INC;
+                    if ((newBits & SBLK_MASK_LOCK_RECLEVEL) != 0)
+                    {
+                        *pHeader = newBits;
+                        return HeaderLockResult.Success;
+                    }
+                    return HeaderLockResult.UseSlowPath;
+                }
+
+                if ((oldBits & SBLK_MASK_LOCK_THREADID) == 0)
+                {
+                    *pHeader = oldBits | currentThreadID;
+                    return HeaderLockResult.Success;
+                }
+
+                return HeaderLockResult.UseSlowPath;
+            }
+        }
+#else
         // Try acquiring the thin-lock
         public static unsafe HeaderLockResult TryAcquireThinLock(object obj)
         {
@@ -198,6 +267,7 @@ namespace System.Threading
             // owned by somebody else
             return HeaderLockResult.Failure;
         }
+#endif // !FEATURE_SINGLE_THREADED (TryAcquireThinLock + TryAcquireThinLockSpin)
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe HeaderLockResult IsAcquired(object obj)
