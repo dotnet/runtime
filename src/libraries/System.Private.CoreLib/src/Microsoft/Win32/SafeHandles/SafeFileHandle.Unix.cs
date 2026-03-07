@@ -180,8 +180,12 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        public static unsafe partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        private static unsafe void CreateAnonymousPipeCore(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
         {
+            // Allocate the handles first, so in case of OOM we don't leak any handles.
+            SafeFileHandle tempReadHandle = new();
+            SafeFileHandle tempWriteHandle = new();
+
             int* fds = stackalloc int[2];
             Interop.Sys.PipeFlags flags = Interop.Sys.PipeFlags.O_CLOEXEC;
             if (asyncRead)
@@ -197,47 +201,19 @@ namespace Microsoft.Win32.SafeHandles
             if (Interop.Sys.Pipe(fds, flags) != 0)
             {
                 Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                tempReadHandle.Dispose();
+                tempWriteHandle.Dispose();
                 throw Interop.GetExceptionForIoErrno(error);
             }
 
-            int readFd = fds[Interop.Sys.ReadEndOfPipe];
-            int writeFd = fds[Interop.Sys.WriteEndOfPipe];
-            bool closeReadFd = true;
-            bool closeWriteFd = true;
+            tempReadHandle.SetHandle(fds[Interop.Sys.ReadEndOfPipe]);
+            tempReadHandle.IsAsync = asyncRead;
 
-            SafeFileHandle? tempReadHandle = null;
-            SafeFileHandle? tempWriteHandle = null;
-            try
-            {
-                tempReadHandle = new SafeFileHandle((IntPtr)readFd, ownsHandle: true);
-                closeReadFd = false;
-                tempWriteHandle = new SafeFileHandle((IntPtr)writeFd, ownsHandle: true);
-                closeWriteFd = false;
+            tempWriteHandle.SetHandle(fds[Interop.Sys.WriteEndOfPipe]);
+            tempWriteHandle.IsAsync = asyncWrite;
 
-                tempReadHandle.IsAsync = asyncRead;
-                tempWriteHandle.IsAsync = asyncWrite;
-
-                readHandle = tempReadHandle;
-                writeHandle = tempWriteHandle;
-
-                tempReadHandle = null;
-                tempWriteHandle = null;
-            }
-            finally
-            {
-                tempReadHandle?.Dispose();
-                tempWriteHandle?.Dispose();
-
-                if (closeReadFd)
-                {
-                    Interop.Sys.Close(readFd);
-                }
-
-                if (closeWriteFd)
-                {
-                    Interop.Sys.Close(writeFd);
-                }
-            }
+            readHandle = tempReadHandle;
+            writeHandle = tempWriteHandle;
         }
 
         // Specialized Open that returns the file length and permissions of the opened file.

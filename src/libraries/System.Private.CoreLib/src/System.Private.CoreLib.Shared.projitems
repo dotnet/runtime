@@ -1798,6 +1798,12 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.PipeOptions.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.PipeOptions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreatePipe_SafeFileHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CreatePipe_SafeFileHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateNamedPipe_SafeFileHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateNamedPipe_SafeFileHandle.cs</Link>
     </Compile>
