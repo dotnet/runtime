@@ -91,11 +91,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             tmf = typeof(TF); // This is a hole that doesn't warn but assigns a misannotated value to target.T
         }
 
-        [ExpectedWarning("IL2089", "RefFieldWithMethods", "T", Tool.Trimmer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL2089", "RefFieldWithFields", "T", Tool.Trimmer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL2089", "RefFieldWithMethodsAndFields", "T", Tool.Trimmer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL2089", "RefFieldWithMethodsAndFields", "T", Tool.Trimmer | Tool.NativeAot, "")]
-        [ExpectedWarning("IL2089", "RefFieldWithFields", "T", Tool.Trimmer | Tool.NativeAot, "")]
+        [ExpectedWarning("IL2089", "RefFieldWithMethods", "T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
+        [ExpectedWarning("IL2089", "RefFieldWithFields", "T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
+        [ExpectedWarning("IL2089", "RefFieldWithMethodsAndFields", "T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
+        [ExpectedWarning("IL2089", "RefFieldWithMethodsAndFields", "T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
+        [ExpectedWarning("IL2089", "RefFieldWithFields", "T", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101734")]
         static void AssignRefLocals<
             T,
             [DAM(DAMT.PublicMethods)] TM,
