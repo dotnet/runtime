@@ -482,6 +482,11 @@ namespace ILCompiler.DependencyAnalysis
             foreach (IMethodNode methodNode in MetadataManager.GetCompiledMethods(moduleToEnumerate, methodCategory))
             {
                 MethodDesc method = methodNode.Method;
+                if (CompilationModuleGroup.IsCompositeBuildMode &&
+                    (method.IsAsyncVariant() || method.IsCompilerGeneratedILBodyForAsync()))
+                {
+                    continue;
+                }
                 MethodWithGCInfo methodCodeNode = methodNode as MethodWithGCInfo;
 #if DEBUG
                 if ((!methodCodeNode.IsEmpty || CompilationModuleGroup.VersionsWithMethodBody(method)) && method.IsPrimaryMethodDesc())
