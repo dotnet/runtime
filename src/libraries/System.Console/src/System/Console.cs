@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace System
@@ -238,14 +239,27 @@ namespace System
         {
             return outputStream == Stream.Null ?
                 TextWriter.Null :
-                TextWriter.Synchronized(new StreamWriter(
+                TextWriter.Synchronized(new NonClosableStreamWriter(
                     stream: outputStream,
                     encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
-                    bufferSize: WriteBufferSize,
-                    leaveOpen: true)
-                    {
-                        AutoFlush = true
-                    });
+                    bufferSize: WriteBufferSize));
+        }
+
+        /// <summary>
+        /// A StreamWriter that ignores Dispose so that Console.Out/Error remain functional
+        /// even if user code disposes the writer returned by Console.Out or Console.Error.
+        /// </summary>
+        private sealed class NonClosableStreamWriter : StreamWriter
+        {
+            internal NonClosableStreamWriter(Stream stream, Encoding encoding, int bufferSize)
+                : base(stream, encoding, bufferSize, leaveOpen: true)
+            {
+                AutoFlush = true;
+            }
+
+            // Do nothing - Console.Out/Error must remain functional after Dispose.
+            protected override void Dispose(bool disposing) { }
+            public override ValueTask DisposeAsync() => default;
         }
 
         private static StrongBox<bool>? _isStdInRedirected;

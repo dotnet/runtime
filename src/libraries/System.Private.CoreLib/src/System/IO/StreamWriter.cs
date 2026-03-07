@@ -221,16 +221,16 @@ namespace System.IO
 
         private void CloseStreamFromDispose(bool disposing)
         {
-            // Dispose of our resources if this StreamWriter is closable.
-            if (_closable && !_disposed)
+            if (!_disposed)
             {
                 try
                 {
+                    // Dispose of our resources if this StreamWriter is closable.
                     // Attempt to close the stream even if there was an IO error from Flushing.
                     // Note that Stream.Close() can potentially throw here (may or may not be
                     // due to the same Flush error). In this case, we still need to ensure
                     // cleaning up internal resources, hence the finally block.
-                    if (disposing)
+                    if (_closable && disposing)
                     {
                         _stream.Close();
                     }

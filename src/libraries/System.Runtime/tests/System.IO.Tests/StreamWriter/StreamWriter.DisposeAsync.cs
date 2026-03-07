@@ -62,6 +62,19 @@ namespace System.IO.Tests
             Assert.Equal(5, ms.Position); // doesn't throw
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DisposeAsync_ThrowsAfterDispose(bool leaveOpen)
+        {
+            var ms = new MemoryStream();
+            var sw = new StreamWriter(ms, leaveOpen: leaveOpen);
+            sw.Write("Hello");
+            await sw.DisposeAsync();
+
+            Assert.Throws<ObjectDisposedException>(() => sw.Write(" World"));
+        }
+
         [Fact]
         public async Task DisposeAsync_DerivedTypeForcesDisposeToBeUsedUnlessOverridden()
         {

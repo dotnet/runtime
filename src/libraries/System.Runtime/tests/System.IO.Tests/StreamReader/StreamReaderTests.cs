@@ -244,10 +244,14 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => sr.Read(new char[0], 2, 0));
         }
 
-        [Fact]
-        public void ObjectDisposedExceptionDisposedStream()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ObjectDisposedExceptionDisposedStream(bool leaveOpen)
         {
-            var sr = GetCharArrayStream().Item2;
+            var ms = new MemoryStream(Encoding.UTF8.GetBytes("Hello World"));
+            var sr = new StreamReader(ms, leaveOpen: leaveOpen);
+            sr.ReadToEnd();
             sr.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => sr.Read(new char[1], 0, 1));
