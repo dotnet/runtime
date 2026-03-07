@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Collections.Generic;
-using System.Linq;
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct BuiltInCOM_1 : IBuiltInCOM
@@ -77,35 +76,20 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 
     // See ClrDataAccess::GetCCWData in src/coreclr/debug/daccess/request.cpp.
     // ccw must be a ComCallWrapper address; resolve COM interface pointers first via GetCCWFromInterfacePointer.
-    public CCWData GetCCWData(TargetPointer ccw)
+    public TargetPointer GetCCWAddress(TargetPointer ccw) => NavigateToStartWrapper(ccw);
+
+    public TargetPointer GetCCWHandle(TargetPointer ccw)
     {
-        // Navigate to the start of the chain (mirrors DACGetCCWFromAddress → GetStartWrapper).
         TargetPointer startCCW = NavigateToStartWrapper(ccw);
-
         Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(startCCW);
-        Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+        return wrapper.Handle;
+    }
 
-        int refCount = (int)GetRefCount(startCCW);
-        bool hasStrongRef = (refCount > 0) && !IsHandleWeak(startCCW);
-
-        TargetPointer handle = wrapper.Handle;
-        TargetPointer managedObject = handle != TargetPointer.Null
-            ? _target.ReadPointer(handle)
-            : TargetPointer.Null;
-
-        return new CCWData
-        {
-            OuterIUnknown = simpleWrapper.OuterIUnknown,
-            ManagedObject = managedObject,
-            Handle = handle,
-            CCWAddress = startCCW,
-            RefCount = refCount,
-            InterfaceCount = GetCCWInterfaces(startCCW).Count(),
-            IsNeutered = IsNeutered(startCCW),
-            HasStrongRef = hasStrongRef,
-            IsExtendsCOMObject = IsExtendsCOMObject(startCCW),
-            IsAggregated = IsAggregated(startCCW),
-        };
+    public TargetPointer GetOuterIUnknown(TargetPointer ccw)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
+        Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+        return sccw.OuterIUnknown;
     }
 
     // Navigates to the start of the ComCallWrapper chain.

@@ -599,27 +599,32 @@ public sealed unsafe partial class SOSDacImpl
             if (ccw == 0 || data == null)
                 throw new ArgumentException();
 
-            Contracts.IBuiltInCOM builtInCOMContract = _target.Contracts.BuiltInCOM;
+            Contracts.IBuiltInCOM contract = _target.Contracts.BuiltInCOM;
             // Try to resolve as a COM interface pointer; if not recognised, treat as a direct CCW pointer.
-            TargetPointer ccwPtr = builtInCOMContract.GetCCWFromInterfacePointer(ccw.ToTargetPointer(_target));
+            TargetPointer ccwPtr = contract.GetCCWFromInterfacePointer(ccw.ToTargetPointer(_target));
             if (ccwPtr == TargetPointer.Null)
                 ccwPtr = ccw.ToTargetPointer(_target);
 
-            Contracts.CCWData ccwData = builtInCOMContract.GetCCWData(ccwPtr);
+            TargetPointer startCCW = contract.GetCCWAddress(ccwPtr);
+            TargetPointer handle = contract.GetCCWHandle(startCCW);
+            TargetPointer managedObject = handle != TargetPointer.Null
+                ? _target.ReadPointer(handle)
+                : TargetPointer.Null;
+            int refCount = (int)contract.GetRefCount(startCCW);
 
-            data->outerIUnknown = ccwData.OuterIUnknown.ToClrDataAddress(_target);
-            data->managedObject = ccwData.ManagedObject.ToClrDataAddress(_target);
-            data->handle = ccwData.Handle.ToClrDataAddress(_target);
-            data->ccwAddress = ccwData.CCWAddress.ToClrDataAddress(_target);
-            data->refCount = ccwData.RefCount;
-            data->interfaceCount = ccwData.InterfaceCount;
-            data->isNeutered = ccwData.IsNeutered ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->outerIUnknown = contract.GetOuterIUnknown(startCCW).ToClrDataAddress(_target);
+            data->managedObject = managedObject.ToClrDataAddress(_target);
+            data->handle = handle.ToClrDataAddress(_target);
+            data->ccwAddress = startCCW.ToClrDataAddress(_target);
+            data->refCount = refCount;
+            data->interfaceCount = contract.GetCCWInterfaces(startCCW).Count();
+            data->isNeutered = contract.IsNeutered(startCCW) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             data->jupiterRefCount = 0;
             data->isPegged = Interop.BOOL.FALSE;
             data->isGlobalPegged = Interop.BOOL.FALSE;
-            data->hasStrongRef = ccwData.HasStrongRef ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-            data->isExtendsCOMObject = ccwData.IsExtendsCOMObject ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-            data->isAggregated = ccwData.IsAggregated ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->hasStrongRef = (refCount > 0) && !contract.IsHandleWeak(startCCW) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isExtendsCOMObject = contract.IsExtendsCOMObject(startCCW) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+            data->isAggregated = contract.IsAggregated(startCCW) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {

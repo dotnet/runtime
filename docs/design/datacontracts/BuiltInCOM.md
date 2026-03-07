@@ -6,7 +6,7 @@ This contract is for getting information related to built-in COM.
 
 ``` csharp
 public ulong GetRefCount(TargetPointer ccw);
-// Check whether the COM wrappers handle is weak.
+// Check whether the COM wrapper's handle is weak.
 public bool IsHandleWeak(TargetPointer ccw);
 // Returns true if the CCW has been neutered (CLEANUP_SENTINEL bit set in the raw ref count).
 public bool IsNeutered(TargetPointer ccw);
@@ -20,9 +20,17 @@ public TargetPointer GetCCWFromInterfacePointer(TargetPointer interfacePointer);
 // Enumerate the COM interfaces exposed by the ComCallWrapper chain.
 // ccw may be any ComCallWrapper in the chain; the implementation navigates to the start.
 public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw);
-// Returns aggregated CCW data for the given ComCallWrapper address.
-// ccw must be a ComCallWrapper address (resolve COM interface pointers first via GetCCWFromInterfacePointer).
-public CCWData GetCCWData(TargetPointer ccw);
+// Returns the address of the start ComCallWrapper for the given CCW address.
+// All wrappers in a chain share the same SimpleComCallWrapper, so any wrapper address is accepted.
+public TargetPointer GetCCWAddress(TargetPointer ccw);
+// Returns the GC object handle (m_ppThis) of the start ComCallWrapper.
+public TargetPointer GetCCWHandle(TargetPointer ccw);
+// Returns the outer IUnknown pointer (m_pOuter) for aggregated CCWs.
+// All wrappers in a chain share the same SimpleComCallWrapper, so any wrapper address is accepted.
+public TargetPointer GetOuterIUnknown(TargetPointer ccw);
+// Enumerate entries in the RCW cleanup list.
+// If cleanupListPtr is Null, the global g_pRCWCleanupList is used.
+public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr);
 ```
 
 where `COMInterfacePointerData` is:
@@ -34,28 +42,6 @@ public struct COMInterfacePointerData
     // MethodTable for this interface, or TargetPointer.Null for slot 0 (IUnknown/IDispatch).
     public TargetPointer MethodTable;
 }
-```
-
-and `CCWData` is:
-``` csharp
-public struct CCWData
-{
-    public TargetPointer OuterIUnknown;      // outer IUnknown for aggregation (m_pOuter)
-    public TargetPointer ManagedObject;      // managed object pointer (dereferenced from Handle)
-    public TargetPointer Handle;             // GC handle holding the managed object (m_ppThis)
-    public TargetPointer CCWAddress;         // address of the start ComCallWrapper
-    public int RefCount;                     // COM reference count (masked with ComRefcountMask)
-    public int InterfaceCount;              // number of exposed COM interfaces
-    public bool IsNeutered;                  // true if the CLEANUP_SENTINEL bit is set
-    public bool HasStrongRef;               // true if RefCount > 0 and handle is not weak
-    public bool IsExtendsCOMObject;         // true if the managed class extends a COM object
-    public bool IsAggregated;               // true if the CCW is aggregated
-}
-```
-
-// Enumerate entries in the RCW cleanup list.
-// If cleanupListPtr is Null, the global g_pRCWCleanupList is used.
-public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr);
 ```
 
 ## Version 1
@@ -178,26 +164,27 @@ public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
     //   - slot 0 of the first wrapper (IUnknown/IDispatch) yields null MethodTable
 }
 
-// See ClrDataAccess::GetCCWData in src/coreclr/debug/daccess/request.cpp.
-// ccw must be a ComCallWrapper address; resolve COM interface pointers first via GetCCWFromInterfacePointer.
-public CCWData GetCCWData(TargetPointer ccw)
+// Returns the address of the start ComCallWrapper.
+// Unconditionally follows SimpleWrapper→MainWrapper (mirrors ComCallWrapper::GetStartWrapper).
+public TargetPointer GetCCWAddress(TargetPointer ccw)
 {
-    // Navigate to the start of the chain; then compose from the existing predicate APIs.
-    TargetPointer startCCW = NavigateToStartWrapper(ccw);
-    int refCount = (int)GetRefCount(startCCW);
-    return new CCWData
-    {
-        OuterIUnknown = /* SimpleComCallWrapper::OuterIUnknown */,
-        ManagedObject = /* *Handle (dereference the GC handle) */,
-        Handle        = /* ComCallWrapper::Handle (m_ppThis) */,
-        CCWAddress    = startCCW,
-        RefCount      = refCount,
-        InterfaceCount = GetCCWInterfaces(startCCW).Count(),
-        IsNeutered    = IsNeutered(startCCW),
-        HasStrongRef  = (refCount > 0) && !IsHandleWeak(startCCW),
-        IsExtendsCOMObject = IsExtendsCOMObject(startCCW),
-        IsAggregated  = IsAggregated(startCCW),
-    };
+    var sccw = _target.ReadPointer(_target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */)
+                                   + /* SimpleComCallWrapper::MainWrapper offset */);
+    return sccw; // = sccw.MainWrapper
+}
+
+// Returns the GC object handle (m_ppThis) of the start ComCallWrapper.
+public TargetPointer GetCCWHandle(TargetPointer ccw)
+{
+    TargetPointer startCCW = GetCCWAddress(ccw);
+    return _target.ReadPointer(startCCW + /* ComCallWrapper::Handle offset */);
+}
+
+// Returns the outer IUnknown pointer (m_pOuter); any wrapper in the chain is accepted.
+public TargetPointer GetOuterIUnknown(TargetPointer ccw)
+{
+    var sccw = _target.ReadPointer(ccw + /* ComCallWrapper::SimpleWrapper offset */);
+    return _target.ReadPointer(sccw + /* SimpleComCallWrapper::OuterIUnknown offset */);
 }
 
 public IEnumerable<RCWCleanupInfo> GetRCWCleanupList(TargetPointer cleanupListPtr)

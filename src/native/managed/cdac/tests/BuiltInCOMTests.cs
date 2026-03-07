@@ -841,185 +841,41 @@ public class BuiltInCOMTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetCCWData_ReturnsExpectedFields(MockTarget.Architecture arch)
+    public void GetCCWAddress_ReturnsStartAddress(MockTarget.Architecture arch)
     {
         var helpers = new TargetTestHelpers(arch);
         var builder = new MockMemorySpace.Builder(helpers);
         int P = helpers.PointerSize;
-        uint cmtSize = (uint)(2 * P);
 
-        var allocator = builder.CreateAllocator(AllocationStart, AllocationEnd);
+        ulong simpleWrapperAddr = 0x5000;
+        ulong ccwAddr = 0x4000;
 
-        // Managed object and its handle slot
-        var managedObjectFrag = allocator.Allocate((ulong)P, "ManagedObject");
-        builder.AddHeapFragment(managedObjectFrag);
-        var handleFrag = allocator.Allocate((ulong)P, "Handle");
-        builder.AddHeapFragment(handleFrag);
-        Span<byte> handleData = builder.BorrowAddressRange(handleFrag.Address, P);
-        helpers.WritePointer(handleData, managedObjectFrag.Address); // *handle = managedObject
+        var simpleWrapperFragment = new MockMemorySpace.HeapFragment
+        {
+            Name = "SimpleComCallWrapper",
+            Address = simpleWrapperAddr,
+            Data = new byte[12 + 3 * P],
+        };
+        helpers.WritePointer(simpleWrapperFragment.Data.AsSpan(12, P), ccwAddr); // MainWrapper = ccw
+        builder.AddHeapFragment(simpleWrapperFragment);
 
-        ulong outerIUnknownAddr = 0xAAAA_0000;
-        // RefCount: COM ref count = 1, CLEANUP_SENTINEL clear (not neutered)
-        ulong rawRefCount = 1UL;
-        uint flags = 0x2; // IsExtendsCom
-
-        var simpleWrapperFrag = allocator.Allocate((ulong)(12 + 3 * P), "SimpleComCallWrapper");
-        builder.AddHeapFragment(simpleWrapperFrag);
-        Span<byte> sccwData = builder.BorrowAddressRange(simpleWrapperFrag.Address, 12 + 3 * P);
-        helpers.Write(sccwData.Slice(0, 8), rawRefCount);                         // RefCount
-        helpers.Write(sccwData.Slice(8, 4), flags);                               // Flags
-        helpers.WritePointer(sccwData.Slice(12 + 2 * P, P), outerIUnknownAddr);  // OuterIUnknown
-
-        // CCW with one layout-complete interface in slot 0
-        var ccwFrag = allocator.Allocate((ulong)(8 * P), "ComCallWrapper");
-        builder.AddHeapFragment(ccwFrag);
-
-        // sccw.MainWrapper → ccwFrag
-        helpers.WritePointer(sccwData.Slice(12, P), ccwFrag.Address); // MainWrapper
-
-        // ComMethodTable for slot 0
-        var cmtFrag = allocator.Allocate(cmtSize, "ComMethodTable[0]");
-        builder.AddHeapFragment(cmtFrag);
-        ulong vtable0 = cmtFrag.Address + cmtSize;
-        Span<byte> cmtData = builder.BorrowAddressRange(cmtFrag.Address, (int)cmtSize);
-        helpers.WriteNUInt(cmtData.Slice(0, P), new TargetNUInt(IsLayoutCompleteFlag));
-        helpers.WritePointer(cmtData.Slice(P, P), 0); // MethodTable = null (slot 0 of first wrapper)
-
-        Span<byte> ccwData = builder.BorrowAddressRange(ccwFrag.Address, 8 * P);
-        helpers.WritePointer(ccwData.Slice(0, P), simpleWrapperFrag.Address);     // SimpleWrapper
-        helpers.WritePointer(ccwData.Slice(1 * P, P), vtable0);                  // slot 0 (IP[0])
-        helpers.WritePointer(ccwData.Slice(2 * P, P), 0);                        // slot 1 (null)
-        helpers.WritePointer(ccwData.Slice(3 * P, P), 0);                        // slot 2 (null)
-        helpers.WritePointer(ccwData.Slice(4 * P, P), 0);                        // slot 3 (null)
-        helpers.WritePointer(ccwData.Slice(5 * P, P), 0);                        // slot 4 (null)
-        helpers.WritePointer(ccwData.Slice(6 * P, P), LinkedWrapperTerminator);  // Next = terminator
-        helpers.WritePointer(ccwData.Slice(7 * P, P), handleFrag.Address);       // Handle
+        var ccwFragment = new MockMemorySpace.HeapFragment
+        {
+            Name = "ComCallWrapper",
+            Address = ccwAddr,
+            Data = new byte[8 * P],
+        };
+        helpers.WritePointer(ccwFragment.Data.AsSpan(0, P), simpleWrapperAddr);
+        helpers.WritePointer(ccwFragment.Data.AsSpan(6 * P, P), LinkedWrapperTerminator);
+        builder.AddHeapFragment(ccwFragment);
 
         Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
-
-        CCWData result = target.Contracts.BuiltInCOM.GetCCWData(new TargetPointer(ccwFrag.Address));
-
-        Assert.Equal(outerIUnknownAddr, result.OuterIUnknown.Value);
-        Assert.Equal(managedObjectFrag.Address, result.ManagedObject.Value);
-        Assert.Equal(handleFrag.Address, result.Handle.Value);
-        Assert.Equal(ccwFrag.Address, result.CCWAddress.Value);
-        Assert.Equal(1, result.RefCount);
-        Assert.Equal(1, result.InterfaceCount); // slot 0 is the one layout-complete interface
-        Assert.False(result.IsNeutered);
-        Assert.True(result.HasStrongRef);        // refCount > 0 && !isHandleWeak
-        Assert.True(result.IsExtendsCOMObject);  // flag 0x2 set
-        Assert.False(result.IsAggregated);       // flag 0x1 not set
+        Assert.Equal(ccwAddr, target.Contracts.BuiltInCOM.GetCCWAddress(new TargetPointer(ccwAddr)).Value);
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetCCWData_NeuteredCCW_IsNeuteredTrue(MockTarget.Architecture arch)
-    {
-        var helpers = new TargetTestHelpers(arch);
-        var builder = new MockMemorySpace.Builder(helpers);
-        int P = helpers.PointerSize;
-
-        var allocator = builder.CreateAllocator(AllocationStart, AllocationEnd);
-
-        // RefCount with CLEANUP_SENTINEL bit set (isNeutered = true)
-        ulong rawRefCount = 0x80000000UL;
-
-        var simpleWrapperFrag = allocator.Allocate((ulong)(12 + 3 * P), "SimpleComCallWrapper");
-        builder.AddHeapFragment(simpleWrapperFrag);
-
-        var ccwFrag = allocator.Allocate((ulong)(8 * P), "ComCallWrapper");
-        builder.AddHeapFragment(ccwFrag);
-
-        Span<byte> sccwData = builder.BorrowAddressRange(simpleWrapperFrag.Address, 12 + 3 * P);
-        helpers.Write(sccwData.Slice(0, 8), rawRefCount); // RefCount with sentinel
-        helpers.WritePointer(sccwData.Slice(12, P), ccwFrag.Address); // MainWrapper
-
-        Span<byte> ccwData = builder.BorrowAddressRange(ccwFrag.Address, 8 * P);
-        helpers.WritePointer(ccwData.Slice(0, P), simpleWrapperFrag.Address);    // SimpleWrapper
-        helpers.WritePointer(ccwData.Slice(6 * P, P), LinkedWrapperTerminator); // Next = terminator
-
-        Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
-
-        CCWData result = target.Contracts.BuiltInCOM.GetCCWData(new TargetPointer(ccwFrag.Address));
-
-        Assert.True(result.IsNeutered);
-        Assert.Equal(0, result.RefCount); // COM ref count masked: sentinel bit not in the mask
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetCCWData_WeakHandle_HasStrongRefFalse(MockTarget.Architecture arch)
-    {
-        var helpers = new TargetTestHelpers(arch);
-        var builder = new MockMemorySpace.Builder(helpers);
-        int P = helpers.PointerSize;
-
-        var allocator = builder.CreateAllocator(AllocationStart, AllocationEnd);
-
-        // refCount > 0 but IsHandleWeak → hasStrongRef = false
-        ulong rawRefCount = 1UL;
-        uint flags = 0x4; // IsHandleWeak
-
-        var simpleWrapperFrag = allocator.Allocate((ulong)(12 + 3 * P), "SimpleComCallWrapper");
-        builder.AddHeapFragment(simpleWrapperFrag);
-
-        var ccwFrag = allocator.Allocate((ulong)(8 * P), "ComCallWrapper");
-        builder.AddHeapFragment(ccwFrag);
-
-        Span<byte> sccwData = builder.BorrowAddressRange(simpleWrapperFrag.Address, 12 + 3 * P);
-        helpers.Write(sccwData.Slice(0, 8), rawRefCount);
-        helpers.Write(sccwData.Slice(8, 4), flags); // IsHandleWeak
-        helpers.WritePointer(sccwData.Slice(12, P), ccwFrag.Address); // MainWrapper
-
-        Span<byte> ccwData = builder.BorrowAddressRange(ccwFrag.Address, 8 * P);
-        helpers.WritePointer(ccwData.Slice(0, P), simpleWrapperFrag.Address);    // SimpleWrapper
-        helpers.WritePointer(ccwData.Slice(6 * P, P), LinkedWrapperTerminator); // Next = terminator
-
-        Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
-
-        CCWData result = target.Contracts.BuiltInCOM.GetCCWData(new TargetPointer(ccwFrag.Address));
-
-        Assert.False(result.HasStrongRef);
-        Assert.Equal(1, result.RefCount);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetCCWData_AggregatedCCW_IsAggregatedTrue(MockTarget.Architecture arch)
-    {
-        var helpers = new TargetTestHelpers(arch);
-        var builder = new MockMemorySpace.Builder(helpers);
-        int P = helpers.PointerSize;
-
-        var allocator = builder.CreateAllocator(AllocationStart, AllocationEnd);
-
-        uint flags = 0x1; // IsAggregated
-
-        var simpleWrapperFrag = allocator.Allocate((ulong)(12 + 3 * P), "SimpleComCallWrapper");
-        builder.AddHeapFragment(simpleWrapperFrag);
-
-        var ccwFrag = allocator.Allocate((ulong)(8 * P), "ComCallWrapper");
-        builder.AddHeapFragment(ccwFrag);
-
-        Span<byte> sccwData = builder.BorrowAddressRange(simpleWrapperFrag.Address, 12 + 3 * P);
-        helpers.Write(sccwData.Slice(8, 4), flags); // Flags = IsAggregated
-        helpers.WritePointer(sccwData.Slice(12, P), ccwFrag.Address); // MainWrapper
-
-        Span<byte> ccwData = builder.BorrowAddressRange(ccwFrag.Address, 8 * P);
-        helpers.WritePointer(ccwData.Slice(0, P), simpleWrapperFrag.Address);    // SimpleWrapper
-        helpers.WritePointer(ccwData.Slice(6 * P, P), LinkedWrapperTerminator); // Next = terminator
-
-        Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
-
-        CCWData result = target.Contracts.BuiltInCOM.GetCCWData(new TargetPointer(ccwFrag.Address));
-
-        Assert.True(result.IsAggregated);
-        Assert.False(result.IsExtendsCOMObject);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetCCWData_NullHandle_ManagedObjectIsNull(MockTarget.Architecture arch)
+    public void GetCCWAddress_NonStartWrapper_ReturnsStartAddress(MockTarget.Architecture arch)
     {
         var helpers = new TargetTestHelpers(arch);
         var builder = new MockMemorySpace.Builder(helpers);
@@ -1030,70 +886,160 @@ public class BuiltInCOMTests
         var simpleWrapperFrag = allocator.Allocate((ulong)(12 + 3 * P), "SimpleComCallWrapper");
         builder.AddHeapFragment(simpleWrapperFrag);
 
-        var ccwFrag = allocator.Allocate((ulong)(8 * P), "ComCallWrapper");
-        builder.AddHeapFragment(ccwFrag);
-
-        Span<byte> sccwData = builder.BorrowAddressRange(simpleWrapperFrag.Address, 12 + 3 * P);
-        helpers.WritePointer(sccwData.Slice(12, P), ccwFrag.Address); // MainWrapper
-
-        Span<byte> ccwData = builder.BorrowAddressRange(ccwFrag.Address, 8 * P);
-        helpers.WritePointer(ccwData.Slice(0, P), simpleWrapperFrag.Address);    // SimpleWrapper
-        helpers.WritePointer(ccwData.Slice(6 * P, P), LinkedWrapperTerminator); // Next = terminator
-        // Handle at offset 7*P is left as null (zero-initialized)
-
-        Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
-
-        CCWData result = target.Contracts.BuiltInCOM.GetCCWData(new TargetPointer(ccwFrag.Address));
-
-        Assert.Equal(TargetPointer.Null, result.Handle);
-        Assert.Equal(TargetPointer.Null, result.ManagedObject);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetCCWData_NonStartWrapper_NavigatesToStartAndReturnsStartAddress(MockTarget.Architecture arch)
-    {
-        // Verify that NavigateToStartWrapper correctly resolves a non-start (second) wrapper
-        // to the start wrapper, and that GetCCWData reports the start wrapper's address.
-        var helpers = new TargetTestHelpers(arch);
-        var builder = new MockMemorySpace.Builder(helpers);
-        int P = helpers.PointerSize;
-
-        var allocator = builder.CreateAllocator(AllocationStart, AllocationEnd);
-
-        ulong refCount = 2UL;
-        var simpleWrapperFrag = allocator.Allocate((ulong)(12 + 3 * P), "SimpleComCallWrapper");
-        builder.AddHeapFragment(simpleWrapperFrag);
-
-        // Start wrapper (CCW[1]): Next → CCW[2]
+        // Start wrapper (CCW[1])
         var ccw1Frag = allocator.Allocate((ulong)(8 * P), "ComCallWrapper[1]");
         builder.AddHeapFragment(ccw1Frag);
 
-        // Second wrapper (CCW[2]): Next = terminator
+        // Second wrapper (CCW[2])
         var ccw2Frag = allocator.Allocate((ulong)(8 * P), "ComCallWrapper[2]");
         builder.AddHeapFragment(ccw2Frag);
 
         // SCCW: MainWrapper → ccw1 (the start)
         Span<byte> sccwData = builder.BorrowAddressRange(simpleWrapperFrag.Address, 12 + 3 * P);
-        helpers.Write(sccwData.Slice(0, 8), refCount);
         helpers.WritePointer(sccwData.Slice(12, P), ccw1Frag.Address); // MainWrapper = start
 
-        // Write CCW[1]: SimpleWrapper = sccw, Next → CCW[2]
+        // CCW[1]: SimpleWrapper = sccw, Next → CCW[2]
         Span<byte> w1Data = builder.BorrowAddressRange(ccw1Frag.Address, 8 * P);
-        helpers.WritePointer(w1Data.Slice(0, P), simpleWrapperFrag.Address); // SimpleWrapper
-        helpers.WritePointer(w1Data.Slice(6 * P, P), ccw2Frag.Address);      // Next → CCW[2]
+        helpers.WritePointer(w1Data.Slice(0, P), simpleWrapperFrag.Address);
+        helpers.WritePointer(w1Data.Slice(6 * P, P), ccw2Frag.Address);
 
-        // Write CCW[2]: SimpleWrapper = sccw, Next = terminator
+        // CCW[2]: SimpleWrapper = sccw, Next = terminator
         Span<byte> w2Data = builder.BorrowAddressRange(ccw2Frag.Address, 8 * P);
-        helpers.WritePointer(w2Data.Slice(0, P), simpleWrapperFrag.Address); // SimpleWrapper
-        helpers.WritePointer(w2Data.Slice(6 * P, P), LinkedWrapperTerminator); // Next = terminator
+        helpers.WritePointer(w2Data.Slice(0, P), simpleWrapperFrag.Address);
+        helpers.WritePointer(w2Data.Slice(6 * P, P), LinkedWrapperTerminator);
 
         Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
 
-        // Calling GetCCWData with the second (non-start) wrapper should resolve to the start.
-        CCWData result = target.Contracts.BuiltInCOM.GetCCWData(new TargetPointer(ccw2Frag.Address));
+        // GetCCWAddress on the non-start (second) wrapper should return the start wrapper's address.
+        Assert.Equal(ccw1Frag.Address, target.Contracts.BuiltInCOM.GetCCWAddress(new TargetPointer(ccw2Frag.Address)).Value);
+    }
 
-        Assert.Equal(ccw1Frag.Address, result.CCWAddress.Value);
-        Assert.Equal((int)refCount, result.RefCount);
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetCCWHandle_ReturnsHandleFromStartWrapper(MockTarget.Architecture arch)
+    {
+        var helpers = new TargetTestHelpers(arch);
+        var builder = new MockMemorySpace.Builder(helpers);
+        int P = helpers.PointerSize;
+
+        var allocator = builder.CreateAllocator(AllocationStart, AllocationEnd);
+
+        var handleFrag = allocator.Allocate((ulong)P, "Handle");
+        builder.AddHeapFragment(handleFrag);
+
+        var simpleWrapperFrag = allocator.Allocate((ulong)(12 + 3 * P), "SimpleComCallWrapper");
+        builder.AddHeapFragment(simpleWrapperFrag);
+
+        var ccwFrag = allocator.Allocate((ulong)(8 * P), "ComCallWrapper");
+        builder.AddHeapFragment(ccwFrag);
+
+        Span<byte> sccwData = builder.BorrowAddressRange(simpleWrapperFrag.Address, 12 + 3 * P);
+        helpers.WritePointer(sccwData.Slice(12, P), ccwFrag.Address); // MainWrapper
+
+        Span<byte> ccwData = builder.BorrowAddressRange(ccwFrag.Address, 8 * P);
+        helpers.WritePointer(ccwData.Slice(0, P), simpleWrapperFrag.Address);    // SimpleWrapper
+        helpers.WritePointer(ccwData.Slice(6 * P, P), LinkedWrapperTerminator); // Next = terminator
+        helpers.WritePointer(ccwData.Slice(7 * P, P), handleFrag.Address);       // Handle
+
+        Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
+        Assert.Equal(handleFrag.Address, target.Contracts.BuiltInCOM.GetCCWHandle(new TargetPointer(ccwFrag.Address)).Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetCCWHandle_NullHandle_ReturnsNull(MockTarget.Architecture arch)
+    {
+        var helpers = new TargetTestHelpers(arch);
+        var builder = new MockMemorySpace.Builder(helpers);
+        int P = helpers.PointerSize;
+
+        var allocator = builder.CreateAllocator(AllocationStart, AllocationEnd);
+
+        var simpleWrapperFrag = allocator.Allocate((ulong)(12 + 3 * P), "SimpleComCallWrapper");
+        builder.AddHeapFragment(simpleWrapperFrag);
+
+        var ccwFrag = allocator.Allocate((ulong)(8 * P), "ComCallWrapper");
+        builder.AddHeapFragment(ccwFrag);
+
+        Span<byte> sccwData = builder.BorrowAddressRange(simpleWrapperFrag.Address, 12 + 3 * P);
+        helpers.WritePointer(sccwData.Slice(12, P), ccwFrag.Address); // MainWrapper
+
+        Span<byte> ccwData = builder.BorrowAddressRange(ccwFrag.Address, 8 * P);
+        helpers.WritePointer(ccwData.Slice(0, P), simpleWrapperFrag.Address);    // SimpleWrapper
+        helpers.WritePointer(ccwData.Slice(6 * P, P), LinkedWrapperTerminator); // Next = terminator
+        // Handle at offset 7*P left as null (zero-initialized)
+
+        Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
+        Assert.Equal(TargetPointer.Null, target.Contracts.BuiltInCOM.GetCCWHandle(new TargetPointer(ccwFrag.Address)));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetOuterIUnknown_ReturnsValue(MockTarget.Architecture arch)
+    {
+        var helpers = new TargetTestHelpers(arch);
+        var builder = new MockMemorySpace.Builder(helpers);
+        int P = helpers.PointerSize;
+
+        ulong simpleWrapperAddr = 0x5000;
+        ulong ccwAddr = 0x4000;
+        ulong outerIUnknownAddr = 0xAAAA_0000;
+
+        var simpleWrapperFragment = new MockMemorySpace.HeapFragment
+        {
+            Name = "SimpleComCallWrapper",
+            Address = simpleWrapperAddr,
+            Data = new byte[12 + 3 * P],
+        };
+        helpers.WritePointer(simpleWrapperFragment.Data.AsSpan(12, P), ccwAddr);        // MainWrapper
+        helpers.WritePointer(simpleWrapperFragment.Data.AsSpan(12 + 2 * P, P), outerIUnknownAddr); // OuterIUnknown
+        builder.AddHeapFragment(simpleWrapperFragment);
+
+        var ccwFragment = new MockMemorySpace.HeapFragment
+        {
+            Name = "ComCallWrapper",
+            Address = ccwAddr,
+            Data = new byte[8 * P],
+        };
+        helpers.WritePointer(ccwFragment.Data.AsSpan(0, P), simpleWrapperAddr);
+        helpers.WritePointer(ccwFragment.Data.AsSpan(6 * P, P), LinkedWrapperTerminator);
+        builder.AddHeapFragment(ccwFragment);
+
+        Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
+        Assert.Equal(outerIUnknownAddr, target.Contracts.BuiltInCOM.GetOuterIUnknown(new TargetPointer(ccwAddr)).Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetOuterIUnknown_ZeroWhenNotAggregated(MockTarget.Architecture arch)
+    {
+        var helpers = new TargetTestHelpers(arch);
+        var builder = new MockMemorySpace.Builder(helpers);
+        int P = helpers.PointerSize;
+
+        ulong simpleWrapperAddr = 0x5000;
+        ulong ccwAddr = 0x4000;
+
+        var simpleWrapperFragment = new MockMemorySpace.HeapFragment
+        {
+            Name = "SimpleComCallWrapper",
+            Address = simpleWrapperAddr,
+            Data = new byte[12 + 3 * P], // OuterIUnknown slot left zero-initialized
+        };
+        helpers.WritePointer(simpleWrapperFragment.Data.AsSpan(12, P), ccwAddr); // MainWrapper
+        builder.AddHeapFragment(simpleWrapperFragment);
+
+        var ccwFragment = new MockMemorySpace.HeapFragment
+        {
+            Name = "ComCallWrapper",
+            Address = ccwAddr,
+            Data = new byte[8 * P],
+        };
+        helpers.WritePointer(ccwFragment.Data.AsSpan(0, P), simpleWrapperAddr);
+        helpers.WritePointer(ccwFragment.Data.AsSpan(6 * P, P), LinkedWrapperTerminator);
+        builder.AddHeapFragment(ccwFragment);
+
+        Target target = CreateTarget(arch, builder, CreateTypeInfos(P));
+        Assert.Equal(TargetPointer.Null, target.Contracts.BuiltInCOM.GetOuterIUnknown(new TargetPointer(ccwAddr)));
     }
 }
