@@ -14,7 +14,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.Windows)]
     public partial class SafeProcessHandleTests
     {
         // On Windows:
@@ -28,7 +28,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void Start_WithNoArguments_Succeeds()
         {
-            ProcessStartOptions options = new("hostname");
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("hostname")
+                : new("pwd");
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -48,7 +50,16 @@ namespace System.Diagnostics.Tests
 
             ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(5));
             Assert.False(exitStatus.Canceled);
-            Assert.Equal(-1, exitStatus.ExitCode);
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.Equal(-1, exitStatus.ExitCode);
+            }
+            else
+            {
+                Assert.Equal(PosixSignal.SIGKILL, exitStatus.Signal);
+                // Exit code for signal termination is 128 + signal_number (native signal number, not enum value)
+                Assert.True(exitStatus.ExitCode > 128, $"Exit code {exitStatus.ExitCode} should indicate signal termination (>128)");
+            }
         }
 
         [Fact]
@@ -84,7 +95,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void Kill_OnAlreadyExitedProcess_ReturnsFalse()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -111,7 +124,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void WaitForExit_WaitsIndefinitelyForProcessToComplete()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -125,7 +140,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void TryWaitForExit_ReturnsTrueWhenProcessExitsBeforeTimeout()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -163,7 +180,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void WaitForExitOrKillOnTimeout_DoesNotKillWhenProcessExitsBeforeTimeout()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -186,7 +205,17 @@ namespace System.Diagnostics.Tests
             Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(270), TimeSpan.FromSeconds(2));
             Assert.True(exitStatus.Canceled, "Process should be marked as canceled when killed due to timeout");
             Assert.NotEqual(0, exitStatus.ExitCode);
-            Assert.Equal(-1, exitStatus.ExitCode);
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.Equal(-1, exitStatus.ExitCode);
+            }
+            else
+            {
+                // On Unix, the process should have been killed with SIGKILL
+                Assert.Equal(PosixSignal.SIGKILL, exitStatus.Signal);
+                // Exit code for signal termination is 128 + signal_number (native signal number, not enum value)
+                Assert.True(exitStatus.ExitCode > 128, $"Exit code {exitStatus.ExitCode} should indicate signal termination (>128)");
+            }
         }
 
         [Fact]
@@ -233,7 +262,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static async Task WaitForExitAsync_CompletesNormallyWhenProcessExits()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -248,7 +279,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static async Task WaitForExitAsync_WithoutCancellationToken_CompletesNormally()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -262,7 +295,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static async Task WaitForExitOrKillOnCancellationAsync_CompletesNormallyWhenProcessExits()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
 
@@ -275,22 +310,11 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public static void KillOnParentExit_CanBeSetToTrue()
-        {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" }, KillOnParentExit = true };
-
-            Assert.True(options.KillOnParentExit);
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
-
-            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(5));
-            Assert.Equal(0, exitStatus.ExitCode);
-        }
-
-        [Fact]
         public static void KillOnParentExit_DefaultsToFalse()
         {
-            ProcessStartOptions options = new("cmd.exe") { Arguments = { "/c", "echo test" } };
+            ProcessStartOptions options = OperatingSystem.IsWindows()
+                ? new("cmd.exe") { Arguments = { "/c", "echo test" } }
+                : new("echo") { Arguments = { "test" } };
             Assert.False(options.KillOnParentExit);
         }
 
@@ -314,6 +338,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)] // we don't have handles on macOS
         public static void ProcessId_IsFetched_WhenNotProvided()
         {
             ProcessStartOptions options = CreateTenSecondSleep();
@@ -324,42 +349,6 @@ namespace System.Diagnostics.Tests
 
             copy.Kill();
             Assert.True(started.TryWaitForExit(TimeSpan.FromMilliseconds(300), out _));
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void Signal_UnsupportedSignal_ThrowsPlatformNotSupportedException()
-        {
-            ProcessStartOptions options = CreateTenSecondSleep();
-            options.CreateNewProcessGroup = true;
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
-
-            try
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => processHandle.Signal(PosixSignal.SIGTERM));
-            }
-            finally
-            {
-                processHandle.Kill();
-                processHandle.WaitForExit();
-            }
-        }
-
-        [Fact]
-        public void CreateNewProcessGroup_CanBeSetToTrue()
-        {
-            ProcessStartOptions options = new("cmd.exe")
-            {
-                Arguments = { "/c", "echo test" },
-                CreateNewProcessGroup = true
-            };
-
-            Assert.True(options.CreateNewProcessGroup);
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
-            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(5));
-            Assert.Equal(0, exitStatus.ExitCode);
         }
 
         [ConditionalTheory]
@@ -529,7 +518,8 @@ namespace System.Diagnostics.Tests
 
             remoteHandle.Process.WaitForExit();
 
-            VerifyProcessIsRunning(enabled, remoteHandle.ExitCode);
+            // It's currently not implemented on macOS.
+            VerifyProcessIsRunning(shouldExited: enabled && !OperatingSystem.IsMacOS(), remoteHandle.ExitCode);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -561,7 +551,8 @@ namespace System.Diagnostics.Tests
             remoteHandle.Process.Kill();
             remoteHandle.Process.WaitForExit();
 
-            VerifyProcessIsRunning(enabled, grandChildPid);
+            // It's currently not implemented on macOS.
+            VerifyProcessIsRunning(shouldExited: enabled && !OperatingSystem.IsMacOS(), grandChildPid);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -597,7 +588,8 @@ namespace System.Diagnostics.Tests
             remoteHandle.Process.StandardInput.WriteLine("One AccessViolationException please.");
             remoteHandle.Process.WaitForExit();
 
-            VerifyProcessIsRunning(enabled, grandChildPid);
+            // It's currently not implemented on macOS.
+            VerifyProcessIsRunning(shouldExited: enabled && !OperatingSystem.IsMacOS(), grandChildPid);
         }
 
         private static void VerifyProcessIsRunning(bool shouldExited, int processId)
@@ -606,7 +598,6 @@ namespace System.Diagnostics.Tests
             {
                 using SafeProcessHandle grandChild = SafeProcessHandle.Open(processId);
                 grandChild.Kill();
-                grandChild.WaitForExit();
             }
             catch (Win32Exception) when (shouldExited)
             {

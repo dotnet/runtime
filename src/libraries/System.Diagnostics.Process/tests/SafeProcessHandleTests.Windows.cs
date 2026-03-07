@@ -3,7 +3,6 @@
 
 using System.ComponentModel;
 using System.IO;
-using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -60,6 +59,26 @@ namespace System.Diagnostics.Tests
             bool exited = processHandle.TryWaitForExit(TimeSpan.FromMilliseconds(300), out ProcessExitStatus? exitStatus);
             Assert.True(exited, "Process should have exited after signal is sent");
             Assert.NotEqual(0, exitStatus?.ExitCode);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void Signal_UnsupportedSignal_ThrowsPlatformNotSupportedException()
+        {
+            ProcessStartOptions options = CreateTenSecondSleep();
+            options.CreateNewProcessGroup = true;
+
+            using SafeProcessHandle processHandle = SafeProcessHandle.Start(options, input: null, output: null, error: null);
+
+            try
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => processHandle.Signal(PosixSignal.SIGTERM));
+            }
+            finally
+            {
+                processHandle.Kill();
+                processHandle.WaitForExit();
+            }
         }
     }
 }

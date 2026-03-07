@@ -64,6 +64,12 @@ PALEXPORT void SystemNative_SetPosixSignalHandler(PosixSignalHandler signalHandl
 PALEXPORT int32_t SystemNative_GetPlatformSignalNumber(PosixSignal signal);
 
 /**
+ * Converts a native signal code to its PosixSignal equivalent.
+ * Returns true if the signal was converted, false otherwise.
+ */
+bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal);
+
+/**
  * Enables calling the PosixSignalHandler for the specified signal.
  */
 PALEXPORT int32_t SystemNative_EnablePosixSignalHandling(int signalCode);
