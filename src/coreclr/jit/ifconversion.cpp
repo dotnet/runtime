@@ -771,16 +771,26 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     // Update the flow graph. JTRUE block now contains the SELECT.
     //
 
-    // Remove flow into Then/Else blocks and update their weights
-    auto RemoveFlowInto = [&](BasicBlock* block) {
-        m_compiler->fgRemoveAllRefPreds(block, m_startBlock);
-        block->bbWeight = BB_ZERO_WEIGHT;
-        assert(block->bbPreds == nullptr);
+    BasicBlock* falseBb = m_startBlock->GetFalseTarget();
+    BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
+
+    // Remove all Then/Else blocks
+    auto removeBlocks = [&](BasicBlock* start) {
+        m_compiler->fgRemoveAllRefPreds(start, m_startBlock);
+        start->bbWeight = BB_ZERO_WEIGHT;
+        assert(start->bbPreds == nullptr);
+
+        for (BasicBlock* bb = start; bb != m_finalBlock;)
+        {
+            BasicBlock* next = bb->GetUniqueSucc();
+            m_compiler->fgRemoveBlock(bb, true);
+            bb = next;
+        }
     };
-    RemoveFlowInto(m_startBlock->GetFalseTarget());
+    removeBlocks(falseBb);
     if (m_doElseConversion)
     {
-        RemoveFlowInto(m_startBlock->GetTrueTarget());
+        removeBlocks(trueBb);
     }
 
     // Change kind of JTRUE block and make it flow
@@ -795,7 +805,6 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
             m_doElseConversion ? m_compiler->fgAddRefPred(m_finalBlock, m_startBlock) : m_startBlock->GetTrueEdge();
         m_startBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
-
     assert(m_startBlock->GetUniqueSucc() == m_finalBlock);
 
 #ifdef DEBUG
