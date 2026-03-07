@@ -38,7 +38,7 @@ namespace System.Numerics.Tensors
 
             InvokeSpanIntoSpan<T, ExpOperator<T>>(x, destination);
             T expSum = Sum(destination);
-            InvokeSpanScalarIntoSpan<T, DivideOperator<T>>(destination, expSum, destination);
+            InvokeSpanScalarIntoSpan<T, MultiplyOperator<T>>(destination, T.One / expSum, destination);
         }
     }
 }
