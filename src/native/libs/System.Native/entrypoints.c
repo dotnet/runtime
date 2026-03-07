@@ -20,6 +20,7 @@
 #include "pal_networkchange.h"
 #include "pal_networking.h"
 #include "pal_networkstatistics.h"
+#include "pal_io_uring_shim.h"
 #include "pal_process.h"
 #include "pal_random.h"
 #include "pal_runtimeinformation.h"
@@ -191,6 +192,16 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_FreeSocketEventBuffer)
     DllImportEntry(SystemNative_TryChangeSocketEventRegistration)
     DllImportEntry(SystemNative_WaitForSocketEvents)
+    DllImportEntry(SystemNative_IoUringShimSetup)
+    DllImportEntry(SystemNative_IoUringShimEnter)
+    DllImportEntry(SystemNative_IoUringShimEnterExt)
+    DllImportEntry(SystemNative_IoUringShimRegister)
+    DllImportEntry(SystemNative_IoUringShimMmap)
+    DllImportEntry(SystemNative_IoUringShimMunmap)
+    DllImportEntry(SystemNative_IoUringShimCreateEventFd)
+    DllImportEntry(SystemNative_IoUringShimWriteEventFd)
+    DllImportEntry(SystemNative_IoUringShimReadEventFd)
+    DllImportEntry(SystemNative_IoUringShimCloseFd)
     DllImportEntry(SystemNative_GetWasiSocketDescriptor)
     DllImportEntry(SystemNative_PlatformSupportsDualModeIPv4PacketInfo)
     DllImportEntry(SystemNative_GetDomainSocketSizes)
