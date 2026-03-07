@@ -38,8 +38,9 @@ namespace Microsoft.Win32.SafeHandles
             || AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
 
         // not using bool? as it's not thread safe
-        private volatile NullableBool _canSeek = NullableBool.Undefined;
-        private volatile NullableBool _supportsRandomAccess = NullableBool.Undefined;
+        private volatile NullableBool _canSeek /* = NullableBool.Undefined */;
+        private volatile NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
+        private volatile NullableBool _isAsync /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
         private bool _isLocked;
 
@@ -53,7 +54,25 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(new IntPtr(-1));
         }
 
-        public bool IsAsync { get; private set; }
+        public bool IsAsync
+        {
+            get
+            {
+                NullableBool isAsync = _isAsync;
+                if (isAsync == NullableBool.Undefined)
+                {
+                    if (Interop.Sys.Fcntl.GetIsNonBlocking(this, out bool isNonBlocking) != 0)
+                    {
+                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), Path);
+                    }
+
+                    _isAsync = isAsync = isNonBlocking ? NullableBool.True : NullableBool.False;
+                }
+
+                return isAsync == NullableBool.True;
+            }
+            private set => _isAsync = value ? NullableBool.True : NullableBool.False;
+        }
 
         internal bool CanSeek => !IsClosed && GetCanSeek();
 
@@ -159,6 +178,42 @@ namespace Microsoft.Win32.SafeHandles
                 long h = (long)handle;
                 return h < 0 || h > int.MaxValue;
             }
+        }
+
+        private static unsafe void CreateAnonymousPipeCore(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        {
+            // Allocate the handles first, so in case of OOM we don't leak any handles.
+            SafeFileHandle tempReadHandle = new();
+            SafeFileHandle tempWriteHandle = new();
+
+            int* fds = stackalloc int[2];
+            Interop.Sys.PipeFlags flags = Interop.Sys.PipeFlags.O_CLOEXEC;
+            if (asyncRead)
+            {
+                flags |= Interop.Sys.PipeFlags.O_ASYNC_READ;
+            }
+
+            if (asyncWrite)
+            {
+                flags |= Interop.Sys.PipeFlags.O_ASYNC_WRITE;
+            }
+
+            if (Interop.Sys.Pipe(fds, flags) != 0)
+            {
+                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                tempReadHandle.Dispose();
+                tempWriteHandle.Dispose();
+                throw Interop.GetExceptionForIoErrno(error);
+            }
+
+            tempReadHandle.SetHandle(fds[Interop.Sys.ReadEndOfPipe]);
+            tempReadHandle.IsAsync = asyncRead;
+
+            tempWriteHandle.SetHandle(fds[Interop.Sys.WriteEndOfPipe]);
+            tempWriteHandle.IsAsync = asyncWrite;
+
+            readHandle = tempReadHandle;
+            writeHandle = tempWriteHandle;
         }
 
         // Specialized Open that returns the file length and permissions of the opened file.
@@ -529,7 +584,7 @@ namespace Microsoft.Win32.SafeHandles
             return status.Size;
         }
 
-        private enum NullableBool
+        private enum NullableBool : sbyte
         {
             Undefined = 0,
             False = -1,

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -79,6 +80,34 @@ namespace System.IO.Tests
                     SafeFileHandle createdFromIntPtr = new SafeFileHandle(handle.DangerousGetHandle(), ownsHandle: false);
                     Assert.Equal((options & FileOptions.Asynchronous) != 0, createdFromIntPtr.IsAsync);
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public static async Task SafeFileHandle_CreateAnonymousPipe_SetsIsAsyncAndTransfersData(bool asyncRead, bool asyncWrite)
+        {
+            byte[] message = "Hello, Pipe!"u8.ToArray();
+
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead, asyncWrite);
+            Assert.Equal(asyncRead, readHandle.IsAsync);
+            Assert.Equal(asyncWrite, writeHandle.IsAsync);
+            Assert.Equal(FileHandleType.Pipe, readHandle.Type);
+            Assert.Equal(FileHandleType.Pipe, writeHandle.Type);
+
+            using (readHandle)
+            using (writeHandle)
+            using (FileStream readStream = new(readHandle, FileAccess.Read, bufferSize: 1, isAsync: asyncRead))
+            using (FileStream writeStream = new(writeHandle, FileAccess.Write, bufferSize: 1, isAsync: asyncWrite))
+            {
+                byte[] buffer = new byte[message.Length];
+
+                await Task.WhenAll(writeStream.WriteAsync(message, 0, message.Length), readStream.ReadAsync(buffer, 0, buffer.Length));
+
+                Assert.Equal(message, buffer);
             }
         }
 
