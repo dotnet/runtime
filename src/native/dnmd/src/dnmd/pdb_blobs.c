@@ -184,24 +184,44 @@ md_blob_parse_result_t md_parse_sequence_points(
     if (!md_get_column_value_as_cursor(method_debug_information, mdtMethodDebugInformation_Document, &document))
         return mdbpr_InvalidBlob;
 
-    // Create a "null" cursor to default-initialize the document field.
     mdcxt_t* cxt = extract_mdcxt(md_extract_handle_from_cursor(method_debug_information));
-    sequence_points->document = create_cursor(&cxt->tables[mdtid_Document], 0);
 
     // header InitialDocument
-    uint32_t document_rid = 0;
-    if (CursorNull(&document)
-        && !decompress_u32(&blob, &blob_len, &document_rid))
+    // Per the Portable PDB spec, the initial document is determined by
+    // the Document column of the MethodDebugInformation row. When the
+    // column is null (zero), the initial document RID is encoded in the
+    // sequence points blob instead.
+    if (!CursorNull(&document))
     {
-        return mdbpr_InvalidBlob;
+        if (CursorEnd(&document))
+            return mdbpr_InvalidBlob;
+        sequence_points->document = document;
+    }
+    else
+    {
+        uint32_t document_rid;
+        if (!decompress_u32(&blob, &blob_len, &document_rid))
+            return mdbpr_InvalidBlob;
+
+        if (document_rid != 0)
+        {
+            if (!md_token_to_cursor(cxt, CreateTokenType(mdtid_Document) | document_rid, &sequence_points->document))
+                return mdbpr_InvalidBlob;
+        }
+        else
+        {
+            // No document — initialize to a null-like cursor.
+            sequence_points->document = create_cursor(&cxt->tables[mdtid_Document], 0);
+        }
     }
 
-    if (document_rid != 0
-        && !md_token_to_cursor(cxt, CreateTokenType(mdtid_Document) | document_rid, &sequence_points->document))
-    {
-        return mdbpr_InvalidBlob;
-    }
-
+    // Accumulate delta-encoded values into running sums per the Portable PDB spec.
+    // The blob encodes ILOffset, StartLine, and StartColumn as deltas from
+    // the previous record (absolute for the first). The "rolling_" output
+    // fields provide the accumulated (absolute) values to the caller.
+    uint32_t running_il = 0;
+    int64_t running_line = 0;
+    int64_t running_col = 0;
     bool seen_non_hidden_sequence_point = false;
     for (uint32_t i = 0; blob_len > 0 && i < num_records; ++i)
     {
@@ -223,6 +243,10 @@ md_blob_parse_result_t md_parse_sequence_points(
 
             continue;
         }
+
+        if (il_offset > UINT32_MAX - running_il)
+            return mdbpr_InvalidBlob;
+        running_il += il_offset;
 
         uint32_t delta_lines;
         if (!decompress_u32(&blob, &blob_len, &delta_lines)) // DeltaLines
@@ -248,12 +272,10 @@ md_blob_parse_result_t md_parse_sequence_points(
         if (delta_lines == 0 && delta_columns == 0)
         {
             sequence_points->records[i].kind = mdsp_HiddenSequencePointRecord;
-            sequence_points->records[i].hidden_sequence_point.rolling_il_offset = il_offset;
+            sequence_points->records[i].hidden_sequence_point.rolling_il_offset = running_il;
             continue;
         }
 
-        int64_t start_line;
-        int64_t start_column;
         if (!seen_non_hidden_sequence_point)
         {
             seen_non_hidden_sequence_point = true;
@@ -263,30 +285,28 @@ md_blob_parse_result_t md_parse_sequence_points(
             uint32_t start_column_raw;
             if (!decompress_u32(&blob, &blob_len, &start_column_raw)) // StartColumn
                 return mdbpr_InvalidBlob;
-            start_line = start_line_raw;
-            start_column = start_column_raw;
+            running_line = start_line_raw;
+            running_col = start_column_raw;
         }
         else
         {
-            // If we've seen a non-hidden sequence point,
-            // then the values are compressed signed integers instead of
-            // unsigned integers.
+            // Subsequent non-hidden records encode signed deltas.
             int32_t start_line_raw;
-            if (!decompress_i32(&blob, &blob_len, &start_line_raw)) // StartLine
+            if (!decompress_i32(&blob, &blob_len, &start_line_raw)) // DeltaStartLine
                 return mdbpr_InvalidBlob;
             int32_t start_column_raw;
-            if (!decompress_i32(&blob, &blob_len, &start_column_raw)) // StartColumn
+            if (!decompress_i32(&blob, &blob_len, &start_column_raw)) // DeltaStartColumn
                 return mdbpr_InvalidBlob;
-            start_line = start_line_raw;
-            start_column = start_column_raw;
+            running_line += start_line_raw;
+            running_col += start_column_raw;
         }
 
         sequence_points->records[i].kind = mdsp_SequencePointRecord;
-        sequence_points->records[i].sequence_point.rolling_il_offset = il_offset;
+        sequence_points->records[i].sequence_point.rolling_il_offset = running_il;
         sequence_points->records[i].sequence_point.delta_lines = delta_lines;
         sequence_points->records[i].sequence_point.delta_columns = delta_columns;
-        sequence_points->records[i].sequence_point.rolling_start_line = start_line;
-        sequence_points->records[i].sequence_point.rolling_start_column = start_column;
+        sequence_points->records[i].sequence_point.rolling_start_line = running_line;
+        sequence_points->records[i].sequence_point.rolling_start_column = running_col;
     }
 
     if (blob_len != 0)
