@@ -55,7 +55,6 @@ private:
     bool IfConvertCheckThenFlow();
     void IfConvertFindFlow();
     bool IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOperation* foundOperation);
-    void IfConvertJoinStmts(BasicBlock* fromBlock);
 
     GenTree* TryTransformSelectOperOrLocal(GenTree* oper, GenTree* lcl);
     GenTree* TryTransformSelectOperOrZero(GenTree* oper, GenTree* lcl);
@@ -354,26 +353,6 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
         }
     }
     return found;
-}
-
-//-----------------------------------------------------------------------------
-// IfConvertJoinStmts
-//
-// Move all the statements from a block onto the end of the start block.
-//
-// Arguments:
-//   fromBlock  -- Source block
-//
-void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
-{
-    Statement* stmtList1 = m_startBlock->firstStmt();
-    Statement* stmtList2 = fromBlock->firstStmt();
-    Statement* stmtLast1 = m_startBlock->lastStmt();
-    Statement* stmtLast2 = fromBlock->lastStmt();
-    stmtLast1->SetNextStmt(stmtList2);
-    stmtList2->SetPrevStmt(stmtLast1);
-    stmtList1->SetPrevStmt(stmtLast2);
-    fromBlock->SetFirstStmt(nullptr);
 }
 
 //-----------------------------------------------------------------------------
@@ -736,9 +715,16 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         select = m_compiler->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
     }
 
-    m_thenOperation.node->AddAllEffectsFlags(select);
+    // Update statements
+    //
 
-    // Use the select as the source of the Then operation.
+    // Remove JTRUE statement
+    last->gtBashToNOP();
+    m_compiler->gtSetEvalOrder(last);
+    m_compiler->fgSetStmtSeq(m_startBlock->lastStmt());
+
+    // Use the SELECT as the source of the Then STORE/RETURN.
+    m_thenOperation.node->AddAllEffectsFlags(select);
     if (m_mainOper == GT_STORE_LCL_VAR)
     {
         m_thenOperation.node->AsLclVar()->Data() = select;
@@ -750,32 +736,22 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     m_compiler->gtSetEvalOrder(m_thenOperation.node);
     m_compiler->fgSetStmtSeq(m_thenOperation.stmt);
 
-    // Remove statements.
-    last->gtBashToNOP();
-    m_compiler->gtSetEvalOrder(last);
-    m_compiler->fgSetStmtSeq(m_startBlock->lastStmt());
-    if (m_doElseConversion)
-    {
-        m_elseOperation.node->gtBashToNOP();
-        m_compiler->gtSetEvalOrder(m_elseOperation.node);
-        m_compiler->fgSetStmtSeq(m_elseOperation.stmt);
-    }
+    // Append STORE(SELECT)/RETURN(SELECT) statement to JTRUE block
+    Statement* useSelectStmt = m_thenOperation.stmt;
+    useSelectStmt->SetNextStmt(nullptr);
+    useSelectStmt->SetPrevStmt(m_startBlock->lastStmt());
+    m_startBlock->lastStmt()->SetNextStmt(useSelectStmt);
+    m_startBlock->firstStmt()->SetPrevStmt(useSelectStmt);
+    m_thenOperation.block->SetFirstStmt(nullptr);
 
-    // Merge all the blocks.
-    IfConvertJoinStmts(m_thenOperation.block);
-    if (m_doElseConversion)
-    {
-        IfConvertJoinStmts(m_elseOperation.block);
-    }
-
-    // Update the flow graph. JTRUE block now contains the SELECT.
+    // Update flow graph. JTRUE block now contains the SELECT.
     //
-
+    
     BasicBlock* falseBb = m_startBlock->GetFalseTarget();
     BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
 
-    // Change kind of JTRUE block and make it flow
-    // directly into block where flows merge (which is null in case of GT_RETURN)
+    // Change kind of JTRUE block and make it flow directly into
+    // block where flows merge (which is null in case of GT_RETURN)
     if (m_mainOper == GT_RETURN)
     {
         m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
