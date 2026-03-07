@@ -390,7 +390,15 @@ namespace System.Text.RegularExpressions
                 // to implementations that don't support backtracking.
                 rootNode.EliminateEndingBacktracking();
 
+                // Re-run reduction passes to clean up structures created by the optimizations above.
+                // FinalOptimize can create patterns like Atomic(Alternate(X, Empty)) that ReduceAtomic
+                // would simplify to Loop?(X), or Concatenate(X, Empty) that ReduceConcatenation would
+                // simplify to X. A single re-reduce pass catches all such cases.
+                rootNode.FinalReduce();
+
                 // Optimization: unnecessary re-processing of starting loops.
+                // This runs after FinalReduce so it operates on the final tree structure, since
+                // FinalReduce may restructure alternations into concatenations with a leading loop.
                 // If an expression is guaranteed to begin with a single-character unbounded loop that isn't part of an alternation (in which case it
                 // wouldn't be guaranteed to be at the beginning) or a capture (in which case a back reference could be influenced by its length), then we
                 // can update the tree with a temporary node to indicate that the implementation should use that node's ending position in the input text
@@ -440,6 +448,26 @@ namespace System.Text.RegularExpressions
             rootNode.ValidateFinalTreeInvariants();
 #endif
             return rootNode;
+        }
+
+        /// <summary>
+        /// Walks the tree bottom-up and re-calls <see cref="Reduce"/> on each child node,
+        /// replacing any child that reduces to a simpler form. This cleans up structures
+        /// created by the <see cref="FinalOptimize"/> passes, e.g. Concatenate(X, Empty)
+        /// or Atomic wrappers that became redundant.
+        /// </summary>
+        private void FinalReduce()
+        {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return;
+            }
+
+            for (int i = 0, childCount = ChildCount(); i < childCount; i++)
+            {
+                Child(i).FinalReduce();
+                ReplaceChild(i, Child(i)); // ReplaceChild runs Reduce on the child
+            }
         }
 
         /// <summary>Converts nodes at the end of the node tree to be atomic.</summary>
