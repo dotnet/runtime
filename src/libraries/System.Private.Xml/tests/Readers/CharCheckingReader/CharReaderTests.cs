@@ -9,6 +9,7 @@ namespace System.Xml.CharCheckingReaderTests
 {
     public partial class CharCheckingReaderTest : CGenericTestModule
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Theory]
         [XmlTests(nameof(Create))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]

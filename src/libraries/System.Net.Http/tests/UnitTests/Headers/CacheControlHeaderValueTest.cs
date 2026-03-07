@@ -366,6 +366,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Equals_CompareCollectionFieldsSet_MatchExpectation()
         {
             CacheControlHeaderValue cacheControl1 = new CacheControlHeaderValue();
@@ -411,6 +412,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Clone_Call_CloneFieldsMatchSourceFields()
         {
             CacheControlHeaderValue source = new CacheControlHeaderValue();
@@ -437,6 +439,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void GetCacheControlLength_DifferentValidScenariosAndNoExistingCacheControl_AllReturnNonZero()
         {
             CacheControlHeaderValue expected = new CacheControlHeaderValue();
@@ -481,6 +484,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void GetCacheControlLength_DifferentValidScenariosAndExistingCacheControl_AllReturnNonZero()
         {
             CacheControlHeaderValue storeValue = new CacheControlHeaderValue();
@@ -609,6 +613,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Parse_SetOfValidValueStrings_ParsedCorrectly()
         {
             // Just verify parser is implemented correctly. Don't try to test syntax parsed by CacheControlHeaderValue.
@@ -652,6 +657,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
         {
             // Just verify parser is implemented correctly. Don't try to test syntax parsed by CacheControlHeaderValue.

@@ -150,6 +150,7 @@ namespace System.ComponentModel.TypeConverterTests
 
         [Theory]
         [MemberData(nameof(ColorNames))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ConvertFrom_Name(string name)
         {
             var conv = new ColorConverter();
@@ -234,6 +235,7 @@ namespace System.ComponentModel.TypeConverterTests
 
         [Theory]
         [MemberData(nameof(ColorNames))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ConvertTo_Named(string name)
         {
             var conv = new ColorConverter();
@@ -323,6 +325,7 @@ namespace System.ComponentModel.TypeConverterTests
 
         [Theory]
         [MemberData(nameof(ColorNames))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ConvertFromInvariantString_Name(string name)
         {
             var conv = new ColorConverter();
@@ -369,6 +372,7 @@ namespace System.ComponentModel.TypeConverterTests
 
         [Theory]
         [MemberData(nameof(ColorNames))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ConvertFromString_Name(string name)
         {
             var conv = new ColorConverter();
@@ -409,6 +413,7 @@ namespace System.ComponentModel.TypeConverterTests
 
         [Theory]
         [MemberData(nameof(ColorNames))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ConvertToInvariantString_Name(string name)
         {
             var conv = new ColorConverter();
@@ -426,6 +431,7 @@ namespace System.ComponentModel.TypeConverterTests
 
         [Theory]
         [MemberData(nameof(ColorNames))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ConvertToString_Name(string name)
         {
             var conv = new ColorConverter();

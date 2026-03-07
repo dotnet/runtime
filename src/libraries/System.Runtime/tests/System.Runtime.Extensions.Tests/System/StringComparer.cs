@@ -154,6 +154,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void FromComparisonInvalidTest()
         {
             StringComparison minInvalid = Enum.GetValues(typeof(StringComparison)).Cast<StringComparison>().Min() - 1;

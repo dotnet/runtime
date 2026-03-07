@@ -961,7 +961,7 @@ extends:
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
-          shouldRunSmokeOnly: true
+          # shouldRunSmokeOnly: false
           # TODO consider shouldContinueOnError: true
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:

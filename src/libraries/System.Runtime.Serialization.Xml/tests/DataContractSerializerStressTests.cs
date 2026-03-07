@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using SerializationTypes;
 using System.IO;
 using System.Runtime.Serialization;
 using Xunit;
 
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
 public static partial class DataContractSerializerTests
 {
     [Fact]

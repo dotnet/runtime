@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Tests;
 using System.Linq;
 using Xunit;
 using SetTriad = System.Tuple<System.Collections.Generic.IEnumerable<int>, System.Collections.Generic.IEnumerable<int>, bool>;
@@ -102,6 +103,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void IsProperSupersetOfTest()
         {
             this.SetCompareTestHelper(s => s.IsProperSupersetOf, s => s.IsProperSupersetOf, this.GetIsProperSubsetOfScenarios().Select(Flip));
@@ -114,12 +116,14 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void IsSupersetOfTest()
         {
             this.SetCompareTestHelper(s => s.IsSupersetOf, s => s.IsSupersetOf, this.GetIsSubsetOfScenarios().Select(Flip));
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void OverlapsTest()
         {
             this.SetCompareTestHelper(s => s.Overlaps, s => s.Overlaps, this.GetOverlapsScenarios());

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Tests;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -16,6 +17,7 @@ namespace System.Collections.Immutable.Tests
             get { return true; }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void CustomSort()
         {
@@ -32,6 +34,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ChangeUnorderedEqualityComparer()
         {
             ImmutableHashSet<string> ordinalSet = ImmutableHashSet<string>.Empty
@@ -63,6 +66,7 @@ namespace System.Collections.Immutable.Tests
             this.EnumeratorTestHelper(emptySet, null, 3, 1, 5);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void EnumeratorWithHashCollisionsTest_RefType()
         {
@@ -97,6 +101,7 @@ namespace System.Collections.Immutable.Tests
             enumerator.Dispose();
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void Create()
         {
@@ -170,6 +175,7 @@ namespace System.Collections.Immutable.Tests
         /// that *is* in the set.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void RemoveValuesFromCollidedHashCode_RefType()
         {
             var set = ImmutableHashSet.Create<string>(new BadHasher<string>(), "a", "b");
@@ -198,6 +204,7 @@ namespace System.Collections.Immutable.Tests
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         [Fact]
         public void SymmetricExceptWithComparerTests()
         {

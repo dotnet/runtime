@@ -299,6 +299,7 @@ namespace System.Memory.Tests.Span
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void IndexOfAny_InvalidUtf16()
         {
@@ -322,6 +323,7 @@ namespace System.Memory.Tests.Span
             IndexOfAny(StringComparison.OrdinalIgnoreCase, 1, "\uD801\uDCD8\uD8FB\uDCD8", "foo, \uDCD8");
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Theory]
         // Single value of various lengths
         [InlineData("a")]
@@ -506,6 +508,7 @@ namespace System.Memory.Tests.Span
             Assert.Throws<ArgumentNullException>("values", () => SearchValues.Create(new[] { "foo", null, "bar" }, StringComparison.Ordinal));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))] // Slow
         [Fact]
         public static void TestIndexOfAny_RandomInputs()
         {

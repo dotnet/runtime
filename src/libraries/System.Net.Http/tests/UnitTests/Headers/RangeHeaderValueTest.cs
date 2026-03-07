@@ -66,6 +66,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Equals_UseSameAndDifferentRanges_EqualOrNotEqualNoExceptions()
         {
             RangeHeaderValue range1 = new RangeHeaderValue(1, 2);
@@ -149,6 +150,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void Parse_SetOfValidValueStrings_ParsedCorrectly()
         {
             CheckValidParse(" bytes=1-2 ", new RangeHeaderValue(1, 2));
