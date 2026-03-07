@@ -7,6 +7,9 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    // TODO-Wasm: Some instances of AssemblyStubNode will need to implement IWasmCodeNode
+    // if they need to be callable from Wasm, though it may not make sense for the base
+    // class to implement IWasmCodeNode.
     public abstract class AssemblyStubNode : ObjectNode, ISymbolDefinitionNode
     {
         public AssemblyStubNode()
