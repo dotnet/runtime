@@ -174,6 +174,7 @@ set( JIT_SOURCES
   smweights.cpp
   ssabuilder.cpp
   ssarenamestate.cpp
+  ssawebsplit.cpp
   stacklevelsetter.cpp
   switchrecognition.cpp
   treelifeupdater.cpp

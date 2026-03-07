@@ -4750,6 +4750,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Build up SSA form for the IR
                 //
                 DoPhase(this, PHASE_BUILD_SSA, &Compiler::fgSsaBuild);
+
+                // Split locals whose SSA webs are disjoint.
+                //
+                DoPhase(this, PHASE_SSA_WEB_SPLIT, &Compiler::fgSsaWebSplit);
             }
             else
             {
