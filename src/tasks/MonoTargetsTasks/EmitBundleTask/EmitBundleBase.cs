@@ -154,16 +154,21 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         // Generate source file(s) containing each resource's byte data and size
         int allowedParallelism = Math.Max(Math.Min(bundledResources.Count, Environment.ProcessorCount), 1);
+        int coresAcquired = 0;
         IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
-        try
+        if (be9 is not null)
         {
-            if (be9 is not null)
-                allowedParallelism = be9.RequestCores(allowedParallelism);
-        }
-        catch (NotImplementedException)
-        {
-            // RequestCores is not implemented in TaskHostFactory
-            be9 = null;
+            try
+            {
+                coresAcquired = be9.RequestCores(allowedParallelism);
+                if (coresAcquired > 0)
+                    allowedParallelism = coresAcquired;
+            }
+            catch
+            {
+                // RequestCores may not be supported in all host environments
+                coresAcquired = 0;
+            }
         }
 
         try
@@ -196,7 +201,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         }
         finally
         {
-            be9?.ReleaseCores(allowedParallelism);
+            if (coresAcquired > 0)
+                be9?.ReleaseCores(coresAcquired);
         }
 
         foreach (ITaskItem bundledResource in bundledResources)
