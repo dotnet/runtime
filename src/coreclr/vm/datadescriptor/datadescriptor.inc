@@ -285,6 +285,7 @@ CDAC_TYPE_BEGIN(PEImageLayout)
 CDAC_TYPE_FIELD(PEImageLayout, /*pointer*/, Base, cdac_data<PEImageLayout>::Base)
 CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Size, cdac_data<PEImageLayout>::Size)
 CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Flags, cdac_data<PEImageLayout>::Flags)
+CDAC_TYPE_FIELD(PEImageLayout, /*uint32*/, Format, cdac_data<PEImageLayout>::Format)
 CDAC_TYPE_END(PEImageLayout)
 
 CDAC_TYPE_BEGIN(CGrowableSymbolStream)
@@ -1199,6 +1200,14 @@ CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureOnStackReplacement, uint8, 0)
 #endif // FEATURE_ON_STACK_REPLACEMENT
+#ifdef FEATURE_WEBCIL
+CDAC_GLOBAL(FeatureWebcil, uint8, 1)
+CDAC_GLOBAL(WebcilHeaderSize, uint32, sizeof(WebcilHeader))
+CDAC_GLOBAL(WebcilSectionHeaderSize, uint32, sizeof(WebcilSectionHeader))
+CDAC_GLOBAL(WebcilCoffSectionsOffset, uint32, offsetof(WebcilHeader, CoffSections))
+#else
+CDAC_GLOBAL(FeatureWebcil, uint8, 0)
+#endif
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)

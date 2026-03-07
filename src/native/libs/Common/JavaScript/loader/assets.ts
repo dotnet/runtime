@@ -115,9 +115,10 @@ export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
         asset.resolvedUrl = locateFile(assetNameForUrl);
     }
 
+    const isWebcilInWasm = assetInternal.virtualPath?.endsWith(".wasm") ?? false;
     normalizeVirtualPath(assetInternal);
 
-    if (assetInternal.virtualPath.endsWith(".wasm")) {
+    if (isWebcilInWasm) {
         await fetchWebcil(assetInternal);
     } else {
         await fetchDll(assetInternal);
@@ -127,8 +128,6 @@ export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
 async function fetchWebcil(assetInternal: AssetEntryInternal): Promise<void> {
     try {
         assetInternal.behavior = "webcil";
-
-        normalizeVirtualPath(assetInternal);
 
         const webcilPromise = loadResource(assetInternal);
 

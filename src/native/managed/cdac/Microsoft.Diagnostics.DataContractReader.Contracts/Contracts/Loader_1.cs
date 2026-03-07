@@ -216,6 +216,9 @@ internal readonly struct Loader_1 : ILoader
 
     private uint RvaToOffset(int rva, Data.PEImageLayout imageLayout)
     {
+        if (imageLayout.IsWebcilFormat)
+            return WebcilRvaToOffset(rva, imageLayout);
+
         TargetPointer section = RvaToSection(rva, imageLayout);
         if (section == TargetPointer.Null)
             throw new InvalidOperationException("Failed to read from image.");
@@ -223,6 +226,42 @@ internal readonly struct Loader_1 : ILoader
         Data.ImageSectionHeader sectionHeader = _target.ProcessedData.GetOrAdd<Data.ImageSectionHeader>(section);
         uint offset = (uint)(rva - sectionHeader.VirtualAddress) + sectionHeader.PointerToRawData;
         return offset;
+    }
+
+    private uint WebcilRvaToOffset(int rva, Data.PEImageLayout imageLayout)
+    {
+        TargetPointer headerBase = imageLayout.Base;
+        // Read Webcil format constants from the runtime's data contract globals.
+        // These correspond to sizeof(WebcilHeader), sizeof(WebcilSectionHeader), and
+        // offsetof(WebcilHeader, CoffSections) defined in src/coreclr/inc/webcildecoder.h.
+        int webcilHeaderSize = _target.ReadGlobal<int>(Constants.Globals.WebcilHeaderSize);
+        int webcilSectionHeaderSize = _target.ReadGlobal<int>(Constants.Globals.WebcilSectionHeaderSize);
+        int webcilCoffSectionsOffset = _target.ReadGlobal<int>(Constants.Globals.WebcilCoffSectionsOffset);
+        ushort numSections = _target.Read<ushort>(headerBase + (uint)webcilCoffSectionsOffset);
+        if (numSections == 0 || numSections > 16)
+            throw new InvalidOperationException("Invalid Webcil section count.");
+        TargetPointer sectionTableBase = headerBase + (uint)webcilHeaderSize;
+
+        for (int i = 0; i < numSections; i++)
+        {
+            TargetPointer sectionPtr = sectionTableBase + (uint)(i * webcilSectionHeaderSize);
+            uint virtualSize = _target.Read<uint>(sectionPtr);         // VirtualSize at offset 0
+            uint virtualAddress = _target.Read<uint>(sectionPtr + 4);  // VirtualAddress at offset 4
+            uint sizeOfRawData = _target.Read<uint>(sectionPtr + 8);   // SizeOfRawData at offset 8
+            uint pointerToRawData = _target.Read<uint>(sectionPtr + 12); // PointerToRawData at offset 12
+
+            uint rvaUnsigned = (uint)rva;
+            if (rvaUnsigned >= virtualAddress)
+            {
+                uint offset = rvaUnsigned - virtualAddress;
+                if (offset < virtualSize && offset < sizeOfRawData)
+                {
+                    return offset + pointerToRawData;
+                }
+            }
+        }
+
+        throw new InvalidOperationException("Failed to resolve RVA in Webcil image.");
     }
 
     TargetPointer ILoader.GetILAddr(TargetPointer peAssemblyPtr, int rva)
