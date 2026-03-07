@@ -5095,10 +5095,11 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     FALLTHROUGH;
 
                 case IAT_PVALUE:
-                    // Load the address into a register, load indirect and call through a register
+                    // Load the address into a register, load indirect and call  through a register
                     // We have to use R12 since we assume the argument registers are in use
                     params.callType = EC_INDIR_R;
                     params.ireg     = REG_INDIRECT_CALL_TARGET_REG;
+                    instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, params.ireg, (ssize_t)addrInfo.addr);
                     if (addrInfo.accessType == IAT_PVALUE)
                     {
                         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, params.ireg, params.ireg, 0);
