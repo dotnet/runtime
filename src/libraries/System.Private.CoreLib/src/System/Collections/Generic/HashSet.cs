@@ -406,49 +406,49 @@ namespace System.Collections.Generic
 
         private void RemoveAt(Entry[] entries, int removeIndex)
         {
-            uint collisionCount = 0;
-            int last = -1;
-            ref int bucket = ref GetBucketRef(entries[removeIndex].HashCode);
+            ref Entry entry = ref entries[removeIndex];
+            ref int bucket = ref GetBucketRef(entry.HashCode);
             int i = bucket - 1; // Value in buckets is 1-based
-
-            while (i >= 0)
+            if (i == removeIndex)
             {
-                ref Entry entry = ref entries[i];
-                if (i == removeIndex)
+                bucket = entry.Next + 1; // Value in buckets is 1-based
+            }
+            else
+            {
+                uint collisionCount = 0;
+                while (true)
                 {
-                    if (last < 0)
+                    if ((uint)i >= (uint)entries.Length)
                     {
-                        bucket = entry.Next + 1; // Value in buckets is 1-based
-                    }
-                    else
-                    {
-                        entries[last].Next = entry.Next;
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                     }
 
-                    Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
-                    entry.Next = StartOfFreeList - _freeList;
-
-                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    ref Entry last = ref entries[i];
+                    i = last.Next;
+                    if (i == removeIndex)
                     {
-                        entry.Value = default!;
+                        last.Next = entry.Next;
+                        break;
                     }
 
-                    _freeList = i;
-                    _freeCount++;
-                    return;
-                }
-
-                last = i;
-                i = entry.Next;
-
-                if (++collisionCount > (uint)entries.Length)
-                {
-                    // The chain of entries forms a loop; which means a concurrent update has happened.
-                    // Break out of the loop and throw, rather than looping forever.
-                    break;
+                    if (++collisionCount > (uint)entries.Length)
+                    {
+                        // The chain of entries forms a loop; which means a concurrent update has happened.
+                        // Break out of the loop and throw, rather than looping forever.
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
                 }
             }
-            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                entry.Value = default!;
+            }
+
+            Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
+            entry.Next = StartOfFreeList - _freeList;
+            _freeList = i;
+            _freeCount++;
         }
 
         /// <summary>Gets the number of elements that are contained in the set.</summary>
