@@ -463,7 +463,7 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-                for (int i = 0, childCount = ChildCount(); i < childCount; i++)
+            for (int i = 0, childCount = ChildCount(); i < childCount; i++)
             {
                 Child(i).ReReduceTree();
                 ReplaceChild(i, Child(i)); // ReplaceChild reduces the node in place
