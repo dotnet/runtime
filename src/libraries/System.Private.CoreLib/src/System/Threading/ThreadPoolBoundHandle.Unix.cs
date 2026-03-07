@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -123,6 +124,7 @@ namespace System.Threading
         ///     This method was called after the <see cref="ThreadPoolBoundHandle"/> was disposed.
         /// </exception>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
             AllocateNativeOverlappedPortableCore(callback, state, pinData);
 
@@ -171,6 +173,7 @@ namespace System.Threading
         ///     This method was called after the <see cref="ThreadPoolBoundHandle"/> was disposed.
         /// </exception>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe NativeOverlapped* UnsafeAllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
             UnsafeAllocateNativeOverlappedPortableCore(callback, state, pinData);
 
@@ -203,6 +206,7 @@ namespace System.Threading
         /// </exception>
         /// <seealso cref="PreAllocatedOverlapped"/>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated) => AllocateNativeOverlappedPortableCore(preAllocated);
 
         /// <summary>
@@ -229,6 +233,7 @@ namespace System.Threading
         ///     This method was called after the <see cref="ThreadPoolBoundHandle"/> was disposed.
         /// </exception>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped) => FreeNativeOverlappedPortableCore(overlapped);
 
         /// <summary>
@@ -248,6 +253,7 @@ namespace System.Threading
         ///     <paramref name="overlapped"/> is <see langword="null"/>.
         /// </exception>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped) => GetNativeOverlappedStatePortableCore(overlapped);
 
         public void Dispose() => DisposePortableCore();

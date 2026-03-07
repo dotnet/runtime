@@ -64,6 +64,7 @@
 // static variable (perhaps using Interlocked.CompareExchange).  Of course,
 // assignments in a static class constructor are under a lock implicitly.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -147,6 +148,7 @@ namespace System.Runtime.InteropServices
         /// the pointer from within the SafeBuffer.  You must set
         /// pointer to null before calling this method.</param>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public void AcquirePointer(ref byte* pointer)
         {
             if (_numBytes == Uninitialized)
@@ -363,6 +365,7 @@ namespace System.Runtime.InteropServices
         /* No indexer.  The perf would be misleadingly bad.  People should use
          * AcquirePointer and ReleasePointer instead.  */
 
+        [RequiresUnsafe]
         private void SpaceCheck(byte* ptr, nuint sizeInBytes)
         {
             if (_numBytes < sizeInBytes)

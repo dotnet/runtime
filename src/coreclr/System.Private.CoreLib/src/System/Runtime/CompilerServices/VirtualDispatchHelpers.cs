@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -20,6 +21,7 @@ internal static unsafe partial class VirtualDispatchHelpers
         public IntPtr _methodHandle;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         public VirtualResolutionData(MethodTable* objectMethodTable, IntPtr classHandle, IntPtr methodHandle)
         {
             _hashCode = (int) ((uint)objectMethodTable + (BitOperations.RotateLeft((uint)classHandle, 5)) + (BitOperations.RotateRight((uint)methodHandle, 5)));

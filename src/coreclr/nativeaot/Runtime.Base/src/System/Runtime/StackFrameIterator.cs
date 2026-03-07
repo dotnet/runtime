@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
+
 #if !NATIVEAOT
 using System.Runtime.ExceptionServices;
 #endif
@@ -31,7 +33,9 @@ namespace System.Runtime
 
         [FieldOffset(AsmOffsets.OFFSETOF__StackFrameIterator__m_AdjustedControlPC)]
         internal byte* ControlPC;
+
         internal byte* OriginalControlPC { get { return (byte*)_pRegDisplay->ControlPC; } }
+
         internal void* RegisterSet { get { return _pRegDisplay; } }
         internal UIntPtr SP { get { return _pRegDisplay->SP; } }
         internal UIntPtr FramePointer { get { return _pRegDisplay->m_pCurrentContext->FP; } }

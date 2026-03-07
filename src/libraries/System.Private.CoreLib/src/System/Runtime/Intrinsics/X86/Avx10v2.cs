@@ -111,11 +111,13 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         ///   <para>  VMOVW xmm1/m16, xmm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreScalar(short* address, Vector128<short> source) => StoreScalar(address, source);
 
         /// <summary>
         ///   <para>  VMOVW xmm1/m16, xmm2</para>
         /// </summary>
+        [RequiresUnsafe]
         public static unsafe void StoreScalar(ushort* address, Vector128<ushort> source) => StoreScalar(address, source);
 
         /// <summary>Provides access to the x86 AVX10.2 hardware instructions, that are only available to 64-bit processes, via intrinsics.</summary>

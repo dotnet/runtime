@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -24,6 +25,7 @@ namespace System.Text
             return newCapacity;
         }
 
+        [RequiresUnsafe]
         internal unsafe void ReplaceBufferInternal(char* newBuffer, int newLength)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan(newLength, m_MaxCapacity, "capacity");
@@ -54,6 +56,7 @@ namespace System.Text
             m_ChunkOffset = 0;
         }
 
+        [RequiresUnsafe]
         internal unsafe void ReplaceBufferAnsiInternal(sbyte* newBuffer, int newLength)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan(newLength, m_MaxCapacity, "capacity");

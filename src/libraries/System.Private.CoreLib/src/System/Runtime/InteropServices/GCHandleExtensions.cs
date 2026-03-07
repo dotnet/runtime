@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
@@ -24,6 +25,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         /// <typeparam name="T">The element type of the pinned array.</typeparam>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe T* GetAddressOfArrayData<T>(
 #nullable disable // Nullable oblivious because no covariance between PinnedGCHandle<T> and PinnedGCHandle<T?>
             this PinnedGCHandle<T[]> handle)
@@ -47,6 +49,7 @@ namespace System.Runtime.InteropServices
         /// </returns>
         /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         [CLSCompliant(false)]
+        [RequiresUnsafe]
         public static unsafe char* GetAddressOfStringData(
 #nullable disable // Nullable oblivious because no covariance between PinnedGCHandle<T> and PinnedGCHandle<T?>
             this PinnedGCHandle<string> handle)

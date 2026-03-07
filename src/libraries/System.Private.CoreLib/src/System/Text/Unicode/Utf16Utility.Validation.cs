@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -69,6 +70,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// Returns a pointer to the end of <paramref name="pInputBuffer"/> if the buffer is well-formed.
         /// </remarks>
+        [RequiresUnsafe]
         public static char* GetPointerToFirstInvalidChar(char* pInputBuffer, int inputLength, out long utf8CodeUnitCountAdjustment, out int scalarCountAdjustment)
         {
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");

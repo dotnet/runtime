@@ -1,8 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -31,6 +32,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="managed">The managed span.</param>
         /// <param name="numElements">The number of elements in the span.</param>
         /// <returns>A pointer to the block of memory for the unmanaged elements.</returns>
+        [RequiresUnsafe]
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(Span<T> managed, out int numElements)
         {
             // Emulate the pinning behavior:
@@ -62,6 +64,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanaged">The pointer to the block of memory for the unmanaged elements.</param>
         /// <param name="numElements">The number of elements that will be copied into the memory block.</param>
         /// <returns>A span over the unmanaged memory that can contain the specified number of elements.</returns>
+        [RequiresUnsafe]
         public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged == null)
@@ -76,6 +79,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanaged">The unmanaged value.</param>
         /// <param name="numElements">The number of elements in the unmanaged collection.</param>
         /// <returns>A span over enough memory to contain <paramref name="numElements"/> elements.</returns>
+        [RequiresUnsafe]
         public static Span<T> AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged is null)
@@ -98,6 +102,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="unmanaged">The unmanaged value.</param>
         /// <param name="numElements">The number of elements in the unmanaged collection.</param>
         /// <returns>A span over the native collection elements.</returns>
+        [RequiresUnsafe]
         public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
         {
             if (unmanaged == null)
@@ -110,6 +115,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Frees the allocated unmanaged memory.
         /// </summary>
         /// <param name="unmanaged">A pointer to the allocated unmanaged memory.</param>
+        [RequiresUnsafe]
         public static void Free(TUnmanagedElement* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
@@ -180,6 +186,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Returns the unmanaged value representing the array.
             /// </summary>
+            [RequiresUnsafe]
             public TUnmanagedElement* ToUnmanaged()
             {
                 // Unsafe.AsPointer is safe since buffer must be pinned

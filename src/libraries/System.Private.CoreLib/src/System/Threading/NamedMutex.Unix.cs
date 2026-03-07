@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -260,6 +261,7 @@ namespace System.Threading
             }
         }
 
+        [RequiresUnsafe]
         private static unsafe void InitializeSharedData(void* v)
         {
             if (UsePThreadMutexes)

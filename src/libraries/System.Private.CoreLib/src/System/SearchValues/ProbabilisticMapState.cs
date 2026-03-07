@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
@@ -52,6 +52,7 @@ namespace System.Buffers
         }
 
         // valuesPtr must remain valid for as long as this ProbabilisticMapState is used.
+        [RequiresUnsafe]
         public ProbabilisticMapState(ReadOnlySpan<char>* valuesPtr)
         {
             Debug.Assert((IntPtr)valuesPtr != IntPtr.Zero);

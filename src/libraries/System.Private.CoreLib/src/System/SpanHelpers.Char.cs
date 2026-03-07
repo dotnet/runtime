@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -528,6 +529,7 @@ namespace System
 
         // IndexOfNullCharacter processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
         // This behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
+        [RequiresUnsafe]
         public static unsafe int IndexOfNullCharacter(char* searchSpace)
         {
             const char value = '\0';
@@ -878,6 +880,7 @@ namespace System
             => (length - offset) & ~(Vector512<ushort>.Count - 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [RequiresUnsafe]
         private static unsafe nint UnalignedCountVector128(char* searchSpace)
         {
             const int ElementsPerByte = sizeof(ushort) / sizeof(byte);
