@@ -7,6 +7,7 @@ using System.Buffers.Binary;
 using System;
 using Internal.Text;
 using System.Security.Cryptography.X509Certificates;
+using System.Diagnostics;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -31,7 +32,7 @@ namespace ILCompiler.ObjectWriter
 
         public static int EncodeSize()
         {
-            return sizeof(uint) +  // 4
+            int size = sizeof(uint) +  // 4
                     sizeof(ushort) + // 6
                     sizeof(ushort) + // 8
                     sizeof(ushort) + // 10
@@ -40,6 +41,26 @@ namespace ILCompiler.ObjectWriter
                     sizeof(uint) +   // 20
                     sizeof(uint) +   // 24
                     sizeof(uint);    // 28
+            Debug.Assert(size == 28);
+            return size;
+        }
+
+        public int Emit(Stream outputStream)
+        {
+            int encodeSize = EncodeSize();
+            Span<byte> headerBuffer = stackalloc byte[encodeSize];
+            BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(0, 4), Id);
+            BinaryPrimitives.WriteUInt16LittleEndian(headerBuffer.Slice(4, 2), VersionMajor);
+            BinaryPrimitives.WriteUInt16LittleEndian(headerBuffer.Slice(6, 2), VersionMinor);
+            BinaryPrimitives.WriteUInt16LittleEndian(headerBuffer.Slice(8, 2), CoffSections);
+            BinaryPrimitives.WriteUInt16LittleEndian(headerBuffer.Slice(10, 2), Reserved0);
+            BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(12, 4), PeCliHeaderRva);
+            BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(16, 4), PeCliHeaderSize);
+            BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(20, 4), PeDebugRva);
+            BinaryPrimitives.WriteUInt32LittleEndian(headerBuffer.Slice(24, 4), PeDebugSize);
+
+            outputStream.Write(headerBuffer);
+            return encodeSize;
         }
     }
 
@@ -74,9 +95,10 @@ namespace ILCompiler.ObjectWriter
                     sizeof(uint);  // 16
         }
 
-        public void Encode(Stream outputStream)
+        public int Encode(Stream outputStream)
         {
-            Span<byte> header = stackalloc byte[EncodeSize()];
+            int encodeSize = EncodeSize();
+            Span<byte> header = stackalloc byte[encodeSize];
 
             // The Webcil spec requires little-endian encoding
             BinaryPrimitives.WriteUInt32LittleEndian(header.Slice(0, 4), VirtualSize);
@@ -86,6 +108,7 @@ namespace ILCompiler.ObjectWriter
 
             outputStream.Write(header);
 
+            return encodeSize;
         }
     }
 }

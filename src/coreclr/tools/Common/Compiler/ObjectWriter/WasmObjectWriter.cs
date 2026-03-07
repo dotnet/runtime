@@ -188,38 +188,10 @@ namespace ILCompiler.ObjectWriter
             // This is a no-op for now under Wasm
         }
 
-        private WasmDataSection CreateCombinedDataSection()
-        {
-            WasmInstructionGroup GetR2RStartOffset(int offset)
-            {
-                return new WasmInstructionGroup([
-                    Global.Get(R2RStartGlobalIndex),
-                    I32.Const(offset),
-                    I32.Add,
-                ]);
-            }
-
-            IEnumerable<WasmSection> dataSections = _sections.Where(s => s.Type == WasmSectionType.Data);
-            int offset = 0;
-            List<WasmDataSegment> segments = new();
-            foreach (WasmSection wasmSection in dataSections)
-            {
-                Console.WriteLine($"Emitting: {wasmSection.Name}");
-                Debug.Assert(wasmSection.Type == WasmSectionType.Data);
-                WasmDataSegment segment = new WasmDataSegment(wasmSection.Stream, wasmSection.Name, WasmDataSectionType.Active,
-                    GetR2RStartOffset(offset));
-                segments.Add(segment);
-                offset += segment.ContentSize;
-            }
-
-            return new WasmDataSection(segments, new Utf8String(WasmObjectNodeSection.CombinedDataSection.Name));
-        }
-
         private class WebcilSegment
         {
             public WebcilHeader Header;
             public WebcilSection[] Sections;
-            public Dictionary<int, WebcilSection> indexToSection;
 
             public WebcilSegment(WebcilHeader header, WebcilSection[] sections)
             {
@@ -227,9 +199,18 @@ namespace ILCompiler.ObjectWriter
                 Sections = sections;
             }
 
-            public int EmitHeader(Stream output)
+            public int GetFlatMappedSize()
             {
-                return 0;
+                int size = 0;
+                size += WebcilHeader.EncodeSize(); // include header
+                size += Sections.Length * WebcilSectionHeader.EncodeSize(); // include size of all section headers
+
+                foreach (WebcilSection section in Sections)
+                {
+                    size += (int)section.Header.SizeOfRawData; // include raw data size of each section (same as virtual size since Webcil has a flat mapping)
+                }
+
+                return size;
             }
         }
 
@@ -379,6 +360,7 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.TableSection.Name,
             WasmObjectNodeSection.ExportSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
+            WasmObjectNodeSection.DataSection.Name,
         ];
 
         private int[] _sectionEmitOrder = null;
@@ -413,7 +395,7 @@ namespace ILCompiler.ObjectWriter
                         MemoryStream stream = new MemoryStream((int)originalStream.Length);
                         originalStream.Position = 0;
                         originalStream.CopyTo(stream);
-                        ResolveRelocations(stream, relocations);
+                        ResolveRelocations(index, stream, relocations, sectionStart: 0);
                         section.Stream = stream;
                         // originalStream may be disposed, section.Stream now points to resolved stream
                     }
@@ -422,25 +404,37 @@ namespace ILCompiler.ObjectWriter
                 section.Emit(outputFileStream);
             }
 
-            // Emit WebCIL segment at the end of the file
+            /********************************
+            Emit Webcil segment at end of file
+            *********************************/
+
             Debug.Assert(_webcilSegment != null); // should have been built in EmitSectionsAndLayout
-            _webcilSegment.EmitHeader(outputFileStream);
+
+            MemoryStream webcilStream = new(_webcilSegment.GetFlatMappedSize());
+            // TODO-Wasm: resolve RVAs for cor header, debug info here
+            _webcilSegment.Header.Emit(webcilStream);
+            foreach (WebcilSection section in _webcilSegment.Sections)
+            {
+                section.Header.Encode(webcilStream);
+            }
+
             foreach (WebcilSection section in _webcilSegment.Sections)
             {
                 if (_resolvableRelocations.TryGetValue(section.Index, out List<SymbolicRelocation> relocations))
                 {
-                    using (Stream originalStream = section.Stream)
-                    {
-                        MemoryStream stream = new MemoryStream((int)originalStream.Length);
-                        originalStream.Position = 0;
-                        originalStream.CopyTo(stream);
-                        ResolveRelocations(stream, relocations);
-                        section.Stream = stream;
-                        // originalStream may be disposed, section.Stream now points to resolved stream
-                    }
+                    webcilStream.Position = section.Header.PointerToRawData;
+                    section.Stream.Position = 0;
+                    section.Stream.CopyTo(webcilStream);
+                    ResolveRelocations(section.Index, webcilStream, relocations, sectionStart: (long)webcilStream.Position);
                 }
-                section.Emit(outputFileStream);
             }
+
+            // TODO-Wasm: can dispose individual section streams here, all the data we need has been copied to the unified webcil stream
+
+            WasmDataSegment webcilContentsSegment = new WasmDataSegment(webcilStream, new Utf8String("webcilPayload"),
+                WasmDataSectionType.Passive, null);
+            WasmDataSection dataSection = new WasmDataSection([webcilContentsSegment], new Utf8String("data"));
+            dataSection.Emit(outputFileStream);
         }
 
 
@@ -462,9 +456,18 @@ namespace ILCompiler.ObjectWriter
 
         // TODO-WASM: Currently, all Wasm relocs are resolved to 5 byte values unconditionally (the same size as the original placeholder padding), which is wasteful.
         // We should remove the padding and shrink the resolved values to their minimal size so we don't bloat the binary size.
-        private unsafe void ResolveRelocations(MemoryStream sectionStream, List<SymbolicRelocation> relocs)
+#nullable enable
+        private unsafe void ResolveRelocations(int sectionIndex, MemoryStream sectionStream, List<SymbolicRelocation> relocs, long sectionStart = 0)
         {
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
+
+            WebcilSection? webcilSection = null;
+            uint webcilVirtualStart = 0;
+            if (_sections[sectionIndex] is WebcilSection curSection)
+            {
+                webcilSection = curSection;
+                webcilVirtualStart = curSection.Header.VirtualAddress;
+            }
 
             foreach (SymbolicRelocation reloc in relocs)
             {
@@ -474,9 +477,29 @@ namespace ILCompiler.ObjectWriter
                     throw new InvalidOperationException($"Unsupported relocation size for relocation: {reloc.Type}");
                 }
 
-                // We need a pinned raw pointer here for manipulation with Relocation.WriteValue
-                fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer))
+                SymbolDefinition definedSymbol = _definedSymbols[reloc.SymbolName];
+
+                uint virtualRelocOffset = 0;
+                uint virtualSymbolImageOffset = 0;
+
+                WebcilSection? symbolWebcilSection = null;
+                bool betweenWebcilSections = false;
+                if (webcilSection is not null && _sections[definedSymbol.SectionIndex] is WebcilSection targetSection)
                 {
+                    betweenWebcilSections = true;
+                    symbolWebcilSection = targetSection;
+
+                    virtualRelocOffset = webcilVirtualStart + (uint)reloc.Offset;
+                    virtualSymbolImageOffset = symbolWebcilSection.Header.VirtualAddress + (uint)definedSymbol.Value;
+                }
+
+                Debug.Assert(webcilSection is null || sectionStart != 0);
+                // We need a pinned raw pointer here for manipulation with Relocation.WriteValue
+                fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer, sectionStart))
+                {
+                    long addend = Relocation.ReadValue(reloc.Type, pData);
+                    int relocLength = Relocation.GetSize(reloc.Type);
+
                     switch (reloc.Type)
                     {
                         case RelocType.WASM_TYPE_INDEX_LEB:
@@ -484,7 +507,6 @@ namespace ILCompiler.ObjectWriter
                             if (_uniqueSignatures.TryGetValue(reloc.SymbolName, out int index))
                             {
                                 Relocation.WriteValue(reloc.Type, pData, index);
-                                WriteRelocFromDataSpan(reloc, pData);
                             }
                             else
                             {
@@ -493,28 +515,57 @@ namespace ILCompiler.ObjectWriter
 
                             break;
                         }
+
+                        case RelocType.IMAGE_REL_BASED_ABSOLUTE:
+                            // No action required
+                            break;
+
+                        case RelocType.IMAGE_REL_BASED_DIR64:
+                        case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                            Debug.Assert(betweenWebcilSections);
+                            // This is an ImageBase-relative value in PE, but our image base
+                            // for Webcil is virtual address 0
+                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + 0 + addend);
+                            break;
+                        case RelocType.IMAGE_REL_BASED_ADDR32NB:
+                            Debug.Assert(betweenWebcilSections);
+                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
+                            break;
+                        case RelocType.IMAGE_REL_BASED_REL32:
+                        case RelocType.IMAGE_REL_BASED_RELPTR32:
+                            Debug.Assert(betweenWebcilSections);
+                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset - (virtualRelocOffset + relocLength) + addend);
+                            break;
+                        case RelocType.IMAGE_REL_FILE_ABSOLUTE:
+                            Debug.Assert(betweenWebcilSections && symbolWebcilSection != null);
+                            long fileOffset = symbolWebcilSection.Header.PointerToRawData + definedSymbol.Value;
+                            Relocation.WriteValue(reloc.Type, pData, fileOffset + addend);
+                            break;
                         default:
                             // TODO-WASM: add other cases as needed;
                             // ignoring other reloc types for now
                             throw new NotSupportedException($"Relocation type {reloc.Type} not yet implemented");
                     }
+
+                    WriteRelocFromDataSpan(reloc, pData, sectionStart);
                 }
             }
 
-            Span<byte> ReadRelocToDataSpan(SymbolicRelocation reloc, byte[] buffer)
+            Span<byte> ReadRelocToDataSpan(SymbolicRelocation reloc, byte[] buffer, long sectionStart)
             {
                 Span<byte> relocContents = buffer.AsSpan(0, Relocation.GetSize(reloc.Type)); 
-                sectionStream.Position = reloc.Offset;
+                sectionStream.Position = reloc.Offset + sectionStart;
                 sectionStream.ReadExactly(relocContents);
                 return relocContents;
             }
 
-            void WriteRelocFromDataSpan(SymbolicRelocation reloc, byte *pData)
+            void WriteRelocFromDataSpan(SymbolicRelocation reloc, byte *pData, long sectionStart)
             {
-                sectionStream.Position = reloc.Offset;
+                sectionStream.Position = reloc.Offset + sectionStart;
                 sectionStream.Write(new Span<byte>(pData, Relocation.GetSize(reloc.Type)));
             }
         }
+#nullable disable
 
         const int StackPointerGlobalIndex = 0;
         const int R2RStartGlobalIndex = 1;
