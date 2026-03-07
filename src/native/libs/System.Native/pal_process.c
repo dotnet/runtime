@@ -1307,7 +1307,7 @@ int32_t SystemNative_TryWaitForExit(int32_t pidfd, int32_t pid, int32_t timeout_
 #endif
 }
 
-int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal, int32_t* out_timeout)
+int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int32_t isGroupLeader, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal, int32_t* out_timeout)
 {
     *out_timeout = 0;
     int ret = SystemNative_TryWaitForExit(pidfd, pid, timeout_ms, out_exitCode, out_signal);
@@ -1317,7 +1317,15 @@ int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int3
     }
 
     *out_timeout = 1;
-    ret = SystemNative_SendSignal(pidfd, pid, (int32_t)PosixSignalSIGKILL);
+    if (isGroupLeader)
+    {
+        // Negative pid means to signal the process group
+        ret = SystemNative_SendSignal(-1, -pid, (int32_t)PosixSignalSIGKILL);
+    }
+    else
+    {
+        ret = SystemNative_SendSignal(pidfd, pid, (int32_t)PosixSignalSIGKILL);
+    }
 
     if (ret == -1)
     {

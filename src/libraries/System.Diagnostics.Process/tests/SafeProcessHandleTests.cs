@@ -598,7 +598,6 @@ namespace System.Diagnostics.Tests
             {
                 using SafeProcessHandle grandChild = SafeProcessHandle.Open(processId);
                 grandChild.Kill();
-                grandChild.WaitForExit();
             }
             catch (Win32Exception) when (shouldExited)
             {

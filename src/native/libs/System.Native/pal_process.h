@@ -299,7 +299,7 @@ PALEXPORT int32_t SystemNative_TryWaitForExitCancellable(int32_t pidfd, int32_t 
  *
  * Returns 0 on success, -1 on error (errno is set).
  */
-PALEXPORT int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal, int32_t* out_timeout);
+PALEXPORT int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int32_t isGroupLeader, int32_t timeout_ms, int32_t* out_exitCode, int32_t* out_signal, int32_t* out_timeout);
 
 /**
  * Tries to get the exit code of a process without blocking.

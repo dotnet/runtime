@@ -26,6 +26,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
+        private readonly bool _isGroupLeader;
 
         internal SafeProcessHandle(int processId, SafeWaitHandle handle) :
             this(handle.DangerousGetHandle(), ownsHandle: true)
@@ -35,10 +36,11 @@ namespace Microsoft.Win32.SafeHandles
             handle.DangerousAddRef(ref _releaseRef);
         }
 
-        private SafeProcessHandle(int pidfd, int pid)
+        private SafeProcessHandle(int pidfd, int pid, bool isGroupLeader)
             : this(existingHandle: (IntPtr)pidfd, ownsHandle: true)
         {
             ProcessId = pid;
+            _isGroupLeader = isGroupLeader;
         }
 
         protected override bool ReleaseHandle()
@@ -66,7 +68,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new Win32Exception();
             }
 
-            return new SafeProcessHandle(pidfd, processId);
+            return new SafeProcessHandle(pidfd, processId, isGroupLeader: false);
         }
 
         private static unsafe SafeProcessHandle StartCore(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended)
@@ -132,7 +134,7 @@ namespace Microsoft.Win32.SafeHandles
                     throw new Win32Exception();
                 }
 
-                return new SafeProcessHandle(pidfd == -1 ? NoPidFd : pidfd, pid);
+                return new SafeProcessHandle(pidfd, pid, options.CreateNewProcessGroup);
             }
             finally
             {
@@ -180,7 +182,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private ProcessExitStatus WaitForExitOrKillOnTimeoutCore(int milliseconds)
         {
-            switch (Interop.Sys.WaitForExitOrKillOnTimeout(this, ProcessId, milliseconds, out int exitCode, out int rawSignal, out int hasTimedout))
+            switch (Interop.Sys.WaitForExitOrKillOnTimeout(this, ProcessId, _isGroupLeader, milliseconds, out int exitCode, out int rawSignal, out int hasTimedout))
             {
                 case -1:
                     throw new Win32Exception();
@@ -245,7 +247,7 @@ namespace Microsoft.Win32.SafeHandles
                         case -1:
                             throw new Win32Exception();
                         case 1: // canceled
-                            bool wasKilled = KillCore(throwOnError: false);
+                            bool wasKilled = KillCore(throwOnError: false, entireProcessGroup: _isGroupLeader);
                             ProcessExitStatus status = WaitForExitCore();
                             return new ProcessExitStatus(status.ExitCode, wasKilled, status.Signal);
                         default:

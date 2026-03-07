@@ -39,7 +39,7 @@ internal static partial class Interop
         internal static partial int TryWaitForExitCancellable(SafeProcessHandle pidfd, int pid, int cancelPipeFd, out int exitCode, out int signal);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitForExitOrKillOnTimeout", SetLastError = true)]
-        internal static partial int WaitForExitOrKillOnTimeout(SafeProcessHandle pidfd, int pid, int timeoutMs, out int exitCode, out int signal, out int hasTimedout);
+        internal static partial int WaitForExitOrKillOnTimeout(SafeProcessHandle pidfd, int pid, bool isGroupLeader, int timeoutMs, out int exitCode, out int signal, out int hasTimedout);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_TryGetExitCode", SetLastError = true)]
         internal static partial int TryGetExitCode(SafeProcessHandle pidfd, int pid, out int exitCode, out int signal);
