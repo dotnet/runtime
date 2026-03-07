@@ -228,7 +228,7 @@ namespace System.Reflection.Context.Tests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMethodBodySupported))]
         public void GetMethodBody_ReturnsProjectedBody()
         {
             TypeInfo typeInfo = typeof(TestObject).GetTypeInfo();
