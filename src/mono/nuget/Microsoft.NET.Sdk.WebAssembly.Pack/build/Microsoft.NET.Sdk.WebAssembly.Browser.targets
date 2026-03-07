@@ -231,7 +231,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       
       <_WasmBundlerFriendlyBootConfig>$(WasmBundlerFriendlyBootConfig)</_WasmBundlerFriendlyBootConfig>
       <_WasmBundlerFriendlyBootConfig Condition="'$(_WasmBundlerFriendlyBootConfig)' == ''">false</_WasmBundlerFriendlyBootConfig>
-
+      <WasmEnableHotReload Condition="'$(_WasmBundlerFriendlyBootConfig)' == 'true' and '$(WasmEnableHotReload)' == ''">false</WasmEnableHotReload>
+      
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114 -->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
     </PropertyGroup>
