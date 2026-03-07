@@ -463,25 +463,10 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            int childCount = ChildCount();
-            for (int i = 0; i < childCount; i++)
+                for (int i = 0, childCount = ChildCount(); i < childCount; i++)
             {
                 Child(i).ReReduceTree();
-
-                RegexNode child = Child(i);
-                RegexNode reduced = child.Reduce();
-                if (reduced != child)
-                {
-                    reduced.Parent = this;
-                    if (Children is RegexNode)
-                    {
-                        Children = reduced;
-                    }
-                    else if (Children is List<RegexNode> list)
-                    {
-                        list[i] = reduced;
-                    }
-                }
+                ReplaceChild(i, Child(i)); // ReplaceChild reduces the node in place
             }
         }
 
