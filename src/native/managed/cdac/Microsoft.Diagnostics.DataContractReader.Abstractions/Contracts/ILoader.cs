@@ -16,6 +16,12 @@ public readonly struct ModuleHandle
     public TargetPointer Address { get; }
 }
 
+public enum LoaderHeapKind
+{
+    Normal = 0,
+    ExplicitControl = 1,
+}
+
 [Flags]
 public enum ModuleFlags
 {
@@ -94,6 +100,14 @@ public interface ILoader : IContract
     TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
     TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
+
+    // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
+    // Throws NotImplementedException for unknown kind values.
+    TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap, LoaderHeapKind kind) => throw new NotImplementedException();
+    TargetNUInt GetLoaderHeapBlockSize(TargetPointer block) => throw new NotImplementedException();
+    TargetPointer GetLoaderHeapBlockAddress(TargetPointer block) => throw new NotImplementedException();
+    // Returns the next block in the loader heap linked list, or TargetPointer.Null if there are no more blocks
+    TargetPointer GetNextLoaderHeapBlock(TargetPointer block) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

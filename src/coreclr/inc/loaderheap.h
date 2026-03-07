@@ -17,6 +17,7 @@
 #include "utilcode.h"
 #include "ex.h"
 #include "executableallocator.h"
+#include "../vm/cdacdata.h"
 
 //==============================================================================
 // Interface used to back out loader heap allocations.
@@ -209,6 +210,7 @@ protected:
 typedef DPTR(class UnlockedLoaderHeapBase) PTR_UnlockedLoaderHeapBase;
 class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable, public ILoaderHeapBackout
 {
+    friend struct cdac_data<UnlockedLoaderHeapBase>;
 #ifdef _DEBUG
     friend class LoaderHeapSniffer;
 #endif
@@ -279,6 +281,12 @@ public:
     size_t              m_dwDebugWastedBytes;
     static DWORD        s_dwNumInstancesOfLoaderHeaps;
 #endif
+};
+
+template<>
+struct cdac_data<UnlockedLoaderHeapBase>
+{
+    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBase, m_pFirstBlock);
 };
 
 //===============================================================================
@@ -599,6 +607,7 @@ protected:
 typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
 class ExplicitControlLoaderHeap : public UnlockedLoaderHeapBaseTraversable
 {
+    friend struct cdac_data<ExplicitControlLoaderHeap>;
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
 #endif
@@ -691,6 +700,12 @@ public:
     void *AllocMemForCode_NoThrow(size_t dwHeaderSize, size_t dwCodeSize, DWORD dwCodeAlignment, size_t dwReserveForJumpStubs);
 
     void SetReservedRegion(BYTE* dwReservedRegionAddress, SIZE_T dwReservedRegionSize, BOOL fReleaseMemory);
+};
+
+template<>
+struct cdac_data<ExplicitControlLoaderHeap>
+{
+    static constexpr size_t FirstBlock = offsetof(ExplicitControlLoaderHeap, m_pFirstBlock);
 };
 
 //===============================================================================

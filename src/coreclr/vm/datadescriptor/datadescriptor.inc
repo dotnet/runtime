@@ -264,6 +264,22 @@ CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, StubHeap, cdac_data<LoaderAllocato
 CDAC_TYPE_FIELD(LoaderAllocator, /*pointer*/, ObjectHandle, cdac_data<LoaderAllocator>::ObjectHandle)
 CDAC_TYPE_END(LoaderAllocator)
 
+CDAC_TYPE_BEGIN(LoaderHeap)
+CDAC_TYPE_INDETERMINATE(LoaderHeap)
+CDAC_TYPE_FIELD(LoaderHeap, /*pointer*/, FirstBlock, cdac_data<UnlockedLoaderHeapBase>::FirstBlock)
+CDAC_TYPE_END(LoaderHeap)
+
+CDAC_TYPE_BEGIN(ExplicitControlLoaderHeap)
+CDAC_TYPE_INDETERMINATE(ExplicitControlLoaderHeap)
+CDAC_TYPE_FIELD(ExplicitControlLoaderHeap, /*pointer*/, FirstBlock, cdac_data<ExplicitControlLoaderHeap>::FirstBlock)
+CDAC_TYPE_END(ExplicitControlLoaderHeap)
+
+CDAC_TYPE_BEGIN(LoaderHeapBlock)
+CDAC_TYPE_FIELD(LoaderHeapBlock, /*pointer*/, Next, offsetof(LoaderHeapBlock, pNext))
+CDAC_TYPE_FIELD(LoaderHeapBlock, /*pointer*/, VirtualAddress, offsetof(LoaderHeapBlock, pVirtualAddress))
+CDAC_TYPE_FIELD(LoaderHeapBlock, /*nuint*/, VirtualSize, offsetof(LoaderHeapBlock, dwVirtualSize))
+CDAC_TYPE_END(LoaderHeapBlock)
+
 CDAC_TYPE_BEGIN(PEAssembly)
 CDAC_TYPE_INDETERMINATE(PEAssembly)
 CDAC_TYPE_FIELD(PEAssembly, /*pointer*/, PEImage, cdac_data<PEAssembly>::PEImage)

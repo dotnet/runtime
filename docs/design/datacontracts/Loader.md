@@ -86,6 +86,23 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
+
+// Loader heap traversal
+enum LoaderHeapKind
+{
+    Normal = 0,          // UnlockedLoaderHeap / LoaderHeap
+    ExplicitControl = 1, // ExplicitControlLoaderHeap
+}
+
+// Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
+// Throws NotImplementedException for unknown kind values.
+TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap, LoaderHeapKind kind);
+// Returns the size of the reserved virtual memory region for the given loader heap block
+TargetNUInt GetLoaderHeapBlockSize(TargetPointer block);
+// Returns the start address of the reserved virtual memory for the given loader heap block
+TargetPointer GetLoaderHeapBlockAddress(TargetPointer block);
+// Returns the next block in the loader heap linked list, or TargetPointer.Null if there are no more blocks
+TargetPointer GetNextLoaderHeapBlock(TargetPointer block);
 ```
 
 ## Version 1
@@ -159,6 +176,11 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `DynamicILBlobTable` | `EntrySize` | Size of each table entry |
 | `DynamicILBlobTable` | `EntryMethodToken` | Offset of each entry method token from entry address |
 | `DynamicILBlobTable` | `EntryIL` | Offset of each entry IL from entry address |
+| `LoaderHeap` | `FirstBlock` | Pointer to the first `LoaderHeapBlock` in the linked list (normal heaps: `UnlockedLoaderHeap`/`LoaderHeap`) |
+| `ExplicitControlLoaderHeap` | `FirstBlock` | Pointer to the first `LoaderHeapBlock` in the linked list |
+| `LoaderHeapBlock` | `Next` | Pointer to the next `LoaderHeapBlock` in the linked list |
+| `LoaderHeapBlock` | `VirtualAddress` | Pointer to the start of the reserved virtual memory |
+| `LoaderHeapBlock` | `VirtualSize` | Size in bytes of the reserved virtual memory region |
 
 
 
@@ -759,5 +781,41 @@ class InstMethodHashTable
         public TargetPointer MethodDesc { get; } = value & ~FLAG_MASK;
         public uint Flags { get; } = (uint)(value.Value & FLAG_MASK);
     }
+}
+```
+
+#### GetFirstLoaderHeapBlock, GetLoaderHeapBlockAddress, GetLoaderHeapBlockSize, GetNextLoaderHeapBlock
+
+Both `UnlockedLoaderHeap`/`LoaderHeap` (normal) and `ExplicitControlLoaderHeap` (explicit-control) inherit from
+`UnlockedLoaderHeapBaseTraversable`, which holds `m_pFirstBlock`. Each kind maps to a separate cDAC type
+(`LoaderHeap` and `ExplicitControlLoaderHeap` respectively) so callers are explicit about which type they are
+traversing. The `LoaderHeapKind` enum encodes the choice, and an unknown kind throws `NotImplementedException`.
+
+```csharp
+TargetPointer ILoader.GetFirstLoaderHeapBlock(TargetPointer loaderHeap, LoaderHeapKind kind)
+{
+    return kind switch
+    {
+        LoaderHeapKind.Normal =>
+            target.ReadPointer(loaderHeap + /* LoaderHeap::FirstBlock offset */),
+        LoaderHeapKind.ExplicitControl =>
+            target.ReadPointer(loaderHeap + /* ExplicitControlLoaderHeap::FirstBlock offset */),
+        _ => throw new NotImplementedException($"Unknown loader heap kind: {kind}"),
+    };
+}
+
+TargetPointer ILoader.GetLoaderHeapBlockAddress(TargetPointer block)
+{
+    return target.ReadPointer(block + /* LoaderHeapBlock::VirtualAddress offset */);
+}
+
+TargetNUInt ILoader.GetLoaderHeapBlockSize(TargetPointer block)
+{
+    return target.ReadNUInt(block + /* LoaderHeapBlock::VirtualSize offset */);
+}
+
+TargetPointer ILoader.GetNextLoaderHeapBlock(TargetPointer block)
+{
+    return target.ReadPointer(block + /* LoaderHeapBlock::Next offset */);
 }
 ```
