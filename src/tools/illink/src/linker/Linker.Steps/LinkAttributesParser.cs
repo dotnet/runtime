@@ -29,7 +29,7 @@ namespace Mono.Linker.Steps
         {
         }
 
-        public void Parse(AttributeInfo xmlInfo)
+        internal void Parse(AttributeInfo xmlInfo)
         {
             _attributeInfo = xmlInfo;
             bool stripLinkAttributes = _context.IsOptimizationEnabled(CodeOptimizations.RemoveLinkAttributes, _resource?.Assembly);

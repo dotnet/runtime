@@ -38,7 +38,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-    public class AssemblyResolver : IAssemblyResolver
+    internal class AssemblyResolver : IAssemblyResolver
     {
         readonly List<string> _references = new();
         readonly LinkContext _context;
