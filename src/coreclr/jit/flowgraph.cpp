@@ -600,7 +600,7 @@ PhaseStatus Compiler::fgImport()
 }
 
 //------------------------------------------------------------------------
-// fgIsThrow: Check if a tree is a call that unconditionally throws an exception.
+// fgIsThrow: Check if a tree is a helper call that unconditionally throws an exception.
 //
 // Arguments:
 //    tree - The tree to check
@@ -1462,12 +1462,13 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 //      }
 //
 //    If the lock is actually acquired, then the 'acquired' variable is set to 1
-//    by the helper call. During normal exit, the finally is called, 'acquired'
-//    is 1, and the lock is released. If an exception occurs before the lock is
-//    acquired, but within the 'try' (extremely unlikely, but possible), 'acquired'
-//    will be 0, and the monitor exit call will quickly return without attempting
-//    to release the lock. Otherwise, 'acquired' will be 1, and the lock will be
-//    released during exception processing.
+//    by the helper call. During normal exit from the 'try' block, the exit helper
+//    is executed, 'acquired' is 1, and the lock is released. If an exception occurs
+//    before the lock is acquired, but within the 'try' (extremely unlikely, but
+//    possible), 'acquired' will be 0, and the monitor exit call will quickly return
+//    without attempting to release the lock. Otherwise, 'acquired' will be 1, and
+//    the lock will be released when the fault handler runs during exception
+//    processing.
 //
 //    For synchronized methods, we generate a single return block.
 //    We can do this without creating additional "step" blocks because "ret" blocks
