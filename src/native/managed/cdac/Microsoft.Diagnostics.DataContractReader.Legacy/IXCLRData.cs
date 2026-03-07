@@ -916,6 +916,19 @@ public unsafe partial interface IXCLRDataMethodDefinition
     int HasClassOrMethodInstantiation(int* bGeneric);
 }
 
+public enum CLRDataGeneralRequest : uint
+{
+    CLRDATA_REQUEST_REVISION = 0xe0000000,
+}
+
+[Flags]
+public enum CLRDataExceptionStateFlag : uint
+{
+    CLRDATA_EXCEPTION_DEFAULT = 0,
+    CLRDATA_EXCEPTION_NESTED = 0x1,
+    CLRDATA_EXCEPTION_PARTIAL = 0x2,
+}
+
 [GeneratedComInterface]
 [Guid("75DA9E4C-BD33-43C8-8F5C-96E8A5241F57")]
 public unsafe partial interface IXCLRDataExceptionState

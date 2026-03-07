@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -47,7 +48,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            System.Diagnostics.Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
         return hr;
@@ -112,7 +113,8 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
             }
             else
             {
-                exception = new ClrDataExceptionState(_target, _address, thrownObjectHandle, legacyExceptionState);
+                Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
+                exception = new ClrDataExceptionState(_target, _address, (uint)CLRDataExceptionStateFlag.CLRDATA_EXCEPTION_DEFAULT, thrownObjectHandle, threadData.FirstNestedException, legacyExceptionState);
             }
         }
         catch (System.Exception ex)
@@ -122,7 +124,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            System.Diagnostics.Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
         return hr;
