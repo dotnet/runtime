@@ -9,8 +9,14 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
 
     private enum CCWFlags
     {
+        IsAggregated = 0x1,
+        IsExtendsCom = 0x2,
         IsHandleWeak = 0x4,
     }
+
+    // CLEANUP_SENTINEL is bit 31 of m_llRefCount; when set the CCW is neutered.
+    // Mirrors SimpleComCallWrapper::CLEANUP_SENTINEL in src/coreclr/vm/comcallablewrapper.h
+    private const ulong CleanupSentinel = 0x80000000UL;
 
     // Mirrors enum Masks in src/coreclr/vm/comcallablewrapper.h
     private enum ComMethodTableFlags : ulong
@@ -45,6 +51,55 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
         Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
         Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
         return (simpleWrapper.Flags & (uint)CCWFlags.IsHandleWeak) != 0;
+    }
+
+    public bool IsNeutered(TargetPointer address)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
+        Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+        return (simpleWrapper.RefCount & CleanupSentinel) != 0;
+    }
+
+    public bool IsExtendsCOMObject(TargetPointer address)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
+        Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+        return (simpleWrapper.Flags & (uint)CCWFlags.IsExtendsCom) != 0;
+    }
+
+    public bool IsAggregated(TargetPointer address)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(address);
+        Data.SimpleComCallWrapper simpleWrapper = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+        return (simpleWrapper.Flags & (uint)CCWFlags.IsAggregated) != 0;
+    }
+
+    // See ClrDataAccess::GetCCWData in src/coreclr/debug/daccess/request.cpp.
+    // ccw must be a ComCallWrapper address; resolve COM interface pointers first via GetCCWFromInterfacePointer.
+    public TargetPointer GetCCWAddress(TargetPointer ccw) => NavigateToStartWrapper(ccw);
+
+    public TargetPointer GetCCWHandle(TargetPointer ccw)
+    {
+        TargetPointer startCCW = NavigateToStartWrapper(ccw);
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(startCCW);
+        return wrapper.Handle;
+    }
+
+    public TargetPointer GetOuterIUnknown(TargetPointer ccw)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
+        Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+        return sccw.OuterIUnknown;
+    }
+
+    // Navigates to the start of the ComCallWrapper chain.
+    // Mirrors ComCallWrapper::GetStartWrapper: unconditionally follows SimpleWrapper→MainWrapper,
+    // which always returns the canonical start wrapper (for the start itself, it returns itself).
+    private TargetPointer NavigateToStartWrapper(TargetPointer ccw)
+    {
+        Data.ComCallWrapper wrapper = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
+        Data.SimpleComCallWrapper sccw = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(wrapper.SimpleWrapper);
+        return sccw.MainWrapper;
     }
 
     // See ClrDataAccess::DACGetCCWFromAddress in src/coreclr/debug/daccess/request.cpp.
@@ -99,12 +154,7 @@ internal readonly struct BuiltInCOM_1 : IBuiltInCOM
     public IEnumerable<COMInterfacePointerData> GetCCWInterfaces(TargetPointer ccw)
     {
         // Navigate to the start of the linked chain, mirroring ComCallWrapper::GetStartWrapper in the runtime.
-        Data.ComCallWrapper firstCheck = _target.ProcessedData.GetOrAdd<Data.ComCallWrapper>(ccw);
-        if (firstCheck.Next != TargetPointer.Null)
-        {
-            Data.SimpleComCallWrapper sccwFirst = _target.ProcessedData.GetOrAdd<Data.SimpleComCallWrapper>(firstCheck.SimpleWrapper);
-            ccw = sccwFirst.MainWrapper;
-        }
+        ccw = NavigateToStartWrapper(ccw);
 
         ulong comMethodTableSize = _target.GetTypeInfo(DataType.ComMethodTable).Size!.Value;
         int pointerSize = _target.PointerSize;

@@ -1046,6 +1046,7 @@ private:
 template<>
 struct cdac_data<ComCallWrapper>
 {
+    static constexpr size_t Handle = offsetof(ComCallWrapper, m_ppThis);
     static constexpr size_t SimpleWrapper = offsetof(ComCallWrapper, m_pSimpleWrapper);
     static constexpr size_t IPtr = offsetof(ComCallWrapper, m_rgpIPtr);
     static constexpr size_t Next = offsetof(ComCallWrapper, m_pNext);
@@ -1623,6 +1624,7 @@ private:
 template<>
 struct cdac_data<SimpleComCallWrapper>
 {
+    static constexpr size_t OuterIUnknown = offsetof(SimpleComCallWrapper, m_pOuter);
     static constexpr size_t RefCount = offsetof(SimpleComCallWrapper, m_llRefCount);
     static constexpr size_t Flags = offsetof(SimpleComCallWrapper, m_flags);
     static constexpr size_t MainWrapper = offsetof(SimpleComCallWrapper, m_pWrap);
