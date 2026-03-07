@@ -107,10 +107,16 @@ namespace System.Reflection.Context.Tests
                 Module module = _customAssembly.GetModule(moduleName);
                 Assert.NotNull(module);
             }
-            else
+            else if (PlatformDetection.IsNativeAot)
             {
                 // On native AOT, Module.Name returns "<Unknown>" and GetModule with that name returns null
                 Assert.Equal("<Unknown>", moduleName);
+            }
+            else
+            {
+                // On browser-wasm, HasAssemblyFiles is false but Module.Name still returns the real name
+                Module module = _customAssembly.GetModule(moduleName);
+                Assert.NotNull(module);
             }
         }
 
