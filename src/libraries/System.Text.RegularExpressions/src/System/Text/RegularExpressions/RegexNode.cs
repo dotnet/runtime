@@ -466,7 +466,7 @@ namespace System.Text.RegularExpressions
             for (int i = 0, childCount = ChildCount(); i < childCount; i++)
             {
                 Child(i).FinalReduce();
-                ReplaceChild(i, Child(i)); // ReplaceChild reduces the node in place
+                ReplaceChild(i, Child(i)); // ReplaceChild runs Reduce on the child
             }
         }
 
