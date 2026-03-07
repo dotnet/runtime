@@ -2600,7 +2600,7 @@ namespace Internal.JitInterface
 
             MethodDesc contextMethod = callerHandle;
 
-            // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup.
+            // There is a pathological case where invalid IL references __Canon type directly, but there is no dictionary available to store the lookup.
             if (!contextMethod.IsSharedByGenericInstantiations)
             {
                 ThrowHelper.ThrowInvalidProgramException();
@@ -2632,11 +2632,12 @@ namespace Internal.JitInterface
                     break;
 
                 case DictionaryEntryKind.MethodDescSlot:
+                case DictionaryEntryKind.DevirtualizedMethodDescSlot:
                 case DictionaryEntryKind.MethodEntrySlot:
                 case DictionaryEntryKind.ConstrainedMethodEntrySlot:
                 case DictionaryEntryKind.DispatchStubAddrSlot:
                 {
-                    if (entryKind == DictionaryEntryKind.MethodDescSlot)
+                    if (entryKind == DictionaryEntryKind.MethodDescSlot || entryKind == DictionaryEntryKind.DevirtualizedMethodDescSlot)
                     {
                         helperId = ReadyToRunHelperId.MethodHandle;
                     }
@@ -2664,17 +2665,27 @@ namespace Internal.JitInterface
                     throw new NotImplementedException(entryKind.ToString());
             }
 
-            object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-            if (helperArg is MethodDesc methodDesc)
+            object helperArg;
+            if (entryKind == DictionaryEntryKind.DevirtualizedMethodDescSlot)
             {
-                var methodIL = HandleToObject(pResolvedToken.tokenScope);
-                MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
+                Debug.Assert(templateMethod != null);
+                _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, templateMethod);
+                helperArg = ComputeMethodWithToken(templateMethod, ref pResolvedToken, constrainedType: null, unboxing: false);
             }
-            else if (helperArg is FieldDesc fieldDesc)
+            else
             {
-                helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
+                helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                if (helperArg is MethodDesc methodDesc)
+                {
+                    var methodIL = HandleToObject(pResolvedToken.tokenScope);
+                    MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                    _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
+                    helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
+                }
+                else if (helperArg is FieldDesc fieldDesc)
+                {
+                    helperArg = new FieldWithToken(fieldDesc, HandleToModuleToken(ref pResolvedToken));
+                }
             }
 
             var methodContext = new GenericContext(callerHandle);
