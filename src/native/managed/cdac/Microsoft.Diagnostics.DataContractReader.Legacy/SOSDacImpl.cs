@@ -4874,14 +4874,13 @@ public sealed unsafe partial class SOSDacImpl
         => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeapNames(count, ppNames, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
         => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, count, pLoaderHeaps, pKinds, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface13.GetHandleTableMemoryRegions(out ISOSMemoryEnum? ppEnum)
+    int ISOSDacInterface13.GetHandleTableMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
     {
-        ppEnum = null;
         int hr = HResults.S_OK;
         try
         {
             IReadOnlyList<GCMemoryRegionData> regions = _target.Contracts.GC.GetHandleTableMemoryRegions();
-            ppEnum = new SOSMemoryEnum(_target, regions);
+            ppEnum.Interface = new SOSMemoryEnum(_target, regions);
         }
         catch (System.Exception e)
         {
@@ -4891,20 +4890,20 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl13 is not null)
         {
-            int hrLocal = _legacyImpl13.GetHandleTableMemoryRegions(out _);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            DacComNullableByRef<ISOSMemoryEnum> legacyOut = new(isNullRef: false);
+            int hrLocal = _legacyImpl13.GetHandleTableMemoryRegions(legacyOut);
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
         return hr;
     }
-    int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(out ISOSMemoryEnum? ppEnum)
+    int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
     {
-        ppEnum = null;
         int hr = HResults.S_OK;
         try
         {
             IReadOnlyList<GCMemoryRegionData> regions = _target.Contracts.GC.GetGCBookkeepingMemoryRegions();
-            ppEnum = new SOSMemoryEnum(_target, regions);
+            ppEnum.Interface = new SOSMemoryEnum(_target, regions);
         }
         catch (System.Exception e)
         {
@@ -4914,20 +4913,20 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl13 is not null)
         {
-            int hrLocal = _legacyImpl13.GetGCBookkeepingMemoryRegions(out _);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            DacComNullableByRef<ISOSMemoryEnum> legacyOut = new(isNullRef: false);
+            int hrLocal = _legacyImpl13.GetGCBookkeepingMemoryRegions(legacyOut);
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
         return hr;
     }
-    int ISOSDacInterface13.GetGCFreeRegions(out ISOSMemoryEnum? ppEnum)
+    int ISOSDacInterface13.GetGCFreeRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
     {
-        ppEnum = null;
         int hr = HResults.S_OK;
         try
         {
             IReadOnlyList<GCMemoryRegionData> regions = _target.Contracts.GC.GetGCFreeRegions();
-            ppEnum = new SOSMemoryEnum(_target, regions);
+            ppEnum.Interface = new SOSMemoryEnum(_target, regions);
         }
         catch (System.Exception e)
         {
@@ -4937,8 +4936,9 @@ public sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl13 is not null)
         {
-            int hrLocal = _legacyImpl13.GetGCFreeRegions(out _);
-            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            DacComNullableByRef<ISOSMemoryEnum> legacyOut = new(isNullRef: false);
+            int hrLocal = _legacyImpl13.GetGCFreeRegions(legacyOut);
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
         return hr;
