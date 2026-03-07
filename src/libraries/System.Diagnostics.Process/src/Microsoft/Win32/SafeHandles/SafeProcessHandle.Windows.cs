@@ -88,14 +88,34 @@ namespace Microsoft.Win32.SafeHandles
 
         private static SafeProcessHandle StartCore(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended)
         {
-            ProcessUtils.s_processStartLock.EnterReadLock();
+            // When any InheritedHandles are provided, we modify them
+            // by enabling and later disabling the inheritance.
+            // This requires a writer lock.
+            bool writeLock = options.HasInheritedHandles;
+
+            if (writeLock)
+            {
+                ProcessUtils.s_processStartLock.EnterWriteLock();
+            }
+            else
+            {
+                ProcessUtils.s_processStartLock.EnterReadLock();
+            }
+
             try
             {
                 return StartCoreSerialized(options, inputHandle, outputHandle, errorHandle, createSuspended);
             }
             finally
             {
-                ProcessUtils.s_processStartLock.ExitReadLock();
+                if (writeLock)
+                {
+                    ProcessUtils.s_processStartLock.ExitWriteLock();
+                }
+                else
+                {
+                    ProcessUtils.s_processStartLock.ExitReadLock();
+                }
             }
         }
 
