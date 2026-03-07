@@ -394,14 +394,26 @@ public:
         {
             OBJECTHANDLE* elements = m_pJitHandles->GetElements();
             unsigned count = m_pJitHandles->GetCount();
+#ifdef _DEBUG
+            // Slow O(n²) check for duplicate handles, which would lead to a double-free.
+            for (unsigned i = 0; i < count; i++)
+            {
+                for (unsigned j = i + 1; j < count; j++)
+                {
+                    _ASSERTE("Duplicate handle in m_pJitHandles detected - this would cause a double-free." && elements[i] != elements[j]);
+                }
+            }
+#endif // _DEBUG
             for (unsigned i = 0; i < count; i++)
             {
                 DestroyHandle(elements[i]);
             }
             delete m_pJitHandles;
+            m_pJitHandles = nullptr;
         }
 
         delete m_transientDetails;
+        m_transientDetails = nullptr;
 #endif
     }
 
