@@ -202,6 +202,8 @@ static bool set_column_size_for_max_row_count(mdeditor_t* editor, mdtable_t* tab
     assert((mdtid_First <= updated_table && updated_table <= mdtid_End) || (updated_table == mdtid_Unused && (ExtractHeapType(updated_heap) != 0)));
     mdtcol_t new_column_details[MDTABLE_MAX_COLUMN_COUNT];
 
+    bool is_minimal_delta = (editor->cxt->context_flags & mdc_minimal_delta) == mdc_minimal_delta;
+
     uint32_t initial_row_count;
     if (updated_table != mdtid_Unused)
     {
@@ -269,7 +271,14 @@ static bool set_column_size_for_max_row_count(mdeditor_t* editor, mdtable_t* tab
         }
         else if ((col_details & mdtc_b4) && new_max_column_value <= UINT16_MAX)
         {
-            new_column_details[col_index] = (col_details & ~mdtc_b4) | mdtc_b2;
+            // In minimal delta images, table or coded index columns are always 4 bytes wide.
+            // They are not affected by the table's row count.
+            bool is_table_or_coded_index = ((col_details & mdtc_idx_table) == mdtc_idx_table)
+                                        || ((col_details & mdtc_idx_coded) == mdtc_idx_coded);
+            if (!is_minimal_delta || !is_table_or_coded_index)
+            {
+                new_column_details[col_index] = (col_details & ~mdtc_b4) | mdtc_b2;
+            }
         }
     }
 
