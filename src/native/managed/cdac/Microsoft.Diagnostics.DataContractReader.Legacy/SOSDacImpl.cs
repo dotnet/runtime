@@ -3897,7 +3897,7 @@ public sealed unsafe partial class SOSDacImpl
 
             Contracts.ILoader loader = _target.Contracts.Loader;
             TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
-            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
+            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr, Contracts.LoaderHeapKind.Normal);
             TargetPointer firstBlock = block;
             int i = 0;
             while (block != TargetPointer.Null && i++ < iterationMax)
@@ -4966,13 +4966,11 @@ public sealed unsafe partial class SOSDacImpl
         {
             if (loaderHeapAddr == 0 || pCallback is null)
                 throw new ArgumentException();
-            if (kind != (int)Contracts.LoaderHeapKind.Normal && kind != (int)Contracts.LoaderHeapKind.ExplicitControl)
-                throw new NotImplementedException();
             int iterationMax = 8192;
 
             Contracts.ILoader loader = _target.Contracts.Loader;
             TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
-            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
+            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr, (Contracts.LoaderHeapKind)kind);
             TargetPointer firstBlock = block;
             int i = 0;
             while (block != TargetPointer.Null && i++ < iterationMax)
