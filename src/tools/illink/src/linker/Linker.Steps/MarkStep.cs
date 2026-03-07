@@ -1462,7 +1462,7 @@ namespace Mono.Linker.Steps
             return !Annotations.SetProcessed(provider);
         }
 
-        public void MarkAssembly(AssemblyDefinition assembly, DependencyInfo reason, MessageOrigin origin)
+        public virtual void MarkAssembly(AssemblyDefinition assembly, DependencyInfo reason, MessageOrigin origin)
         {
             Annotations.Mark(assembly, reason, origin);
             if (CheckProcessed(assembly))
