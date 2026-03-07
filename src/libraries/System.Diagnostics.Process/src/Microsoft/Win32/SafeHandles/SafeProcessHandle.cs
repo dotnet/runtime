@@ -244,10 +244,10 @@ namespace Microsoft.Win32.SafeHandles
         /// <returns>
         /// <c>true</c> if the process group was terminated; <c>false</c> if the process had already exited.
         /// </returns>
-        /// <exception cref="InvalidOperationException">Thrown when the handle is invalid or the process was not started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/>.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the handle is invalid. On Windows, thrown when the process was not started with <see cref="ProcessStartOptions.CreateNewProcessGroup"/>.</exception>
         /// <exception cref="Win32Exception">Thrown when the kill operation fails for reasons other than the process having already exited.</exception>
         /// <remarks>
-        /// On Windows, it kills not just the process group, but all descendants of the process.
+        /// On Windows, this API provides best-effort simulation of Unix process groups using an anonymous Windows job object. The process must be started with `<see cref="ProcessStartOptions.CreateNewProcessGroup"/>` to enable it. All processes that inherited the Windows job object are killed.
         /// </remarks>
         internal bool KillProcessGroup()
         {
@@ -292,7 +292,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <list type="bullet">
         /// <item><description>
         /// <see cref="PosixSignal.SIGINT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_C_EVENT)</c>.
-        /// The root process of the process group must <see href="https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw#remarks">re-enable of this handler in order to receinve this signal.</see>
+        /// The root process of the process group must <see href="https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw#remarks">re-enable the handler in order to receive this signal.</see>
         /// </description></item>
         /// <item><description><see cref="PosixSignal.SIGQUIT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT)</c>.</description></item>
         /// <item><description><see cref="PosixSignal.SIGKILL"/> is mapped to <see cref="Kill"/>.</description></item>
@@ -326,7 +326,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <list type="bullet">
         /// <item><description>
         /// <see cref="PosixSignal.SIGINT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_C_EVENT)</c>.
-        /// The root process of the process group must <see href="https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw#remarks">re-enable of this handler in order to receinve this signal.</see>
+        /// The root process of the process group must <see href="https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw#remarks">re-enable the handler in order to receive this signal.</see>
         /// </description></item>
         /// <item><description><see cref="PosixSignal.SIGQUIT"/> is mapped to <c>GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT)</c>.</description></item>
         /// <item><description><see cref="PosixSignal.SIGKILL"/> is mapped to <see cref="Kill"/>.</description></item>
