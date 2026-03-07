@@ -38,9 +38,9 @@ namespace Microsoft.Win32.SafeHandles
             || AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
 
         // not using bool? as it's not thread safe
-        private volatile NullableBool _canSeek = NullableBool.Undefined;
-        private volatile NullableBool _supportsRandomAccess = NullableBool.Undefined;
-        private volatile NullableBool _isAsync = NullableBool.Undefined;
+        private volatile NullableBool _canSeek /* = NullableBool.Undefined */;
+        private volatile NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
+        private volatile NullableBool _isAsync /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
         private bool _isLocked;
 
@@ -180,18 +180,18 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static unsafe partial void CreateAnonymousPipeCore(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        public static unsafe partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
         {
             int* fds = stackalloc int[2];
             Interop.Sys.PipeFlags flags = Interop.Sys.PipeFlags.O_CLOEXEC;
             if (asyncRead)
             {
-                flags |= Interop.Sys.PipeFlags.AsyncReads;
+                flags |= Interop.Sys.PipeFlags.O_ASYNC_READ;
             }
 
             if (asyncWrite)
             {
-                flags |= Interop.Sys.PipeFlags.AsyncWrites;
+                flags |= Interop.Sys.PipeFlags.O_ASYNC_WRITE;
             }
 
             if (Interop.Sys.Pipe(fds, flags) != 0)
@@ -200,14 +200,30 @@ namespace Microsoft.Win32.SafeHandles
                 throw Interop.GetExceptionForIoErrno(error);
             }
 
-            readHandle = new SafeFileHandle();
-            writeHandle = new SafeFileHandle();
+            int readFd = fds[Interop.Sys.ReadEndOfPipe];
+            int writeFd = fds[Interop.Sys.WriteEndOfPipe];
 
-            readHandle.SetHandle(new IntPtr(fds[Interop.Sys.ReadEndOfPipe]));
-            writeHandle.SetHandle(new IntPtr(fds[Interop.Sys.WriteEndOfPipe]));
+            SafeFileHandle? tempReadHandle = null;
+            SafeFileHandle? tempWriteHandle = null;
+            try
+            {
+                tempReadHandle = new SafeFileHandle((IntPtr)readFd, ownsHandle: true);
+                tempWriteHandle = new SafeFileHandle((IntPtr)writeFd, ownsHandle: true);
 
-            readHandle.IsAsync = asyncRead;
-            writeHandle.IsAsync = asyncWrite;
+                tempReadHandle.IsAsync = asyncRead;
+                tempWriteHandle.IsAsync = asyncWrite;
+
+                readHandle = tempReadHandle;
+                writeHandle = tempWriteHandle;
+
+                tempReadHandle = null;
+                tempWriteHandle = null;
+            }
+            finally
+            {
+                tempReadHandle?.Dispose();
+                tempWriteHandle?.Dispose();
+            }
         }
 
         // Specialized Open that returns the file length and permissions of the opened file.
@@ -578,7 +594,7 @@ namespace Microsoft.Win32.SafeHandles
             return status.Size;
         }
 
-        private enum NullableBool
+        private enum NullableBool : sbyte
         {
             Undefined = 0,
             False = -1,

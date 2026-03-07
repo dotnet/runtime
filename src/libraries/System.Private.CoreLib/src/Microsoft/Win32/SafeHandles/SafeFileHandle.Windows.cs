@@ -22,65 +22,85 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
-        private static unsafe partial void CreateAnonymousPipeCore(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        public static unsafe partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
-
-            // When neither end is async, use the simple CreatePipe API
-            if (!asyncRead && !asyncWrite)
-            {
-                bool ret = Interop.Kernel32.CreatePipe(out readHandle, out writeHandle, ref securityAttributes, 0);
-                if (!ret || readHandle.IsInvalid || writeHandle.IsInvalid)
-                {
-                    throw new Win32Exception();
-                }
-
-                readHandle._fileOptions = FileOptions.None;
-                writeHandle._fileOptions = FileOptions.None;
-                return;
-            }
-
-            // When one or both ends are async, use named pipes to support async I/O.
-            string pipeName = $@"\\.\pipe\{Guid.NewGuid()}";
-
-            // Security: we don't need to specify a security descriptor, because
-            // we allow only for 1 instance of the pipe and immediately open the write end,
-            // so there is no time window for another process to open the pipe with different permissions.
-            // Even if that happens, we are going to fail to open the write end and throw an exception, so there is no security risk.
-
-            // Determine the open mode for the read end
-            int openMode = (int)Interop.Kernel32.PipeOptions.PIPE_ACCESS_INBOUND |
-                           Interop.Kernel32.FileOperations.FILE_FLAG_FIRST_PIPE_INSTANCE; // Only one can be created with this name
-
-            if (asyncRead)
-            {
-                openMode |= Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED; // Asynchronous I/O
-            }
-
-            int pipeMode = (int)(Interop.Kernel32.PipeOptions.PIPE_TYPE_BYTE | // the alternative would be to use "Message"
-                                 Interop.Kernel32.PipeOptions.PIPE_READMODE_BYTE); // Data is read from the pipe as a stream of bytes
-
-            // We could consider specifying a larger buffer size.
-            readHandle = Interop.Kernel32.CreateNamedPipeFileHandle(pipeName, openMode, pipeMode, 1, 0, 0, 0, ref securityAttributes);
-
-            if (readHandle.IsInvalid)
-            {
-                throw new Win32Exception();
-            }
+            SafeFileHandle? tempReadHandle = null;
+            SafeFileHandle? tempWriteHandle = null;
 
             try
             {
-                FileOptions writeOptions = asyncWrite ? FileOptions.Asynchronous : FileOptions.None;
-                writeHandle = Open(pipeName, FileMode.Open, FileAccess.Write, FileShare.Read, writeOptions, preallocationSize: 0);
-            }
-            catch
-            {
-                readHandle.Dispose();
-                throw;
-            }
+                // When neither end is async, use the simple CreatePipe API
+                if (!asyncRead && !asyncWrite)
+                {
+                    bool ret = Interop.Kernel32.CreatePipe(out tempReadHandle, out tempWriteHandle, ref securityAttributes, 0);
+                    if (!ret)
+                    {
+                        throw new Win32Exception();
+                    }
 
-            readHandle._fileOptions = asyncRead ? FileOptions.Asynchronous : FileOptions.None;
-            writeHandle._fileOptions = asyncWrite ? FileOptions.Asynchronous : FileOptions.None;
+                    Debug.Assert(!tempReadHandle.IsInvalid);
+                    Debug.Assert(!tempWriteHandle.IsInvalid);
+
+                    if (tempReadHandle.IsInvalid || tempWriteHandle.IsInvalid)
+                    {
+                        throw new Win32Exception(Interop.Errors.ERROR_INVALID_HANDLE);
+                    }
+
+                    tempReadHandle._fileOptions = FileOptions.None;
+                    tempWriteHandle._fileOptions = FileOptions.None;
+                }
+                else
+                {
+                    // When one or both ends are async, use named pipes to support async I/O.
+                    string pipeName = $@"\\.\pipe\{Guid.NewGuid()}";
+
+                    // Security: we don't need to specify a security descriptor, because
+                    // we allow only for 1 instance of the pipe and immediately open the write end,
+                    // so there is no time window for another process to open the pipe with different permissions.
+                    // Even if that happens, we are going to fail to open the write end and throw an exception, so there is no security risk.
+
+                    // Determine the open mode for the read end
+                    int openMode = (int)Interop.Kernel32.PipeOptions.PIPE_ACCESS_INBOUND |
+                                   Interop.Kernel32.FileOperations.FILE_FLAG_FIRST_PIPE_INSTANCE; // Only one can be created with this name
+
+                    if (asyncRead)
+                    {
+                        openMode |= Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED; // Asynchronous I/O
+                    }
+
+                    int pipeMode = (int)(Interop.Kernel32.PipeOptions.PIPE_TYPE_BYTE | // the alternative would be to use "Message"
+                                         Interop.Kernel32.PipeOptions.PIPE_READMODE_BYTE); // Data is read from the pipe as a stream of bytes
+
+                    // We could consider specifying a larger buffer size.
+                    tempReadHandle = Interop.Kernel32.CreateNamedPipeFileHandle(pipeName, openMode, pipeMode, 1, 0, 0, 0, ref securityAttributes);
+
+                    if (tempReadHandle.IsInvalid)
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    FileOptions writeOptions = asyncWrite ? FileOptions.Asynchronous : FileOptions.None;
+                    tempWriteHandle = Open(pipeName, FileMode.Open, FileAccess.Write, FileShare.Read, writeOptions, preallocationSize: 0);
+
+                    tempReadHandle._fileOptions = asyncRead ? FileOptions.Asynchronous : FileOptions.None;
+                    tempWriteHandle._fileOptions = asyncWrite ? FileOptions.Asynchronous : FileOptions.None;
+                }
+
+                Debug.Assert(tempReadHandle is not null);
+                Debug.Assert(tempWriteHandle is not null);
+
+                readHandle = tempReadHandle;
+                writeHandle = tempWriteHandle;
+
+                tempReadHandle = null;
+                tempWriteHandle = null;
+            }
+            finally
+            {
+                tempReadHandle?.Dispose();
+                tempWriteHandle?.Dispose();
+            }
         }
 
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;

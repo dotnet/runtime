@@ -17,10 +17,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <param name="writeHandle">When this method returns, contains the write end of the pipe.</param>
         /// <param name="asyncRead"><see langword="true"/> to enable asynchronous operations for the read end of the pipe; otherwise, <see langword="false"/>.</param>
         /// <param name="asyncWrite"><see langword="true"/> to enable asynchronous operations for the write end of the pipe; otherwise, <see langword="false"/>.</param>
-        public static void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead = false, bool asyncWrite = false) =>
-            CreateAnonymousPipeCore(out readHandle, out writeHandle, asyncRead, asyncWrite);
-
-        private static unsafe partial void CreateAnonymousPipeCore(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite);
+        public static unsafe partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead = false, bool asyncWrite = false);
 
         /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeFileHandle" /> around a file handle.
