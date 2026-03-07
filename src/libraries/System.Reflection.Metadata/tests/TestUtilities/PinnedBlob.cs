@@ -8,7 +8,7 @@ namespace System.Reflection.Metadata.Tests
 {
     internal struct PinnedBlob : IDisposable
     {
-        private GCHandle _bytes;
+        private GCHandle _bytes; // non-readonly as Free() mutates to prevent double-free.
         private readonly byte[] _blob;
 
         public PinnedBlob(ImmutableArray<byte> blob)
@@ -35,10 +35,7 @@ namespace System.Reflection.Metadata.Tests
 
         public void Dispose()
         {
-            if (_bytes.IsAllocated)
-            {
-                _bytes.Free();
-            }
+            _bytes.Free();
         }
     }
 }
