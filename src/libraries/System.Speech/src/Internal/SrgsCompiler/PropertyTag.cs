@@ -19,10 +19,10 @@ namespace System.Speech.Internal.SrgsCompiler
 
         #region Internal Methods
         // The probability that this item will be repeated.
-        void IPropertyTag.NameValue(IElement parent, string name, object value)
+        void IPropertyTag.NameValue(IElement? parent, string? name, object? value)
         {
             //Return if the Tag content is empty
-            string sValue = value as string;
+            string? sValue = value as string;
             if (string.IsNullOrEmpty(name) && (value == null || (sValue != null && string.IsNullOrEmpty((sValue).Trim()))))
             {
                 return;

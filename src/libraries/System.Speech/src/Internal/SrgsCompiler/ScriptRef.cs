@@ -39,7 +39,7 @@ namespace System.Speech.Internal.SrgsCompiler
             streamBuffer.WriteStream(script);
         }
 
-        internal static string OnInitMethod(ScriptRef[] scriptRefs, string rule)
+        internal static string? OnInitMethod(ScriptRef[]? scriptRefs, string? rule)
         {
             if (scriptRefs != null)
             {
