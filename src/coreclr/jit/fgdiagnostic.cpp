@@ -3064,28 +3064,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(succBlock->bbTraversalStamp == curTraversalStamp);
         }
 
-        // Block that isn't BBJ_RETURN should not contain GT_RETURN node.
-        if (!block->KindIs(BBJ_RETURN))
-        {
-            for (Statement* const stmt : block->Statements())
-            {
-                GenTree* tree = stmt->GetRootNode();
-                assert(!tree->OperIs(GT_RETURN));
-            }
-        }
-
-        // If the block contains a GT_RETURN node it should be last.
-        if (block->KindIs(BBJ_RETURN))
-        {
-            for (Statement* const stmt : block->Statements())
-            {
-                GenTree* tree       = stmt->GetRootNode();
-                bool     isReturn   = tree->OperIs(GT_RETURN);
-                bool     isLastStmt = stmt->GetNextStmt() == nullptr;
-                assert(!(isReturn && !isLastStmt));
-            }
-        }
-
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
         // lowered GT_SWITCH_TABLE node then make sure it
         // ends with a conditional jump or a GT_SWITCH
@@ -3951,6 +3929,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 //    - all statements in the block are linked correctly
 //    - check statements flags
 //    - check nodes gtNext and gtPrev values, if the node list is threaded
+//    - no invalid statements given the block kind
 //
 // Arguments:
 //    block  - the block to check statements in
@@ -3985,6 +3964,22 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         else
         {
             noway_assert(block->lastStmt() == stmt);
+        }
+
+        // Block that isn't BBJ_RETURN should not contain GT_RETURN node.
+        if (!block->KindIs(BBJ_RETURN))
+        {
+            GenTree* tree = stmt->GetRootNode();
+            assert(!tree->OperIs(GT_RETURN));
+        }
+
+        // If the block contains a GT_RETURN node it should be last.
+        if (block->KindIs(BBJ_RETURN))
+        {
+            GenTree* tree          = stmt->GetRootNode();
+            bool     isReturn      = tree->OperIs(GT_RETURN);
+            bool     isNotLastStmt = stmt->GetNextStmt() != nullptr;
+            assert(!(isReturn && isNotLastStmt));
         }
 
         // For each statement check that the exception flags are properly set
