@@ -940,6 +940,11 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// True if the W3CIdFlags.RandomTraceId flag is set.
+        /// </summary>
+        public bool RandomizedTraceId { get => (ActivityTraceFlags & ActivityTraceFlags.RandomTraceId) != 0; }
+
+        /// <summary>
         /// True if the W3CIdFlags.Recorded flag is set.
         /// </summary>
         public bool Recorded { get => (ActivityTraceFlags & ActivityTraceFlags.Recorded) != 0; }
@@ -1289,7 +1294,20 @@ namespace System.Diagnostics
                 if (!TrySetTraceIdFromParent())
                 {
                     Func<ActivityTraceId>? traceIdGenerator = TraceIdGenerator;
-                    ActivityTraceId id = traceIdGenerator == null ? ActivityTraceId.CreateRandom() : traceIdGenerator();
+                    ActivityTraceId id;
+
+                    if (traceIdGenerator == null)
+                    {
+                        id = ActivityTraceId.CreateRandom();
+                        // Set RandomTraceId flag when using the default random generator
+                        ActivityTraceFlags |= ActivityTraceFlags.RandomTraceId;
+                    }
+                    else
+                    {
+                        // Using custom generator
+                        id = traceIdGenerator();
+                    }
+
                     _traceId = id.ToHexString();
                 }
             }
@@ -1872,6 +1890,7 @@ namespace System.Diagnostics
     {
         None = 0b_0_0000000,
         Recorded = 0b_0_0000001, // The Activity (or more likely its parents) has been marked as useful to record
+        RandomTraceId = 0b_0_0000010, // The Activity has a randomized TraceId
     }
 
     /// <summary>
