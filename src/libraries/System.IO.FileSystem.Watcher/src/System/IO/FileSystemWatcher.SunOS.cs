@@ -989,7 +989,7 @@ namespace System.IO
                 }
 
                 // Dissociate all files
-                foreach (var (name, watch) in _nameToWatchMap)
+                foreach (var watch in _nameToWatchMap.Values)
                 {
                     unsafe
                     {
