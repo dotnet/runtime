@@ -19,7 +19,15 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected virtual bool IsVisibleFromManagedCode => true;
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            if (factory.Target.IsWasm)
+            {
+                return ObjectNodeSection.ReadOnlyDataSection;
+            }
+
+            return ObjectNodeSection.TextSection;
+        }
 
         public override bool StaticDependenciesAreComputed => true;
 

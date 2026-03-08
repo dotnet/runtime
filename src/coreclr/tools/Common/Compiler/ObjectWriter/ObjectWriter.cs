@@ -386,7 +386,7 @@ namespace ILCompiler.ObjectWriter
                 // TODO-WASM: emit symbol ranges properly when code and data are separated
                 // Right now we still need to determine placements for some traditionally text-placed nodes,
                 // such as DebugDirectoryEntryNode and AssemblyStubNode
-                if (depNode is ISymbolRangeNode symbolRange && LayoutMode == CodeDataLayout.Unified)
+                if (depNode is ISymbolRangeNode symbolRange)
                 {
                     symbolRangeNodes.Add(symbolRange);
                     continue;
@@ -457,11 +457,6 @@ namespace ILCompiler.ObjectWriter
                     // body will be emitted by the call to EmitData() at the end
                     // of this loop iteration.
                     RecordMethodDeclaration((ISymbolDefinitionNode)node, methodNode.Method);
-                }
-                else if (node is AssemblyStubNode && LayoutMode is CodeDataLayout.Separate)
-                {
-                    // TODO-WASM: handle AssemblyStubNode properly here instead of skipping
-                    continue;
                 }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
@@ -572,7 +567,8 @@ namespace ILCompiler.ObjectWriter
                 if (startNode is null)
                 {
                     // Emit empty symbol ranges as an empty symbol at the end of the text section.
-                    var writer = GetOrCreateSection(ObjectNodeSection.TextSection);
+                    var writer = _nodeFactory.Target.IsWasm ? GetOrCreateSection(ObjectNodeSection.ReadOnlyDataSection) :
+                        GetOrCreateSection(ObjectNodeSection.TextSection);
                     writer.EmitSymbolDefinition(GetMangledName(range));
                     continue;
                 }
