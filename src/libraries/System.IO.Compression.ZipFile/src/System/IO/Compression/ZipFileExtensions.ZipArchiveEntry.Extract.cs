@@ -110,12 +110,20 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationFileName);
 
+            long preallocationSize = 0;
+            try
+            {
+                preallocationSize = source.Length;
+            }
+            catch (InvalidOperationException) { }
+
             fileStreamOptions = new()
             {
                 Access = FileAccess.Write,
                 Mode = overwrite ? FileMode.Create : FileMode.CreateNew,
                 Share = FileShare.None,
                 BufferSize = ZipFile.FileStreamBufferSize,
+                PreallocationSize = preallocationSize,
                 Options = useAsync ? FileOptions.Asynchronous : FileOptions.None
             };
 
