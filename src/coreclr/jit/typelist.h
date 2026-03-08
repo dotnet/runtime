@@ -54,6 +54,8 @@ DEF_TP(ULONG   ,"ulong"   , TYP_LONG,    8,EPS,EPS,   2, 8, VTR_INT,   available
 DEF_TP(FLOAT   ,"float"   , TYP_FLOAT,   4,  4,  4,   1, 4, VTR_FLOAT, availableFloatRegs,  RBM_FLT_CALLEE_SAVED,    RBM_FLT_CALLEE_TRASH,    VTF_FLT)
 DEF_TP(DOUBLE  ,"double"  , TYP_DOUBLE,  8,  8,  8,   2, 8, VTR_FLOAT, availableDoubleRegs, RBM_FLT_CALLEE_SAVED,    RBM_FLT_CALLEE_TRASH,    VTF_FLT)
 
+DEF_TP(HALF    ,"half"    , TYP_HALF,   2,  2,  2,   1, 2, VTR_FLOAT, availableFloatRegs,  RBM_FLT_CALLEE_SAVED,    RBM_FLT_CALLEE_TRASH,     VTF_S)
+
 DEF_TP(REF     ,"ref"     , TYP_REF,     PS,GCS,GCS, PST,PS,VTR_INT,   availableIntRegs,    RBM_INT_CALLEE_SAVED,    RBM_INT_CALLEE_TRASH,    VTF_ANY|VTF_GCR|VTF_I)
 DEF_TP(BYREF   ,"byref"   , TYP_BYREF,   PS,BRS,BRS, PST,PS,VTR_INT,   availableIntRegs,    RBM_INT_CALLEE_SAVED,    RBM_INT_CALLEE_TRASH,    VTF_ANY|VTF_BYR|VTF_I)
 DEF_TP(STRUCT  ,"struct"  , TYP_STRUCT,  0,  0,  0,   1, 4, VTR_INT,   availableIntRegs,    RBM_INT_CALLEE_SAVED,    RBM_INT_CALLEE_TRASH,    VTF_S)
