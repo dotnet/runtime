@@ -1134,6 +1134,53 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, IndexOfMax([ConvertFromSingle(-1),  ConvertFromSingle(-0f)]));
             Assert.Equal(2, IndexOfMax([ConvertFromSingle(-1),  ConvertFromSingle(-0f), ConvertFromSingle(1f)]));
         }
+
+#if !SNT_NET8_TESTS
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        public void IndexOfMax_NoIntegerOverflow()
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                byte[] data = new byte[258];
+                for (int i = 0; i < data.Length; i++)
+                {
+                    data[i] = (byte)(i % 256);
+                }
+                data[257] = 255;
+                Assert.Equal(257, TensorPrimitives.IndexOfMax<byte>(data));
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                sbyte[] data = new sbyte[258];
+                for (int i = 0; i < data.Length; i++)
+                {
+                    data[i] = (sbyte)((i % 256) - 128);
+                }
+                data[257] = 127;
+                Assert.Equal(257, TensorPrimitives.IndexOfMax<sbyte>(data));
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                short[] data = new short[32770];
+                for (int i = 0; i < data.Length; i++)
+                {
+                    data[i] = (short)(i % 32768);
+                }
+                data[32769] = 32767;
+                Assert.Equal(32769, TensorPrimitives.IndexOfMax<short>(data));
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                ushort[] data = new ushort[65538];
+                for (int i = 0; i < data.Length; i++)
+                {
+                    data[i] = (ushort)(i % 65536);
+                }
+                data[65537] = 65535;
+                Assert.Equal(65537, TensorPrimitives.IndexOfMax<ushort>(data));
+            }
+        }
+#endif
         #endregion
 
         #region IndexOfMaxMagnitude
