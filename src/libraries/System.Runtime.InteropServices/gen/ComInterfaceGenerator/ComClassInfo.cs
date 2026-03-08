@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Microsoft.Interop
 {
@@ -23,7 +24,7 @@ namespace Microsoft.Interop
             ImplementedInterfacesNames = implementedInterfacesNames;
         }
 
-        public static ComClassInfo? TryGetFrom(INamedTypeSymbol type, ClassDeclarationSyntax syntax)
+        public static ComClassInfo? TryGetFrom(INamedTypeSymbol type, ClassDeclarationSyntax syntax, Compilation compilation)
         {
             if (!syntax.IsInPartialContext(out _))
             {
@@ -31,9 +32,10 @@ namespace Microsoft.Interop
             }
 
             ImmutableArray<string>.Builder names = ImmutableArray.CreateBuilder<string>();
+            INamedTypeSymbol? generatedComInterfaceAttributeType = compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComInterfaceAttribute);
             foreach (INamedTypeSymbol iface in type.AllInterfaces)
             {
-                AttributeData? generatedComInterfaceAttribute = iface.GetAttributes().FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute);
+                AttributeData? generatedComInterfaceAttribute = iface.GetAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generatedComInterfaceAttributeType));
                 if (generatedComInterfaceAttribute is not null)
                 {
                     var attributeData = GeneratedComInterfaceCompilationData.GetDataFromAttribute(generatedComInterfaceAttribute);

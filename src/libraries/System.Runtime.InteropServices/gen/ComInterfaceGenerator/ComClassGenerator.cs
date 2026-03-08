@@ -28,7 +28,8 @@ namespace Microsoft.Interop
                     {
                         var type = (INamedTypeSymbol)context.TargetSymbol;
                         var syntax = (ClassDeclarationSyntax)context.TargetNode;
-                        return ComClassInfo.TryGetFrom(type, syntax);
+                        var compilation = context.SemanticModel.Compilation;
+                        return ComClassInfo.TryGetFrom(type, syntax, compilation);
                     })
                 .Combine(unsafeCodeIsEnabled)
                 .Where(static data => data.Left is not null && data.Right)
