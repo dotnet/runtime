@@ -729,8 +729,8 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     m_compiler->fgSetStmtSeq(m_thenOperation.stmt);
 
     // Replace JTRUE with STORE(SELECT)/RETURN(SELECT) statement
+    m_compiler->fgInsertStmtBefore(m_startBlock, m_startBlock->lastStmt(), m_thenOperation.stmt);
     m_compiler->fgRemoveStmt(m_startBlock, m_startBlock->lastStmt());
-    m_compiler->fgInsertStmtAtEnd(m_startBlock, m_thenOperation.stmt);
     m_thenOperation.block->SetFirstStmt(nullptr);
 
     BasicBlock* falseBb = m_startBlock->GetFalseTarget();
