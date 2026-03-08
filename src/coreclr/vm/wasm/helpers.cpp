@@ -722,7 +722,7 @@ namespace
     }
 }
 
-void* GetCookieForCalliSig(MetaSig metaSig)
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -761,7 +761,7 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
 void InvokeManagedMethod(ManagedMethodParam *pParam)
 {
     MetaSig sig(pParam->pMD);
-    void* cookie = GetCookieForCalliSig(sig);
+    void* cookie = GetCookieForCalliSig(sig, pParam->pMD);
 
     _ASSERTE(cookie != NULL);
 

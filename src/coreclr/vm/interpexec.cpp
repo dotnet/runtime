@@ -503,6 +503,7 @@ void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
     // copied to a local buffer before we can actually set their target address.
     CallStubHeader* stubHeaderTemplate = (CallStubHeader*)cookie;
+
     size_t templateSize = stubHeaderTemplate->GetSize();
     uint8_t* actualCallStub = (uint8_t*)alloca(templateSize);
     memcpy(actualCallStub, stubHeaderTemplate, templateSize);
@@ -548,12 +549,12 @@ void InvokeCalliStub(CalliStubParam* pParam)
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
 }
 
-void* GetCookieForCalliSig(MetaSig metaSig)
+void* GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
 {
     STANDARD_VM_CONTRACT;
 
     CallStubGenerator callStubGenerator;
-    return callStubGenerator.GenerateCallStubForSig(metaSig);
+    return callStubGenerator.GenerateCallStubForSig(metaSig, pContextMD);
 }
 
 // Create call stub for calling interpreted methods from JITted/AOTed code.
