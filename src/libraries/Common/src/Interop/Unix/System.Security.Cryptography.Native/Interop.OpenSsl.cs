@@ -346,7 +346,7 @@ internal static partial class Interop
         }
 
         // This essentially wraps SSL* SSL_new()
-        internal static SafeSslHandle AllocateSslHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        internal static SafeSslHandle AllocateSslHandle(SslAuthenticationOptions sslAuthenticationOptions, int socketFd = -1, bool enableKtls = true)
         {
             SafeSslHandle? sslHandle = null;
             bool cacheSslContext = sslAuthenticationOptions.AllowTlsResume && !SslStream.DisableTlsResume && sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.RequireEncryption && sslAuthenticationOptions.CipherSuitesPolicy == null;
@@ -391,7 +391,9 @@ internal static partial class Interop
             GCHandle alpnHandle = default;
             try
             {
-                sslHandle = SafeSslHandle.Create(sslCtxHandle, sslAuthenticationOptions.IsServer);
+                sslHandle = socketFd >= 0
+                    ? SafeSslHandle.CreateForKtls(sslCtxHandle, sslAuthenticationOptions.IsServer, socketFd, enableKtls)
+                    : SafeSslHandle.Create(sslCtxHandle, sslAuthenticationOptions.IsServer);
                 Debug.Assert(sslHandle != null, "Expected non-null return value from SafeSslHandle.Create");
                 if (sslHandle.IsInvalid)
                 {
@@ -1029,7 +1031,7 @@ internal static partial class Interop
             }
         }
 
-        private static Exception? GetSslError(int result, Ssl.SslErrorCode retVal)
+        internal static Exception? GetSslError(int result, Ssl.SslErrorCode retVal)
         {
             Exception? innerError;
             switch (retVal)

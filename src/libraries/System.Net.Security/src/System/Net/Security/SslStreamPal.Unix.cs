@@ -250,20 +250,34 @@ namespace System.Net.Security
 
         public static SecurityStatusPal ApplyShutdownToken(SafeDeleteSslContext context)
         {
-            // Unset the quiet shutdown option initially configured.
-            Interop.Ssl.SslSetQuietShutdown((SafeSslHandle)context, 0);
+            SafeSslHandle sslHandle = (SafeSslHandle)context;
 
-            int status = Interop.Ssl.SslShutdown((SafeSslHandle)context);
+            if (sslHandle.UseKtls)
+            {
+                // With socket BIO (kTLS/DirectOpenSSL), SSL_shutdown would attempt
+                // to send/receive close_notify directly on the non-blocking socket,
+                // which fails with EAGAIN surfaced as SSL_ERROR_SYSCALL. Keep quiet
+                // shutdown enabled so SSL_shutdown just sets internal shutdown flags
+                // without doing any I/O. The TCP FIN from socket close signals the
+                // peer. No close_notify is sent in this mode.
+                Interop.Ssl.SslShutdown(sslHandle);
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            }
+
+            // Unset the quiet shutdown option initially configured.
+            Interop.Ssl.SslSetQuietShutdown(sslHandle, 0);
+
+            int status = Interop.Ssl.SslShutdown(sslHandle);
             if (status == 0)
             {
                 // Call SSL_shutdown again for a bi-directional shutdown.
-                status = Interop.Ssl.SslShutdown((SafeSslHandle)context);
+                status = Interop.Ssl.SslShutdown(sslHandle);
             }
 
             if (status == 1)
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
 
-            Interop.Ssl.SslErrorCode code = Interop.Ssl.SslGetError((SafeSslHandle)context, status);
+            Interop.Ssl.SslErrorCode code = Interop.Ssl.SslGetError(sslHandle, status);
             if (code == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ ||
                 code == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE)
             {

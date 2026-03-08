@@ -682,12 +682,15 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_get_current_cipher) \
     REQUIRED_FUNCTION(SSL_get_error) \
     REQUIRED_FUNCTION(SSL_get_ex_data) \
+    LIGHTUP_FUNCTION(SSL_get_fd) \
     REQUIRED_FUNCTION(SSL_get_finished) \
     REQUIRED_FUNCTION(SSL_get_peer_cert_chain) \
     REQUIRED_FUNCTION(SSL_get_peer_finished) \
+    LIGHTUP_FUNCTION(SSL_get_rbio) \
     REQUIRED_FUNCTION(SSL_get_servername) \
     REQUIRED_FUNCTION(SSL_get_SSL_CTX) \
     REQUIRED_FUNCTION(SSL_get_version) \
+    LIGHTUP_FUNCTION(SSL_get_wbio) \
     LIGHTUP_FUNCTION(SSL_get0_alpn_selected) \
     RENAMED_FUNCTION(SSL_get1_peer_certificate, SSL_get_peer_certificate) \
     REQUIRED_FUNCTION(SSL_get_certificate) \
@@ -709,6 +712,7 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(SSL_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
     REQUIRED_FUNCTION(SSL_set_ex_data) \
+    LIGHTUP_FUNCTION(SSL_set_fd) \
     REQUIRED_FUNCTION(SSL_set_options) \
     REQUIRED_FUNCTION(SSL_set_session) \
     REQUIRED_FUNCTION(SSL_get_session) \
@@ -1246,12 +1250,15 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_get_current_cipher SSL_get_current_cipher_ptr
 #define SSL_get_error SSL_get_error_ptr
 #define SSL_get_ex_data SSL_get_ex_data_ptr
+#define SSL_get_fd SSL_get_fd_ptr
 #define SSL_get_finished SSL_get_finished_ptr
 #define SSL_get_peer_cert_chain SSL_get_peer_cert_chain_ptr
 #define SSL_get_peer_finished SSL_get_peer_finished_ptr
+#define SSL_get_rbio SSL_get_rbio_ptr
 #define SSL_get_servername SSL_get_servername_ptr
 #define SSL_get_SSL_CTX SSL_get_SSL_CTX_ptr
 #define SSL_get_version SSL_get_version_ptr
+#define SSL_get_wbio SSL_get_wbio_ptr
 #define SSL_get0_alpn_selected SSL_get0_alpn_selected_ptr
 #define SSL_get1_peer_certificate SSL_get1_peer_certificate_ptr
 #define SSL_is_init_finished SSL_is_init_finished_ptr
@@ -1274,6 +1281,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define SSL_set_ciphersuites SSL_set_ciphersuites_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
 #define SSL_set_ex_data SSL_set_ex_data_ptr
+#define SSL_set_fd SSL_set_fd_ptr
 #define SSL_set_options SSL_set_options_ptr
 #define SSL_set_session SSL_set_session_ptr
 #define SSL_get_session SSL_get_session_ptr

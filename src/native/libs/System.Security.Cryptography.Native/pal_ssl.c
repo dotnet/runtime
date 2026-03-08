@@ -1308,3 +1308,46 @@ void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len)
         OPENSSL_free(copy);
     }
 }
+
+int32_t CryptoNative_SslSetFd(SSL* ssl, int32_t fd)
+{
+    ERR_clear_error();
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (SSL_set_fd_ptr == NULL)
+    {
+        return 0;
+    }
+#endif
+    return SSL_set_fd(ssl, fd);
+}
+
+int32_t CryptoNative_SslSetKtls(SSL* ssl)
+{
+#ifdef SSL_OP_ENABLE_KTLS
+    SSL_set_options(ssl, SSL_OP_ENABLE_KTLS);
+    return 1;
+#else
+    (void)ssl;
+    return 0;
+#endif
+}
+
+int32_t CryptoNative_SslGetKtlsSend(SSL* ssl)
+{
+#ifndef OPENSSL_NO_KTLS
+    return BIO_get_ktls_send(SSL_get_wbio(ssl));
+#else
+    (void)ssl;
+    return 0;
+#endif
+}
+
+int32_t CryptoNative_SslGetKtlsRecv(SSL* ssl)
+{
+#ifndef OPENSSL_NO_KTLS
+    return BIO_get_ktls_recv(SSL_get_rbio(ssl));
+#else
+    (void)ssl;
+    return 0;
+#endif
+}
