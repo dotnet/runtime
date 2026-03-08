@@ -102,7 +102,7 @@ namespace System.Collections.Immutable
             Debug.Assert(array != null);
             Debug.Assert(arrayIndex >= 0 && arrayIndex <= array.Length);
 
-            // ICollection is the GCD of what the following types implement.
+            // Optimized paths for well-known types, all other ICollection<T> implementations use the generic CopyTo fallback.
             if (sequence is ICollection<T>)
             {
                 if (sequence is List<T> list)
