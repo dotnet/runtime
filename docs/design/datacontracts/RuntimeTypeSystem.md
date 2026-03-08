@@ -54,8 +54,6 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool IsString(TypeHandle typeHandle);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
-    // True if the MethodTable represents a continuation type used by the async continuation feature
-    public virtual bool IsContinuation(TypeHandle typeHandle);
     public virtual bool IsDynamicStatics(TypeHandle typeHandle);
     public virtual ushort GetNumInterfaces(TypeHandle typeHandle);
 
@@ -372,7 +370,6 @@ The contract depends on the following globals
 
 | Global name | Meaning |
 | --- | --- |
-| `ContinuationMethodTable` | A pointer to the address of the base `Continuation` `MethodTable`, or null if no continuations have been created
 | `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
 | `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
@@ -432,7 +429,6 @@ Contracts used:
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;
 
     internal TargetPointer FreeObjectMethodTablePointer {get; }
-    internal TargetPointer ContinuationMethodTablePointer {get; }
 
     public TypeHandle GetTypeHandle(TargetPointer typeHandlePointer)
     {
