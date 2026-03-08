@@ -8,12 +8,23 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public partial class RSASignatureFormatterTests : AsymmetricSignatureFormatterTests
+    public abstract partial class RSASignatureFormatterTests<TProvider> : AsymmetricSignatureFormatterTests where TProvider : IRSAProvider, new()
     {
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        private static readonly TProvider s_provider = new TProvider();
+
+        public static bool SupportsSha1Signatures => s_provider.SupportsSha1Signatures;
+
+        private static RSA CreateRSA(RSAParameters rsaParameters)
+        {
+            RSA rsa = s_provider.Create();
+            rsa.ImportParameters(rsaParameters);
+            return rsa;
+        }
+
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public static void VerifySignature_SHA1()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
 
@@ -31,7 +42,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void VerifySignature_SHA256()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
 
@@ -49,7 +60,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void InvalidHashAlgorithm()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 var formatter = new RSAPKCS1SignatureFormatter(rsa);
                 var deformatter = new RSAPKCS1SignatureDeformatter(rsa);
@@ -66,13 +77,13 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
+        [ConditionalFact(nameof(SupportsSha1Signatures))]
         public static void VerifyKnownSignature()
         {
             byte[] hash = "012d161304fa0c6321221516415813022320620c".HexToByteArray();
             byte[] sig;
 
-            using (RSA key = RSAFactory.Create())
+            using (RSA key = s_provider.Create())
             {
                 key.ImportParameters(TestData.RSA1024Params);
                 RSAPKCS1SignatureFormatter formatter = new RSAPKCS1SignatureFormatter(key);
@@ -86,7 +97,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.Equal(expectedSig, sig);
             }
 
-            using (RSA key = RSAFactory.Create()) // Test against a different instance
+            using (RSA key = s_provider.Create()) // Test against a different instance
             {
                 key.ImportParameters(TestData.RSA1024Params);
                 RSAPKCS1SignatureDeformatter deformatter = new RSAPKCS1SignatureDeformatter(key);

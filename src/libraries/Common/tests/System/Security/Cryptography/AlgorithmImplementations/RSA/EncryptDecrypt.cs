@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
-    public sealed class EncryptDecrypt_Array : EncryptDecrypt
+    public abstract class EncryptDecrypt_Array<TProvider> : EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
             rsa.Encrypt(data, padding);
@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void NullArray_Throws()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 AssertExtensions.Throws<ArgumentNullException>("data", () => rsa.Encrypt(null, RSAEncryptionPadding.OaepSHA1));
                 AssertExtensions.Throws<ArgumentNullException>("data", () => rsa.Decrypt(null, RSAEncryptionPadding.OaepSHA1));
@@ -29,9 +29,18 @@ namespace System.Security.Cryptography.Rsa.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public abstract class EncryptDecrypt
+    public abstract class EncryptDecrypt<TProvider> where TProvider : IRSAProvider, new()
     {
-        public static bool SupportsSha2Oaep => RSAFactory.SupportsSha2Oaep;
+        protected static readonly TProvider s_provider = new TProvider();
+
+        public static bool SupportsSha2Oaep => s_provider.SupportsSha2Oaep;
+
+        protected static RSA CreateRSA(RSAParameters rsaParameters)
+        {
+            RSA rsa = s_provider.Create();
+            rsa.ImportParameters(rsaParameters);
+            return rsa;
+        }
 
         protected abstract byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding);
         protected abstract byte[] Decrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding);
@@ -39,7 +48,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void NullPadding_Throws()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 AssertExtensions.Throws<ArgumentNullException>("padding", () => Encrypt(rsa, TestData.HelloBytes, null));
                 AssertExtensions.Throws<ArgumentNullException>("padding", () => Decrypt(rsa, TestData.HelloBytes, null));
@@ -51,7 +60,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [InlineData(true)]
         public void UseAfterDispose(bool importKey)
         {
-            RSA rsa = importKey ? RSAFactory.Create(TestData.RSA2048Params) : RSAFactory.Create(1024);
+            RSA rsa = importKey ? CreateRSA(TestData.RSA2048Params) : s_provider.Create(1024);
             byte[] data = TestData.HelloBytes;
             byte[] enc;
 
@@ -89,7 +98,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA1024Params);
                 output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA1);
@@ -121,7 +130,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 0x8A, 0x9C, 0xCD, 0x58, 0x1A, 0x27, 0x79, 0x97,
             };
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 RSAParameters parameters = TestData.RSA1024Params;
                 RSAParameters pubParameters = new RSAParameters
@@ -152,11 +161,11 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
 
-                if (RSAFactory.SupportsSha2Oaep)
+                if (s_provider.SupportsSha2Oaep)
                 {
                     output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA256);
                 }
@@ -213,11 +222,11 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
 
-                if (RSAFactory.SupportsSha2Oaep)
+                if (s_provider.SupportsSha2Oaep)
                 {
                     output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA384);
                 }
@@ -248,11 +257,11 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.RSA2048Params);
 
-                if (RSAFactory.SupportsSha2Oaep)
+                if (s_provider.SupportsSha2Oaep)
                 {
                     output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA512);
                 }
@@ -293,7 +302,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.UnusualExponentParameters);
                 output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA1);
@@ -307,34 +316,34 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         [Fact]
         public void RsaCryptRoundtrip_OaepSHA256() =>
-            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA256, RSAFactory.SupportsSha2Oaep);
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA256, s_provider.SupportsSha2Oaep);
 
         [Fact]
         public void RsaCryptRoundtrip_OaepSHA384() =>
-            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA384, RSAFactory.SupportsSha2Oaep);
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA384, s_provider.SupportsSha2Oaep);
 
         [Fact]
         public void RsaCryptRoundtrip_OaepSHA512() =>
-            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA512, RSAFactory.SupportsSha2Oaep);
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA512, s_provider.SupportsSha2Oaep);
 
         [Fact]
         public void RsaCryptRoundtrip_OaepSHA3_256() =>
-            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA3_256, RSAFactory.SupportsSha3);
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA3_256, s_provider.SupportsSha3);
 
         [Fact]
         public void RsaCryptRoundtrip_OaepSHA3_384() =>
-            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA3_384, RSAFactory.SupportsSha3);
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA3_384, s_provider.SupportsSha3);
 
         [Fact]
         public void RsaCryptRoundtrip_OaepSHA3_512() =>
-            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA3_512, RSAFactory.SupportsSha3);
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA3_512, s_provider.SupportsSha3);
 
         private void RsaCryptRoundtrip(RSAEncryptionPadding paddingMode, bool expectSuccess = true)
         {
             byte[] crypt;
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create(2048))
+            using (RSA rsa = s_provider.Create(2048))
             {
                 if (!expectSuccess)
                 {
@@ -359,7 +368,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RoundtripEmptyArray()
         {
-            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 void RoundtripEmpty(RSAEncryptionPadding paddingMode)
                 {
@@ -372,14 +381,14 @@ namespace System.Security.Cryptography.Rsa.Tests
                 RoundtripEmpty(RSAEncryptionPadding.Pkcs1);
                 RoundtripEmpty(RSAEncryptionPadding.OaepSHA1);
 
-                if (RSAFactory.SupportsSha2Oaep)
+                if (s_provider.SupportsSha2Oaep)
                 {
                     RoundtripEmpty(RSAEncryptionPadding.OaepSHA256);
                     RoundtripEmpty(RSAEncryptionPadding.OaepSHA384);
                     RoundtripEmpty(RSAEncryptionPadding.OaepSHA512);
                 }
 
-                if (RSAFactory.SupportsSha3)
+                if (s_provider.SupportsSha3)
                 {
                     RoundtripEmpty(RSAEncryptionPadding.OaepSHA3_256);
                     RoundtripEmpty(RSAEncryptionPadding.OaepSHA3_384);
@@ -393,7 +402,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             RSAParameters rsaParameters = TestData.RSA2048Params;
 
-            using (RSA rsa = RSAFactory.Create(rsaParameters))
+            using (RSA rsa = CreateRSA(rsaParameters))
             {
                 RSAEncryptionPadding paddingMode1 = RSAEncryptionPadding.Pkcs1;
                 // The overhead required is 8 + 3 => 11.
@@ -419,7 +428,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             RSAParameters rsaParameters = TestData.RSA2048Params;
 
-            using (RSA rsa = RSAFactory.Create(rsaParameters))
+            using (RSA rsa = CreateRSA(rsaParameters))
             {
                 void Test(RSAEncryptionPadding paddingMode, int hashSizeInBits)
                 {
@@ -442,7 +451,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
                 Test(RSAEncryptionPadding.OaepSHA1, 160);
 
-                if (RSAFactory.SupportsSha2Oaep)
+                if (s_provider.SupportsSha2Oaep)
                 {
                     Test(RSAEncryptionPadding.OaepSHA256, 256);
                     Test(RSAEncryptionPadding.OaepSHA384, 384);
@@ -466,7 +475,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 "0176AFB1D3A5AE474B708B882ACA88447046E13D44E5EA8D66421DFC177A683B" +
                 "7B395F18886AAFD9CED072079739ED1D390354976D188C50A29AAD58784886E6").HexToByteArray();
 
-            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 Assert.ThrowsAny<CryptographicException>(
                     () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA384));
@@ -476,7 +485,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [ConditionalFact(typeof(EncryptDecrypt), nameof(SupportsSha2Oaep))]
         public void RsaDecryptOaepWrongAlgorithm()
         {
-            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 byte[] data = TestData.HelloBytes;
                 byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA256);
@@ -489,7 +498,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void RsaDecryptOaepWrongData()
         {
-            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 byte[] data = TestData.HelloBytes;
                 byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA1);
@@ -498,7 +507,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.ThrowsAny<CryptographicException>(
                     () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
 
-                if (RSAFactory.SupportsSha2Oaep)
+                if (s_provider.SupportsSha2Oaep)
                 {
                     encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA256);
                     encrypted[1] ^= 0xFF;
@@ -524,7 +533,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 "0079CEFA8972F02D05C4204078BD9ADF98571CE5374AB94BF01918F0EA31A815" +
                 "59F065A4C3FA0DD0E3086530608CA54387F86F25ED77D46C7576376B64BE3C91").HexToByteArray();
 
-            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 byte[] decrypted = Decrypt(rsa, encrypted, RSAEncryptionPadding.Pkcs1);
                 Assert.Equal(TestData.HelloBytes, decrypted);
@@ -552,7 +561,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] correctlyPadded = new byte[encrypted.Length + 1];
             Buffer.BlockCopy(encrypted, 0, correctlyPadded, 1, encrypted.Length);
 
-            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 byte[] decrypted = Decrypt(rsa, correctlyPadded, RSAEncryptionPadding.Pkcs1);
                 Assert.NotNull(decrypted);
@@ -565,7 +574,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void RsaDecryptPkcs1WrongDataLength()
         {
-            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 byte[] data = TestData.HelloBytes;
 
@@ -590,7 +599,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void RsaDecryptOaepWrongDataLength()
         {
-            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            using (RSA rsa = CreateRSA(TestData.RSA2048Params))
             {
                 byte[] data = TestData.HelloBytes;
 
@@ -608,7 +617,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.ThrowsAny<CryptographicException>(
                     () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
 
-                if (RSAFactory.SupportsSha2Oaep)
+                if (s_provider.SupportsSha2Oaep)
                 {
                     encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA256);
                     Array.Resize(ref encrypted, encrypted.Length + 1);
@@ -632,7 +641,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 byte[] crypt = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
 
@@ -649,7 +658,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 try
                 {
@@ -677,7 +686,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] crypt;
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.ImportParameters(TestData.UnusualExponentParameters);
 
@@ -696,7 +705,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] crypt;
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create(3072))
+            using (RSA rsa = s_provider.Create(3072))
             {
                 crypt = Encrypt(rsa, TestData.HelloBytes, oaepPaddingMode);
                 output = Decrypt(rsa, crypt, oaepPaddingMode);
@@ -709,7 +718,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void NotSupportedValueMethods()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
 #pragma warning disable SYSLIB0048
                 Assert.Throws<NotSupportedException>(() => rsa.DecryptValue(null));
@@ -739,7 +748,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             ref byte lastByte = ref buf[^1];
             afterMinPadding = 0;
 
-            using (RSA rsa = RSAFactory.Create(keyParams))
+            using (RSA rsa = CreateRSA(keyParams))
             {
                 RawEncrypt(buf, e, n, c);
                 // Assert.NoThrow, check that manual padding is coherent
@@ -837,14 +846,14 @@ namespace System.Security.Cryptography.Rsa.Tests
             {
                 yield return new object[] { RSAEncryptionPadding.OaepSHA1 };
 
-                if (RSAFactory.SupportsSha2Oaep)
+                if (s_provider.SupportsSha2Oaep)
                 {
                     yield return new object[] { RSAEncryptionPadding.OaepSHA256 };
                     yield return new object[] { RSAEncryptionPadding.OaepSHA384 };
                     yield return new object[] { RSAEncryptionPadding.OaepSHA512 };
                 }
 
-                if (RSAFactory.SupportsSha3)
+                if (s_provider.SupportsSha3)
                 {
                     yield return new object[] { RSAEncryptionPadding.OaepSHA3_256 };
                     yield return new object[] { RSAEncryptionPadding.OaepSHA3_384 };

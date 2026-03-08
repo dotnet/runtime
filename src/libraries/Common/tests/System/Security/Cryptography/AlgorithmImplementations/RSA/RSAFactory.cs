@@ -15,38 +15,4 @@ namespace System.Security.Cryptography.Rsa.Tests
         bool SupportsMd5Signatures { get; }
         bool SupportsSha3 { get; }
     }
-
-    public static partial class RSAFactory
-    {
-        public static RSA Create()
-        {
-            return s_provider.Create();
-        }
-
-        public static RSA Create(int keySize)
-        {
-            return s_provider.Create(keySize);
-        }
-
-        public static RSA Create(RSAParameters rsaParameters)
-        {
-            RSA rsa = Create();
-            rsa.ImportParameters(rsaParameters);
-            return rsa;
-        }
-
-        public static bool Supports384PrivateKey => s_provider.Supports384PrivateKey;
-
-        public static bool SupportsLargeExponent => s_provider.SupportsLargeExponent;
-
-        public static bool SupportsSha2Oaep => s_provider.SupportsSha2Oaep;
-
-        public static bool SupportsPss => s_provider.SupportsPss;
-
-        public static bool SupportsSha1Signatures => s_provider.SupportsSha1Signatures;
-        public static bool SupportsMd5Signatures => s_provider.SupportsMd5Signatures;
-
-        public static bool SupportsSha3 => s_provider.SupportsSha3;
-        public static bool NoSupportsSha3 => !SupportsSha3;
-    }
 }

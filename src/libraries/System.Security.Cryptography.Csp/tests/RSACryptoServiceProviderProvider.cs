@@ -30,8 +30,21 @@ namespace System.Security.Cryptography.Rsa.Tests
         public bool SupportsSha3 => false;
     }
 
-    public partial class RSAFactory
-    {
-        private static readonly IRSAProvider s_provider = new RSACryptoServiceProviderProvider();
-    }
+    // Concrete test classes for RSACryptoServiceProviderProvider
+    public class RSACryptoServiceProviderImportExport : ImportExport<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderEncryptDecrypt_Array : EncryptDecrypt_Array<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderEncryptDecrypt_Span : EncryptDecrypt_Span<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderEncryptDecrypt_AllocatingSpan : EncryptDecrypt_AllocatingSpan<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderEncryptDecrypt_TrySpan : EncryptDecrypt_TrySpan<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderSignVerify_Array : SignVerify_Array<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderSignVerify_AllocatingSpan : SignVerify_AllocatingSpan<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderSignVerify_Span : SignVerify_Span<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderSignVerify_TrySpan : SignVerify_TrySpan<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderKeyGeneration : KeyGeneration<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderXml : RSAXml<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderSignatureFormatterTests : RSASignatureFormatterTests<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderKeyExchangeFormatterTests : RSAKeyExchangeFormatterTests<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderFactoryTests : RSAFactoryTests<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderKeyPemTests : RSAKeyPemTests<RSACryptoServiceProviderProvider> { }
+    public class RSACryptoServiceProviderKeyFileTests : RSAKeyFileTests<RSACryptoServiceProviderProvider> { }
 }

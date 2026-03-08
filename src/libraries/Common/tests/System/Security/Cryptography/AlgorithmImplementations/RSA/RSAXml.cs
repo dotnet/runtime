@@ -8,12 +8,22 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class RSAXml
+    public abstract class RSAXml<TProvider> where TProvider : IRSAProvider, new()
     {
+        private static readonly TProvider s_provider = new TProvider();
+
+        public static bool Supports16384 => ImportExport<TProvider>.Supports16384;
+
+        private static RSA CreateRSA(RSAParameters rsaParameters)
+        {
+            RSA rsa = s_provider.Create();
+            rsa.ImportParameters(rsaParameters);
+            return rsa;
+        }
         [Fact]
         public static void TestRead1032Parameters_Public()
         {
-            RSAParameters expectedParameters = ImportExport.MakePublic(TestData.RSA1032Parameters);
+            RSAParameters expectedParameters = ImportExport<TProvider>.MakePublic(TestData.RSA1032Parameters);
 
             // Bonus trait of this XML: the elements are all in different namespaces,
             // showing that isn't part of the reading consideration.
@@ -76,10 +86,10 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void TestRead16384Parameters_Public()
         {
-            RSAParameters expectedParameters = ImportExport.MakePublic(TestData.RSA16384Params);
+            RSAParameters expectedParameters = ImportExport<TProvider>.MakePublic(TestData.RSA16384Params);
 
             // Bonus trait of this XML: the Modulus and Exponent parameters
             // are not in canonical order.
@@ -157,7 +167,7 @@ zM=
                 expectedParameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void TestRead16384Parameters_Private()
         {
             // Bonus trait of this XML: the D parameter is not in
@@ -386,7 +396,7 @@ zM=
         public static void TestReadDiminishedDPParameters_Public()
         {
             RSAParameters expectedParameters =
-                ImportExport.MakePublic(TestData.DiminishedDPParameters);
+                ImportExport<TProvider>.MakePublic(TestData.DiminishedDPParameters);
 
             TestReadXml(
                 // Bonus trait of this XML: Canonical element order, pretty-printed.
@@ -634,7 +644,7 @@ zM=
                 ));
         }
 
-        [ConditionalTheory(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalTheory(nameof(Supports16384))]
         [InlineData(true)]
         [InlineData(false)]
         public static void TestWrite16384Parameters(bool includePrivateParameters)
@@ -984,7 +994,7 @@ zM=
         [Fact]
         public static void FromToXml()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 RSAParameters pubOnly = rsa.ExportParameters(false);
                 RSAParameters pubPriv = rsa.ExportParameters(true);
@@ -992,14 +1002,14 @@ zM=
                 string xmlPub = rsa.ToXmlString(false);
                 string xmlPriv = rsa.ToXmlString(true);
 
-                using (RSA rsaPub = RSAFactory.Create())
+                using (RSA rsaPub = s_provider.Create())
                 {
                     rsaPub.FromXmlString(xmlPub);
 
                     RSATestHelpers.AssertKeyEquals(pubOnly, rsaPub.ExportParameters(false));
                 }
 
-                using (RSA rsaPriv = RSAFactory.Create())
+                using (RSA rsaPriv = s_provider.Create())
                 {
                     rsaPriv.FromXmlString(xmlPriv);
 
@@ -1012,7 +1022,7 @@ zM=
         [Fact]
         public static void FromXml_MissingModulus()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
                     () => rsa.FromXmlString(
@@ -1047,7 +1057,7 @@ zM=
         [Fact]
         public static void FromXml_MissingExponent()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
                     () => rsa.FromXmlString(
@@ -1085,7 +1095,7 @@ zM=
         [Fact]
         public static void FromXml_MissingQ()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
                     () => rsa.FromXmlString(
@@ -1121,7 +1131,7 @@ zM=
         [Fact]
         public static void FromXml_MissingDP()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
                     () => rsa.FromXmlString(
@@ -1157,7 +1167,7 @@ zM=
         [Fact]
         public static void FromXml_MissingDQ()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
                     () => rsa.FromXmlString(
@@ -1193,7 +1203,7 @@ zM=
         [Fact]
         public static void FromXml_MissingInverseQ()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
                     () => rsa.FromXmlString(
@@ -1229,7 +1239,7 @@ zM=
         [Fact]
         public static void FromXml_BadBase64()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 // The D value is missing the terminating ==.
                 Assert.Throws<FormatException>(
@@ -1267,7 +1277,7 @@ zM=
 
         private static void TestReadXml(string xmlString, in RSAParameters expectedParameters)
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 rsa.FromXmlString(xmlString);
                 Assert.Equal(expectedParameters.Modulus.Length * 8, rsa.KeySize);
@@ -1283,7 +1293,7 @@ zM=
         [Fact]
         public static void FromNullXml()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 AssertExtensions.Throws<ArgumentNullException>(
                     "xmlString",
@@ -1294,7 +1304,7 @@ zM=
         [Fact]
         public static void FromInvalidXml()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 Exception exception = Assert.ThrowsAny<Exception>(
                     () => rsa.FromXmlString(
@@ -1344,7 +1354,7 @@ zM=
         public static void FromNonsenseXml()
         {
             // This is DiminishedDPParameters XML, but with a P that is way too long.
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
                     () => rsa.FromXmlString(
@@ -1397,7 +1407,7 @@ zM=
         {
             IEnumerator<XElement> iter;
 
-            using (RSA rsa = RSAFactory.Create(keyParameters))
+            using (RSA rsa = CreateRSA(keyParameters))
             {
                 iter = VerifyRootAndGetChildren(rsa, includePrivateParameters);
             }

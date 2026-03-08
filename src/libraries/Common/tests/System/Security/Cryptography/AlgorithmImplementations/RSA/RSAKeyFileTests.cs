@@ -9,17 +9,28 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class RSAKeyFileTests
+    public abstract class RSAKeyFileTests<TProvider> where TProvider : IRSAProvider, new()
     {
-        public static bool Supports384BitPrivateKeyAndRC2 { get; } = RSAFactory.Supports384PrivateKey && RC2Factory.IsSupported;
-        public static bool SupportsLargeExponent { get; } = RSAFactory.SupportsLargeExponent;
+        private static readonly TProvider s_provider = new TProvider();
+
+        private static RSA CreateRSA(RSAParameters rsaParameters)
+        {
+            RSA rsa = s_provider.Create();
+            rsa.ImportParameters(rsaParameters);
+            return rsa;
+        }
+
+        public static bool Supports384BitPrivateKeyAndRC2 { get; } = s_provider.Supports384PrivateKey && RC2Factory.IsSupported;
+        public static bool SupportsLargeExponent { get; } = s_provider.SupportsLargeExponent;
+        public static bool Supports16384 => ImportExport<TProvider>.Supports16384;
+        public static bool RC2IsSupported => RC2Factory.IsSupported;
 
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public static void UseAfterDispose(bool importKey)
         {
-            RSA rsa = importKey ? RSAFactory.Create(TestData.RSA2048Params) : RSAFactory.Create(1024);
+            RSA rsa = importKey ? CreateRSA(TestData.RSA2048Params) : s_provider.Create(1024);
             byte[] pkcs1Public;
             byte[] pkcs1Private;
             byte[] pkcs8Private;
@@ -122,7 +133,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==",
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void ReadWritePublicPkcs1()
         {
             ReadWriteBase64PublicPkcs1(
@@ -198,7 +209,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==",
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void ReadWriteRsa16384SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -250,7 +261,7 @@ rAigcwt6noH/hX5ZO5X869SV1WvLOvhCt4Ru7LOzqUULk+Y3+gSNHX34/+Jw+VCq
                 TestData.RSA16384Params);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void ReadWrite16384Pkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -525,7 +536,7 @@ rBZc";
                 TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact(nameof(Supports16384))]
         public static void ReadEncryptedRsa16384()
         {
             // PBES2: PBKDF2 + des (single DES, not 3DES).
@@ -736,7 +747,7 @@ pgCJTk846cb+AizgZMeOsYpTOgu2UL6cQiLtsYNz7WpDK3iS7Agj9EoL2ao7QxA=";
                 TestData.RSA16384Params);
         }
 
-        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
+        [ConditionalFact(nameof(RC2IsSupported))]
         public static void ReadPbes2Rc2EncryptedDiminishedDP()
         {
             // PBES2: PBKDF2 + RC2-128
@@ -762,7 +773,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
+        [ConditionalFact(nameof(RC2IsSupported))]
         public static void ReadPbes2Rc2EncryptedDiminishedDP_PasswordBytes()
         {
             // PBES2: PBKDF2 + RC2-128
@@ -866,7 +877,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         [Fact]
         public static void NoFuzzyRSAPublicKey()
         {
-            using (RSA key = RSAFactory.Create())
+            using (RSA key = s_provider.Create())
             {
                 int bytesRead = -1;
                 byte[] rsaPriv = key.ExportRSAPrivateKey();
@@ -909,7 +920,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         [Fact]
         public static void NoFuzzySubjectPublicKeyInfo()
         {
-            using (RSA key = RSAFactory.Create())
+            using (RSA key = s_provider.Create())
             {
                 int bytesRead = -1;
                 byte[] rsaPriv = key.ExportRSAPrivateKey();
@@ -952,7 +963,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         [Fact]
         public static void NoFuzzyRSAPrivateKey()
         {
-            using (RSA key = RSAFactory.Create())
+            using (RSA key = s_provider.Create())
             {
                 int bytesRead = -1;
                 byte[] rsaPub = key.ExportRSAPublicKey();
@@ -995,7 +1006,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         [Fact]
         public static void NoFuzzyPkcs8()
         {
-            using (RSA key = RSAFactory.Create())
+            using (RSA key = s_provider.Create())
             {
                 int bytesRead = -1;
 
@@ -1039,7 +1050,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         [Fact]
         public static void NoFuzzyEncryptedPkcs8()
         {
-            using (RSA key = RSAFactory.Create())
+            using (RSA key = s_provider.Create())
             {
                 int bytesRead = -1;
                 byte[] empty = Array.Empty<byte>();
@@ -1076,7 +1087,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         [Fact]
         public static void NoPrivKeyFromPublicOnly()
         {
-            using (RSA key = RSAFactory.Create())
+            using (RSA key = s_provider.Create())
             {
                 RSAParameters srcParameters = TestData.RSA2048Params;
                 RSAParameters rsaParameters = new RSAParameters
@@ -1116,7 +1127,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         [Fact]
         public static void BadPbeParameters()
         {
-            using (RSA key = RSAFactory.Create())
+            using (RSA key = s_provider.Create())
             {
                 Assert.ThrowsAny<ArgumentNullException>(
                     () => key.ExportEncryptedPkcs8PrivateKey(
@@ -1238,7 +1249,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         [Fact]
         public static void DecryptPkcs12WithBytes()
         {
-            using (RSA key = RSAFactory.Create())
+            using (RSA key = s_provider.Create())
             {
                 string charBased = "hello";
                 byte[] byteBased = Encoding.UTF8.GetBytes(charBased);
@@ -1285,7 +1296,7 @@ R40NElq8tzOa/TudOpNAqC8mgS25uTm7ws472gUE0z9uvcq1/MgkqE++xgmLAxGUN/l7EHSAmYKG
 i33DDR38LaRqG9ho3brf466OkNooBv4MpD5SA63yfooytxOgeuaqbuTzKP/OSRqJNab9wctA9nfJ
 gms2YM+honjUS1sXk1zdm/8=");
 
-            using (RSA key = RSAFactory.Create())
+            using (RSA key = s_provider.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
                     () => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"test", high3DesIterationKey, out _));
@@ -1446,7 +1457,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
             const int OverAllocate = 30;
             const int WriteShift = 6;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 readAction(rsa, derBytes, out int bytesRead);
                 Assert.Equal(derBytes.Length, bytesRead);
@@ -1466,7 +1477,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
                 Assert.Equal(derBytes.ByteArrayToHex(), arrayExport.ByteArrayToHex());
             }
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 Assert.ThrowsAny<CryptographicException>(
                     () => readAction(rsa, arrayExport.AsSpan(1), out _));
@@ -1521,7 +1532,7 @@ gpX/dwXfODsj4zcOw4gyP70lDxUWLEPtxhS5Ti0FEuge1XKn3+GOp3clVjGpXKpJTNLsPA/wlqlo
                 }
             }
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = s_provider.Create())
             {
                 readAction(rsa, tooBig.AsSpan(WriteShift), out int bytesRead);
                 Assert.Equal(arrayExport.Length, bytesRead);
