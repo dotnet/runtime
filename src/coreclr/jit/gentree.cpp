@@ -6899,6 +6899,16 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             return false;
 #endif // FEATURE_HW_INTRINSICS
 
+#ifdef TARGET_ARM64
+        case GT_BFX:
+            if (operand == this->AsOp()->gtOp1)
+            {
+                *pUse = &this->AsOp()->gtOp1;
+                return true;
+            }
+            return false;
+#endif
+
         // Special nodes
         case GT_PHI:
             for (GenTreePhi::Use& phiUse : AsPhi()->Uses())
@@ -7814,6 +7824,24 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
     assert(!compQmarkRationalized && "QMARKs are illegal to create after QMARK-rationalization");
     return result;
 }
+
+#if defined(TARGET_ARM64)
+GenTreeBfm* Compiler::gtNewBfiNode(var_types type, GenTree* base, GenTree* src, unsigned offset, unsigned width)
+{
+    GenTreeBfm* result = new (this, GT_BFI) GenTreeBfm(GT_BFI, type, base, src, offset, width);
+    result->gtFlags |= (base->gtFlags | src->gtFlags) & (GTF_ALL_EFFECT);
+    result->gtFlags &= ~GTF_SET_FLAGS;
+    return result;
+}
+
+GenTreeBfm* Compiler::gtNewBfxNode(var_types type, GenTree* base, unsigned offset, unsigned width)
+{
+    GenTreeBfm* result = new (this, GT_BFX) GenTreeBfm(GT_BFX, type, base, nullptr, offset, width);
+    result->gtFlags |= (base->gtFlags & GTF_ALL_EFFECT);
+    result->gtFlags &= ~GTF_SET_FLAGS;
+    return result;
+}
+#endif
 
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
@@ -10537,6 +10565,15 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::Terminate;
             return;
+
+#ifdef TARGET_ARM64
+        case GT_BFX:
+            assert(m_node->AsOp()->gtOp2 == nullptr);
+            m_edge = &m_node->AsOp()->gtOp1;
+            assert(*m_edge != nullptr);
+            m_advance = &GenTreeUseEdgeIterator::Terminate;
+            return;
+#endif
 
         // Unary operators with an optional operand
         case GT_FIELD_ADDR:

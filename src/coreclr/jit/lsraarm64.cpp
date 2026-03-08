@@ -892,11 +892,29 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
+        case GT_BFI:
+        {
+            tgtPrefUse          = BuildUse(tree->gtGetOp1());
+            srcCount            = 1;
+            RefPosition* srcUse = nullptr;
+            srcCount += BuildDelayFreeUses(tree->gtGetOp2(), tree, RBM_NONE, &srcUse);
+            BuildDef(tree);
+            break;
+        }
+
         case GT_BFIZ:
             assert(tree->gtGetOp1()->OperIs(GT_CAST));
             srcCount = BuildOperandUses(tree->gtGetOp1()->gtGetOp1());
             BuildDef(tree);
             break;
+
+        case GT_BFX:
+        {
+            srcCount = BuildOperandUses(tree->gtGetOp1());
+            assert(dstCount == 1);
+            BuildDef(tree);
+            break;
+        }
 
         case GT_RETURNTRAP:
             // this just turns into a compare of its child with an int

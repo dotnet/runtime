@@ -4505,6 +4505,18 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             return visitor(&cond->gtOp2);
         }
 
+#ifdef TARGET_ARM64
+        case GT_BFX:
+        {
+            GenTree* op1 = gtGetOp1();
+            if (op1 != nullptr)
+            {
+                return visitor(op1);
+            }
+            return VisitResult::Continue;
+        }
+#endif
+
         // Binary nodes
         default:
             assert(this->OperIsBinary());
