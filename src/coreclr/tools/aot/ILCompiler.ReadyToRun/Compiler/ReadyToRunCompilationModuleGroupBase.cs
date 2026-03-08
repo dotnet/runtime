@@ -716,7 +716,13 @@ namespace ILCompiler
             if (!VersionsWithMethodBody(method))
                 return false;
 
-            return !Marshaller.IsMarshallingRequired(method);
+            if (!Marshaller.IsMarshallingRequired(method))
+                return true;
+
+            if (MarshalHelpers.ShouldCheckForPendingException(method.Context.Target, method.GetPInvokeMethodMetadata()))
+                return true;
+
+            return false;
         }
 
         public sealed override bool TryGetModuleTokenForExternalType(TypeDesc type, out ModuleToken token)
