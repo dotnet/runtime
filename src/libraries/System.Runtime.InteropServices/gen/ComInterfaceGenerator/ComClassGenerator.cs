@@ -20,22 +20,19 @@ namespace Microsoft.Interop
         {
             var unsafeCodeIsEnabled = context.CompilationProvider.Select((comp, ct) => comp.Options is CSharpCompilationOptions { AllowUnsafe: true }); // Unsafe code enabled
             // Get all types with the [GeneratedComClassAttribute] attribute.
-            var attributedClassesOrDiagnostics = context.SyntaxProvider
+            var attributedClasses = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.GeneratedComClassAttribute,
                     static (node, ct) => node is ClassDeclarationSyntax,
-                    static (context, ct) => context)
-                .Combine(unsafeCodeIsEnabled)
-                .Select(static (data, ct) =>
+                    static (context, _) =>
                     {
-                        var context = data.Left;
-                        var unsafeCodeIsEnabled = data.Right;
                         var type = (INamedTypeSymbol)context.TargetSymbol;
                         var syntax = (ClassDeclarationSyntax)context.TargetNode;
-                        return ComClassInfo.From(type, syntax, unsafeCodeIsEnabled);
-                    });
-
-            var attributedClasses = context.FilterAndReportDiagnostics(attributedClassesOrDiagnostics);
+                        return ComClassInfo.TryGetFrom(type, syntax);
+                    })
+                .Combine(unsafeCodeIsEnabled)
+                .Where(static data => data.Left is not null && data.Right)
+                .Select(static (data, _) => data.Left!);
 
             var classInfoType = attributedClasses
                 .Select(static (info, ct) => new ItemAndSyntaxes<ComClassInfo>(info,

@@ -23,20 +23,11 @@ namespace Microsoft.Interop
             ImplementedInterfacesNames = implementedInterfacesNames;
         }
 
-        public static DiagnosticOr<ComClassInfo> From(INamedTypeSymbol type, ClassDeclarationSyntax syntax, bool unsafeCodeIsEnabled)
+        public static ComClassInfo? TryGetFrom(INamedTypeSymbol type, ClassDeclarationSyntax syntax)
         {
-            if (!unsafeCodeIsEnabled)
-            {
-                return DiagnosticOr<ComClassInfo>.From(DiagnosticInfo.Create(GeneratorDiagnostics.RequiresAllowUnsafeBlocks, syntax.Identifier.GetLocation()));
-            }
-
             if (!syntax.IsInPartialContext(out _))
             {
-                return DiagnosticOr<ComClassInfo>.From(
-                    DiagnosticInfo.Create(
-                        GeneratorDiagnostics.InvalidAttributedClassMissingPartialModifier,
-                        syntax.Identifier.GetLocation(),
-                        type.ToDisplayString()));
+                return null;
             }
 
             ImmutableArray<string>.Builder names = ImmutableArray.CreateBuilder<string>();
@@ -53,19 +44,11 @@ namespace Microsoft.Interop
                 }
             }
 
-            if (names.Count == 0)
-            {
-                return DiagnosticOr<ComClassInfo>.From(DiagnosticInfo.Create(GeneratorDiagnostics.ClassDoesNotImplementAnyGeneratedComInterface,
-                    syntax.Identifier.GetLocation(),
-                    type.ToDisplayString()));
-            }
-
-            return DiagnosticOr<ComClassInfo>.From(
-                new ComClassInfo(
-                    type.ToDisplayString(),
-                    new ContainingSyntaxContext(syntax),
-                    new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
-                    new(names.ToImmutable())));
+            return names.Count == 0 ? null : new ComClassInfo(
+                type.ToDisplayString(),
+                new ContainingSyntaxContext(syntax),
+                new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
+                new(names.ToImmutable()));
         }
 
         public bool Equals(ComClassInfo? other)
