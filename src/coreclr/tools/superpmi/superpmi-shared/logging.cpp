@@ -18,7 +18,7 @@
 
 bool             Logger::s_initialized = false;
 UINT32           Logger::s_logLevel    = LOGMASK_DEFAULT;
-HANDLE           Logger::s_logFile     = INVALID_HANDLE_VALUE;
+FILE*            Logger::s_logFile     = NULL;
 char*            Logger::s_logFilePath = nullptr;
 minipal_mutex Logger::s_critSec;
 
@@ -55,12 +55,11 @@ void Logger::Shutdown()
 /* static */
 void Logger::OpenLogFile(const char* logFilePath)
 {
-    if (s_logFile == INVALID_HANDLE_VALUE && logFilePath != nullptr)
+    if (s_logFile == NULL && logFilePath != nullptr)
     {
-        s_logFile = CreateFileA(logFilePath, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, CREATE_ALWAYS,
-                                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+        s_logFile = fopen(logFilePath, "w");
 
-        if (s_logFile != INVALID_HANDLE_VALUE)
+        if (s_logFile != NULL)
         {
             // We may need the file path later in order to delete the log file
             s_logFilePath = _strdup(logFilePath);
@@ -79,22 +78,22 @@ void Logger::OpenLogFile(const char* logFilePath)
 /* static */
 void Logger::CloseLogFile()
 {
-    if (s_logFile != INVALID_HANDLE_VALUE)
+    if (s_logFile != NULL)
     {
         // Avoid polluting the file system with empty log files
-        if (GetFileSize(s_logFile, nullptr) == 0 && s_logFilePath != nullptr)
+        if (ftell(s_logFile) == 0 && s_logFilePath != nullptr)
         {
             // We can call this before closing the handle because remove just marks the file
             // for deletion, i.e. it does not actually get deleted until its last handle is closed.
             if (remove(s_logFilePath) == -1)
-                fprintf(stderr, "WARNING: [Logger::CloseLogFile] remove failed. GetLastError()=%u\n",
-                        GetLastError());
+                fprintf(stderr, "WARNING: [Logger::CloseLogFile] remove failed. errno=%d\n",
+                        errno);
         }
 
-        if (!CloseHandle(s_logFile))
-            fprintf(stderr, "WARNING: [Logger::CloseLogFile] CloseHandle failed. GetLastError()=%u\n", GetLastError());
+        if (fclose(s_logFile) != 0)
+            fprintf(stderr, "WARNING: [Logger::CloseLogFile] CloseHandle failed. errno=%d\n", errno);
 
-        s_logFile = INVALID_HANDLE_VALUE;
+        s_logFile = NULL;
 
         free(s_logFilePath);
         s_logFilePath = nullptr;
@@ -251,7 +250,7 @@ void Logger::LogVprintf(
 
     fprintf(dest, "%s\n", fullMsg);
 
-    if (s_logFile != INVALID_HANDLE_VALUE)
+    if (s_logFile != NULL)
     {
 #ifndef TARGET_UNIX // TODO: no localtime_s() or strftime() in PAL
         tm      timeInfo;
@@ -276,25 +275,13 @@ void Logger::LogVprintf(
         const char* timeStr = "";
 #endif // TARGET_UNIX
 
-        const char logEntryFmtStr[] = "%s - %s [%s:%d] - %s - %s\r\n";
-        size_t logEntryBuffSize = sizeof(logEntryFmtStr) + strlen(timeStr) + strlen(function) + strlen(file) + /* line number */ 10 +
-                                  strlen(logLevelStr) + strlen(fullMsg);
+        if (fprintf(s_logFile, "%s - %s [%s:%d] - %s - %s\r\n", timeStr, function, file, line, logLevelStr, fullMsg) <= 0)
+            fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to write to log file. errno=%d\n",
+                    errno);
 
-        char* logEntry = new char[logEntryBuffSize];
-        sprintf_s(logEntry, logEntryBuffSize, logEntryFmtStr, timeStr, function, file, line, logLevelStr, fullMsg);
-        size_t logEntryLen = strlen(logEntry);
-
-        DWORD bytesWritten;
-
-        if (!WriteFile(s_logFile, logEntry, (DWORD)logEntryLen, &bytesWritten, nullptr))
-            fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to write to log file. GetLastError()=%u\n",
-                    GetLastError());
-
-        if (!FlushFileBuffers(s_logFile))
-            fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to flush log file. GetLastError()=%u\n",
-                    GetLastError());
-
-        delete[] logEntry;
+        if (fflush(s_logFile) != 0)
+            fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to flush log file. errno=%d\n",
+                    errno);
 
 #ifndef TARGET_UNIX
         free((void*)timeStr);

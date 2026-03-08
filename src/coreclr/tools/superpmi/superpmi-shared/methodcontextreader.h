@@ -48,7 +48,7 @@ class MethodContextReader
 {
 private:
     // The MC/MCH file
-    HANDLE fileHandle;
+    FILE* fp;
 
     // The size of the MC/MCH file
     int64_t fileSize;
@@ -82,19 +82,14 @@ private:
     int Offset;
     int Increment;
 
-    struct StringList
-    {
-        StringList* next;
-        std::string hash;
-    };
-    StringList* excludedMethodsList;
+    std::vector<std::string> excludedMethodsList;
 
     // Binary search to get this method number from the index
     // Returns -1 for not found, or -2 for not indexed
     int64_t GetOffset(unsigned int methodNumber);
 
     // Just a helper...
-    static HANDLE OpenFile(const char* inputFile, DWORD flags = FILE_ATTRIBUTE_NORMAL);
+    static FILE* OpenFile(const char* inputFile);
 
     MethodContextBuffer ReadMethodContextNoLock(bool justSkip = false);
     MethodContextBuffer ReadMethodContext(bool acquireLock, bool justSkip = false);
@@ -110,9 +105,6 @@ private:
     static std::string CheckForPairedFile(const std::string& fileName,
                                           const std::string& origSuffix,
                                           const std::string& newSuffix);
-
-    // are we're at the end of the file...
-    bool atEof();
 
     // Do we have a valid TOC?
     bool hasTOC();

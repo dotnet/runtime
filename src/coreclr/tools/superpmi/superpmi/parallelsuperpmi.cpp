@@ -72,108 +72,70 @@ bool StartProcess(char* commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE
     return true;
 }
 
-void ReadMCLToArray(char* mclFilename, int** arr, int* count)
+void ReadMCLToArray(char* mclFilename, std::vector<int>& MCL)
 {
-    *count     = 0;
-    *arr       = nullptr;
-    char* buff = nullptr;
+    std::vector<int> l;
 
-    HANDLE hFile = CreateFileA(mclFilename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                               FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    FILE*   fp = fopen(mclFilename, "r");
+    int64_t size;
 
-    if (hFile == INVALID_HANDLE_VALUE)
+    if (fp == NULL)
     {
-        LogError("Unable to open '%s'. GetLastError()=%u", mclFilename, GetLastError());
+        LogError("Unable to open '%s'. errno=%d", mclFilename, errno);
         goto Cleanup;
     }
 
-    LARGE_INTEGER DataTemp;
-    if (GetFileSizeEx(hFile, &DataTemp) == 0)
+    fseek(fp, 0, SEEK_END);
+#ifdef TARGET_WINDOWS
+    size = _ftelli64(fp);
+#else
+    size = ftell(fp);
+#endif // TARGET_WINDOWS
+    fseek(fp, 0, SEEK_SET);
+
+    if (size > MAXMCLFILESIZE)
     {
-        LogError("GetFileSizeEx failed. GetLastError()=%u", GetLastError());
+        LogError("Size %lld exceeds max size of %d", size, MAXMCLFILESIZE);
         goto Cleanup;
     }
 
-    if (DataTemp.QuadPart > MAXMCLFILESIZE)
+    int value;
+    while (fscanf(fp, "%d", &value) > 0)
     {
-        LogError("Size %d exceeds max size of %d", DataTemp.QuadPart, MAXMCLFILESIZE);
-        goto Cleanup;
+        l.push_back(value);
     }
-
-    int sz;
-    sz = (int)(DataTemp.QuadPart);
-
-    buff = new char[sz];
-    DWORD bytesRead;
-    if (ReadFile(hFile, buff, sz, &bytesRead, nullptr) == 0)
-    {
-        LogError("ReadFile failed. GetLastError()=%u", GetLastError());
-        goto Cleanup;
-    }
-
-    for (int i = 0; i < sz; i++)
-    {
-        if (buff[i] == 0x0d)
-            (*count)++;
-    }
-
-    if (*count <= 0)
-        return;
-
-    *arr = new int[*count];
-    for (int j = 0, arrIndex = 0; j < sz;)
-    {
-        // seek the first number on the line
-        while (!isdigit((unsigned char)buff[j]))
-            j++;
-        // read in the number
-        (*arr)[arrIndex++] = atoi(&buff[j]);
-        // seek to the start of next line
-        while ((j < sz) && (buff[j] != 0x0a))
-            j++;
-        j++;
-    }
+    MCL = std::move(l);
 
 Cleanup:
-    if (buff != nullptr)
-        delete[] buff;
-
-    if (hFile != INVALID_HANDLE_VALUE)
-        CloseHandle(hFile);
+    if (fp != NULL)
+        fclose(fp);
 }
 
-bool WriteArrayToMCL(char* mclFilename, int* arr, int count)
+bool WriteArrayToMCL(char* mclFilename, const std::vector<int>& MCL)
 {
-    HANDLE hMCLFile =
-        CreateFileA(mclFilename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    FILE* fpMCLFile = fopen(mclFilename, "w");
     bool result = true;
 
-    if (hMCLFile == INVALID_HANDLE_VALUE)
+    if (fpMCLFile == NULL)
     {
-        LogError("Failed to open output file '%s'. GetLastError()=%u", mclFilename, GetLastError());
+        LogError("Failed to open output file '%s'. errno=%d", mclFilename, errno);
         result = false;
         goto Cleanup;
     }
 
-    for (int i = 0; i < count; i++)
+    for (int val : MCL)
     {
-        char  strMethodIndex[12];
-        DWORD charCount    = 0;
-        DWORD bytesWritten = 0;
-
-        charCount = sprintf_s(strMethodIndex, sizeof(strMethodIndex), "%d\r\n", arr[i]);
-
-        if (!WriteFile(hMCLFile, strMethodIndex, charCount, &bytesWritten, nullptr) || (bytesWritten != charCount))
+        if (fprintf(fpMCLFile, "%d\r\n", val) <= 0)
         {
-            LogError("Failed to write method index '%d'. GetLastError()=%u", strMethodIndex, GetLastError());
+            LogError("Failed to write method index '%d'. errno=%d", val, errno);
             result = false;
             goto Cleanup;
         }
     }
 
 Cleanup:
-    if (hMCLFile != INVALID_HANDLE_VALUE)
-        CloseHandle(hMCLFile);
+    if (fpMCLFile != NULL)
+        fclose(fpMCLFile);
 
     return result;
 }
@@ -295,11 +257,6 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 }
 #endif // !TARGET_UNIX
 
-int __cdecl compareInt(const void* arg1, const void* arg2)
-{
-    return (*(const int*)arg1) - (*(const int*)arg2);
-}
-
 struct PerWorkerData
 {
     HANDLE hStdOutput = INVALID_HANDLE_VALUE;
@@ -314,40 +271,25 @@ struct PerWorkerData
 
 static void MergeWorkerMCLs(char* mclFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::*mclPath)
 {
-    int **MCL = new int *[workerCount], *MCLCount = new int[workerCount], totalCount = 0;
+    std::vector<int> MCL;
 
     for (int i = 0; i < workerCount; i++)
     {
         // Read the next partial MCL file
-        ReadMCLToArray(workerData[i].*mclPath, &MCL[i], &MCLCount[i]);
-
-        totalCount += MCLCount[i];
+        ReadMCLToArray(workerData[i].*mclPath, MCL);
     }
 
-    int* mergedMCL = new int[totalCount];
-    int  index     = 0;
-
-    for (int i = 0; i < workerCount; i++)
-    {
-        for (int j             = 0; j < MCLCount[i]; j++)
-            mergedMCL[index++] = MCL[i][j];
-    }
-
-    qsort(mergedMCL, totalCount, sizeof(int), compareInt);
+    std::sort(MCL.begin(), MCL.end());
 
     // Write the merged MCL array back to disk
-    if (!WriteArrayToMCL(mclFilename, mergedMCL, totalCount))
+    if (!WriteArrayToMCL(mclFilename, MCL))
         LogError("Unable to write to MCL file %s.", mclFilename);
-
-    delete[] MCL;
-    delete[] MCLCount;
-    delete[] mergedMCL;
 }
 
 static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::* csvPath)
 {
-    FileWriter fw;
-    if (!FileWriter::CreateNew(csvFilename, &fw))
+    FILE* fpWriter = fopen(csvFilename, "w");
+    if (fpWriter == NULL)
     {
         LogError("Could not create file %s", csvFilename);
         return;
@@ -369,24 +311,29 @@ static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int wo
                 continue;
         }
 
-        FileLineReader reader;
-        if (!FileLineReader::Open(workerData[i].*csvPath, &reader))
+        FILE* fpReader = fopen(workerData[i].*csvPath, "r");
+
+        if (fpReader == NULL)
         {
             LogError("Could not open child CSV file %s", workerData[i].*csvPath);
             continue;
         }
 
-        if (hasHeader && !reader.AdvanceLine())
+        char buffer[512] = {};
+        if (hasHeader)
         {
-            continue;
+            // Skip the title line
+            fgets(buffer, sizeof(buffer) - 1, fpReader);
         }
 
-        while (reader.AdvanceLine())
+        while (!feof(fpReader))
         {
-             fw.Printf("%s\n", reader.GetCurrentLine());
+            fgets(buffer, sizeof(buffer) - 1, fpReader);
+            fputs(buffer, fpReader);
         }
 
         hasHeader = true;
+        fclose(fpReader);
     }
 }
 
