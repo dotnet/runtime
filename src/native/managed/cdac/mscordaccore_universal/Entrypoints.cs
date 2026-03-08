@@ -86,6 +86,37 @@ internal static class Entrypoints
         return 0;
     }
 
+    [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_dacdbi_interface")]
+    private static unsafe int CreateDacDbiInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
+    {
+        if (obj == null)
+            return HResults.E_INVALIDARG;
+        if (handle == IntPtr.Zero || legacyImplPtr == IntPtr.Zero)
+        {
+            *obj = IntPtr.Zero;
+            return HResults.E_NOTIMPL;
+        }
+
+        Target? target = GCHandle.FromIntPtr(handle).Target as Target;
+        if (target == null)
+        {
+            *obj = IntPtr.Zero;
+            return HResults.E_INVALIDARG;
+        }
+
+        ComWrappers cw = new StrategyBasedComWrappers();
+        object legacyObj = cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None);
+        if (legacyObj is not Legacy.IDacDbiInterface)
+        {
+            *obj = IntPtr.Zero;
+            return HResults.E_NOINTERFACE;
+        }
+
+        Legacy.DacDbiImpl impl = new(target, legacyObj);
+        *obj = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
+        return HResults.S_OK;
+    }
+
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstanceWithFallback")]
     private static unsafe int CLRDataCreateInstanceWithFallback(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
     {

@@ -17,6 +17,8 @@
 // existing V2 interfaces
 #include "dbgipcevents.h"
 
+EXTERN_C const IID IID_IDacDbiInterface;
+
 //-----------------------------------------------------------------------------
 // Deallocation function for memory allocated with the global IAllocator object.
 //
@@ -163,10 +165,11 @@ const DWORD kCurrentDbiVersionFormat = 1;
 //
 //
 //-----------------------------------------------------------------------------
-class IDacDbiInterface
+MIDL_INTERFACE("B7A6D3F5-6B46-4DD4-8AF1-0D4A2AFB98C1")
+IDacDbiInterface : public IUnknown
 {
 public:
-    class IStringHolder;
+    struct IStringHolder;
 
     // The following tag tells the DD-marshalling tool to start scanning.
     // BEGIN_MARSHAL
@@ -2565,7 +2568,8 @@ public:
     // different DLLs with their own heap allocation mechanism, while avoiding
     // the ugly and verbose 2-call C-style string passing API pattern.
     //-----------------------------------------------------------------------------
-    class IStringHolder
+    MIDL_INTERFACE("1D83B63E-D0C1-4473-9E6D-E53BFB3CF9A3")
+    IStringHolder : public IUnknown
     {
     public:
         //

@@ -33,6 +33,12 @@ int cdac_reader_free(intptr_t handle);
 //   obj: returned SOS interface that can be QI'd to ISOSDacInterface*
 int cdac_reader_create_sos_interface(intptr_t handle, IUnknown* legacyImpl, IUnknown** obj);
 
+// Create the DAC-DBI interface from the cDAC reader
+//   handle: handle to the reader
+//   legacyImpl: optional legacy IDacDbiInterface implementation for fallback
+//   obj: returned IDacDbiInterface implementation
+int cdac_reader_create_dacdbi_interface(intptr_t handle, void* legacyImpl, void** obj);
+
 #ifdef __cplusplus
 }
 #endif

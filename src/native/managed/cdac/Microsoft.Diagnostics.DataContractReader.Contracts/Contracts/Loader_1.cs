@@ -552,4 +552,23 @@ internal readonly struct Loader_1 : ILoader
         ISHash shashContract = _target.Contracts.SHash;
         return shashContract.LookupSHash(dynamicILBlobTable.HashTable, token).EntryIL;
     }
+
+    string ILoader.GetModuleSimpleName(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.SimpleName != TargetPointer.Null
+            ? _target.ReadUtf8String(module.SimpleName.Value)
+            : string.Empty;
+    }
+
+    TargetPointer ILoader.GetDomainAssemblyForModule(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.DomainAssembly;
+    }
+
+    TargetPointer ILoader.GetAppDomain()
+    {
+        return _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.AppDomain));
+    }
 }

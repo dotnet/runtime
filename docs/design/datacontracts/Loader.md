@@ -86,6 +86,9 @@ TargetPointer GetStubHeap(TargetPointer loaderAllocatorPointer);
 TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer);
 TargetPointer GetILHeader(ModuleHandle handle, uint token);
 TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
+string GetModuleSimpleName(ModuleHandle handle);
+TargetPointer GetDomainAssemblyForModule(ModuleHandle handle);
+TargetPointer GetAppDomain();
 ```
 
 ## Version 1
@@ -110,6 +113,8 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token);
 | `Module` | `TypeDefToMethodTableMap` | Mapping table |
 | `Module` | `TypeRefToMethodTableMap` | Mapping table |
 | `Module` | `DynamicILBlobTable` | pointer to the table of dynamic IL |
+| `Module` | `SimpleName` | Pointer to the simple name of the Module (UTF-8, null-terminated) |
+| `Module` | `DomainAssembly` | Pointer to the DomainAssembly for this Module |
 | `ModuleLookupMap` | `TableData` | Start of the mapping table's data |
 | `ModuleLookupMap` | `SupportedFlagsMask` | Mask for flag bits on lookup map entries |
 | `ModuleLookupMap` | `Count` | Number of TargetPointer sized entries in this section of the map |
@@ -689,6 +694,31 @@ TargetPointer GetDynamicIL(ModuleHandle handle, uint token)
     SHash<uint, Data.DynamicILBlobEntry> shash = shashContract.CreateSHash<uint, Data.DynamicILBlobEntry>(target, dynamicBlobTablePtr, DataType.DynamicILBlobTable, traits)
     Data.DynamicILBlobEntry blobEntry = shashContract.LookupSHash(shash, token);
     return /* blob entry IL address */
+}
+```
+
+```csharp
+string GetModuleSimpleName(ModuleHandle handle)
+{
+    TargetPointer simpleNamePtr = target.ReadPointer(handle.Address + /* Module::SimpleName offset */);
+    if (simpleNamePtr == TargetPointer.Null)
+        return string.Empty;
+    return target.ReadUtf8String(simpleNamePtr);
+}
+```
+
+```csharp
+TargetPointer GetDomainAssemblyForModule(ModuleHandle handle)
+{
+    return target.ReadPointer(handle.Address + /* Module::DomainAssembly offset */);
+}
+```
+
+```csharp
+TargetPointer GetAppDomain()
+{
+    TargetPointer appDomainPointerAddress = target.ReadGlobalPointer("AppDomain");
+    return target.ReadPointer(appDomainPointerAddress);
 }
 ```
 

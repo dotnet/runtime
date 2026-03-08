@@ -94,6 +94,9 @@ public interface ILoader : IContract
     TargetPointer GetILHeader(ModuleHandle handle, uint token) => throw new NotImplementedException();
     TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
+    string GetModuleSimpleName(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetDomainAssemblyForModule(ModuleHandle handle) => throw new NotImplementedException();
+    TargetPointer GetAppDomain() => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

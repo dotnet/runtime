@@ -216,5 +216,53 @@ internal partial class MockDescriptors
             helpers.WritePointer(data.Slice(threadType.Fields[nameof(Data.Thread.CachedStackBase)].Offset), stackBase);
             helpers.WritePointer(data.Slice(threadType.Fields[nameof(Data.Thread.CachedStackLimit)].Offset), stackLimit);
         }
+
+        internal void SetThreadState(TargetPointer threadAddress, uint state, uint stateNC = 0)
+        {
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
+            Target.TypeInfo threadType = Types[DataType.Thread];
+            Span<byte> data = Builder.BorrowAddressRange(threadAddress, (int)threadType.Size.Value);
+            helpers.Write(data.Slice(threadType.Fields[nameof(Data.Thread.State)].Offset), state);
+            helpers.Write(data.Slice(threadType.Fields[nameof(Data.Thread.StateNC)].Offset), stateNC);
+        }
+
+        internal void SetThreadHandle(TargetPointer threadAddress, TargetPointer handle)
+        {
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
+            Target.TypeInfo threadType = Types[DataType.Thread];
+            Span<byte> data = Builder.BorrowAddressRange(threadAddress, (int)threadType.Size.Value);
+            helpers.WritePointer(data.Slice(threadType.Fields[nameof(Data.Thread.ThreadHandle)].Offset), handle);
+        }
+
+        internal void SetGCHandle(TargetPointer threadAddress, TargetPointer gcHandle)
+        {
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
+            Target.TypeInfo threadType = Types[DataType.Thread];
+            Span<byte> data = Builder.BorrowAddressRange(threadAddress, (int)threadType.Size.Value);
+            helpers.WritePointer(data.Slice(threadType.Fields["GCHandle"].Offset), gcHandle);
+        }
+
+        internal void SetCurrNotification(TargetPointer threadAddress, TargetPointer notification)
+        {
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
+            Target.TypeInfo threadType = Types[DataType.Thread];
+            Span<byte> data = Builder.BorrowAddressRange(threadAddress, (int)threadType.Size.Value);
+            helpers.WritePointer(data.Slice(threadType.Fields[nameof(Data.Thread.CurrNotification)].Offset), notification);
+        }
+
+        internal void SetExceptionThrownObjectHandle(TargetPointer threadAddress, TargetPointer thrownObjectHandle)
+        {
+            TargetTestHelpers helpers = Builder.TargetTestHelpers;
+            Target.TypeInfo threadType = Types[DataType.Thread];
+            Target.TypeInfo exceptionInfoType = Types[DataType.ExceptionInfo];
+
+            // Read the ExceptionTracker pointer stored in the thread — this is the address of the ExceptionInfo
+            Span<byte> threadData = Builder.BorrowAddressRange(threadAddress, (int)threadType.Size.Value);
+            TargetPointer exceptionInfoAddr = helpers.ReadPointer(threadData.Slice(threadType.Fields[nameof(Data.Thread.ExceptionTracker)].Offset));
+
+            // Write the ThrownObjectHandle into the ExceptionInfo
+            Span<byte> exInfoData = Builder.BorrowAddressRange(exceptionInfoAddr, (int)exceptionInfoType.Size.Value);
+            helpers.WritePointer(exInfoData.Slice(exceptionInfoType.Fields[nameof(Data.ExceptionInfo.ThrownObjectHandle)].Offset), thrownObjectHandle);
+        }
     }
 }

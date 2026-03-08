@@ -65,6 +65,8 @@
 
 // Global allocator for DD. Access is protected under the g_dacMutex lock.
 IDacDbiInterface::IAllocator * g_pAllocator = NULL;
+extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+EXTERN_C const IID IID_IDacDbiInterface = { 0xb7a6d3f5, 0x6b46, 0x4dd4, { 0x8a, 0xf1, 0x0d, 0x4a, 0x2a, 0xfb, 0x98, 0xc1 } };
 
 //---------------------------------------------------------------------------------------
 //
@@ -276,6 +278,35 @@ DacDbiInterfaceInstance(
 
     if (SUCCEEDED(hrStatus))
     {
+#ifdef CAN_USE_CDAC
+        CLRConfigNoCache enable = CLRConfigNoCache::Get("ENABLE_CDAC");
+        if (enable.IsSet())
+        {
+            DWORD val;
+            if (enable.TryAsInteger(10, val) && val == 1)
+            {
+                uint64_t contractDescriptorAddr = 0;
+                if (TryGetSymbol(pDac->m_pTarget, pDac->m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+                {
+                    CDAC& cdac = pDac->m_cdac;
+                    cdac = CDAC::Create(contractDescriptorAddr, pDac->m_pMutableTarget, pDac);
+                    if (cdac.IsValid())
+                    {
+                        IDacDbiInterface* cdacDbi = nullptr;
+                        if (SUCCEEDED(cdac.CreateDacDbiInterface(&cdacDbi)) && cdacDbi != nullptr)
+                        {
+                            if (cdacDbi != pDac)
+                            {
+                                pDac->Release();
+                            }
+                            *ppInterface = cdacDbi;
+                            return S_OK;
+                        }
+                    }
+                }
+            }
+        }
+#endif
         *ppInterface = pDac;
     }
     else
@@ -327,6 +358,33 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
     // This overrides the assignment in the base class ctor (which runs first).
     m_fEnableDllVerificationAsserts = true;
 #endif
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::QueryInterface(REFIID interfaceId, PVOID* iface)
+{
+    if (iface == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (IsEqualIID(interfaceId, IID_IDacDbiInterface))
+    {
+        ClrDataAccess::AddRef();
+        *iface = static_cast<IDacDbiInterface*>(this);
+        return S_OK;
+    }
+
+    return ClrDataAccess::QueryInterface(interfaceId, iface);
+}
+
+ULONG STDMETHODCALLTYPE DacDbiInterfaceImpl::AddRef()
+{
+    return ClrDataAccess::AddRef();
+}
+
+ULONG STDMETHODCALLTYPE DacDbiInterfaceImpl::Release()
+{
+    return ClrDataAccess::Release();
 }
 
 //-----------------------------------------------------------------------------
@@ -449,7 +507,7 @@ HRESULT DacDbiInterfaceImpl::Destroy()
     {
         m_pAllocator = NULL;
 
-        this->Release();
+        ClrDataAccess::Release();
         // Memory is deleted, don't access this object any more
     }
     EX_CATCH_HRESULT(hr);
