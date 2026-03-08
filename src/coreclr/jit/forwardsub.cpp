@@ -34,12 +34,13 @@
 // and ensuring downstream phases do not get confused.
 //
 // For throughput, we try and early out on illegal or unprofitable cases
-// before doing the more costly bits of analysis. We only scan a limited
-// amount of IR and just give up if we can't find what we are looking for.
-// We use the linked lists of locals to quickly find out if there is a
-// candidate last use in the next statement.
+// before doing the more costly bits of analysis. We use the linked lists
+// of locals to quickly find out if there is a candidate last use.
 //
-// If we're successful we will backtrack a bit, to try and catch cases like
+// The block walk maintains a set of candidate def statements. For each
+// statement we check if any candidate's local has a last use there and
+// attempt substitution. After a successful substitution we re-process
+// the same statement to handle cascading cases like:
 //
 // Statement(n):
 //    lcl1 = tree1
@@ -49,7 +50,7 @@
 //    use ...  lcl1 ... use ... lcl2 ...
 //
 // If we can forward sub tree2, then the def and use of lcl1 become
-// adjacent.
+// adjacent and we can try to sub tree1 as well.
 //
 // For legality we must show that evaluating "tree" at its new position
 // can't change any observable behavior. This largely means running an
@@ -79,7 +80,6 @@
 //
 // Possible enhancements:
 // * Allow fwd sub of "simple, cheap" trees when there's more than one use.
-// * Search more widely for the use.
 // * Use height/depth to avoid blowing morph's recursion, rather than tree size.
 // * Sub across a block boundary if successor block is unique, join-free,
 //   and in the same EH region.
@@ -126,52 +126,6 @@ PhaseStatus Compiler::fgForwardSub()
     }
 
     return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
-}
-
-//------------------------------------------------------------------------
-// fgForwardSubBlock: run forward substitution in this block
-//
-// Arguments:
-//    block -- block to process
-//
-// Returns:
-//    true if any IR was modified
-//
-bool Compiler::fgForwardSubBlock(BasicBlock* block)
-{
-    Statement* stmt     = block->firstStmt();
-    Statement* lastStmt = block->lastStmt();
-    bool       changed  = false;
-
-    while (stmt != lastStmt)
-    {
-        Statement* const prevStmt    = stmt->GetPrevStmt();
-        Statement* const nextStmt    = stmt->GetNextStmt();
-        bool const       substituted = fgForwardSubStatement(stmt);
-
-        if (substituted)
-        {
-            fgRemoveStmt(block, stmt);
-            changed = true;
-        }
-
-        // Try backtracking if we substituted.
-        //
-        if (substituted && (prevStmt != lastStmt) && prevStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR))
-        {
-            // Yep, bactrack.
-            //
-            stmt = prevStmt;
-        }
-        else
-        {
-            // Move on to the next.
-            //
-            stmt = nextStmt;
-        }
-    }
-
-    return changed;
 }
 
 //------------------------------------------------------------------------
@@ -423,7 +377,7 @@ public:
         return fgWalkResult::WALK_CONTINUE;
     }
 
-    GenTreeFlags GetFlags()
+    GenTreeFlags GetFlags() const
     {
         return m_flags;
     }
@@ -433,24 +387,33 @@ private:
 };
 
 //------------------------------------------------------------------------
-// fgForwardSubStatement: forward substitute this statement's
-//  computation to the next statement, if legal and profitable
+// ForwardSubCandidate: tracks a def statement that may be forward
+// substituted into a later statement.
 //
-// arguments:
-//    stmt - statement in question
+struct ForwardSubCandidate
+{
+    Statement*        defStmt;
+    unsigned          lclNum;
+    GenTree*          fwdSubNode;
+    GenTreeFlags      fwdSubFlags;
+    GenTreeFlags      intermediateFlags;
+    ExceptionSetFlags intermediateExcepts;
+};
+
+//------------------------------------------------------------------------
+// fgForwardSubIsDefCandidate: check if a statement is a valid forward
+// sub candidate (def-side checks only).
+//
+// Arguments:
+//    stmt       - statement to check
+//    fwdSubNode - [out] the tree to substitute if this is a candidate
+//    lclNum     - [out] the local being defined
 //
 // Returns:
-//    true if statement computation was forwarded.
-//    caller is responsible for removing the now-dead statement.
+//    true if the statement is a valid forward sub def candidate.
 //
-// Remarks:
-//    This requires locals to be linked (fgNodeThreading == AllLocals) and
-//    liveness information to be up-to-date (specifically GTF_VAR_DEATH).
-//
-bool Compiler::fgForwardSubStatement(Statement* stmt)
+bool Compiler::fgForwardSubIsDefCandidate(Statement* stmt, GenTree** fwdSubNode, unsigned* lclNum)
 {
-    // Is this tree a def of a single use, unaliased local?
-    //
     GenTree* const defNode = stmt->GetRootNode();
 
     if (!defNode->OperIs(GT_STORE_LCL_VAR))
@@ -458,153 +421,261 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
+    // Clean up stale flags before checking.
+    //
+    gtUpdateStmtSideEffects(stmt);
+
     JITDUMP("    [%06u]: ", dspTreeID(defNode))
 
-    unsigned const   lclNum = defNode->AsLclVarCommon()->GetLclNum();
-    LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+    *lclNum                 = defNode->AsLclVarCommon()->GetLclNum();
+    LclVarDsc* const varDsc = lvaGetDesc(*lclNum);
 
-    // Leave pinned locals alone.
-    // This is just a perf opt -- we shouldn't find any uses.
-    //
     if (varDsc->lvPinned)
     {
         JITDUMP(" pinned local\n");
         return false;
     }
 
-    // And local is unalised
-    //
     if (varDsc->IsAddressExposed())
     {
-        JITDUMP(" not store (unaliased single-use lcl)\n");
+        JITDUMP(" address-exposed local\n");
         return false;
     }
 
-    // Could handle this case --perhaps-- but we'd want to update ref counts.
-    //
-    if (lvaIsImplicitByRefLocal(lclNum))
+    if (lvaIsImplicitByRefLocal(*lclNum))
     {
         JITDUMP(" implicit by-ref local\n");
         return false;
     }
 
-    // Check the tree to substitute.
-    //
-    // We could just extract the value portion and forward sub that,
-    // but cleanup would be more complicated.
-    //
-    GenTree* fwdSubNode = defNode->AsLclVarCommon()->Data();
+    GenTree* node = defNode->AsLclVarCommon()->Data();
 
-    // Can't substitute GT_CATCH_ARG, GT_LCLHEAP or GT_ASYNC_CONTINUATION.
-    //
-    if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP, GT_ASYNC_CONTINUATION))
+    if (node->OperIs(GT_CATCH_ARG, GT_LCLHEAP, GT_ASYNC_CONTINUATION))
     {
-        JITDUMP(" tree to sub is %s\n", GenTree::OpName(fwdSubNode->OperGet()));
+        JITDUMP(" tree to sub is %s\n", GenTree::OpName(node->OperGet()));
         return false;
     }
 
-    // Do not substitute async calls; if the target node has a temp BYREF node,
-    // that creates illegal IR.
-    if (gtTreeContainsAsyncCall(fwdSubNode))
+    if (gtTreeContainsAsyncCall(node))
     {
         JITDUMP(" tree has an async call\n");
         return false;
     }
 
-    // Bail if sub node has embedded stores.
-    //
-    if ((fwdSubNode->gtFlags & GTF_ASG) != 0)
+    if ((node->gtFlags & GTF_ASG) != 0)
     {
         JITDUMP(" tree to sub has effects\n");
         return false;
     }
 
-    // Bail if sub node has mismatched types.
-    // Might be able to tolerate these by retyping.
-    //
-    if (genActualType(defNode->TypeGet()) != genActualType(fwdSubNode->TypeGet()))
+    if (genActualType(defNode->TypeGet()) != genActualType(node->TypeGet()))
     {
         JITDUMP(" mismatched types (store)\n");
         return false;
     }
 
-    // Local and tree to substitute seem suitable.
-    // See if the next statement contains the one and only use.
-    //
-    Statement* const nextStmt = stmt->GetNextStmt();
-
-    ForwardSubVisitor fsv(this, lclNum);
-    // Do a quick scan through the linked locals list to see if there is a last use.
-    bool found = false;
-    for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
+    // If fwdSubNode is an address-exposed local, forwarding it may lose
+    // optimizations due to GLOB_REF "poisoning" the tree. CQ analysis shows
+    // this to not be a problem with structs.
+    if (node->OperIs(GT_LCL_VAR))
     {
-        if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
-        {
-            if (fsv.IsLastUse(lcl->AsLclVar()))
-            {
-                found = true;
-                break;
-            }
-        }
+        unsigned const   fwdLclNum = node->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
 
-        if (fsv.IsUse(lcl))
+        if (!varTypeIsStruct(fwdVarDsc) && fwdVarDsc->IsAddressExposed())
         {
-            JITDUMP(" next stmt has non-last use\n");
+            JITDUMP(" V%02u is address exposed\n", fwdLclNum);
             return false;
         }
     }
 
-    if (!found)
+    // A "CanBeReplacedWithItsField" SDSU can serve as a sort of
+    // "BITCAST<primitive>(struct)" device, forwarding it risks forcing
+    // things to memory.
+    if (node->IsCall() && varDsc->CanBeReplacedWithItsField(this))
     {
-        JITDUMP(" no next stmt use\n");
+        JITDUMP(" fwd sub local is 'CanBeReplacedWithItsField'\n");
         return false;
     }
 
-    // Don't fwd sub overly large trees.
-    // Size limit here is ad-hoc. Need to tune.
-    //
-    // Consider instead using the height of the fwdSubNode.
-    //
     unsigned const nodeLimit = 16;
     auto           countNode = [](GenTree* tree) -> unsigned {
         return 1;
     };
 
-    if (gtComplexityExceeds(fwdSubNode, nodeLimit, countNode))
+    if (gtComplexityExceeds(node, nodeLimit, countNode))
     {
         JITDUMP(" tree to sub has more than %u nodes\n", nodeLimit);
         return false;
     }
 
-    // We often see stale flags, eg call flags after inlining.
-    // Try and clean these up.
-    //
-    gtUpdateStmtSideEffects(nextStmt);
-    gtUpdateStmtSideEffects(stmt);
+    JITDUMP(" fwd sub candidate for V%02u\n", *lclNum);
+    *fwdSubNode = node;
+    return true;
+}
 
-    // Scan for the (last) use.
-    //
-    fsv.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
+//------------------------------------------------------------------------
+// fgForwardSubCanReorderPast: check if a forward sub candidate can be
+// safely reordered past a statement's effects.
+//
+// Arguments:
+//    candidate   - the forward sub candidate
+//    stmtFlags   - the effects flags of the statement to reorder past
+//
+// Returns:
+//    true if the candidate can be safely reordered past the statement.
+//
+// static
+bool Compiler::fgForwardSubCanReorderPast(ForwardSubCandidate* candidate, GenTreeFlags stmtFlags)
+{
+    GenTreeFlags const fwdFlags = candidate->fwdSubFlags;
 
-    // The visitor has more contextual information and may not actually deem
-    // the use we found above as a valid forward sub destination so we must
-    // recheck it here.
-    if (fsv.GetNode() == nullptr)
+    if (((fwdFlags & GTF_CALL) != 0) && ((stmtFlags & GTF_ALL_EFFECT) != 0))
     {
-        JITDUMP(" no next stmt use\n");
+        return false;
+    }
+    if (((stmtFlags & GTF_CALL) != 0) && ((fwdFlags & GTF_ALL_EFFECT) != 0))
+    {
+        return false;
+    }
+    if (((fwdFlags & GTF_GLOB_REF) != 0) && ((stmtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+    {
+        return false;
+    }
+    if (((stmtFlags & GTF_GLOB_REF) != 0) && ((fwdFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+    {
+        return false;
+    }
+    if (((fwdFlags & GTF_ORDER_SIDEEFF) != 0) && ((stmtFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
+    {
+        return false;
+    }
+    if (((stmtFlags & GTF_ORDER_SIDEEFF) != 0) && ((fwdFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
+    {
+        return false;
+    }
+    if (((fwdFlags & GTF_EXCEPT) != 0) && ((stmtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+    {
+        return false;
+    }
+    if (((stmtFlags & GTF_EXCEPT) != 0) && ((fwdFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+    {
+        return false;
+    }
+    if (((fwdFlags & GTF_EXCEPT) != 0) && ((stmtFlags & GTF_EXCEPT) != 0))
+    {
         return false;
     }
 
-    JITDUMP(" [%06u] is last use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(defNode), lclNum);
+    return true;
+}
+
+//------------------------------------------------------------------------
+// fgForwardSubHasStoreInterferenceWithCandidate: check if any stores in
+// a statement conflict with locals read by the forward sub candidate.
+//
+// Arguments:
+//    candidate - the forward sub candidate
+//    stmt      - the statement to check for conflicting stores
+//
+// Returns:
+//    true if there is interference.
+//
+bool Compiler::fgForwardSubHasStoreInterferenceWithCandidate(ForwardSubCandidate* candidate, Statement* stmt)
+{
+    Statement*           defStmt = candidate->defStmt;
+    GenTreeLclVarCommon* defNode = defStmt->GetRootNode()->AsLclVarCommon();
+
+    for (GenTreeLclVarCommon* defStmtLcl : defStmt->LocalsTreeList())
+    {
+        if (defStmtLcl == defNode)
+        {
+            break;
+        }
+
+        unsigned   defStmtLclNum       = defStmtLcl->GetLclNum();
+        LclVarDsc* defStmtLclDsc       = lvaGetDesc(defStmtLclNum);
+        unsigned   defStmtParentLclNum = BAD_VAR_NUM;
+        if (defStmtLclDsc->lvIsStructField)
+        {
+            defStmtParentLclNum = defStmtLclDsc->lvParentLcl;
+        }
+
+        for (GenTreeLclVarCommon* stmtLcl : stmt->LocalsTreeList())
+        {
+            if (!stmtLcl->OperIsLocalStore())
+            {
+                continue;
+            }
+
+            if ((stmtLcl->GetLclNum() == defStmtLclNum) || (stmtLcl->GetLclNum() == defStmtParentLclNum))
+            {
+                return true;
+            }
+
+            // Check if the store target is a field of a local read by the candidate.
+            LclVarDsc* const stmtLclDsc = lvaGetDesc(stmtLcl->GetLclNum());
+            if (stmtLclDsc->lvIsStructField && (stmtLclDsc->lvParentLcl == defStmtLclNum))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// fgForwardSubStatement: forward substitute a candidate's computation
+// into a use statement, if legal and profitable
+//
+// Arguments:
+//    candidate - the forward sub candidate
+//    useStmt   - the statement containing the use
+//
+// Returns:
+//    true if substitution was performed.
+//    caller is responsible for removing the now-dead def statement.
+//
+bool Compiler::fgForwardSubStatement(ForwardSubCandidate* candidate, Statement* useStmt)
+{
+    Statement* const defStmt    = candidate->defStmt;
+    GenTree* const   defNode    = defStmt->GetRootNode();
+    unsigned const   lclNum     = candidate->lclNum;
+    LclVarDsc* const varDsc     = lvaGetDesc(lclNum);
+    GenTree*         fwdSubNode = candidate->fwdSubNode;
+
+    JITDUMP("  Trying to fwd sub [%06u] (V%02u) into [%06u]\n", dspTreeID(defNode), lclNum,
+            dspTreeID(useStmt->GetRootNode()));
+
+    // We often see stale flags, eg call flags after inlining.
+    // Try and clean these up.
+    //
+    gtUpdateStmtSideEffects(useStmt);
+    gtUpdateStmtSideEffects(defStmt);
+
+    // Scan for the (last) use.
+    //
+    ForwardSubVisitor fsv(this, lclNum);
+    fsv.WalkTree(useStmt->GetRootNodePointer(), nullptr);
+
+    // The visitor may not find a valid forward sub destination.
+    if (fsv.GetNode() == nullptr)
+    {
+        JITDUMP("    no valid use found in use stmt\n");
+        return false;
+    }
+
+    JITDUMP("    [%06u] is last use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(defNode), lclNum);
 
     // Qmarks must replace top-level uses. Also, restrict to STORE_LCL_VAR.
     // And also to where neither local is normalize on store, otherwise
     // something downstream may add a cast over the qmark.
     //
-    GenTree* const nextRootNode = nextStmt->GetRootNode();
+    GenTree* const useRootNode = useStmt->GetRootNode();
     if (fwdSubNode->OperIs(GT_QMARK))
     {
-        if ((fsv.GetParentNode() != nextRootNode) || !nextRootNode->OperIs(GT_STORE_LCL_VAR))
+        if ((fsv.GetParentNode() != useRootNode) || !useRootNode->OperIs(GT_STORE_LCL_VAR))
         {
             JITDUMP(" can't fwd sub qmark as use is not top level STORE_LCL_VAR\n");
             return false;
@@ -616,7 +687,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
             return false;
         }
 
-        const unsigned   dstLclNum = nextRootNode->AsLclVarCommon()->GetLclNum();
+        const unsigned   dstLclNum = useRootNode->AsLclVarCommon()->GetLclNum();
         LclVarDsc* const dstVarDsc = lvaGetDesc(dstLclNum);
 
         if (dstVarDsc->lvNormalizeOnStore())
@@ -626,20 +697,20 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         }
     }
 
-    // If next statement already has a large tree, hold off
+    // If use statement already has a large tree, hold off
     // on making it even larger.
     //
-    // We use total node count. Consider instead using the depth of the use and the
-    // height of the fwdSubNode.
-    //
+    auto countNode = [](GenTree* tree) -> unsigned {
+        return 1;
+    };
+
     unsigned const nextTreeLimit = 200;
     if ((fsv.GetComplexity() > nextTreeLimit) && gtComplexityExceeds(fwdSubNode, 1, countNode))
     {
-        JITDUMP(" next stmt tree is too large (%u)\n", fsv.GetComplexity());
+        JITDUMP(" use stmt tree is too large (%u)\n", fsv.GetComplexity());
         return false;
     }
 
-    // Next statement seems suitable.
     // See if we can forward sub without changing semantics.
     //
     if (genActualType(fsv.GetNode()) != genActualType(fwdSubNode))
@@ -648,51 +719,45 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    // We can forward sub if
+    // The effects we need to check against include both the effects within
+    // the use statement (before the use point) and any accumulated
+    // intermediate effects from statements between the def and use.
     //
-    // the value of the fwdSubNode can't change and its evaluation won't cause side effects,
-    //
-    // or,
-    //
-    // if the next tree can't change the value of fwdSubNode or be impacted by fwdSubNode effects
-    //
-    if (((fsv.GetFlags() & GTF_ASG) != 0) && fgForwardSubHasStoreInterference(stmt, nextStmt, fsv.GetNode()))
+    GenTreeFlags const      useFlags   = fsv.GetFlags() | candidate->intermediateFlags;
+    ExceptionSetFlags const useExcepts = fsv.GetExceptions() | candidate->intermediateExcepts;
+
+    if (((useFlags & GTF_ASG) != 0) && fgForwardSubHasStoreInterference(defStmt, useStmt, fsv.GetNode()))
     {
-        // We execute a store before the substitution local; that
-        // store could interfere with some of the locals in the source of
-        // the candidate def.
         JITDUMP(" cannot reorder with potential interfering store\n");
         return false;
     }
-    if (((fwdSubNode->gtFlags & GTF_CALL) != 0) && ((fsv.GetFlags() & GTF_ALL_EFFECT) != 0))
+    if (((fwdSubNode->gtFlags & GTF_CALL) != 0) && ((useFlags & GTF_ALL_EFFECT) != 0))
     {
         JITDUMP(" cannot reorder call with any side effect\n");
         return false;
     }
-    if (((fwdSubNode->gtFlags & GTF_GLOB_REF) != 0) && ((fsv.GetFlags() & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+    if (((fwdSubNode->gtFlags & GTF_GLOB_REF) != 0) && ((useFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
     {
         JITDUMP(" cannot reorder global reference with persistent side effects\n");
         return false;
     }
-    if (((fwdSubNode->gtFlags & GTF_ORDER_SIDEEFF) != 0) &&
-        ((fsv.GetFlags() & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
+    if (((fwdSubNode->gtFlags & GTF_ORDER_SIDEEFF) != 0) && ((useFlags & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
     {
         JITDUMP(" cannot reorder ordering side effect with global reference/ordering side effect\n");
         return false;
     }
     if ((fwdSubNode->gtFlags & GTF_EXCEPT) != 0)
     {
-        if ((fsv.GetFlags() & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
+        if ((useFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
         {
             JITDUMP(" cannot reorder exception with persistent side effect\n");
             return false;
         }
 
-        if ((fsv.GetFlags() & GTF_EXCEPT) != 0)
+        if ((useFlags & GTF_EXCEPT) != 0)
         {
-            assert(fsv.GetExceptions() != ExceptionSetFlags::None);
-            if ((genCountBits(static_cast<uint32_t>(fsv.GetExceptions())) > 1) ||
-                (((fsv.GetExceptions() & ExceptionSetFlags::UnknownException) != ExceptionSetFlags::None)))
+            if ((genCountBits(static_cast<uint32_t>(useExcepts)) > 1) ||
+                (((useExcepts & ExceptionSetFlags::UnknownException) != ExceptionSetFlags::None)))
             {
                 JITDUMP(" cannot reorder different/unknown thrown exceptions\n");
                 return false;
@@ -700,7 +765,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
             ExceptionSetFlags fwdSubNodeExceptions = gtCollectExceptions(fwdSubNode);
             assert(fwdSubNodeExceptions != ExceptionSetFlags::None);
-            if (fwdSubNodeExceptions != fsv.GetExceptions())
+            if (fwdSubNodeExceptions != useExcepts)
             {
                 JITDUMP(" cannot reorder different thrown exceptions\n");
                 return false;
@@ -714,7 +779,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // TODO: remove this once we can trust upstream phases and/or gtUpdateStmtSideEffects
     // to set GTF_GLOB_REF properly.
     //
-    if ((fsv.GetFlags() & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
+    if ((useFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
     {
         EffectsVisitor ev(this);
         ev.WalkTree(&fwdSubNode, nullptr);
@@ -722,27 +787,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         if ((ev.GetFlags() & GTF_GLOB_REF) != 0)
         {
             JITDUMP(" potentially interacting effects (AX locals)\n");
-            return false;
-        }
-    }
-
-    // Finally, profitability checks.
-    //
-    // These conditions can be checked earlier in the final version to save some throughput.
-    // Perhaps allowing for bypass with jit stress.
-    //
-    // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations due
-    // to GLOB_REF "poisoning" the tree. CQ analysis shows this to not be a problem with
-    // structs.
-    //
-    if (fwdSubNode->OperIs(GT_LCL_VAR))
-    {
-        unsigned const   fwdLclNum = fwdSubNode->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
-
-        if (!varTypeIsStruct(fwdVarDsc) && fwdVarDsc->IsAddressExposed())
-        {
-            JITDUMP(" V%02u is address exposed\n", fwdLclNum);
             return false;
         }
     }
@@ -757,20 +801,8 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    // A "CanBeReplacedWithItsField" SDSU can serve as a sort of "BITCAST<primitive>(struct)"
-    // device, forwarding it risks forcing things to memory.
-    //
-    if (fwdSubNode->IsCall() && varDsc->CanBeReplacedWithItsField(this))
-    {
-        JITDUMP(" fwd sub local is 'CanBeReplacedWithItsField'\n");
-        return false;
-    }
-
     // There are implicit assumptions downstream on where/how multi-reg ops
     // can appear.
-    //
-    // Eg if fwdSubNode is a multi-reg call, parent node must be STORE_LCL_VAR
-    // and the local being defined must be specially marked up.
     //
     if (varTypeIsStruct(fwdSubNode) && fwdSubNode->IsMultiRegNode())
     {
@@ -791,12 +823,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // If a method returns a multi-reg type, only forward sub locals,
     // and ensure the local and operand have the required markup.
-    // (see eg impFixupStructReturnType).
-    //
-    // TODO-Cleanup: this constraint only exists for multi-reg **struct**
-    // returns, it does not exist for LONGs. However, enabling substitution
-    // for them on all 32 bit targets is a CQ regression due to some bad
-    // interaction between decomposition and RA.
     //
     if (compMethodReturnsMultiRegRetType() && (fsv.GetParentNode() != nullptr) &&
         fsv.GetParentNode()->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
@@ -824,9 +850,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
             GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
             unsigned const       fwdLclNum       = fwdSubNodeLocal->GetLclNum();
 
-            // These may later turn into indirections and the backend does not support
-            // those as sources of multi-reg returns.
-            //
             if (lvaIsImplicitByRefLocal(fwdLclNum))
             {
                 JITDUMP(" parent is multi-reg return; fwd sub node is implicit byref\n");
@@ -857,32 +880,93 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     GenTreeLclVarCommon* useLcl = (*use)->AsLclVarCommon();
     *use                        = fwdSubNode;
 
-    // We expect the last local in the statement is the defined local and
-    // replace the use of it with the rest from the statement.
     assert(defNode->gtNext == nullptr);
 
-    GenTreeLclVarCommon* firstLcl = *stmt->LocalsTreeList().begin();
+    GenTreeLclVarCommon* firstLcl = *defStmt->LocalsTreeList().begin();
 
     if (firstLcl == defNode)
     {
-        nextStmt->LocalsTreeList().Remove(useLcl);
+        useStmt->LocalsTreeList().Remove(useLcl);
     }
     else
     {
-        nextStmt->LocalsTreeList().Replace(useLcl, useLcl, firstLcl, defNode->gtPrev->AsLclVarCommon());
+        useStmt->LocalsTreeList().Replace(useLcl, useLcl, firstLcl, defNode->gtPrev->AsLclVarCommon());
 
         fgForwardSubUpdateLiveness(firstLcl, defNode->gtPrev);
     }
 
     if ((fwdSubNode->gtFlags & GTF_ALL_EFFECT) != 0)
     {
-        gtUpdateStmtSideEffects(nextStmt);
+        gtUpdateStmtSideEffects(useStmt);
     }
 
-    JITDUMP(" -- fwd subbing [%06u]; new next stmt is\n", dspTreeID(fwdSubNode));
-    DISPSTMT(nextStmt);
+    JITDUMP(" -- fwd subbing [%06u]; new use stmt is\n", dspTreeID(fwdSubNode));
+    DISPSTMT(useStmt);
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// fgForwardSubStatement: convenience wrapper that tries to forward
+// substitute a def statement into the immediately following statement.
+//
+// Arguments:
+//    stmt - the def statement
+//
+// Returns:
+//    true if substitution was performed.
+//
+bool Compiler::fgForwardSubStatement(Statement* stmt)
+{
+    GenTree* fwdSubNode = nullptr;
+    unsigned lclNum     = BAD_VAR_NUM;
+
+    if (!fgForwardSubIsDefCandidate(stmt, &fwdSubNode, &lclNum))
+    {
+        return false;
+    }
+
+    Statement* const nextStmt = stmt->GetNextStmt();
+    if (nextStmt == nullptr)
+    {
+        return false;
+    }
+
+    // Quick scan for a last use in the next statement.
+    //
+    ForwardSubVisitor fsv(this, lclNum);
+    bool              found = false;
+    for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
+    {
+        if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
+        {
+            if (fsv.IsLastUse(lcl->AsLclVar()))
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (fsv.IsUse(lcl))
+        {
+            return false;
+        }
+    }
+
+    if (!found)
+    {
+        return false;
+    }
+
+    ForwardSubCandidate candidate;
+    candidate.defStmt             = stmt;
+    candidate.lclNum              = lclNum;
+    candidate.fwdSubNode          = fwdSubNode;
+    candidate.fwdSubFlags         = fwdSubNode->gtFlags;
+    candidate.intermediateFlags   = GTF_EMPTY;
+    candidate.intermediateExcepts = ExceptionSetFlags::None;
+
+    return fgForwardSubStatement(&candidate, nextStmt);
 }
 
 //------------------------------------------------------------------------
@@ -935,10 +1019,14 @@ bool Compiler::fgForwardSubHasStoreInterference(Statement* defStmt, Statement* n
                 continue;
             }
 
-            // If the next statement has a store earlier than the use and that
-            // store affects a local on the RHS of the forward sub candidate,
-            // then we have interference.
             if ((useStmtLcl->GetLclNum() == defStmtLclNum) || (useStmtLcl->GetLclNum() == defStmtParentLclNum))
+            {
+                return true;
+            }
+
+            // Check if the store target is a field of a local read by the candidate.
+            LclVarDsc* const useStmtLclDsc = lvaGetDesc(useStmtLcl->GetLclNum());
+            if (useStmtLclDsc->lvIsStructField && (useStmtLclDsc->lvParentLcl == defStmtLclNum))
             {
                 return true;
             }
@@ -1025,4 +1113,194 @@ void Compiler::fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* new
             candidate = candidate->gtNext;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// fgForwardSubBlock: run forward substitution in this block
+//
+// Arguments:
+//    block -- block to process
+//
+// Returns:
+//    true if any IR was modified
+//
+// Remarks:
+//    Walks statements first to last, maintaining a candidate set of def
+//    statements whose trees may be forward substituted into later
+//    statements. For each statement we check for last uses of candidate
+//    locals, attempt substitution, remove interfered candidates, and
+//    add new candidates.
+//
+bool Compiler::fgForwardSubBlock(BasicBlock* block)
+{
+    bool changed = false;
+
+    ArrayStack<ForwardSubCandidate> candidates(getAllocator(CMK_Generic));
+
+    for (Statement* stmt = block->firstStmt(); stmt != nullptr;)
+    {
+        Statement* const nextStmt = stmt->GetNextStmt();
+
+        // Try to forward sub any candidate whose local has a last use
+        // in this statement.
+        //
+        bool substituted = false;
+        for (int i = 0; i < candidates.Height(); i++)
+        {
+            ForwardSubCandidate* candidate = &candidates.BottomRef(i);
+            unsigned const       candLcl   = candidate->lclNum;
+
+            // Quick scan through the linked locals list for a last use.
+            //
+            ForwardSubVisitor fsv(this, candLcl);
+            bool              hasLastUse = false;
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            {
+                if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == candLcl))
+                {
+                    if (fsv.IsLastUse(lcl->AsLclVar()))
+                    {
+                        hasLastUse = true;
+                        break;
+                    }
+                }
+
+                if (fsv.IsUse(lcl))
+                {
+                    // Non-last use: this candidate can never succeed.
+                    hasLastUse = false;
+                    break;
+                }
+            }
+
+            if (!hasLastUse)
+            {
+                continue;
+            }
+
+            // Found a last use. Attempt the substitution.
+            //
+            if (fgForwardSubStatement(candidate, stmt))
+            {
+                fgRemoveStmt(block, candidate->defStmt);
+                changed = true;
+
+                // Remove this candidate from the set.
+                //
+                candidates.BottomRef(i) = candidates.BottomRef(candidates.Height() - 1);
+                candidates.Pop(1);
+
+                // Re-process this statement since it changed.
+                //
+                substituted = true;
+                break;
+            }
+            else
+            {
+                // Forward sub failed; this candidate won't succeed later.
+                //
+                JITDUMP("    fwd sub of V%02u failed, removing candidate\n", candLcl);
+                candidates.BottomRef(i) = candidates.BottomRef(candidates.Height() - 1);
+                candidates.Pop(1);
+                i--;
+            }
+        }
+
+        if (substituted)
+        {
+            // Stay on the same statement to handle cascading substitutions.
+            //
+            continue;
+        }
+
+        // No substitution happened. Check interference and remove
+        // candidates that can't be reordered past this statement.
+        //
+        gtUpdateStmtSideEffects(stmt);
+        EffectsVisitor ev(this);
+        ev.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        GenTreeFlags const stmtFlags = ev.GetFlags();
+
+        for (int i = 0; i < candidates.Height(); i++)
+        {
+            ForwardSubCandidate* candidate = &candidates.BottomRef(i);
+
+            // If this statement uses the candidate local, the def must
+            // remain alive for that use and forward sub is impossible.
+            //
+            bool             interferes    = false;
+            unsigned const   candLcl       = candidate->lclNum;
+            LclVarDsc* const candDsc       = lvaGetDesc(candLcl);
+            unsigned const   candParentLcl = candDsc->lvIsStructField ? candDsc->lvParentLcl : BAD_VAR_NUM;
+
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            {
+                unsigned const lclNum = lcl->GetLclNum();
+
+                if ((lclNum == candLcl) || (lclNum == candParentLcl))
+                {
+                    interferes = true;
+                    break;
+                }
+
+                LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
+                if (lclDsc->lvIsStructField && (lclDsc->lvParentLcl == candLcl))
+                {
+                    interferes = true;
+                    break;
+                }
+            }
+
+            if (!interferes)
+            {
+                interferes = !fgForwardSubCanReorderPast(candidate, stmtFlags);
+            }
+
+            if (!interferes && ((stmtFlags & GTF_ASG) != 0))
+            {
+                interferes = fgForwardSubHasStoreInterferenceWithCandidate(candidate, stmt);
+            }
+
+            if (interferes)
+            {
+                JITDUMP("    V%02u interferes with [%06u], removing candidate\n", candidate->lclNum,
+                        dspTreeID(stmt->GetRootNode()));
+                candidates.BottomRef(i) = candidates.BottomRef(candidates.Height() - 1);
+                candidates.Pop(1);
+                i--;
+            }
+            else
+            {
+                candidate->intermediateFlags |= stmtFlags;
+                if ((stmtFlags & GTF_EXCEPT) != 0)
+                {
+                    candidate->intermediateExcepts = ExceptionSetFlags::UnknownException;
+                }
+            }
+        }
+
+        // If this statement defines a local, check if it's a valid
+        // forward sub candidate. Cap the candidate set size to bound
+        // the O(N*M) work in the main loop.
+        //
+        unsigned const maxCandidates = 16;
+        GenTree*       fwdSubNode    = nullptr;
+        unsigned       lclNum        = BAD_VAR_NUM;
+
+        if ((candidates.Height() < (int)maxCandidates) && fgForwardSubIsDefCandidate(stmt, &fwdSubNode, &lclNum))
+        {
+            ForwardSubCandidate newCandidate;
+            newCandidate.defStmt             = stmt;
+            newCandidate.lclNum              = lclNum;
+            newCandidate.fwdSubNode          = fwdSubNode;
+            newCandidate.fwdSubFlags         = fwdSubNode->gtFlags;
+            newCandidate.intermediateFlags   = GTF_EMPTY;
+            newCandidate.intermediateExcepts = ExceptionSetFlags::None;
+            candidates.Push(newCandidate);
+        }
+
+        stmt = nextStmt;
+    }
+
+    return changed;
 }
