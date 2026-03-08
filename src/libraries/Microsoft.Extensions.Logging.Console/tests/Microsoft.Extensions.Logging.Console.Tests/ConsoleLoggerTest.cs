@@ -445,6 +445,43 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }, new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } }).Dispose();
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData("FORCE_COLOR", "1", null, null, "AnsiLogConsole")]
+        [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "1", null, null, "AnsiLogConsole")]
+        [InlineData(null, null, "NO_COLOR", "1", "AnsiParsingLogConsole")]
+        [InlineData("FORCE_COLOR", "1", "NO_COLOR", "1", "AnsiLogConsole")]
+        public void DoesConsoleSupportAnsi_RespectsColorEnvVars(
+            string? envVarName1, string? envVarValue1,
+            string? envVarName2, string? envVarValue2,
+            string expectedConsoleTypeName)
+        {
+            var psi = new ProcessStartInfo { RedirectStandardOutput = true };
+            if (envVarName1 is not null)
+            {
+                psi.Environment[envVarName1] = envVarValue1;
+            }
+            if (envVarName2 is not null)
+            {
+                psi.Environment[envVarName2] = envVarValue2;
+            }
+
+            RemoteExecutor.Invoke(static (expectedTypeName) =>
+            {
+                var loggerProvider = new ServiceCollection()
+                    .AddLogging(builder => builder.AddConsole())
+                    .BuildServiceProvider()
+                    .GetRequiredService<ILoggerProvider>();
+
+                var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
+
+                var messageQueueField = typeof(ConsoleLoggerProvider).GetField("_messageQueue", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var processor = (ConsoleLoggerProcessor)messageQueueField!.GetValue(consoleLoggerProvider)!;
+                Assert.Equal(expectedTypeName, processor.Console.GetType().Name);
+
+                loggerProvider.Dispose();
+            }, expectedConsoleTypeName, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void WriteDebug_LogsCorrectColors()
         {
