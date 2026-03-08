@@ -131,6 +131,14 @@ namespace System.Text.Json.SourceGeneration
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor JsonIgnoreConditionAlwaysInvalidOnType { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1226",
+                title: new LocalizableResourceString(nameof(SR.JsonIgnoreConditionAlwaysInvalidOnTypeTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.JsonIgnoreConditionAlwaysInvalidOnTypeFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
         }
     }
 }
