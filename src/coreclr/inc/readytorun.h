@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 18
-#define READYTORUN_MINOR_VERSION 0x0002
+#define READYTORUN_MINOR_VERSION 0x0003
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 18
 
@@ -52,7 +52,7 @@
 //     R2R 17 is not backward compatible with 16.x or earlier.
 // R2R Version 17.1 adds the READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE flag to specify that the R2R image pointed to by OwnerCompositeExecutable is in the platform native format.
 // R2R Version 18 updates fields layout algorithm
-// R2R Version 18.2 adds InitClass and InitInstClass helpers
+// R2R Version 18.3 adds the ExternalTypeMaps, ProxyTypeMaps, TypeMapAssemblyTargets sections
 
 struct READYTORUN_CORE_HEADER
 {
@@ -118,6 +118,9 @@ enum class ReadyToRunSectionType : uint32_t
     MethodIsGenericMap          = 121, // Added in V9.0
     EnclosingTypeMap            = 122, // Added in V9.0
     TypeGenericInfoMap          = 123, // Added in V9.0
+    ExternalTypeMaps            = 124, // Added in V18.3
+    ProxyTypeMaps               = 125, // Added in V18.3
+    TypeMapAssemblyTargets      = 126, // Added in V18.3
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail

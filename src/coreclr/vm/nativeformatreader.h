@@ -101,6 +101,13 @@ namespace NativeFormat
             return *dac_cast<PTR_UINT32>(_base + offset); // Assumes little endian and unaligned access
         }
 
+        UInt64 ReadUInt64(uint offset)
+        {
+            if ((int)offset < 0 || offset + 7 >= _size)
+                ThrowBadImageFormatException();
+            return *dac_cast<PTR_UINT64>(_base + offset); // Assumes little endian and unaligned access
+        }
+
         uint DecodeUnsigned(uint offset, uint * pValue)
         {
             if (offset >= _size)
@@ -247,6 +254,69 @@ namespace NativeFormat
             }
         }
 
+        uint DecodeString(uint offset, PTR_CBYTE * ppValue, uint * pLength)
+        {
+            uint numBytes;
+            offset = DecodeUnsigned(offset, &numBytes);
+
+            if (numBytes == 0)
+            {
+                *ppValue = NULL;
+                *pLength = 0;
+                return offset;
+            }
+
+            uint endOffset = offset + numBytes;
+            if (endOffset < numBytes || endOffset > _size)
+                ThrowBadImageFormatException();
+
+            *ppValue = _base + offset;
+            *pLength = numBytes;
+
+            return endOffset;
+        }
+
+        uint SkipString(uint offset)
+        {
+            uint numBytes;
+            offset = DecodeUnsigned(offset, &numBytes);
+
+            if (numBytes == 0)
+            {
+                return offset;
+            }
+
+            uint endOffset = offset + numBytes;
+            if (endOffset < numBytes || endOffset > _size)
+                ThrowBadImageFormatException();
+
+            return endOffset;
+        }
+
+        bool StringEquals(uint offset, LPCUTF8 value, uint valueLength)
+        {
+            uint originalOffset = offset;
+
+            uint numBytes;
+            offset = DecodeUnsigned(offset, &numBytes);
+
+            uint endOffset = offset + numBytes;
+            if (endOffset < numBytes || endOffset > _size)
+                ThrowBadImageFormatException();
+
+            if (numBytes != valueLength)
+                return false;
+
+            PTR_CBYTE pData = _base + offset;
+            for (uint i = 0; i < numBytes; i++)
+            {
+                if (pData[i] != (byte)value[i])
+                    return false;
+            }
+
+            return true;
+        }
+
 #ifndef DACCESS_COMPILE
         const BYTE* GetBlob(uint offset)
         {
@@ -329,6 +399,21 @@ namespace NativeFormat
         void SkipInteger()
         {
             _offset = _pReader->SkipInteger(_offset);
+        }
+
+        void GetString(PTR_CBYTE * ppValue, uint * pLength)
+        {
+            _offset = _pReader->DecodeString(_offset, ppValue, pLength);
+        }
+
+        void SkipString()
+        {
+            _offset = _pReader->SkipString(_offset);
+        }
+
+        bool StringEquals(LPCUTF8 value, uint valueLength)
+        {
+            return _pReader->StringEquals(_offset, value, valueLength);
         }
 
         NativeParser GetParserFromRelativeOffset()
