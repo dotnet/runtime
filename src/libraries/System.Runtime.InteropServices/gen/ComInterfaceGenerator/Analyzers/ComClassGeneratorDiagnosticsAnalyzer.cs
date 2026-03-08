@@ -29,7 +29,13 @@ public sealed class ComClassGeneratorDiagnosticsAnalyzer : DiagnosticAnalyzer
         {
             bool unsafeCodeIsEnabled = context.Compilation.Options is CSharpCompilationOptions { AllowUnsafe: true };
             INamedTypeSymbol? generatedComClassAttributeType = context.Compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComClassAttribute);
-            INamedTypeSymbol? generatedComInterfaceAttributeType = context.Compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComInterfaceAttribute);
+
+            // We use this type only to report warning diagnostic. We also don't report a warning if there is at least one error.
+            // Given that with unsafe code disabled we will get an error on each declaration, we can skip
+            // unnecessary work of getting this symbol here
+            INamedTypeSymbol? generatedComInterfaceAttributeType = unsafeCodeIsEnabled
+                ? context.Compilation.GetBestTypeByMetadataName(TypeNames.GeneratedComInterfaceAttribute)
+                : null;
 
             context.RegisterSymbolAction(context => AnalyzeNamedType(context, unsafeCodeIsEnabled, generatedComClassAttributeType, generatedComInterfaceAttributeType), SymbolKind.NamedType);
         });
@@ -48,6 +54,7 @@ public sealed class ComClassGeneratorDiagnosticsAnalyzer : DiagnosticAnalyzer
         }
 
         Location location = classToAnalyze.Locations.First();
+        bool hasErrors = false;
 
         if (!unsafeCodeIsEnabled)
         {
@@ -55,6 +62,7 @@ public sealed class ComClassGeneratorDiagnosticsAnalyzer : DiagnosticAnalyzer
                 Diagnostic.Create(
                     GeneratorDiagnostics.RequiresAllowUnsafeBlocks,
                     location));
+            hasErrors = true;
         }
 
         var declarationNode = (TypeDeclarationSyntax)location.SourceTree.GetRoot().FindNode(location.SourceSpan);
@@ -66,6 +74,13 @@ public sealed class ComClassGeneratorDiagnosticsAnalyzer : DiagnosticAnalyzer
                     GeneratorDiagnostics.InvalidAttributedClassMissingPartialModifier,
                     location,
                     classToAnalyze));
+            hasErrors = true;
+        }
+
+        if (hasErrors)
+        {
+            // If we already reported at least one error avoid stacking a warning on top of it
+            return;
         }
 
         foreach (INamedTypeSymbol iface in classToAnalyze.AllInterfaces)

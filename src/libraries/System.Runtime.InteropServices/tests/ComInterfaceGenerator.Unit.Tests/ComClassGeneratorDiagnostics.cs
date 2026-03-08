@@ -27,7 +27,6 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 [GeneratedComClass]
                 internal class {|#0:C|} : INativeAPI {}
-
                 """;
 
             await VerifyCS.VerifySourceGeneratorAsync(
@@ -54,7 +53,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                     [GeneratedComClass]
                     internal partial class {|#0:C|} : INativeAPI {}
                 }
-
                 """;
 
             await VerifyCS.VerifySourceGeneratorAsync(
@@ -155,12 +153,66 @@ namespace ComInterfaceGenerator.Unit.Tests
                     [GeneratedComClass]
                     internal partial class {|#0:C|} : INativeAPI {}
                 }
-
                 """;
 
             await VerifyCS.VerifySourceGeneratorAsync(
                 source,
                 new DiagnosticResult(GeneratorDiagnostics.ClassDoesNotImplementAnyGeneratedComInterface)
+                    .WithLocation(0)
+                    .WithArguments("Test.C"));
+        }
+
+        [Fact]
+        public async Task NoWarningIfErrorIsAlreadyPresent_UnsafeCodeNotEnabledError()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                public partial class Test{
+                    internal interface INativeAPI
+                    {
+                    }
+
+                    [GeneratedComClass]
+                    internal partial class {|#0:C|} : INativeAPI {}
+                }
+                """;
+
+            var test = new UnsafeBlocksNotAllowedTest(false)
+            {
+                TestCode = source,
+                ExpectedDiagnostics =
+                {
+                    new DiagnosticResult(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
+                        .WithLocation(0)
+                        .WithArguments("Test.C")
+                }
+            };
+
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task NoWarningIfErrorIsAlreadyPresent_NotPartialContextError()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                public partial class Test{
+                    internal interface INativeAPI
+                    {
+                    }
+
+                    [GeneratedComClass]
+                    internal class {|#0:C|} : INativeAPI {}
+                }
+                """;
+
+            await VerifyCS.VerifySourceGeneratorAsync(
+                source,
+                new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedClassMissingPartialModifier)
                     .WithLocation(0)
                     .WithArguments("Test.C"));
         }
