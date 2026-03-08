@@ -254,6 +254,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.WriteCore.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonDictionaryKeyFilter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonResumableConverterOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Helpers.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleMetadata.cs" />
