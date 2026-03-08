@@ -55,7 +55,12 @@ namespace System
             // the types are the same, obj should also be a
             // MulticastDelegate
             Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
-            MulticastDelegate d = Unsafe.As<MulticastDelegate>(obj);
+            MulticastDelegate d;
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                d = Unsafe.As<MulticastDelegate>(obj);
+            }
 
             if (_invocationCount != 0)
             {

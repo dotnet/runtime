@@ -631,7 +631,11 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(key != null); // Key already validated as non-null
 
                 int entryIndex = FindEntry(key, out object? secondary);
-                value = Unsafe.As<TValue>(secondary);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    value = Unsafe.As<TValue>(secondary);
+                }
                 return entryIndex != -1;
             }
 
@@ -682,8 +686,16 @@ namespace System.Runtime.CompilerServices
 
                     if (oKey != null)
                     {
-                        key = Unsafe.As<TKey>(oKey);
-                        value = Unsafe.As<TValue>(oValue!);
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            key = Unsafe.As<TKey>(oKey);
+                        }
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            value = Unsafe.As<TValue>(oValue!);
+                        }
                         return true;
                     }
                 }
@@ -711,7 +723,11 @@ namespace System.Runtime.CompilerServices
                 if (entryIndex != -1)
                 {
                     RemoveIndex(entryIndex);
-                    value = Unsafe.As<TValue>(valueObject!);
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        value = Unsafe.As<TValue>(valueObject!);
+                    }
                     return true;
                 }
 

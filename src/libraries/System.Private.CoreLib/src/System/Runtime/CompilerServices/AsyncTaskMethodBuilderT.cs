@@ -105,13 +105,21 @@ namespace System.Runtime.CompilerServices
 
             if ((null != (object?)default(TAwaiter)) && (awaiter is ITaskAwaiter))
             {
-                ref TaskAwaiter ta = ref Unsafe.As<TAwaiter, TaskAwaiter>(ref awaiter); // relies on TaskAwaiter/TaskAwaiter<T> having the same layout
-                TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, continueOnCapturedContext: true);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    ref TaskAwaiter ta = ref Unsafe.As<TAwaiter, TaskAwaiter>(ref awaiter);
+                    TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, continueOnCapturedContext: true);
+                }
             }
             else if ((null != (object?)default(TAwaiter)) && (awaiter is IConfiguredTaskAwaiter))
             {
-                ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
-                TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, (ta.m_options & ConfigureAwaitOptions.ContinueOnCapturedContext) != 0);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
+                    TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, (ta.m_options & ConfigureAwaitOptions.ContinueOnCapturedContext) != 0);
+                }
             }
             else if ((null != (object?)default(TAwaiter)) && (awaiter is IStateMachineBoxAwareAwaiter))
             {
@@ -340,7 +348,11 @@ namespace System.Runtime.CompilerServices
                 get
                 {
                     Debug.Assert(m_stateObject is null or ExecutionContext, $"Expected {nameof(m_stateObject)} to be null or an ExecutionContext but was {(m_stateObject is object o ? o.GetType().ToString() : "(null)")}.");
-                    return ref Unsafe.As<object?, ExecutionContext?>(ref m_stateObject);
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        return ref Unsafe.As<object?, ExecutionContext?>(ref m_stateObject);
+                    }
                 }
             }
 

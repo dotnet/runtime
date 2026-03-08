@@ -33,11 +33,13 @@ namespace System
             {
                 goto SEARCH_TWO_CHARS;
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
-            int remainingSearchSpaceLength = searchSpaceMinusValueTailLength;
-
-            while (remainingSearchSpaceLength > 0)
+            unsafe
+            {
+                ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
+                int remainingSearchSpaceLength = searchSpaceMinusValueTailLength;
+                while (remainingSearchSpaceLength > 0)
             {
                 // Do a quick search for the first element of "value".
                 // Using the non-packed variant as the input is short and would not benefit from the packed implementation.
@@ -62,6 +64,7 @@ namespace System
 
                 remainingSearchSpaceLength--;
                 offset++;
+                }
             }
             return -1;
 
@@ -117,12 +120,16 @@ namespace System
                         int bitPos = BitOperations.TrailingZeroCount(mask);
                         // div by 2 (shr) because we work with 2-byte chars
                         nint charPos = (nint)((uint)bitPos / 2);
-                        if (valueLength == 2 || // we already matched two chars
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            if (valueLength == 2 || // we already matched two chars
                             SequenceEqual(
                                 ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
                                 ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                         {
                             return (int)(offset + charPos);
+                            }
                         }
 
                         // Clear two the lowest set bits
@@ -182,12 +189,16 @@ namespace System
                     do
                     {
                         nint charPos = (nint)(uint.TrailingZeroCount(mask) / sizeof(ushort));
-                        if (valueLength == 2 || // we already matched two chars
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            if (valueLength == 2 || // we already matched two chars
                             SequenceEqual(
                                 ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
                                 ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                         {
                             return (int)(offset + charPos);
+                            }
                         }
 
                         // Clear two the lowest set bits
@@ -244,12 +255,16 @@ namespace System
                     do
                     {
                         nint charPos = (nint)(uint.TrailingZeroCount(mask) / sizeof(ushort));
-                        if (valueLength == 2 || // we already matched two chars
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            if (valueLength == 2 || // we already matched two chars
                             SequenceEqual(
                                 ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
                                 ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                         {
                             return (int)(offset + charPos);
+                            }
                         }
 
                         // Clear two lowest set bits
@@ -271,7 +286,13 @@ namespace System
 
             int valueTailLength = valueLength - 1;
             if (valueTailLength == 0)
-                return LastIndexOfValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value, searchSpaceLength); // for single-char values use plain LastIndexOf
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return LastIndexOfValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value, searchSpaceLength);
+                }
+            } // for single-char values use plain LastIndexOf
 
             int offset = 0;
             char valueHead = value;
@@ -280,10 +301,12 @@ namespace System
             {
                 goto SEARCH_TWO_CHARS;
             }
+            // TODO(unsafe): Baselining unsafe usage
 
-            ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
-
-            while (true)
+            unsafe
+            {
+                ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
+                while (true)
             {
                 Debug.Assert(0 <= offset && offset <= searchSpaceLength); // Ensures no deceptive underflows in the computation of "remainingSearchSpaceLength".
                 int remainingSearchSpaceLength = searchSpaceLength - offset - valueTailLength;
@@ -304,6 +327,7 @@ namespace System
                 }
 
                 offset += remainingSearchSpaceLength - relativeIndex;
+                }
             }
             return -1;
 
@@ -340,13 +364,17 @@ namespace System
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
                             int bitPos = 62 - BitOperations.LeadingZeroCount(mask);
                             int charPos = (int)((uint)bitPos / 2);
+                            // TODO(unsafe): Baselining unsafe usage
 
-                            if (valueLength == 2 || // we already matched two chars
+                            unsafe
+                            {
+                                if (valueLength == 2 || // we already matched two chars
                                 SequenceEqual(
                                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
                                     ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                             {
                                 return charPos + offset;
+                                }
                             }
                             mask &= ~(ulong)((ulong)0b11 << bitPos); // clear two highest set bits.
                         } while (mask != 0);
@@ -390,13 +418,17 @@ namespace System
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
                             int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
                             int charPos = (int)((uint)bitPos / 2);
+                            // TODO(unsafe): Baselining unsafe usage
 
-                            if (valueLength == 2 || // we already matched two chars
+                            unsafe
+                            {
+                                if (valueLength == 2 || // we already matched two chars
                                 SequenceEqual(
                                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
                                     ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                             {
                                 return charPos + offset;
+                                }
                             }
                             mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
                         } while (mask != 0);
@@ -440,13 +472,17 @@ namespace System
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
                             int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
                             int charPos = (int)((uint)bitPos / 2);
+                            // TODO(unsafe): Baselining unsafe usage
 
-                            if (valueLength == 2 || // we already matched two chars
+                            unsafe
+                            {
+                                if (valueLength == 2 || // we already matched two chars
                                 SequenceEqual(
                                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
                                     ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                             {
                                 return charPos + offset;
+                                }
                             }
                             mask &= ~(uint)(0b11 << bitPos); // clear two the highest set bits.
                         } while (mask != 0);
@@ -896,28 +932,20 @@ namespace System
                 nint lastOffset = remainder - Vector512<ushort>.Count;
                 do
                 {
-                    ref ushort first = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, offset));
-                    ref ushort last = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, lastOffset));
-
-                    Vector512<ushort> tempFirst = Vector512.LoadUnsafe(ref first);
-                    Vector512<ushort> tempLast = Vector512.LoadUnsafe(ref last);
-
-                    // Shuffle to reverse each vector:
-                    //     +-------------------------------+
-                    //     | A | B | C | D | E | F | G | H |
-                    //     +-------------------------------+
-                    //          --->
-                    //     +-------------------------------+
-                    //     | H | G | F | E | D | C | B | A |
-                    //     +-------------------------------+
-                    tempFirst = Vector512.Shuffle(tempFirst, Vector512.Create((ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        ref ushort first = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, offset));
+                        ref ushort last = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, lastOffset));
+                        Vector512<ushort> tempFirst = Vector512.LoadUnsafe(ref first);
+                        Vector512<ushort> tempLast = Vector512.LoadUnsafe(ref last);
+                        tempFirst = Vector512.Shuffle(tempFirst, Vector512.Create((ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
                         15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
-                    tempLast = Vector512.Shuffle(tempLast, Vector512.Create((ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
+                        tempLast = Vector512.Shuffle(tempLast, Vector512.Create((ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16,
                         15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
-
-                    // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref first);
-                    tempFirst.StoreUnsafe(ref last);
+                        tempLast.StoreUnsafe(ref first);
+                        tempFirst.StoreUnsafe(ref last);
+                    }
 
                     offset += Vector512<ushort>.Count;
                     lastOffset -= Vector512<ushort>.Count;
@@ -935,33 +963,20 @@ namespace System
                 nint lastOffset = remainder - Vector256<ushort>.Count;
                 do
                 {
-                    ref byte first = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref buf, offset));
-                    ref byte last = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref buf, lastOffset));
-
-                    Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref first);
-                    Vector256<byte> tempLast = Vector256.LoadUnsafe(ref last);
-
-                    // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
-                    // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
-                    //     +---------------------------------------------------------------+
-                    //     | A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P |
-                    //     +---------------------------------------------------------------+
-                    //         Shuffle --->
-                    //     +---------------------------------------------------------------+
-                    //     | H | G | F | E | D | C | B | A | P | O | N | M | L | K | J | I |
-                    //     +---------------------------------------------------------------+
-                    //         Permute --->
-                    //     +---------------------------------------------------------------+
-                    //     | P | O | N | M | L | K | J | I | H | G | F | E | D | C | B | A |
-                    //     +---------------------------------------------------------------+
-                    tempFirst = Avx2.Shuffle(tempFirst, reverseMask);
-                    tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 0b00_01);
-                    tempLast = Avx2.Shuffle(tempLast, reverseMask);
-                    tempLast = Avx2.Permute2x128(tempLast, tempLast, 0b00_01);
-
-                    // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref first);
-                    tempFirst.StoreUnsafe(ref last);
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        ref byte first = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref buf, offset));
+                        ref byte last = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref buf, lastOffset));
+                        Vector256<byte> tempFirst = Vector256.LoadUnsafe(ref first);
+                        Vector256<byte> tempLast = Vector256.LoadUnsafe(ref last);
+                        tempFirst = Avx2.Shuffle(tempFirst, reverseMask);
+                        tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 0b00_01);
+                        tempLast = Avx2.Shuffle(tempLast, reverseMask);
+                        tempLast = Avx2.Permute2x128(tempLast, tempLast, 0b00_01);
+                        tempLast.StoreUnsafe(ref first);
+                        tempFirst.StoreUnsafe(ref last);
+                    }
 
                     offset += Vector256<ushort>.Count;
                     lastOffset -= Vector256<ushort>.Count;
@@ -974,26 +989,18 @@ namespace System
                 nint lastOffset = remainder - Vector128<ushort>.Count;
                 do
                 {
-                    ref ushort first = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, offset));
-                    ref ushort last = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, lastOffset));
-
-                    Vector128<ushort> tempFirst = Vector128.LoadUnsafe(ref first);
-                    Vector128<ushort> tempLast = Vector128.LoadUnsafe(ref last);
-
-                    // Shuffle to reverse each vector:
-                    //     +-------------------------------+
-                    //     | A | B | C | D | E | F | G | H |
-                    //     +-------------------------------+
-                    //          --->
-                    //     +-------------------------------+
-                    //     | H | G | F | E | D | C | B | A |
-                    //     +-------------------------------+
-                    tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
-                    tempLast = Vector128.Shuffle(tempLast, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
-
-                    // Store the reversed vectors
-                    tempLast.StoreUnsafe(ref first);
-                    tempFirst.StoreUnsafe(ref last);
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        ref ushort first = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, offset));
+                        ref ushort last = ref Unsafe.As<char, ushort>(ref Unsafe.Add(ref buf, lastOffset));
+                        Vector128<ushort> tempFirst = Vector128.LoadUnsafe(ref first);
+                        Vector128<ushort> tempLast = Vector128.LoadUnsafe(ref last);
+                        tempFirst = Vector128.Shuffle(tempFirst, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
+                        tempLast = Vector128.Shuffle(tempLast, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
+                        tempLast.StoreUnsafe(ref first);
+                        tempFirst.StoreUnsafe(ref last);
+                    }
 
                     offset += Vector128<ushort>.Count;
                     lastOffset -= Vector128<ushort>.Count;

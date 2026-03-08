@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -52,16 +52,28 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal override int LastIndexOfAny(ReadOnlySpan<char> span) =>
-            IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default, SearchValues.FalseConst>(
+        internal override int LastIndexOfAny(ReadOnlySpan<char> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default, SearchValues.FalseConst>(
                 ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)), span.Length, ref _state);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        internal override int LastIndexOfAnyExcept(ReadOnlySpan<char> span) =>
-            IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default, SearchValues.FalseConst>(
+        internal override int LastIndexOfAnyExcept(ReadOnlySpan<char> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return IndexOfAnyAsciiSearcher.LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate, IndexOfAnyAsciiSearcher.Default, SearchValues.FalseConst>(
                 ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(span)), span.Length, ref _state);
+            }
+        }
     }
 }

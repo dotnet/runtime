@@ -612,7 +612,14 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            private ref byte GetResultStorage() => ref Unsafe.As<T?, byte>(ref m_result);
+            private ref byte GetResultStorage()
+            {
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    return ref Unsafe.As<T?, byte>(ref m_result);
+                }
+            }
 
             private static unsafe Continuation? UnwindToPossibleHandler(Continuation? continuation, Exception ex)
             {

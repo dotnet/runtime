@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -96,10 +96,15 @@ namespace System.Buffers
                     // If '\0' is one of the starting chars and we're running on Ssse3 hardware, this may return false-positives.
                     // False-positives here are okay, we'll just rule them out below. While we could flow the Ssse3AndWasmHandleZeroInNeedle
                     // generic through, we expect such values to be rare enough that introducing more code is not worth it.
-                    int offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default, SearchValues.FalseConst>(
+                    int offset;
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default, SearchValues.FalseConst>(
                         ref Unsafe.As<char, short>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), i)),
                         remainingLength,
                         ref Unsafe.AsRef(in _startingAsciiChars));
+                    }
 
                     if (offset < 0)
                     {
@@ -205,10 +210,15 @@ namespace System.Buffers
 
                 if (remainingLength >= Vector128<ushort>.Count)
                 {
-                    int offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default, SearchValues.FalseConst>(
+                    int offset;
+                    // TODO(unsafe): Baselining unsafe usage
+                    unsafe
+                    {
+                        offset = IndexOfAnyAsciiSearcher.IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate, IndexOfAnyAsciiSearcher.Default, SearchValues.FalseConst>(
                         ref Unsafe.As<char, short>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), i)),
                         remainingLength,
                         ref Unsafe.AsRef(in _startingAsciiChars));
+                    }
 
                     if (offset < 0)
                     {

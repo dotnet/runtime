@@ -93,8 +93,16 @@ namespace System.Globalization
             TVector vecZMinusA = TVector.Create('z' - 'a');
             do
             {
-                vec1 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
-                vec2 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    vec1 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
+                }
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    vec2 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
+                }
 
                 if (!Utf16Utility.AllCharsInVectorAreAscii(vec1 | vec2))
                 {
@@ -120,8 +128,16 @@ namespace System.Globalization
             if (i != lengthU)
             {
                 i = lengthU - (nuint)TVector.ElementCount;
-                vec1 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
-                vec2 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    vec1 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
+                }
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    vec2 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
+                }
 
                 if (!Utf16Utility.AllCharsInVectorAreAscii(vec1 | vec2))
                 {
@@ -184,8 +200,16 @@ namespace System.Globalization
             // Read 4 chars (64 bits) at a time from each string
             while ((uint)length >= 4)
             {
-                valueAu64 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charA, byteOffset)));
-                valueBu64 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charB, byteOffset)));
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    valueAu64 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charA, byteOffset)));
+                }
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    valueBu64 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charB, byteOffset)));
+                }
 
                 // A 32-bit test - even with the bit-twiddling here - is more efficient than a 64-bit test.
                 ulong temp = valueAu64 | valueBu64;
@@ -219,8 +243,16 @@ namespace System.Globalization
             while ((uint)length >= 2)
 #endif
             {
-                valueAu32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charA, byteOffset)));
-                valueBu32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charB, byteOffset)));
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    valueAu32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charA, byteOffset)));
+                }
+                // TODO(unsafe): Baselining unsafe usage
+                unsafe
+                {
+                    valueBu32 = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charB, byteOffset)));
+                }
 
                 if (!Utf16Utility.AllCharsInUInt32AreAscii(valueAu32 | valueBu32))
                 {

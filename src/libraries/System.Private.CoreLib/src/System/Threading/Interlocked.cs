@@ -38,8 +38,14 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of location is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static uint Decrement(ref uint location) =>
-            (uint)Add(ref Unsafe.As<uint, int>(ref location), -1);
+        public static uint Decrement(ref uint location)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (uint)Add(ref Unsafe.As<uint, int>(ref location), -1);
+            }
+        }
 
         /// <summary>Decrements a specified variable and stores the result, as an atomic operation.</summary>
         /// <param name="location">The variable whose value is to be decremented.</param>
@@ -47,8 +53,14 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of location is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static ulong Decrement(ref ulong location) =>
-            (ulong)Add(ref Unsafe.As<ulong, long>(ref location), -1);
+        public static ulong Decrement(ref ulong location)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (ulong)Add(ref Unsafe.As<ulong, long>(ref location), -1);
+            }
+        }
         #endregion
 
         #region Exchange
@@ -60,8 +72,14 @@ namespace System.Threading
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static sbyte Exchange(ref sbyte location1, sbyte value) =>
-            (sbyte)Exchange(ref Unsafe.As<sbyte, byte>(ref location1), (byte)value);
+        public static sbyte Exchange(ref sbyte location1, sbyte value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (sbyte)Exchange(ref Unsafe.As<sbyte, byte>(ref location1), (byte)value);
+            }
+        }
 
         /// <summary>Sets a 16-bit unsigned integer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
@@ -70,8 +88,14 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static short Exchange(ref short location1, short value) =>
-            (short)Exchange(ref Unsafe.As<short, ushort>(ref location1), (ushort)value);
+        public static short Exchange(ref short location1, short value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (short)Exchange(ref Unsafe.As<short, ushort>(ref location1), (ushort)value);
+            }
+        }
 
         /// <summary>Sets a 8-bit unsigned integer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
@@ -158,8 +182,14 @@ namespace System.Threading
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static uint Exchange(ref uint location1, uint value) =>
-            (uint)Exchange(ref Unsafe.As<uint, int>(ref location1), (int)value);
+        public static uint Exchange(ref uint location1, uint value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (uint)Exchange(ref Unsafe.As<uint, int>(ref location1), (int)value);
+            }
+        }
 
         /// <summary>Sets a 64-bit unsigned integer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
@@ -169,8 +199,14 @@ namespace System.Threading
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static ulong Exchange(ref ulong location1, ulong value) =>
-            (ulong)Exchange(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+        public static ulong Exchange(ref ulong location1, ulong value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (ulong)Exchange(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+            }
+        }
 
         /// <summary>Sets a single-precision floating point number to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
@@ -179,7 +215,13 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Exchange(ref float location1, float value)
-            => Unsafe.BitCast<int, float>(Exchange(ref Unsafe.As<float, int>(ref location1), Unsafe.BitCast<float, int>(value)));
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return Unsafe.BitCast<int, float>(Exchange(ref Unsafe.As<float, int>(ref location1), Unsafe.BitCast<float, int>(value)));
+            }
+        }
 
         /// <summary>Sets a double-precision floating point number to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
@@ -188,7 +230,13 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Exchange(ref double location1, double value)
-            => Unsafe.BitCast<long, double>(Exchange(ref Unsafe.As<double, long>(ref location1), Unsafe.BitCast<double, long>(value)));
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return Unsafe.BitCast<long, double>(Exchange(ref Unsafe.As<double, long>(ref location1), Unsafe.BitCast<double, long>(value)));
+            }
+        }
 
         /// <summary>Sets a native-sized signed integer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
@@ -199,11 +247,15 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint Exchange(ref nint location1, nint value)
         {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
 #if TARGET_64BIT
-            return (nint)Exchange(ref Unsafe.As<nint, long>(ref location1), (long)value);
+                return (nint)Exchange(ref Unsafe.As<nint, long>(ref location1), (long)value);
 #else
-            return (nint)Exchange(ref Unsafe.As<nint, int>(ref location1), (int)value);
+                return (nint)Exchange(ref Unsafe.As<nint, int>(ref location1), (int)value);
 #endif
+            }
         }
 
         /// <summary>Sets a native-sized unsigned integer to a specified value and returns the original value, as an atomic operation.</summary>
@@ -216,11 +268,15 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nuint Exchange(ref nuint location1, nuint value)
         {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
 #if TARGET_64BIT
-            return (nuint)Exchange(ref Unsafe.As<nuint, long>(ref location1), (long)value);
+                return (nuint)Exchange(ref Unsafe.As<nuint, long>(ref location1), (long)value);
 #else
-            return (nuint)Exchange(ref Unsafe.As<nuint, int>(ref location1), (int)value);
+                return (nuint)Exchange(ref Unsafe.As<nuint, int>(ref location1), (int)value);
 #endif
+            }
         }
 
         /// <summary>Sets a variable of the specified type <typeparamref name="T"/> to a specified value and returns the original value, as an atomic operation.</summary>
@@ -294,8 +350,14 @@ namespace System.Threading
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static sbyte CompareExchange(ref sbyte location1, sbyte value, sbyte comparand) =>
-            (sbyte)CompareExchange(ref Unsafe.As<sbyte, byte>(ref location1), (byte)value, (byte)comparand);
+        public static sbyte CompareExchange(ref sbyte location1, sbyte value, sbyte comparand)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (sbyte)CompareExchange(ref Unsafe.As<sbyte, byte>(ref location1), (byte)value, (byte)comparand);
+            }
+        }
 
         /// <summary>Compares two 16-bit unsigned integers for equality and, if they are equal, replaces the first value.</summary>
         /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
@@ -305,8 +367,14 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static short CompareExchange(ref short location1, short value, short comparand) =>
-            (short)CompareExchange(ref Unsafe.As<short, ushort>(ref location1), (ushort)value, (ushort)comparand);
+        public static short CompareExchange(ref short location1, short value, short comparand)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (short)CompareExchange(ref Unsafe.As<short, ushort>(ref location1), (ushort)value, (ushort)comparand);
+            }
+        }
 
         /// <summary>Compares two 8-bit unsigned integers for equality and, if they are equal, replaces the first value.</summary>
         /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
@@ -402,8 +470,14 @@ namespace System.Threading
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static uint CompareExchange(ref uint location1, uint value, uint comparand) =>
-            (uint)CompareExchange(ref Unsafe.As<uint, int>(ref location1), (int)value, (int)comparand);
+        public static uint CompareExchange(ref uint location1, uint value, uint comparand)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (uint)CompareExchange(ref Unsafe.As<uint, int>(ref location1), (int)value, (int)comparand);
+            }
+        }
 
         /// <summary>Compares two 64-bit unsigned integers for equality and, if they are equal, replaces the first value.</summary>
         /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
@@ -414,8 +488,14 @@ namespace System.Threading
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static ulong CompareExchange(ref ulong location1, ulong value, ulong comparand) =>
-            (ulong)CompareExchange(ref Unsafe.As<ulong, long>(ref location1), (long)value, (long)comparand);
+        public static ulong CompareExchange(ref ulong location1, ulong value, ulong comparand)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (ulong)CompareExchange(ref Unsafe.As<ulong, long>(ref location1), (long)value, (long)comparand);
+            }
+        }
 
         /// <summary>Compares two single-precision floating point numbers for equality and, if they are equal, replaces the first value.</summary>
         /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
@@ -425,7 +505,13 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float CompareExchange(ref float location1, float value, float comparand)
-            => Unsafe.BitCast<int, float>(CompareExchange(ref Unsafe.As<float, int>(ref location1), Unsafe.BitCast<float, int>(value), Unsafe.BitCast<float, int>(comparand)));
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return Unsafe.BitCast<int, float>(CompareExchange(ref Unsafe.As<float, int>(ref location1), Unsafe.BitCast<float, int>(value), Unsafe.BitCast<float, int>(comparand)));
+            }
+        }
 
         /// <summary>Compares two double-precision floating point numbers for equality and, if they are equal, replaces the first value.</summary>
         /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
@@ -435,7 +521,13 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double CompareExchange(ref double location1, double value, double comparand)
-            => Unsafe.BitCast<long, double>(CompareExchange(ref Unsafe.As<double, long>(ref location1), Unsafe.BitCast<double, long>(value), Unsafe.BitCast<double, long>(comparand)));
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return Unsafe.BitCast<long, double>(CompareExchange(ref Unsafe.As<double, long>(ref location1), Unsafe.BitCast<double, long>(value), Unsafe.BitCast<double, long>(comparand)));
+            }
+        }
 
         /// <summary>Compares two native-sized signed integers for equality and, if they are equal, replaces the first one.</summary>
         /// <param name="location1">The destination, whose value is compared with the value of <paramref name="comparand"/> and possibly replaced by <paramref name="value"/>.</param>
@@ -447,11 +539,15 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint CompareExchange(ref nint location1, nint value, nint comparand)
         {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
 #if TARGET_64BIT
-            return (nint)CompareExchange(ref Unsafe.As<nint, long>(ref location1), (long)value, (long)comparand);
+                return (nint)CompareExchange(ref Unsafe.As<nint, long>(ref location1), (long)value, (long)comparand);
 #else
-            return (nint)CompareExchange(ref Unsafe.As<nint, int>(ref location1), (int)value, (int)comparand);
+                return (nint)CompareExchange(ref Unsafe.As<nint, int>(ref location1), (int)value, (int)comparand);
 #endif
+            }
         }
 
         /// <summary>Compares two native-sized unsigned integers for equality and, if they are equal, replaces the first one.</summary>
@@ -465,11 +561,15 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nuint CompareExchange(ref nuint location1, nuint value, nuint comparand)
         {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
 #if TARGET_64BIT
-            return (nuint)CompareExchange(ref Unsafe.As<nuint, long>(ref location1), (long)value, (long)comparand);
+                return (nuint)CompareExchange(ref Unsafe.As<nuint, long>(ref location1), (long)value, (long)comparand);
 #else
-            return (nuint)CompareExchange(ref Unsafe.As<nuint, int>(ref location1), (int)value, (int)comparand);
+                return (nuint)CompareExchange(ref Unsafe.As<nuint, int>(ref location1), (int)value, (int)comparand);
 #endif
+            }
         }
 
         /// <summary>Compares two instances of the specified type <typeparamref name="T"/> for equality and, if they are equal, replaces the first one.</summary>
@@ -546,8 +646,14 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static uint Add(ref uint location1, uint value) =>
-            (uint)Add(ref Unsafe.As<uint, int>(ref location1), (int)value);
+        public static uint Add(ref uint location1, uint value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (uint)Add(ref Unsafe.As<uint, int>(ref location1), (int)value);
+            }
+        }
 
         /// <summary>Adds two 64-bit unsigned integers and replaces the first integer with the sum, as an atomic operation.</summary>
         /// <param name="location1">A variable containing the first value to be added. The sum of the two values is stored in <paramref name="location1"/>.</param>
@@ -556,8 +662,14 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static ulong Add(ref ulong location1, ulong value) =>
-            (ulong)Add(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+        public static ulong Add(ref ulong location1, ulong value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (ulong)Add(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+            }
+        }
         #endregion
 
         #region Read
@@ -600,8 +712,14 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static uint And(ref uint location1, uint value) =>
-            (uint)And(ref Unsafe.As<uint, int>(ref location1), (int)value);
+        public static uint And(ref uint location1, uint value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (uint)And(ref Unsafe.As<uint, int>(ref location1), (int)value);
+            }
+        }
 
         /// <summary>Bitwise "ands" two 64-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
         /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
@@ -632,8 +750,14 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static ulong And(ref ulong location1, ulong value) =>
-            (ulong)And(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+        public static ulong And(ref ulong location1, ulong value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (ulong)And(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+            }
+        }
 
         /// <summary>Bitwise "ands" two values of type <typeparamref name="T"/> and replaces the first value with the result, as an atomic operation.</summary>
         /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
@@ -743,8 +867,14 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static uint Or(ref uint location1, uint value) =>
-            (uint)Or(ref Unsafe.As<uint, int>(ref location1), (int)value);
+        public static uint Or(ref uint location1, uint value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (uint)Or(ref Unsafe.As<uint, int>(ref location1), (int)value);
+            }
+        }
 
         /// <summary>Bitwise "ors" two 64-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
         /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
@@ -775,8 +905,14 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static ulong Or(ref ulong location1, ulong value) =>
-            (ulong)Or(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+        public static ulong Or(ref ulong location1, ulong value)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (ulong)Or(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+            }
+        }
 
         /// <summary>Bitwise "ors" two values of type <typeparamref name="T"/> and replaces the first value with the result, as an atomic operation.</summary>
         /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>

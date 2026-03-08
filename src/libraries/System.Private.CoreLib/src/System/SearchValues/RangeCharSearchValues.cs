@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
@@ -38,24 +38,36 @@ namespace System.Buffers
             value - _lowUint <= _highMinusLow;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAny(ReadOnlySpan<char> span) =>
-            (PackedSpanHelpers.PackedIndexOfIsSupported && TShouldUsePacked.Value)
+        internal override int IndexOfAny(ReadOnlySpan<char> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (PackedSpanHelpers.PackedIndexOfIsSupported && TShouldUsePacked.Value)
                 ? PackedSpanHelpers.IndexOfAnyInRange(ref MemoryMarshal.GetReference(span), _lowInclusive, _rangeInclusive, span.Length)
                 : SpanHelpers.NonPackedIndexOfAnyInRangeUnsignedNumber<ushort, SpanHelpers.DontNegate<ushort>>(
                     ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(span)),
                     _lowInclusive,
                     _highInclusive,
                     span.Length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override int IndexOfAnyExcept(ReadOnlySpan<char> span) =>
-            (PackedSpanHelpers.PackedIndexOfIsSupported && TShouldUsePacked.Value)
+        internal override int IndexOfAnyExcept(ReadOnlySpan<char> span)
+        {
+            // TODO(unsafe): Baselining unsafe usage
+            unsafe
+            {
+                return (PackedSpanHelpers.PackedIndexOfIsSupported && TShouldUsePacked.Value)
                 ? PackedSpanHelpers.IndexOfAnyExceptInRange(ref MemoryMarshal.GetReference(span), _lowInclusive, _rangeInclusive, span.Length)
                 : SpanHelpers.NonPackedIndexOfAnyInRangeUnsignedNumber<ushort, SpanHelpers.Negate<ushort>>(
                     ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(span)),
                     _lowInclusive,
                     _highInclusive,
                     span.Length);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int LastIndexOfAny(ReadOnlySpan<char> span) =>
