@@ -19,32 +19,32 @@ namespace System.Net.Security
         private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
         private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
 
-        private static volatile int s_disableTlsResume = -1;
+        private static volatile NullableBool s_disableTlsResume;
 
         internal static bool DisableTlsResume
         {
             get
             {
-                int disableTlsResume = s_disableTlsResume;
-                if (disableTlsResume != -1)
+                NullableBool disableTlsResume = s_disableTlsResume;
+                if (disableTlsResume != NullableBool.Undefined)
                 {
-                    return disableTlsResume != 0;
+                    return disableTlsResume == NullableBool.True;
                 }
 
                 // First check for the AppContext switch, giving it priority over the environment variable.
                 if (AppContext.TryGetSwitch(DisableTlsResumeCtxSwitch, out bool value))
                 {
-                    s_disableTlsResume = value ? 1 : 0;
+                    s_disableTlsResume = value ? NullableBool.True : NullableBool.False;
                 }
                 else
                 {
                     // AppContext switch wasn't used. Check the environment variable.
                     s_disableTlsResume =
                         Environment.GetEnvironmentVariable(DisableTlsResumeEnvironmentVariable) is string envVar &&
-                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? NullableBool.True : NullableBool.False;
                 }
 
-                return s_disableTlsResume != 0;
+                return s_disableTlsResume == NullableBool.True;
             }
         }
 

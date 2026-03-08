@@ -1476,6 +1476,9 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs">
       <Link>Common\System\HexConverter.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\NullableBool.cs">
+      <Link>Common\System\NullableBool.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>
     </Compile>
