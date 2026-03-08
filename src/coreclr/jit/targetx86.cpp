@@ -139,4 +139,119 @@ ABIPassingInformation X86Classifier::Classify(Compiler*    comp,
     return ABIPassingInformation::FromSegmentByValue(comp, segment);
 }
 
+#ifdef VECTORCALL_SUPPORT
+// Vectorcall uses XMM0-XMM5 for vector arguments on x86.
+// clang-format off
+static const regNumber vectorcallFltArgRegs [] = { REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5 };
+// clang-format on
+
+//-----------------------------------------------------------------------------
+// VectorcallX86Classifier:
+//   Construct a new instance of the vectorcall x86 ABI classifier.
+//
+// Parameters:
+//   info - Info about the method being classified.
+//
+VectorcallX86Classifier::VectorcallX86Classifier(const ClassifierInfo& info)
+    : m_info(info)
+    , m_intRegs(intArgRegs, ArrLen(intArgRegs))
+    , m_floatRegs(vectorcallFltArgRegs, ArrLen(vectorcallFltArgRegs))
+{
+    // Vectorcall on x86 uses ECX, EDX for integer arguments (like fastcall)
+    // and XMM0-XMM5 for vector/float arguments
+    if (info.IsVarArgs)
+    {
+        // In varargs methods we only enregister the this pointer or retbuff.
+        unsigned numRegs = info.HasThis || info.HasRetBuff ? 1 : 0;
+        m_intRegs        = RegisterQueue(intArgRegs, numRegs);
+        // Varargs don't use XMM registers
+        m_floatRegs.Clear();
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Classify:
+//   Classify a parameter for the vectorcall x86 ABI.
+//
+// Parameters:
+//   comp           - Compiler instance
+//   type           - The type of the parameter
+//   structLayout   - The layout of the struct. Expected to be non-null if
+//                    varTypeIsStruct(type) is true.
+//   wellKnownParam - Well known type of the parameter (if it may affect its ABI classification)
+//
+// Returns:
+//   Classification information for the parameter.
+//
+// Notes:
+//   Unlike standard x86 calling conventions that pass floats on the stack,
+//   vectorcall passes float/double/SIMD types in XMM0-XMM5. Integer types
+//   still use ECX, EDX (like fastcall).
+//
+ABIPassingInformation VectorcallX86Classifier::Classify(Compiler*    comp,
+                                                        var_types    type,
+                                                        ClassLayout* structLayout,
+                                                        WellKnownArg wellKnownParam)
+{
+    unsigned size     = type == TYP_STRUCT ? structLayout->GetSize() : genTypeSize(type);
+    unsigned numSlots = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+
+    ABIPassingSegment segment;
+    bool              useFloatReg = varTypeUsesFloatArgReg(type);
+
+    if (useFloatReg && (m_floatRegs.Count() > 0))
+    {
+        // Float/double/SIMD types go in XMM registers
+        regNumber reg = m_floatRegs.Dequeue();
+        segment       = ABIPassingSegment::InRegister(reg, 0, size);
+    }
+    else if (!useFloatReg && (m_intRegs.Count() >= numSlots) && (wellKnownParam != WellKnownArg::X86TailCallSpecialArg))
+    {
+        // Check if we can enregister integer types
+        bool canEnreg = false;
+        switch (type)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            case TYP_SHORT:
+            case TYP_USHORT:
+            case TYP_INT:
+            case TYP_REF:
+            case TYP_BYREF:
+                canEnreg = true;
+                break;
+            case TYP_STRUCT:
+                canEnreg = comp->isTrivialPointerSizedStruct(structLayout->GetClassHandle());
+                break;
+            default:
+                break;
+        }
+
+        if (canEnreg)
+        {
+            assert(numSlots == 1);
+            segment = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, size);
+        }
+        else
+        {
+            // Pass on stack
+            unsigned offset         = m_stackArgSize;
+            unsigned roundedArgSize = roundUp(size, TARGET_POINTER_SIZE);
+            m_stackArgSize += roundedArgSize;
+            segment = ABIPassingSegment::OnStack(offset, 0, size);
+        }
+    }
+    else
+    {
+        // Pass on stack
+        unsigned offset         = m_stackArgSize;
+        unsigned roundedArgSize = roundUp(size, TARGET_POINTER_SIZE);
+        m_stackArgSize += roundedArgSize;
+        segment = ABIPassingSegment::OnStack(offset, 0, size);
+    }
+
+    return ABIPassingInformation::FromSegmentByValue(comp, segment);
+}
+#endif // VECTORCALL_SUPPORT
+
 #endif // TARGET_X86

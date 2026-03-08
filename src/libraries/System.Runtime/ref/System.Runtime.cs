@@ -13575,6 +13575,10 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvThiscall() { }
     }
+    public partial class CallConvVectorcall
+    {
+        public CallConvVectorcall() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple=false, Inherited=false)]
     public sealed partial class CallerArgumentExpressionAttribute : System.Attribute
     {

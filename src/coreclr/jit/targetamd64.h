@@ -44,21 +44,19 @@
 #define MAX_MULTIREG_COUNT            4  // Maximum number of registers defined by a single instruction (including calls).
                                          // This is also the maximum number of registers for a MultiReg node.
 #else // !UNIX_AMD64_ABI
-#define WINDOWS_AMD64_ABI                // Uses the Windows ABI for AMD64
-#define FEATURE_IMPLICIT_BYREFS       1  // Support for struct parameters passed via pointers to shadow copies
-#define FEATURE_MULTIREG_ARGS_OR_RET  0  // Support for passing and/or returning single values in more than one register
-#define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
-#define FEATURE_MULTIREG_RET          0  // Support for returning a single value in more than one register
-#define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
-#define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments
-#define MAX_RET_MULTIREG_BYTES        0  // No multireg return values
-#define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass a single argument (no arguments are passed using multiple registers)
-#define MAX_RET_REG_COUNT             1  // Maximum registers used to return a value.
+  #define WINDOWS_AMD64_ABI                // Uses the Windows ABI for AMD64
+  #define FEATURE_IMPLICIT_BYREFS       1  // Support for struct parameters passed via pointers to shadow copies
+  #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register (needed for vectorcall HVA)
+  #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register (needed for vectorcall HVA)
+  #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register (needed for vectorcall HVA)
+  #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
+  #define MAX_PASS_MULTIREG_BYTES      64  // Maximum size of a struct that could be passed in more than one register (vectorcall HVA: 4 x 16-byte vectors)
+  #define MAX_RET_MULTIREG_BYTES       64  // Maximum size of a struct that could be returned in more than one register (vectorcall HVA: 4 x 16-byte vectors)
+  #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument (vectorcall HVA uses up to 4 XMM registers)
+  #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value (vectorcall HVA uses up to 4 XMM registers)
 
-#define MAX_MULTIREG_COUNT            2  // Maximum number of registers defined by a single instruction (including calls).
-                                         // This is also the maximum number of registers for a MultiReg node.
-                                         // Note that this must be greater than 1 so that GenTreeLclVar can have an array of
-                                         // MAX_MULTIREG_COUNT - 1.
+  #define MAX_MULTIREG_COUNT            4  // Maximum number of registers defined by a single instruction (including calls).
+                                           // This is also the maximum number of registers for a MultiReg node.
 #endif // !UNIX_AMD64_ABI
 
 #define NOGC_WRITE_BARRIERS      0       // We DO-NOT have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
@@ -580,6 +578,9 @@
 #define REG_SWIFT_ARG_RET_BUFF REG_RAX
 #define RBM_SWIFT_ARG_RET_BUFF RBM_RAX
 #define SWIFT_RET_BUFF_ARGNUM  MAX_REG_ARG
+#else // !UNIX_AMD64_ABI
+  // Vectorcall is only supported on Windows x64
+  #define VECTORCALL_SUPPORT
 #endif // UNIX_AMD64_ABI
 
 // clang-format on
