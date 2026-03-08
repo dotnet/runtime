@@ -105,7 +105,7 @@ extends:
           DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals windows.vs2026preview.scout.amd64.open
+          demands: ImageOverride -equals windows.vs2026.amd64.open
 
         steps:
         - checkout: self
