@@ -796,7 +796,7 @@ namespace System.Collections.Immutable
                     return -1;
                 }
 
-                Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
+                Requires.Range(startIndex >= 0 && startIndex <= this.Count, nameof(startIndex));
                 Requires.Range(count >= 0 && startIndex + count <= this.Count, nameof(count));
 
                 equalityComparer ??= EqualityComparer<T>.Default;

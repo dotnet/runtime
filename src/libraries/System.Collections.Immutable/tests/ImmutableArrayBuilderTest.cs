@@ -255,7 +255,8 @@ namespace System.Collections.Immutable.Tests
                 (b, v) => b.IndexOf(v),
                 (b, v, i) => b.IndexOf(v, i),
                 (b, v, i, c) => b.IndexOf(v, i, c),
-                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq));
+                (b, v, i, c, eq) => b.IndexOf(v, i, c, eq),
+                "startIndex");
         }
 
         [Fact]
@@ -266,6 +267,23 @@ namespace System.Collections.Immutable.Tests
 
             Assert.Equal(1, builder.IndexOf(-5, 0, absComparer));
             Assert.Equal(-1, builder.IndexOf(-5, 2, absComparer));
+        }
+
+        [Fact]
+        public void IndexOfConsistentWithArray()
+        {
+            ImmutableArray<int>.Builder builder = ImmutableArray.Create(1, 2, 3, 4).ToBuilder();
+            int[] array = new[] { 1, 2, 3, 4 };
+
+            Assert.Equal(-1, builder.IndexOf(2, builder.Count, 0));
+            Assert.Equal(-1, Array.IndexOf(array, 2, array.Length, 0));
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                int builderResult = builder.IndexOf(builder[i], 0, builder.Count);
+                int arrayResult = Array.IndexOf(array, array[i], 0, array.Length);
+                Assert.Equal(builderResult, arrayResult);
+            }
         }
 
         [Fact]
