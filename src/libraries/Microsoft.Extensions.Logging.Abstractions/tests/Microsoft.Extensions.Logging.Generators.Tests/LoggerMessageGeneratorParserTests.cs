@@ -1160,6 +1160,41 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public async Task ValidTemplates_WithDuplicatePlaceholders()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = ""Hello {Name}. How are you {Name}"")]
+                    static partial void M1(ILogger logger, string name);
+
+                    [LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = ""Hello {Name}. You are {Age} years old. How are you {Name}"")]
+                    static partial void M2(ILogger logger, string name, int age);
+
+                    [LoggerMessage(EventId = 3, Level = LogLevel.Debug, Message = ""{Age} {Name} {Age}"")]
+                    static partial void M3(ILogger logger, int age, string name);
+
+                    [LoggerMessage(EventId = 4, Level = LogLevel.Debug, Message = ""{Name} {Name} {Name}"")]
+                    static partial void M4(ILogger logger, string name);
+
+                    [LoggerMessage(EventId = 5, Level = LogLevel.Debug, Message = ""Age: {Age}, Name: {Name}, Age: {Age}, Name: {Name}"")]
+                    static partial void M5(ILogger logger, int age, string name);
+
+                    [LoggerMessage(EventId = 6, Level = LogLevel.Debug, Message = ""Hello {Name}. How are you {name}"")]
+                    static partial void M6(ILogger logger, string name);
+
+                    [LoggerMessage(EventId = 7, Level = LogLevel.Debug, Message = ""{Name} {NAME} {name}"")]
+                    static partial void M7(ILogger logger, string name);
+
+                    [LoggerMessage(EventId = 8, Level = LogLevel.Debug, Message = ""Hello {Name}. You are {age} years old. How are you {NAME}"")]
+                    static partial void M8(ILogger logger, string name, int age);
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
         public async Task Cancellation()
         {
             await Assert.ThrowsAsync<OperationCanceledException>(async () =>

@@ -236,6 +236,56 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(expected, logValues.ToString());
         }
 
+        [Theory]
+        [InlineData("Hello David. How are you David", "Hello {Name}. How are you {Name}", new object[] { "David" })]
+        [InlineData("Hello David. You are 100 years old. How are you David", "Hello {Name}. You are {Age} years old. How are you {Name}", new object[] { "David", 100 })]
+        [InlineData("100 David 100", "{Age} {Name} {Age}", new object[] { 100, "David" })]
+        [InlineData("David David David", "{Name} {Name} {Name}", new object[] { "David" })]
+        [InlineData("Age: 100, Name: David, Age: 100, Name: David", "Age: {Age}, Name: {Name}, Age: {Age}, Name: {Name}", new object[] { 100, "David" })]
+        [InlineData("Hello David. How are you David", "Hello {Name}. How are you {name}", new object[] { "David" })]
+        [InlineData("David David David", "{Name} {NAME} {name}", new object[] { "David" })]
+        [InlineData("Hello David. You are 100 years old. How are you David", "Hello {Name}. You are {age} years old. How are you {NAME}", new object[] { "David", 100 })]
+        public void LogValues_WithDuplicatePlaceholders(string expected, string format, object[] args)
+        {
+            var logValues = new FormattedLogValues(format, args);
+            Assert.Equal(expected, logValues.ToString());
+
+            // Original format is expected to be returned from GetValues.
+            Assert.Equal(format, logValues.First(v => v.Key == "{OriginalFormat}").Value);
+        }
+
+        [Fact]
+        public void LogValues_WithDuplicatePlaceholders_CorrectKeyValuePairs()
+        {
+            var format = "Hello {Name}. How are you {Name}";
+            var name = "David";
+            var logValues = new FormattedLogValues(format, name);
+
+            var state = logValues.ToArray();
+            Assert.Equal(new[]
+            {
+                new KeyValuePair<string, object>("Name", name),
+                new KeyValuePair<string, object>("{OriginalFormat}", format),
+            }, state);
+        }
+
+        [Fact]
+        public void LogValues_WithMultipleDuplicatePlaceholders_CorrectKeyValuePairs()
+        {
+            var format = "Hello {Name}. You are {Age} years old. How are you {Name}";
+            var name = "David";
+            var age = 100;
+            var logValues = new FormattedLogValues(format, name, age);
+
+            var state = logValues.ToArray();
+            Assert.Equal(new[]
+            {
+                new KeyValuePair<string, object>("Name", name),
+                new KeyValuePair<string, object>("Age", age),
+                new KeyValuePair<string, object>("{OriginalFormat}", format),
+            }, state);
+        }
+
         private class MediaType
         {
             public MediaType(string type, string subType)

@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Logging
     {
         private const string NullValue = "(null)";
         private readonly List<string> _valueNames = new List<string>();
+
 #if NET
         private readonly CompositeFormat _format;
 #else
@@ -33,6 +34,7 @@ namespace Microsoft.Extensions.Logging
 
             OriginalFormat = format;
 
+            Dictionary<string, int>? valueNameIndices = null;
             var vsb = new ValueStringBuilder(stackalloc char[256]);
             int scanIndex = 0;
             int endIndex = format.Length;
@@ -66,8 +68,40 @@ namespace Microsoft.Extensions.Logging
                     formatDelimiterIndex = formatDelimiterIndex < 0 ? closeBraceIndex : formatDelimiterIndex + openBraceIndex;
 
                     vsb.Append(format.AsSpan(scanIndex, openBraceIndex - scanIndex + 1));
-                    vsb.Append(_valueNames.Count.ToString(CultureInfo.InvariantCulture));
-                    _valueNames.Add(format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1));
+                    string valueName = format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
+
+                    int valueIndex;
+                    if (valueNameIndices != null)
+                    {
+                        // Use dictionary for lookup when we have many placeholders
+                        if (!valueNameIndices.TryGetValue(valueName, out valueIndex))
+                        {
+                            valueIndex = _valueNames.Count;
+                            _valueNames.Add(valueName);
+                            valueNameIndices[valueName] = valueIndex;
+                        }
+                    }
+                    else
+                    {
+                        // For small number of placeholders, use linear search to avoid dictionary allocation and hashing overhead
+                        valueIndex = FindValueName(valueName);
+                        if (valueIndex < 0)
+                        {
+                            valueIndex = _valueNames.Count;
+                            _valueNames.Add(valueName);
+
+                            // Switch to dictionary when we have many unique placeholders
+                            if (_valueNames.Count > 4)
+                            {
+                                valueNameIndices = new Dictionary<string, int>(_valueNames.Count, StringComparer.OrdinalIgnoreCase);
+                                for (int i = 0; i < _valueNames.Count; i++)
+                                {
+                                    valueNameIndices[_valueNames[i]] = i;
+                                }
+                            }
+                        }
+                    }
+                    vsb.Append(valueIndex.ToString(CultureInfo.InvariantCulture));
                     vsb.Append(format.AsSpan(formatDelimiterIndex, closeBraceIndex - formatDelimiterIndex + 1));
 
                     scanIndex = closeBraceIndex + 1;
@@ -84,6 +118,19 @@ namespace Microsoft.Extensions.Logging
 
         public string OriginalFormat { get; }
         public List<string> ValueNames => _valueNames;
+
+        private int FindValueName(string valueName)
+        {
+            for (int i = 0; i < _valueNames.Count; i++)
+            {
+                if (string.Equals(_valueNames[i], valueName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
 
         private static int FindBraceIndex(string format, char brace, int startIndex, int endIndex)
         {
