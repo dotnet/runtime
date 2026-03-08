@@ -156,6 +156,12 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
             echo  clang -dynamiclib -o "$__OutputFileFinal" "$__OutputFile" -install_name "@rpath/`basename "$__OutputFileFinal"`" -Wl,-dead_strip
             clang -dynamiclib -o "$__OutputFileFinal" "$__OutputFile" -install_name "@rpath/`basename "$__OutputFileFinal"`" -Wl,-dead_strip
             __linkExitCode=$?
+
+            if [ $__linkExitCode -eq 0 ] && [ "$(StripSymbols)" == "true" ]; then
+                echo "Stripping symbols from: $(basename "$__OutputFileFinal")"
+                dsymutil "$__OutputFileFinal" && strip -no_code_signature_warning -x "$__OutputFileFinal"
+                __linkExitCode=$?
+            fi
         fi
 
         echo "Running R2RDump: $__R2RDumpCommand"
