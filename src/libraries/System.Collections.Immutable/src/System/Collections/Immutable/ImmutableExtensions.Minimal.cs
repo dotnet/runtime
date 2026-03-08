@@ -128,8 +128,8 @@ namespace System.Collections.Immutable
                 }
 
 #if !NET
-                // On .NET Framework, ICollection<T>.CopyTo may throw an ArrayTypeMismatchException if the underlying type of
-                // the destination array is not typeof(T[]), but is assignment-compatible with T[].
+                // On .NET Framework, if 'sequence' is actually a covariant array (for example, string[] used as ICollection<object>),
+                // its ICollection<T>.CopyTo implementation may call Array.Copy and throw an ArrayTypeMismatchException when copying into a T[].
                 if (sequence is Array)
                 {
                     return false;
