@@ -84,17 +84,18 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         return hr;
     }
 
-    int IXCLRDataStackWalk.GetFrame(out IXCLRDataFrame? frame)
+    int IXCLRDataStackWalk.GetFrame(DacComNullableByRef<IXCLRDataFrame> frame)
     {
         int hr = HResults.S_OK;
-        frame = default;
 
         IXCLRDataFrame? legacyFrame = null;
         if (_legacyImpl is not null)
         {
-            int hrLocal = _legacyImpl.GetFrame(out legacyFrame);
+            DacComNullableByRef<IXCLRDataFrame> legacyFrameOut = new(isNullRef: false);
+            int hrLocal = _legacyImpl.GetFrame(legacyFrameOut);
             if (hrLocal < 0)
                 return hrLocal;
+            legacyFrame = legacyFrameOut.Interface;
         }
 
         try
@@ -102,7 +103,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             if (!_currentFrameIsValid)
                 throw new ArgumentException();
 
-            frame = new ClrDataFrame(_target, _dataFrames.Current, legacyFrame);
+            frame.Interface = new ClrDataFrame(_target, _dataFrames.Current, legacyFrame);
         }
         catch (System.Exception ex)
         {
