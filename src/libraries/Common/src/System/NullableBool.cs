@@ -4,7 +4,7 @@
 namespace System
 {
     /// <summary>
-    /// Used to avoid bool? which isn't thread safe due to its boxing.
+    /// Used to avoid bool? which isn't thread safe.
     /// </summary>
     internal enum NullableBool : sbyte
     {
