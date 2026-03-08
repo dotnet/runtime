@@ -269,12 +269,13 @@ namespace System.IO.Compression
             if (useDictionary && !SupportsDictionaries)
                 return;
 
+            // 0xFF is an invalid first byte for all three formats:
+            // - GZip requires magic bytes 0x1F 0x8B
+            // - ZLib requires a valid CMF byte (0x78 for deflate with window size)
+            // - Deflate (raw) encodes BTYPE in bits 1-2; 0xFF sets BTYPE=11 which is a reserved invalid block type
             Span<byte> source = new byte[100];
+            source.Fill(0xFF);
             Span<byte> destination = new byte[5 * source.Length];
-
-            // deterministic random data that should not match any valid compressed format
-            Random rng = new Random(42);
-            rng.NextBytes(source);
 
             Assert.False(TryDecompress(source, destination, out int bytesWritten), "TryDecompress completed successfully but should have failed");
             Assert.Equal(0, bytesWritten);
@@ -661,6 +662,25 @@ namespace System.IO.Compression
                 Assert.Equal(totalWrittenThisIteration, decompressbytesConsumed);
                 Assert.Equal(bytesConsumed, decompressbytesWritten);
                 Assert.Equal<byte>(uncompressed, decompressedSpan.ToArray());
+            }
+        }
+
+        [Fact]
+        public void RoundTrip_AllCompressionLevels()
+        {
+            byte[] input = CreateTestData();
+
+            for (int quality = 0; quality <= 9; quality++)
+            {
+                byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
+                using var encoder = CreateEncoder(quality, ValidWindowLog);
+                encoder.Compress(input, compressed, out _, out int compressedSize, isFinalBlock: true);
+
+                byte[] decompressed = new byte[input.Length];
+                using var decoder = CreateDecoder();
+                decoder.Decompress(compressed.AsSpan(0, compressedSize), decompressed, out _, out _);
+
+                Assert.Equal(input, decompressed);
             }
         }
 
