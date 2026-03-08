@@ -120,6 +120,10 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
         {
             return InstructionSet_Vector128;
         }
+        else if (strcmp(className, "VectorT") == 0)
+        {
+            return InstructionSet_VectorT;
+        }
     }
 
     return InstructionSet_ILLEGAL;

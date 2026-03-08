@@ -605,6 +605,14 @@ struct HWIntrinsicInfo
             *pSimdSize = lookup(id).simdSize;
             succeeded  = true;
         }
+#if defined(TARGET_ARM64) && defined(DEBUG)
+        else if (JitConfig.JitUseScalableVectorT() && HWIntrinsicInfo::IsScalable(id))
+        {
+            *pSimdSize = SIZE_UNKNOWN;
+            succeeded  = true;
+        }
+#endif
+
         return succeeded;
     }
 
