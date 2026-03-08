@@ -366,6 +366,11 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 //
 void OptIfConversionDsc::IfConvertJoinStmts(BasicBlock* fromBlock)
 {
+    if (fromBlock == m_startBlock)
+    {
+        return;
+    }
+
     Statement* stmtList1 = m_startBlock->firstStmt();
     Statement* stmtList2 = fromBlock->firstStmt();
     Statement* stmtLast1 = m_startBlock->lastStmt();
@@ -696,6 +701,47 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     GenTree*  selectFalseInput;
     if (m_mainOper == GT_STORE_LCL_VAR)
     {
+        if (!m_doElseConversion)
+        {
+            // If we don't have an else case look for previous unconditional store and treat that as the else.
+            // Abort if the condition or store depend on lclVar:
+            //
+            // short lclVar = (short)arg1;
+            // if (lclVar > 3) {                 // Used in condition!
+            //     lclVar = (short)(lclVar + 3); // Used in store!
+            // }
+
+            GenTreeLclVar* store       = m_thenOperation.node->AsLclVar();
+            unsigned       storeLclNum = store->GetLclNum();
+
+            bool lclVarUsedInCondOrStore =
+                m_compiler->gtHasRef(m_cond, storeLclNum) || m_compiler->gtHasRef(store->Data(), storeLclNum);
+            if (!lclVarUsedInCondOrStore)
+            {
+                Statement* last = m_startBlock->lastStmt();
+                for (Statement* stmt = last->GetPrevStmt(); stmt != last; stmt = stmt->GetPrevStmt())
+                {
+                    GenTree* tree = stmt->GetRootNode();
+                    if (tree->OperIs(GT_STORE_LCL_VAR))
+                    {
+                        GenTreeLclVar* prevStore = tree->AsLclVar();
+                        if (prevStore->GetLclNum() == storeLclNum)
+                        {
+                            if ((prevStore->Data()->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) == 0)
+                            {
+                                m_doElseConversion    = true;
+                                m_elseOperation.block = m_startBlock;
+                                m_elseOperation.stmt  = stmt;
+                                m_elseOperation.node  = tree;
+                            }
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         selectFalseInput = m_thenOperation.node->AsLclVar()->Data();
         selectTrueInput  = m_doElseConversion ? m_elseOperation.node->AsLclVar()->Data() : nullptr;
 
