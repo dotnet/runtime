@@ -446,5 +446,96 @@ namespace System.Linq.Tests
             var en = iterator as IEnumerator<int>;
             Assert.False(en is not null && en.MoveNext());
         }
+
+        [Fact]
+        public void TupleLeftJoin_Basic()
+        {
+            string[] outer = ["Prakash", "Tim", "Robert"];
+            string[] inner = ["prakash", "robert"];
+
+            var result = outer.LeftJoin(inner, o => o.ToLowerInvariant(), i => i.ToLowerInvariant()).ToList();
+
+            Assert.Equal(3, result.Count);
+            Assert.Contains(result, r => r.Outer == "Prakash" && r.Inner == "prakash");
+            Assert.Contains(result, r => r.Outer == "Tim" && r.Inner == null);
+            Assert.Contains(result, r => r.Outer == "Robert" && r.Inner == "robert");
+        }
+
+        [Fact]
+        public void TupleLeftJoin_EmptyOuter()
+        {
+            string[] outer = [];
+            string[] inner = ["prakash"];
+
+            Assert.Empty(outer.LeftJoin(inner, o => o, i => i));
+        }
+
+        [Fact]
+        public void TupleLeftJoin_EmptyInner()
+        {
+            string[] outer = ["Prakash"];
+            string[] inner = Array.Empty<string>();
+
+            var result = outer.LeftJoin(inner, o => o, i => i).ToList();
+            Assert.Single(result);
+            Assert.Equal("Prakash", result[0].Outer);
+            Assert.Null(result[0].Inner);
+        }
+
+        [Fact]
+        public void TupleLeftJoin_WithComparer()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Prakash", custID = 98022 },
+                new CustomerRec{ name = "Tim", custID = 99021 }
+            ];
+            AnagramRec[] inner =
+            [
+                new AnagramRec{ name = "miT", orderID = 43455, total = 10 }
+            ];
+
+            var result = outer.LeftJoin(inner, o => o.name, i => i.name, new AnagramEqualityComparer()).ToList();
+
+            Assert.Equal(2, result.Count);
+            Assert.Contains(result, r => r.Outer.name == "Prakash" && r.Inner.orderID == 0);
+            Assert.Contains(result, r => r.Outer.name == "Tim" && r.Inner.name == "miT");
+        }
+
+        [Fact]
+        public void TupleLeftJoin_OuterNull()
+        {
+            CustomerRec[] outer = null;
+            OrderRec[] inner = [new OrderRec{ orderID = 45321, custID = 98022, total = 50 }];
+
+            AssertExtensions.Throws<ArgumentNullException>("outer", () => outer.LeftJoin(inner, o => o.custID, i => i.custID));
+        }
+
+        [Fact]
+        public void TupleLeftJoin_InnerNull()
+        {
+            CustomerRec[] outer = [new CustomerRec{ name = "Prakash", custID = 98022 }];
+            OrderRec[] inner = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => outer.LeftJoin(inner, o => o.custID, i => i.custID));
+        }
+
+        [Fact]
+        public void TupleLeftJoin_OuterKeySelectorNull()
+        {
+            CustomerRec[] outer = [new CustomerRec{ name = "Prakash", custID = 98022 }];
+            OrderRec[] inner = [new OrderRec{ orderID = 45321, custID = 98022, total = 50 }];
+
+            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => outer.LeftJoin(inner, (Func<CustomerRec, int>)null, i => i.custID));
+        }
+
+        [Fact]
+        public void TupleLeftJoin_InnerKeySelectorNull()
+        {
+            CustomerRec[] outer = [new CustomerRec{ name = "Prakash", custID = 98022 }];
+            OrderRec[] inner = [new OrderRec{ orderID = 45321, custID = 98022, total = 50 }];
+
+            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.LeftJoin(inner, o => o.custID, (Func<OrderRec, int>)null));
+        }
     }
 }
