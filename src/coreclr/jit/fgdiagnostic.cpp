@@ -3970,7 +3970,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         if (!block->KindIs(BBJ_RETURN))
         {
             GenTree* tree = stmt->GetRootNode();
-            assert(!tree->OperIs(GT_RETURN));
+            assert(!tree->OperIs(GT_RETURN) && "GT_RETURN node found in a block that isn't BBJ_RETURN");
         }
 
         // If the block contains a GT_RETURN node it should be last.
@@ -3979,7 +3979,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
             GenTree* tree          = stmt->GetRootNode();
             bool     isReturn      = tree->OperIs(GT_RETURN);
             bool     isNotLastStmt = stmt->GetNextStmt() != nullptr;
-            assert(!(isReturn && isNotLastStmt));
+            assert(!(isReturn && isNotLastStmt) && "GT_RETURN node found that is not the last statement in the block");
         }
 
         // For each statement check that the exception flags are properly set
