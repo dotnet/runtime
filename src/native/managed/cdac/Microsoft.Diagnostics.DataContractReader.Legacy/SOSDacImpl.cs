@@ -2450,7 +2450,7 @@ public sealed unsafe partial class SOSDacImpl
             if (ip == 0 || ppMD == null)
                 throw new ArgumentException();
             IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            IRuntimeTypeSystem rtss = _target.Contracts.RuntimeTypeSystem;
 
             CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(ip.ToTargetCodePointer(_target));
             if (handle is not CodeBlockHandle codeHandle)
@@ -2462,7 +2462,7 @@ public sealed unsafe partial class SOSDacImpl
             {
                 // Runs validation of MethodDesc
                 // if validation fails, should return E_INVALIDARG
-                rts.GetMethodDescHandle(methodDescAddr);
+                rtss.GetMethodDescHandle(methodDescAddr);
 
                 *ppMD = methodDescAddr.ToClrDataAddress(_target);
                 hr = HResults.S_OK;
