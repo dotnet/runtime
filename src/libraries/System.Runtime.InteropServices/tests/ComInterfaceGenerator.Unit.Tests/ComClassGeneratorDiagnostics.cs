@@ -72,7 +72,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
-        public async Task UnsafeCodeNotEnabledWarns()
+        public async Task UnsafeCodeNotEnabledErrors()
         {
             string source = """
                 using System.Runtime.InteropServices;
@@ -88,15 +88,54 @@ namespace ComInterfaceGenerator.Unit.Tests
                     [GeneratedComClass]
                     internal partial class {|#0:C|} : INativeAPI {}
                 }
-
                 """;
 
-            var test = new UnsafeBlocksNotAllowedTest(false);
-            test.TestState.Sources.Add(source);
-            test.ExpectedDiagnostics.Add(
-                new DiagnosticResult(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
-                    .WithLocation(0)
-                    .WithArguments("Test.C"));
+            var test = new UnsafeBlocksNotAllowedTest(false)
+            {
+                TestCode = source,
+                ExpectedDiagnostics =
+                {
+                    new DiagnosticResult(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
+                        .WithLocation(0)
+                        .WithArguments("Test.C")
+                }
+            };
+
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task UnsafeCodeNotEnabledAndNoPartialModifierProducesBothErrors()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                public partial class Test
+                {
+                    [GeneratedComInterface]
+                    internal partial interface INativeAPI
+                    {
+                    }
+                
+                    [GeneratedComClass]
+                    internal class {|#0:C|} : INativeAPI {}
+                }
+                """;
+
+            var test = new UnsafeBlocksNotAllowedTest(false)
+            {
+                TestCode = source,
+                ExpectedDiagnostics =
+                {
+                    new DiagnosticResult(GeneratorDiagnostics.RequiresAllowUnsafeBlocks)
+                        .WithLocation(0)
+                        .WithArguments("Test.C"),
+                    new DiagnosticResult(GeneratorDiagnostics.InvalidAttributedClassMissingPartialModifier)
+                        .WithLocation(0)
+                        .WithArguments("Test.C")
+                }
+            };
 
             await test.RunAsync();
         }
