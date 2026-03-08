@@ -403,12 +403,15 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 extern JIT_PatchpointWorkerWorkerWithPolicy:proc
 
 NESTED_ENTRY JIT_Patchpoint, _TEXT
-        PROLOG_WITH_TRANSITION_BLOCK
+        ; Use PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS to save all registers including FP callee-saved
+        ; This allows us to build a complete CONTEXT from TransitionBlock without RtlCaptureContext
+        PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS rcx
 
-        lea     rcx, [rsp + __PWTB_TransitionBlock] ; TransitionBlock *
+        ; RCX contains pointer to TransitionBlock
         call    JIT_PatchpointWorkerWorkerWithPolicy
 
-        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+        ; If we return, restore all registers and return to caller
+        POP_COOP_PINVOKE_FRAME_WITH_FLOATS_RETURN
 NESTED_END JIT_Patchpoint, _TEXT
 
 ; first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
