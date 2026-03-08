@@ -1132,41 +1132,36 @@ static void UpdateFrameForTailCall(InterpMethodContextFrame *pFrame, PTR_InterpB
     pFrame->ReInit(pFrame->pParent, targetIp, pFrame->pRetVal, pFrame->pStack);
 }
 
-// Ensures that the target method has interpreter code available, calling DoPrestub if necessary.
+// Prepares interpreter code, calling DoPrestub if necessary.
 // Returns the interpreter code pointer, or NULL if the method cannot be interpreted.
-static InterpByteCodeStart* EnsureInterpreterCode(MethodDesc* targetMethod, InterpMethodContextFrame* pFrame, InterpreterFrame* pInterpreterFrame, const int32_t* ip)
+static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, InterpMethodContextFrame* pFrame, InterpreterFrame* pInterpreterFrame, const int32_t* ip)
 {
-    if (targetMethod == NULL)
-        return NULL;
+    _ASSERTE(targetMethod != NULL);
 
-    InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
-    if (targetIp == NULL && !targetMethod->IsInterpreterCodePoisoned())
+    // This is an optimization to ensure that the stack walk will not have to search
+    // for the topmost frame in the current InterpExecMethod. It is not required
+    // for correctness, as the stack walk will find the topmost frame anyway. But it
+    // would need to seek through the frames to find it.
+    // An alternative approach would be to update the topmost frame during stack walk
+    // to make the probability that the next stack walk will need to search only a
+    // small subset of frames high.
+    pFrame->ip = ip;
+    pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
     {
-        // This is an optimization to ensure that the stack walk will not have to search
-        // for the topmost frame in the current InterpExecMethod. It is not required
-        // for correctness, as the stack walk will find the topmost frame anyway. But it
-        // would need to seek through the frames to find it.
-        // An alternative approach would be to update the topmost frame during stack walk
-        // to make the probability that the next stack walk will need to search only a
-        // small subset of frames high.
-        pFrame->ip = ip;
-        pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+        GCX_PREEMP();
+        if (targetMethod->ShouldCallPrestub())
         {
-            GCX_PREEMP();
-            if (targetMethod->ShouldCallPrestub())
-            {
-                CallWithSEHWrapper(
-                    [&targetMethod]() {
-                        return targetMethod->DoPrestub(nullptr, CallerGCMode::Coop);
-                    });
-            }
+            CallWithSEHWrapper(
+                [&targetMethod]() {
+                    return targetMethod->DoPrestub(nullptr, CallerGCMode::Coop);
+                });
         }
-        targetIp = targetMethod->GetInterpreterCode();
-        if (targetIp == NULL)
-        {
-            // The prestub wasn't able to setup an interpreter code, so it will never be able to.
-            targetMethod->PoisonInterpreterCode();
-        }
+    }
+    InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
+    if (targetIp == NULL)
+    {
+        // The prestub wasn't able to setup an interpreter code, so it will never be able to.
+        targetMethod->PoisonInterpreterCode();
     }
 
     return targetIp;
@@ -3157,10 +3152,12 @@ SWITCH_OPCODE:
                             targetMethod = NonVirtualEntry2MethodDesc(actualTarget);
                         }
 
-                        // WASM-TODO: reconsider again when we have codegen or at least native relinking.
-                        // then we can reach this point with non IL entrypoint in open virtual dispatch scenario
                         PTR_InterpByteCodeStart targetIp;
-                        if ((targetIp = EnsureInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip)) != NULL)
+                        if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
+                        {
+                            targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
+                        }
+                        if (targetIp != NULL)
                         {
                             pFrame->ip = ip;
                             InterpMethod* pTargetMethod = targetIp->Method;
@@ -3254,7 +3251,11 @@ CALL_INTERP_METHOD:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
-                    InterpByteCodeStart* targetIp = EnsureInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
+                    InterpByteCodeStart* targetIp;
+                    if (!targetMethod->IsInterpreterCodeInitialized(targetIp))
+                    {
+                        targetIp = PrepareInterpreterCode(targetMethod, pFrame, pInterpreterFrame, ip);
+                    }
                     if (targetIp == NULL)
                     {
                         // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
