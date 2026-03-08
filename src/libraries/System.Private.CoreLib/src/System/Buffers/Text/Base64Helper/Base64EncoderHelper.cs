@@ -84,7 +84,7 @@ namespace System.Buffers.Text
                 srcMax -= 2;
                 while (src < srcMax)
                 {
-                    encoder.EncodeThreeAndWrite(src, dest, ref encodingMap);
+                    encoder.EncodeThreeAndWrite(new ReadOnlySpan<byte>(src, 3), new Span<T>(dest, 4), ref encodingMap);
                     src += 3;
                     dest += 4;
                 }
@@ -102,13 +102,13 @@ namespace System.Buffers.Text
 
                 if (src + 1 == srcEnd)
                 {
-                    encoder.EncodeOneOptionallyPadTwo(src, dest, ref encodingMap);
+                    encoder.EncodeOneOptionallyPadTwo(new ReadOnlySpan<byte>(src, 1), new Span<T>(dest, encoder.IncrementPadTwo), ref encodingMap);
                     src += 1;
                     dest += encoder.IncrementPadTwo;
                 }
                 else if (src + 2 == srcEnd)
                 {
-                    encoder.EncodeTwoOptionallyPadOne(src, dest, ref encodingMap);
+                    encoder.EncodeTwoOptionallyPadOne(new ReadOnlySpan<byte>(src, 2), new Span<T>(dest, encoder.IncrementPadOne), ref encodingMap);
                     src += 2;
                     dest += encoder.IncrementPadOne;
                 }
@@ -575,7 +575,7 @@ namespace System.Buffers.Text
         }
 #endif
 
-        internal static unsafe OperationStatus EncodeToUtf8InPlace<TBase64Encoder>(TBase64Encoder encoder, Span<byte> buffer, int dataLength, out int bytesWritten)
+        internal static OperationStatus EncodeToUtf8InPlace<TBase64Encoder>(TBase64Encoder encoder, Span<byte> buffer, int dataLength, out int bytesWritten)
             where TBase64Encoder : IBase64Encoder<byte>
         {
             if (buffer.IsEmpty)
@@ -584,119 +584,79 @@ namespace System.Buffers.Text
                 return OperationStatus.Done;
             }
 
-            fixed (byte* bufferBytes = &MemoryMarshal.GetReference(buffer))
+            int encodedLength = encoder.GetMaxEncodedLength(dataLength);
+            if (buffer.Length < encodedLength)
             {
-                int encodedLength = encoder.GetMaxEncodedLength(dataLength);
-                if (buffer.Length < encodedLength)
+                bytesWritten = 0;
+                return OperationStatus.DestinationTooSmall;
+            }
+
+            int leftover = (int)((uint)dataLength % 3); // how many bytes after packs of 3
+
+            uint destinationIndex = encoder.GetInPlaceDestinationLength(encodedLength, leftover);
+            uint sourceIndex = (uint)(dataLength - leftover);
+            ref byte encodingMap = ref MemoryMarshal.GetReference(encoder.EncodingMap);
+
+            // encode last pack to avoid conditional in the main loop
+            if (leftover != 0)
+            {
+                if (leftover == 1)
                 {
-                    bytesWritten = 0;
-                    return OperationStatus.DestinationTooSmall;
+                    encoder.EncodeOneOptionallyPadTwo(buffer.Slice((int)sourceIndex, 1), buffer.Slice((int)destinationIndex), ref encodingMap);
+                }
+                else
+                {
+                    encoder.EncodeTwoOptionallyPadOne(buffer.Slice((int)sourceIndex, 2), buffer.Slice((int)destinationIndex), ref encodingMap);
                 }
 
-                int leftover = (int)((uint)dataLength % 3); // how many bytes after packs of 3
+                destinationIndex -= 4;
+            }
 
-                uint destinationIndex = encoder.GetInPlaceDestinationLength(encodedLength, leftover);
-                uint sourceIndex = (uint)(dataLength - leftover);
-                ref byte encodingMap = ref MemoryMarshal.GetReference(encoder.EncodingMap);
-
-                // encode last pack to avoid conditional in the main loop
-                if (leftover != 0)
-                {
-                    if (leftover == 1)
-                    {
-                        encoder.EncodeOneOptionallyPadTwo(bufferBytes + sourceIndex, bufferBytes + destinationIndex, ref encodingMap);
-                    }
-                    else
-                    {
-                        encoder.EncodeTwoOptionallyPadOne(bufferBytes + sourceIndex, bufferBytes + destinationIndex, ref encodingMap);
-                    }
-
-                    destinationIndex -= 4;
-                }
-
+            sourceIndex -= 3;
+            while ((int)sourceIndex >= 0)
+            {
+                EncodeThreeBytes(buffer.Slice((int)sourceIndex, 3), buffer.Slice((int)destinationIndex, 4), ref encodingMap);
+                destinationIndex -= 4;
                 sourceIndex -= 3;
-                while ((int)sourceIndex >= 0)
-                {
-                    uint result = Encode(bufferBytes + sourceIndex, ref encodingMap);
-                    Unsafe.WriteUnaligned(bufferBytes + destinationIndex, result);
-                    destinationIndex -= 4;
-                    sourceIndex -= 3;
-                }
-
-                bytesWritten = encodedLength;
-                return OperationStatus.Done;
             }
+
+            bytesWritten = encodedLength;
+            return OperationStatus.Done;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe uint Encode(byte* threeBytes, ref byte encodingMap)
+        private static void EncodeThreeBytes(ReadOnlySpan<byte> source, Span<byte> destination, ref byte encodingMap)
         {
-            uint t0 = threeBytes[0];
-            uint t1 = threeBytes[1];
-            uint t2 = threeBytes[2];
+            uint i = ((uint)source[0] << 16) | ((uint)source[1] << 8) | source[2];
 
-            uint i = (t0 << 16) | (t1 << 8) | t2;
-
-            uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-            uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-            uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-            uint i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
-
-            return ConstructResult(i0, i1, i2, i3);
+            destination[0] = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
+            destination[1] = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
+            destination[2] = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
+            destination[3] = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint ConstructResult(uint i0, uint i1, uint i2, uint i3)
-        {
-            if (BitConverter.IsLittleEndian)
-            {
-                return i0 | (i1 << 8) | (i2 << 16) | (i3 << 24);
-            }
-            else
-            {
-                return (i0 << 24) | (i1 << 16) | (i2 << 8) | i3;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, ushort* dest, ref byte encodingMap)
+        public static void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<ushort> dest, ref byte encodingMap)
         {
             uint t0 = oneByte[0];
 
             uint i = t0 << 8;
 
-            uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
-            uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
-
-            uint result;
-
-            if (BitConverter.IsLittleEndian)
-            {
-                result = (i0 | (i1 << 16));
-            }
-            else
-            {
-                result = ((i0 << 16) | i1);
-            }
-
-            Unsafe.WriteUnaligned(dest, result);
+            dest[0] = (ushort)Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
+            dest[1] = (ushort)Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, ushort* dest, ref byte encodingMap)
+        public static void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<ushort> dest, ref byte encodingMap)
         {
             uint t0 = twoBytes[0];
             uint t1 = twoBytes[1];
 
             uint i = (t0 << 16) | (t1 << 8);
 
-            ushort i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-            ushort i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-            ushort i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-
-            dest[0] = i0;
-            dest[1] = i1;
-            dest[2] = i2;
+            dest[0] = (ushort)Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
+            dest[1] = (ushort)Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
+            dest[2] = (ushort)Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
         }
 
         internal const uint EncodingPad = '='; // '=', for padding
@@ -729,33 +689,30 @@ namespace System.Buffers.Text
             public int GetMaxEncodedLength(int srcLength) => Base64.GetMaxEncodedToUtf8Length(srcLength);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, byte* dest, ref byte encodingMap)
+            public void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<byte> dest, ref byte encodingMap)
             {
                 uint t0 = oneByte[0];
 
                 uint i = t0 << 8;
 
-                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
-                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
-
-                uint result = ConstructResult(i0, i1, EncodingPad, EncodingPad);
-                Unsafe.WriteUnaligned(dest, result);
+                dest[0] = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
+                dest[1] = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
+                dest[2] = (byte)EncodingPad;
+                dest[3] = (byte)EncodingPad;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, byte* dest, ref byte encodingMap)
+            public void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<byte> dest, ref byte encodingMap)
             {
                 uint t0 = twoBytes[0];
                 uint t1 = twoBytes[1];
 
                 uint i = (t0 << 16) | (t1 << 8);
 
-                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-                uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-
-                uint result = ConstructResult(i0, i1, i2, EncodingPad);
-                Unsafe.WriteUnaligned(dest, result);
+                dest[0] = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
+                dest[1] = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
+                dest[2] = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
+                dest[3] = (byte)EncodingPad;
             }
 
 #if NET
@@ -792,10 +749,9 @@ namespace System.Buffers.Text
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeThreeAndWrite(byte* threeBytes, byte* destination, ref byte encodingMap)
+            public void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<byte> destination, ref byte encodingMap)
             {
-                uint result = Encode(threeBytes, ref encodingMap);
-                Unsafe.WriteUnaligned(destination, result);
+                EncodeThreeBytes(threeBytes, destination, ref encodingMap);
             }
         }
 
@@ -823,7 +779,7 @@ namespace System.Buffers.Text
             public int GetMaxEncodedLength(int _) => 0;  // not used for char encoding
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, ushort* dest, ref byte encodingMap)
+            public void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<ushort> dest, ref byte encodingMap)
             {
                 Base64Helper.EncodeOneOptionallyPadTwo(oneByte, dest, ref encodingMap);
                 dest[2] = (ushort)EncodingPad;
@@ -831,7 +787,7 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, ushort* dest, ref byte encodingMap)
+            public void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<ushort> dest, ref byte encodingMap)
             {
                 Base64Helper.EncodeTwoOptionallyPadOne(twoBytes, dest, ref encodingMap);
                 dest[3] = (ushort)EncodingPad;
@@ -881,7 +837,7 @@ namespace System.Buffers.Text
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeThreeAndWrite(byte* threeBytes, ushort* destination, ref byte encodingMap)
+            public void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<ushort> destination, ref byte encodingMap)
             {
                 uint t0 = threeBytes[0];
                 uint t1 = threeBytes[1];
@@ -889,22 +845,10 @@ namespace System.Buffers.Text
 
                 uint i = (t0 << 16) | (t1 << 8) | t2;
 
-                ulong i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-                ulong i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-                ulong i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-                ulong i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
-
-                ulong result;
-                if (BitConverter.IsLittleEndian)
-                {
-                    result = i0 | (i1 << 16) | (i2 << 32) | (i3 << 48);
-                }
-                else
-                {
-                    result = (i0 << 48) | (i1 << 32) | (i2 << 16) | i3;
-                }
-
-                Unsafe.WriteUnaligned(destination, result);
+                destination[0] = (ushort)Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
+                destination[1] = (ushort)Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
+                destination[2] = (ushort)Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
+                destination[3] = (ushort)Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
             }
         }
     }

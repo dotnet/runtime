@@ -178,9 +178,9 @@ namespace System.Buffers.Text
             int GetMaxSrcLength(int srcLength, int destLength);
             int GetMaxEncodedLength(int srcLength);
             uint GetInPlaceDestinationLength(int encodedLength, int leftOver);
-            unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, T* dest, ref byte encodingMap);
-            unsafe void EncodeTwoOptionallyPadOne(byte* oneByte, T* dest, ref byte encodingMap);
-            unsafe void EncodeThreeAndWrite(byte* threeBytes, T* destination, ref byte encodingMap);
+            void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<T> dest, ref byte encodingMap);
+            void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<T> dest, ref byte encodingMap);
+            void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<T> destination, ref byte encodingMap);
             int IncrementPadTwo { get; }
             int IncrementPadOne { get; }
 #if NET
@@ -236,8 +236,8 @@ namespace System.Buffers.Text
             unsafe bool TryLoadArmVector128x4(T* src, T* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4);
 #endif // NET
-            unsafe int DecodeFourElements(T* source, ref sbyte decodingMap);
-            unsafe int DecodeRemaining(T* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3);
+            int DecodeFourElements(ReadOnlySpan<T> source, ref sbyte decodingMap);
+            int DecodeRemaining(ReadOnlySpan<T> source, ref sbyte decodingMap, out uint t2, out uint t3);
             int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<T> span);
             OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TTBase64Decoder>(TTBase64Decoder decoder, ReadOnlySpan<T> source,
                 Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
