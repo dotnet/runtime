@@ -379,6 +379,12 @@ void HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle)
     // sanity check handle we are being asked to free
     _ASSERTE(handle);
 
+#ifdef DEBUG_DestroyedHandleValue
+    // Detect double-free: if the handle's referent is already the destroyed sentinel value,
+    // this handle was freed before and not yet reallocated for a new purpose.
+    _ASSERTE("Attempt to double-free a GC handle." && *(_UNCHECKED_OBJECTREF *)handle != DEBUG_DestroyedHandleValue);
+#endif
+
     // fetch the handle table pointer
     HandleTable *pTable = Table(hTable);
 
