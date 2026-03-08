@@ -787,6 +787,61 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotEqual(IPAddress.Any, pingReply.Address);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [OuterLoop] // Depends on external host and assumption that network respects and does not change TTL
+        public async Task SendPingWithLowTtl_RoundtripTimeIsNonZero()
+        {
+            // Regression test: TtlExpired replies should include the round-trip time
+            // from the intermediate router, not hardcode it to 0.
+            if (UsesPingUtility)
+            {
+                throw new SkipTestException("SendPingWithLowTtl_RoundtripTimeIsNonZero is only applicable when the ping utility is not used.");
+            }
+
+            string host = System.Net.Test.Common.Configuration.Ping.PingHost;
+            PingOptions options = new PingOptions();
+            bool reachable = false;
+
+            byte[] payload = TestSettings.PayloadAsBytesShort;
+
+            using Ping ping = new Ping();
+            for (int i = 0; i < s_pingcount; i++)
+            {
+                PingReply checkReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload);
+                if (checkReply.Status == IPStatus.Success)
+                {
+                    reachable = true;
+                    break;
+                }
+            }
+            if (!reachable)
+            {
+                throw new SkipTestException($"Host {host} is not reachable. Skipping test.");
+            }
+
+            // RTT can legitimately be 0ms on very fast networks, so retry a few times
+            // and assert that at least one reply reports a non-zero RTT.
+            options.Ttl = 1;
+            bool gotNonZeroRtt = false;
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                PingReply pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, payload, options);
+
+                Assert.True(
+                    pingReply.Status == IPStatus.TimeExceeded || pingReply.Status == IPStatus.TtlExpired,
+                    $"pingReply.Status was {pingReply.Status} instead of TimeExceeded or TtlExpired");
+
+                if (pingReply.RoundtripTime > 0)
+                {
+                    gotNonZeroRtt = true;
+                    break;
+                }
+            }
+
+            Assert.True(gotNonZeroRtt,
+                "Expected at least one TtlExpired reply with non-zero RoundtripTime across 3 attempts");
+        }
+
         private async Task Ping_TimedOut_Core(Func<Ping, string, Task<PingReply>> sendPing)
         {
             Ping sender = new Ping();
