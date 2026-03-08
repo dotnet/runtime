@@ -11,7 +11,7 @@ namespace Internal.IL.Stubs
         // Emits a thunk that wraps an async method to return a Task or ValueTask.
         // The thunk calls the async method, and if it completes synchronously,
         // it returns a completed Task/ValueTask. If the async method suspends,
-        // it calls FinalizeTaskReturningThunk/FinalizeValueTaskReturningThunk method to get the Task/ValueTask.
+        // it calls CreateAsyncMethodTask/CreateAsyncMethodValueTask method to get the Task/ValueTask.
 
         // The emitted code matches method EmitTaskReturningThunk in CoreCLR VM.
         public static MethodIL EmitTaskReturningThunk(MethodDesc taskReturningMethod, MethodDesc asyncMethod)
@@ -38,15 +38,15 @@ namespace Internal.IL.Stubs
 
             ILLocalVariable returnTaskLocal = emitter.NewLocal(returnType);
 
-            TypeDesc executionAndSyncBlockStoreType = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "ExecutionAndSyncBlockStore"u8);
-            ILLocalVariable executionAndSyncBlockStoreLocal = emitter.NewLocal(executionAndSyncBlockStoreType);
+            TypeDesc asyncContextsSnapshotType = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncContextsSnapshot"u8);
+            ILLocalVariable asyncContextsSnapshotLocal = emitter.NewLocal(asyncContextsSnapshotType);
 
             ILCodeLabel returnTaskLabel = emitter.NewCodeLabel();
             ILCodeLabel suspendedLabel = emitter.NewCodeLabel();
             ILCodeLabel finishedLabel = emitter.NewCodeLabel();
 
-            codestream.EmitLdLoca(executionAndSyncBlockStoreLocal);
-            codestream.Emit(ILOpcode.call, emitter.NewToken(executionAndSyncBlockStoreType.GetKnownMethod("Push"u8, null)));
+            codestream.EmitLdLoca(asyncContextsSnapshotLocal);
+            codestream.Emit(ILOpcode.call, emitter.NewToken(asyncContextsSnapshotType.GetKnownMethod("Push"u8, null)));
 
             ILExceptionRegionBuilder tryFinallyRegion = emitter.NewFinallyRegion();
             {
@@ -188,36 +188,36 @@ namespace Internal.IL.Stubs
 
                 codestream.EmitLabel(suspendedLabel);
 
-                MethodDesc finalizeTaskReturningThunkMd;
+                MethodDesc createAsyncMethodTaskMd;
                 if (logicalReturnType != null)
                 {
-                    MethodSignature finalizeReturningThunkSignature = new MethodSignature(
+                    MethodSignature createMethodTaskSignature = new MethodSignature(
                         MethodSignatureFlags.Static,
                         genericParameterCount: 1,
                         returnType: ((MetadataType)returnType.GetTypeDefinition()).MakeInstantiatedType(context.GetSignatureVariable(0, true)),
                         parameters: Array.Empty<TypeDesc>()
                     );
 
-                    finalizeTaskReturningThunkMd = context.SystemModule
+                    createAsyncMethodTaskMd = context.SystemModule
                         .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                        .GetKnownMethod(isValueTask ? "FinalizeValueTaskReturningThunk"u8 : "FinalizeTaskReturningThunk"u8, finalizeReturningThunkSignature)
+                        .GetKnownMethod(isValueTask ? "CreateAsyncMethodValueTask"u8 : "CreateAsyncMethodTask"u8, createMethodTaskSignature)
                         .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                 }
                 else
                 {
-                    MethodSignature finalizeReturningThunkSignature = new MethodSignature(
+                    MethodSignature createMethodTaskSignature = new MethodSignature(
                         MethodSignatureFlags.Static,
                         genericParameterCount: 0,
                         returnType: returnType,
                         parameters: Array.Empty<TypeDesc>()
                     );
 
-                    finalizeTaskReturningThunkMd = context.SystemModule
+                    createAsyncMethodTaskMd = context.SystemModule
                         .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                        .GetKnownMethod(isValueTask ? "FinalizeValueTaskReturningThunk"u8 : "FinalizeTaskReturningThunk"u8, finalizeReturningThunkSignature);
+                        .GetKnownMethod(isValueTask ? "CreateAsyncMethodValueTask"u8 : "CreateAsyncMethodTask"u8, createMethodTaskSignature);
                 }
 
-                codestream.Emit(ILOpcode.call, emitter.NewToken(finalizeTaskReturningThunkMd));
+                codestream.Emit(ILOpcode.call, emitter.NewToken(createAsyncMethodTaskMd));
                 codestream.EmitStLoc(returnTaskLocal);
                 codestream.Emit(ILOpcode.leave, returnTaskLabel);
 
@@ -227,8 +227,8 @@ namespace Internal.IL.Stubs
             {
                 codestream.BeginHandler(tryFinallyRegion);
 
-                codestream.EmitLdLoca(executionAndSyncBlockStoreLocal);
-                codestream.Emit(ILOpcode.call, emitter.NewToken(executionAndSyncBlockStoreType.GetKnownMethod("Pop"u8, null)));
+                codestream.EmitLdLoca(asyncContextsSnapshotLocal);
+                codestream.Emit(ILOpcode.call, emitter.NewToken(asyncContextsSnapshotType.GetKnownMethod("Pop"u8, null)));
                 codestream.Emit(ILOpcode.endfinally);
                 codestream.EndHandler(tryFinallyRegion);
             }
