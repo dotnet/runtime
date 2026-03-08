@@ -111,6 +111,52 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
+        public static TheoryData<string, string, string, string> XslNumberDecimalData => new TheoryData<string, string, string, string>
+        {
+            // (value, format, grouping-separator + grouping-size attributes, expectedOutput)
+            // Basic decimal (fast path: no changes needed)
+            { "1", "1", "", "1" },
+            { "1234", "1", "", "1234" },
+            // Padding only (fast path: PadLeft)
+            { "42", "001", "", "042" },
+            { "5", "0001", "", "0005" },
+            // Grouping separator (string.Create path)
+            { "1234567", "1", @"grouping-separator="","" grouping-size=""3""", "1,234,567" },
+            { "1000", "1", @"grouping-separator="","" grouping-size=""3""", "1,000" },
+            { "100", "1", @"grouping-separator="","" grouping-size=""3""", "100" },
+            { "1234", "1", @"grouping-separator="","" grouping-size=""3""", "1,234" },
+            // Padding with grouping separator (string.Create path)
+            { "42", "001", @"grouping-separator="","" grouping-size=""3""", "042" },
+            { "42", "00001", @"grouping-separator="","" grouping-size=""3""", "00,042" },
+            // Non-ASCII digit system - Arabic-Indic digits (string.Create path, shift != 0)
+            { "123", "\u0661", "", "\u0661\u0662\u0663" },
+            { "1234", "\u0661", "", "\u0661\u0662\u0663\u0664" },
+        };
 
+        [Theory]
+        [MemberData(nameof(XslNumberDecimalData))]
+        public void XslNumberDecimalFormatting(string value, string format, string groupingAttrs, string expected)
+        {
+            string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?><root/>";
+            string xsl = $@"<xsl:stylesheet version=""1.0"" xmlns:xsl=""http://www.w3.org/1999/XSL/Transform"">
+    <xsl:output method=""text"" />
+    <xsl:template match=""/"">
+        <xsl:number value=""{value}"" format=""{format}"" {groupingAttrs}/>
+    </xsl:template>
+</xsl:stylesheet>";
+
+            using var outWriter = new StringWriter();
+            using (var xslStringReader = new StringReader(xsl))
+            using (var xmlStringReader = new StringReader(xml))
+            using (var xslReader = XmlReader.Create(xslStringReader))
+            using (var xmlReader = XmlReader.Create(xmlStringReader))
+            {
+                var transform = new XslCompiledTransform();
+                transform.Load(xslReader);
+                transform.Transform(xmlReader, null, outWriter);
+            }
+
+            Assert.Equal(expected, outWriter.ToString());
+        }
     }
 }
