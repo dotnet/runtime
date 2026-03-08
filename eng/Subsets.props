@@ -535,7 +535,6 @@
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\linker\ref\Mono.Linker.csproj" Category="tools" />
-    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\tlens\tlens.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" Category="tools" />
   </ItemGroup>
 
