@@ -180,7 +180,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static unsafe void CreateAnonymousPipeCore(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
+        public static unsafe partial void CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, bool asyncRead, bool asyncWrite)
         {
             // Allocate the handles first, so in case of OOM we don't leak any handles.
             SafeFileHandle tempReadHandle = new();
