@@ -2794,6 +2794,9 @@ public:
     EHblkDsc* ehIsBlockHndLast(BasicBlock* block);
     bool ehIsBlockEHLast(BasicBlock* block);
 
+    template <typename GetTryLast, typename SetTryLast>
+    void ehSetTryLasts(GetTryLast getTryLast, SetTryLast setTryLast);
+
     bool ehBlockHasExnFlowDsc(BasicBlock* block);
 
     // Return the region index of the most nested EH region this block is in.
@@ -2819,6 +2822,10 @@ public:
 
     // Update the 'last' pointers in the EH table to reflect new or deleted blocks in an EH region.
     void ehUpdateLastBlocks(BasicBlock* oldLast, BasicBlock* newLast);
+
+    // Update the end pointer of the try region containing 'oldTryLast',
+    // as well as the end pointers of any parent try regions, to 'newTryLast'.
+    void ehUpdateLastTryBlocks(BasicBlock* oldTryLast, BasicBlock* newTryLast);
 
     // For a finally handler, find the region index that the BBJ_CALLFINALLY lives in that calls the handler,
     // or NO_ENCLOSING_INDEX if the BBJ_CALLFINALLY lives in the main function body. Normally, the index
