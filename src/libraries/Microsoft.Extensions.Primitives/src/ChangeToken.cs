@@ -54,10 +54,15 @@ namespace Microsoft.Extensions.Primitives
 
         private sealed class ChangeTokenRegistration<TState> : IDisposable
         {
+            private const int MaxConsecutiveSynchronousChanges = 4096;
+            private const string ConsecutiveChangesErrorMessage = "The change token producer returned an already changed token too many consecutive times. Ensure the producer eventually returns a fresh, non-signaled token instance.";
+
             private readonly Func<IChangeToken?> _changeTokenProducer;
             private readonly Action<TState> _changeTokenConsumer;
             private readonly TState _state;
             private IDisposable? _disposable;
+            private int _callbackProcessing;
+            private int _callbackPending;
 
             private static readonly NoopDisposable _disposedSentinel = new NoopDisposable();
 
@@ -74,69 +79,108 @@ namespace Microsoft.Extensions.Primitives
 
             private void OnChangeTokenFired()
             {
-                // The order here is important. We need to take the token and then apply our changes BEFORE
-                // registering. This prevents us from possible having two change updates to process concurrently.
-                //
-                // If the token changes after we take the token, then we'll process the update immediately upon
-                // registering the callback.
-                IChangeToken? token = _changeTokenProducer();
+                Volatile.Write(ref _callbackPending, 1);
 
-                try
+                ProcessCallbacks();
+            }
+
+            private void ProcessCallbacks()
+            {
+                while (Interlocked.CompareExchange(ref _callbackProcessing, 1, 0) is 0)
                 {
-                    _changeTokenConsumer(_state);
-                }
-                finally
-                {
-                    // We always want to ensure the callback is registered
-                    RegisterChangeTokenCallback(token);
+                    int consecutiveSynchronousChanges = 0;
+
+                    try
+                    {
+                        while (Interlocked.Exchange(ref _callbackPending, 0) is not 0)
+                        {
+                            // The order here is important. We need to take the token and then apply our changes BEFORE
+                            // registering. This prevents us from possibly having two change updates to process concurrently.
+                            //
+                            // If the token changes after we take the token, then we'll process the update immediately upon
+                            // registering the callback.
+                            IChangeToken? token = _changeTokenProducer();
+
+                            try
+                            {
+                                _changeTokenConsumer(_state);
+                            }
+                            finally
+                            {
+                                // We always want to ensure the callback is registered.
+                                if (RegisterChangeTokenCallback(token))
+                                {
+                                    if (++consecutiveSynchronousChanges >= MaxConsecutiveSynchronousChanges)
+                                    {
+                                        throw new InvalidOperationException(ConsecutiveChangesErrorMessage);
+                                    }
+
+                                    Volatile.Write(ref _callbackPending, 1);
+                                }
+                                else
+                                {
+                                    consecutiveSynchronousChanges = 0;
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        Volatile.Write(ref _callbackProcessing, 0);
+                    }
+
+                    if (Volatile.Read(ref _callbackPending) is 0)
+                    {
+                        return;
+                    }
                 }
             }
 
-            private void RegisterChangeTokenCallback(IChangeToken? token)
+            private bool RegisterChangeTokenCallback(IChangeToken? token)
             {
                 if (token is null)
                 {
-                    return;
+                    return false;
                 }
-                IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
+
+                IDisposable registration = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
                 if (token.HasChanged && token.ActiveChangeCallbacks)
                 {
-                    registraton?.Dispose();
-                    return;
+                    registration.Dispose();
+                    return true;
                 }
-                SetDisposable(registraton);
+
+                SetDisposable(registration);
+                return false;
             }
 
             private void SetDisposable(IDisposable disposable)
             {
-                // We don't want to transition from _disposedSentinel => anything since it's terminal
-                // but we want to allow going from previously assigned disposable, to another
-                // disposable.
-                IDisposable? current = Volatile.Read(ref _disposable);
+                while (true)
+                {
+                    // We don't want to transition from _disposedSentinel => anything since it's terminal,
+                    // but we want to allow going from previously assigned disposable to another disposable.
+                    IDisposable? current = Volatile.Read(ref _disposable);
 
-                // If Dispose was called, then immediately dispose the disposable
-                if (current == _disposedSentinel)
-                {
-                    disposable.Dispose();
-                    return;
-                }
+                    // If Dispose was called, then immediately dispose the disposable.
+                    if (current == _disposedSentinel)
+                    {
+                        disposable.Dispose();
+                        return;
+                    }
 
-                // Otherwise, try to update the disposable
-                IDisposable? previous = Interlocked.CompareExchange(ref _disposable, disposable, current);
+                    IDisposable? previous = Interlocked.CompareExchange(ref _disposable, disposable, current);
+                    if (previous == current)
+                    {
+                        current?.Dispose();
+                        return;
+                    }
 
-                if (previous == _disposedSentinel)
-                {
-                    // The subscription was disposed so we dispose immediately and return
-                    disposable.Dispose();
-                }
-                else if (previous == current)
-                {
-                    // We successfully assigned the _disposable field to disposable
-                }
-                else
-                {
-                    // Sets can never overlap with other SetDisposable calls so we should never get into this situation
-                    throw new InvalidOperationException("Somebody else set the _disposable field");
+                    if (previous == _disposedSentinel)
+                    {
+                        disposable.Dispose();
+                        return;
+                    }
                 }
             }
 
