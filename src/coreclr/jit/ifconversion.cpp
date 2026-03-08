@@ -920,6 +920,24 @@ static int SumOperandCostEx(ArrayStack<GenTree*>* operands)
     return cost;
 }
 
+//-----------------------------------------------------------------------------
+// ShouldAvoidFactoringConstAddSelect: guard for cases where
+// factoring
+//     select(x + c1, x + c2) -> x + select(c1, c2)
+// tends to pessimize codegen by forcing constant materialization.
+//
+static bool ShouldAvoidFactoringConstAddSelect(genTreeOps          oper,
+                                               ArrayStack<GenTree*>* trueOnlyOperands,
+                                               ArrayStack<GenTree*>* falseOnlyOperands)
+{
+    if ((oper == GT_ADD) && (trueOnlyOperands->Height() == 1) && (falseOnlyOperands->Height() == 1))
+    {
+        return trueOnlyOperands->Bottom(0)->IsIntegralConst() && falseOnlyOperands->Bottom(0)->IsIntegralConst();
+    }
+
+    return false;
+}
+
 static void CollectAssociativeOperands(GenTree* node, genTreeOps oper, ArrayStack<GenTree*>* operands);
 
 //-----------------------------------------------------------------------------
@@ -1062,6 +1080,12 @@ bool OptIfConversionDsc::CanProfitablyFactorCommonCommutativeOperands(GenTree* t
     {
         return false;
     }
+
+    if (ShouldAvoidFactoringConstAddSelect(oper, &trueOnlyOperands, &falseOnlyOperands))
+    {
+        return false;
+    }
+
     assert(varTypeIsIntegralOrI(resultType));
 
     const int operCost         = GetCommutativeFactorOperCost(oper);
@@ -1110,6 +1134,11 @@ GenTree* OptIfConversionDsc::TryFactorCommonCommutativeOperands(GenTree* trueInp
 
     if (!TryAnalyzeCommonCommutativeOperands(trueInput, falseInput, alloc, &oper, &resultType, &commonOperands,
                                              &trueOnlyOperands, &falseOnlyOperands))
+    {
+        return nullptr;
+    }
+
+    if (ShouldAvoidFactoringConstAddSelect(oper, &trueOnlyOperands, &falseOnlyOperands))
     {
         return nullptr;
     }
