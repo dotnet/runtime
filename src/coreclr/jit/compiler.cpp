@@ -10413,7 +10413,7 @@ bool Compiler::killGCRefs(GenTree* tree)
             return true;
         }
 
-        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_JIT_PINVOKE_BEGIN))
+        if (call->IsHelperCall(CORINFO_HELP_JIT_PINVOKE_BEGIN))
         {
             assert(opts.ShouldUsePInvokeHelpers());
             return true;

@@ -7304,12 +7304,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
     GenTree* ctrlExpr = call->gtControlExpr;
     if (call->gtCallType == CT_INDIRECT)
     {
-        // either gtControlExpr != null or gtCallAddr != null.
-        // Both cannot be non-null at the same time.
-        assert(ctrlExpr == nullptr);
-        assert(call->gtCallAddr != nullptr);
-        ctrlExpr = call->gtCallAddr;
-
 #ifdef TARGET_X86
         // Fast tail calls aren't currently supported on x86, but if they ever are, the code
         // below that handles indirect VSD calls will need to be fixed.
