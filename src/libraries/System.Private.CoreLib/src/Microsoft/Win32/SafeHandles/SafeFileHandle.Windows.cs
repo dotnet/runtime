@@ -66,18 +66,16 @@ namespace Microsoft.Win32.SafeHandles
 
                 // We could consider specifying a larger buffer size.
                 tempReadHandle = Interop.Kernel32.CreateNamedPipeFileHandle(pipeName, openMode, pipeMode, 1, 0, 0, 0, ref securityAttributes);
-                if (tempReadHandle.IsInvalid)
-                {
-                    int error = Marshal.GetLastPInvokeError();
-                    tempReadHandle.Dispose();
-                    throw new Win32Exception(error);
-                }
-
-                tempReadHandle._fileOptions = asyncRead ? FileOptions.Asynchronous : FileOptions.None;
-                FileOptions writeOptions = asyncWrite ? FileOptions.Asynchronous : FileOptions.None;
 
                 try
                 {
+                    if (tempReadHandle.IsInvalid)
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    tempReadHandle._fileOptions = asyncRead ? FileOptions.Asynchronous : FileOptions.None;
+                    FileOptions writeOptions = asyncWrite ? FileOptions.Asynchronous : FileOptions.None;
                     tempWriteHandle = Open(pipeName, FileMode.Open, FileAccess.Write, FileShare.Read, writeOptions, preallocationSize: 0);
                 }
                 catch
