@@ -1,0 +1,12 @@
+v5.8.2
+https://github.com/tukaani-project/xz/releases/tag/v5.8.2
+
+To update the code in the future, follow these steps:
+1. Download the source code tarball for the matching version from https://tukaani.org/xz/ or https://github.com/tukaani-project/xz/releases/
+2. Delete existing files in 'src/native/external/xz/'
+3. From the extracted tarball, copy the 'cmake', 'lib' and 'src' directories into 'src/native/external/xz/'
+4. Rebuild the native components and run the relevant tests
+
+Only the 'cmake', 'src/common' and 'src/liblzma' directories from the original source were included to minimize unnecessary code inclusions.
+
+To fix build-time warnings in the currently released version, the xz-patch.diff file was applied. These changes should be upstreamed to the xz project and should not be necessary when upgrading to a future version.

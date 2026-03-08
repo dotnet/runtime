@@ -1,0 +1,440 @@
+diff --git a/src/liblzma/check/crc_x86_clmul.h b/src/liblzma/check/crc_x86_clmul.h
+index b302d6cf..35653623 100644
+--- a/src/liblzma/check/crc_x86_clmul.h
++++ b/src/liblzma/check/crc_x86_clmul.h
+@@ -344,7 +344,7 @@ is_arch_extension_supported(void)
+ #if defined(_MSC_VER)
+ 	// This needs <intrin.h> with MSVC. ICC has it as a built-in
+ 	// on all platforms.
+-	__cpuid(r, 1);
++	__cpuid((int *)r, 1);
+ #elif defined(HAVE_CPUID_H)
+ 	// Compared to just using __asm__ to run CPUID, this also checks
+ 	// that CPUID is supported and saves and restores ebx as that is
+diff --git a/src/liblzma/common/block_buffer_encoder.c b/src/liblzma/common/block_buffer_encoder.c
+index df3b90e8..3963c15c 100644
+--- a/src/liblzma/common/block_buffer_encoder.c
++++ b/src/liblzma/common/block_buffer_encoder.c
+@@ -143,7 +143,7 @@ block_encode_uncompressed(lzma_block *block, const uint8_t *in, size_t in_size,
+ 		// Size of the uncompressed chunk
+ 		const size_t copy_size
+ 				= my_min(in_size - in_pos, LZMA2_CHUNK_MAX);
+-		out[(*out_pos)++] = (copy_size - 1) >> 8;
++		out[(*out_pos)++] = (uint8_t)((copy_size - 1) >> 8);
+ 		out[(*out_pos)++] = (copy_size - 1) & 0xFF;
+ 
+ 		// The actual data
+diff --git a/src/liblzma/common/block_header_encoder.c b/src/liblzma/common/block_header_encoder.c
+index 45e57a26..33840d1b 100644
+--- a/src/liblzma/common/block_header_encoder.c
++++ b/src/liblzma/common/block_header_encoder.c
+@@ -81,7 +81,7 @@ lzma_block_header_encode(const lzma_block *block, uint8_t *out)
+ 	const size_t out_size = block->header_size - 4;
+ 
+ 	// Store the Block Header Size.
+-	out[0] = out_size / 4;
++	out[0] = (uint8_t)(out_size / 4);
+ 
+ 	// We write Block Flags in pieces.
+ 	out[1] = 0x00;
+diff --git a/src/liblzma/delta/delta_encoder.c b/src/liblzma/delta/delta_encoder.c
+index ba4a50b1..c3f30273 100644
+--- a/src/liblzma/delta/delta_encoder.c
++++ b/src/liblzma/delta/delta_encoder.c
+@@ -126,7 +126,7 @@ lzma_delta_props_encode(const void *options, uint8_t *out)
+ 		return LZMA_PROG_ERROR;
+ 
+ 	const lzma_options_delta *opt = options;
+-	out[0] = opt->dist - LZMA_DELTA_DIST_MIN;
++	out[0] = (uint8_t)(opt->dist - LZMA_DELTA_DIST_MIN);
+ 
+ 	return LZMA_OK;
+ }
+diff --git a/src/liblzma/lz/lz_decoder.h b/src/liblzma/lz/lz_decoder.h
+index 2698e016..d26963a9 100644
+--- a/src/liblzma/lz/lz_decoder.h
++++ b/src/liblzma/lz/lz_decoder.h
+@@ -205,7 +205,7 @@ dict_repeat(lzma_dict *restrict dict,
+ {
+ 	// Don't write past the end of the dictionary.
+ 	const size_t dict_avail = dict->limit - dict->pos;
+-	uint32_t left = my_min(dict_avail, *len);
++	uint32_t left = (uint32_t)my_min(dict_avail, *len);
+ 	*len -= left;
+ 
+ 	size_t back = dict->pos - distance - 1;
+diff --git a/src/liblzma/lz/lz_encoder.c b/src/liblzma/lz/lz_encoder.c
+index e5c4057d..0062882a 100644
+--- a/src/liblzma/lz/lz_encoder.c
++++ b/src/liblzma/lz/lz_encoder.c
+@@ -107,7 +107,7 @@ fill_window(lzma_coder *coder, const lzma_allocator *allocator,
+ 				coder->mf.size, action);
+ 	}
+ 
+-	coder->mf.write_pos = write_pos;
++	coder->mf.write_pos = (uint32_t)write_pos;
+ 
+ 	// Silence Valgrind. lzma_memcmplen() can read extra bytes
+ 	// and Valgrind will give warnings if those bytes are uninitialized
+@@ -199,10 +199,10 @@ lz_encoder_prepare(lzma_mf *mf, const lzma_allocator *allocator,
+ 			|| lz_options->nice_len > lz_options->match_len_max)
+ 		return true;
+ 
+-	mf->keep_size_before = lz_options->before_size + lz_options->dict_size;
++	mf->keep_size_before = (uint32_t)(lz_options->before_size + lz_options->dict_size);
+ 
+-	mf->keep_size_after = lz_options->after_size
+-			+ lz_options->match_len_max;
++	mf->keep_size_after = (uint32_t)(lz_options->after_size
++			+ lz_options->match_len_max);
+ 
+ 	// To avoid constant memmove()s, allocate some extra space. Since
+ 	// memmove()s become more expensive when the size of the buffer
+@@ -215,12 +215,12 @@ lz_encoder_prepare(lzma_mf *mf, const lzma_allocator *allocator,
+ 	//     to size_t.
+ 	//   - Memory usage calculation needs something too, e.g. use uint64_t
+ 	//     for mf->size.
+-	uint32_t reserve = lz_options->dict_size / 2;
++	uint32_t reserve = (uint32_t)(lz_options->dict_size / 2);
+ 	if (reserve > (UINT32_C(1) << 30))
+ 		reserve /= 2;
+ 
+-	reserve += (lz_options->before_size + lz_options->match_len_max
+-			+ lz_options->after_size) / 2 + (UINT32_C(1) << 19);
++	reserve += (uint32_t)((lz_options->before_size + lz_options->match_len_max
++			+ lz_options->after_size) / 2 + (UINT32_C(1) << 19));
+ 
+ 	const uint32_t old_size = mf->size;
+ 	mf->size = mf->keep_size_before + reserve + mf->keep_size_after;
+@@ -233,8 +233,8 @@ lz_encoder_prepare(lzma_mf *mf, const lzma_allocator *allocator,
+ 	}
+ 
+ 	// Match finder options
+-	mf->match_len_max = lz_options->match_len_max;
+-	mf->nice_len = lz_options->nice_len;
++	mf->match_len_max = (uint32_t)lz_options->match_len_max;
++	mf->nice_len = (uint32_t)lz_options->nice_len;
+ 
+ 	// cyclic_size has to stay smaller than 2 Gi. Note that this doesn't
+ 	// mean limiting dictionary size to less than 2 GiB. With a match
+@@ -251,7 +251,7 @@ lz_encoder_prepare(lzma_mf *mf, const lzma_allocator *allocator,
+ 	// memory to keep the code simpler. The current way is simple and
+ 	// still allows pretty big dictionaries, so I don't expect these
+ 	// limits to change.
+-	mf->cyclic_size = lz_options->dict_size + 1;
++	mf->cyclic_size = (uint32_t)(lz_options->dict_size + 1);
+ 
+ 	// Validate the match finder ID and setup the function pointers.
+ 	switch (lz_options->match_finder) {
+@@ -308,7 +308,7 @@ lz_encoder_prepare(lzma_mf *mf, const lzma_allocator *allocator,
+ 	} else {
+ 		// Round dictionary size up to the next 2^n - 1 so it can
+ 		// be used as a hash mask.
+-		hs = lz_options->dict_size - 1;
++		hs = (uint32_t)(lz_options->dict_size - 1);
+ 		hs |= hs >> 1;
+ 		hs |= hs >> 2;
+ 		hs |= hs >> 4;
+diff --git a/src/liblzma/lzma/lzma2_encoder.c b/src/liblzma/lzma/lzma2_encoder.c
+index 71cfd9b4..957fa31e 100644
+--- a/src/liblzma/lzma/lzma2_encoder.c
++++ b/src/liblzma/lzma/lzma2_encoder.c
+@@ -81,14 +81,14 @@ lzma2_header_lzma(lzma_lzma2_coder *coder)
+ 
+ 	// Uncompressed size
+ 	size_t size = coder->uncompressed_size - 1;
+-	coder->buf[pos++] += size >> 16;
+-	coder->buf[pos++] = (size >> 8) & 0xFF;
+-	coder->buf[pos++] = size & 0xFF;
++	coder->buf[pos++] += (uint8_t)(size >> 16);
++	coder->buf[pos++] = (uint8_t)((size >> 8) & 0xFF);
++	coder->buf[pos++] = (uint8_t)(size & 0xFF);
+ 
+ 	// Compressed size
+ 	size = coder->compressed_size - 1;
+-	coder->buf[pos++] = size >> 8;
+-	coder->buf[pos++] = size & 0xFF;
++	coder->buf[pos++] = (uint8_t)(size >> 8);
++	coder->buf[pos++] = (uint8_t)(size & 0xFF);
+ 
+ 	// Properties, if needed
+ 	if (coder->need_properties)
+@@ -122,7 +122,7 @@ lzma2_header_uncompressed(lzma_lzma2_coder *coder)
+ 	coder->need_dictionary_reset = false;
+ 
+ 	// "Compressed" size
+-	coder->buf[1] = (coder->uncompressed_size - 1) >> 8;
++	coder->buf[1] = (uint8_t)((coder->uncompressed_size - 1) >> 8);
+ 	coder->buf[2] = (coder->uncompressed_size - 1) & 0xFF;
+ 
+ 	// Set the start position for copying.
+@@ -164,8 +164,8 @@ lzma2_encode(void *coder_ptr, lzma_mf *restrict mf,
+ 	case SEQ_LZMA_ENCODE: {
+ 		// Calculate how much more uncompressed data this chunk
+ 		// could accept.
+-		const uint32_t left = LZMA2_UNCOMPRESSED_MAX
+-				- coder->uncompressed_size;
++		const uint32_t left = (uint32_t)(LZMA2_UNCOMPRESSED_MAX
++				- coder->uncompressed_size);
+ 		uint32_t limit;
+ 
+ 		if (left < mf->match_len_max) {
+@@ -394,7 +394,7 @@ lzma_lzma2_props_encode(const void *options, uint8_t *out)
+ 	if (d == UINT32_MAX)
+ 		out[0] = 40;
+ 	else
+-		out[0] = get_dist_slot(d + 1) - 24;
++		out[0] = (uint8_t)(get_dist_slot(d + 1) - 24);
+ 
+ 	return LZMA_OK;
+ }
+diff --git a/src/liblzma/lzma/lzma_decoder.c b/src/liblzma/lzma/lzma_decoder.c
+index 2088a2fa..627d2ca5 100644
+--- a/src/liblzma/lzma/lzma_decoder.c
++++ b/src/liblzma/lzma/lzma_decoder.c
+@@ -378,7 +378,7 @@ lzma_decode(void *coder_ptr, lzma_dict *restrict dictptr,
+ 			}
+ 
+ 			// Write decoded literal to dictionary
+-			dict_put(&dict, symbol);
++			dict_put(&dict, (uint8_t)symbol);
+ 			continue;
+ 		}
+ 
+@@ -742,7 +742,7 @@ slow:
+ 			}
+ 
+ 	case SEQ_LITERAL_WRITE:
+-			if (dict_put_safe(&dict, symbol)) {
++			if (dict_put_safe(&dict, (uint8_t)symbol)) {
+ 				coder->sequence = SEQ_LITERAL_WRITE;
+ 				goto out;
+ 			}
+@@ -1203,7 +1203,7 @@ lzma_lzma_lclppb_decode(lzma_options_lzma *options, uint8_t byte)
+ 
+ 	// See the file format specification to understand this.
+ 	options->pb = byte / (9 * 5);
+-	byte -= options->pb * 9 * 5;
++	byte -= (uint8_t)(options->pb * 9 * 5);
+ 	options->lp = byte / 9;
+ 	options->lc = byte - options->lp * 9;
+ 
+diff --git a/src/liblzma/lzma/lzma_encoder.c b/src/liblzma/lzma/lzma_encoder.c
+index 543ca321..20dc62d3 100644
+--- a/src/liblzma/lzma/lzma_encoder.c
++++ b/src/liblzma/lzma/lzma_encoder.c
+@@ -753,7 +753,7 @@ lzma_lzma_lclppb_encode(const lzma_options_lzma *options, uint8_t *byte)
+ 	if (!is_lclppb_valid(options))
+ 		return true;
+ 
+-	*byte = (options->pb * 5 + options->lp) * 9 + options->lc;
++	*byte = (uint8_t)((options->pb * 5 + options->lp) * 9 + options->lc);
+ 	assert(*byte <= (4 * 5 + 4) * 9 + 8);
+ 
+ 	return false;
+diff --git a/src/liblzma/simple/arm.c b/src/liblzma/simple/arm.c
+index f9d9c08b..159671a7 100644
+--- a/src/liblzma/simple/arm.c
++++ b/src/liblzma/simple/arm.c
+@@ -35,9 +35,9 @@ arm_code(void *simple lzma_attribute((__unused__)),
+ 				dest = src - (now_pos + (uint32_t)(i) + 8);
+ 
+ 			dest >>= 2;
+-			buffer[i + 2] = (dest >> 16);
+-			buffer[i + 1] = (dest >> 8);
+-			buffer[i + 0] = dest;
++			buffer[i + 2] = (uint8_t)(dest >> 16);
++			buffer[i + 1] = (uint8_t)(dest >> 8);
++			buffer[i + 0] = (uint8_t)dest;
+ 		}
+ 	}
+ 
+diff --git a/src/liblzma/simple/armthumb.c b/src/liblzma/simple/armthumb.c
+index 368b51c7..36233550 100644
+--- a/src/liblzma/simple/armthumb.c
++++ b/src/liblzma/simple/armthumb.c
+@@ -42,9 +42,9 @@ armthumb_code(void *simple lzma_attribute((__unused__)),
+ 
+ 			dest >>= 1;
+ 			buffer[i + 1] = 0xF0 | ((dest >> 19) & 0x7);
+-			buffer[i + 0] = (dest >> 11);
++			buffer[i + 0] = (uint8_t)(dest >> 11);
+ 			buffer[i + 3] = 0xF8 | ((dest >> 8) & 0x7);
+-			buffer[i + 2] = (dest);
++			buffer[i + 2] = (uint8_t)(dest);
+ 			i += 2;
+ 		}
+ 	}
+diff --git a/src/liblzma/simple/powerpc.c b/src/liblzma/simple/powerpc.c
+index ea47d14d..2bcc638b 100644
+--- a/src/liblzma/simple/powerpc.c
++++ b/src/liblzma/simple/powerpc.c
+@@ -39,8 +39,8 @@ powerpc_code(void *simple lzma_attribute((__unused__)),
+ 				dest = src - (now_pos + (uint32_t)(i));
+ 
+ 			buffer[i + 0] = 0x48 | ((dest >> 24) &  0x03);
+-			buffer[i + 1] = (dest >> 16);
+-			buffer[i + 2] = (dest >> 8);
++			buffer[i + 1] = (uint8_t)(dest >> 16);
++			buffer[i + 2] = (uint8_t)(dest >> 8);
+ 			buffer[i + 3] &= 0x03;
+ 			buffer[i + 3] |= dest;
+ 		}
+diff --git a/src/liblzma/simple/simple_coder.c b/src/liblzma/simple/simple_coder.c
+index 5cbfa822..930a532d 100644
+--- a/src/liblzma/simple/simple_coder.c
++++ b/src/liblzma/simple/simple_coder.c
+@@ -59,7 +59,7 @@ call_filter(lzma_simple_coder *coder, uint8_t *buffer, size_t size)
+ 	const size_t filtered = coder->filter(coder->simple,
+ 			coder->now_pos, coder->is_encoder,
+ 			buffer, size);
+-	coder->now_pos += filtered;
++	coder->now_pos += (uint32_t)filtered;
+ 	return filtered;
+ }
+ 
+diff --git a/src/liblzma/common/block_buffer_encoder.c b/src/liblzma/common/block_buffer_encoder.c
+index 3963c15c77a..2219593be1f 100644
+--- a/src/liblzma/common/block_buffer_encoder.c
++++ b/src/liblzma/common/block_buffer_encoder.c
+@@ -80,7 +80,7 @@ lzma_block_buffer_bound(size_t uncompressed_size)
+ 		return 0;
+ #endif
+ 
+-	return ret;
++	return (size_t)ret;
+ }
+ 
+ 
+@@ -180,7 +180,7 @@ block_encode_normal(lzma_block *block, const lzma_allocator *allocator,
+ 	// Limit out_size so that we stop encoding if the output would grow
+ 	// bigger than what uncompressed Block would be.
+ 	if (out_size - *out_pos > block->compressed_size)
+-		out_size = *out_pos + block->compressed_size;
++		out_size = *out_pos + (size_t)block->compressed_size;
+ 
+ 	// TODO: In many common cases this could be optimized to use
+ 	// significantly less memory.
+diff --git a/src/liblzma/common/file_info.c b/src/liblzma/common/file_info.c
+index 4b2eb5d0400..5efa73c4471 100644
+--- a/src/liblzma/common/file_info.c
++++ b/src/liblzma/common/file_info.c
+@@ -399,7 +399,7 @@ file_info_decode(void *coder_ptr, const lzma_allocator *allocator,
+ 			// Set coder->temp_pos to point to the beginning
+ 			// of the Index.
+ 			coder->temp_pos = coder->temp_size
+-					- coder->footer_flags.backward_size;
++					- (size_t)coder->footer_flags.backward_size;
+ 		} else {
+ 			// These are set to zero to indicate that there's no
+ 			// useful data (Index or anything else) in coder->temp.
+@@ -551,15 +551,15 @@ file_info_decode(void *coder_ptr, const lzma_allocator *allocator,
+ 		// Stream are cached and already handled a few lines above.
+ 		// So this isn't as useful as the other seek-avoidance cases.
+ 		if (coder->temp_size != 0 && coder->temp_size
+-				- coder->footer_flags.backward_size
+-				>= seek_amount) {
++				- (size_t)coder->footer_flags.backward_size
++				>= (size_t)seek_amount) {
+ 			// Make temp_pos and temp_size point to the *end* of
+ 			// Stream Header so that SEQ_HEADER_DECODE will find
+ 			// the start of Stream Header from coder->temp[
+ 			// coder->temp_size - LZMA_STREAM_HEADER_SIZE].
+ 			coder->temp_pos = coder->temp_size
+-					- coder->footer_flags.backward_size
+-					- seek_amount
++					- (size_t)coder->footer_flags.backward_size
++					- (size_t)seek_amount
+ 					+ LZMA_STREAM_HEADER_SIZE;
+ 			coder->temp_size = coder->temp_pos;
+ 		} else {
+diff --git a/src/liblzma/common/filter_flags_decoder.c b/src/liblzma/common/filter_flags_decoder.c
+index 0f5d204d474..594c434b414 100644
+--- a/src/liblzma/common/filter_flags_decoder.c
++++ b/src/liblzma/common/filter_flags_decoder.c
+@@ -33,13 +33,13 @@ lzma_filter_flags_decode(
+ 			in, in_pos, in_size));
+ 
+ 	// Filter Properties
+-	if (in_size - *in_pos < props_size)
++	if (in_size - *in_pos < (size_t)props_size)
+ 		return LZMA_DATA_ERROR;
+ 
+ 	const lzma_ret ret = lzma_properties_decode(
+-			filter, allocator, in + *in_pos, props_size);
++			filter, allocator, in + *in_pos, (size_t)props_size);
+ 
+-	*in_pos += props_size;
++	*in_pos += (size_t)props_size;
+ 
+ 	return ret;
+ }
+diff --git a/src/liblzma/common/index.c b/src/liblzma/common/index.c
+index 6add6a68350..0b81e9322ad 100644
+--- a/src/liblzma/common/index.c
++++ b/src/liblzma/common/index.c
+@@ -883,7 +883,7 @@ static index_stream *
+ index_dup_stream(const index_stream *src, const lzma_allocator *allocator)
+ {
+ 	// Catch a somewhat theoretical integer overflow.
+-	if (src->record_count > PREALLOC_MAX)
++	if (src->record_count > (lzma_vli)PREALLOC_MAX)
+ 		return NULL;
+ 
+ 	// Allocate and initialize a new Stream.
+@@ -907,7 +907,7 @@ index_dup_stream(const index_stream *src, const lzma_allocator *allocator)
+ 	// a single group. It's simplest and also tends to make
+ 	// lzma_index_locate() a little bit faster with very big Indexes.
+ 	index_group *destg = lzma_alloc(sizeof(index_group)
+-			+ src->record_count * sizeof(index_record),
++			+ (size_t)src->record_count * sizeof(index_record),
+ 			allocator);
+ 	if (destg == NULL) {
+ 		index_stream_end(dest, allocator);
+@@ -918,8 +918,8 @@ index_dup_stream(const index_stream *src, const lzma_allocator *allocator)
+ 	destg->node.uncompressed_base = 0;
+ 	destg->node.compressed_base = 0;
+ 	destg->number_base = 1;
+-	destg->allocated = src->record_count;
+-	destg->last = src->record_count - 1;
++	destg->allocated = (size_t)src->record_count;
++	destg->last = (size_t)src->record_count - 1;
+ 
+ 	// Go through all the groups in src and copy the Records into destg.
+ 	const index_group *srcg = (const index_group *)(src->groups.leftmost);
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 8d8d9a5306f..329d8a44db9 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2405,20 +2405,20 @@ xzdiff, xzgrep, xzmore, xzless, and their symlinks" ON)
+     set(xz "xz")
+     set(POSIX_SHELL "${XZ_POSIX_SHELL}")
+ 
+-    foreach(S xzdiff xzgrep xzmore xzless)
+-        configure_file("src/scripts/${S}.in" "${S}"
+-               @ONLY
+-               NEWLINE_STYLE LF
+-               FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+-                                GROUP_READ GROUP_EXECUTE
+-                                WORLD_READ WORLD_EXECUTE)
+-
+-        if(ENABLE_SCRIPTS)
++    if(ENABLE_SCRIPTS)
++        foreach(S xzdiff xzgrep xzmore xzless)
++            configure_file("src/scripts/${S}.in" "${S}"
++                   @ONLY
++                   NEWLINE_STYLE LF
++                   FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
++                                    GROUP_READ GROUP_EXECUTE
++                                    WORLD_READ WORLD_EXECUTE)
++
+             install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${S}"
+                     DESTINATION "${CMAKE_INSTALL_BINDIR}"
+                     COMPONENT scripts_Runtime)
+-        endif()
+-    endforeach()
++        endforeach()
++    endif()
+ 
+     unset(xz)
+     unset(POSIX_SHELL)

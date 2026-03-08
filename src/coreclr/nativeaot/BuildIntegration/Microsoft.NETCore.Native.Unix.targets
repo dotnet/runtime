@@ -34,6 +34,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <!-- Use libbrotlicommon.a as the sentinel for the three brotli libs. -->
       <UseSystemBrotli Condition="'$(UseSystemBrotli)' == '' and !Exists('$(IlcFrameworkNativePath)libbrotlicommon.a')">true</UseSystemBrotli>
       <UseSystemZstd Condition="'$(UseSystemZstd)' == '' and !Exists('$(IlcFrameworkNativePath)libzstd.a')">true</UseSystemZstd>
+      <UseSystemLzma Condition="'$(UseSystemLzma)' == '' and !Exists('$(IlcFrameworkNativePath)liblzma.a')">true</UseSystemLzma>
 
       <FullRuntimeName>libRuntime.WorkstationGC</FullRuntimeName>
       <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
@@ -188,6 +189,11 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(UseSystemZstd)' != 'true'" Include="$(IlcFrameworkNativePath)libzstd.a" />
     </ItemGroup>
 
+    <ItemGroup>
+      <!-- lzma must be added after System.IO.Compression.Native due to dependency. -->
+      <NativeLibrary Condition="'$(UseSystemLzma)' != 'true'" Include="$(IlcFrameworkNativePath)liblzma.a" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static' and '$(InvariantGlobalization)' != 'true'">
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Globalization.Native/build/libSystem.Globalization.Native.a" />
       <DirectPInvoke Include="System.Globalization.Native" />
@@ -228,6 +234,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeSystemLibrary Include="z" Condition="'$(UseSystemZlib)' == 'true'" />
       <NativeSystemLibrary Include="brotlienc;brotlidec;brotlicommon" Condition="'$(UseSystemBrotli)' == 'true'" />
       <NativeSystemLibrary Include="zstd" Condition="'$(UseSystemZstd)' == 'true'" />
+      <NativeSystemLibrary Include="lzma" Condition="'$(UseSystemLzma)' == 'true'" />
       <NativeSystemLibrary Include="rt" Condition="'$(_IsApplePlatform)' != 'true' and '$(_linuxLibcFlavor)' != 'bionic'" />
       <NativeSystemLibrary Include="log" Condition="'$(_linuxLibcFlavor)' == 'bionic'" />
       <NativeSystemLibrary Include="icucore" Condition="'$(_IsApplePlatform)' == 'true'" />
