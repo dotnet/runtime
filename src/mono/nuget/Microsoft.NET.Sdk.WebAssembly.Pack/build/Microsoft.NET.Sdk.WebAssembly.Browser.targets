@@ -353,6 +353,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmBuildWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebcilPath>
       <_WasmBuildTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebcilPath>
+      <_WasmFrameworkAssetPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'fx', '$(PackageId)'))</_WasmFrameworkAssetPath>
     </PropertyGroup>
 
     <ConvertDllsToWebcil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)">
@@ -360,9 +361,42 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>
 
+    <!-- Materialize framework pass-through files (JS, maps, ICU, native wasm, and when WebCil is
+         disabled, DLLs) from shared locations (e.g. NuGet cache) to a per-project directory.
+         Webcil-converted files already live in per-project $(IntermediateOutputPath)webcil/ and
+         don't need materialization. Framework assets are copied to obj/fx/{PackageId}/ following
+         the SWA Framework SourceType convention so each project gets a unique Identity.
+         Satellite assemblies are placed in culture subdirectories to match ConvertDllsToWebcil. -->
     <ItemGroup>
+      <_WasmFrameworkCandidates Include="@(_WebcilAssetsCandidates)"
+        Condition="!$([System.String]::new('%(Identity)').StartsWith($(_WasmBuildWebcilPath)))" />
+      <_WebcilAssetsCandidates Remove="@(_WasmFrameworkCandidates)" />
+    </ItemGroup>
+
+    <!-- Separate satellite (culture) assets from regular ones so we can place them in subdirs -->
+    <ItemGroup>
+      <_WasmCultureFrameworkAssets Include="@(_WasmFrameworkCandidates)"
+        Condition="'%(_WasmFrameworkCandidates.AssetTraitName)' == 'Culture'" />
+      <_WasmFrameworkCandidates Remove="@(_WasmCultureFrameworkAssets)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_WasmFrameworkCandidates)"
+      DestinationFolder="$(_WasmFrameworkAssetPath)"
+      SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(_WasmCultureFrameworkAssets)"
+      DestinationFiles="@(_WasmCultureFrameworkAssets->'$(_WasmFrameworkAssetPath)%(AssetTraitValue)/%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true"
+      Condition="'@(_WasmCultureFrameworkAssets)' != ''" />
+
+    <ItemGroup>
+      <FileWrites Include="@(_WasmFrameworkCandidates->'$(_WasmFrameworkAssetPath)%(Filename)%(Extension)')" />
+      <FileWrites Include="@(_WasmCultureFrameworkAssets->'$(_WasmFrameworkAssetPath)%(AssetTraitValue)/%(Filename)%(Extension)')" />
+      <_WasmMaterializedFrameworkAssets Include="@(_WasmFrameworkCandidates->'$(_WasmFrameworkAssetPath)%(Filename)%(Extension)')" />
+      <_WasmMaterializedFrameworkAssets Include="@(_WasmCultureFrameworkAssets->'$(_WasmFrameworkAssetPath)%(AssetTraitValue)/%(Filename)%(Extension)')" />
       <!-- Set per-item ContentRoot so each asset's Identity matches its actual file on disk -->
       <_WebcilAssetsCandidates Update="@(_WebcilAssetsCandidates)" ContentRoot="%(RootDir)%(Directory)" />
+      <_WasmMaterializedFrameworkAssets Update="@(_WasmMaterializedFrameworkAssets)" ContentRoot="%(RootDir)%(Directory)" />
       <_WasmFingerprintPatterns Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DllFiles" Pattern="*.dll" Expression="#[.{fingerprint}]!" />
       <_WasmFingerprintPatterns Include="DatFiles" Pattern="*.dat" Expression="#[.{fingerprint}]!" />
@@ -370,10 +404,28 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmFingerprintPatterns Include="Symbols" Pattern="*.js.symbols" Expression="#[.{fingerprint}]!" />
     </ItemGroup>
 
+    <!-- Webcil-converted assets are per-project (Computed); materialized framework assets
+         are adopted from the runtime pack (Framework). Define them separately so the SWA
+         pipeline can handle Framework materialization/ownership correctly. -->
     <DefineStaticWebAssets
       CandidateAssets="@(_WebcilAssetsCandidates)"
       SourceId="$(PackageId)"
       SourceType="Computed"
+      AssetKind="Build"
+      AssetRole="Primary"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="Never"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
+      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
+      BasePath="$(StaticWebAssetBasePath)"
+    >
+      <Output TaskParameter="Assets" ItemName="WasmStaticWebAsset" />
+    </DefineStaticWebAssets>
+
+    <DefineStaticWebAssets
+      CandidateAssets="@(_WasmMaterializedFrameworkAssets)"
+      SourceId="$(PackageId)"
+      SourceType="Framework"
       AssetKind="Build"
       AssetRole="Primary"
       CopyToOutputDirectory="PreserveNewest"
