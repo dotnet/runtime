@@ -242,6 +242,13 @@ namespace System.Linq.Tests
             }
         }
 
+        [Fact]
+        public void LargeSequence_TryUseRange()
+        {
+            var sequence = Enumerable.Sequence(0L, 2L + int.MaxValue, 1L);
+            Assert.Equal(0L, sequence.First());
+        }
+
         private sealed class ReferenceAddable(int value) : INumber<ReferenceAddable>
         {
             public static ReferenceAddable One => throw new NotImplementedException();
