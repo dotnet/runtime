@@ -601,7 +601,8 @@ namespace System.Net.Security
             }
 #endif
 
-            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+            sslPolicyErrors = SslPolicyErrors.None;
+            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertValidationDelegate, _sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, ref sslPolicyErrors, out chainStatus))
             {
                 _handshakeCompleted = false;
                 return false;
