@@ -2434,13 +2434,17 @@ BasicBlock* LinearScan::findPredBlockForLiveIn(BasicBlock*           block,
         }
         else
         {
-            for (BasicBlock* const candidatePredBlock : block->PredBlocks())
+            FlowEdge* hottestPred = nullptr;
+            for (FlowEdge* const candidatePredEdge : block->PredEdges())
             {
+                BasicBlock* const candidatePredBlock = candidatePredEdge->getSourceBlock();
                 if (isBlockVisited(candidatePredBlock))
                 {
-                    if ((predBlock == nullptr) || (predBlock->bbWeight < candidatePredBlock->bbWeight))
+                    if ((hottestPred == nullptr) ||
+                        (hottestPred->getLikelyWeight() < candidatePredEdge->getLikelyWeight()))
                     {
-                        predBlock = candidatePredBlock;
+                        hottestPred = candidatePredEdge;
+                        predBlock   = candidatePredBlock;
                         INDEBUG(*pPredBlockIsAllocated = true;)
                     }
                 }
