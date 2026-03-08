@@ -2130,29 +2130,57 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         return true;
     }
 
-    // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
+    // SIMD Intrinsic types should be classified as SSE to pass in XMM registers.
+    // We must NOT fall through to normal field enumeration because the internal fields
+    // (e.g., Vector64<T>._00 is ulong) would classify as INTEGER instead of SSE.
     if (IsIntrinsicType())
     {
         LPCUTF8 namespaceName;
         LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
 
+        bool isSIMDType = false;
+        unsigned structSize = 0;
+
         if ((strcmp(className, "Vector512`1") == 0) || (strcmp(className, "Vector256`1") == 0) ||
             (strcmp(className, "Vector128`1") == 0) || (strcmp(className, "Vector64`1") == 0))
         {
             assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
-
-            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
-                nestingLevel * 5, "", this->GetDebugClassName()));
-
-            return false;
+            structSize = GetNumInstanceFieldBytes();
+            isSIMDType = true;
+        }
+        else if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
+        {
+            structSize = GetNumInstanceFieldBytes();
+            isSIMDType = true;
         }
 
-        if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
+        if (isSIMDType)
         {
-            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
-                nestingLevel * 5, "", this->GetDebugClassName()));
+            // All callers (SystemVAmd64CheckForPassStructInRegister, ClassifyEightBytes)
+            // already filter out structs > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS (16 bytes).
+            // Only Vector64 (8B) and Vector128 (16B) can reach here. Vector256/512 are handled
+            // by the JIT's handleAsSingleSimd path and never consult this classification.
+            _ASSERTE(structSize <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS);
 
-            return false;
+            // Directly classify each 8-byte chunk as SSE so the JIT passes them in XMM registers.
+            for (unsigned offset = 0; offset < structSize; offset += SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
+            {
+                unsigned eightByteSize = min(static_cast<unsigned>(SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES), structSize - offset);
+                unsigned normalizedOffset = offset + startOffsetOfStruct;
+
+                helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField] = SystemVClassificationTypeSSE;
+                helperPtr->fieldSizes[helperPtr->currentUniqueOffsetField] = eightByteSize;
+                helperPtr->fieldOffsets[helperPtr->currentUniqueOffsetField] = normalizedOffset;
+                helperPtr->currentUniqueOffsetField++;
+
+                LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: SIMD type %s eightbyte at offset %u classified as SSE\n",
+                    nestingLevel * 5, "", this->GetDebugClassName(), normalizedOffset));
+            }
+
+            helperPtr->largestFieldOffset = (int)(startOffsetOfStruct + structSize - min(structSize, static_cast<unsigned>(SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)));
+
+            AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
+            return true;
         }
     }
 
@@ -2358,29 +2386,57 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         numIntroducedFields = pNativeLayoutInfo->GetSize() / pNativeFieldDescs->NativeSize();
     }
 
-    // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
+    // SIMD Intrinsic types should be classified as SSE to pass in XMM registers.
+    // We must NOT fall through to normal field enumeration because the internal fields
+    // (e.g., Vector64<T>._00 is ulong) would classify as INTEGER instead of SSE.
     if (IsIntrinsicType())
     {
         LPCUTF8 namespaceName;
         LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
 
+        bool isSIMDType = false;
+        unsigned structSize = 0;
+
         if ((strcmp(className, "Vector512`1") == 0) || (strcmp(className, "Vector256`1") == 0) ||
             (strcmp(className, "Vector128`1") == 0) || (strcmp(className, "Vector64`1") == 0))
         {
             assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
-
-            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithNativeLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
-                nestingLevel * 5, "", this->GetDebugClassName()));
-
-            return false;
+            structSize = pNativeLayoutInfo->GetSize();
+            isSIMDType = true;
+        }
+        else if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
+        {
+            structSize = pNativeLayoutInfo->GetSize();
+            isSIMDType = true;
         }
 
-        if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
+        if (isSIMDType)
         {
-            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithNativeLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
-                nestingLevel * 5, "", this->GetDebugClassName()));
+            // All callers (SystemVAmd64CheckForPassNativeStructInRegister) already filter out
+            // structs > CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS (16 bytes).
+            // Only Vector64 (8B) and Vector128 (16B) can reach here. Vector256/512 are handled
+            // by the JIT's handleAsSingleSimd path and never consult this classification.
+            _ASSERTE(structSize <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS);
 
-            return false;
+            // Directly classify each 8-byte chunk as SSE so the JIT passes them in XMM registers.
+            for (unsigned offset = 0; offset < structSize; offset += SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
+            {
+                unsigned eightByteSize = min(static_cast<unsigned>(SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES), structSize - offset);
+                unsigned normalizedOffset = offset + startOffsetOfStruct;
+
+                helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField] = SystemVClassificationTypeSSE;
+                helperPtr->fieldSizes[helperPtr->currentUniqueOffsetField] = eightByteSize;
+                helperPtr->fieldOffsets[helperPtr->currentUniqueOffsetField] = normalizedOffset;
+                helperPtr->currentUniqueOffsetField++;
+
+                LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithNativeLayout: SIMD type %s eightbyte at offset %u classified as SSE\n",
+                    nestingLevel * 5, "", this->GetDebugClassName(), normalizedOffset));
+            }
+
+            helperPtr->largestFieldOffset = (int)(startOffsetOfStruct + structSize - min(structSize, static_cast<unsigned>(SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)));
+
+            AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
+            return true;
         }
     }
 

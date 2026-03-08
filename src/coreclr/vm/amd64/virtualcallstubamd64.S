@@ -26,20 +26,32 @@
 
 NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
-        PROLOG_WITH_TRANSITION_BLOCK 0, 8, rdx, 0, 0
+        PROLOG_WITH_TRANSITION_BLOCK 384, 8, rdx, 0, 0
+
+        // r11 holds indirection cell + flags from the caller. Save it before
+        // SAVE_UPPER_VECTOR_REGISTERS clobbers r11 as a scratch register.
+        mov             r10, r11
+
+        SAVE_UPPER_VECTOR_REGISTERS 0x00
 
         // token stored in rdx by prolog
 
         lea             rdi, [rsp + __PWTB_TransitionBlock]        // pTransitionBlock
-        mov             rsi, r11                                   // indirection cell + flags
+        mov             rsi, r10                                   // indirection cell + flags
         mov             rcx,  rsi
         and             rcx,  7                                    // flags
         sub             rsi, rcx                                   // indirection cell
 
         call            C_FUNC(VSD_ResolveWorker)
+        mov             r10, rax
 
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        TAILJMP_RAX
+        RESTORE_FLOAT_ARGUMENT_REGISTERS __PWTB_FloatArgumentRegisters
+        RESTORE_UPPER_VECTOR_REGISTERS 0x00
+
+        free_stack      __PWTB_StackAlloc
+        POP_ARGUMENT_REGISTERS
+        POP_CALLEE_SAVED_REGISTERS
+        jmp             r10
 
 NESTED_END ResolveWorkerAsmStub, _TEXT
 

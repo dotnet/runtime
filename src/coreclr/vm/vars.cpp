@@ -105,6 +105,11 @@ GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
 GVAL_IMPL_INIT(DWORD, g_offsetOfCurrentThreadInfo, 0);
 GVAL_IMPL_INIT(DWORD, g_gcNotificationFlags, 0);
 
+#if defined(TARGET_AMD64) && defined(UNIX_AMD64_ABI)
+extern "C" uint8_t g_avxSupported = 0;
+extern "C" uint8_t g_avx512Supported = 0;
+#endif
+
 
 MethodTable* g_pCastHelpers;
 
