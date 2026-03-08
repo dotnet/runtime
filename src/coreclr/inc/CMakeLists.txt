@@ -31,6 +31,15 @@ if(CLR_CMAKE_HOST_WIN32)
                       COMMENT "Compiling ${GENERATE_IDL}")
     endforeach(GENERATE_IDL)
 
+    # dacdbi.idl lives in debug/inc/ rather than inc/, so handle it separately
+    set(DACDBI_IDL_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../debug/inc/dacdbi.idl)
+    set(DACDBI_OUT_NAME ${CMAKE_CURRENT_BINARY_DIR}/idls_out/dacdbi_i.c)
+    list(APPEND CORGUIDS_SOURCES ${DACDBI_OUT_NAME})
+    add_custom_command(OUTPUT ${DACDBI_OUT_NAME}
+                  COMMAND ${MIDL} ${MIDL_INCLUDE_DIRECTORIES} /nologo /no_stamp /h ${CMAKE_CURRENT_BINARY_DIR}/idls_out/dacdbi.h ${MIDL_DEFINITIONS} /out ${CMAKE_CURRENT_BINARY_DIR}/idls_out ${DACDBI_IDL_PATH}
+                  DEPENDS ${DACDBI_IDL_PATH}
+                  COMMENT "Compiling dacdbi.idl")
+
     set_source_files_properties(${CORGUIDS_SOURCES}
                             PROPERTIES GENERATED TRUE)
 
@@ -47,6 +56,9 @@ else(CLR_CMAKE_HOST_WIN32)
         set(C_SOURCE ../pal/prebuilt/idl/${IDLNAME}_i.cpp)
         list(APPEND CORGUIDS_SOURCES ${C_SOURCE})
     endforeach(IDL_SOURCE)
+
+    # dacdbi.idl prebuilt file
+    list(APPEND CORGUIDS_SOURCES ../pal/prebuilt/idl/dacdbi_i.cpp)
 
 endif(CLR_CMAKE_HOST_WIN32)
 

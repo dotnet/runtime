@@ -912,7 +912,7 @@ bool CordbThread::IsThreadWaitingOrSleeping()
 //
 bool CordbThread::IsThreadDead()
 {
-    bool _isDead;
+    BOOL _isDead;
     IfFailThrow(GetProcess()->GetDAC()->IsThreadMarkedDead(m_vmThreadToken, &_isDead));
     return _isDead;
 }
