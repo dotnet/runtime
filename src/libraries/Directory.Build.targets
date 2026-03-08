@@ -61,6 +61,12 @@
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                    '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)' and
                                                    ('$(IsNETCoreAppRef)' == 'true' or '$(IsNETCoreAppSrc)' == 'true')">true</DisableImplicitFrameworkReferences>
+    <!-- AOT compatibility is enabled by default for src/ref projects. -->
+    <IsAotCompatible Condition="'$(IsAotCompatible)' == '' and ('$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true')">true</IsAotCompatible>
+    <!-- Source-build only builds the current TFM, so there's an intentional "gap" in downlevel TFMs.
+         The SDK warns about this gap (NETSDK1210), but it's expected for source-build since those
+         downlevel TFMs aren't shipped. Silence the warning. -->
+    <_SilenceIsAotCompatibleUnsupportedWarning Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</_SilenceIsAotCompatibleUnsupportedWarning>
     <!-- Enable trimming for any source project that's part of the shared framework.
          Don't attempt to trim PNSE assemblies which are generated from the reference source. -->
     <ILLinkTrimAssembly Condition="'$(ILLinkTrimAssembly)' == '' and
@@ -135,7 +141,12 @@
   <Import Project="$(RepositoryEngineeringDir)testing\runsettings.targets" Condition="'$(EnableRunSettingsSupport)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)testing\coverage.targets" Condition="'$(EnableRunSettingsSupport)' == 'true' or '$(EnableCoverageSupport)' == 'true'" />
 
-  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssemblyProject)' == 'true' or '$(ExplicitlyImportCustomILLinkTargets)' == 'true'" />
+  <PropertyGroup>
+    <ImportCustomILLinkTargets Condition="'$(ImportCustomILLinkTargets)' == '' And
+      ('$(IsSourceProject)' == 'true' Or '$(IsReferenceAssemblyProject)' == 'true') And
+      $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">true</ImportCustomILLinkTargets>
+  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(ImportCustomILLinkTargets)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" />
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 
