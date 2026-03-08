@@ -903,6 +903,16 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?(\w+)\w+)dog", "catdog", RegexOptions.None, 0, 6, true, "catdog");
                 yield return (@"(?(abc)\w+|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
                 yield return (@"(?(abc)cat|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
+
+                // Inline options inside conditional branches
+                yield return (@"(?(cat)(?i)CAT|dog)", "cat", RegexOptions.None, 0, 3, true, "cat");
+                yield return (@"(?(cat)(?i)cat|dog)", "dog", RegexOptions.None, 0, 3, true, "dog");
+                yield return (@"(?(cat)cat|(?i)dog)", "DOG", RegexOptions.None, 0, 3, true, "DOG");
+                yield return (@"(?(cat)(?i:CAT)|dog)", "cat", RegexOptions.None, 0, 3, true, "cat");
+                yield return (@"(?(?=cat)(?i)CAT|dog)", "cat", RegexOptions.None, 0, 3, true, "cat");
+                yield return (@"(cat)?(?(1)(?i)dog|pig)", "catDOG", RegexOptions.None, 0, 6, true, "catDOG");
+                yield return (@"(cat)?(?(1)(?i)dog|pig)", "pig", RegexOptions.None, 0, 3, true, "pig");
+                yield return (@"(?((?i)cat)CAT|dog)", "CAT", RegexOptions.None, 0, 3, true, "CAT");
                 yield return ("(a|ab|abc|abcd)d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
 
                 yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.None, 0, 4, false, string.Empty);
