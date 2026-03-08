@@ -34,4 +34,22 @@ public class PInvokeStubDumpTests : DumpTestBase
 
         Assert.True(frameList.Count > 0, "Expected at least one stack frame on the crashing thread");
     }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "PInvokeStub debuggee uses msvcrt.dll (Windows only)")]
+    public void PInvokeStub_ContainsExpectedFrames(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+
+        ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
+
+        // Stack (top -> bottom): ..., memcpy, CrashInILStubPInvoke, Main
+        DumpTestStackWalker.Walk(Target, crashingThread)
+            .ExpectFrame("memcpy")
+            .ExpectAdjacentFrame("CrashInILStubPInvoke")
+            .ExpectAdjacentFrame("Main")
+            .Verify();
+    }
 }
