@@ -1010,7 +1010,7 @@ public:
                 break;
 
             case GT_FIELD_ADDR:
-                if (MorphStructFieldAddress(node, 0) != BAD_VAR_NUM)
+                if (MorphStructFieldAddress(node, ValueSize(0)) != BAD_VAR_NUM)
                 {
                     goto LOCAL_NODE;
                 }
@@ -1595,32 +1595,10 @@ private:
         unsigned   lclNum    = val.LclNum();
         unsigned   offset    = val.Offset();
         LclVarDsc* varDsc    = m_compiler->lvaGetDesc(lclNum);
-        unsigned   indirSize = node->AsIndir()->Size();
-        bool       isWide;
+        ValueSize  lclSize   = m_compiler->lvaLclValueSize(lclNum);
+        ValueSize  indirSize = node->AsIndir()->ValueSize();
 
-        // TODO-Cleanup: delete "indirSize == 0", use "Compiler::IsValidLclAddr".
-        if ((indirSize == 0) || ((offset + indirSize) > UINT16_MAX))
-        {
-            // If we can't figure out the indirection size then treat it as a wide indirection.
-            // Additionally, treat indirections with large offsets as wide: local field nodes
-            // and the emitter do not support them.
-            isWide = true;
-        }
-        else
-        {
-            ClrSafeInt<unsigned> endOffset = ClrSafeInt<unsigned>(offset) + ClrSafeInt<unsigned>(indirSize);
-
-            if (endOffset.IsOverflow())
-            {
-                isWide = true;
-            }
-            else
-            {
-                isWide = endOffset.Value() > m_compiler->lvaLclExactSize(lclNum);
-            }
-        }
-
-        if (isWide)
+        if (indirSize.IsNull() || m_compiler->IsWideAccess(lclNum, offset, indirSize))
         {
             unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
             if (m_lclAddrAssertions != nullptr)
@@ -2065,7 +2043,7 @@ private:
             return false;
         }
 
-        unsigned fieldLclNum = MorphStructFieldAddress(addr, node->Size());
+        unsigned fieldLclNum = MorphStructFieldAddress(addr, node->ValueSize());
         if (fieldLclNum == BAD_VAR_NUM)
         {
             return false;
@@ -2104,13 +2082,13 @@ private:
     //
     // Arguments:
     //    node       - the address node
-    //    accessSize - load/store size if known, zero otherwise
+    //    accessSize - load/store value size
     //
     // Return Value:
     //    Local number for the promoted field if the replacement was successful,
     //    BAD_VAR_NUM otherwise.
     //
-    unsigned MorphStructFieldAddress(GenTree* node, unsigned accessSize)
+    unsigned MorphStructFieldAddress(GenTree* node, ValueSize accessSize)
     {
         unsigned offset       = 0;
         bool     isSpanLength = false;
@@ -2137,16 +2115,16 @@ private:
                 }
 
                 LclVarDsc* fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
+                ValueSize  fieldSize   = fieldVarDsc->lvValueSize();
 
                 // Span's Length is never negative unconditionally
-                if (isSpanLength && (accessSize == genTypeSize(TYP_INT)))
+                if (isSpanLength && (accessSize.GetExact() == genTypeSize(TYP_INT)))
                 {
-                    fieldVarDsc->SetIsNeverNegative(true);
+                    unsigned exactSize      = accessSize.GetExact();
+                    unsigned exactFieldSize = fieldSize.GetExact();
                 }
 
-                // Retargeting the indirection to reference the promoted field would make it "wide", exposing
-                // the whole parent struct (with all of its fields).
-                if (accessSize > genTypeSize(fieldVarDsc))
+                if (!accessSize.IsNull() && m_compiler->IsWideAccess(fieldLclNum, 0, accessSize))
                 {
                     return BAD_VAR_NUM;
                 }
