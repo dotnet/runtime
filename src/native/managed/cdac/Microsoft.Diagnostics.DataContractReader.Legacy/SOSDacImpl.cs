@@ -2483,17 +2483,7 @@ public sealed unsafe partial class SOSDacImpl
             if (handle is not CodeBlockHandle codeHandle)
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
-            TargetPointer methodDescAddr;
-            try
-            {
-                methodDescAddr = executionManager.GetMethodDesc(codeHandle);
-            }
-            catch (VirtualReadException)
-            {
-                // In mini-dumps, memory for JIT data structures may not be captured. Return E_FAIL
-                // and skip the #if DEBUG comparison against the native DAC, since the mismatch is expected.
-                return HResults.E_FAIL;
-            }
+            TargetPointer methodDescAddr = executionManager.GetMethodDesc(codeHandle);
 
             try
             {
