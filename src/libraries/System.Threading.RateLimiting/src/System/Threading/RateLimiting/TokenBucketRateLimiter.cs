@@ -112,7 +112,7 @@ namespace System.Threading.RateLimiting
             // Return SuccessfulLease or FailedLease depending to indicate limiter state
             if (tokenCount == 0 && !_disposed)
             {
-                if (_tokenCount > 0)
+                if (_tokenCount >= 1)
                 {
                     Interlocked.Increment(ref _successfulLeasesCount);
                     return SuccessfulLease;
@@ -146,7 +146,7 @@ namespace System.Threading.RateLimiting
             ThrowIfDisposed();
 
             // Return SuccessfulAcquisition if requestedCount is 0 and resources are available
-            if (tokenCount == 0 && _tokenCount > 0)
+            if (tokenCount == 0 && _tokenCount >= 1)
             {
                 Interlocked.Increment(ref _successfulLeasesCount);
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
@@ -227,7 +227,7 @@ namespace System.Threading.RateLimiting
             ThrowIfDisposed();
 
             // if permitCount is 0 we want to queue it if there are no available permits
-            if (_tokenCount >= tokenCount && _tokenCount != 0)
+            if (_tokenCount >= tokenCount && _tokenCount >= 1)
             {
                 if (tokenCount == 0)
                 {
@@ -336,7 +336,7 @@ namespace System.Threading.RateLimiting
                             : queue.DequeueTail();
                         disposer.Add(nextPendingRequest);
                     }
-                    else if (_tokenCount >= nextPendingRequest.Count)
+                    else if (_tokenCount >= nextPendingRequest.Count && (nextPendingRequest.Count > 0 || _tokenCount >= 1))
                     {
                         // Request can be fulfilled
                         nextPendingRequest =

@@ -465,6 +465,96 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public void AcquireZero_WithFractionalTokens_Fails()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 3,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                ReplenishmentPeriod = TimeSpan.FromMilliseconds(2),
+                TokensPerPeriod = 1,
+                AutoReplenishment = false
+            });
+
+            using var lease1 = limiter.AttemptAcquire(3);
+            Assert.True(lease1.IsAcquired);
+            Assert.Equal(0, limiter.GetStatistics()!.CurrentAvailablePermits);
+
+            // Replenish a fractional amount (less than 1 token)
+            // With ReplenishmentPeriod=2ms and TokensPerPeriod=1, replenishing 1ms adds 0.5 tokens
+            Replenish(limiter, 1);
+
+            // Statistics should still report 0 available permits (fractional tokens truncated)
+            Assert.Equal(0, limiter.GetStatistics()!.CurrentAvailablePermits);
+
+            // AttemptAcquire(0) should fail when there are only fractional tokens
+            var lease2 = limiter.AttemptAcquire(0);
+            Assert.False(lease2.IsAcquired);
+            lease2.Dispose();
+        }
+
+        [Fact]
+        public async Task AcquireAsyncZero_WithFractionalTokens_Queues()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 3,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                ReplenishmentPeriod = TimeSpan.FromMilliseconds(2),
+                TokensPerPeriod = 1,
+                AutoReplenishment = false
+            });
+
+            using var lease1 = limiter.AttemptAcquire(3);
+            Assert.True(lease1.IsAcquired);
+
+            Replenish(limiter, 1);
+            Assert.Equal(0, limiter.GetStatistics()!.CurrentAvailablePermits);
+
+            var acquireTask = limiter.AcquireAsync(0);
+            Assert.False(acquireTask.IsCompleted);
+
+            Replenish(limiter, 1);
+            using var lease2 = await acquireTask;
+            Assert.True(lease2.IsAcquired);
+        }
+
+        [Fact]
+        public async Task AcquireAsyncZero_QueuedRequest_NotFulfilledWithFractionalTokens()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 3,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 1,
+                ReplenishmentPeriod = TimeSpan.FromMilliseconds(4),
+                TokensPerPeriod = 1,
+                AutoReplenishment = false
+            });
+
+            using var lease1 = limiter.AttemptAcquire(3);
+            Assert.True(lease1.IsAcquired);
+            Assert.Equal(0, limiter.GetStatistics()!.CurrentAvailablePermits);
+
+            Replenish(limiter, 2);
+            Assert.Equal(0, limiter.GetStatistics()!.CurrentAvailablePermits);
+
+            var acquireTask = limiter.AcquireAsync(0);
+            Assert.False(acquireTask.IsCompleted);
+
+            Replenish(limiter, 1);
+            Assert.Equal(0, limiter.GetStatistics()!.CurrentAvailablePermits);
+            Assert.False(acquireTask.IsCompleted);
+
+            Replenish(limiter, 1);
+            Assert.Equal(1, limiter.GetStatistics()!.CurrentAvailablePermits);
+            using var lease2 = await acquireTask;
+            Assert.True(lease2.IsAcquired);
+        }
+
+        [Fact]
         public override async Task AcquireAsyncZero_WithAvailability()
         {
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
