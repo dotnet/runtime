@@ -57,10 +57,10 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the definition of the partial method. This method just delegates to the property cache on the generated Regex-derived type.</summary>
-        private static void EmitRegexPartialMethod(RegexMethod regexMethod, IndentedTextWriter writer)
+        private static void EmitRegexPartialMethod(RegexMethodEntry entry, string generatedName, IndentedTextWriter writer)
         {
             // Emit the namespace.
-            RegexType? parent = regexMethod.DeclaringType;
+            RegexType? parent = entry.DeclaringType;
             if (!string.IsNullOrWhiteSpace(parent.Namespace))
             {
                 writer.WriteLine($"namespace {parent.Namespace}");
@@ -85,24 +85,32 @@ namespace System.Text.RegularExpressions.Generator
             // Emit the partial method definition.
             writer.WriteLine($"/// <remarks>");
             writer.WriteLine($"/// Pattern:<br/>");
-            writer.WriteLine($"/// <code>{EscapeXmlComment(regexMethod.Pattern)}</code><br/>");
-            if (regexMethod.Options != RegexOptions.None)
+            writer.WriteLine($"/// <code>{EscapeXmlComment(entry.Pattern)}</code><br/>");
+            if (entry.Options != RegexOptions.None)
             {
                 writer.WriteLine($"/// Options:<br/>");
-                writer.WriteLine($"/// <code>{Literal(regexMethod.Options)}</code><br/>");
+                writer.WriteLine($"/// <code>{Literal(entry.Options)}</code><br/>");
             }
             writer.WriteLine($"/// Explanation:<br/>");
             writer.WriteLine($"/// <code>");
-            DescribeExpressionAsXmlComment(writer, regexMethod.Tree.Root.Child(0), regexMethod); // skip implicit root capture
+            // Emit the pre-computed expression description line by line so IndentedTextWriter adds proper indentation.
+            using (var reader = new StringReader(entry.ExpressionDescription))
+            {
+                string? line;
+                while ((line = reader.ReadLine()) is not null)
+                {
+                    writer.WriteLine(line);
+                }
+            }
             writer.WriteLine($"/// </code>");
             writer.WriteLine($"/// </remarks>");
             writer.WriteLine($"[global::System.CodeDom.Compiler.{s_generatedCodeAttribute}]");
-            writer.Write($"{regexMethod.Modifiers} global::System.Text.RegularExpressions.Regex{(regexMethod.NullableRegex ? "?" : "")} {regexMethod.MemberName}");
-            if (!regexMethod.IsProperty)
+            writer.Write($"{entry.Modifiers} global::System.Text.RegularExpressions.Regex{(entry.NullableRegex ? "?" : "")} {entry.MemberName}");
+            if (!entry.IsProperty)
             {
                 writer.Write("()");
             }
-            writer.WriteLine($" => global::{GeneratedNamespace}.{regexMethod.GeneratedName}.Instance;");
+            writer.WriteLine($" => global::{GeneratedNamespace}.{generatedName}.Instance;");
 
             // Unwind all scopes
             while (writer.Indent != 0)
@@ -114,13 +122,13 @@ namespace System.Text.RegularExpressions.Generator
 
         /// <summary>Emits the Regex-derived type for a method where we're unable to generate custom code.</summary>
         private static void EmitRegexLimitedBoilerplate(
-            IndentedTextWriter writer, RegexMethod rm, string reason, LanguageVersion langVer)
+            IndentedTextWriter writer, RegexMethodEntry entry, string generatedName, string reason, LanguageVersion langVer)
         {
             string visibility;
             if (langVer >= LanguageVersion.CSharp11)
             {
                 visibility = "file";
-                writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MemberName} method.</summary>");
+                writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {entry.MemberName} method.</summary>");
             }
             else
             {
@@ -129,14 +137,14 @@ namespace System.Text.RegularExpressions.Generator
             }
             writer.WriteLine($"/// <remarks>A custom Regex-derived type could not be generated because {reason}.</remarks>");
             writer.WriteLine($"[{s_generatedCodeAttribute}]");
-            writer.WriteLine($"{visibility} sealed class {rm.GeneratedName} : Regex");
+            writer.WriteLine($"{visibility} sealed class {generatedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
             writer.Write($"    internal static readonly Regex Instance = ");
             writer.WriteLine(
-                rm.MatchTimeout is not null ? $"new({Literal(rm.Pattern)}, {Literal(rm.Options)}, {GetTimeoutExpression(rm.MatchTimeout.Value)});" :
-                rm.Options != 0 ? $"new({Literal(rm.Pattern)}, {Literal(rm.Options)});" :
-                $"new({Literal(rm.Pattern)});");
+                entry.MatchTimeout is not null ? $"new({Literal(entry.Pattern)}, {Literal(entry.Options)}, {GetTimeoutExpression(entry.MatchTimeout.Value)});" :
+                entry.Options != 0 ? $"new({Literal(entry.Pattern)}, {Literal(entry.Options)});" :
+                $"new({Literal(entry.Pattern)});");
             writer.WriteLine($"}}");
         }
 
@@ -148,27 +156,27 @@ namespace System.Text.RegularExpressions.Generator
 
         /// <summary>Emits the Regex-derived type for a method whose RunnerFactory implementation was generated into <paramref name="runnerFactoryImplementation"/>.</summary>
         private static void EmitRegexDerivedImplementation(
-            IndentedTextWriter writer, RegexMethod rm, string runnerFactoryImplementation, bool allowUnsafe)
+            IndentedTextWriter writer, RegexMethodEntry entry, string generatedName, string runnerFactoryImplementation, bool allowUnsafe)
         {
-            writer.WriteLine($"/// <summary>Custom <see cref=\"Regex\"/>-derived type for the {rm.MemberName} method.</summary>");
+            writer.WriteLine($"/// <summary>Custom <see cref=\"Regex\"/>-derived type for the {entry.MemberName} method.</summary>");
             writer.WriteLine($"[{s_generatedCodeAttribute}]");
             if (allowUnsafe)
             {
                 writer.WriteLine($"[SkipLocalsInit]");
             }
-            writer.WriteLine($"file sealed class {rm.GeneratedName} : Regex");
+            writer.WriteLine($"file sealed class {generatedName} : Regex");
             writer.WriteLine($"{{");
             writer.WriteLine($"    /// <summary>Cached, thread-safe singleton instance.</summary>");
-            writer.WriteLine($"    internal static readonly {rm.GeneratedName} Instance = new();");
+            writer.WriteLine($"    internal static readonly {generatedName} Instance = new();");
             writer.WriteLine($"");
             writer.WriteLine($"    /// <summary>Initializes the instance.</summary>");
-            writer.WriteLine($"    private {rm.GeneratedName}()");
+            writer.WriteLine($"    private {generatedName}()");
             writer.WriteLine($"    {{");
-            writer.WriteLine($"        base.pattern = {Literal(rm.Pattern)};");
-            writer.WriteLine($"        base.roptions = {Literal(rm.Options)};");
-            if (rm.MatchTimeout is not null)
+            writer.WriteLine($"        base.pattern = {Literal(entry.Pattern)};");
+            writer.WriteLine($"        base.roptions = {Literal(entry.Options)};");
+            if (entry.MatchTimeout is not null)
             {
-                writer.WriteLine($"        base.internalMatchTimeout = {GetTimeoutExpression(rm.MatchTimeout.Value)};");
+                writer.WriteLine($"        base.internalMatchTimeout = {GetTimeoutExpression(entry.MatchTimeout.Value)};");
             }
             else
             {
@@ -176,23 +184,35 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"        base.internalMatchTimeout = {HelpersTypeName}.{DefaultTimeoutFieldName};");
             }
             writer.WriteLine($"        base.factory = new RunnerFactory();");
-            if (rm.Tree.CaptureNumberSparseMapping is not null)
+            if (entry.CaptureNumberSparseMapping is not null)
             {
                 writer.Write("        base.Caps = new Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.CaptureNumberSparseMapping.Cast<DictionaryEntry>().OrderBy(de => de.Key as int?));
+                string separator = "";
+                foreach ((int key, int value) in entry.CaptureNumberSparseMapping)
+                {
+                    writer.Write(separator);
+                    separator = ", ";
+                    writer.Write($" {{ {key}, {value} }} ");
+                }
                 writer.WriteLine($" }};");
             }
-            if (rm.Tree.CaptureNameToNumberMapping is not null)
+            if (entry.CaptureNameToNumberMapping is not null)
             {
                 writer.Write("        base.CapNames = new Hashtable {");
-                AppendHashtableContents(writer, rm.Tree.CaptureNameToNumberMapping.Cast<DictionaryEntry>().OrderBy(de => de.Key as string, StringComparer.Ordinal));
+                string separator = "";
+                foreach ((string key, int value) in entry.CaptureNameToNumberMapping)
+                {
+                    writer.Write(separator);
+                    separator = ", ";
+                    writer.Write($" {{ \"{key}\", {value} }} ");
+                }
                 writer.WriteLine($" }};");
             }
-            if (rm.Tree.CaptureNames is not null)
+            if (entry.CaptureNames is not null)
             {
                 writer.Write("        base.capslist = new string[] {");
                 string separator = "";
-                foreach (string s in rm.Tree.CaptureNames)
+                foreach (string s in entry.CaptureNames)
                 {
                     writer.Write(separator);
                     writer.Write(Literal(s));
@@ -200,31 +220,10 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 writer.WriteLine($" }};");
             }
-            writer.WriteLine($"        base.capsize = {rm.Tree.CaptureCount};");
+            writer.WriteLine($"        base.capsize = {entry.CaptureCount};");
             writer.WriteLine($"    }}");
             writer.WriteLine(runnerFactoryImplementation);
             writer.WriteLine($"}}");
-
-            static void AppendHashtableContents(IndentedTextWriter writer, IEnumerable<DictionaryEntry> contents)
-            {
-                string separator = "";
-                foreach (DictionaryEntry en in contents)
-                {
-                    writer.Write(separator);
-                    separator = ", ";
-
-                    writer.Write(" { ");
-                    if (en.Key is int key)
-                    {
-                        writer.Write(key);
-                    }
-                    else
-                    {
-                        writer.Write($"\"{en.Key}\"");
-                    }
-                    writer.Write($", {en.Value} }} ");
-                }
-            }
         }
 
         /// <summary>Emits the code for the RunnerFactory.  This is the actual logic for the regular expression.</summary>

@@ -1426,5 +1426,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             return d;
         }
+
+        [Fact]
+        public async Task Diagnostic_HasPragmaSuppressibleLocation()
+        {
+            // SYSLIB1017: MissingLogLevel
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    [LoggerMessage(EventId = 0, Message = ""M1"")]
+                    static partial void M1(ILogger logger);
+                }
+            ");
+
+            Diagnostic diagnostic = Assert.Single(diagnostics, d => d.Id == "SYSLIB1017");
+            Assert.Equal(LocationKind.SourceFile, diagnostic.Location.Kind);
+        }
     }
 }
