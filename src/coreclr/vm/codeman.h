@@ -625,6 +625,7 @@ private:
     ULONG               cTableCurCount;
     ULONG               cTableMaxCount;
     int                 cDeletedEntries;    // Number of slots we removed.
+    LONG                m_nPendingFlushes; // Count of threads with a deferred RtlGrowFunctionTable call
 #endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
 
