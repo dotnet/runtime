@@ -6,6 +6,7 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 #include "pal_errno.h"
+#include "pal_time.h"
 #include <time.h>
 #include <stdio.h>
 #include <dirent.h>
@@ -771,6 +772,66 @@ PALEXPORT int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathName
 * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
 */
 PALEXPORT int32_t SystemNative_INotifyRemoveWatch(intptr_t fd, int32_t wd);
+
+/**
+ * Creates a new event port.
+ *
+ * Returns a file descriptor for the new event port on success.
+ * On error, -1 is returned, and errno is set to indicate the error.
+ */
+PALEXPORT intptr_t SystemNative_PortCreate(void);
+
+/**
+ * Associates an event port with an event source.
+ *
+ * Parameters:
+ *   port     - The event port to associate with the event source.
+ *   pFileObj - A pointer identifying the event source (for example, a file object).
+ *   dirPath  - Optional directory path used to identify the event source.
+ *   mtime    - Optional pointer to the last modification time of the event source.
+ *   events   - A bitmask of events to monitor for the event source.
+ *   cookie   - An opaque value returned to the caller when an event is delivered.
+ *
+ * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
+ */
+PALEXPORT int32_t SystemNative_PortAssociate(intptr_t port, intptr_t pFileObj, const char *dirPath, TimeSpec *mtime, int32_t events, uintptr_t cookie);
+
+/**
+ * Dissociates an event port from an event source.
+ *
+ * Parameters:
+ *   port     - The event port to dissociate from the event source.
+ *   pFileObj - A pointer identifying the event source to dissociate.
+ *
+ * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
+ */
+PALEXPORT int32_t SystemNative_PortDissociate(intptr_t port, intptr_t pFileObj);
+
+/**
+ * Waits for an event on a port and retrieves information about the event.
+ *
+ * Parameters:
+ *   port    - The event port from which to retrieve an event.
+ *   events  - On success, receives a bitmask describing the events that occurred.
+ *   cookie  - On success, receives the opaque value associated with the event source.
+ *   tmo     - Optional timeout specifying how long to wait for an event; null to wait indefinitely.
+ *
+ * Returns 0 on success, or -1 if an error occurred or the operation timed out
+ * (in which case, errno is set appropriately).
+ */
+PALEXPORT int32_t SystemNative_PortGet(intptr_t port, int32_t *events, uintptr_t *cookie, TimeSpec *tmo);
+
+/**
+ * Sends a user-defined event to a port.
+ *
+ * Parameters:
+ *   port    - The event port to which the user event is sent.
+ *   evflags - A bitmask describing the user event.
+ *   cookie  - An opaque value delivered with the event.
+ *
+ * Returns 0 on success, or -1 if an error occurred (in which case, errno is set appropriately).
+ */
+PALEXPORT int32_t SystemNative_PortSend(intptr_t port, int32_t evflags, uintptr_t cookie);
 
 /**
 * Expands all symbolic links and expands all paths to return an absolute path
