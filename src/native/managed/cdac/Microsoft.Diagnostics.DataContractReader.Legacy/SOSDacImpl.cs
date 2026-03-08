@@ -736,21 +736,7 @@ public sealed unsafe partial class SOSDacImpl
             IGCInfo gcInfo = _target.Contracts.GCInfo;
 
             TargetCodePointer targetCodePointer = ip.ToTargetCodePointer(_target);
-            CodeBlockHandle? cbhNullable;
-            try
-            {
-                cbhNullable = eman.GetCodeBlockHandle(targetCodePointer);
-            }
-            catch (VirtualReadException)
-            {
-                // In mini-dumps, PE image sections for ReadyToRun code (e.g. the RuntimeFunctions
-                // table) may not be captured. The native DAC can fall back to reading from the PE
-                // file on disk; the cDAC reads only from dump memory. Return E_FAIL and skip the
-                // #if DEBUG comparison against the native DAC, since the mismatch is expected.
-                return HResults.E_FAIL;
-            }
-
-            if (cbhNullable is not CodeBlockHandle cbh)
+            if (eman.GetCodeBlockHandle(targetCodePointer) is not CodeBlockHandle cbh)
             {
                 TargetPointer methodDesc = eman.NonVirtualEntry2MethodDesc(targetCodePointer);
                 if (methodDesc == TargetPointer.Null)
@@ -2466,20 +2452,7 @@ public sealed unsafe partial class SOSDacImpl
             IExecutionManager executionManager = _target.Contracts.ExecutionManager;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
-            CodeBlockHandle? handle;
-            try
-            {
-                handle = executionManager.GetCodeBlockHandle(ip.ToTargetCodePointer(_target));
-            }
-            catch (VirtualReadException)
-            {
-                // In mini-dumps, PE image sections for ReadyToRun code (e.g. the RuntimeFunctions
-                // table) may not be captured. The native DAC can fall back to reading from the PE
-                // file on disk; the cDAC reads only from dump memory. Return E_FAIL and skip the
-                // #if DEBUG comparison against the native DAC, since the mismatch is expected.
-                return HResults.E_FAIL;
-            }
-
+            CodeBlockHandle? handle = executionManager.GetCodeBlockHandle(ip.ToTargetCodePointer(_target));
             if (handle is not CodeBlockHandle codeHandle)
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
