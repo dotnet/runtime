@@ -7,6 +7,10 @@
 #include "reader.h"
 #include "manifest.h"
 
+#if defined(NATIVE_LIBS_EMBEDDED)
+#include <zstd.h>
+#endif
+
 namespace bundle
 {
     class extractor_t
@@ -22,6 +26,16 @@ namespace bundle
             m_bundle_id = bundle_id;
             m_bundle_path = bundle_path;
         }
+
+#if defined(NATIVE_LIBS_EMBEDDED)
+        ~extractor_t()
+        {
+            if (m_dctx != nullptr)
+            {
+                ZSTD_freeDCtx(m_dctx);
+            }
+        }
+#endif
 
         pal::string_t& extract(reader_t& reader);
 
@@ -45,6 +59,9 @@ namespace bundle
         pal::string_t m_extraction_dir;
         pal::string_t m_working_extraction_dir;
         const manifest_t& m_manifest;
+#if defined(NATIVE_LIBS_EMBEDDED)
+        ZSTD_DCtx* m_dctx = nullptr;
+#endif
     };
 }
 
