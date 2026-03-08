@@ -24,6 +24,10 @@
      timeout: %(HelixWorkItem.Timeout)  '"/>
   </Target> -->
 
+  <PropertyGroup>
+    <HelixBaseUri>https://helix.int-dot.net/</HelixBaseUri>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT' ">
     <Python>%HELIX_PYTHONPATH%</Python>
     <ProductDirectory>%HELIX_CORRELATION_PAYLOAD%</ProductDirectory>

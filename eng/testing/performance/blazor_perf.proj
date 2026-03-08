@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
   <PropertyGroup>
+    <HelixBaseUri>https://helix.int-dot.net/</HelixBaseUri>
     <LogDirectory Condition="'$(AGENT_OS)' == 'Windows_NT'">%HELIX_WORKITEM_UPLOAD_ROOT%\</LogDirectory>
     <LogDirectory Condition="'$(AGENT_OS)' != 'Windows_NT'">%24{HELIX_WORKITEM_UPLOAD_ROOT}/</LogDirectory>
 
