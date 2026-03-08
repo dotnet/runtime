@@ -103,19 +103,34 @@ namespace Internal.Reflection.Extensions.NonPortable
                 }
                 else
                 {
-                    // Property
+                    Type argumentType = namedArgument.TypedValue.ArgumentType;
                     for (; ; )
                     {
-                        PropertyInfo? propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
-                        if (propertyInfo != null)
+                        // Use type-qualified lookup to avoid AmbiguousMatchException
+                        // when a derived class covariant-overrides the property
+                        PropertyInfo? propertyInfo = argumentType != null
+                            ? walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly, 
+                                               binder: null, returnType: argumentType, types: [], modifiers: null)
+                            : walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
+
+                        if (propertyInfo is not null)
                         {
-                            propertyInfo.SetValue(newAttribute, argumentValue);
-                            break;
+                            MethodInfo? setMethod = propertyInfo.GetSetMethod(true);
+                            if (setMethod is not null)
+                            {
+                                // Public properties may have non-public setter methods
+                                if (setMethod.IsPublic)
+                                {
+                                    propertyInfo.SetValue(newAttribute, argumentValue);
+                                }
+
+                                break;
+                            }
                         }
-                        Type? baseType = walk.BaseType;
-                        if (baseType == null)
-                            throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
-                        walk = baseType;
+
+                        walk = walk.BaseType is null
+                            ? throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name))
+                            : walk.BaseType;
                     }
                 }
             }
