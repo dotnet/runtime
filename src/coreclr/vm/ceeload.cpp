@@ -40,6 +40,7 @@
 #include "inlinetracking.h"
 #include "threads.h"
 #include "nativeimage.h"
+#include <minipal/getexepath.h>
 
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
@@ -3733,18 +3734,16 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     }
     CONTRACTL_END;
 
-    // Get the command line.
-    LPCWSTR osCommandLine = GetCommandLineW();
-
 #ifndef TARGET_UNIX
-    // On Windows, osCommandLine contains the executable and all arguments.
-    s_pCommandLine = osCommandLine;
+    // On Windows, GetCommandLineW contains the executable and all arguments.
+    s_pCommandLine = GetCommandLineW();
 #else
     // On UNIX, the PAL doesn't have the command line arguments, so we must build the command line.
-    // osCommandLine contains the full path to the executable.
-    SIZE_T  commandLineLen = (u16_strlen(osCommandLine) + 1);
+    // exePath contains the full path to the executable.
+    MAKE_WIDEPTR_FROMUTF8(exePath, minipal_getexepath());
+    SIZE_T  commandLineLen = (u16_strlen(exePath) + 1);
 
-    // We will append pwzAssemblyPath to the 'corerun' osCommandLine
+    // We will append pwzAssemblyPath to the 'corerun' exePath
     commandLineLen += (u16_strlen(pwzAssemblyPath) + 1);
 
     for (int i = 0; i < argc; i++)
@@ -3758,7 +3757,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     SIZE_T remainingLen    = commandLineLen;
     LPWSTR pCursor         = pNewCommandLine;
 
-    Append_Next_Item(&pCursor, &remainingLen, osCommandLine,   true);
+    Append_Next_Item(&pCursor, &remainingLen, exePath,   true);
     Append_Next_Item(&pCursor, &remainingLen, pwzAssemblyPath, (argc > 0));
 
     for (int i = 0; i < argc; i++)
