@@ -48,6 +48,20 @@ pr:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
+parameters:
+- name: diagnosticsBranch
+  displayName: Diagnostics Branch
+  type: string
+  default: main
+
+resources:
+  repositories:
+    - repository: diagnostics
+      type: github
+      endpoint: public
+      name: dotnet/diagnostics
+      ref: ${{ parameters.diagnosticsBranch }}
+
 variables:
   - template: /eng/pipelines/common/variables.yml
   - template: /eng/pipelines/helix-platforms.yml
@@ -251,7 +265,7 @@ extends:
           - windows_x64
           jobParameters:
             nameSuffix: CoreCLR_Libraries
-            buildArgs: -s clr+libs+libs.tests -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
+            buildArgs: -s clr+libs+libs.tests+tools.cdac -rc Release -c $(_BuildConfig) /p:ArchiveTests=true
             timeoutInMinutes: 120
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -271,6 +285,19 @@ extends:
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
                   artifactName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+              - powershell: |
+                  $versionDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*/shared/Microsoft.NETCore.App" | Select-Object -First 1 -ExpandProperty FullName
+                  Write-Host "##vso[task.setvariable variable=versionDir]$versionDir"
+                displayName: 'Set Path to Shared Framework Artifacts'
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(versionDir)
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: DiagnosticsRuntime_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Diagnostics Runtime
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -1951,4 +1978,91 @@ extends:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+    #
+    # Diagnostics Tests (SOS with cDAC and DAC)
+    # These jobs reuse the CoreCLR_Libraries build artifacts to avoid duplicate builds.
+    # They check out the dotnet/diagnostics repo and run its SOS test suite.
+    # This stage is separate so diagnostics failures don't block the main Build stage.
+    #
+    - stage: Diagnostics
+      dependsOn:
+      - Build
+      - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+        - EvaluatePaths
+      jobs:
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+          - windows_x64
+          jobParameters:
+            name: cDAC
+            useCdac: true
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
+            timeoutInMinutes: 360
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: ${{ format('DiagnosticsRuntime_windows_x64_{0}', variables.debugOnPrReleaseOnRolling) }}
+                  artifactFileName: ${{ format('DiagnosticsRuntime_windows_x64_{0}.zip', variables.debugOnPrReleaseOnRolling) }}
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
+                  displayName: 'Diagnostics Runtime Artifacts'
+            postBuildSteps:
+            - task: PublishTestResults@2
+              inputs:
+                testResultsFormat: xUnit
+                testResultsFiles: '**/SOS.*.xml'
+                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
+                testRunTitle: 'Tests cDAC_$(osGroup)_$(archType)_$(_BuildConfig)'
+                failTaskOnFailedTests: true
+                publishRunAttachments: true
+                mergeTestResults: true
+                buildConfiguration: $(_BuildConfig)
+              continueOnError: true
+              condition: always()
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+          - windows_x64
+          jobParameters:
+            name: DAC
+            useCdac: false
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
+            timeoutInMinutes: 360
+            preBuildSteps:
+              - template: /eng/pipelines/common/download-artifact-step.yml
+                parameters:
+                  artifactName: ${{ format('DiagnosticsRuntime_windows_x64_{0}', variables.debugOnPrReleaseOnRolling) }}
+                  artifactFileName: ${{ format('DiagnosticsRuntime_windows_x64_{0}.zip', variables.debugOnPrReleaseOnRolling) }}
+                  unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
+                  displayName: 'Diagnostics Runtime Artifacts'
+            postBuildSteps:
+            - task: PublishTestResults@2
+              inputs:
+                testResultsFormat: xUnit
+                testResultsFiles: '**/SOS.*.xml'
+                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
+                testRunTitle: 'Tests DAC_$(osGroup)_$(archType)_$(_BuildConfig)'
+                failTaskOnFailedTests: true
+                publishRunAttachments: true
+                mergeTestResults: true
+                buildConfiguration: $(_BuildConfig)
+              continueOnError: true
+              condition: always()
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
