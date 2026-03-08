@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Http.Metrics;
 using System.Net.Sockets;
@@ -893,14 +894,26 @@ namespace System.Net.Http.Functional.Tests
 
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
+                using var httpEventListener = new TestUtilities.TestEventListener(
+                    _output, "System.Net.Http", "Private.InternalDiagnostics.System.Net.Http");
+
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
 
                 for (int i = 0; i < RequestCount; i++)
                 {
                     using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+
+                    _output.WriteLine($"========== Sending request {i + 1} ==========");
+
                     using HttpResponseMessage response = await SendAsync(client, request);
                 }
+
+                _output.WriteLine("========== Finished processing requests ==========");
+
+                var measurements = timeInQueueRecorder.GetMeasurements();
+                for (var i = 0; i < measurements.Count; i++)
+                    _output.WriteLine($"Measurements[{i + 1}]: {measurements[i].Value}");
 
                 // Only the first request is supposed to record time_in_queue.
                 // For follow up requests, the connection should be immediately available.
