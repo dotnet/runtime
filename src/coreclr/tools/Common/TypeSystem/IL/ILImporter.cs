@@ -276,10 +276,40 @@ namespace Internal.IL
             {
                 var r = _exceptionRegions[i];
 
-                CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
+                // Check try region bounds (avoiding integer overflow)
+                if ((uint)r.ILRegion.TryOffset >= (uint)_basicBlocks.Length ||
+                    (uint)r.ILRegion.TryLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.TryOffset)
+                {
+                    ReportInvalidExceptionRegion();
+                }
+                else
+                {
+                    CreateBasicBlock(r.ILRegion.TryOffset).TryStart = true;
+                }
+
+                // Check filter region bounds (for filter exception handlers)
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
-                    CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
-                CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
+                {
+                    if ((uint)r.ILRegion.FilterOffset >= (uint)_basicBlocks.Length)
+                    {
+                        ReportInvalidExceptionRegion();
+                    }
+                    else
+                    {
+                        CreateBasicBlock(r.ILRegion.FilterOffset).FilterStart = true;
+                    }
+                }
+
+                // Check handler region bounds (avoiding integer overflow)
+                if ((uint)r.ILRegion.HandlerOffset >= (uint)_basicBlocks.Length ||
+                    (uint)r.ILRegion.HandlerLength > (uint)_basicBlocks.Length - (uint)r.ILRegion.HandlerOffset)
+                {
+                    ReportInvalidExceptionRegion();
+                }
+                else
+                {
+                    CreateBasicBlock(r.ILRegion.HandlerOffset).HandlerStart = true;
+                }
             }
         }
 
