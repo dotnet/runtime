@@ -28,7 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 extern ICorJitHost* g_jitHost;
 
-unsigned Compiler::jitTotalMethodCompiled = 0; // t
+unsigned Compiler::jitTotalMethodCompiled = 0; // to
 
 #if defined(DEBUG)
 LONG Compiler::jitNestingLevel = 0;
