@@ -1217,6 +1217,7 @@ namespace System.Text.Json.SourceGeneration
                 ProcessMemberCustomAttributes(
                     contextType,
                     memberInfo,
+                    memberType,
                     out bool hasJsonInclude,
                     out string? jsonPropertyName,
                     out JsonIgnoreCondition? ignoreCondition,
@@ -1322,6 +1323,7 @@ namespace System.Text.Json.SourceGeneration
             private void ProcessMemberCustomAttributes(
                 INamedTypeSymbol contextType,
                 ISymbol memberInfo,
+                ITypeSymbol memberType,
                 out bool hasJsonInclude,
                 out string? jsonPropertyName,
                 out JsonIgnoreCondition? ignoreCondition,
@@ -1355,7 +1357,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (converterType is null && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
-                        converterType = GetConverterTypeFromJsonConverterAttribute(contextType, memberInfo, attributeData);
+                        converterType = GetConverterTypeFromJsonConverterAttribute(contextType, memberInfo, attributeData, memberType);
                     }
                     else if (attributeType.ContainingAssembly.Name == SystemTextJsonNamespace)
                     {
@@ -1657,7 +1659,7 @@ namespace System.Text.Json.SourceGeneration
                 return propertyInitializers;
             }
 
-            private TypeRef? GetConverterTypeFromJsonConverterAttribute(INamedTypeSymbol contextType, ISymbol declaringSymbol, AttributeData attributeData)
+            private TypeRef? GetConverterTypeFromJsonConverterAttribute(INamedTypeSymbol contextType, ISymbol declaringSymbol, AttributeData attributeData, ITypeSymbol? typeToConvert = null)
             {
                 Debug.Assert(_knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeData.AttributeClass));
 
@@ -1669,12 +1671,33 @@ namespace System.Text.Json.SourceGeneration
 
                 Debug.Assert(attributeData.ConstructorArguments.Length == 1 && attributeData.ConstructorArguments[0].Value is null or ITypeSymbol);
                 var converterType = (ITypeSymbol?)attributeData.ConstructorArguments[0].Value;
-                return GetConverterTypeFromAttribute(contextType, converterType, declaringSymbol, attributeData);
+
+                // If typeToConvert is not provided, try to infer it from declaringSymbol
+                typeToConvert ??= declaringSymbol as ITypeSymbol;
+
+                return GetConverterTypeFromAttribute(contextType, converterType, declaringSymbol, attributeData, typeToConvert);
             }
 
-            private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, ITypeSymbol? converterType, ISymbol declaringSymbol, AttributeData attributeData)
+            private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, ITypeSymbol? converterType, ISymbol declaringSymbol, AttributeData attributeData, ITypeSymbol? typeToConvert = null)
             {
-                if (converterType is not INamedTypeSymbol namedConverterType ||
+                INamedTypeSymbol? namedConverterType = converterType as INamedTypeSymbol;
+
+                // Check if this is an unbound generic converter type that needs to be constructed.
+                // For open generics, we construct the closed generic type first and then validate.
+                if (namedConverterType is { IsUnboundGenericType: true } unboundConverterType &&
+                    typeToConvert is INamedTypeSymbol { IsGenericType: true } genericTypeToConvert)
+                {
+                    // For nested generic types like Container<>.NestedConverter<>, we need to count
+                    // all type parameters from the entire type hierarchy, not just the immediate type.
+                    int totalTypeParameterCount = GetTotalTypeParameterCount(unboundConverterType);
+
+                    if (totalTypeParameterCount == genericTypeToConvert.TypeArguments.Length)
+                    {
+                        namedConverterType = ConstructNestedGenericType(unboundConverterType, genericTypeToConvert.TypeArguments);
+                    }
+                }
+
+                if (namedConverterType is null ||
                     !_knownSymbols.JsonConverterType.IsAssignableFrom(namedConverterType) ||
                     !namedConverterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
                 {
@@ -1682,12 +1705,105 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                if (_knownSymbols.JsonStringEnumConverterType.IsAssignableFrom(converterType))
+                if (_knownSymbols.JsonStringEnumConverterType.IsAssignableFrom(namedConverterType))
                 {
                     ReportDiagnostic(DiagnosticDescriptors.JsonStringEnumConverterNotSupportedInAot, attributeData.GetLocation(), declaringSymbol.ToDisplayString());
                 }
 
-                return new TypeRef(converterType);
+                return new TypeRef(namedConverterType);
+            }
+
+            /// <summary>
+            /// Gets the total number of type parameters from an unbound generic type,
+            /// including type parameters from containing types for nested generics.
+            /// For example, Container&lt;&gt;.NestedConverter&lt;&gt; has a total of 2 type parameters.
+            /// </summary>
+            private static int GetTotalTypeParameterCount(INamedTypeSymbol unboundType)
+            {
+                int count = 0;
+                INamedTypeSymbol? current = unboundType;
+                while (current != null)
+                {
+                    count += current.TypeParameters.Length;
+                    current = current.ContainingType;
+                }
+                return count;
+            }
+
+            /// <summary>
+            /// Constructs a closed generic type from an unbound generic type (potentially nested),
+            /// using the provided type arguments in the order they should be applied.
+            /// Returns null if the type cannot be constructed.
+            /// </summary>
+            private static INamedTypeSymbol? ConstructNestedGenericType(INamedTypeSymbol unboundType, ImmutableArray<ITypeSymbol> typeArguments)
+            {
+                // Build the chain of containing types from outermost to innermost
+                var typeChain = new List<INamedTypeSymbol>();
+                INamedTypeSymbol? current = unboundType;
+                while (current != null)
+                {
+                    typeChain.Add(current);
+                    current = current.ContainingType;
+                }
+
+                // Reverse to go from outermost to innermost
+                typeChain.Reverse();
+
+                // Track which type arguments have been used
+                int typeArgIndex = 0;
+                INamedTypeSymbol? constructedContainingType = null;
+
+                foreach (var type in typeChain)
+                {
+                    int typeParamCount = type.TypeParameters.Length;
+                    INamedTypeSymbol originalDef = type.OriginalDefinition;
+
+                    if (typeParamCount > 0)
+                    {
+                        // Get the type arguments for this level
+                        var args = typeArguments.Skip(typeArgIndex).Take(typeParamCount).ToArray();
+                        typeArgIndex += typeParamCount;
+
+                        // Construct this level
+                        if (constructedContainingType == null)
+                        {
+                            constructedContainingType = originalDef.Construct(args);
+                        }
+                        else
+                        {
+                            // Get the nested type from the constructed containing type
+                            var nestedTypeDef = constructedContainingType.GetTypeMembers(originalDef.Name, originalDef.Arity).FirstOrDefault();
+                            if (nestedTypeDef != null)
+                            {
+                                constructedContainingType = nestedTypeDef.Construct(args);
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Non-generic type in the chain
+                        if (constructedContainingType == null)
+                        {
+                            constructedContainingType = originalDef;
+                        }
+                        else
+                        {
+                            // Use arity 0 to avoid ambiguity with nested types of the same name but different arity
+                            var nestedType = constructedContainingType.GetTypeMembers(originalDef.Name, 0).FirstOrDefault();
+                            if (nestedType == null)
+                            {
+                                return null;
+                            }
+                            constructedContainingType = nestedType;
+                        }
+                    }
+                }
+
+                return constructedContainingType;
             }
 
             private static string DetermineEffectiveJsonPropertyName(string propertyName, string? jsonPropertyName, SourceGenerationOptionsSpec? options)
