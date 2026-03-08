@@ -715,14 +715,6 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
         select = m_compiler->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
     }
 
-    // Update statements
-    //
-
-    // Remove JTRUE statement
-    last->gtBashToNOP();
-    m_compiler->gtSetEvalOrder(last);
-    m_compiler->fgSetStmtSeq(m_startBlock->lastStmt());
-
     // Use the SELECT as the source of the Then STORE/RETURN.
     m_thenOperation.node->AddAllEffectsFlags(select);
     if (m_mainOper == GT_STORE_LCL_VAR)
@@ -736,22 +728,16 @@ bool OptIfConversionDsc::optIfConvert(int* pReachabilityBudget)
     m_compiler->gtSetEvalOrder(m_thenOperation.node);
     m_compiler->fgSetStmtSeq(m_thenOperation.stmt);
 
-    // Append STORE(SELECT)/RETURN(SELECT) statement to JTRUE block
-    Statement* useSelectStmt = m_thenOperation.stmt;
-    useSelectStmt->SetNextStmt(nullptr);
-    useSelectStmt->SetPrevStmt(m_startBlock->lastStmt());
-    m_startBlock->lastStmt()->SetNextStmt(useSelectStmt);
-    m_startBlock->firstStmt()->SetPrevStmt(useSelectStmt);
+    // Replace JTRUE with STORE(SELECT)/RETURN(SELECT) statement
+    m_compiler->fgRemoveStmt(m_startBlock, m_startBlock->lastStmt());
+    m_compiler->fgInsertStmtAtEnd(m_startBlock, m_thenOperation.stmt);
     m_thenOperation.block->SetFirstStmt(nullptr);
 
-    // Update flow graph. JTRUE block now contains the SELECT.
-    //
-    
     BasicBlock* falseBb = m_startBlock->GetFalseTarget();
     BasicBlock* trueBb  = m_startBlock->GetTrueTarget();
 
-    // Change kind of JTRUE block and make it flow directly into
-    // block where flows merge (which is null in case of GT_RETURN)
+    // JTRUE block now contains SELECT. Change it's kind and make it flow
+    // directly into block where flows merge, which is null in case of GT_RETURN.
     if (m_mainOper == GT_RETURN)
     {
         m_startBlock->SetKindAndTargetEdge(BBJ_RETURN);
