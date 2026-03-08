@@ -429,6 +429,8 @@ MethodDesc* ILStubCache::CreateR2RBackedILStub(
     // Set the native code directly - no precode needed since code already exists
     pMD->SetNativeCodeInterlocked(r2rEntryPoint);
 
+    pChunk->DetermineAndSetIsEligibleForTieredCompilation();
+
 #ifdef _DEBUG
     pMD->m_pszDebugMethodName = pMD->m_pszMethodName;
     pMD->m_pszDebugClassName = "ILStubClass";
