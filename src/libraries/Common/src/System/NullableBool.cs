@@ -4,7 +4,7 @@
 namespace System
 {
     /// <summary>
-    /// Used instead of bool? for thread-safe state because Nullable&lt;bool&gt; is not guaranteed to be read or written atomically.
+    /// Used instead of bool? for thread-safe state because <see cref="Nullable{Boolean}"/> is not guaranteed to be read or written atomically.
     /// </summary>
     internal enum NullableBool : sbyte
     {
