@@ -1886,7 +1886,7 @@ namespace System
                 }
             }
 
-            return Array.Empty<string>();
+            return [];
         }
 
         private string[] SplitInternal(string separator, int count, StringSplitOptions options)

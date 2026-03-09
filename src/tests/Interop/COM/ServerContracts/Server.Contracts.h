@@ -443,6 +443,10 @@ IDispatchTesting : IDispatch
     virtual HRESULT STDMETHODCALLTYPE TriggerException (
         /*[in]*/ enum IDispatchTesting_Exception excep,
         /*[in]*/ int errorCode) = 0;
+    virtual HRESULT STDMETHODCALLTYPE TriggerCustomMarshaler(
+        /*[in]*/ IUnknown* objIn,
+        /*[in,out]*/ IUnknown** objRef,
+        /*[out,retval]*/ IUnknown* pRetVal) = 0;
 
     // Special cases
     virtual HRESULT STDMETHODCALLTYPE DoubleHVAValues(

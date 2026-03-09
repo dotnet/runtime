@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             {
                 return false;
             }
-            else if (fileSystemInfo.Name.StartsWith(".", StringComparison.Ordinal) && (filters & ExclusionFilters.DotPrefixed) != 0)
+            else if (fileSystemInfo.Name.StartsWith('.') && (filters & ExclusionFilters.DotPrefixed) != 0)
             {
                 return true;
             }

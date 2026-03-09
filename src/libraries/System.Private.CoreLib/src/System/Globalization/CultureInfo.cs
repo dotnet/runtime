@@ -277,25 +277,20 @@ namespace System.Globalization
                 // When CultureInfo throws this exception, it may be because someone passed the form
                 // like "az-az" because it came out of an http accept lang. We should try a little
                 // parsing to perhaps fall back to "az" here and use *it* to create the neutral.
-                culture = null;
-                for (int idx = 0; idx < name.Length; idx++)
+                int idx = name.IndexOf('-');
+                if (idx >= 0)
                 {
-                    if ('-' == name[idx])
+                    try
                     {
-                        try
-                        {
-                            culture = new CultureInfo(name.Substring(0, idx));
-                            break;
-                        }
-                        catch (ArgumentException)
-                        {
-                            // throw the original exception so the name in the string will be right
-                            throw;
-                        }
+                        culture = new CultureInfo(name.Substring(0, idx));
+                    }
+                    catch (ArgumentException)
+                    {
+                        // throw the original exception so the name in the string will be right
+                        throw;
                     }
                 }
-
-                if (culture == null)
+                else
                 {
                     // nothing to save here; throw the original exception
                     throw;
@@ -1150,7 +1145,7 @@ namespace System.Globalization
         public static CultureInfo GetCultureInfoByIetfLanguageTag(string name)
         {
             // Disallow old zh-CHT/zh-CHS names
-            if (name == "zh-CHT" || name == "zh-CHS")
+            if (name is "zh-CHT" or "zh-CHS")
             {
                 throw new CultureNotFoundException(nameof(name), SR.Format(SR.Argument_CultureIetfNotSupported, name));
             }

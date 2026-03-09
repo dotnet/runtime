@@ -230,7 +230,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 var isSupportedType = GetIsSupportedTypeSymbol(model, memberAccessExpression);
                 if (isSupportedType == null)
                 {
-                    return Array.Empty<INamedTypeSymbol>();
+                    return [];
                 }
                 else
                     return new INamedTypeSymbol[] { isSupportedType };
@@ -240,7 +240,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 var isSupportedType = GetIsSupportedTypeSymbol(model, identifier);
                 if (isSupportedType == null)
                 {
-                    return Array.Empty<INamedTypeSymbol>();
+                    return [];
                 }
                 else
                     return new INamedTypeSymbol[] { isSupportedType };
@@ -262,12 +262,12 @@ namespace IntrinsicsInSystemPrivateCoreLib
                     }
                     else
                     {
-                        return Array.Empty<INamedTypeSymbol>();
+                        return [];
                     }
                 }
             }
 
-            return Array.Empty<INamedTypeSymbol>();
+            return [];
         }
 
         private static INamedTypeSymbol[][] DecomposePropertySymbolForIsSupportedGroups_Property(OperationAnalysisContext context, SemanticModel model, ExpressionSyntax expressionToDecompose)
@@ -275,7 +275,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
             var symbolInfo = model.GetSymbolInfo(expressionToDecompose);
             if (symbolInfo.Symbol.Kind != SymbolKind.Property)
             {
-                return Array.Empty<INamedTypeSymbol[]>();
+                return [];
             }
 
             if (symbolInfo.Symbol.Name == "IsSupported")
@@ -303,7 +303,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 }
             }
 
-            return Array.Empty<INamedTypeSymbol[]>();
+            return [];
         }
 
         private static INamedTypeSymbol[][] DecomposeConditionForIsSupportedGroups(OperationAnalysisContext context, SemanticModel model, ExpressionSyntax expressionToDecompose)
@@ -342,7 +342,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
                         {
                             context.ReportDiagnostic(Diagnostic.Create(RuleCantParse, expressionToDecompose.GetLocation()));
                         }
-                        return Array.Empty<INamedTypeSymbol[]>();
+                        return [];
                     }
                     var retVal = new INamedTypeSymbol[decomposedLeft.Length + decomposedRight.Length][];
                     Array.Copy(decomposedLeft, retVal, decomposedLeft.Length);
@@ -373,7 +373,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
                     context.ReportDiagnostic(Diagnostic.Create(RuleCantParse, expressionToDecompose.GetLocation()));
                 }
             }
-            return Array.Empty<INamedTypeSymbol[]>();
+            return [];
         }
 
         private static IEnumerable<INamedTypeSymbol> GetCompExactlyDependsOnUseList(ISymbol symbol, IntrinsicsAnalyzerOnLoadData onLoadData)

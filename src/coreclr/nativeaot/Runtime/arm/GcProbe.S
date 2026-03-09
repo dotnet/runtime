@@ -92,9 +92,9 @@
 .endm
 
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
-    PUSH_PROBE_FRAME r2, r3, r12
+    PUSH_PROBE_FRAME r3, r2, r12
 
-    ldr         r0, [r2, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
+    ldr         r0, [r3, #OFFSETOF__Thread__m_pDeferredTransitionFrame]
     bl          RhpWaitForGC2
 
     POP_PROBE_FRAME
@@ -124,7 +124,6 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     bne         LOCAL_LABEL(WaitForGC)
     bx          lr
 LOCAL_LABEL(WaitForGC):
-    mov         r2, r3                  // Move thread pointer to r2 for RhpWaitForGC
     mov         r12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_R0 + PTFF_SAVE_R1 + PTFF_SAVE_R2)
     orr         r12, r12, #PTFF_THREAD_HIJACK
     b           RhpWaitForGC

@@ -8,6 +8,7 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private string? _path;
+        private volatile int _cachedFileType = -1;
 
         /// <summary>
         /// Creates a <see cref="T:Microsoft.Win32.SafeHandles.SafeFileHandle" /> around a file handle.
@@ -20,5 +21,26 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         internal string? Path => _path;
+
+        /// <summary>
+        /// Gets the type of the file that this handle represents.
+        /// </summary>
+        /// <value>The type of the file.</value>
+        /// <exception cref="ObjectDisposedException">The handle is closed.</exception>
+        public System.IO.FileHandleType Type
+        {
+            get
+            {
+                ObjectDisposedException.ThrowIf(IsClosed, this);
+
+                int cachedType = _cachedFileType;
+                if (cachedType == -1)
+                {
+                    cachedType = _cachedFileType = (int)GetFileTypeCore();
+                }
+
+                return (System.IO.FileHandleType)cachedType;
+            }
+        }
     }
 }

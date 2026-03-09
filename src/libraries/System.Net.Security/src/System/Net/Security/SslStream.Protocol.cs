@@ -18,8 +18,11 @@ namespace System.Net.Security
     {
         private const string DisableTlsResumeCtxSwitch = "System.Net.Security.DisableTlsResume";
         private const string DisableTlsResumeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_DISABLETLSRESUME";
+        private const string EnableServerAiaDownloadsCtxSwitch = "System.Net.Security.EnableServerAiaDownloads";
+        private const string EnableServerAiaDownloadsEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_ENABLESERVERAIADOWNLOADS";
 
         private static volatile int s_disableTlsResume = -1;
+        private static volatile int s_enableServerAiaDownloads = -1;
 
         internal static bool DisableTlsResume
         {
@@ -45,6 +48,33 @@ namespace System.Net.Security
                 }
 
                 return s_disableTlsResume != 0;
+            }
+        }
+
+        internal static bool EnableServerAiaDownloads
+        {
+            get
+            {
+                int enableServerAiaDownloads = s_enableServerAiaDownloads;
+                if (enableServerAiaDownloads != -1)
+                {
+                    return enableServerAiaDownloads != 0;
+                }
+
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(EnableServerAiaDownloadsCtxSwitch, out bool value))
+                {
+                    s_enableServerAiaDownloads = value ? 1 : 0;
+                }
+                else
+                {
+                    // AppContext switch wasn't used. Check the environment variable.
+                    s_enableServerAiaDownloads =
+                        Environment.GetEnvironmentVariable(EnableServerAiaDownloadsEnvironmentVariable) is string envVar &&
+                        (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                }
+
+                return s_enableServerAiaDownloads != 0;
             }
         }
 
@@ -1087,6 +1117,11 @@ namespace System.Net.Security
                         chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
                         chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 
+                        if (_sslAuthenticationOptions.IsServer && !EnableServerAiaDownloads)
+                        {
+                            chain.ChainPolicy.DisableCertificateDownloads = true;
+                        }
+
                         if (trust != null)
                         {
                             chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
@@ -1164,16 +1199,22 @@ namespace System.Net.Security
 
                 if (chain != null)
                 {
-                    // Dispose only the certificates that were added by GetRemoteCertificate
-                    for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
+                    // Only cleanup certificates if no user callback was provided.
+                    // When a callback is provided, users might add their own certificates to ExtraStore
+                    // or keep references to certificates from ChainElements.
+                    if (remoteCertValidationCallback == null)
                     {
-                        chain.ChainPolicy.ExtraStore[i].Dispose();
-                    }
+                        // Dispose only the certificates that were added by GetRemoteCertificate
+                        for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
+                        {
+                            chain.ChainPolicy.ExtraStore[i].Dispose();
+                        }
 
-                    int elementsCount = chain.ChainElements.Count;
-                    for (int i = 0; i < elementsCount; i++)
-                    {
-                        chain.ChainElements[i].Certificate.Dispose();
+                        int elementsCount = chain.ChainElements.Count;
+                        for (int i = 0; i < elementsCount; i++)
+                        {
+                            chain.ChainElements[i].Certificate.Dispose();
+                        }
                     }
 
                     chain.Dispose();

@@ -303,6 +303,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         EmitElementType(CorElementType.ELEMENT_TYPE_CANON_ZAPSIG);
                     }
+                    else if (typeDesc is AsyncContinuationType act)
+                    {
+                        // We should never try to encode a continuation on this path
+                        throw new InvalidOperationException();
+                    }
                     else
                     {
                         ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);

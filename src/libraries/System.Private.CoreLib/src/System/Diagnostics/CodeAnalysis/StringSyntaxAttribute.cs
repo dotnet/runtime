@@ -17,7 +17,7 @@ namespace System.Diagnostics.CodeAnalysis
         public StringSyntaxAttribute(string syntax)
         {
             Syntax = syntax;
-            Arguments = Array.Empty<object?>();
+            Arguments = [];
         }
 
         /// <summary>Initializes the <see cref="StringSyntaxAttribute"/> with the identifier of the syntax used.</summary>

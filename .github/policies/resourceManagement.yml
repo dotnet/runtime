@@ -366,7 +366,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - JulieLeeMSFT
-            - dotnet/jit-contrib
+            - jakobbotsch
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
