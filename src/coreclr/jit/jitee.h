@@ -19,7 +19,7 @@ public:
         JIT_FLAG_OSR                     = 7, // Generate alternate version for On Stack Replacement
         JIT_FLAG_ALT_JIT                 = 8, // JIT should consider itself an ALT_JIT
         JIT_FLAG_FROZEN_ALLOC_ALLOWED    = 9, // JIT is allowed to use *_MAYBEFROZEN allocators
-        // JIT_FLAG_UNUSED               = 10,
+        JIT_FLAG_PORTABLE_ENTRY_POINTS   = 10,
         JIT_FLAG_AOT                     = 11, // Do ahead-of-time code generation (ReadyToRun or NativeAOT)
         JIT_FLAG_PROF_ENTERLEAVE         = 12, // Instrument prologues/epilogues
         JIT_FLAG_PROF_NO_PINVOKE_INLINE  = 13, // Disables PInvoke inlining
@@ -45,7 +45,6 @@ public:
 #endif
 
         JIT_FLAG_ASYNC                   = 31, // Generate code for use as an async function
-        JIT_FLAG_PORTABLE_ENTRY_POINTS   = 32,
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,
         // something needs to change.
@@ -121,6 +120,7 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_OSR, JIT_FLAG_OSR);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT, JIT_FLAG_ALT_JIT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED, JIT_FLAG_FROZEN_ALLOC_ALLOWED);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PORTABLE_ENTRY_POINTS, JIT_FLAG_PORTABLE_ENTRY_POINTS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_AOT, JIT_FLAG_AOT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE, JIT_FLAG_PROF_ENTERLEAVE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE, JIT_FLAG_PROF_NO_PINVOKE_INLINE);
@@ -144,7 +144,6 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI, JIT_FLAG_SOFTFP_ABI);
 #endif // TARGET_ARM
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ASYNC, JIT_FLAG_ASYNC);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PORTABLE_ENTRY_POINTS, JIT_FLAG_PORTABLE_ENTRY_POINTS);
 
 #undef FLAGS_EQUAL
     }
