@@ -663,7 +663,7 @@ namespace
         static key_t GetKey(element_t e)
         {
             LIMITED_METHOD_CONTRACT;
-            return { e->hashCode, e->value.Source };
+            return { e->hashCode, e->Source };
         }
         static BOOL Equals(key_t k1, key_t k2)
         {
@@ -721,7 +721,7 @@ namespace
         ReverseThunkMapKey key = { hashCode, source.GetUTF8() };
         const ReverseThunkMapEntry* entry = table->Lookup(key);
         const ReverseThunkMapValue* thunk = entry != nullptr ? &entry->value : nullptr;
-        LOG((LF_STUBS, LL_INFO100000, "WASM reverse thunk %s for key: %u\n", thunk != nullptr ? "found" : "missing", hashCode));
+        LOG((LF_STUBS, LL_INFO100000, "WASM reverse thunk %s for key: %u source: %s\n", thunk != nullptr ? "found" : "missing", hashCode, source.GetUTF8()));
 
         return thunk;
     }

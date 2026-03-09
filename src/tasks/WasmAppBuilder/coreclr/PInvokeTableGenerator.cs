@@ -499,7 +499,7 @@ internal sealed class PInvokeTableGenerator
     {
         var fsName = FixedSymbolName(cb, Log);
 
-        return $"    {{ {HashString(cb.Key)}, {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol}, \"{EscapeLiteral(cb.Key)}\" }} }}";
+        return $"    {{ {HashString(cb.Key)}, \"{EscapeLiteral(cb.Key)}\", {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol} }} }}";
     }
 
     private static readonly Dictionary<Type, bool> _blittableCache = new();
