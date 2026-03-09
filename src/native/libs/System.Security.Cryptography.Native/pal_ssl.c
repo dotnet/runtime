@@ -478,7 +478,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     if (SSL_version(ssl) == TLS1_3_VERSION)
     {
         // Post-handshake auth reqires SSL_VERIFY_PEER to be set
-        CryptoNative_SslSetVerifyPeer(ssl);
+        CryptoNative_SslSetVerifyPeer(ssl, 0);
         return SSL_verify_client_post_handshake(ssl);
     }
 #endif
@@ -489,7 +489,7 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     int pending = SSL_renegotiate_pending(ssl);
     if (!pending)
     {
-        CryptoNative_SslSetVerifyPeer(ssl);
+        CryptoNative_SslSetVerifyPeer(ssl, 0);
         int ret = SSL_renegotiate(ssl);
         if(ret != 1)
         {
@@ -629,10 +629,15 @@ X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
     return SSL_get_client_CA_list(ssl);
 }
 
-void CryptoNative_SslSetVerifyPeer(SSL* ssl)
+void CryptoNative_SslSetVerifyPeer(SSL* ssl, int32_t failIfNoPeerCert)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
-    SSL_set_verify(ssl, SSL_VERIFY_PEER, NULL);
+    int mode = SSL_VERIFY_PEER;
+    if (failIfNoPeerCert)
+    {
+        mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+    }
+    SSL_set_verify(ssl, mode, NULL);
 }
 
 int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)

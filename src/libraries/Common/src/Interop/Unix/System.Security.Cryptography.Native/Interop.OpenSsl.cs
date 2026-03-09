@@ -445,7 +445,7 @@ internal static partial class Interop
                 if (sslAuthenticationOptions.IsClient)
                 {
                     // Client side always verifies the server's certificate.
-                    Ssl.SslSetVerifyPeer(sslHandle);
+                    Ssl.SslSetVerifyPeer(sslHandle, failIfNoPeerCert: false);
 
                     if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !IPAddress.IsValid(sslAuthenticationOptions.TargetHost))
                     {
@@ -478,7 +478,14 @@ internal static partial class Interop
                 {
                     if (sslAuthenticationOptions.RemoteCertRequired)
                     {
-                        Ssl.SslSetVerifyPeer(sslHandle);
+                        // When no user callback is registered, also set
+                        // SSL_VERIFY_FAIL_IF_NO_PEER_CERT so that OpenSSL sends the
+                        // appropriate TLS alert when the client doesn't provide a
+                        // certificate.  When a callback IS registered, the application
+                        // may choose to accept connections without a client certificate,
+                        // so we only set SSL_VERIFY_PEER and let managed code handle it.
+                        bool failIfNoPeerCert = sslAuthenticationOptions.CertValidationDelegate is null;
+                        Ssl.SslSetVerifyPeer(sslHandle, failIfNoPeerCert);
                     }
 
                     if (sslAuthenticationOptions.CertificateContext != null)

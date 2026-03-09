@@ -407,7 +407,7 @@ PALEXPORT X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl);
 /*
 Shims the SSL_set_verify method.
 */
-PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl);
+PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl, int32_t failIfNoPeerCert);
 
 /*
 Shims SSL_set_ex_data to attach application context.
