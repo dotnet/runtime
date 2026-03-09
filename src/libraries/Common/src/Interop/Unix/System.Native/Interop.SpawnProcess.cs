@@ -45,6 +45,6 @@ internal static partial class Interop
         internal static partial int TryGetExitCode(SafeProcessHandle pidfd, int pid, out int exitCode, out int signal);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenProcess", SetLastError = true)]
-        internal static partial int OpenProcess(int pid, out int outPidfd);
+        internal static partial int OpenProcess(int pid, out int outPidfd, out int outIsGroupLeader);
     }
 }

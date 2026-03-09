@@ -61,14 +61,14 @@ namespace Microsoft.Win32.SafeHandles
 
         private static SafeProcessHandle OpenCore(int processId)
         {
-            int result = Interop.Sys.OpenProcess(processId, out int pidfd);
+            int result = Interop.Sys.OpenProcess(processId, out int pidfd, out int isGroupLeader);
 
             if (result == -1)
             {
                 throw new Win32Exception();
             }
 
-            return new SafeProcessHandle(pidfd, processId, isGroupLeader: false);
+            return new SafeProcessHandle(pidfd, processId, isGroupLeader: isGroupLeader != 0);
         }
 
         private static unsafe SafeProcessHandle StartCore(ProcessStartOptions options, SafeFileHandle inputHandle, SafeFileHandle outputHandle, SafeFileHandle errorHandle, bool createSuspended)

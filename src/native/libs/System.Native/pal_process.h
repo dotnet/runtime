@@ -313,4 +313,4 @@ PALEXPORT int32_t SystemNative_TryGetExitCode(int32_t pidfd, int32_t pid, int32_
  *
  * Returns 0 on success, -1 on error (errno is set).
  */
-PALEXPORT int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd);
+PALEXPORT int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd, int32_t* out_isGroupLeader);

@@ -172,7 +172,7 @@ int32_t SystemNative_TryGetExitCode(int32_t pidfd, int32_t pid, int32_t* out_exi
     return -1;
 }
 
-int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd)
+int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd, int32_t* out_isGroupLeader)
 {
     errno = ENOTSUP;
     return -1;

@@ -1342,9 +1342,10 @@ int32_t SystemNative_WaitForExitOrKillOnTimeout(int32_t pidfd, int32_t pid, int3
     return SystemNative_WaitForExitAndReap(pidfd, pid, out_exitCode, out_signal);
 }
 
-int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd)
+int32_t SystemNative_OpenProcess(int32_t pid, int32_t* out_pidfd, int32_t* out_isGroupLeader)
 {
     *out_pidfd = INT_MIN;
+    *out_isGroupLeader = (getpgid(pid) == pid) ? 1 : 0;
 
     return kill(pid, 0);
 }
