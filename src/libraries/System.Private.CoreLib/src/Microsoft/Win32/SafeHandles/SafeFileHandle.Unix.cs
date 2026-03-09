@@ -59,7 +59,7 @@ namespace Microsoft.Win32.SafeHandles
             get
             {
                 NullableBool isAsync = _isAsync;
-                if (isAsync == NullableBool.Undefined)
+                if (isAsync == NullableBool.Undefined && !IsClosed)
                 {
                     if (Interop.Sys.Fcntl.GetIsNonBlocking(this, out bool isNonBlocking) != 0)
                     {
