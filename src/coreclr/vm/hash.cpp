@@ -77,10 +77,13 @@ BOOL Bucket::InsertValue(const UPTR key, const UPTR value)
         {
             SetValue (value, i);
 
-            // Release store: ensures the value is visible before the
-            // key that publishes it. Pairs with the acquire load in
-            // LookupValue/ReplaceValue/DeleteValue.
-            VolatileStore(&m_rgKeys[i], key);
+            // On multiprocessors we should make sure that
+            // the value is propagated before we proceed.
+            // inline memory barrier call, refer to
+            // function description at the beginning of this
+            MemoryBarrier();
+
+            m_rgKeys[i] = key;
             return true;
         }
     }       // for i= 0; i < SLOTS_PER_BUCKET; loop
@@ -587,11 +590,13 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
         PTR_Bucket pBucket = rgBuckets+(seed % cbSize);
         for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
         {
-            // Acquire load: ensures the value load below is ordered
-            // after the key load. Pairs with the release store in
-            // Bucket::InsertValue.
-            if (VolatileLoad(&pBucket->m_rgKeys[i]) == key) // keys match
+            if (pBucket->m_rgKeys[i] == key) // keys match
             {
+
+                // inline memory barrier call, refer to
+                // function description at the beginning of this
+                MemoryBarrier();
+
                 UPTR storedVal = pBucket->GetValue(i);
                 // if compare function is provided
                 // dupe keys are possible, check if the value matches,
@@ -656,11 +661,13 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
         Bucket* pBucket = &rgBuckets[seed % cbSize];
         for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
         {
-            // Acquire load: ensures the value load below observes the
-            // value that was stored when this key was first published
-            // via Bucket::InsertValue.
-            if (VolatileLoad(&pBucket->m_rgKeys[i]) == key) // keys match
+            if (pBucket->m_rgKeys[i] == key) // keys match
             {
+
+                // inline memory barrier call, refer to
+                // function description at the beginning of this
+                MemoryBarrier();
+
                 UPTR storedVal = pBucket->GetValue(i);
                 // if compare function is provided
                 // dupe keys are possible, check if the value matches,
@@ -668,14 +675,13 @@ UPTR HashMap::ReplaceValue(UPTR key, UPTR value)
                 {
                     ProfileLookup(ntry,storedVal); //no-op in non HASHTABLE_PROFILE code
 
-                    // Plain store the new value, then release-store the
-                    // key to re-publish it. Readers acquire-load the key
-                    // via VolatileLoad(&m_rgKeys[i]), forming a proper
-                    // release-acquire pair on the same address and
-                    // ensuring they observe either the old or fully-
-                    // updated new value.
                     pBucket->SetValue(value, i);
-                    VolatileStore(&pBucket->m_rgKeys[i], key);
+
+                    // On multiprocessors we should make sure that
+                    // the value is propagated before we proceed.
+                    // inline memory barrier call, refer to
+                    // function description at the beginning of this
+                    MemoryBarrier();
 
                     // return the previous stored value
                     return storedVal;
@@ -731,11 +737,12 @@ UPTR HashMap::DeleteValue (UPTR key, UPTR value)
         Bucket* pBucket = &rgBuckets[seed % cbSize];
         for (unsigned int i = 0; i < SLOTS_PER_BUCKET; i++)
         {
-            // Acquire load: ensures the value load below is ordered
-            // after the key load. Pairs with the release store in
-            // Bucket::InsertValue.
-            if (VolatileLoad(&pBucket->m_rgKeys[i]) == key) // keys match
+            if (pBucket->m_rgKeys[i] == key) // keys match
             {
+                // inline memory barrier call, refer to
+                // function description at the beginning of this
+                MemoryBarrier();
+
                 UPTR storedVal = pBucket->GetValue(i);
                 // if compare function is provided
                 // dupe keys are possible, check if the value matches,
@@ -953,12 +960,11 @@ LDone:
     rgCurrentBuckets = NULL;
     currentBucketsSize = 0;
 
-    // Release store: ensures all writes to the new bucket array are
-    // visible before the pointer is published. Readers observe these
-    // writes because they enter an EBR critical region (see
-    // EbrCriticalRegionHolder::EnterCriticalRegion and Buckets()), which
-    // executes a full MemoryBarrier() before reading m_rgBuckets.
-    VolatileStore(&m_rgBuckets, rgNewBuckets);
+    // memory barrier, to replace the pointer to array of bucket
+    MemoryBarrier();
+
+    // Update the HashMap state
+    m_rgBuckets = rgNewBuckets;
     m_iPrimeIndex = newPrimeIndex;
     m_cbInserts = cbValidSlotsInit; // reset insert count to the new valid count
     m_cbPrevSlotsInUse = cbValidSlotsInit; // track the previous delete count
