@@ -526,8 +526,8 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     // We can end up with a block copy operation storing a non-STRUCT into a STRUCT due to type erasure.
     if ((storeType == TYP_STRUCT) && lclNode->OperIsCopyBlkOp())
     {
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNode->GetLclNum());
-        var_types lclRegType = varDsc->GetRegisterType(lclNode);
+        LclVarDsc* varDsc     = m_compiler->lvaGetDesc(lclNode->GetLclNum());
+        var_types  lclRegType = varDsc->GetRegisterType(lclNode);
         if (lclRegType != TYP_UNDEF)
         {
             storeType = lclRegType;
